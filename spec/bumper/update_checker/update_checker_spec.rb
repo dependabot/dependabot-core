@@ -37,7 +37,7 @@ RSpec.describe UpdateChecker::RubyUpdateChecker do
   end
 
   let(:checker) { UpdateChecker::RubyUpdateChecker.new(initial_dependencies) }
-  subject(:dependencies) { checker.dependencies_to_update }
+  subject(:dependencies) { checker.outdated_dependencies }
 
   its(:length) { is_expected.to eq(1) }
 

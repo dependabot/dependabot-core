@@ -5,7 +5,7 @@ module UpdateChecker
   # checks for dependencies that are out of date
   #
   # usage:
-  #     UpdateChecker::RubyUpdateChecker.new(initial_dependencies).dependencies_to_update
+  #     UpdateChecker::RubyUpdateChecker.new(initial_dependencies).outdated_dependencies
   #
   # dependencies, Array
   # return an Array of dependencies that are out of date
@@ -18,7 +18,7 @@ module UpdateChecker
       @dependencies = dependencies
     end
 
-    def dependencies_to_update
+    def outdated_dependencies
       dependencies.select do |dependency|
         latest_version = rubygems_info_for(dependency)["version"]
         Gem::Version.new(latest_version) > Gem::Version.new(dependency.version)
