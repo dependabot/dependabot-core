@@ -34,7 +34,7 @@ DEPENDENCIES
   gemnasium-parser (~> 0.1.9)
   rspec (~> 3.3.0)
   rspec-its (~> 1.2.0)
-  webmock
+  webmock (~> 1.21.0)
 
 BUNDLED WITH
    1.10.6
