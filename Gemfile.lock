@@ -1,6 +1,9 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.3.8)
+    crack (0.4.2)
+      safe_yaml (~> 1.0.0)
     diff-lcs (1.2.5)
     gemnasium-parser (0.1.9)
     rspec (3.3.0)
@@ -19,6 +22,10 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.3.0)
     rspec-support (3.3.0)
+    safe_yaml (1.0.4)
+    webmock (1.21.0)
+      addressable (>= 2.3.6)
+      crack (>= 0.3.2)
 
 PLATFORMS
   ruby
@@ -27,6 +34,7 @@ DEPENDENCIES
   gemnasium-parser (~> 0.1.9)
   rspec (~> 3.3.0)
   rspec-its (~> 1.2.0)
+  webmock (~> 1.21.0)
 
 BUNDLED WITH
-   1.10.4
+   1.10.6
