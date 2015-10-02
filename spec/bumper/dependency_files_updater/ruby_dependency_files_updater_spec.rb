@@ -20,21 +20,13 @@ RSpec.describe DependencyFilesUpdater::RubyDependencyFilesUpdater do
   its(:length) { is_expected.to eq(2) }
   specify { updated_files.each { |file| expect(file).to be_a(DependencyFile) } }
 
-  describe "the Gemfile.lock" do
-    subject(:file) { updated_files.find { |file| file.name == "Gemfile.lock" } }
-
-    it { is_expected.to_not be_nil }
-    # FIXME: find a way to parse Gemfile.lock and spec the version
-    its(:content) { is_expected.to include "1.5.0" }
+  describe "the updated Gemfile" do
+    subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
+    its(:content) { is_expected.to include "gem 'business', '~> 1.5.0'" }
   end
 
-  describe "the Gemfile" do
-    subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-    its(:content) { is_expected.to include "~> 1.5.0" }
-
-    it "has an updated version" do
-      requirement = file.content.match(Gemnasium::Parser::Patterns::GEM_CALL)[5]
-      expect(requirement).to include "1.5.0"
-    end
+  describe "the updated Gemfile.lock" do
+    subject(:file) { updated_files.find { |file| file.name == "Gemfile.lock" } }
+    its(:content) { is_expected.to include "business (~> 1.5.0" }
   end
 end

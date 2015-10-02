@@ -14,6 +14,6 @@ RSpec.describe FileParsers::RubyFileParser do
 
     it { is_expected.to be_a(Dependency) }
     its(:name) { is_expected.to eq("business") }
-    its(:version) { is_expected.to eq("1.5.0") }
+    its(:version) { is_expected.to eq("1.4.0") }
   end
 end

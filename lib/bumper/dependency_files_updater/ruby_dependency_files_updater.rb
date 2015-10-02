@@ -31,13 +31,16 @@ module DependencyFilesUpdater
     def updated_gemfile
       return @updated_gemfile if @updated_gemfile
 
-      @updated_gemfile = gemfile
-      # m = gemfile.match(Gemnasium::Parser::Patterns::GEM_CALL)
-      # m.offset(5) # 5th part is the requirement
-      # new_gemfile = gemfile.dup
-      # new_gemfile[45...53].match(/[\d\.]+/).offset(0)
-      # new_gemfile[0...(45+3)] + dependency.version + new_gemfile[(45+8)...-1]
-      # new_gemfile
+      lines = gemfile.split("\n")
+
+      lines.each do |line|
+        match = line.match(Gemnasium::Parser::Patterns::GEM_CALL)
+        next unless match && match[:name] == dependency.name
+
+        line.sub!(/[\d\.]+/, dependency.version)
+      end
+
+      @updated_gemfile = lines.join("\n")
     end
 
     def updated_gemfile_lock
