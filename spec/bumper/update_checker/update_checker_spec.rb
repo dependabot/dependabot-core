@@ -3,21 +3,10 @@ require "bumper/dependency"
 require "bumper/update_checker/update_checker"
 
 RSpec.describe UpdateChecker::RubyUpdateChecker do
-  let(:outdated_dependency) {
-    File.read("spec/fixtures/out_of_date_dependency_response.json")
-  }
-
-  let(:outdated_dependency_json) {
-    JSON.parse(outdated_dependency)
-  }
-
-  let(:latest_dependency) {
-    File.read("spec/fixtures/up_to_date_dependency_response.json")
-  }
-
-  let(:latest_dependency_json) {
-    JSON.parse(latest_dependency)
-  }
+  let(:outdated_dependency) { fixture("out_of_date_dependency_response.json") }
+  let(:outdated_dependency_json) { json_fixture("out_of_date_dependency_response.json") }
+  let(:latest_dependency) { fixture("up_to_date_dependency_response.json") }
+  let(:latest_dependency_json) { json_fixture("up_to_date_dependency_response.json") }
 
   before do
     stub_request(
@@ -42,7 +31,7 @@ RSpec.describe UpdateChecker::RubyUpdateChecker do
       ),
       Dependency.new(
         name: outdated_dependency_json["name"],
-        version: "1.2.0"
+        version: "1.2.0" # current needs to be < new
       )
     ]
   end
