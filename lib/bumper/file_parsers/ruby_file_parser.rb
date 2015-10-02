@@ -1,4 +1,5 @@
 require "gemnasium/parser"
+require "bumper/dependency"
 
 module FileParsers
   class RubyFileParser
