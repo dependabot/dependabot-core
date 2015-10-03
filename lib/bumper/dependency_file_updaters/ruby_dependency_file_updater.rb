@@ -71,7 +71,7 @@ module DependencyFileUpdaters
     end
 
     def in_a_temporary_directory
-      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exists?(BUMP_TMP_DIR_PATH)
+      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
       Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
         yield dir
       end

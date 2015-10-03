@@ -20,7 +20,7 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
   let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }
   let(:tmp_path) { described_class::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exists?(tmp_path) }
+  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
   subject(:updated_files) { updater.updated_dependency_files }
 
   it "cleans up after updated_files" do
