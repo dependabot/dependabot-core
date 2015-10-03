@@ -12,7 +12,7 @@ dependency_file_parser:
     repo:
       name
       language
-    files:
+    dependency_files:
       name
       contents
 ​
@@ -21,7 +21,7 @@ update_checker:
     repo:
       name
       language
-    files:
+    dependency_files:
       name
       contents
     dependency:
@@ -33,7 +33,7 @@ dependency_file_updater:
     repo:
       name
       language
-    files:
+    dependency_files:
       name
       contents
     new_dependency:
@@ -45,7 +45,7 @@ pull_request_creator:
     repo:
       name
       language
-    updated_files:
+    updated_dependency_files:
       name
       contents
     new_dependency:
