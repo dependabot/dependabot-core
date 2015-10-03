@@ -36,7 +36,7 @@ dependency_file_updater:
     dependency_files:
       name
       contents
-    new_dependency:
+    updated_dependency:
       name
       version
 ​
@@ -48,7 +48,7 @@ pull_request_creator:
     updated_dependency_files:
       name
       contents
-    new_dependency:
+    updated_dependency:
       name
       version
 ```
