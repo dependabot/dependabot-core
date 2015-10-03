@@ -33,11 +33,11 @@ class PullRequestCreator
     current_file = Github.client.contents(repo, path: file.name)
     Github.client.update_contents(
       repo,
-     file.name,
-     "Updating #{file.name}",
-     current_file.sha,
-     file.content,
-     branch: new_branch_name
+      file.name,
+      "Updating #{file.name}",
+      current_file.sha,
+      file.content,
+      branch: new_branch_name
     )
   end
 

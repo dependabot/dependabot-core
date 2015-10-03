@@ -14,12 +14,12 @@ RSpec.describe PullRequestCreator do
 
   let(:repo) { "gocardless/bump" }
   let(:github_headers) { {"Content-Type": "application/json"} }
-  let(:repo_response) { github_fixture("repo.json") }
-  let(:ref_response) { github_fixture("ref.json") }
-  let(:create_ref_response) { github_fixture("create_ref.json") }
-  let(:update_file_response) { github_fixture("update_file.json") }
-  let(:create_pr_response) { github_fixture("create_pr.json") }
-  let(:gemfile_content) { github_fixture("gemfile_content.json") }
+  let(:repo_response) { fixture("github", "repo.json") }
+  let(:ref_response) { fixture("github", "ref.json") }
+  let(:create_ref_response) { fixture("github", "create_ref.json") }
+  let(:update_file_response) { fixture("github", "update_file.json") }
+  let(:create_pr_response) { fixture("github", "create_pr.json") }
+  let(:gemfile_content) { fixture("github", "gemfile_content.json") }
 
   let(:creator) do
     PullRequestCreator.new(
