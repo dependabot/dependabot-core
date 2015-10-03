@@ -8,7 +8,7 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: [gemfile, gemfile_lock],
-      dependency: dependency,
+      dependency: dependency
     )
   end
   let(:gemfile) do
@@ -45,7 +45,7 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
     let(:updater) do
       described_class.new(
         dependency_files: [gemfile],
-        dependency: dependency,
+        dependency: dependency
       )
     end
 

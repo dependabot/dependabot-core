@@ -21,7 +21,7 @@ module DependencyFileFetchers
           "name" => repo,
           "language" => "ruby"
         },
-        "dependency_files" => dependency_files,
+        "dependency_files" => dependency_files
       )
     end
 

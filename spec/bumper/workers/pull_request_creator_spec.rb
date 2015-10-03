@@ -8,15 +8,15 @@ RSpec.describe Workers::PullRequestCreator do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby",
+        "language" => "ruby"
       },
       "updated_dependency" => {
         "name" => "business",
-        "version" => "1.5.0",
+        "version" => "1.5.0"
       },
       "updated_dependency_files" => [
         { "name" => "Gemfile", "content" => "xyz" },
-        { "name" => "Gemfile.lock", "content" => "xyz" },
+        { "name" => "Gemfile.lock", "content" => "xyz" }
       ]
     }
   end

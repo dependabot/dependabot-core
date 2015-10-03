@@ -8,11 +8,11 @@ RSpec.describe Workers::DependencyFileParser do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby",
+        "language" => "ruby"
       },
       "dependency_files" => [
         { "name" => "Gemfile", "content" => fixture("Gemfile") },
-        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") },
+        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") }
       ]
     }
   end
@@ -28,7 +28,7 @@ RSpec.describe Workers::DependencyFileParser do
           "dependency_files" => body["dependency_files"],
           "dependency" => {
             "name" => "business",
-            "version" => "1.4.0",
+            "version" => "1.4.0"
           })
       perform
     end

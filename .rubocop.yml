@@ -1,0 +1,6 @@
+# For all options see https://github.com/bbatsov/rubocop/tree/master/config
+
+inherit_from: .rubocop_todo.yml
+
+AllCops:
+  DisplayCopNames: true

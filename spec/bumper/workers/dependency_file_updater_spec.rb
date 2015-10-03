@@ -8,15 +8,15 @@ RSpec.describe Workers::DependencyFileUpdater do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby",
+        "language" => "ruby"
       },
       "updated_dependency" => {
         "name" => "business",
-        "version" => "1.5.0",
+        "version" => "1.5.0"
       },
       "dependency_files" => [
         { "name" => "Gemfile", "content" => fixture("Gemfile") },
-        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") },
+        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") }
       ]
     }
   end
@@ -37,7 +37,7 @@ RSpec.describe Workers::DependencyFileUpdater do
           "updated_dependency" => body["updated_dependency"],
           "updated_dependency_files" => [{
             "name" => "Gemfile",
-            "content" => "xyz",
+            "content" => "xyz"
           }])
       perform
     end

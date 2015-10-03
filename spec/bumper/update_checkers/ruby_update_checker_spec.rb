@@ -19,7 +19,7 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
   let(:dependency) do
     Dependency.new(
       name: rubygems_response_json["name"],
-      version: dependency_version,
+      version: dependency_version
     )
   end
 

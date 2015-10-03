@@ -9,7 +9,7 @@ class Workers::DependencyFileParser
   shoryuken_options(
     queue: "bump-dependency_files_to_parse",
     body_parser: :json,
-    auto_delete: true,
+    auto_delete: true
   )
 
   def perform(sqs_message, body)
@@ -36,7 +36,7 @@ class Workers::DependencyFileParser
       "dependency_files" => dependency_files,
       "dependency" => {
         "name" => dependency.name,
-        "version" => dependency.version,
+        "version" => dependency.version
       }
     )
   end

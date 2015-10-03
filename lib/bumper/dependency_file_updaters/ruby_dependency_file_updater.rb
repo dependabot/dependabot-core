@@ -31,7 +31,7 @@ module DependencyFileUpdaters
         DependencyFile.new(
           name: "Gemfile.lock",
           content: updated_gemfile_lock_content
-        ),
+        )
       ]
     end
 

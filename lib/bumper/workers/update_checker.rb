@@ -9,21 +9,21 @@ class Workers::UpdateChecker
   shoryuken_options(
     queue: "bump-dependencies_to_check",
     body_parser: :json,
-    auto_delete: true,
+    auto_delete: true
   )
 
   def perform(sqs_message, body)
     update_checker_class = update_checker_for(body["repo"]["language"])
     dependency = Dependency.new(
       name: body["dependency"]["name"],
-      version: body["dependency"]["version"],
+      version: body["dependency"]["version"]
     )
 
     update_checker = update_checker_class.new(dependency)
     if update_checker.needs_update?
       updated_dependency = Dependency.new(
         name: dependency.name,
-        version: update_checker.latest_version,
+        version: update_checker.latest_version
       )
       update_dependency(
         body["repo"],
@@ -41,7 +41,7 @@ class Workers::UpdateChecker
       "dependency_files" => dependency_files,
       "updated_dependency" => {
         "name" => updated_dependency.name,
-        "version" => updated_dependency.version,
+        "version" => updated_dependency.version
       }
     )
   end

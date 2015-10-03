@@ -6,7 +6,7 @@ RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
   let(:gemfile) do
     DependencyFile.new(
       name: "Gemfile",
-      content: File.read("spec/fixtures/Gemfile"),
+      content: File.read("spec/fixtures/Gemfile")
     )
   end
   let(:parser) { DependencyFileParsers::RubyDependencyFileParser.new([gemfile]) }
