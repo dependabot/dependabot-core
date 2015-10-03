@@ -2,7 +2,7 @@ require "bumper/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message", delete: nil) }
+  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
