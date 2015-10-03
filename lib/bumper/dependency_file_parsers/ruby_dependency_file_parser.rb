@@ -1,8 +1,8 @@
 require "gemnasium/parser"
 require "bumper/dependency"
 
-module FileParsers
-  class RubyFileParser
+module DependencyFileParsers
+  class RubyDependencyFileParser
     def initialize(gemfile)
       @gemfile = gemfile
     end
