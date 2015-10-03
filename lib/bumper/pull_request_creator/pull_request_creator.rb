@@ -9,6 +9,8 @@ class PullRequestCreator
     @files = files
   end
 
+  private
+
   def create
     create_branch
     files.each { |file| update_file(file) }
@@ -27,9 +29,9 @@ class PullRequestCreator
     @new_branch_name ||= "bump_#{dependency.name}_to_#{dependency.version}"
   end
 
-  private
-
   def update_file(file)
+    # GitHub's API makes it hard to create a new commit with multiple files.
+    # TODO: use https://developer.github.com/v3/git/commits/#create-a-commit
     current_file = Github.client.contents(repo, path: file.name)
     Github.client.update_contents(
       repo,
