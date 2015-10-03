@@ -2,9 +2,9 @@ require "spec_helper"
 require "tmpdir"
 require "bumper/dependency_file"
 require "bumper/dependency"
-require "bumper/dependency_files_updaters/ruby_dependency_files_updater"
+require "bumper/dependency_file_updaters/ruby_dependency_file_updater"
 
-RSpec.describe DependencyFilesUpdaters::RubyDependencyFilesUpdater do
+RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
   let(:updater) { described_class.new(gemfile: gemfile, dependency: dependency) }
   let(:gemfile) { fixture("Gemfile") }
   let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }

@@ -3,10 +3,10 @@ require "bumper/dependency_file"
 require "tmpdir"
 require "bundler"
 
-module DependencyFilesUpdaters
+module DependencyFileUpdaters
   # NOTE: in ruby a requirement is a matcher and version
   # e.g. "~> 1.2.3", where "~>" is the match
-  class RubyDependencyFilesUpdater
+  class RubyDependencyFileUpdater
     attr_reader :gemfile, :dependency
 
     BUMP_TMP_FILE_PREFIX = "bump_".freeze
