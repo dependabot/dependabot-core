@@ -1,2 +1,2 @@
-export GITHUB_TOKEN="token"
+export BUMP_GITHUB_TOKEN="token"
 export WATCHED_REPOS="gocardless/bump"

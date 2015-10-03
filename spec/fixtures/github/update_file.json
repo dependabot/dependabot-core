@@ -1,0 +1,9 @@
+{
+  "message": "my commit message",
+  "committer": {
+    "name": "Bump Bumper",
+    "email": "keep@uptodate.com"
+  },
+  "content": "bXkgdXBkYXRlZCBmaWxlIGNvbnRlbnRz",
+  "sha": "329688480d39049927147c162b9d2deaf885005f"
+}

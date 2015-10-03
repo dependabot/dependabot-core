@@ -1,0 +1,9 @@
+{
+  "ref": "refs/heads/bump_test_to_0.0.1",
+  "url": "https://api.github.com/repos/gocardless/bump/git/refs/heads/bump_test_to_0.0.1",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/gocardless/bump/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}

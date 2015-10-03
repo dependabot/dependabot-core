@@ -32,7 +32,7 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
 
   describe "the updated Gemfile" do
     subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-    its(:content) { is_expected.to include "gem 'business', '~> 1.5.0'" }
+    its(:content) { is_expected.to include "gem \"business\", \"~> 1.5.0\"" }
   end
 
   describe "the updated Gemfile.lock" do

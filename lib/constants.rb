@@ -1,3 +1,5 @@
+require "bumper/boot"
+
 module Constants
-  GITHUB_TOKEN = Prius.get(:github_token)
+  GITHUB_TOKEN = Prius.get(:bump_github_token)
 end
