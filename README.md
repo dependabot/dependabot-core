@@ -1,0 +1,54 @@
+bump
+====
+```
+dependency_file_fetcher:
+  inputs:
+    repos:
+      name
+      language
+​
+dependency_file_parser:
+  inputs:
+    repo:
+      name
+      language
+    files:
+      name
+      contents
+​
+update_checker:
+  inputs:
+    repo:
+      name
+      language
+    files:
+      name
+      contents
+    dependency:
+      name
+      version
+​
+dependency_file_updater:
+  inputs:
+    repo:
+      name
+      language
+    files:
+      name
+      contents
+    new_dependency:
+      name
+      version
+​
+pull_request_creator:
+  inputs:
+    repo:
+      name
+      language
+    updated_files:
+      name
+      contents
+    new_dependency:
+      name
+      version
+```
