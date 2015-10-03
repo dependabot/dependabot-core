@@ -1,10 +1,10 @@
 require "spec_helper"
 require "bumper/dependency"
-require "bumper/file_parsers/ruby_file_parser"
+require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
 
-RSpec.describe FileParsers::RubyFileParser do
+RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
   let(:gemfile) { File.read("spec/fixtures/Gemfile") }
-  let(:parser) { FileParsers::RubyFileParser.new(gemfile) }
+  let(:parser) { DependencyFileParsers::RubyDependencyFileParser.new(gemfile) }
   subject(:dependencies) { parser.parse }
 
   its(:length) { is_expected.to eq(1) }

@@ -1,7 +1,7 @@
 require "bumper/workers"
-require "bumper/file_parsers/ruby_file_parser"
+require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
 
-class Workers::FileParser
+class Workers::DependencyFileParser
   include Shoryuken::Worker
 
   shoryuken_options queue: "bump-dependency_files", body_parser: :json
@@ -22,7 +22,7 @@ class Workers::FileParser
 
   def parser_for(language)
     case language
-    when "ruby" then FileParsers::RubyFileParser
+    when "ruby" then DependencyFileParsers::RubyDependencyFileParser
     else raise "Invalid language #{language}"
     end
   end
