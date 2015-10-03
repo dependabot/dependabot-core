@@ -1,13 +1,6 @@
 require "json"
 
 module UpdateCheckers
-  # checks for dependencies that are out of date
-  #
-  # usage:
-  #     UpdateChecker::RubyUpdateChecker.new(initial_dependencies).outdated_dependencies
-  #
-  # dependencies, Array
-  # return an Array of dependencies that are out of date
   class RubyUpdateChecker
     attr_reader :dependency
 

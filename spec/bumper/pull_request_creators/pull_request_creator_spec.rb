@@ -24,19 +24,33 @@ RSpec.describe PullRequestCreator do
   let(:create_pr_response) { fixture("github", "create_pr.json") }
   let(:gemfile_content_response) { fixture("github", "gemfile_content.json") }
 
+  let(:repo_url) { "https://api.github.com/repos/#{repo}" }
+
   before do
-    stub_request(:get, "https://api.github.com/repos/#{repo}").
-      to_return(status: 200, body: repo_response, headers: github_headers)
-    stub_request(:get, "https://api.github.com/repos/#{repo}/git/refs/heads/master").
-      to_return(status: 200, body: ref_response, headers: github_headers)
-    stub_request(:post, "https://api.github.com/repos/#{repo}/git/refs").
-      to_return(status: 200, body: create_ref_response, headers: github_headers)
-    stub_request(:get, "https://api.github.com/repos/#{repo}/contents/#{gemfile.name}").
-      to_return(status: 200, body: gemfile_content_response, headers: github_headers)
-    stub_request(:put, "https://api.github.com/repos/#{repo}/contents/#{gemfile.name}").
-      to_return(status: 200, body: update_file_response, headers: github_headers)
-    stub_request(:post, "https://api.github.com/repos/#{repo}/pulls").
-      to_return(status: 200, body: create_pr_response, headers: github_headers)
+    stub_request(:get, repo_url).
+      to_return(status: 200,
+                body: repo_response,
+                headers: github_headers)
+    stub_request(:get, "#{repo_url}/git/refs/heads/master").
+      to_return(status: 200,
+                body: ref_response,
+                headers: github_headers)
+    stub_request(:post, "#{repo_url}/git/refs").
+      to_return(status: 200,
+                body: create_ref_response,
+                headers: github_headers)
+    stub_request(:get, "#{repo_url}/contents/#{gemfile.name}").
+      to_return(status: 200,
+                body: gemfile_content_response,
+                headers: github_headers)
+    stub_request(:put, "#{repo_url}/contents/#{gemfile.name}").
+      to_return(status: 200,
+                body: update_file_response,
+                headers: github_headers)
+    stub_request(:post, "#{repo_url}/pulls").
+      to_return(status: 200,
+                body: create_pr_response,
+                headers: github_headers)
   end
 
   describe "#create" do
@@ -44,7 +58,7 @@ RSpec.describe PullRequestCreator do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "https://api.github.com/repos/gocardless/bump/git/refs").
+        to have_requested(:post, "#{repo_url}/git/refs").
         with(body: {
                ref: "refs/heads/bump_business_to_1.5.0",
                sha: "aa218f56b14c9653891f9e74264a383fa43fefbd"
@@ -55,11 +69,12 @@ RSpec.describe PullRequestCreator do
       creator.create
 
       expect(WebMock).
-        to have_requested(:put, "https://api.github.com/repos/gocardless/bump/contents/Gemfile").
+        to have_requested(:put, "#{repo_url}/contents/Gemfile").
         with(body: {
                branch: "bump_business_to_1.5.0",
                sha: "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
-               content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVzaW5lc3MiLCAifj4gMS40LjAiCg==",
+               content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVza"\
+                        "W5lc3MiLCAifj4gMS40LjAiCg==",
                message: "Updating Gemfile"
              })
     end
@@ -68,7 +83,7 @@ RSpec.describe PullRequestCreator do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "https://api.github.com/repos/gocardless/bump/pulls").
+        to have_requested(:post, "#{repo_url}/pulls").
         with(body: {
                base: "master",
                head: "bump_business_to_1.5.0",

@@ -13,7 +13,7 @@ module Workers
       auto_delete: true
     )
 
-    def perform(sqs_message, body)
+    def perform(_sqs_message, body)
       file_updater_class = file_updater_for(body["repo"]["language"])
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
@@ -37,15 +37,15 @@ module Workers
 
     private
 
-    def open_pull_request_for(repo, updated_dependency, updated_dependency_files)
-      updated_dependency_files_hash = updated_dependency_files.map do |file|
+    def open_pull_request_for(repo, updated_dependency, updated_files)
+      updated_dependency_files = updated_files.map! do |file|
         { "name" => file.name, "content" => file.content }
       end
 
       Workers::PullRequestCreator.perform_async(
         "repo" => repo,
         "updated_dependency" => updated_dependency,
-        "updated_dependency_files" => updated_dependency_files_hash
+        "updated_dependency_files" => updated_dependency_files
       )
     end
 

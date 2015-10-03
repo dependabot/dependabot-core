@@ -13,7 +13,7 @@ module Workers
       auto_delete: true
     )
 
-    def perform(sqs_message, body)
+    def perform(_sqs_message, body)
       update_checker_class = update_checker_for(body["repo"]["language"])
       dependency = Dependency.new(
         name: body["dependency"]["name"],

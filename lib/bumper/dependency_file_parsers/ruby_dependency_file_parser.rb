@@ -3,7 +3,7 @@ require "bumper/dependency"
 
 module DependencyFileParsers
   class RubyDependencyFileParser
-    def initialize(dependency_files)
+    def initialize(dependency_files:)
       @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
       raise "No Gemfile!" unless @gemfile
     end

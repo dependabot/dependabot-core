@@ -13,12 +13,12 @@ module Workers
       auto_delete: true
     )
 
-    def perform(sqs_message, body)
+    def perform(_sqs_message, body)
       parser = parser_for(body["repo"]["language"])
       dependency_files = body["dependency_files"].map do |file|
         DependencyFile.new(name: file["name"], content: file["content"])
       end
-      dependencies = parser.new(dependency_files).parse
+      dependencies = parser.new(dependency_files: dependency_files).parse
 
       dependencies.each do |dependency|
         check_for_dependency_update(

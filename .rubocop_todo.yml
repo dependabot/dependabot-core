@@ -6,15 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 4
-# Cop supports --auto-correct.
-Lint/UnusedMethodArgument:
-  Exclude:
-    - 'lib/bumper/workers/dependency_file_parser.rb'
-    - 'lib/bumper/workers/dependency_file_updater.rb'
-    - 'lib/bumper/workers/pull_request_creator.rb'
-    - 'lib/bumper/workers/update_checker.rb'
-
 # Offense count: 3
 Metrics/AbcSize:
   Max: 19
@@ -22,7 +13,7 @@ Metrics/AbcSize:
 # Offense count: 16
 # Configuration parameters: AllowURI, URISchemes.
 Metrics/LineLength:
-  Max: 107
+  Max: 80
 
 # Offense count: 5
 # Configuration parameters: CountComments.
