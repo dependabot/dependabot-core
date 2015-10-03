@@ -36,5 +36,18 @@ RSpec.describe Workers::PullRequestCreator do
 
       worker.perform(sqs_message, body)
     end
+
+    context "if an error is raised" do
+      before do
+        allow_any_instance_of(::PullRequestCreator).
+          to receive(:create).
+          and_raise("hell")
+      end
+
+      it "still raises, but also sends the error to sentry" do
+        expect(Raven).to receive(:capture_exception).and_call_original
+        expect { worker.perform(sqs_message, body) }.to raise_error("hell")
+      end
+    end
   end
 end

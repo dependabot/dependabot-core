@@ -14,7 +14,6 @@ module Workers
     )
 
     def perform(_sqs_message, body)
-      file_updater_class = file_updater_for(body["repo"]["language"])
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"]
@@ -24,15 +23,19 @@ module Workers
         DependencyFile.new(name: file["name"], content: file["content"])
       end
 
-      file_updater = file_updater_class.new(
-        dependency_files: dependency_files,
-        dependency: updated_dependency
+      file_updater = file_updater_for(body["repo"]["language"]).new(
+        dependency: updated_dependency,
+        dependency_files: dependency_files
       )
+
       open_pull_request_for(
         body["repo"],
         body["updated_dependency"],
         file_updater.updated_dependency_files
       )
+    rescue => error
+      Raven.capture_exception(error)
+      raise
     end
 
     private

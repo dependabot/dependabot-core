@@ -58,6 +58,8 @@ GEM
     sawyer (0.6.0)
       addressable (~> 2.3.5)
       faraday (~> 0.8, < 0.10)
+    sentry-raven (0.15.2)
+      faraday (>= 0.7.6)
     shoryuken (2.0.0)
       aws-sdk-core (~> 2.0.21)
       celluloid (~> 0.16.0)
@@ -79,6 +81,7 @@ DEPENDENCIES
   rspec (~> 3.3.0)
   rspec-its (~> 1.2.0)
   rubocop (~> 0.34.2)
+  sentry-raven (~> 0.15.2)
   shoryuken (~> 2.0.0)
   webmock (~> 1.21.0)
 

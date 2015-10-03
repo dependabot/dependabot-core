@@ -54,4 +54,17 @@ RSpec.describe Workers::UpdateChecker do
       worker.perform(sqs_message, body)
     end
   end
+
+  context "if an error is raised" do
+    before do
+      allow(UpdateCheckers::RubyUpdateChecker).
+        to receive(:new).
+        and_raise("hell")
+    end
+
+    it "still raises, but also sends the error to sentry" do
+      expect(Raven).to receive(:capture_exception).and_call_original
+      expect { worker.perform(sqs_message, body) }.to raise_error("hell")
+    end
+  end
 end

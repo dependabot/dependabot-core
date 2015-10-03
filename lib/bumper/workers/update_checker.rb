@@ -14,12 +14,12 @@ module Workers
     )
 
     def perform(_sqs_message, body)
-      update_checker_class = update_checker_for(body["repo"]["language"])
       dependency = Dependency.new(
         name: body["dependency"]["name"],
         version: body["dependency"]["version"]
       )
 
+      update_checker_class = update_checker_for(body["repo"]["language"])
       update_checker = update_checker_class.new(dependency)
 
       return unless update_checker.needs_update?
@@ -33,6 +33,9 @@ module Workers
         body["dependency_files"],
         updated_dependency
       )
+    rescue => error
+      Raven.capture_exception(error)
+      raise
     end
 
     private

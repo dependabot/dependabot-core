@@ -31,6 +31,9 @@ module Workers
       )
 
       pull_request_creator.create
+    rescue => error
+      Raven.capture_exception(error)
+      raise
     end
   end
 end
