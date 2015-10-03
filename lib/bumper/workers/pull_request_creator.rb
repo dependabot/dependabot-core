@@ -2,7 +2,7 @@ require "shoryuken"
 require "bumper/workers"
 require "bumper/dependency"
 require "bumper/dependency_file"
-require "bumper/pull_request_creators/pull_request_creator"
+require "bumper/pull_request_creator"
 
 module Workers
   class PullRequestCreator
