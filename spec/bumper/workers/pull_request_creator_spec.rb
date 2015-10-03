@@ -1,5 +1,4 @@
 require "spec_helper"
-require "bumper/dependency"
 require "bumper/workers/pull_request_creator"
 
 RSpec.describe Workers::PullRequestCreator do

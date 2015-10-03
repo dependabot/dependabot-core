@@ -1,11 +1,16 @@
 require "shoryuken"
 require "bumper/workers"
+require "bumper/dependency_file"
 require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
 
 class Workers::DependencyFileParser
   include Shoryuken::Worker
 
-  shoryuken_options queue: "bump-dependency_files_to_parse", body_parser: :json
+  shoryuken_options(
+    queue: "bump-dependency_files_to_parse",
+    body_parser: :json,
+    auto_delete: true,
+  )
 
   def perform(sqs_message, body)
     parser = parser_for(body["repo"]["language"])
@@ -21,8 +26,6 @@ class Workers::DependencyFileParser
         dependency
       )
     end
-
-    sqs_message.delete
   end
 
   private
