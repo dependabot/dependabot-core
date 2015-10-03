@@ -108,9 +108,9 @@ RSpec.describe PullRequestCreator do
     context "when a branch for this update already exists" do
       before do
         stub_request(:post, "#{repo_url}/git/refs").
-        to_return(status: 422,
-                  body: create_ref_error_response,
-                  headers: github_headers)
+          to_return(status: 422,
+                    body: create_ref_error_response,
+                    headers: github_headers)
       end
 
       specify { expect { creator.create }.to_not raise_error }
