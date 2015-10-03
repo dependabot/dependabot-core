@@ -3,50 +3,42 @@ require "bumper/dependency"
 require "bumper/update_checkers/ruby_update_checker"
 
 RSpec.describe UpdateCheckers::RubyUpdateChecker do
-  let(:outdated_dependency) { fixture("out_of_date_dependency_response.json") }
-  let(:outdated_dependency_json) { JSON.parse(outdated_dependency) }
-  let(:outdated_dependency_url) do
-    "https://rubygems.org/api/v1/gems/#{outdated_dependency_json["name"]}.json"
-  end
-
-  let(:latest_dependency) { fixture("up_to_date_dependency_response.json") }
-  let(:latest_dependency_json) { JSON.parse(latest_dependency) }
-  let(:latest_dependency_url) do
-    "https://rubygems.org/api/v1/gems/#{latest_dependency_json["name"]}.json"
+  let(:rubygems_response) { fixture("rubygems_response.json") }
+  let(:rubygems_response_json) { JSON.parse(rubygems_response) }
+  let(:rubygems_url) do
+    "https://rubygems.org/api/v1/gems/#{dependency.name}.json"
   end
 
   before do
-    stub_request(:get, outdated_dependency_url).
-      to_return(status: 200, body: outdated_dependency, headers: {})
-
-    stub_request(:get, latest_dependency_url).
-      to_return(status: 200, body: latest_dependency, headers: {})
+    stub_request(:get, rubygems_url).
+      to_return(status: 200, body: rubygems_response, headers: {})
   end
 
-  let(:initial_dependencies) do
-    [
-      Dependency.new(
-        name: latest_dependency_json["name"],
-        version: latest_dependency_json["version"]
-      ),
-      Dependency.new(
-        name: outdated_dependency_json["name"],
-        version: "1.2.0"
-      )
-    ]
+  let(:checker) { UpdateCheckers::RubyUpdateChecker.new(dependency) }
+  let(:dependency_version) { "1.2.0" }
+  let(:dependency) do
+    Dependency.new(
+      name: rubygems_response_json["name"],
+      version: dependency_version,
+    )
   end
 
-  let(:checker) { UpdateCheckers::RubyUpdateChecker.new(initial_dependencies) }
-  subject(:dependencies) { checker.outdated_dependencies }
+  describe "#needs_update?" do
+    subject { checker.needs_update? }
 
-  its(:length) { is_expected.to eq(1) }
+    context "given an up-to-date dependency" do
+      let(:dependency_version) { rubygems_response_json["version"] }
+      it { is_expected.to be_falsey }
+    end
 
-  describe "the only dependency" do
-    subject { dependencies.first }
-
-    it { is_expected.to be_a(Dependency) }
-    its(:name) { is_expected.to eq(outdated_dependency_json["name"]) }
-    its(:version) { is_expected.to eq("1.2.0") }
+    context "given an outdated dependency" do
+      let(:dependency_version) { "1.2.0" }
+      it { is_expected.to be_truthy }
+    end
   end
 
+  describe "#latest_version" do
+    subject { checker.latest_version }
+    it { is_expected.to eq(rubygems_response_json["version"]) }
+  end
 end
