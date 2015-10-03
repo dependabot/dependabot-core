@@ -10,27 +10,27 @@ module UpdateCheckers
   # dependencies, Array
   # return an Array of dependencies that are out of date
   class RubyUpdateChecker
-    attr_reader :dependencies
+    attr_reader :dependency
 
     BASE_URL = "https://rubygems.org/api/v1".freeze
 
-    def initialize(dependencies)
-      @dependencies = dependencies
+    def initialize(dependency)
+      @dependency = dependency
     end
 
-    def outdated_dependencies
-      dependencies.select do |dependency|
-        latest_version = rubygems_info_for(dependency)["version"]
-        Gem::Version.new(latest_version) > Gem::Version.new(dependency.version)
-      end
+    def needs_update?
+      Gem::Version.new(latest_version) > Gem::Version.new(dependency.version)
+    end
+
+    def latest_version
+      @latest_version ||=
+        begin
+          rubygems_response = Net::HTTP.get(URI.parse(rubygems_url(dependency)))
+          JSON.parse(rubygems_response)["version"]
+        end
     end
 
     private
-
-    def rubygems_info_for(dependency)
-      rubygems_response = Net::HTTP.get(URI.parse(rubygems_url(dependency)))
-      JSON.parse(rubygems_response)
-    end
 
     def rubygems_url(dependency)
       "#{BASE_URL}/gems/#{dependency.name}.json"
