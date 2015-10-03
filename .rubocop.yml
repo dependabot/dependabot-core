@@ -1,9 +1,14 @@
-# For all options see https://github.com/bbatsov/rubocop/tree/master/config
-
-inherit_from: .rubocop_todo.yml
-
 AllCops:
   DisplayCopNames: true
+
+Metrics/LineLength:
+  Max: 80
+
+Metrics/AbcSize:
+  Max: 20
+
+Metrics/MethodLength:
+  Max: 20
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
