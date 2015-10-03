@@ -1,6 +1,8 @@
 require "github"
 
 class PullRequestCreator
+  CHANGELOG_NAMES = %w(changelog history)
+
   attr_reader :repo, :dependency, :files
 
   def initialize(repo:, dependency:, files:)
@@ -17,16 +19,12 @@ class PullRequestCreator
 
   private
 
-  def default_branch
-    @default_branch ||= Github.client.repository("#{repo}").default_branch
-  end
-
-  def default_branch_sha
-    Github.client.ref(repo, "heads/#{default_branch}").object.sha
-  end
-
-  def new_branch_name
-    @new_branch_name ||= "bump_#{dependency.name}_to_#{dependency.version}"
+  def create_branch
+    Github.client.create_ref(
+      repo,
+      "heads/#{new_branch_name}",
+      default_branch_sha
+    )
   end
 
   def update_file(file)
@@ -43,21 +41,50 @@ class PullRequestCreator
     )
   end
 
-  def create_branch
-    Github.client.create_ref(
-      repo,
-      "heads/#{new_branch_name}",
-      default_branch_sha
-    )
-  end
-
   def create_pull_request
     Github.client.create_pull_request(
       repo,
       default_branch,
       new_branch_name,
       "Bump #{dependency.name} to #{dependency.version}",
-      "<3 bump"
+      pr_message
     )
+  end
+
+  def pr_message
+    msg = "Bumps [#{dependency.name}](#{repo_url}) to #{dependency.version}"
+    msg += "\n- [Changelog](#{changelog_url})" if changelog_url
+    msg + "\n- [Commits](#{commits_url})"
+  end
+
+  def default_branch
+    @default_branch ||= repo_details.default_branch
+  end
+
+  def default_branch_sha
+    Github.client.ref(repo, "heads/#{default_branch}").object.sha
+  end
+
+  def new_branch_name
+    @new_branch_name ||= "bump_#{dependency.name}_to_#{dependency.version}"
+  end
+
+  def changelog_url
+    files = Github.client.contents(repo)
+    file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
+
+    file.nil? ? nil : file.url
+  end
+
+  def repo_url
+    repo_details.url
+  end
+
+  def commits_url
+    repo_url + "/commits"
+  end
+
+  def repo_details
+    @repo_details ||= Github.client.repository(repo)
   end
 end

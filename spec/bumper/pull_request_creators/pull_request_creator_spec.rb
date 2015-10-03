@@ -23,6 +23,7 @@ RSpec.describe PullRequestCreator do
   let(:update_file_response) { fixture("github", "update_file.json") }
   let(:create_pr_response) { fixture("github", "create_pr.json") }
   let(:gemfile_content_response) { fixture("github", "gemfile_content.json") }
+  let(:files_response) { fixture("github", "files.json") }
 
   let(:repo_url) { "https://api.github.com/repos/#{repo}" }
 
@@ -50,6 +51,10 @@ RSpec.describe PullRequestCreator do
     stub_request(:post, "#{repo_url}/pulls").
       to_return(status: 200,
                 body: create_pr_response,
+                headers: github_headers)
+    stub_request(:get, "#{repo_url}/contents/").
+      to_return(status: 200,
+                body: files_response,
                 headers: github_headers)
   end
 
@@ -82,13 +87,20 @@ RSpec.describe PullRequestCreator do
     it "creates a PR with the right details" do
       creator.create
 
+      repo_url =      "https://api.github.com/repos/gocardless/bump"
+      changelog_url = "https://api.github.com/repos/gocardless/bump/"\
+                      "contents/CHANGELOG.md?ref=master"
+      commits_url =   "https://api.github.com/repos/gocardless/bump/commits"
+
       expect(WebMock).
         to have_requested(:post, "#{repo_url}/pulls").
         with(body: {
                base: "master",
                head: "bump_business_to_1.5.0",
                title: "Bump business to 1.5.0",
-               body: "<3 bump"
+               body: "Bumps [business](#{repo_url}) to 1.5.0"\
+                     "\n- [Changelog](#{changelog_url})"\
+                     "\n- [Commits](#{commits_url})"
              })
     end
   end
