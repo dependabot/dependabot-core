@@ -1,5 +1,5 @@
 class DependencyFile
-  attr_accessor :name, :content
+  attr_reader :name, :content
 
   def initialize(name:, content:)
     @name = name
