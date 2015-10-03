@@ -1,8 +1,8 @@
 require "spec_helper"
 require "bumper/dependency"
-require "bumper/update_checker/update_checker"
+require "bumper/update_checkers/ruby_update_checker"
 
-RSpec.describe UpdateChecker::RubyUpdateChecker do
+RSpec.describe UpdateCheckers::RubyUpdateChecker do
   let(:outdated_dependency) { fixture("out_of_date_dependency_response.json") }
   let(:outdated_dependency_json) { JSON.parse(outdated_dependency) }
   let(:outdated_dependency_url) do
@@ -36,7 +36,7 @@ RSpec.describe UpdateChecker::RubyUpdateChecker do
     ]
   end
 
-  let(:checker) { UpdateChecker::RubyUpdateChecker.new(initial_dependencies) }
+  let(:checker) { UpdateCheckers::RubyUpdateChecker.new(initial_dependencies) }
   subject(:dependencies) { checker.outdated_dependencies }
 
   its(:length) { is_expected.to eq(1) }

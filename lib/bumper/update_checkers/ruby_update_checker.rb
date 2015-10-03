@@ -1,6 +1,6 @@
 require "json"
 
-module UpdateChecker
+module UpdateCheckers
 
   # checks for dependencies that are out of date
   #
