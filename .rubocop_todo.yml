@@ -34,7 +34,7 @@ Metrics/AbcSize:
 # Offense count: 16
 # Configuration parameters: AllowURI, URISchemes.
 Metrics/LineLength:
-  Max: 101
+  Max: 102
 
 # Offense count: 5
 # Configuration parameters: CountComments.
@@ -109,10 +109,5 @@ Style/SignalException:
     - 'lib/bumper/workers/dependency_file_updater.rb'
     - 'lib/bumper/workers/update_checker.rb'
 
-# Offense count: 4
-# Cop supports --auto-correct.
-Style/SpaceAfterColon:
-  Exclude:
-    - 'spec/bumper/pull_request_creators/pull_request_creator_spec.rb'
 
 
