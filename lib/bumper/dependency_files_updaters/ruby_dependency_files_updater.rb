@@ -3,7 +3,7 @@ require "bumper/dependency_file"
 require "tmpdir"
 require "bundler"
 
-module DependencyFilesUpdater
+module DependencyFilesUpdaters
   # NOTE: in ruby a requirement is a matcher and version
   # e.g. "~> 1.2.3", where "~>" is the match
   class RubyDependencyFilesUpdater
