@@ -1,4 +1,5 @@
-require 'octokit'
+require "constants"
+require "octokit"
 
 module Github
   def self.client
