@@ -6,11 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 1
-Lint/ParenthesesAsGroupedExpression:
-  Exclude:
-    - 'lib/bumper/workers/pull_request_creator.rb'
-
 # Offense count: 4
 # Cop supports --auto-correct.
 Lint/UnusedMethodArgument:
