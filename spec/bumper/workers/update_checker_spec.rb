@@ -15,8 +15,8 @@ RSpec.describe Workers::UpdateChecker do
         "version" => "1.4.0",
       },
       "dependency_files" => [
-        { "name" => "Gemfile", "content" => "xyz" },
-        { "name" => "Gemfile.lock", "content" => "xyz" },
+        { "name" => "Gemfile", "content" => fixture("Gemfile") },
+        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") },
       ]
     }
   end
@@ -29,8 +29,16 @@ RSpec.describe Workers::UpdateChecker do
         to receive(:latest_version).and_return("1.5.0")
     end
 
-    it "writes a message into the queue" do
-      expect(worker).to receive(:update_dependency)
+    it "enqueues a DependencyFileUpdater with the correct arguments" do
+      expect(Workers::DependencyFileUpdater).
+        to receive(:perform_async).
+        with(
+          "repo" => body["repo"],
+          "dependency_files" => body["dependency_files"],
+          "updated_dependency" => {
+            "name" => "business",
+            "version" => "1.5.0",
+          })
       worker.perform(sqs_message, body)
     end
   end
@@ -42,7 +50,7 @@ RSpec.describe Workers::UpdateChecker do
     end
 
     it "doesn't write a message into the queue" do
-      expect(worker).to_not receive(:send_update_notification)
+      expect(Workers::DependencyFileUpdater).to_not receive(:perform_async)
       worker.perform(sqs_message, body)
     end
   end
