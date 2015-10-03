@@ -1,4 +1,5 @@
 require "spec_helper"
+require "bumper/dependency"
 require "bumper/workers/pull_request_creator"
 
 RSpec.describe Workers::PullRequestCreator do
@@ -21,14 +22,20 @@ RSpec.describe Workers::PullRequestCreator do
     }
   end
 
-  it { }
+  describe "#perform" do
+    let(:stubbed_creator) { double("PullRequestCreator", create: nil) }
 
-  # describe "#perform" do
-  #   it "passes updated files to the next phase" do
-  #     allow_any_instance_of(DependencyFileUpdaters::RubyDependencyFileUpdater).
-  #       to receive(:updated_dependency_files)
-  #     expect(worker).to receive(:do_something_with)
-  #     worker.perform(sqs_message, body)
-  #   end
-  # end
+    it "passes the correct arguments to pull request creator" do
+      expect(PullRequestCreator).
+        to receive(:new).
+        with(repo: "gocardless/bump",
+             dependency: an_instance_of(Dependency),
+             files: an_instance_of(Array)).
+        and_return(stubbed_creator)
+
+      expect(stubbed_creator).to receive(:create)
+
+      worker.perform(sqs_message, body)
+    end
+  end
 end
