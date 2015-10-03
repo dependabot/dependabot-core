@@ -5,8 +5,18 @@ require "bumper/dependency"
 require "bumper/dependency_file_updaters/ruby_dependency_file_updater"
 
 RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
-  let(:updater) { described_class.new(gemfile: gemfile, dependency: dependency) }
-  let(:gemfile) { fixture("Gemfile") }
+  let(:updater) do
+    described_class.new(
+      dependency_files: [gemfile, gemfile_lock],
+      dependency: dependency,
+    )
+  end
+  let(:gemfile) do
+    DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
+  end
+  let(:gemfile_lock) do
+    DependencyFile.new(content: fixture("Gemfile.lock"), name: "Gemfile.lock")
+  end
   let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }
   let(:tmp_path) { described_class::BUMP_TMP_DIR_PATH }
 
@@ -28,5 +38,17 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
   describe "the updated Gemfile.lock" do
     subject(:file) { updated_files.find { |file| file.name == "Gemfile.lock" } }
     its(:content) { is_expected.to include "business (~> 1.5.0" }
+  end
+
+  context "when the gemfile.lock is missing" do
+    subject { -> { updater } }
+    let(:updater) do
+      described_class.new(
+        dependency_files: [gemfile],
+        dependency: dependency,
+      )
+    end
+
+    it { is_expected.to raise_error(/No Gemfile.lock/) }
   end
 end

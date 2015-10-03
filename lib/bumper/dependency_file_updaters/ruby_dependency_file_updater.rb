@@ -7,13 +7,16 @@ module DependencyFileUpdaters
   # NOTE: in ruby a requirement is a matcher and version
   # e.g. "~> 1.2.3", where "~>" is the match
   class RubyDependencyFileUpdater
-    attr_reader :gemfile, :dependency
+    attr_reader :gemfile, :gemfile_lock, :dependency
 
     BUMP_TMP_FILE_PREFIX = "bump_".freeze
     BUMP_TMP_DIR_PATH = "tmp".freeze
 
-    def initialize(gemfile:, dependency:)
-      @gemfile = gemfile
+    def initialize(dependency_files:, dependency:)
+      @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
+      @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
+      validate_files_are_present!
+
       @dependency = dependency
     end
 
@@ -21,17 +24,28 @@ module DependencyFileUpdaters
       return @updated_dependency_files if @updated_dependency_files
 
       @updated_dependency_files = [
-        DependencyFile.new(name: "Gemfile", content: updated_gemfile),
-        DependencyFile.new(name: "Gemfile.lock", content: updated_gemfile_lock)
+        DependencyFile.new(
+          name: "Gemfile",
+          content: updated_gemfile_content
+        ),
+        DependencyFile.new(
+          name: "Gemfile.lock",
+          content: updated_gemfile_lock_content
+        ),
       ]
     end
 
     private
 
-    def updated_gemfile
-      return @updated_gemfile if @updated_gemfile
+    def validate_files_are_present!
+      raise "No Gemfile!" unless gemfile
+      raise "No Gemfile.lock!" unless gemfile_lock
+    end
 
-      lines = gemfile.split("\n")
+    def updated_gemfile_content
+      return @updated_gemfile_content if @updated_gemfile_content
+
+      lines = gemfile.content.split("\n")
 
       lines.each do |line|
         match = line.match(Gemnasium::Parser::Patterns::GEM_CALL)
@@ -40,20 +54,21 @@ module DependencyFileUpdaters
         line.sub!(/[\d\.]+/, dependency.version)
       end
 
-      @updated_gemfile = lines.join("\n")
+      @updated_gemfile_content = lines.join("\n")
     end
 
-    def updated_gemfile_lock
-      return @updated_gemfile_lock if @updated_gemfile_lock
+    def updated_gemfile_lock_content
+      return @updated_gemfile_lock_content if @updated_gemfile_lock_content
 
       in_a_temporary_directory do |dir|
-        File.write(File.join(dir, "Gemfile"), updated_gemfile)
-        @updated_gemfile_lock = Bundler.with_clean_env do
+        File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
+        File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
+        @updated_gemfile_lock_content = Bundler.with_clean_env do
           `cd #{dir} && bundle lock --print`
         end
       end
 
-      @updated_gemfile_lock
+      @updated_gemfile_lock_content
     end
 
     def in_a_temporary_directory

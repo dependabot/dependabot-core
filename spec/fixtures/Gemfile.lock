@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+
+BUNDLED WITH
+   1.10.4
