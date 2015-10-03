@@ -9,13 +9,13 @@ class PullRequestCreator
     @files = files
   end
 
-  private
-
   def create
     create_branch
     files.each { |file| update_file(file) }
     create_pull_request
   end
+
+  private
 
   def default_branch
     @default_branch ||= Github.client.repository("#{repo}").default_branch
