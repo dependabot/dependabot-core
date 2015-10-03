@@ -30,8 +30,5 @@ class Workers::PullRequestCreator
     )
 
     pull_request_creator.create
-
-  rescue => err
-    raise ([err] + err.backtrace).join('          ')
   end
 end

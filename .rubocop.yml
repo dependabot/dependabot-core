@@ -4,3 +4,6 @@ inherit_from: .rubocop_todo.yml
 
 AllCops:
   DisplayCopNames: true
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes

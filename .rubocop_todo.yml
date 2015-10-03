@@ -115,9 +115,4 @@ Style/SpaceAfterColon:
   Exclude:
     - 'spec/bumper/pull_request_creators/pull_request_creator_spec.rb'
 
-# Offense count: 367
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/StringLiterals:
-  Enabled: false
 

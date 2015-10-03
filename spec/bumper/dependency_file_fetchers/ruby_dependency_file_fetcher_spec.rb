@@ -4,7 +4,7 @@ require "bumper/dependency_file_fetchers/ruby_dependency_file_fetcher"
 
 RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
   let(:file_fetcher) { described_class.new(repo) }
-  let(:repo) { 'gocardless/bump' }
+  let(:repo) { "gocardless/bump" }
 
   describe "individual dependency files" do
     before do
@@ -15,7 +15,7 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
     end
 
     describe "#gemfile" do
-      let(:file_name) { 'Gemfile' }
+      let(:file_name) { "Gemfile" }
       let(:github_content_response) { fixture("github", "gemfile_content.json") }
 
       subject { file_fetcher.gemfile }
@@ -26,7 +26,7 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
     end
 
     describe "#gemfile.lock" do
-      let(:file_name) { 'Gemfile.lock' }
+      let(:file_name) { "Gemfile.lock" }
       let(:github_content_response) { fixture("github", "gemfile_lock_content.json") }
 
       subject { file_fetcher.gemfile_lock }
