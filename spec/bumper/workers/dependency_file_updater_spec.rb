@@ -15,18 +15,31 @@ RSpec.describe Workers::DependencyFileUpdater do
         "version" => "1.5.0",
       },
       "dependency_files" => [
-        { "name" => "Gemfile", "content" => "xyz" },
-        { "name" => "Gemfile.lock", "content" => "xyz" },
+        { "name" => "Gemfile", "content" => fixture("Gemfile") },
+        { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") },
       ]
     }
   end
 
   describe "#perform" do
-    it "passes updated files to the next phase" do
+    subject(:perform) { worker.perform(sqs_message, body) }
+    before do
       allow_any_instance_of(DependencyFileUpdaters::RubyDependencyFileUpdater).
-        to receive(:updated_dependency_files)
-      expect(worker).to receive(:open_pull_request_for)
-      worker.perform(sqs_message, body)
+        to receive(:updated_dependency_files).
+        and_return([DependencyFile.new(name: "Gemfile", content: "xyz")])
+    end
+
+    it "enqueues a PullRequestCreator with the correct arguments" do
+      expect(Workers::PullRequestCreator).
+        to receive(:perform_async).
+        with(
+          "repo" => body["repo"],
+          "updated_dependency" => body["updated_dependency"],
+          "updated_dependency_files" => [{
+            "name" => "Gemfile",
+            "content" => "xyz",
+          }])
+      perform
     end
   end
 end

@@ -29,7 +29,7 @@ class Workers::DependencyFileUpdater
     )
     open_pull_request_for(
       body["repo"],
-      updated_dependency,
+      body["updated_dependency"],
       file_updater.updated_dependency_files,
     )
   end
@@ -43,11 +43,8 @@ class Workers::DependencyFileUpdater
 
     Workers::PullRequestCreator.perform_async(
       "repo" => repo,
+      "updated_dependency" => updated_dependency,
       "updated_dependency_files" => updated_dependency_files_hash,
-      "updated_dependency" => {
-        "name" => updated_dependency.name,
-        "version" => updated_dependency.version,
-      }
     )
   end
 
