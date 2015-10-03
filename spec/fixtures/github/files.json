@@ -1,0 +1,226 @@
+[
+    {
+        "name": ".gitignore",
+        "path": ".gitignore",
+        "sha": "5acc028ec6a9683b63c7b1aa13b4cf6477009968",
+        "size": 161,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/.gitignore?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/.gitignore",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/5acc028ec6a9683b63c7b1aa13b4cf6477009968",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.gitignore",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/.gitignore?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/5acc028ec6a9683b63c7b1aa13b4cf6477009968",
+            "html": "https://github.com/gocardless/bump/blob/master/.gitignore"
+        }
+    },
+    {
+        "name": ".rubocop.yml",
+        "path": ".rubocop.yml",
+        "sha": "bed67a845342aea4a18909f020377252eb4edf37",
+        "size": 737,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/.rubocop.yml?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/.rubocop.yml",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/bed67a845342aea4a18909f020377252eb4edf37",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.rubocop.yml",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/.rubocop.yml?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/bed67a845342aea4a18909f020377252eb4edf37",
+            "html": "https://github.com/gocardless/bump/blob/master/.rubocop.yml"
+        }
+    },
+    {
+        "name": ".travis.yml",
+        "path": ".travis.yml",
+        "sha": "8fa9629b87dad13f7d8dbe54947cf9e4f217ed01",
+        "size": 539,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/.travis.yml?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/.travis.yml",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8fa9629b87dad13f7d8dbe54947cf9e4f217ed01",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.travis.yml",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/.travis.yml?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8fa9629b87dad13f7d8dbe54947cf9e4f217ed01",
+            "html": "https://github.com/gocardless/bump/blob/master/.travis.yml"
+        }
+    },
+    {
+        "name": "CHANGELOG.md",
+        "path": "CHANGELOG.md",
+        "sha": "99f63c3dcc41c00fc1478a4b682cc1570d001d60",
+        "size": 7144,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/CHANGELOG.md?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/CHANGELOG.md",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/99f63c3dcc41c00fc1478a4b682cc1570d001d60",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/CHANGELOG.md",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/CHANGELOG.md?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/99f63c3dcc41c00fc1478a4b682cc1570d001d60",
+            "html": "https://github.com/gocardless/bump/blob/master/CHANGELOG.md"
+        }
+    },
+    {
+        "name": "CONTRIBUTING.md",
+        "path": "CONTRIBUTING.md",
+        "sha": "4302f38dc17faf37d3908dfb7dfca89f86075a68",
+        "size": 853,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/CONTRIBUTING.md?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/CONTRIBUTING.md",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/4302f38dc17faf37d3908dfb7dfca89f86075a68",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/CONTRIBUTING.md",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/CONTRIBUTING.md?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/4302f38dc17faf37d3908dfb7dfca89f86075a68",
+            "html": "https://github.com/gocardless/bump/blob/master/CONTRIBUTING.md"
+        }
+    },
+    {
+        "name": "Gemfile",
+        "path": "Gemfile",
+        "sha": "8028dcea91e69cc41077bf9dd68dfc29272e6e1a",
+        "size": 272,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8028dcea91e69cc41077bf9dd68dfc29272e6e1a",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8028dcea91e69cc41077bf9dd68dfc29272e6e1a",
+            "html": "https://github.com/gocardless/bump/blob/master/Gemfile"
+        }
+    },
+    {
+        "name": "Guardfile",
+        "path": "Guardfile",
+        "sha": "9581a697d5b7ff30c76669e3e0e60c1ecd14ab71",
+        "size": 507,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/Guardfile?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/Guardfile",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/9581a697d5b7ff30c76669e3e0e60c1ecd14ab71",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Guardfile",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/Guardfile?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/9581a697d5b7ff30c76669e3e0e60c1ecd14ab71",
+            "html": "https://github.com/gocardless/bump/blob/master/Guardfile"
+        }
+    },
+    {
+        "name": "LICENSE.txt",
+        "path": "LICENSE.txt",
+        "sha": "c81e2536ebee6953d0e4fe7f9bdeb345147e9df0",
+        "size": 1067,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/LICENSE.txt?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/LICENSE.txt",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/c81e2536ebee6953d0e4fe7f9bdeb345147e9df0",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/LICENSE.txt",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/LICENSE.txt?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/c81e2536ebee6953d0e4fe7f9bdeb345147e9df0",
+            "html": "https://github.com/gocardless/bump/blob/master/LICENSE.txt"
+        }
+    },
+    {
+        "name": "README.md",
+        "path": "README.md",
+        "sha": "a33cac28db0ef860976c90af2302901648a79ce3",
+        "size": 12369,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/README.md?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/README.md",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a33cac28db0ef860976c90af2302901648a79ce3",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/README.md",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/README.md?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a33cac28db0ef860976c90af2302901648a79ce3",
+            "html": "https://github.com/gocardless/bump/blob/master/README.md"
+        }
+    },
+    {
+        "name": "Rakefile",
+        "path": "Rakefile",
+        "sha": "c92b11ee0648d3434c44f881d85ee0c0356540de",
+        "size": 114,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/Rakefile?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/Rakefile",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/c92b11ee0648d3434c44f881d85ee0c0356540de",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Rakefile",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/Rakefile?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/c92b11ee0648d3434c44f881d85ee0c0356540de",
+            "html": "https://github.com/gocardless/bump/blob/master/Rakefile"
+        }
+    },
+    {
+        "name": "circle.yml",
+        "path": "circle.yml",
+        "sha": "cf4a15d26158ef8a533bc09972cdc8820c84b532",
+        "size": 139,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/circle.yml?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/circle.yml",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/cf4a15d26158ef8a533bc09972cdc8820c84b532",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/circle.yml",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/circle.yml?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/cf4a15d26158ef8a533bc09972cdc8820c84b532",
+            "html": "https://github.com/gocardless/bump/blob/master/circle.yml"
+        }
+    },
+    {
+        "name": "lib",
+        "path": "lib",
+        "sha": "639fea41b2ec309dce85cce0f01b0e5b26dbb7ec",
+        "size": 0,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/lib?ref=master",
+        "html_url": "https://github.com/gocardless/bump/tree/master/lib",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/639fea41b2ec309dce85cce0f01b0e5b26dbb7ec",
+        "download_url": null,
+        "type": "dir",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/lib?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/trees/639fea41b2ec309dce85cce0f01b0e5b26dbb7ec",
+            "html": "https://github.com/gocardless/bump/tree/master/lib"
+        }
+    },
+    {
+        "name": "spec",
+        "path": "spec",
+        "sha": "d53dc93cc91739f2763d8bd0ad315c1d4541305a",
+        "size": 0,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/spec?ref=master",
+        "html_url": "https://github.com/gocardless/bump/tree/master/spec",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/d53dc93cc91739f2763d8bd0ad315c1d4541305a",
+        "download_url": null,
+        "type": "dir",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/spec?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/trees/d53dc93cc91739f2763d8bd0ad315c1d4541305a",
+            "html": "https://github.com/gocardless/bump/tree/master/spec"
+        }
+    },
+    {
+        "name": "bump.gemspec",
+        "path": "bump.gemspec",
+        "sha": "f7c886a0530d40a27c210ec01352df5131e61402",
+        "size": 1613,
+        "url": "https://api.github.com/repos/gocardless/bump/contents/bump.gemspec?ref=master",
+        "html_url": "https://github.com/gocardless/bump/blob/master/bump.gemspec",
+        "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/f7c886a0530d40a27c210ec01352df5131e61402",
+        "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/bump.gemspec",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/bump/contents/bump.gemspec?ref=master",
+            "git": "https://api.github.com/repos/gocardless/bump/git/blobs/f7c886a0530d40a27c210ec01352df5131e61402",
+            "html": "https://github.com/gocardless/bump/blob/master/bump.gemspec"
+        }
+    }
+]
