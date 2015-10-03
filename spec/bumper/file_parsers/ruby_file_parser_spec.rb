@@ -13,7 +13,7 @@ RSpec.describe FileParsers::RubyFileParser do
     subject { dependencies.first }
 
     it { is_expected.to be_a(Dependency) }
-    its(:name) { is_expected.to eq("rails") }
-    its(:version) { is_expected.to eq("4.2.4") }
+    its(:name) { is_expected.to eq("business") }
+    its(:version) { is_expected.to eq("1.4.0") }
   end
 end
