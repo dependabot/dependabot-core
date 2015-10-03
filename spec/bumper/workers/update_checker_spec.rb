@@ -1,3 +1,4 @@
+require "spec_helper"
 require "bumper/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do

@@ -1,3 +1,4 @@
+require "spec_helper"
 require "bumper/workers/dependency_file_updater"
 
 RSpec.describe Workers::DependencyFileUpdater do
