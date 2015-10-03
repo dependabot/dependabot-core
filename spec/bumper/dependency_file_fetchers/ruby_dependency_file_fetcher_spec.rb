@@ -16,7 +16,7 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
 
     describe "#gemfile" do
       let(:file_name) { 'Gemfile' }
-      let(:github_content_response) { fixture(File.join('github', 'gemfile_content.json')) }
+      let(:github_content_response) { fixture("github", "gemfile_content.json") }
 
       subject { file_fetcher.gemfile }
 
@@ -27,7 +27,7 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
 
     describe "#gemfile.lock" do
       let(:file_name) { 'Gemfile.lock' }
-      let(:github_content_response) { fixture(File.join('github', 'gemfile_lock_content.json')) }
+      let(:github_content_response) { fixture("github", "gemfile_lock_content.json") }
 
       subject { file_fetcher.gemfile_lock }
 
