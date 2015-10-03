@@ -43,12 +43,12 @@ module DependencyFileFetchers
 
     def gemfile_content
       @gemfile_content ||=
-        Base64::decode64(Github.client.contents(repo, path: "Gemfile").content)
+        Base64.decode64(Github.client.contents(repo, path: "Gemfile").content)
     end
 
     def gemfile_lock_content
       @gemfile_lock_content ||=
-        Base64::decode64(Github.client.contents(repo, path: "Gemfile.lock").content)
+        Base64.decode64(Github.client.contents(repo, path: "Gemfile.lock").content)
     end
   end
 end
