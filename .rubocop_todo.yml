@@ -28,12 +28,3 @@ Metrics/LineLength:
 # Configuration parameters: CountComments.
 Metrics/MethodLength:
   Max: 17
-
-# Offense count: 4
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/ClassAndModuleChildren:
-  Exclude:
-    - 'lib/bumper/workers/dependency_file_parser.rb'
-    - 'lib/bumper/workers/dependency_file_updater.rb'
-    - 'lib/bumper/workers/pull_request_creator.rb'
-    - 'lib/bumper/workers/update_checker.rb'
