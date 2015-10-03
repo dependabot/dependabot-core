@@ -1,15 +1,28 @@
 require "bumper/dependency_file"
+require "bumper/workers"
 require "github"
 
 module DependencyFileFetchers
   class RubyDependencyFileFetcher
-
-    # TODO: I probably shouldn't live here...
-    def self.run
-      Prius.get(:watched_repos).split(",").each do |repo|
+    def self.run(repos)
+      repos.each do |repo|
         file_fetcher = new(repo)
-        file_fetcher.gemfile
+        parse_files(repo, [file_fetcher.gemfile, file_fetcher.gemfile_lock])
       end
+    end
+
+    def self.parse_files(repo, files)
+      dependency_files = files.map do |file|
+        { "name" => file.name, "content" => file.content }
+      end
+
+      Workers::DependencyFileParser.perform_async(
+        "repo" => {
+          "name" => repo,
+          "language" => "ruby"
+        },
+        "dependency_files" => dependency_files,
+      )
     end
 
     attr_reader :repo

@@ -1,24 +1,42 @@
+require "shoryuken"
 require "bumper/workers"
 require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
 
 class Workers::DependencyFileParser
   include Shoryuken::Worker
 
-  shoryuken_options queue: "bump-dependency_files", body_parser: :json
+  shoryuken_options queue: "bump-dependency_files_to_parse", body_parser: :json
 
   def perform(sqs_message, body)
-    parser = parser_for(body["language"])
-    dependencies = parser.new(body["file"]).parse
+    parser = parser_for(body["repo"]["language"])
+    dependency_files = body["dependency_files"].map do |file|
+      DependencyFile.new(name: file["name"], content: file["content"])
+    end
+    dependencies = parser.new(dependency_files).parse
 
-    # TODO remove this - it's just here to test that this actually does
-    #      something when we deploy it to ECS
-    deps_str = Time.now.to_s + ' -- ' + dependencies.map(&:name).join(", ")
-    `curl -s -d '#{deps_str}' http://requestb.in/za3prvza`
+    dependencies.each do |dependency|
+      check_for_dependency_update(
+        body["repo"],
+        body["dependency_files"],
+        dependency
+      )
+    end
 
     sqs_message.delete
   end
 
   private
+
+  def check_for_dependency_update(repo, dependency_files, dependency)
+    Workers::UpdateChecker.perform_async(
+      "repo" => repo,
+      "dependency_files" => dependency_files,
+      "dependency" => {
+        "name" => dependency.name,
+        "version" => dependency.version,
+      }
+    )
+  end
 
   def parser_for(language)
     case language

@@ -3,8 +3,9 @@ require "bumper/dependency"
 
 module DependencyFileParsers
   class RubyDependencyFileParser
-    def initialize(gemfile)
-      @gemfile = gemfile
+    def initialize(dependency_files)
+      @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
+      raise "No Gemfile!" unless @gemfile
     end
 
     def parse
@@ -17,7 +18,7 @@ module DependencyFileParsers
     private
 
     def parser
-      Gemnasium::Parser.gemfile(@gemfile)
+      Gemnasium::Parser.gemfile(@gemfile.content)
     end
   end
 end
