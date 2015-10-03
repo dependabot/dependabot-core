@@ -98,16 +98,6 @@ Style/GuardClause:
 Style/IndentHash:
   Enabled: false
 
-# Offense count: 6
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/SignalException:
-  Exclude:
-    - 'lib/bumper/dependency_file_parsers/ruby_dependency_file_parser.rb'
-    - 'lib/bumper/dependency_file_updaters/ruby_dependency_file_updater.rb'
-    - 'lib/bumper/workers/dependency_file_parser.rb'
-    - 'lib/bumper/workers/dependency_file_updater.rb'
-    - 'lib/bumper/workers/update_checker.rb'
 
 
 
