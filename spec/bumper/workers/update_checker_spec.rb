@@ -25,10 +25,12 @@ RSpec.describe Workers::UpdateChecker do
     before do
       allow_any_instance_of(UpdateCheckers::RubyUpdateChecker).
         to receive(:needs_update?).and_return(true)
+      allow_any_instance_of(UpdateCheckers::RubyUpdateChecker).
+        to receive(:latest_version).and_return("1.5.0")
     end
 
     it "writes a message into the queue" do
-      expect(worker).to receive(:send_update_notification)
+      expect(worker).to receive(:update_dependency)
       worker.perform(sqs_message, body)
     end
   end
