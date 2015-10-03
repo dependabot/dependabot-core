@@ -34,7 +34,7 @@ Metrics/AbcSize:
 # Offense count: 16
 # Configuration parameters: AllowURI, URISchemes.
 Metrics/LineLength:
-  Max: 102
+  Max: 107
 
 # Offense count: 5
 # Configuration parameters: CountComments.
@@ -91,12 +91,6 @@ Style/EmptyLinesAroundModuleBody:
 Style/GuardClause:
   Exclude:
     - 'lib/bumper/workers/update_checker.rb'
-
-# Offense count: 6
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/IndentHash:
-  Enabled: false
 
 
 

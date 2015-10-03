@@ -46,9 +46,9 @@ RSpec.describe PullRequestCreator do
       expect(WebMock).
         to have_requested(:post, "https://api.github.com/repos/gocardless/bump/git/refs").
         with(body: {
-          ref: "refs/heads/bump_business_to_1.5.0",
-          sha: "aa218f56b14c9653891f9e74264a383fa43fefbd"
-        })
+               ref: "refs/heads/bump_business_to_1.5.0",
+               sha: "aa218f56b14c9653891f9e74264a383fa43fefbd"
+             })
     end
 
     it "pushes changes to that branch" do
@@ -57,11 +57,11 @@ RSpec.describe PullRequestCreator do
       expect(WebMock).
         to have_requested(:put, "https://api.github.com/repos/gocardless/bump/contents/Gemfile").
         with(body: {
-          branch: "bump_business_to_1.5.0",
-          sha: "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
-          content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVzaW5lc3MiLCAifj4gMS40LjAiCg==",
-          message: "Updating Gemfile"
-        })
+               branch: "bump_business_to_1.5.0",
+               sha: "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+               content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVzaW5lc3MiLCAifj4gMS40LjAiCg==",
+               message: "Updating Gemfile"
+             })
     end
 
     it "creates a PR with the right details" do
@@ -70,11 +70,11 @@ RSpec.describe PullRequestCreator do
       expect(WebMock).
         to have_requested(:post, "https://api.github.com/repos/gocardless/bump/pulls").
         with(body: {
-          base: "master",
-          head: "bump_business_to_1.5.0",
-          title: "Bump business to 1.5.0",
-          body: "<3 bump"
-        })
+               base: "master",
+               head: "bump_business_to_1.5.0",
+               title: "Bump business to 1.5.0",
+               body: "<3 bump"
+             })
     end
   end
 end
