@@ -4,22 +4,19 @@ require "bumper/dependency_file"
 require "bumper/pull_request_creator/pull_request_creator"
 
 RSpec.describe PullRequestCreator do
-
   let(:gemfile) do
-    DependencyFile.new(
-      name: "Gemfile",
-      content: fixture("Gemfile")
-    )
+    DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
   end
 
   let(:repo) { "gocardless/bump" }
-  let(:github_headers) { {"Content-Type": "application/json"} }
+  let(:github_headers) { { "Content-Type": "application/json" } }
+
   let(:repo_response) { fixture("github", "repo.json") }
   let(:ref_response) { fixture("github", "ref.json") }
   let(:create_ref_response) { fixture("github", "create_ref.json") }
   let(:update_file_response) { fixture("github", "update_file.json") }
   let(:create_pr_response) { fixture("github", "create_pr.json") }
-  let(:gemfile_content) { fixture("github", "gemfile_content.json") }
+  let(:gemfile_content_response) { fixture("github", "gemfile_content.json") }
 
   let(:creator) do
     PullRequestCreator.new(
@@ -31,22 +28,17 @@ RSpec.describe PullRequestCreator do
 
   before do
     stub_request(:get, "https://api.github.com/repos/#{repo}").
-         to_return(status: 200, body: repo_response, headers: github_headers)
-
+      to_return(status: 200, body: repo_response, headers: github_headers)
     stub_request(:get, "https://api.github.com/repos/#{repo}/git/refs/heads/master").
-         to_return(:status => 200, body: ref_response, headers: github_headers)
-
+      to_return(status: 200, body: ref_response, headers: github_headers)
     stub_request(:post, "https://api.github.com/repos/#{repo}/git/refs").
-         to_return(:status => 200, body: create_ref_response, :headers => github_headers)
-
-    stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/Gemfile").
-         to_return(:status => 200, body: gemfile_content, headers: github_headers)
-
-    stub_request(:put, "https://api.github.com/repos/gocardless/bump/contents/Gemfile").
-         to_return(:status => 200, body: update_file_response, headers: github_headers)
-
-    stub_request(:post, "https://api.github.com/repos/gocardless/bump/pulls").
-         to_return(:status => 200, body: create_pr_response, headers: github_headers)
+      to_return(status: 200, body: create_ref_response, headers: github_headers)
+    stub_request(:get, "https://api.github.com/repos/#{repo}/contents/#{gemfile.name}").
+      to_return(status: 200, body: gemfile_content_response, headers: github_headers)
+    stub_request(:put, "https://api.github.com/repos/#{repo}/contents/#{gemfile.name}").
+      to_return(status: 200, body: update_file_response, headers: github_headers)
+    stub_request(:post, "https://api.github.com/repos/#{repo}/pulls").
+      to_return(status: 200, body: create_pr_response, headers: github_headers)
   end
 
   # describe "information" do
@@ -54,8 +46,6 @@ RSpec.describe PullRequestCreator do
   # end
 
   subject(:pr) { creator.create }
-
-  it { is_expected.to be_a(Sawyer::Resource) }
 
   describe "requests" do
     before { creator.create }
