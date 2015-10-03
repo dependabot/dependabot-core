@@ -5,20 +5,35 @@ require "bumper/dependency_file_fetchers/ruby_dependency_file_fetcher"
 RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { 'gocardless/bump' }
-  let(:github_content_response) { fixture(File.join('github', 'gemfile_content.json')) }
 
-  before do
-    stub_request(:get, "https://api.github.com/repos/#{repo}/contents/Gemfile").
-      to_return(status: 200,
-                body: github_content_response,
-                headers: { "content-type" => "application/json" })
-  end
+  describe "individual dependency files" do
+    before do
+      stub_request(:get, "https://api.github.com/repos/#{repo}/contents/#{file_name}").
+        to_return(status: 200,
+                  body: github_content_response,
+                  headers: { "content-type" => "application/json" })
+    end
 
-  describe "#gemfile" do
-    subject { file_fetcher.gemfile }
+    describe "#gemfile" do
+      let(:file_name) { 'Gemfile' }
+      let(:github_content_response) { fixture(File.join('github', 'gemfile_content.json')) }
 
-    it { is_expected.to be_a(DependencyFile) }
-    its(:name) { is_expected.to eq("Gemfile") }
-    its(:content) { is_expected.to include("octokit") }
+      subject { file_fetcher.gemfile }
+
+      it { is_expected.to be_a(DependencyFile) }
+      its(:name) { is_expected.to eq("Gemfile") }
+      its(:content) { is_expected.to include("octokit") }
+    end
+
+    describe "#gemfile.lock" do
+      let(:file_name) { 'Gemfile.lock' }
+      let(:github_content_response) { fixture(File.join('github', 'gemfile_lock_content.json')) }
+
+      subject { file_fetcher.gemfile_lock }
+
+      it { is_expected.to be_a(DependencyFile) }
+      its(:name) { is_expected.to eq("Gemfile.lock") }
+      its(:content) { is_expected.to include("octokit") }
+    end
   end
 end
