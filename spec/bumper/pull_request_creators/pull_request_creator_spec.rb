@@ -20,6 +20,7 @@ RSpec.describe PullRequestCreator do
   let(:repo_response) { fixture("github", "repo.json") }
   let(:ref_response) { fixture("github", "ref.json") }
   let(:create_ref_response) { fixture("github", "create_ref.json") }
+  let(:create_ref_error_response) { fixture("github", "create_ref_error.json") }
   let(:update_file_response) { fixture("github", "update_file.json") }
   let(:create_pr_response) { fixture("github", "create_pr.json") }
   let(:gemfile_content_response) { fixture("github", "gemfile_content.json") }
@@ -102,6 +103,29 @@ RSpec.describe PullRequestCreator do
                      "\n- [Changelog](#{changelog_url})"\
                      "\n- [Commits](#{commits_url})"
              })
+    end
+
+    context "when a branch for this update already exists" do
+      before do
+        stub_request(:post, "#{repo_url}/git/refs").
+        to_return(status: 422,
+                  body: create_ref_error_response,
+                  headers: github_headers)
+      end
+
+      specify { expect { creator.create }.to_not raise_error }
+
+      it "doesn't push changes to the branch" do
+        creator.create
+
+        expect(WebMock).
+          to_not have_requested(:put, "#{repo_url}/contents/Gemfile")
+      end
+
+      it "doesn't try to re-create the PR" do
+        creator.create
+        expect(WebMock).to_not have_requested(:post, "#{repo_url}/pulls")
+      end
     end
   end
 end

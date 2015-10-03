@@ -12,7 +12,7 @@ class PullRequestCreator
   end
 
   def create
-    create_branch
+    return unless create_branch
     files.each { |file| update_file(file) }
     create_pull_request
   end
@@ -25,6 +25,8 @@ class PullRequestCreator
       "heads/#{new_branch_name}",
       default_branch_sha
     )
+  rescue Octokit::UnprocessableEntity
+    nil
   end
 
   def update_file(file)
