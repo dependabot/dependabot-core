@@ -10,3 +10,9 @@ Style/StringLiterals:
 
 Style/SignalException:
   EnforcedStyle: only_raise
+
+Style/Documentation:
+  Enabled: false
+
+Style/DotPosition:
+  EnforcedStyle: trailing

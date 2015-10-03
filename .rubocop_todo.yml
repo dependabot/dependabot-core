@@ -56,36 +56,6 @@ Style/ColonMethodCall:
   Exclude:
     - 'lib/bumper/dependency_file_fetchers/ruby_dependency_file_fetcher.rb'
 
-# Offense count: 12
-# Configuration parameters: Exclude.
-Style/Documentation:
-  Exclude:
-    - 'lib/bumper/dependency.rb'
-    - 'lib/bumper/dependency_file.rb'
-    - 'lib/bumper/dependency_file_fetchers/ruby_dependency_file_fetcher.rb'
-    - 'lib/bumper/dependency_file_parsers/ruby_dependency_file_parser.rb'
-    - 'lib/bumper/pull_request_creators/pull_request_creator.rb'
-    - 'lib/bumper/workers.rb'
-    - 'lib/bumper/workers/dependency_file_parser.rb'
-    - 'lib/bumper/workers/dependency_file_updater.rb'
-    - 'lib/bumper/workers/pull_request_creator.rb'
-    - 'lib/bumper/workers/update_checker.rb'
-    - 'lib/constants.rb'
-    - 'lib/github.rb'
-
-# Offense count: 28
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/DotPosition:
-  Enabled: false
-
-# Offense count: 1
-# Cop supports --auto-correct.
-# Configuration parameters: EnforcedStyle, SupportedStyles.
-Style/EmptyLinesAroundModuleBody:
-  Exclude:
-    - 'lib/bumper/update_checkers/ruby_update_checker.rb'
-
 # Offense count: 1
 # Configuration parameters: MinBodyLength.
 Style/GuardClause:
