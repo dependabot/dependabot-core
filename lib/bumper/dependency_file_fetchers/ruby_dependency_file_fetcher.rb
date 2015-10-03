@@ -1,10 +1,4 @@
 require "bumper/dependency_file"
-require "prius"
-
-# TODO: Move me to main app file so it's clear I happen at boot time
-Prius.load(:github_token)
-Prius.load(:watched_repos)
-
 require "github"
 
 module DependencyFileFetchers
