@@ -20,17 +20,18 @@ class Workers::UpdateChecker
     )
 
     update_checker = update_checker_class.new(dependency)
-    if update_checker.needs_update?
-      updated_dependency = Dependency.new(
-        name: dependency.name,
-        version: update_checker.latest_version
-      )
-      update_dependency(
-        body["repo"],
-        body["dependency_files"],
-        updated_dependency
-      )
-    end
+
+    return unless update_checker.needs_update?
+
+    updated_dependency = Dependency.new(
+      name: dependency.name,
+      version: update_checker.latest_version
+    )
+    update_dependency(
+      body["repo"],
+      body["dependency_files"],
+      updated_dependency
+    )
   end
 
   private
