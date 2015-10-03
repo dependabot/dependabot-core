@@ -63,9 +63,8 @@ module DependencyFileUpdaters
       in_a_temporary_directory do |dir|
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
-        @updated_gemfile_lock_content = Bundler.with_clean_env do
-          `cd #{dir} && bundle lock --print`
-        end
+        Bundler.with_clean_env { system "cd #{dir} && bundle install --quiet" }
+        @updated_gemfile_lock_content = File.read(File.join(dir, "Gemfile.lock"))
       end
 
       @updated_gemfile_lock_content

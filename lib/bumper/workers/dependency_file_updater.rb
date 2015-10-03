@@ -38,7 +38,7 @@ class Workers::DependencyFileUpdater
 
   def open_pull_request_for(repo, updated_dependency, updated_dependency_files)
     updated_dependency_files_hash = updated_dependency_files.map do |file|
-      DependencyFile.new(name: file["name"], content: file["content"])
+      { "name" => file.name, "content" => file.content }
     end
 
     Workers::PullRequestCreator.perform_async(
