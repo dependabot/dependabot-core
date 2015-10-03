@@ -27,13 +27,28 @@ class Workers::DependencyFileUpdater
       dependency_files: dependency_files,
       dependency: updated_dependency,
     )
-    do_something_with(file_updater.updated_dependency_files)
+    open_pull_request_for(
+      body["repo"],
+      updated_dependency,
+      file_updater.updated_dependency_files,
+    )
   end
 
   private
 
-  def do_something_with(updated_dependency_files)
-    # TODO ....
+  def open_pull_request_for(repo, updated_dependency, updated_dependency_files)
+    updated_dependency_files_hash = updated_dependency_files.map do |file|
+      DependencyFile.new(name: file["name"], content: file["content"])
+    end
+
+    Workers::PullRequestCreator.perform_async(
+      "repo" => repo,
+      "updated_dependency_files" => updated_dependency_files_hash,
+      "updated_dependency" => {
+        "name" => updated_dependency.name,
+        "version" => updated_dependency.version,
+      }
+    )
   end
 
   def file_updater_for(language)

@@ -20,14 +20,30 @@ class Workers::UpdateChecker
     )
 
     update_checker = update_checker_class.new(dependency)
-    send_update_notification if update_checker.needs_update?
+    if update_checker.needs_update?
+      updated_dependency = Dependency.new(
+        name: dependency.name,
+        version: update_checker.latest_version,
+      )
+      update_dependency(
+        body["repo"],
+        body["dependency_files"],
+        updated_dependency
+      )
+    end
   end
 
   private
 
-  def send_update_notification
-    # TODO write a message into the next queue
-    `curl -s -d '#{dependency.name} needs update' http://requestb.in/za3prvza`
+  def update_dependency(repo, dependency_files, updated_dependency)
+    Workers::DependencyFileUpdater.perform_async(
+      "repo" => repo,
+      "dependency_files" => dependency_files,
+      "updated_dependency" => {
+        "name" => updated_dependency.name,
+        "version" => updated_dependency.version,
+      }
+    )
   end
 
   def update_checker_for(language)
