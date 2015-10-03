@@ -25,7 +25,7 @@ RSpec.describe Workers::DependencyFileUpdater do
     it "passes updated files to the next phase" do
       allow_any_instance_of(DependencyFileUpdaters::RubyDependencyFileUpdater).
         to receive(:updated_dependency_files)
-      expect(worker).to receive(:do_something_with)
+      expect(worker).to receive(:open_pull_request_for)
       worker.perform(sqs_message, body)
     end
   end
