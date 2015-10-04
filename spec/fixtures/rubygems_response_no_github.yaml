@@ -12,7 +12,7 @@ metadata: {}
 sha: 5293b3f6e9b5db12d8b0ee36c2df1f1592aaff49ce961c1c11d035a72e2f9a77
 project_uri: https://rubygems.org/gems/business
 gem_uri: https://rubygems.org/gems/business-1.5.0.gem
-homepage_uri: https://github.com/gocardless/business/homepage
+homepage_uri: https://bitbucket.org/gocardless/business/
 wiki_uri:
 documentation_uri: http://www.rubydoc.info/gems/business/1.5.0
 mailing_list_uri:

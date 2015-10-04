@@ -1,3 +1,6 @@
+require "gems"
+require "github"
+
 class Dependency
   attr_reader :name, :version
 
@@ -23,10 +26,9 @@ class Dependency
 
   def changelog_url
     return unless github_repo
-    files = Github.client.contents(github_repo)
-    file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
+    return @changelog_url if @changelog_url_lookup_attempted
 
-    file.nil? ? nil : file.url
+    look_up_changelog_url
   end
 
   private
@@ -39,5 +41,14 @@ class Dependency
     source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
 
     @github_repo = source_url.nil? ? nil : source_url.match(GITHUB_REGEX)[:repo]
+  end
+
+  def look_up_changelog_url
+    @changelog_url_lookup_attempted = true
+
+    files = Github.client.contents(github_repo)
+    file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
+
+    @changelog_url = file.nil? ? nil : file.html_url
   end
 end

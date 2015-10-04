@@ -1,5 +1,4 @@
 require "github"
-require "gems"
 
 class PullRequestCreator
   attr_reader :watched_repo, :dependency, :files
