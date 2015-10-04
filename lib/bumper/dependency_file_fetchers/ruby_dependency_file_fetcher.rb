@@ -9,6 +9,9 @@ module DependencyFileFetchers
         file_fetcher = new(repo)
         parse_files(repo, [file_fetcher.gemfile, file_fetcher.gemfile_lock])
       end
+    rescue => error
+      Raven.capture_exception(error)
+      raise
     end
 
     def self.parse_files(repo, files)

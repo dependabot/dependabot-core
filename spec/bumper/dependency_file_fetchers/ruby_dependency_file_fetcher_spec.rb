@@ -6,6 +6,23 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 
+  describe ".run" do
+    subject(:run) { described_class.run(['gocardless/bump']) }
+
+    context "if an error is raised" do
+      before do
+        allow_any_instance_of(described_class).
+          to receive(:gemfile).
+          and_raise("hell")
+      end
+
+      it "still raises, but also sends the error to sentry" do
+        expect(Raven).to receive(:capture_exception).and_call_original
+        expect { run }.to raise_error("hell")
+      end
+    end
+  end
+
   describe "individual dependency files" do
     let(:url) { "https://api.github.com/repos/#{repo}/contents/#{file_name}" }
     before do
