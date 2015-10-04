@@ -10,9 +10,10 @@ module DependencyFileParsers
 
     def parse
       parser.dependencies.map do |dependency|
+        next if dependency.requirement.requirements.count > 1
         version = dependency.requirement.to_s.match(/[\d\.]+/)[0]
         Dependency.new(name: dependency.name, version: version)
-      end
+      end.reject(&:nil?)
     end
 
     private
