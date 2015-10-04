@@ -54,7 +54,7 @@ module DependencyFileUpdaters
         line.sub!(/[\d\.]+/, dependency.version)
       end
 
-      @updated_gemfile_content = lines.join("\n")
+      @updated_gemfile_content = lines.join("\n") + "\n"
     end
 
     def updated_gemfile_lock_content
