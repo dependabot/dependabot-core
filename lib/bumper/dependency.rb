@@ -50,5 +50,7 @@ class Dependency
     file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
 
     @changelog_url = file.nil? ? nil : file.html_url
+  rescue Octokit::NotFound
+    @changelog_url = nil
   end
 end

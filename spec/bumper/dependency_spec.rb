@@ -66,23 +66,29 @@ RSpec.describe Dependency do
           to receive(:github_repo).
           and_return("gocardless/business")
       end
+
       let(:github_url) do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
 
+      let(:github_status) { 200 }
+
+      before do
+        stub_request(:get, "#{github_url}").
+          to_return(status: github_status,
+                    body: github_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
       context "with a changelog" do
-        before do
-          stub_request(:get, "#{github_url}").
-            to_return(status: 200,
-                      body: fixture("github", "business_files.json"),
-                      headers: { "Content-Type" => "application/json" })
-        end
+        let(:github_response) { fixture("github", "business_files.json") }
 
-        let(:changelog_url) do
-          "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
+        it "gets the right URL" do
+          expect(dependency.changelog_url).
+            to eq(
+              "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
+            )
         end
-
-        it { is_expected.to eq(changelog_url) }
 
         it "caches the call to github" do
           2.times { dependency.changelog_url }
@@ -91,13 +97,8 @@ RSpec.describe Dependency do
       end
 
       context "without a changelog" do
-        before do
-          stub_request(:get, "#{github_url}").
-            to_return(
-              status: 200,
-              body: fixture("github", "business_files_no_changelog.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
+        let(:github_response) do
+          fixture("github", "business_files_no_changelog.json")
         end
 
         it { is_expected.to be_nil }
@@ -106,6 +107,13 @@ RSpec.describe Dependency do
           2.times { dependency.changelog_url }
           expect(WebMock).to have_requested(:get, github_url).once
         end
+      end
+
+      context "when the github_repo doesn't exists" do
+        let(:github_response) { fixture("github", "not_found.json") }
+        let(:github_status) { 404 }
+
+        it { is_expected.to be_nil }
       end
     end
 
