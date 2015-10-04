@@ -15,48 +15,62 @@ RSpec.describe PullRequestCreator do
   let(:gemfile) do
     DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
   end
+  let(:json_header) { { "Content-Type": "application/json" } }
 
-  let(:github_headers) { { "Content-Type": "application/json" } }
-  let(:repo_response) { fixture("github", "repo.json") }
+  # Calls to GitHub to get info about the repo we're putting a PR into
+  let(:repo_url) { "https://api.github.com/repos/#{repo}" }
+  let(:bump_repo_response) { fixture("github", "bump_repo.json") }
   let(:ref_response) { fixture("github", "ref.json") }
   let(:create_ref_response) { fixture("github", "create_ref.json") }
   let(:create_ref_error_response) { fixture("github", "create_ref_error.json") }
   let(:update_file_response) { fixture("github", "update_file.json") }
   let(:create_pr_response) { fixture("github", "create_pr.json") }
   let(:gemfile_content_response) { fixture("github", "gemfile_content.json") }
-  let(:files_response) { fixture("github", "files.json") }
 
-  let(:repo_url) { "https://api.github.com/repos/#{repo}" }
+  # Calls to Rubygems and GitHub to get info about the gem we're updating
+  let(:rubygems_response) { fixture("rubygems_response.yaml") }
+  let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
+  let(:business_repo_response) { fixture("github", "business_repo.json") }
+  let(:business_files_response) { fixture("github", "business_files.json") }
 
   before do
     stub_request(:get, repo_url).
       to_return(status: 200,
-                body: repo_response,
-                headers: github_headers)
+                body: bump_repo_response,
+                headers: json_header)
     stub_request(:get, "#{repo_url}/git/refs/heads/master").
       to_return(status: 200,
                 body: ref_response,
-                headers: github_headers)
+                headers: json_header)
     stub_request(:post, "#{repo_url}/git/refs").
       to_return(status: 200,
                 body: create_ref_response,
-                headers: github_headers)
+                headers: json_header)
     stub_request(:get, "#{repo_url}/contents/#{gemfile.name}").
       to_return(status: 200,
                 body: gemfile_content_response,
-                headers: github_headers)
+                headers: json_header)
     stub_request(:put, "#{repo_url}/contents/#{gemfile.name}").
       to_return(status: 200,
                 body: update_file_response,
-                headers: github_headers)
+                headers: json_header)
     stub_request(:post, "#{repo_url}/pulls").
       to_return(status: 200,
                 body: create_pr_response,
-                headers: github_headers)
-    stub_request(:get, "#{repo_url}/contents/").
+                headers: json_header)
+
+    stub_request(:get, business_repo_url).
       to_return(status: 200,
-                body: files_response,
-                headers: github_headers)
+                body: business_repo_response,
+                headers: json_header)
+    stub_request(:get, "#{business_repo_url}/contents/").
+      to_return(status: 200,
+                body: business_files_response,
+                headers: json_header)
+    stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
+      to_return(status: 200,
+                body: rubygems_response,
+                headers: json_header)
   end
 
   describe "#create" do
@@ -88,10 +102,11 @@ RSpec.describe PullRequestCreator do
     it "creates a PR with the right details" do
       creator.create
 
-      repo_url =      "https://api.github.com/repos/gocardless/bump"
-      changelog_url = "https://api.github.com/repos/gocardless/bump/"\
+      repo_url      = "https://api.github.com/repos/gocardless/bump"
+      dep_url       = "https://github.com/gocardless/business"
+      changelog_url = "https://api.github.com/repos/gocardless/business/"\
                       "contents/CHANGELOG.md?ref=master"
-      commits_url =   "https://api.github.com/repos/gocardless/bump/commits"
+      commits_url   = "https://github.com/gocardless/business/commits"
 
       expect(WebMock).
         to have_requested(:post, "#{repo_url}/pulls").
@@ -99,7 +114,7 @@ RSpec.describe PullRequestCreator do
                base: "master",
                head: "bump_business_to_1.5.0",
                title: "Bump business to 1.5.0",
-               body: "Bumps [business](#{repo_url}) to 1.5.0"\
+               body: "Bumps [business](#{dep_url}) to 1.5.0"\
                      "\n- [Changelog](#{changelog_url})"\
                      "\n- [Commits](#{commits_url})"
              })
@@ -110,7 +125,7 @@ RSpec.describe PullRequestCreator do
         stub_request(:post, "#{repo_url}/git/refs").
           to_return(status: 422,
                     body: create_ref_error_response,
-                    headers: github_headers)
+                    headers: json_header)
       end
 
       specify { expect { creator.create }.to_not raise_error }
