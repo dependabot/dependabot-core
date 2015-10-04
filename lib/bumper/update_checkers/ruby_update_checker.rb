@@ -4,8 +4,6 @@ module UpdateCheckers
   class RubyUpdateChecker
     attr_reader :dependency
 
-    BASE_URL = "https://rubygems.org/api/v1".freeze
-
     def initialize(dependency)
       @dependency = dependency
     end
@@ -15,17 +13,7 @@ module UpdateCheckers
     end
 
     def latest_version
-      @latest_version ||=
-        begin
-          rubygems_response = Net::HTTP.get(URI.parse(rubygems_url(dependency)))
-          JSON.parse(rubygems_response)["version"]
-        end
-    end
-
-    private
-
-    def rubygems_url(dependency)
-      "#{BASE_URL}/gems/#{dependency.name}.json"
+      @latest_version ||= Gem.latest_version_for(dependency.name).to_s
     end
   end
 end
