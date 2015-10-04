@@ -45,16 +45,18 @@ module DependencyFileUpdaters
     def updated_gemfile_content
       return @updated_gemfile_content if @updated_gemfile_content
 
-      lines = gemfile.content.split("\n")
+      gemfile.content.
+        to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
+        find { Regexp.last_match[:name] == dependency.name }
 
-      lines.each do |line|
-        match = line.match(Gemnasium::Parser::Patterns::GEM_CALL)
-        next unless match && match[:name] == dependency.name
+      original_gem_declaration_string = $&
+      updated_gem_declaration_string =
+        original_gem_declaration_string.sub(/[\d\.]+/, dependency.version)
 
-        line.sub!(/[\d\.]+/, dependency.version)
-      end
-
-      @updated_gemfile_content = lines.join("\n") + "\n"
+      @updated_gemfile_content = gemfile.content.gsub(
+        original_gem_declaration_string,
+        updated_gem_declaration_string
+      )
     end
 
     def updated_gemfile_lock_content
