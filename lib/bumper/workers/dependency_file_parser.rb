@@ -27,6 +27,9 @@ module Workers
           dependency
         )
       end
+    rescue => error
+      Raven.capture_exception(error)
+      raise
     end
 
     private
