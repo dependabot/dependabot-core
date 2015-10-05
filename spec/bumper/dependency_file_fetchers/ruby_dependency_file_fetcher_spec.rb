@@ -6,51 +6,33 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 
-  describe ".run" do
-    subject(:run) { described_class.run(["gocardless/bump"]) }
-
-    context "if an error is raised" do
-      before do
-        allow_any_instance_of(described_class).
-          to receive(:gemfile).
-          and_raise("hell")
-      end
-
-      it "still raises, but also sends the error to sentry" do
-        expect(Raven).to receive(:capture_exception).and_call_original
-        expect { run }.to raise_error("hell")
-      end
-    end
-  end
-
-  describe "individual dependency files" do
-    let(:url) { "https://api.github.com/repos/#{repo}/contents/#{file_name}" }
+  describe "#files" do
+    subject(:files) { file_fetcher.files }
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
     before do
-      stub_request(:get, url).
+      stub_request(:get, url + "Gemfile").
         to_return(status: 200,
-                  body: github_response,
+                  body: fixture("github", "gemfile_content.json"),
+                  headers: { "content-type" => "application/json" })
+      stub_request(:get, url + "Gemfile.lock").
+        to_return(status: 200,
+                  body: fixture("github", "gemfile_lock_content.json"),
                   headers: { "content-type" => "application/json" })
     end
 
-    describe "#gemfile" do
-      let(:file_name) { "Gemfile" }
-      let(:github_response) { fixture("github", "gemfile_content.json") }
+    its(:length) { is_expected.to eq(2) }
 
-      subject { file_fetcher.gemfile }
+    describe "the Gemfile" do
+      subject { files.find { |file| file.name == "Gemfile" } }
 
       it { is_expected.to be_a(DependencyFile) }
-      its(:name) { is_expected.to eq("Gemfile") }
       its(:content) { is_expected.to include("octokit") }
     end
 
-    describe "#gemfile.lock" do
-      let(:file_name) { "Gemfile.lock" }
-      let(:github_response) { fixture("github", "gemfile_lock_content.json") }
-
-      subject { file_fetcher.gemfile_lock }
+    describe "the Gemfile.lock" do
+      subject { files.find { |file| file.name == "Gemfile.lock" } }
 
       it { is_expected.to be_a(DependencyFile) }
-      its(:name) { is_expected.to eq("Gemfile.lock") }
       its(:content) { is_expected.to include("octokit") }
     end
   end
