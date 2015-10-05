@@ -4,35 +4,17 @@ require "github"
 
 module DependencyFileFetchers
   class RubyDependencyFileFetcher
-    def self.run(repos)
-      repos.each do |repo|
-        file_fetcher = new(repo)
-        parse_files(repo, [file_fetcher.gemfile, file_fetcher.gemfile_lock])
-      end
-    rescue => error
-      Raven.capture_exception(error)
-      raise
-    end
-
-    def self.parse_files(repo, files)
-      dependency_files = files.map do |file|
-        { "name" => file.name, "content" => file.content }
-      end
-
-      Workers::DependencyFileParser.perform_async(
-        "repo" => {
-          "name" => repo,
-          "language" => "ruby"
-        },
-        "dependency_files" => dependency_files
-      )
-    end
-
     attr_reader :repo
 
     def initialize(repo)
       @repo = repo
     end
+
+    def files
+      [gemfile, gemfile_lock]
+    end
+
+    private
 
     def gemfile
       DependencyFile.new(name: "Gemfile", content: gemfile_content)
@@ -41,8 +23,6 @@ module DependencyFileFetchers
     def gemfile_lock
       DependencyFile.new(name: "Gemfile.lock", content: gemfile_lock_content)
     end
-
-    private
 
     def gemfile_content
       @gemfile_content ||=
