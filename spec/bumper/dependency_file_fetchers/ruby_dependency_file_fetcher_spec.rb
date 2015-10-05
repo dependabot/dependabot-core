@@ -7,7 +7,7 @@ RSpec.describe DependencyFileFetchers::RubyDependencyFileFetcher do
   let(:repo) { "gocardless/bump" }
 
   describe ".run" do
-    subject(:run) { described_class.run(['gocardless/bump']) }
+    subject(:run) { described_class.run(["gocardless/bump"]) }
 
     context "if an error is raised" do
       before do
