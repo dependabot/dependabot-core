@@ -73,6 +73,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  bundler (~> 1.10.6)
   dotenv
   gemnasium-parser (~> 0.1.9)
   gems (~> 0.8.3)

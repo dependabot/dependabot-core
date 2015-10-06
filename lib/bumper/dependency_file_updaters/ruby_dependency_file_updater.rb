@@ -66,11 +66,12 @@ module DependencyFileUpdaters
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
         Bundler.with_clean_env do
-          system "cd #{dir} && bundle update #{dependency.name} --quiet"
+          Bundler::SharedHelpers.chdir(dir) do
+            definition = Bundler.definition(gems: [dependency.name])
+            definition.resolve_remotely!
+            @updated_gemfile_lock_content = definition.to_lock
+          end
         end
-
-        @updated_gemfile_lock_content =
-          File.read(File.join(dir, "Gemfile.lock"))
       end
 
       @updated_gemfile_lock_content
