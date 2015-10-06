@@ -35,12 +35,22 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
 
       describe "the updated Gemfile" do
         subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+
+        it "is updated to specify the new version" do
+          expect(file.content).to include "\"business\", \"~> 1.5.0\""
+        end
       end
 
       describe "the updated Gemfile.lock" do
         subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
-        its(:content) { is_expected.to include "business (~> 1.5.0)" }
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+
+        it "doesn't change the version of the other (also outdated) gem" do
+          expect(file.content).to include "statesman (1.2.1)"
+        end
       end
     end
 
@@ -49,12 +59,22 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
 
       describe "the updated Gemfile" do
         subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-        its(:content) { is_expected.to include "\"business\"\n" }
+
+        it "continues to not specify a version" do
+          expect(file.content).to include "\"business\"\n"
+        end
       end
 
       describe "the updated Gemfile.lock" do
         subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
-        its(:content) { is_expected.to include "business (1.5.0)" }
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+
+        it "doesn't change the version of the other (also outdated) gem" do
+          expect(file.content).to include "statesman (1.2.1)"
+        end
       end
     end
 

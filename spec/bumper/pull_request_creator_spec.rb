@@ -79,7 +79,8 @@ RSpec.describe PullRequestCreator do
                branch: "bump_business_to_1.5.0",
                sha: "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
                content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVza"\
-                        "W5lc3MiLCAifj4gMS40LjAiCg==",
+                        "W5lc3MiLCAifj4gMS40LjAiCmdlbSAic3RhdGVzbWFuIiwgIn4+ID"\
+                        "EuMi4wIgo=",
                message: "Updating Gemfile"
              })
     end

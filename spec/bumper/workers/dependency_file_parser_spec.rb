@@ -20,7 +20,7 @@ RSpec.describe Workers::DependencyFileParser do
   describe "#perform" do
     subject(:perform) { worker.perform(sqs_message, body) }
 
-    it "enqueues an UpdateChecker with the correct arguments" do
+    it "enqueues UpdateCheckers with the correct arguments" do
       expect(Workers::UpdateChecker).
         to receive(:perform_async).
         with(
@@ -30,6 +30,17 @@ RSpec.describe Workers::DependencyFileParser do
             "name" => "business",
             "version" => "1.4.0"
           })
+
+      expect(Workers::UpdateChecker).
+        to receive(:perform_async).
+        with(
+          "repo" => body["repo"],
+          "dependency_files" => body["dependency_files"],
+          "dependency" => {
+            "name" => "statesman",
+            "version" => "1.2.0"
+          })
+
       perform
     end
 

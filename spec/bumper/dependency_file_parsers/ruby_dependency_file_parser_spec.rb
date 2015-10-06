@@ -13,7 +13,7 @@ RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(1) }
+    its(:length) { is_expected.to eq(2) }
 
     context "with a version specified" do
       describe "the first dependency" do
@@ -42,7 +42,7 @@ RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
 
       # TODO: For now we ignore gems with multiple requirements, because they'd
       # cause trouble at the Gemfile update step.
-      its(:length) { is_expected.to eq(0) }
+      its(:length) { is_expected.to eq(1) }
     end
   end
 end

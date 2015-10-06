@@ -1,3 +1,4 @@
 source "https://rubygems.org"
 
 gem "business", "> 1.0.0", "< 2.0.0"
+gem "statesman", "~> 1.2.0"
