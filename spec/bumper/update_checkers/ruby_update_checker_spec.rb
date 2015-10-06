@@ -7,7 +7,7 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
   before do
     allow(Gem).
       to receive(:latest_version_for).
-      with("business").
+      with(dependency_name).
       and_return(Gem::Version.new("1.2.0"))
   end
 
@@ -16,8 +16,11 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
                         dependency_files: [gemfile, gemfile_lock])
   end
 
-  let(:dependency) { Dependency.new(name: "business", version: dep_version) }
-  let(:dep_version) { "1.2.0" }
+  let(:dependency_version) { "1.2.0" }
+  let(:dependency_name) { "business" }
+  let(:dependency) do
+    Dependency.new(name: dependency_name, version: dependency_version)
+  end
 
   let(:gemfile) { DependencyFile.new(content: gemfile_body, name: "Gemfile") }
   let(:gemfile_body) { fixture("Gemfile") }
@@ -29,12 +32,12 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
     subject { checker.needs_update? }
 
     context "given an up-to-date dependency" do
-      let(:dep_version) { "1.2.0" }
+      let(:dependency_version) { "1.2.0" }
       it { is_expected.to be_falsey }
     end
 
     context "given an outdated dependency" do
-      let(:dep_version) { "1.1.0" }
+      let(:dependency_version) { "1.1.0" }
       it { is_expected.to be_truthy }
     end
   end
