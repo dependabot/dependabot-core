@@ -7,43 +7,53 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
   before do
     allow(Gem).
       to receive(:latest_version_for).
-      with(dependency_name).
-      and_return(Gem::Version.new("1.2.0"))
+      with("business").
+      and_return(Gem::Version.new(latest_version))
   end
+
+  let(:latest_version) { "1.4.0" }
 
   let(:checker) do
     described_class.new(dependency: dependency,
                         dependency_files: [gemfile, gemfile_lock])
   end
 
-  let(:dependency_version) { "1.2.0" }
-  let(:dependency_name) { "business" }
-  let(:dependency) do
-    Dependency.new(name: dependency_name, version: dependency_version)
-  end
+  let(:dependency) { Dependency.new(name: "business", version: "1.3") }
 
-  let(:gemfile) { DependencyFile.new(content: gemfile_body, name: "Gemfile") }
-  let(:gemfile_body) { fixture("Gemfile") }
+  let(:gemfile) do
+    DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
+  end
   let(:gemfile_lock) do
     DependencyFile.new(content: fixture("Gemfile.lock"), name: "Gemfile.lock")
+  end
+
+  describe "new" do
+    context "when the gemfile.lock is missing" do
+      subject { -> { checker } }
+      let(:checker) do
+        described_class.new(dependency: dependency, dependency_files: [gemfile])
+      end
+
+      it { is_expected.to raise_error(/No Gemfile.lock/) }
+    end
   end
 
   describe "#needs_update?" do
     subject { checker.needs_update? }
 
     context "given an up-to-date dependency" do
-      let(:dependency_version) { "1.2.0" }
+      let(:latest_version) { "1.4.0" }
       it { is_expected.to be_falsey }
     end
 
     context "given an outdated dependency" do
-      let(:dependency_version) { "1.1.0" }
+      let(:latest_version) { "1.5.0" }
       it { is_expected.to be_truthy }
     end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq("1.2.0") }
+    it { is_expected.to eq(latest_version) }
   end
 end
