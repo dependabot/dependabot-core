@@ -1,6 +1,7 @@
 require "shoryuken"
 require "bumper/workers"
 require "bumper/dependency"
+require "bumper/dependency_file"
 require "bumper/update_checkers/ruby_update_checker"
 
 module Workers
@@ -14,25 +15,22 @@ module Workers
     )
 
     def perform(_sqs_message, body)
-      dependency = Dependency.new(
-        name: body["dependency"]["name"],
-        version: body["dependency"]["version"]
+      dependency = Dependency.new(name: body["dependency"]["name"],
+                                  version: body["dependency"]["version"])
+      dependency_files = body["dependency_files"].map do |file|
+        DependencyFile.new(name: file["name"], content: file["content"])
+      end
+
+      update_checker = update_checker_for(body["repo"]["language"]).new(
+        dependency: dependency,
+        dependency_files: dependency_files
       )
-
-      update_checker_class = update_checker_for(body["repo"]["language"])
-      update_checker = update_checker_class.new(dependency: dependency)
-
       return unless update_checker.needs_update?
 
-      updated_dependency = Dependency.new(
-        name: dependency.name,
-        version: update_checker.latest_version
-      )
-      update_dependency(
-        body["repo"],
-        body["dependency_files"],
-        updated_dependency
-      )
+      update_dependency(body["repo"],
+                        body["dependency_files"],
+                        Dependency.new(name: dependency.name,
+                                       version: update_checker.latest_version))
     rescue => error
       Raven.capture_exception(error)
       raise

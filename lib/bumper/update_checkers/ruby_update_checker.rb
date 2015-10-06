@@ -2,10 +2,11 @@ require "json"
 
 module UpdateCheckers
   class RubyUpdateChecker
-    attr_reader :dependency
+    attr_reader :dependency, :gemfile_lock
 
-    def initialize(dependency:)
+    def initialize(dependency:, dependency_files:)
       @dependency = dependency
+      @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
     end
 
     def needs_update?
