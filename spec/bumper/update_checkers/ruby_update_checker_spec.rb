@@ -10,7 +10,9 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
       and_return(Gem::Version.new("1.2.0"))
   end
 
-  let(:checker) { UpdateCheckers::RubyUpdateChecker.new(dependency) }
+  let(:checker) do
+    UpdateCheckers::RubyUpdateChecker.new(dependency: dependency)
+  end
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.2.0" }
   let(:dependency) do

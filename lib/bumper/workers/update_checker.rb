@@ -20,7 +20,7 @@ module Workers
       )
 
       update_checker_class = update_checker_for(body["repo"]["language"])
-      update_checker = update_checker_class.new(dependency)
+      update_checker = update_checker_class.new(dependency: dependency)
 
       return unless update_checker.needs_update?
 

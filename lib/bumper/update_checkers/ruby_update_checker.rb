@@ -4,7 +4,7 @@ module UpdateCheckers
   class RubyUpdateChecker
     attr_reader :dependency
 
-    def initialize(dependency)
+    def initialize(dependency:)
       @dependency = dependency
     end
 
