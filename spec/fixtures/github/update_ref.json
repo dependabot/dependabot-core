@@ -3,7 +3,7 @@
   "url": "https://api.github.com/repos/gocardless/bump/git/refs/heads/bump_business_to_1.5.0",
   "object": {
     "type": "commit",
-    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
-    "url": "https://api.github.com/repos/gocardless/bump/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+    "sha": "7638417db6d59f3c431d3e1f261cc637155684cd",
+    "url": "https://api.github.com/repos/gocardless/bump/git/commits/7638417db6d59f3c431d3e1f261cc637155684cd"
   }
 }
