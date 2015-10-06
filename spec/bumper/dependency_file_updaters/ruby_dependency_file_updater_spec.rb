@@ -23,61 +23,7 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "#updated_dependency_files" do
-    subject(:updated_files) { updater.updated_dependency_files }
-
-    specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
-    its(:length) { is_expected.to eq(2) }
-
-    context "when the old Gemfile specified the version" do
-      let(:gemfile_body) { fixture("gemfiles", "version_specified") }
-
-      describe "the updated Gemfile" do
-        subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-
-        it "is updated to specify the new version" do
-          expect(file.content).to include "\"business\", \"~> 1.5.0\""
-        end
-      end
-
-      describe "the updated Gemfile.lock" do
-        subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
-
-        it "locks the updated gem to the latest version" do
-          expect(file.content).to include "business (1.5.0)"
-        end
-
-        it "doesn't change the version of the other (also outdated) gem" do
-          expect(file.content).to include "statesman (1.2.1)"
-        end
-      end
-    end
-
-    context "when the old Gemfile didn't specify the version" do
-      let(:gemfile_body) { fixture("gemfiles", "version_not_specified") }
-
-      describe "the updated Gemfile" do
-        subject(:file) { updated_files.find { |file| file.name == "Gemfile" } }
-
-        it "continues to not specify a version" do
-          expect(file.content).to include "\"business\"\n"
-        end
-      end
-
-      describe "the updated Gemfile.lock" do
-        subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
-
-        it "locks the updated gem to the latest version" do
-          expect(file.content).to include "business (1.5.0)"
-        end
-
-        it "doesn't change the version of the other (also outdated) gem" do
-          expect(file.content).to include "statesman (1.2.1)"
-        end
-      end
-    end
-
+  describe "new" do
     context "when the gemfile.lock is missing" do
       subject { -> { updater } }
       let(:updater) do
@@ -85,6 +31,58 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
       end
 
       it { is_expected.to raise_error(/No Gemfile.lock/) }
+    end
+  end
+
+  describe "#updated_dependency_files" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
+    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
+    its(:length) { is_expected.to eq(2) }
+  end
+
+  describe "#updated_gemfile" do
+    subject(:updated_gemfile) { updater.updated_gemfile }
+
+    context "when the full version is specified" do
+      let(:gemfile_body) { fixture("gemfiles", "version_specified") }
+      its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+      its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
+    end
+
+    context "when the minor version is specified" do
+      let(:gemfile_body) { fixture("gemfiles", "minor_version_specified") }
+      its(:content) { is_expected.to include "\"business\", \"~> 1.5\"" }
+      its(:content) { is_expected.to include "\"statesman\", \"~> 1.2\"" }
+    end
+  end
+
+  describe "#updated_gemfile_lock" do
+    subject(:file) { updater.updated_gemfile_lock }
+
+    context "when the old Gemfile specified the version" do
+      let(:gemfile_body) { fixture("gemfiles", "version_specified") }
+
+      it "locks the updated gem to the latest version" do
+        expect(file.content).to include "business (1.5.0)"
+      end
+
+      it "doesn't change the version of the other (also outdated) gem" do
+        expect(file.content).to include "statesman (1.2.1)"
+      end
+    end
+
+    context "when the old Gemfile didn't specify the version" do
+      let(:gemfile_body) { fixture("gemfiles", "version_not_specified") }
+
+      it "locks the updated gem to the latest version" do
+        expect(file.content).to include "business (1.5.0)"
+      end
+
+      it "doesn't change the version of the other (also outdated) gem" do
+        expect(file.content).to include "statesman (1.2.1)"
+      end
     end
   end
 end

@@ -4,8 +4,6 @@ require "tmpdir"
 require "bundler"
 
 module DependencyFileUpdaters
-  # NOTE: in ruby a requirement is a matcher and version
-  # e.g. "~> 1.2.3", where "~>" is the match
   class RubyDependencyFileUpdater
     attr_reader :gemfile, :gemfile_lock, :dependency
 
@@ -21,18 +19,21 @@ module DependencyFileUpdaters
     end
 
     def updated_dependency_files
-      return @updated_dependency_files if @updated_dependency_files
+      [updated_gemfile, updated_gemfile_lock]
+    end
 
-      @updated_dependency_files = [
-        DependencyFile.new(
-          name: "Gemfile",
-          content: updated_gemfile_content
-        ),
-        DependencyFile.new(
-          name: "Gemfile.lock",
-          content: updated_gemfile_lock_content
-        )
-      ]
+    def updated_gemfile
+      DependencyFile.new(
+        name: "Gemfile",
+        content: updated_gemfile_content
+      )
+    end
+
+    def updated_gemfile_lock
+      DependencyFile.new(
+        name: "Gemfile.lock",
+        content: updated_gemfile_lock_content
+      )
     end
 
     private
@@ -51,7 +52,10 @@ module DependencyFileUpdaters
 
       original_gem_declaration_string = $&
       updated_gem_declaration_string =
-        original_gem_declaration_string.sub(/[\d\.]+/, dependency.version)
+        original_gem_declaration_string.sub(/[\d\.]+/) do |old_version|
+          precision = old_version.split(".").count
+          dependency.version.split(".").first(precision).join(".")
+        end
 
       @updated_gemfile_content = gemfile.content.gsub(
         original_gem_declaration_string,
