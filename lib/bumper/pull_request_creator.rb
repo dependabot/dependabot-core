@@ -11,7 +11,10 @@ class PullRequestCreator
 
   def create
     return unless create_branch
-    files.each { |file| update_file(file) }
+
+    commit = create_commit
+    update_branch(commit)
+
     create_pull_request
   end
 
@@ -27,17 +30,34 @@ class PullRequestCreator
     nil
   end
 
-  def update_file(file)
-    # GitHub's API makes it hard to create a new commit with multiple files.
-    # TODO: use https://developer.github.com/v3/git/commits/#create-a-commit
-    current_file = Github.client.contents(watched_repo, path: file.name)
-    Github.client.update_contents(
+  def create_commit
+    tree = create_tree
+
+    Github.client.create_commit(
       watched_repo,
-      file.name,
-      "Updating #{file.name}",
-      current_file.sha,
-      file.content,
-      branch: new_branch_name
+      "Bump #{dependency.name} to #{dependency.version}",
+      tree.sha,
+      default_branch_sha
+    )
+  end
+
+  def create_tree
+    file_trees = files.map do |file|
+      { path: file.name, mode: "100644", type: "blob", content: file.content }
+    end
+
+    Github.client.create_tree(
+      watched_repo,
+      file_trees,
+      base_tree: default_branch_sha
+    )
+  end
+
+  def update_branch(commit)
+    Github.client.update_ref(
+      watched_repo,
+      "heads/#{new_branch_name}",
+      commit.sha
     )
   end
 
@@ -75,10 +95,11 @@ class PullRequestCreator
   end
 
   def default_branch_sha
-    Github.client.ref(watched_repo, "heads/#{default_branch}").object.sha
+    @default_branch_sha ||=
+      Github.client.ref(watched_repo, "heads/#{default_branch}").object.sha
   end
 
   def new_branch_name
-    @new_branch_name ||= "bump_#{dependency.name}_to_#{dependency.version}"
+    "bump_#{dependency.name}_to_#{dependency.version}"
   end
 end

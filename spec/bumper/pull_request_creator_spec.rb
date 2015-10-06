@@ -10,15 +10,19 @@ RSpec.describe PullRequestCreator do
 
   let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }
   let(:repo) { "gocardless/bump" }
-  let(:files) { [gemfile] }
+  let(:files) { [gemfile, gemfile_lock] }
 
   let(:gemfile) do
     DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
+  end
+  let(:gemfile_lock) do
+    DependencyFile.new(name: "Gemfile.lock", content: fixture("Gemfile.lock"))
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
+  let(:branch_name) { "bump_business_to_1.5.0" }
 
   before do
     stub_request(:get, watched_repo_url).
@@ -33,14 +37,19 @@ RSpec.describe PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "create_ref.json"),
                 headers: json_header)
-    stub_request(:get, "#{watched_repo_url}/contents/#{gemfile.name}").
+    stub_request(:post, "#{watched_repo_url}/git/trees").
       to_return(status: 200,
-                body: fixture("github", "gemfile_content.json"),
+                body: fixture("github", "create_tree.json"),
                 headers: json_header)
-    stub_request(:put, "#{watched_repo_url}/contents/#{gemfile.name}").
+    stub_request(:post, "#{watched_repo_url}/git/commits").
       to_return(status: 200,
-                body: fixture("github", "update_file.json"),
+                body: fixture("github", "create_commit.json"),
                 headers: json_header)
+    stub_request(:patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+      to_return(status: 200,
+                body: fixture("github", "update_ref.json"),
+                headers: json_header)
+
     stub_request(:post, "#{watched_repo_url}/pulls").
       to_return(status: 200,
                 body: fixture("github", "create_pr.json"),
@@ -74,15 +83,27 @@ RSpec.describe PullRequestCreator do
       creator.create
 
       expect(WebMock).
-        to have_requested(:put, "#{watched_repo_url}/contents/Gemfile").
+        to have_requested(:post, "#{watched_repo_url}/git/trees").
         with(body: {
-               branch: "bump_business_to_1.5.0",
-               sha: "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
-               content: "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAiYnVza"\
-                        "W5lc3MiLCAifj4gMS40LjAiCmdlbSAic3RhdGVzbWFuIiwgIn4+ID"\
-                        "EuMi4wIgo=",
-               message: "Updating Gemfile"
+               base_tree: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+               tree: [
+                 {
+                   path: "Gemfile",
+                   mode: "100644",
+                   type: "blob",
+                   content: fixture("Gemfile")
+                 },
+                 {
+                   path: "Gemfile.lock",
+                   mode: "100644",
+                   type: "blob",
+                   content: fixture("Gemfile.lock")
+                 }
+               ]
              })
+
+      expect(WebMock).
+        to have_requested(:post, "#{watched_repo_url}/git/commits")
     end
 
     it "creates a PR with the right details" do
@@ -115,7 +136,7 @@ RSpec.describe PullRequestCreator do
         creator.create
 
         expect(WebMock).
-          to_not have_requested(:put, "#{watched_repo_url}/contents/Gemfile")
+          to_not have_requested(:post, "#{watched_repo_url}/git/trees")
       end
 
       it "doesn't try to re-create the PR" do
