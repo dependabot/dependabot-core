@@ -1,1 +1,4 @@
 export BUMP_GITHUB_TOKEN="token"
+export AMQP_USERNAME=guest
+export AMQP_PASSWORD=guest
+export AMQP_HOST=localhost

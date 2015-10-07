@@ -52,3 +52,13 @@ pull_request_creator:
       name
       version
 ```
+
+# Development
+
+Install RabbitMQ
+```
+cp dummy-env .env
+brew install rabbitmq
+rabbitmqctl add_vhost guest
+rabbitmqctl set_permissions -p guest guest ".*" ".*" ".*"
+```
