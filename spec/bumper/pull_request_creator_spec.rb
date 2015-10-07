@@ -1,7 +1,7 @@
 require "spec_helper"
-require "bumper/dependency"
-require "bumper/dependency_file"
-require "bumper/pull_request_creator"
+require "./app/dependency"
+require "./app/dependency_file"
+require "./app/pull_request_creator"
 
 RSpec.describe PullRequestCreator do
   subject(:creator) do

@@ -1,19 +1,16 @@
-require "shoryuken"
-require "bumper/workers"
-require "bumper/dependency"
-require "bumper/dependency_file_updaters/ruby_dependency_file_updater"
+require "hutch"
+require "./app/boot"
+require "./app/dependency"
+require "./app/dependency_file_updaters/ruby_dependency_file_updater"
+
+$stdout.sync = true
 
 module Workers
   class DependencyFileUpdater
-    include Shoryuken::Worker
+    include Hutch::Consumer
+    consume "bump.dependencies_to_update"
 
-    shoryuken_options(
-      queue: "bump-dependencies_to_update",
-      body_parser: :json,
-      auto_delete: true
-    )
-
-    def perform(_sqs_message, body)
+    def process(body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"]
@@ -45,7 +42,8 @@ module Workers
         { "name" => file.name, "content" => file.content }
       end
 
-      Workers::PullRequestCreator.perform_async(
+      Hutch.publish(
+        "bump.updated_files_to_create_pr_for",
         "repo" => repo,
         "updated_dependency" => updated_dependency,
         "updated_dependency_files" => updated_dependency_files

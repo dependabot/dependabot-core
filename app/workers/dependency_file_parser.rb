@@ -1,19 +1,17 @@
-require "shoryuken"
-require "bumper/workers"
-require "bumper/dependency_file"
-require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
+require "hutch"
+require "./app/boot"
+require "./app/dependency_file"
+require "./app/dependency_file_parsers/ruby_dependency_file_parser"
+
+$stdout.sync = true
 
 module Workers
   class DependencyFileParser
-    include Shoryuken::Worker
+    include Hutch::Consumer
 
-    shoryuken_options(
-      queue: "bump-dependency_files_to_parse",
-      body_parser: :json,
-      auto_delete: true
-    )
+    consume "bump.dependency_files_to_parse"
 
-    def perform(_sqs_message, body)
+    def process(body)
       parser = parser_for(body["repo"]["language"])
       dependency_files = body["dependency_files"].map do |file|
         DependencyFile.new(name: file["name"], content: file["content"])
@@ -35,7 +33,8 @@ module Workers
     private
 
     def check_for_dependency_update(repo, dependency_files, dependency)
-      Workers::UpdateChecker.perform_async(
+      Hutch.publish(
+        "bump.dependencies_to_check",
         "repo" => repo,
         "dependency_files" => dependency_files,
         "dependency" => {

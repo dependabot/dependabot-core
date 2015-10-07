@@ -1,5 +1,5 @@
 require "gemnasium/parser"
-require "bumper/dependency_file"
+require "./app/dependency_file"
 require "tmpdir"
 require "bundler"
 require "shared_helpers"

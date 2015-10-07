@@ -1,5 +1,4 @@
-require "bumper/dependency_file"
-require "bumper/workers"
+require "./app/dependency_file"
 require "github"
 
 module DependencyFileFetchers

@@ -1,6 +1,6 @@
 require "spec_helper"
-require "bumper/dependency_file"
-require "bumper/dependency_file_parsers/ruby_dependency_file_parser"
+require "./app/dependency_file"
+require "./app/dependency_file_parsers/ruby_dependency_file_parser"
 
 RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
   let(:files) { [gemfile] }
