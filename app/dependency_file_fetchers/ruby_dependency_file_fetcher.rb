@@ -1,5 +1,5 @@
 require "./app/dependency_file"
-require "github"
+require "./lib/github"
 
 module DependencyFileFetchers
   class RubyDependencyFileFetcher

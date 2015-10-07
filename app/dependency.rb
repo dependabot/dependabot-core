@@ -1,5 +1,5 @@
 require "gems"
-require "github"
+require "./lib/github"
 
 class Dependency
   attr_reader :name, :version

@@ -2,7 +2,7 @@ require "gemnasium/parser"
 require "./app/dependency_file"
 require "tmpdir"
 require "bundler"
-require "shared_helpers"
+require "./lib/shared_helpers"
 
 module DependencyFileUpdaters
   class RubyDependencyFileUpdater

@@ -1,6 +1,6 @@
 require "prius"
 require "raven"
-require "null_logger"
+require "./lib/null_logger"
 
 Prius.load(:bump_github_token)
 Prius.load(:sentry_dsn, required: false)
