@@ -9,7 +9,7 @@ require "bumper/dependency_file_updaters/ruby_dependency_file_updater"
 module Workers
   class DependencyFileUpdater
     include Hutch::Consumer
-    consume 'bump.dependencies_to_update'
+    consume "bump.dependencies_to_update"
 
     def process(body)
       updated_dependency = Dependency.new(
@@ -43,7 +43,8 @@ module Workers
         { "name" => file.name, "content" => file.content }
       end
 
-      Hutch.publish('bump.updated_files_to_create_pr_for',
+      Hutch.publish(
+        "bump.updated_files_to_create_pr_for",
         "repo" => repo,
         "updated_dependency" => updated_dependency,
         "updated_dependency_files" => updated_dependency_files

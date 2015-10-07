@@ -10,7 +10,7 @@ require "bumper/pull_request_creator"
 module Workers
   class PullRequestCreator
     include Hutch::Consumer
-    consume 'bump.updated_files_to_create_pr_for'
+    consume "bump.updated_files_to_create_pr_for"
 
     def process(body)
       updated_dependency = Dependency.new(

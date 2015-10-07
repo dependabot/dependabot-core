@@ -10,7 +10,7 @@ module Workers
   class DependencyFileParser
     include Hutch::Consumer
 
-    consume 'bump.dependency_files_to_parse'
+    consume "bump.dependency_files_to_parse"
 
     def process(body)
       parser = parser_for(body["repo"]["language"])
@@ -34,7 +34,8 @@ module Workers
     private
 
     def check_for_dependency_update(repo, dependency_files, dependency)
-      Hutch.publish('bump.dependencies_to_check',
+      Hutch.publish(
+        "bump.dependencies_to_check",
         "repo" => repo,
         "dependency_files" => dependency_files,
         "dependency" => {

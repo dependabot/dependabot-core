@@ -103,7 +103,7 @@ DEPENDENCIES
   foreman
   gemnasium-parser (~> 0.1.9)
   gems (~> 0.8.3)
-  hutch
+  hutch (~> 0.19.0)
   octokit (~> 4.1.1)
   prius (~> 1.0.0)
   rspec (~> 3.3.0)

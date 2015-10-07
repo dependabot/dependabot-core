@@ -3,7 +3,6 @@ require "bumper/workers/dependency_file_updater"
 
 RSpec.describe Workers::DependencyFileUpdater do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -21,8 +20,8 @@ RSpec.describe Workers::DependencyFileUpdater do
     }
   end
 
-  describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+  describe "#process" do
+    subject(:process) { worker.process(body) }
     before do
       allow_any_instance_of(DependencyFileUpdaters::RubyDependencyFileUpdater).
         to receive(:updated_dependency_files).
@@ -30,16 +29,17 @@ RSpec.describe Workers::DependencyFileUpdater do
     end
 
     it "enqueues a PullRequestCreator with the correct arguments" do
-      expect(Workers::PullRequestCreator).
-        to receive(:perform_async).
+      expect(Hutch).
+        to receive(:publish).
         with(
+          "bump.updated_files_to_create_pr_for",
           "repo" => body["repo"],
           "updated_dependency" => body["updated_dependency"],
           "updated_dependency_files" => [{
             "name" => "Gemfile",
             "content" => "xyz"
           }])
-      perform
+      process
     end
 
     context "if an error is raised" do
@@ -51,7 +51,7 @@ RSpec.describe Workers::DependencyFileUpdater do
 
       it "still raises, but also sends the error to sentry" do
         expect(Raven).to receive(:capture_exception).and_call_original
-        expect { perform }.to raise_error("hell")
+        expect { process }.to raise_error("hell")
       end
     end
   end

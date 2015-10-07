@@ -3,7 +3,6 @@ require "bumper/workers/dependency_file_parser"
 
 RSpec.describe Workers::DependencyFileParser do
   subject(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -17,13 +16,14 @@ RSpec.describe Workers::DependencyFileParser do
     }
   end
 
-  describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+  describe "#process" do
+    subject(:process) { worker.process(body) }
 
     it "enqueues UpdateCheckers with the correct arguments" do
-      expect(Workers::UpdateChecker).
-        to receive(:perform_async).
+      expect(Hutch).
+        to receive(:publish).
         with(
+          "bump.dependencies_to_check",
           "repo" => body["repo"],
           "dependency_files" => body["dependency_files"],
           "dependency" => {
@@ -31,9 +31,10 @@ RSpec.describe Workers::DependencyFileParser do
             "version" => "1.4.0"
           })
 
-      expect(Workers::UpdateChecker).
-        to receive(:perform_async).
+      expect(Hutch).
+        to receive(:publish).
         with(
+          "bump.dependencies_to_check",
           "repo" => body["repo"],
           "dependency_files" => body["dependency_files"],
           "dependency" => {
@@ -41,7 +42,7 @@ RSpec.describe Workers::DependencyFileParser do
             "version" => "1.2.0"
           })
 
-      perform
+      process
     end
 
     context "if an error is raised" do
@@ -53,7 +54,7 @@ RSpec.describe Workers::DependencyFileParser do
 
       it "still raises, but also sends the error to sentry" do
         expect(Raven).to receive(:capture_exception).and_call_original
-        expect { perform }.to raise_error("hell")
+        expect { process }.to raise_error("hell")
       end
     end
   end

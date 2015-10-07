@@ -3,7 +3,6 @@ require "bumper/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -30,16 +29,17 @@ RSpec.describe Workers::UpdateChecker do
     end
 
     it "enqueues a DependencyFileUpdater with the correct arguments" do
-      expect(Workers::DependencyFileUpdater).
-        to receive(:perform_async).
+      expect(Hutch).
+        to receive(:publish).
         with(
+          "bump.dependencies_to_update",
           "repo" => body["repo"],
           "dependency_files" => body["dependency_files"],
           "updated_dependency" => {
             "name" => "business",
             "version" => "1.5.0"
           })
-      worker.perform(sqs_message, body)
+      worker.process(body)
     end
   end
 
@@ -50,8 +50,8 @@ RSpec.describe Workers::UpdateChecker do
     end
 
     it "doesn't write a message into the queue" do
-      expect(Workers::DependencyFileUpdater).to_not receive(:perform_async)
-      worker.perform(sqs_message, body)
+      expect(Workers::DependencyFileUpdater).to_not receive(:publish)
+      worker.process(body)
     end
   end
 
@@ -64,7 +64,7 @@ RSpec.describe Workers::UpdateChecker do
 
     it "still raises, but also sends the error to sentry" do
       expect(Raven).to receive(:capture_exception).and_call_original
-      expect { worker.perform(sqs_message, body) }.to raise_error("hell")
+      expect { worker.process(body) }.to raise_error("hell")
     end
   end
 end

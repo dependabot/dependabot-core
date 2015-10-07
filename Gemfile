@@ -7,7 +7,7 @@ gem "prius", "~> 1.0.0"
 gem "gems", "~> 0.8.3"
 gem "sentry-raven", "~> 0.15.2"
 gem "bundler", "~> 1.10.6"
-gem "hutch"
+gem "hutch", "~> 0.19.0"
 
 group :development do
   gem "rspec", "~> 3.3.0"

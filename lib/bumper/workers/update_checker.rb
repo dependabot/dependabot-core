@@ -11,7 +11,7 @@ module Workers
   class UpdateChecker
     include Hutch::Consumer
 
-    consume 'bump.dependencies_to_check'
+    consume "bump.dependencies_to_check"
 
     def process(body)
       dependency = Dependency.new(name: body["dependency"]["name"],
@@ -38,7 +38,8 @@ module Workers
     private
 
     def update_dependency(repo, dependency_files, updated_dependency)
-      Hutch.publish('bump.dependencies_to_update',
+      Hutch.publish(
+        "bump.dependencies_to_update",
         "repo" => repo,
         "dependency_files" => dependency_files,
         "updated_dependency" => {

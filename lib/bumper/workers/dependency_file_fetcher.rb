@@ -10,19 +10,19 @@ module Workers
   class DependencyFileFetcher
     include Hutch::Consumer
 
-    consume 'bump.repos_to_fetch_files_for'
+    consume "bump.repos_to_fetch_files_for"
 
     def process(body)
-      file_fetcher = file_fetcher_for(body[:repo][:language])
+      file_fetcher = file_fetcher_for(body["repo"]["language"])
 
       dependency_files =
-        file_fetcher.new(body[:repo][:name]).files.map do |file|
+        file_fetcher.new(body["repo"]["name"]).files.map do |file|
           { "name" => file.name, "content" => file.content }
         end
 
-      Hutch.publish('bump.dependency_files_to_parse',
-                    repo: body["repo"],
-                    dependency_files: dependency_files)
+      Hutch.publish("bump.dependency_files_to_parse",
+                    "repo" => body["repo"],
+                    "dependency_files" => dependency_files)
     rescue => error
       Raven.capture_exception(error)
       raise
