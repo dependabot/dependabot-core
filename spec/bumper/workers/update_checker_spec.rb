@@ -1,5 +1,5 @@
 require "spec_helper"
-require "bumper/workers/update_checker"
+require "./app/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }

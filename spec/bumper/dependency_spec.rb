@@ -1,5 +1,5 @@
 require "spec_helper"
-require "bumper/dependency"
+require "./app/dependency"
 
 RSpec.describe Dependency do
   subject(:dependency) { described_class.new(name: name, version: version) }

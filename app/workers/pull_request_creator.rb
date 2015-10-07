@@ -1,11 +1,10 @@
 require "hutch"
-$LOAD_PATH << "lib"
+require "./app/boot"
+require "./app/dependency"
+require "./app/dependency_file"
+require "./app/pull_request_creator"
 
 $stdout.sync = true
-
-require "bumper/dependency"
-require "bumper/dependency_file"
-require "bumper/pull_request_creator"
 
 module Workers
   class PullRequestCreator

@@ -1,5 +1,5 @@
 require "spec_helper"
-require "bumper/workers/pull_request_creator"
+require "./app/workers/pull_request_creator"
 
 RSpec.describe Workers::PullRequestCreator do
   subject(:worker) { described_class.new }

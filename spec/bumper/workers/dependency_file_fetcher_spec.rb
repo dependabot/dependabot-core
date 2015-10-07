@@ -1,5 +1,5 @@
 require "spec_helper"
-require "bumper/workers/dependency_file_fetcher"
+require "./app/workers/dependency_file_fetcher"
 
 RSpec.describe Workers::DependencyFileFetcher do
   subject(:worker) { described_class.new }

@@ -1,7 +1,7 @@
 require "spec_helper"
-require "bumper/dependency"
-require "bumper/dependency_file"
-require "bumper/update_checkers/ruby_update_checker"
+require "./app/dependency"
+require "./app/dependency_file"
+require "./app/update_checkers/ruby_update_checker"
 
 RSpec.describe UpdateCheckers::RubyUpdateChecker do
   before do

@@ -1,8 +1,8 @@
 require "spec_helper"
 require "tmpdir"
-require "bumper/dependency_file"
-require "bumper/dependency"
-require "bumper/dependency_file_updaters/ruby_dependency_file_updater"
+require "./app/dependency_file"
+require "./app/dependency"
+require "./app/dependency_file_updaters/ruby_dependency_file_updater"
 
 RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
   before { WebMock.disable! }

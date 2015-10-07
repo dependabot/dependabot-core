@@ -1,5 +1,5 @@
 require "spec_helper"
-require "bumper/workers/dependency_file_updater"
+require "./app/workers/dependency_file_updater"
 
 RSpec.describe Workers::DependencyFileUpdater do
   let(:worker) { described_class.new }

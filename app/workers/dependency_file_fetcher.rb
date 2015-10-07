@@ -1,10 +1,9 @@
 require "hutch"
-$LOAD_PATH << "lib"
+require "./app/boot"
+require "./app/dependency_file"
+require "./app/dependency_file_fetchers/ruby_dependency_file_fetcher"
 
 $stdout.sync = true
-
-require "bumper/dependency_file"
-require "bumper/dependency_file_fetchers/ruby_dependency_file_fetcher"
 
 module Workers
   class DependencyFileFetcher
