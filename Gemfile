@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+ruby "2.2.0"
+
 gem "gemnasium-parser", "~> 0.1.9"
 gem "octokit", "~> 4.1.1"
 gem "prius", "~> 1.0.0"
