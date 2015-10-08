@@ -16,7 +16,7 @@ module UpdateCheckers
     end
 
     def latest_version
-      @latest_version ||= Gem.latest_version_for(dependency.name).to_s
+      @latest_version ||= Gems.info(dependency.name)["version"]
     end
 
     private
