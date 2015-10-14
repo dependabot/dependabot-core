@@ -21,8 +21,16 @@ RSpec.describe Workers::PullRequestCreator do
     }
   end
 
+  before do
+    stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
+      to_return(status: 200,
+                body: "{ \"homepage_uri\": \"http://test.com\"}",
+                headers: { "content-type" => "application/json" })
+  end
+
   describe "#perform" do
     subject(:perform) { worker.perform(sqs_message, body) }
+
     let(:stubbed_creator) { double("PullRequestCreator", create: nil) }
 
     it "passes the correct arguments to pull request creator" do

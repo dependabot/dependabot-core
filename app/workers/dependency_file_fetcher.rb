@@ -2,6 +2,7 @@ require "shoryuken"
 require "./app/boot"
 require "./app/dependency_file"
 require "./app/dependency_file_fetchers/ruby_dependency_file_fetcher"
+require "./app/dependency_file_fetchers/node_dependency_file_fetcher"
 
 $stdout.sync = true
 
@@ -37,6 +38,7 @@ module Workers
     def file_fetcher_for(language)
       case language
       when "ruby" then DependencyFileFetchers::RubyDependencyFileFetcher
+      when "node" then DependencyFileFetchers::NodeDependencyFileFetcher
       else raise "Invalid language #{language}"
       end
     end
