@@ -33,9 +33,9 @@ RSpec.describe PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "ref.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/refs").
-      to_return(status: 200,
-                body: fixture("github", "create_ref.json"),
+    stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+      to_return(status: 404,
+                body: fixture("github", "not_found.json"),
                 headers: json_header)
     stub_request(:post, "#{watched_repo_url}/git/trees").
       to_return(status: 200,
@@ -45,11 +45,10 @@ RSpec.describe PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "create_commit.json"),
                 headers: json_header)
-    stub_request(:patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+    stub_request(:post, "#{watched_repo_url}/git/refs").
       to_return(status: 200,
-                body: fixture("github", "update_ref.json"),
+                body: fixture("github", "create_ref.json"),
                 headers: json_header)
-
     stub_request(:post, "#{watched_repo_url}/pulls").
       to_return(status: 200,
                 body: fixture("github", "create_pr.json"),
@@ -68,18 +67,7 @@ RSpec.describe PullRequestCreator do
   end
 
   describe "#create" do
-    it "creates a branch with the right name" do
-      creator.create
-
-      expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/refs").
-        with(body: {
-               ref: "refs/heads/bump_business_to_1.5.0",
-               sha: "aa218f56b14c9653891f9e74264a383fa43fefbd"
-             })
-    end
-
-    it "pushes changes to that branch" do
+    it "pushes a commit to GitHub" do
       creator.create
 
       expect(WebMock).
@@ -106,6 +94,17 @@ RSpec.describe PullRequestCreator do
         to have_requested(:post, "#{watched_repo_url}/git/commits")
     end
 
+    it "creates a branch for that commit" do
+      creator.create
+
+      expect(WebMock).
+        to have_requested(:post, "#{watched_repo_url}/git/refs").
+        with(body: {
+               ref: "refs/heads/bump_business_to_1.5.0",
+               sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+             })
+    end
+
     it "creates a PR with the right details" do
       creator.create
 
@@ -124,9 +123,9 @@ RSpec.describe PullRequestCreator do
 
     context "when a branch for this update already exists" do
       before do
-        stub_request(:post, "#{watched_repo_url}/git/refs").
-          to_return(status: 422,
-                    body: fixture("github", "create_ref_error.json"),
+        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+          to_return(status: 200,
+                    body: fixture("github", "check_ref.json"),
                     headers: json_header)
       end
 
