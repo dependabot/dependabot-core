@@ -10,24 +10,21 @@ class PullRequestCreator
   end
 
   def create
-    return unless create_branch
+    return if branch_exists?
 
     commit = create_commit
-    update_branch(commit)
+    create_branch(commit)
 
     create_pull_request
   end
 
   private
 
-  def create_branch
-    Github.client.create_ref(
-      watched_repo,
-      "heads/#{new_branch_name}",
-      default_branch_sha
-    )
-  rescue Octokit::UnprocessableEntity
-    nil
+  def branch_exists?
+    Github.client.ref(watched_repo, "heads/#{new_branch_name}")
+    true
+  rescue Octokit::NotFound
+    false
   end
 
   def create_commit
@@ -53,8 +50,8 @@ class PullRequestCreator
     )
   end
 
-  def update_branch(commit)
-    Github.client.update_ref(
+  def create_branch(commit)
+    Github.client.create_ref(
       watched_repo,
       "heads/#{new_branch_name}",
       commit.sha

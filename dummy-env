@@ -5,4 +5,5 @@ AMQP_VHOST=guest
 AMQP_HOST=localhost
 AMQP_API_HOST=localhost
 AMQP_API_PORT=15672
+AMQP_API_SSL=false
 AMQP_SSL_FLAG=''
