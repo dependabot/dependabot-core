@@ -1,5 +1,8 @@
 bump
 ====
+
+[![Circle CI](https://circleci.com/gh/gocardless/bump.svg?style=svg&circle-token=135135b2c43b14edc2f5031621a3c1681caeb1c8)](https://circleci.com/gh/gocardless/bump)
+
 ```
 dependency_file_fetcher:
   inputs:
