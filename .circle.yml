@@ -1,0 +1,7 @@
+machine:
+  ruby:
+    version: 2.2.3
+
+test:
+  pre:
+    - bundle exec rubocop:
