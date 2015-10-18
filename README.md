@@ -2,12 +2,16 @@
 
 [![Circle CI](https://circleci.com/gh/gocardless/bump.svg?style=svg&circle-token=135135b2c43b14edc2f5031621a3c1681caeb1c8)](https://circleci.com/gh/gocardless/bump)
 
-Bump helps keep your project's dependencies up to date. It checks for updates
-every day and creates pull requests whenever anything is out of date.
+Bump helps keep your project's dependencies up to date. To do so, it:
 
-Currently Bump supports the following languages:
+- **Checks for updates** to each of your dependencies every day.
+- **Builds an updated dependency file** for each individual dependency that requires and update.
+- **Opens a Pull Request** for the change, linking out to the dependency's changelog to make review easy.
+
+Bump is designed to work for many languages. Currently it supports:
 
 - Ruby
+- Node (in a feature branch)
 
 ## Project structure
 
