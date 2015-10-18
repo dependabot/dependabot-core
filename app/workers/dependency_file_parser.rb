@@ -33,6 +33,7 @@ module Workers
     private
 
     def check_for_dependency_update(repo, dependency_files, dependency)
+      Hutch.connect
       Hutch.publish(
         "bump.dependencies_to_check",
         "repo" => repo,

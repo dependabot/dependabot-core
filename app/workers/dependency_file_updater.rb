@@ -42,6 +42,7 @@ module Workers
         { "name" => file.name, "content" => file.content }
       end
 
+      Hutch.connect
       Hutch.publish(
         "bump.updated_files_to_create_pr_for",
         "repo" => repo,
