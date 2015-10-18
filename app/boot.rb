@@ -25,5 +25,3 @@ Hutch::Config.set(:mq_vhost, Prius.get(:amqp_vhost))
 Hutch::Config.set(:mq_api_ssl, Prius.get(:amqp_api_ssl))
 Hutch::Config.set(:mq_username, Prius.get(:amqp_username))
 Hutch::Config.set(:mq_password, Prius.get(:amqp_password))
-Hutch.connect
-

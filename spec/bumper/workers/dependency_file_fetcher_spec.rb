@@ -3,6 +3,7 @@ require "./app/workers/dependency_file_fetcher"
 
 RSpec.describe Workers::DependencyFileFetcher do
   subject(:worker) { described_class.new }
+  before(:each) { allow(Hutch).to receive(:connect) }
   let(:body) do
     {
       "repo" => {

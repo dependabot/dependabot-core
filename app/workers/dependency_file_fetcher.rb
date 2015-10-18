@@ -19,6 +19,7 @@ module Workers
           { "name" => file.name, "content" => file.content }
         end
 
+      Hutch.connect
       Hutch.publish("bump.dependency_files_to_parse",
                     "repo" => body["repo"],
                     "dependency_files" => dependency_files)

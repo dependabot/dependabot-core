@@ -37,6 +37,7 @@ module Workers
     private
 
     def update_dependency(repo, dependency_files, updated_dependency)
+      Hutch.connect
       Hutch.publish(
         "bump.dependencies_to_update",
         "repo" => repo,

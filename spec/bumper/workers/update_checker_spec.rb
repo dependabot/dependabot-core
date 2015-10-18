@@ -3,6 +3,7 @@ require "./app/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }
+  before(:each) { allow(Hutch).to receive(:connect) }
   let(:body) do
     {
       "repo" => {
