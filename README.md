@@ -31,10 +31,37 @@ Bump is split into five concerns, each of which runs as a separate service:
 
 ## Running locally
 
-Install RabbitMQ
-```
-cp dummy-env .env
-brew install rabbitmq
-rabbitmqctl add_vhost guest
-rabbitmqctl set_permissions -p guest guest ".*" ".*" ".*"
-```
+1. Install [`RabbitMQ`](https://www.rabbitmq.com/)
+  ```bash
+  cp dummy-env .env
+  brew install rabbitmq
+  rabbitmqctl add_vhost guest
+  rabbitmqctl set_permissions -p guest guest ".*" ".*" ".*"
+  ```
+  
+2. Run [`foreman`](http://ddollar.github.io/foreman/)
+  ```bash
+  foreman start
+  ```
+  
+3. Push a job to `bump.repos_to_fetch_files_for`
+  ```ruby
+  require 'hutch'
+  require 'dotenv'
+  
+  REPO_NAME = "YOUR_REPO_NAME" # string that looks like "#{user}/#{repo}"
+  
+  Dotenv.load
+  
+  Hutch::Config.set(:mq_host, ENV['AMQP_HOST'])
+  Hutch::Config.set(:mq_api_host, ENV['AMQP_API_HOST'])
+  Hutch::Config.set(:mq_api_port, ENV['AMQP_API_PORT'])
+  Hutch::Config.set(:mq_vhost, ENV['AMQP_VHOST'])
+  Hutch::Config.set(:mq_api_ssl, ENV['AMQP_SSL_FLAG'] == '-s')
+  Hutch::Config.set(:mq_username, ENV['AMQP_USERNAME'])
+  Hutch::Config.set(:mq_password, ENV['AMQP_PASSWORD'])
+  Hutch.connect
+  Hutch.publish("bump.repos_to_fetch_files_for",
+                "repo" => { "language" => "ruby",
+                            "name" => "#{REPO_NAME}")
+  ```
