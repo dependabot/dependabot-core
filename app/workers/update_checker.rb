@@ -34,7 +34,7 @@ module Workers
                         Dependency.new(name: dependency.name,
                                        version: update_checker.latest_version))
     rescue => error
-      Raven.capture_exception(error)
+      Raven.capture_exception(error, extra: { body: body })
       raise
     end
 

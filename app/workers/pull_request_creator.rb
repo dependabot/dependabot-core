@@ -34,7 +34,7 @@ module Workers
 
       pull_request_creator.create
     rescue => error
-      Raven.capture_exception(error)
+      Raven.capture_exception(error, extra: { body: body })
       raise
     end
   end

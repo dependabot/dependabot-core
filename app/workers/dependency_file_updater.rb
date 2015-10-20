@@ -36,7 +36,7 @@ module Workers
         file_updater.updated_dependency_files
       )
     rescue => error
-      Raven.capture_exception(error)
+      Raven.capture_exception(error, extra: { body: body })
       # We don't want to retry these ones
       sqs_message.delete
     end
