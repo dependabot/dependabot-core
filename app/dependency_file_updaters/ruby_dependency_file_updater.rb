@@ -50,9 +50,9 @@ module DependencyFileUpdaters
 
       original_gem_declaration_string = $&
       updated_gem_declaration_string =
-        original_gem_declaration_string.sub(/[\d\.]+/) do |old_version|
+        original_gem_declaration_string.sub(/(,.*?)[\d\.]+/) do |old_version|
           precision = old_version.split(".").count
-          dependency.version.split(".").first(precision).join(".")
+          $1 + dependency.version.split(".").first(precision).join(".")
         end
 
       @updated_gemfile_content = gemfile.content.gsub(

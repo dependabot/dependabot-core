@@ -56,6 +56,12 @@ RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
       its(:content) { is_expected.to include "\"business\", \"~> 1.5\"" }
       its(:content) { is_expected.to include "\"statesman\", \"~> 1.2\"" }
     end
+
+    context "with a gem whose name includes a number" do
+      let(:gemfile_body) { fixture("gemfiles", "gem_with_number") }
+      let(:dependency) { Dependency.new(name: "i18n", version: "1.5.0") }
+      its(:content) { is_expected.to include "\"i18n\", \"~> 1.5.0\"" }
+    end
   end
 
   describe "#updated_gemfile_lock" do
