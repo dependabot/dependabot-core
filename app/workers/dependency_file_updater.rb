@@ -15,7 +15,7 @@ module Workers
       auto_delete: true
     )
 
-    def perform(_sqs_message, body)
+    def perform(sqs_message, body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"]
@@ -37,7 +37,8 @@ module Workers
       )
     rescue => error
       Raven.capture_exception(error)
-      raise
+      # We don't want to retry these ones
+      sqs_message.delete
     end
 
     private
