@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "2.2.3"
+ruby "2.2.2"
 
 gem "gemnasium-parser", "~> 0.1.9"
 gem "octokit", "~> 4.1.1"
