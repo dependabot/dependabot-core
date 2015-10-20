@@ -1,4 +1,4 @@
-require "hutch"
+require "shoryuken"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
@@ -8,10 +8,15 @@ $stdout.sync = true
 
 module Workers
   class PullRequestCreator
-    include Hutch::Consumer
-    consume "bump.updated_files_to_create_pr_for"
+    include Shoryuken::Worker
 
-    def process(body)
+    shoryuken_options(
+      queue: "bump-updated_dependency_files",
+      body_parser: :json,
+      auto_delete: true
+    )
+
+    def perform(_sqs_message, body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"]

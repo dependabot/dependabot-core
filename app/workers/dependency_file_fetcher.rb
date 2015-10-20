@@ -1,4 +1,4 @@
-require "hutch"
+require "shoryuken"
 require "./app/boot"
 require "./app/dependency_file"
 require "./app/dependency_file_fetchers/ruby_dependency_file_fetcher"
@@ -7,11 +7,15 @@ $stdout.sync = true
 
 module Workers
   class DependencyFileFetcher
-    include Hutch::Consumer
+    include Shoryuken::Worker
 
-    consume "bump.repos_to_fetch_files_for"
+    shoryuken_options(
+      queue: "bump-repos_to_fetch_files_for",
+      body_parser: :json,
+      auto_delete: true
+    )
 
-    def process(body)
+    def perform(_sqs_message, body)
       file_fetcher = file_fetcher_for(body["repo"]["language"])
 
       dependency_files =
@@ -19,10 +23,10 @@ module Workers
           { "name" => file.name, "content" => file.content }
         end
 
-      Hutch.connect
-      Hutch.publish("bump.dependency_files_to_parse",
-                    "repo" => body["repo"],
-                    "dependency_files" => dependency_files)
+      Workers::DependencyFileParser.perform_async(
+        "repo" => body["repo"],
+        "dependency_files" => dependency_files
+      )
     rescue => error
       Raven.capture_exception(error)
       raise
