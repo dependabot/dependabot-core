@@ -3,6 +3,7 @@ require "./app/workers/pull_request_creator"
 
 RSpec.describe Workers::PullRequestCreator do
   subject(:worker) { described_class.new }
+  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -20,7 +21,8 @@ RSpec.describe Workers::PullRequestCreator do
     }
   end
 
-  describe "#process" do
+  describe "#perform" do
+    subject(:perform) { worker.perform(sqs_message, body) }
     let(:stubbed_creator) { double("PullRequestCreator", create: nil) }
 
     it "passes the correct arguments to pull request creator" do
@@ -33,7 +35,7 @@ RSpec.describe Workers::PullRequestCreator do
 
       expect(stubbed_creator).to receive(:create)
 
-      worker.process(body)
+      perform
     end
 
     context "if an error is raised" do
@@ -45,7 +47,7 @@ RSpec.describe Workers::PullRequestCreator do
 
       it "still raises, but also sends the error to sentry" do
         expect(Raven).to receive(:capture_exception).and_call_original
-        expect { worker.process(body) }.to raise_error("hell")
+        expect { perform }.to raise_error("hell")
       end
     end
   end

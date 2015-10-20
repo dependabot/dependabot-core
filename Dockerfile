@@ -7,6 +7,7 @@ RUN mkdir -p /root/.ssh/ && ssh-keyscan github.com > /root/.ssh/github.pub
 # Verify RSA identity of github.com
 RUN [ "$(ssh-keygen -lf /root/.ssh/github.pub | awk '{print $2}')" = "16:27:ac:a5:76:28:2d:36:63:1b:56:4d:eb:df:a6:48" ] && \
     mv /root/.ssh/github.pub /root/.ssh/known_hosts || (echo "Wrong Github Fingerprint" && exit 1)
+ADD deployment/keys/robot_key /root/.ssh/id_rsa
 
 ENV APP_HOME /app
 RUN mkdir $APP_HOME

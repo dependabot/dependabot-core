@@ -1,4 +1,4 @@
-require "hutch"
+require "shoryuken"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
@@ -8,11 +8,15 @@ $stdout.sync = true
 
 module Workers
   class UpdateChecker
-    include Hutch::Consumer
+    include Shoryuken::Worker
 
-    consume "bump.dependencies_to_check"
+    shoryuken_options(
+      queue: "bump-dependencies_to_check",
+      body_parser: :json,
+      auto_delete: true
+    )
 
-    def process(body)
+    def perform(_sqs_message, body)
       dependency = Dependency.new(name: body["dependency"]["name"],
                                   version: body["dependency"]["version"])
       dependency_files = body["dependency_files"].map do |file|
@@ -37,9 +41,7 @@ module Workers
     private
 
     def update_dependency(repo, dependency_files, updated_dependency)
-      Hutch.connect
-      Hutch.publish(
-        "bump.dependencies_to_update",
+      Workers::DependencyFileUpdater.perform_async(
         "repo" => repo,
         "dependency_files" => dependency_files,
         "updated_dependency" => {
