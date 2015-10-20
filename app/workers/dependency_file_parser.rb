@@ -30,7 +30,7 @@ module Workers
         )
       end
     rescue => error
-      Raven.capture_exception(error)
+      Raven.capture_exception(error, extra: { body: body })
       raise
     end
 
