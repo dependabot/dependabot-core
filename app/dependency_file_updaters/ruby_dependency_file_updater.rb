@@ -51,8 +51,9 @@ module DependencyFileUpdaters
       original_gem_declaration_string = $&
       updated_gem_declaration_string =
         original_gem_declaration_string.sub(/(,.*?)[\d\.]+/) do |old_version|
+          matcher = Regexp.last_match[1]
           precision = old_version.split(".").count
-          $1 + dependency.version.split(".").first(precision).join(".")
+          matcher + dependency.version.split(".").first(precision).join(".")
         end
 
       @updated_gemfile_content = gemfile.content.gsub(
