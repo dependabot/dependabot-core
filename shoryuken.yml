@@ -2,3 +2,4 @@
 
 concurrency: 1
 delay: 1
+verbose: true
