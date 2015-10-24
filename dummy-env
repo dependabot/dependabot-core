@@ -1,4 +1,5 @@
 BUMP_GITHUB_TOKEN="token"
+AWS_SQS_ENDPOINT="http://localhost:4568"
+AWS_REGION="eu-west-1"
 AWS_ACCESS_KEY_ID="foo"
 AWS_SECRET_ACCESS_KEY="foo"
-AWS_REGION="eu-west-1"

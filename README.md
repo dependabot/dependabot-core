@@ -33,24 +33,16 @@ Bump is split into five concerns, each of which runs as a separate service:
 
 1. Get set up with SQS
   ```bash
-  TBC
+  fake_sqs
   ```
 
-2. Run [`foreman`](http://ddollar.github.io/foreman/)
+2. Create the right queues and push a job to `bump-repos_to_fetch_files_for`
+  ```ruby
+  bundle exec ./test_produce.rb
+  ```
+
+
+3. Run [`foreman`](http://ddollar.github.io/foreman/)
   ```bash
   foreman start
-  ```
-
-3. Push a job to `bump.repos_to_fetch_files_for`
-  ```ruby
-  require "./app/workers/dependency_file_fetcher"
-  require "dotenv"
-
-  REPO_NAME = "YOUR_REPO_NAME" # string that looks like "#{user}/#{repo}"
-
-  Dotenv.load
-
-  Workers::DependencyFileFetcher.perform(
-    "repo" => { "language" => "ruby",
-                "name" => "#{REPO_NAME}" })
   ```

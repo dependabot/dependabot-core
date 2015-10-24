@@ -1,0 +1,5 @@
+file_fetcher: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-repos_to_fetch_files_for -r ./app/init_shoryuken.rb -c 1
+file_parser: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependency_files_to_parse -r ./app/init_shoryuken.rb -c 1
+update_checker: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependencies_to_check -r ./app/init_shoryuken.rb -c 1
+file_updater: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependencies_to_update -r ./app/init_shoryuken.rb -c 1
+pull_request_creator: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-updated_dependency_files -r ./app/init_shoryuken.rb -c 1

@@ -14,5 +14,7 @@ group :development do
   gem "webmock", "~> 1.21.0"
   gem "rubocop", "~> 0.34.2"
   gem "foreman"
+  gem "fake_sqs", require: false
+  gem "aws-sdk", require: false
   gem "dotenv", require: false
 end
