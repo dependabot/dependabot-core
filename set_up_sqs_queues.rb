@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require "aws-sdk"
-require "./app/boot"
 require "dotenv"
 Dotenv.load
 
