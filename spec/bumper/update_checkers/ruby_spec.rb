@@ -24,17 +24,6 @@ RSpec.describe UpdateCheckers::Ruby do
   end
   let(:gemfile_lock_content) { fixture("Gemfile.lock") }
 
-  describe "new" do
-    context "when the gemfile.lock is missing" do
-      subject { -> { checker } }
-      let(:checker) do
-        described_class.new(dependency: dependency, dependency_files: [gemfile])
-      end
-
-      it { is_expected.to raise_error(/No Gemfile.lock/) }
-    end
-  end
-
   describe "#needs_update?" do
     subject { checker.needs_update? }
 

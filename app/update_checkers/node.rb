@@ -1,22 +1,19 @@
+require "./app/update_checkers/base"
 require "json"
 require "net/http"
 
 module UpdateCheckers
-  class Node
-    attr_reader :dependency
-
-    def initialize(dependency:, dependency_files:)
-      @dependency = dependency
-    end
-
-    def needs_update?
-      Gem::Version.new(latest_version.match(/[\d\.]+/)) > Gem::Version.new(dependency.version.match(/[\d\.]+/))
-    end
-
+  class Node < Base
     def latest_version
-      url = URI("http://registry.npmjs.org/#{dependency.name}")
       @latest_version ||=
-        JSON.parse(Net::HTTP.get(url))["dist-tags"]["latest"]
+        begin
+          url = URI("http://registry.npmjs.org/#{dependency.name}")
+          JSON.parse(Net::HTTP.get(url))["dist-tags"]["latest"]
+        end
+    end
+
+    def dependency_version
+      Gem::Version.new(dependency.version)
     end
   end
 end
