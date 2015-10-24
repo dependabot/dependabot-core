@@ -4,7 +4,9 @@ require "./app/dependency_file_parsers/node"
 
 RSpec.describe DependencyFileParsers::Node do
   let(:files) { [package_json] }
-  let(:package_json) { DependencyFile.new(name: "package.json", content: package_json_body) }
+  let(:package_json) do
+    DependencyFile.new(name: "package.json", content: package_json_body)
+  end
   let(:package_json_body) { fixture("package.json") }
   let(:parser) { described_class.new(dependency_files: files) }
 
@@ -18,8 +20,8 @@ RSpec.describe DependencyFileParsers::Node do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependency) }
-        its(:name) { is_expected.to eq("immutable") }
-        its(:version) { is_expected.to eq("1.0.1") }
+        its(:name) { is_expected.to eq("fetch-factory") }
+        its(:version) { is_expected.to eq("0.0.1") }
       end
     end
   end

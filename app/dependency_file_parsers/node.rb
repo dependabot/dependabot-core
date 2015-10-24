@@ -15,7 +15,7 @@ module DependencyFileParsers
       dependencies_hash.merge!(parsed_content["devDependencies"] || {})
 
       dependencies_hash.map do |name, version|
-        Dependency.new(name: name, version: version)
+        Dependency.new(name: name, version: version.match(/[\d\.]+/).to_s)
       end
     end
 

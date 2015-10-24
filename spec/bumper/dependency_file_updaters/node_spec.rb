@@ -1,4 +1,6 @@
 require "spec_helper"
+require "./app/dependency"
+require "./app/dependency_file"
 require "./app/dependency_file_updaters/node"
 
 RSpec.describe DependencyFileUpdaters::Node do
@@ -15,7 +17,7 @@ RSpec.describe DependencyFileUpdaters::Node do
   let(:npm_shrinkwrap_json) do
     DependencyFile.new(content: fixture("npm-shrinkwrap.json"), name: "npm-shrinkwrap.json")
   end
-  let(:dependency) { Dependency.new(name: "immutable", version: "1.7.0") }
+  let(:dependency) { Dependency.new(name: "fetch-factory", version: "0.0.2") }
   let(:tmp_path) { SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -31,24 +33,25 @@ RSpec.describe DependencyFileUpdaters::Node do
     end
   end
 
-  # describe "#updated_dependency_files" do
-    # subject(:updated_files) { updater.updated_dependency_files }
-    # specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    # specify { updated_files.each { |f| p f.name; expect(f).to be_a(DependencyFile) } }
-    # its(:length) { is_expected.to eq(2) }
-  # end
+  describe "#updated_dependency_files" do
+    subject(:updated_files) { updater.updated_dependency_files }
+    specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
+    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
+    its(:length) { is_expected.to eq(2) }
+  end
 
   describe "#updated_package_json_file" do
     subject(:updated_package_json_file) { updater.updated_package_json_file }
 
-    its(:content) { is_expected.to include "\"immutable\": \"1.7.0\"" }
-    its(:content) { is_expected.to include "\"etag\"" }
+    its(:content) { is_expected.to include "\"fetch-factory\": \"0.0.2\"" }
+    its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
   end
 
-  # describe "#updated_shrinkwrap" do
-  #   subject(:file) { updater.updated_shrinkwrap }
-
-  #   its(:content) { is_expected.to include "\"immutable\": \"1.7.0\"" }
-  #   its(:content) { is_expected.to include "\"etag\"" }
-  # end
+  describe "#updated_shrinkwrap" do
+    subject(:file) { updater.updated_shrinkwrap }
+    it "has details of the updated item" do
+      expect(file.content).
+        to include("\"fetch-factory\": {\n      \"version\": \"0.0.2\"")
+    end
+  end
 end

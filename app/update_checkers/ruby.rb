@@ -18,7 +18,9 @@ module UpdateCheckers
     private
 
     def gemfile_lock
-      dependency_files.find { |f| f.name == "Gemfile.lock" }
+      lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" }
+      raise "No Gemfile.lock!" unless lockfile
+      lockfile
     end
   end
 end
