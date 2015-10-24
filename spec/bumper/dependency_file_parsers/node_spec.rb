@@ -1,14 +1,12 @@
 require "spec_helper"
 require "./app/dependency_file"
-require "./app/dependency_file_parsers/node_dependency_file_parser"
+require "./app/dependency_file_parsers/node"
 
-RSpec.describe DependencyFileParsers::NodeDependencyFileParser do
+RSpec.describe DependencyFileParsers::Node do
   let(:files) { [package_json] }
   let(:package_json) { DependencyFile.new(name: "package.json", content: package_json_body) }
   let(:package_json_body) { fixture("package.json") }
-  let(:parser) do
-    DependencyFileParsers::NodeDependencyFileParser.new(dependency_files: files)
-  end
+  let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

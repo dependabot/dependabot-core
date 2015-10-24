@@ -26,9 +26,9 @@ RSpec.describe Workers::UpdateChecker do
 
     context "when an update is required" do
       before do
-        allow_any_instance_of(UpdateCheckers::RubyUpdateChecker).
+        allow_any_instance_of(UpdateCheckers::Ruby).
           to receive(:needs_update?).and_return(true)
-        allow_any_instance_of(UpdateCheckers::RubyUpdateChecker).
+        allow_any_instance_of(UpdateCheckers::Ruby).
           to receive(:latest_version).and_return("1.5.0")
       end
 
@@ -48,7 +48,7 @@ RSpec.describe Workers::UpdateChecker do
 
     context "when no update is required" do
       before do
-        allow_any_instance_of(UpdateCheckers::RubyUpdateChecker).
+        allow_any_instance_of(UpdateCheckers::Ruby).
           to receive(:needs_update?).and_return(false)
       end
 
@@ -59,11 +59,7 @@ RSpec.describe Workers::UpdateChecker do
     end
 
     context "if an error is raised" do
-      before do
-        allow(UpdateCheckers::RubyUpdateChecker).
-          to receive(:new).
-          and_raise("hell")
-      end
+      before { allow(UpdateCheckers::Ruby).to receive(:new).and_raise("hell") }
 
       it "still raises, but also sends the error to sentry" do
         expect(Raven).to receive(:capture_exception).and_call_original

@@ -1,3 +1,5 @@
+require "tmpdir"
+
 module SharedHelpers
   BUMP_TMP_FILE_PREFIX = "bump_".freeze
   BUMP_TMP_DIR_PATH = "tmp".freeze

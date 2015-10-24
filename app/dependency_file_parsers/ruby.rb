@@ -2,7 +2,7 @@ require "gemnasium/parser"
 require "./app/dependency"
 
 module DependencyFileParsers
-  class RubyDependencyFileParser
+  class Ruby
     def initialize(dependency_files:)
       @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
       raise "No Gemfile!" unless @gemfile

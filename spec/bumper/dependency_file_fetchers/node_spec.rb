@@ -1,8 +1,7 @@
 require "spec_helper"
-require "./app/dependency_file"
-require "./app/dependency_file_fetchers/node_dependency_file_fetcher"
+require "./app/dependency_file_fetchers/node"
 
-RSpec.describe DependencyFileFetchers::NodeDependencyFileFetcher do
+RSpec.describe DependencyFileFetchers::Node do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 

@@ -17,7 +17,7 @@ RSpec.describe Workers::DependencyFileFetcher do
     subject(:perform) { worker.perform(sqs_message, body) }
 
     before do
-      allow_any_instance_of(DependencyFileFetchers::RubyDependencyFileFetcher).
+      allow_any_instance_of(DependencyFileFetchers::Ruby).
         to receive(:files).
         and_return([
           DependencyFile.new(name: "Gemfile", content: "xyz"),
@@ -45,9 +45,8 @@ RSpec.describe Workers::DependencyFileFetcher do
 
     context "if an error is raised" do
       before do
-        allow_any_instance_of(
-          DependencyFileFetchers::RubyDependencyFileFetcher
-        ).to receive(:files).and_raise("hell")
+        allow_any_instance_of(DependencyFileFetchers::Ruby).
+          to receive(:files).and_raise("hell")
       end
 
       it "still raises, but also sends the error to sentry" do

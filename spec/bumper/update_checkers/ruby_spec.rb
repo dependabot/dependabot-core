@@ -1,9 +1,9 @@
 require "spec_helper"
 require "./app/dependency"
 require "./app/dependency_file"
-require "./app/update_checkers/ruby_update_checker"
+require "./app/update_checkers/ruby"
 
-RSpec.describe UpdateCheckers::RubyUpdateChecker do
+RSpec.describe UpdateCheckers::Ruby do
   before do
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
       to_return(status: 200, body: fixture("rubygems_response.yaml"))

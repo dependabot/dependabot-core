@@ -1,7 +1,7 @@
 require "json"
 
 module UpdateCheckers
-  class RubyUpdateChecker
+  class Ruby
     attr_reader :dependency, :gemfile, :gemfile_lock
 
     def initialize(dependency:, dependency_files:)

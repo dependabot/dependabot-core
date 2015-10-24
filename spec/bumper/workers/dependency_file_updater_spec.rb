@@ -24,7 +24,7 @@ RSpec.describe Workers::DependencyFileUpdater do
   describe "#perform" do
     subject(:perform) { worker.perform(sqs_message, body) }
     before do
-      allow_any_instance_of(DependencyFileUpdaters::RubyDependencyFileUpdater).
+      allow_any_instance_of(DependencyFileUpdaters::Ruby).
         to receive(:updated_dependency_files).
         and_return([DependencyFile.new(name: "Gemfile", content: "xyz")])
     end
@@ -44,7 +44,7 @@ RSpec.describe Workers::DependencyFileUpdater do
 
     context "if an error is raised" do
       before do
-        allow(DependencyFileUpdaters::RubyDependencyFileUpdater).
+        allow(DependencyFileUpdaters::Ruby).
           to receive(:new).
           and_raise("hell")
       end

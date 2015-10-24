@@ -1,11 +1,10 @@
 require "gemnasium/parser"
 require "./app/dependency_file"
-require "tmpdir"
 require "bundler"
 require "./lib/shared_helpers"
 
 module DependencyFileUpdaters
-  class RubyDependencyFileUpdater
+  class Ruby
     attr_reader :gemfile, :gemfile_lock, :dependency
 
     def initialize(dependency_files:, dependency:)

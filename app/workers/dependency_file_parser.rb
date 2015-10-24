@@ -1,8 +1,8 @@
 require "shoryuken"
 require "./app/boot"
 require "./app/dependency_file"
-require "./app/dependency_file_parsers/ruby_dependency_file_parser"
-require "./app/dependency_file_parsers/node_dependency_file_parser"
+require "./app/dependency_file_parsers/ruby"
+require "./app/dependency_file_parsers/node"
 
 $stdout.sync = true
 
@@ -50,8 +50,8 @@ module Workers
 
     def parser_for(language)
       case language
-      when "ruby" then DependencyFileParsers::RubyDependencyFileParser
-      when "node" then DependencyFileParsers::NodeDependencyFileParser
+      when "ruby" then DependencyFileParsers::Ruby
+      when "node" then DependencyFileParsers::Node
       else raise "Invalid language #{language}"
       end
     end

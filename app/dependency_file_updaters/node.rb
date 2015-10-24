@@ -1,11 +1,10 @@
 require "gemnasium/parser"
 require "./app/dependency_file"
-require "tmpdir"
 require "bundler"
 require "./lib/shared_helpers"
 
 module DependencyFileUpdaters
-  class NodeDependencyFileUpdater
+  class Node
     attr_reader :package_json, :shrinkwrap, :dependency
 
     def initialize(dependency_files:, dependency:)

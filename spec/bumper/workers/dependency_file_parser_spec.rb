@@ -46,7 +46,7 @@ RSpec.describe Workers::DependencyFileParser do
 
     context "if an error is raised" do
       before do
-        allow_any_instance_of(DependencyFileParsers::RubyDependencyFileParser).
+        allow_any_instance_of(DependencyFileParsers::Ruby).
           to receive(:parse).
           and_raise("hell")
       end

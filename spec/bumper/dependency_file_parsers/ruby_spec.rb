@@ -1,14 +1,12 @@
 require "spec_helper"
 require "./app/dependency_file"
-require "./app/dependency_file_parsers/ruby_dependency_file_parser"
+require "./app/dependency_file_parsers/ruby"
 
-RSpec.describe DependencyFileParsers::RubyDependencyFileParser do
+RSpec.describe DependencyFileParsers::Ruby do
   let(:files) { [gemfile] }
   let(:gemfile) { DependencyFile.new(name: "Gemfile", content: gemfile_body) }
   let(:gemfile_body) { fixture("gemfiles", "version_specified") }
-  let(:parser) do
-    DependencyFileParsers::RubyDependencyFileParser.new(dependency_files: files)
-  end
+  let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

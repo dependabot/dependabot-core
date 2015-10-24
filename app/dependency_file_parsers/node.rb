@@ -2,7 +2,7 @@ require "json"
 require "./app/dependency"
 
 module DependencyFileParsers
-  class NodeDependencyFileParser
+  class Node
     def initialize(dependency_files:)
       @package_json = dependency_files.find { |f| f.name == "package.json" }
       raise "No package.json!" unless @package_json

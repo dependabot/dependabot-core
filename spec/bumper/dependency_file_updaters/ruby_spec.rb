@@ -1,10 +1,7 @@
 require "spec_helper"
-require "tmpdir"
-require "./app/dependency_file"
-require "./app/dependency"
-require "./app/dependency_file_updaters/ruby_dependency_file_updater"
+require "./app/dependency_file_updaters/ruby"
 
-RSpec.describe DependencyFileUpdaters::RubyDependencyFileUpdater do
+RSpec.describe DependencyFileUpdaters::Ruby do
   before { WebMock.disable! }
   after { WebMock.enable! }
   let(:updater) do

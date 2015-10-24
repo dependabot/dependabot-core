@@ -2,7 +2,7 @@ require "json"
 require "net/http"
 
 module UpdateCheckers
-  class NodeUpdateChecker
+  class Node
     attr_reader :dependency
 
     def initialize(dependency:, dependency_files:)
