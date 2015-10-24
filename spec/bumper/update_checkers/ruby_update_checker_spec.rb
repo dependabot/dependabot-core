@@ -46,6 +46,14 @@ RSpec.describe UpdateCheckers::RubyUpdateChecker do
       let(:gemfile_lock_content) { fixture("up_to_date_gemfile.lock") }
       it { is_expected.to be_falsey }
     end
+
+    context "given an out-of-date bundler as a dependency" do
+      before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
+      let(:dependency) { Dependency.new(name: "bundler", version: "1.10.5") }
+      let(:gemfile_lock_content) { fixture("gemfile_with_bundler.lock") }
+
+      it { is_expected.to be_truthy }
+    end
   end
 
   describe "#latest_version" do

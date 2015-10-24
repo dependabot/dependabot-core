@@ -30,6 +30,8 @@ module UpdateCheckers
     # on the dependency's specified version, which may have had a ~> matcher.
     def dependency_version
       parsed_lockfile = Bundler::LockfileParser.new(gemfile_lock.content)
+
+      return Gem::Version.new(Bundler::VERSION) if dependency.name == "bundler"
       parsed_lockfile.specs.find { |spec| spec.name == dependency.name }.version
     end
   end
