@@ -12,10 +12,15 @@ RSpec.describe DependencyFileUpdaters::Node do
       dependency: dependency
     )
   end
-  let(:package_json) { DependencyFile.new(content: package_json_body, name: "package.json") }
+  let(:package_json) do
+    DependencyFile.new(content: package_json_body, name: "package.json")
+  end
   let(:package_json_body) { fixture("package.json") }
   let(:npm_shrinkwrap_json) do
-    DependencyFile.new(content: fixture("npm-shrinkwrap.json"), name: "npm-shrinkwrap.json")
+    DependencyFile.new(
+      name: "npm-shrinkwrap.json",
+      content: fixture("npm-shrinkwrap.json")
+    )
   end
   let(:dependency) { Dependency.new(name: "fetch-factory", version: "0.0.2") }
   let(:tmp_path) { SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -26,7 +31,7 @@ RSpec.describe DependencyFileUpdaters::Node do
     context "when the package.json is missing" do
       subject { -> { updater } }
       let(:updater) do
-        described_class.new(dependency_files: [npm_shrinkwrap_json], dependency: dependency)
+        described_class.new(dependency_files: [], dependency: dependency)
       end
 
       it { is_expected.to raise_error(/No package.json!/) }
