@@ -33,20 +33,20 @@ Bump is split into five concerns, each of which runs as a separate service:
 
 1. Get set up with SQS
   ```bash
-  fake_sqs
+  $ bundle exec fake_sqs
   ```
 
 2. Create the right queues
-  ```ruby
-  bundle exec ./set_up_sqs_queues.rb
+  ```bash
+  $ bundle exec ./set_up_sqs_queues.rb
   ```
 
-3. Run [`foreman`](http://ddollar.github.io/foreman/)
+3. Start the workers using [foreman](http://ddollar.github.io/foreman/)
   ```bash
-  foreman start
+  $ bundle exec foreman start
   ```
 
 4. Push a job to `bump-repos_to_fetch_files_for`
-  ```ruby
-  bundle exec ./test_produce.rb
+  ```bash
+  $ bundle exec ./test_produce.rb
   ```
