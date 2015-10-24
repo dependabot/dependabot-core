@@ -13,7 +13,8 @@ group :development do
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 1.22.1"
   gem "rubocop", "~> 0.34.2"
-  gem "foreman"
+  gem "highline", "~> 1.7.8"
+  gem "foreman", "~> 0.78.0"
   gem "fake_sqs", require: false
   gem "aws-sdk", require: false
   gem "dotenv", require: false

@@ -28,6 +28,7 @@ GEM
     gemnasium-parser (0.1.9)
     gems (0.8.3)
     hashdiff (0.2.2)
+    highline (1.7.8)
     hitimes (1.2.3)
     jmespath (1.1.3)
     multipart-post (2.0.0)
@@ -94,9 +95,10 @@ DEPENDENCIES
   bundler (~> 1.10.6)
   dotenv
   fake_sqs
-  foreman
+  foreman (~> 0.78.0)
   gemnasium-parser (~> 0.1.9)
   gems (~> 0.8.3)
+  highline (~> 1.7.8)
   octokit (~> 4.1.1)
   prius (~> 1.0.0)
   rspec (~> 3.3.0)
