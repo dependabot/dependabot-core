@@ -27,6 +27,7 @@ GEM
       thor (~> 0.19.1)
     gemnasium-parser (0.1.9)
     gems (0.8.3)
+    hashdiff (0.2.2)
     hitimes (1.2.3)
     jmespath (1.1.3)
     multipart-post (2.0.0)
@@ -80,9 +81,10 @@ GEM
     tilt (2.0.1)
     timers (4.0.4)
       hitimes
-    webmock (1.21.0)
+    webmock (1.22.1)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
+      hashdiff
 
 PLATFORMS
   ruby
@@ -102,7 +104,7 @@ DEPENDENCIES
   rubocop (~> 0.34.2)
   sentry-raven (~> 0.15.2)
   shoryuken (~> 2.0.0)
-  webmock (~> 1.21.0)
+  webmock (~> 1.22.1)
 
 BUNDLED WITH
    1.10.6

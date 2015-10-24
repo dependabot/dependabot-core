@@ -11,7 +11,7 @@ gem "shoryuken", "~> 2.0.0"
 group :development do
   gem "rspec", "~> 3.3.0"
   gem "rspec-its", "~> 1.2.0"
-  gem "webmock", "~> 1.21.0"
+  gem "webmock", "~> 1.22.1"
   gem "rubocop", "~> 0.34.2"
   gem "foreman"
   gem "fake_sqs", require: false
