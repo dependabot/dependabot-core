@@ -35,11 +35,13 @@ the dependencies you'd like to update.
 
 4. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
   ```bash
+  export BUMP_GITHUB_TOKEN="your_github_token"
   bundle exec foreman start
   ```
 
 5. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
   ```bash
+  export BUMP_GITHUB_TOKEN="your_github_token"
   bundle exec ./bump_dependencies_for_repo.rb
   ```
 
