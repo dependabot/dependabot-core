@@ -63,22 +63,28 @@ class PullRequestCreator
       watched_repo,
       default_branch,
       new_branch_name,
-      pr_title,
+      "Bump #{dependency.name} to #{dependency.version}",
       pr_message
     )
   end
 
-  def pr_title
-    "Bump #{dependency.name} to #{dependency.version}"
-  end
-
   def pr_message
-    if dependency.url
-      msg = "Bumps [#{dependency.name}](#{dependency.url()}) to "\
+    if dependency.github_repo_url
+      msg = "Bumps [#{dependency.name}](#{dependency.github_repo_url}) to "\
             "#{dependency.version}"
     else
       msg = "Bumps #{dependency.name} to #{dependency.version}"
     end
+
+    if dependency.changelog_url
+      msg += "\n- [Changelog](#{dependency.changelog_url})"
+    end
+
+    if dependency.github_repo_url
+      msg += "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
+    end
+
+    msg
   end
 
   def default_branch

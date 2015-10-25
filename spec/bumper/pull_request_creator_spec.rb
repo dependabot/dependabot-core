@@ -8,7 +8,9 @@ RSpec.describe PullRequestCreator do
     PullRequestCreator.new(repo: repo, dependency: dependency, files: files)
   end
 
-  let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }
+  let(:dependency) do
+    Dependency.new(name: "business", version: "1.5.0", language: "ruby")
+  end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
 
@@ -109,15 +111,16 @@ RSpec.describe PullRequestCreator do
       creator.create
 
       repo_url = "https://api.github.com/repos/gocardless/bump"
-      # FIXME: make sure to include body again
       expect(WebMock).
-        to have_requested(:post, "#{repo_url}/pulls")
-        # .with(body: {
-        #        base: "master",
-        #        head: "bump_business_to_1.5.0",
-        #        title: "Bump business to 1.5.0",
-        #        body: "Bumps [business](#{dependency.url}) to 1.5.0"
-        #      })
+        to have_requested(:post, "#{repo_url}/pulls").
+        with(body: {
+               base: "master",
+               head: "bump_business_to_1.5.0",
+               title: "Bump business to 1.5.0",
+               body: "Bumps [business](#{dependency.github_repo_url}) to 1.5.0"\
+                     "\n- [Changelog](#{dependency.changelog_url})"\
+                     "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
+             })
     end
 
     context "when a branch for this update already exists" do
