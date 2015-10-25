@@ -6,9 +6,9 @@ Bump helps you keep your project's Ruby and Node dependencies up to date. It:
 
 - Checks for updates to each of your dependencies.
 - Builds an updated dependency file for each update required.
-- Opens a separate Pull Request for each update.
+- Opens a separate Pull Request for each update, linking to a changelog.
 
-All that's left for you to do is review the change.
+All that's left for you to do is review the change and merge it.
 
 ### Using Bump from your local machine
 
