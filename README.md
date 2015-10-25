@@ -46,6 +46,11 @@ the dependencies you'd like to update.
   bundle exec bin/bump_dependencies_for_repo
   ```
 
+### Hosting bump on AWS
+
+Bump is designed to be easily deployed to AWS's Elastic Container Service (ECS)
+so you can set it up to run daily. More details TBC.
+
 # The code / contributing
 
 To allow support for multiple languages Bump has a service-oriented
