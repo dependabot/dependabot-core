@@ -16,24 +16,31 @@ You can run Bump locally to kick-off a one-off update of your project's
 dependencies. Bump will ask you for the project's repository and the language of
 the dependencies you'd like to update.
 
-1. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
+1. Pull down bump and install its dependencies:
   ```bash
-  $ bundle exec fake_sqs
+  git clone git@github.com:gocardless/bump.git
+  cd bump
+  bundle install
   ```
 
-2. Create queues (persisted in memory only) for each of Bump's services:
+2. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
   ```bash
-  $ bundle exec ./set_up_sqs_queues.rb
+  bundle exec fake_sqs
   ```
 
-3. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
+3. In a new window, create queues (persisted in memory only) for each of Bump's services:
   ```bash
-  $ bundle exec foreman start
+  bundle exec ./set_up_sqs_queues.rb
   ```
 
-4. Push a message to `DependencyFileFetcher` (the first of Bump's services):
+4. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
   ```bash
-  $ bundle exec ./bump_dependencies_for_repo.rb
+  bundle exec foreman start
+  ```
+
+5. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
+  ```bash
+  bundle exec ./bump_dependencies_for_repo.rb
   ```
 
 # The code / contributing

@@ -23,8 +23,8 @@ repo = ask("Which repo would you like to bump dependencies for? ") do |question|
 end
 
 language = choose do |menu|
-  menu.index = :none
   menu.header = "Which language would you like to bump dependencies for?"
+  menu.index = :none
   menu.choices(:ruby, :node)
 end
 
