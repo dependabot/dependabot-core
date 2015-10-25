@@ -67,3 +67,7 @@ We'd love to see the following improvements to Bump:
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
 - Support for more languages (Python should be relatively easy?)
+
+---
+
+GoCardless ♥ open source. If you do too, come [join us](https://gocardless.com/jobs#software-engineer).
