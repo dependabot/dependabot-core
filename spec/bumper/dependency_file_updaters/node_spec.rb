@@ -15,7 +15,7 @@ RSpec.describe DependencyFileUpdaters::Node do
   let(:package_json) do
     DependencyFile.new(content: package_json_body, name: "package.json")
   end
-  let(:package_json_body) { fixture("package.json") }
+  let(:package_json_body) { fixture("package_files", "package.json") }
   let(:npm_shrinkwrap_json) do
     DependencyFile.new(
       name: "npm-shrinkwrap.json",
@@ -48,8 +48,19 @@ RSpec.describe DependencyFileUpdaters::Node do
   describe "#updated_package_json_file" do
     subject(:updated_package_json_file) { updater.updated_package_json_file }
 
-    its(:content) { is_expected.to include "\"fetch-factory\": \"0.0.2\"" }
+    its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
     its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+
+    context "when the minor version is specified" do
+      let(:dependency) do
+        Dependency.new(name: "fetch-factory", version: "0.2.1")
+      end
+      let(:package_json_body) do
+        fixture("package_files", "minor_version_specified.json")
+      end
+
+      its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+    end
   end
 
   describe "#updated_shrinkwrap" do

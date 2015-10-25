@@ -47,12 +47,12 @@ module DependencyFileUpdaters
 
       parsed_content = JSON.parse(@package_json.content)
 
-      if parsed_content.fetch("dependencies", {})[dependency.name]
-        parsed_content["dependencies"][dependency.name] = dependency.version
-      end
+      %w(dependencies devDependencies).each do |dep_type|
+        old_version_string = parsed_content.fetch(dep_type, {})[dependency.name]
+        next unless old_version_string
 
-      if parsed_content.fetch("devDependencies", {})[dependency.name]
-        parsed_content["devDependencies"][dependency.name] = dependency.version
+        parsed_content[dep_type][dependency.name] =
+          updated_version_string(old_version_string, dependency.version)
       end
 
       @updated_package_json_content =
@@ -66,6 +66,13 @@ module DependencyFileUpdaters
         `cd #{dir} && npm i --silent && npm shrinkwrap --silent`
         @updated_shrinkwrap_content =
           File.read(File.join(dir, "npm-shrinkwrap.json"))
+      end
+    end
+
+    def updated_version_string(old_version_string, new_version_number)
+      old_version_string.sub(/[\d\.]*\d/) do |old_version_number|
+        precision = old_version_number.split(".").count
+        new_version_number.split(".").first(precision).join(".")
       end
     end
   end
