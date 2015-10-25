@@ -1,6 +1,6 @@
 # Bump
 
-[![Circle CI](https://circleci.com/gh/gocardless/bump.svg?style=svg&circle-token=135135b2c43b14edc2f5031621a3c1681caeb1c8)](https://circleci.com/gh/gocardless/bump)
+[![Build Status](https://travis-ci.org/gocardless/bump.svg?branch=master)](https://travis-ci.org/gocardless/bump)
 
 Bump helps keep your project's Ruby and Node dependencies up to date. It:
 

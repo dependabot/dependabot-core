@@ -1,0 +1,13 @@
+language: ruby
+
+rvm:
+  - 2.2
+  - 2.1
+
+sudo: false
+
+bundler_args: ''
+
+script:
+  - bundle exec rubocop
+  - bundle exec rspec
