@@ -69,12 +69,12 @@ worker:
 
 We'd love to see the following improvements to Bump:
 
-- A straightforward deployment process, make it easy for anyone to self-host
-  the project (and automatically trigger an update check every day)
+- A straightforward deployment process, making it easy for anyone to self-host
+  the project (and automatically trigger an update check every day).
 - A faster `DependencyFileUpdater` for Node. This might need its own,
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
-- Support for more languages (Python should be relatively easy?)
+- Support for more languages. Python should be relatively easy, for example.
 
 ---
 
