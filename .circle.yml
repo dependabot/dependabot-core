@@ -5,3 +5,8 @@ machine:
 test:
   pre:
     - bundle exec rubocop:
+        parallel: true
+        files:
+          - app/**/*.rb
+          - lib/**/*.rb
+          - spec/**/*.rb

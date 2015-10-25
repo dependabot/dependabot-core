@@ -2,7 +2,8 @@ require "shoryuken"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
-require "./app/update_checkers/ruby_update_checker"
+require "./app/update_checkers/ruby"
+require "./app/update_checkers/node"
 
 $stdout.sync = true
 
@@ -53,7 +54,8 @@ module Workers
 
     def update_checker_for(language)
       case language
-      when "ruby" then UpdateCheckers::RubyUpdateChecker
+      when "ruby" then UpdateCheckers::Ruby
+      when "node" then UpdateCheckers::Node
       else raise "Invalid language #{language}"
       end
     end

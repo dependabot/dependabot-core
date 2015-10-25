@@ -2,7 +2,8 @@
 
 [![Circle CI](https://circleci.com/gh/gocardless/bump.svg?style=svg&circle-token=135135b2c43b14edc2f5031621a3c1681caeb1c8)](https://circleci.com/gh/gocardless/bump)
 
-Bump helps keep your project's dependencies up to date by doing the manual work for you:
+Bump helps keep your project's dependencies up to date by doing the manual work
+for you:
 
 - Checks for updates to each of your dependencies every day.
 - Builds an updated dependency file for each update required.
@@ -10,12 +11,39 @@ Bump helps keep your project's dependencies up to date by doing the manual work 
 
 All that's left for you to do is review the change.
 
-## Supported languages
+### Supported languages
 
 Bump is designed to work for many languages. Currently it supports:
 
 - Ruby
-- Node (in a feature branch)
+- Node
+
+## Using Bump from your local machine
+
+You can run Bump locally to kick-off a one-off update of your project's
+dependencies. Bump will ask you for the project's repository and the language of
+the dependencies you'd like to update.
+
+1. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
+  ```bash
+  $ bundle exec fake_sqs
+  ```
+
+2. Create queues (persisted in memory only) for each of Bump's services:
+  ```bash
+  $ bundle exec ./set_up_sqs_queues.rb
+  ```
+
+3. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
+  ```bash
+  $ bundle exec foreman start
+  ```
+
+4. Push a job to `DependencyFileFetcher` (the first of Bump's services):
+  ```bash
+  $ bundle exec ./bump_dependencies_for_repo.rb
+  ```
+
 
 ## Project structure
 
@@ -28,25 +56,3 @@ Bump is split into five concerns, each of which runs as a separate service:
 | `UpdateChecker`         | Checks whether a given dependency is up-to-date.                                              |
 | `DependencyFileUpdater` | Updates a dependency file to use the latest version of a given dependency.                    |
 | `PullRequestCreator`    | Creates a Pull Request to the original repo with the updated dependency file.                 |
-
-## Running locally
-
-1. Get set up with SQS
-  ```bash
-  $ bundle exec fake_sqs
-  ```
-
-2. Create the right queues
-  ```bash
-  $ bundle exec ./set_up_sqs_queues.rb
-  ```
-
-3. Start the workers using [foreman](http://ddollar.github.io/foreman/)
-  ```bash
-  $ bundle exec foreman start
-  ```
-
-4. Push a job to `bump-repos_to_fetch_files_for`
-  ```bash
-  $ bundle exec ./test_produce.rb
-  ```

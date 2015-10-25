@@ -20,7 +20,8 @@ module Workers
     def perform(_sqs_message, body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
-        version: body["updated_dependency"]["version"]
+        version: body["updated_dependency"]["version"],
+        language: body["repo"]["language"]
       )
 
       updated_dependency_files = body["updated_dependency_files"].map do |file|
