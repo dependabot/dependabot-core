@@ -23,7 +23,7 @@ the dependencies you'd like to update.
   cp config/dummy_env .env                      # Set up your environment
 
   # You'll also need to update the `BUMP_GITHUB_TOKEN` in .env to be a valid
-  # token with access to your project and any private dependencies
+  # token with access to your project and all of its private dependencies.
   ```
 
 2. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
