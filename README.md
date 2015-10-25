@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/gocardless/bump.svg?branch=master)](https://travis-ci.org/gocardless/bump)
 
-Bump helps keep your project's Ruby and Node dependencies up to date. It:
+Bump helps you keep your project's Ruby and Node dependencies up to date. It:
 
 - Checks for updates to each of your dependencies.
 - Builds an updated dependency file for each update required.
@@ -18,9 +18,12 @@ the dependencies you'd like to update.
 
 1. Pull down bump and install its dependencies:
   ```bash
-  git clone git@github.com:gocardless/bump.git
-  cd bump
-  bundle install
+  git clone git@github.com:gocardless/bump.git  # Pull down Bump
+  cd bump && bundle install                     # Install Bump's dependencies
+  cp config/dummy_env .env                      # Set up your environment
+
+  # You'll also need to update the `BUMP_GITHUB_TOKEN` in .env to be a valid
+  # token with access to your project and any private dependencies
   ```
 
 2. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
@@ -35,13 +38,11 @@ the dependencies you'd like to update.
 
 4. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
   ```bash
-  export BUMP_GITHUB_TOKEN="your_github_token"
   bundle exec foreman start
   ```
 
 5. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
   ```bash
-  export BUMP_GITHUB_TOKEN="your_github_token"
   bundle exec bin/bump_dependencies_for_repo
   ```
 
