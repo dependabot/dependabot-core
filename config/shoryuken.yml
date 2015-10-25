@@ -1,5 +1,4 @@
 # Settings to run Shoryuken locally without melting your laptop.
-
 concurrency: 1
 delay: 1
 verbose: true

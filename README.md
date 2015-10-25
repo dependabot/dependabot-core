@@ -30,7 +30,7 @@ the dependencies you'd like to update.
 
 3. In a new window, create queues (persisted in memory only) for each of Bump's services:
   ```bash
-  bundle exec ./set_up_sqs_queues.rb
+  bundle exec bin/set_up_sqs_queues
   ```
 
 4. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
@@ -42,7 +42,7 @@ the dependencies you'd like to update.
 5. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
   ```bash
   export BUMP_GITHUB_TOKEN="your_github_token"
-  bundle exec ./bump_dependencies_for_repo.rb
+  bundle exec bin/bump_dependencies_for_repo
   ```
 
 # The code / contributing

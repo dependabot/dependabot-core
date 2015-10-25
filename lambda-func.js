@@ -1,3 +1,5 @@
+// Example AWS Lambda function to push a message to `DependencyFileFetcher`
+
 var aws = require('aws-sdk');
 var sqs = new aws.SQS({region:'eu-west-1'});
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-require "./app/workers/dependency_file_fetcher"
-require "./lib/github"
+require File.expand_path("../../app/workers/dependency_file_fetcher", __FILE__)
+require File.expand_path("../../lib/github", __FILE__)
 require "highline/import"
 require "dotenv"
 Dotenv.load

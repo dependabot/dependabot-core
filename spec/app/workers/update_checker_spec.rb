@@ -53,7 +53,7 @@ RSpec.describe Workers::UpdateChecker do
       end
 
       it "doesn't write a message into the queue" do
-        expect(Workers::DependencyFileUpdater).to_not receive(:publish)
+        expect(Workers::DependencyFileUpdater).to_not receive(:perform_async)
         perform
       end
     end
