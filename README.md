@@ -2,23 +2,15 @@
 
 [![Circle CI](https://circleci.com/gh/gocardless/bump.svg?style=svg&circle-token=135135b2c43b14edc2f5031621a3c1681caeb1c8)](https://circleci.com/gh/gocardless/bump)
 
-Bump helps keep your project's dependencies up to date by doing the manual work
-for you:
+Bump helps keep your project's Ruby and Node dependencies up to date. It:
 
-- Checks for updates to each of your dependencies every day.
+- Checks for updates to each of your dependencies.
 - Builds an updated dependency file for each update required.
 - Opens a separate Pull Request for each update.
 
 All that's left for you to do is review the change.
 
-### Supported languages
-
-Bump is designed to work for many languages. Currently it supports:
-
-- Ruby
-- Node
-
-## Using Bump from your local machine
+### Using Bump from your local machine
 
 You can run Bump locally to kick-off a one-off update of your project's
 dependencies. Bump will ask you for the project's repository and the language of
@@ -44,10 +36,21 @@ the dependencies you'd like to update.
   $ bundle exec ./bump_dependencies_for_repo.rb
   ```
 
+## Contributing
 
-## Project structure
+We'd love to see the following improvements to Bump:
 
-Bump is split into five concerns, each of which runs as a separate service:
+- A straightforward deployment process, make it easy for anyone to self-host
+  the project (and automatically trigger an update check every day)
+- A faster `DependencyFileUpdater` for Node. This might need its own,
+  language-specific worker that borrows from NPM internals to avoid doing an
+  actual install.
+- Support for more languages (Python should be relatively easy?)
+
+### Project structure
+
+Bump is split into five concerns, each of which have their own worker which runs
+as a separate service:
 
 | Service                 | Description                                                                                   |
 |-------------------------|-----------------------------------------------------------------------------------------------|
