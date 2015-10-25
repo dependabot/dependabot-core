@@ -31,12 +31,26 @@ the dependencies you'd like to update.
   $ bundle exec foreman start
   ```
 
-4. Push a job to `DependencyFileFetcher` (the first of Bump's services):
+4. Push a message to `DependencyFileFetcher` (the first of Bump's services):
   ```bash
   $ bundle exec ./bump_dependencies_for_repo.rb
   ```
 
-## Contributing
+# The code / contributing
+
+To allow support for multiple languages Bump has a service-oriented
+architecture. It can be split into five concerns, each of which has its own
+worker:
+
+| Service                 | Description                                                                                   |
+|-------------------------|-----------------------------------------------------------------------------------------------|
+| `DependencyFileFetcher` | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
+| `DependencyFileParser`  | Parses a dependency file and extracts a list of dependencies for a project.                   |
+| `UpdateChecker`         | Checks whether a given dependency is up-to-date.                                              |
+| `DependencyFileUpdater` | Updates a dependency file to use the latest version of a given dependency.                    |
+| `PullRequestCreator`    | Creates a Pull Request to the original repo with the updated dependency file.                 |
+
+### Contributing
 
 We'd love to see the following improvements to Bump:
 
@@ -46,16 +60,3 @@ We'd love to see the following improvements to Bump:
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
 - Support for more languages (Python should be relatively easy?)
-
-### Project structure
-
-Bump is split into five concerns, each of which have their own worker which runs
-as a separate service:
-
-| Service                 | Description                                                                                   |
-|-------------------------|-----------------------------------------------------------------------------------------------|
-| `DependencyFileFetcher` | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
-| `DependencyFileParser`  | Parses a dependency file and extracts a list of dependencies for a project.                   |
-| `UpdateChecker`         | Checks whether a given dependency is up-to-date.                                              |
-| `DependencyFileUpdater` | Updates a dependency file to use the latest version of a given dependency.                    |
-| `PullRequestCreator`    | Creates a Pull Request to the original repo with the updated dependency file.                 |
