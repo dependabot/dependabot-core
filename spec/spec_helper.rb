@@ -2,7 +2,7 @@ require "rspec/its"
 require "webmock/rspec"
 require "dotenv"
 
-Dotenv.load(File.expand_path("../../config/dummy-env", __FILE__))
+Dotenv.load(File.expand_path("../../config/dummy_env", __FILE__))
 
 require "./app/boot"
 
