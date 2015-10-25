@@ -55,7 +55,8 @@ module DependencyFileUpdaters
         parsed_content["devDependencies"][dependency.name] = dependency.version
       end
 
-      @updated_package_json_content = JSON.pretty_generate(parsed_content)
+      @updated_package_json_content =
+        JSON.pretty_generate(parsed_content) + "\n"
     end
 
     def updated_shrinkwrap_content
