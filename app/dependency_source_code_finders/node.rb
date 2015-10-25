@@ -12,9 +12,9 @@ module DependencySourceCodeFinders
         JSON.parse(Net::HTTP.get(npm_url)).fetch("versions", {}).values
 
       potential_source_urls =
-        all_versions.map { |v| v.fetch("repository", {}).fetch("url", nil) } +
+        all_versions.map { |v| get_url(v.fetch("repository", {})) } +
         all_versions.map { |v| v["homepage"] } +
-        all_versions.map { |v| v.fetch("bugs", {}).fetch("url", nil) }
+        all_versions.map { |v| get_url(v.fetch("bugs", {})) }
 
       potential_source_urls = potential_source_urls.reject(&:nil?)
 
@@ -22,6 +22,13 @@ module DependencySourceCodeFinders
 
       @github_repo =
         source_url.nil? ? nil : source_url.match(GITHUB_REGEX)[:repo]
+    end
+
+    def get_url(details)
+      case details
+      when String then details
+      when Hash then details.fetch("url", nil)
+      end
     end
   end
 end

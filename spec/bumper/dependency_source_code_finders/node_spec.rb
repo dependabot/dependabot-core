@@ -25,6 +25,17 @@ RSpec.describe DependencySourceCodeFinders::Node do
       end
     end
 
+    context "when there's a link without the expected structure" do
+      let(:npm_response) { fixture("npm_response_string_link.json") }
+
+      it { is_expected.to eq("kesla/etag") }
+
+      it "caches the call to npm" do
+        2.times { github_repo }
+        expect(WebMock).to have_requested(:get, npm_url).once
+      end
+    end
+
     context "when there isn't github link in the npm response" do
       let(:npm_response) { fixture("npm_response_no_github.json") }
 
