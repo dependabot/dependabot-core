@@ -5,12 +5,12 @@ GEM
     ast (2.1.0)
     astrolabe (1.3.1)
       parser (~> 2.2)
-    aws-sdk (2.1.31)
-      aws-sdk-resources (= 2.1.31)
-    aws-sdk-core (2.1.31)
+    aws-sdk (2.1.33)
+      aws-sdk-resources (= 2.1.33)
+    aws-sdk-core (2.1.33)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.1.31)
-      aws-sdk-core (= 2.1.31)
+    aws-sdk-resources (2.1.33)
+      aws-sdk-core (= 2.1.33)
     builder (3.2.2)
     celluloid (0.16.0)
       timers (~> 4.0.0)
@@ -106,7 +106,7 @@ DEPENDENCIES
   rubocop (~> 0.34.2)
   sentry-raven (~> 0.15.2)
   shoryuken (~> 2.0.2)
-  webmock (~> 1.22.2)
+  webmock (~> 1.22.1)
 
 BUNDLED WITH
    1.10.6
