@@ -49,9 +49,10 @@ RSpec.describe Workers::DependencyFileUpdater do
           and_raise("hell")
       end
 
-      it "sends the error to sentry and doesn't raise" do
+      it "sends the error to sentry, deletes the job and raise" do
         expect(Raven).to receive(:capture_exception).and_call_original
-        perform
+        expect(sqs_message).to receive(:delete)
+        expect { perform }.to raise_error(/hell/)
       end
     end
   end
