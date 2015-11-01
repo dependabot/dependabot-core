@@ -71,7 +71,7 @@ GEM
       faraday (~> 0.8, < 0.10)
     sentry-raven (0.15.2)
       faraday (>= 0.7.6)
-    shoryuken (2.0.1)
+    shoryuken (2.0.2)
       aws-sdk-core (~> 2)
       celluloid (~> 0.16.0)
     sinatra (1.4.6)
@@ -105,7 +105,7 @@ DEPENDENCIES
   rspec-its (~> 1.2.0)
   rubocop (~> 0.34.2)
   sentry-raven (~> 0.15.2)
-  shoryuken (~> 2.0.0)
+  shoryuken (~> 2.0.2)
   webmock (~> 1.22.2)
 
 BUNDLED WITH
