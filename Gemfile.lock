@@ -82,7 +82,7 @@ GEM
     tilt (2.0.1)
     timers (4.0.4)
       hitimes
-    webmock (1.22.1)
+    webmock (1.22.2)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff
@@ -106,7 +106,7 @@ DEPENDENCIES
   rubocop (~> 0.34.2)
   sentry-raven (~> 0.15.2)
   shoryuken (~> 2.0.0)
-  webmock (~> 1.22.1)
+  webmock (~> 1.22.2)
 
 BUNDLED WITH
    1.10.6
