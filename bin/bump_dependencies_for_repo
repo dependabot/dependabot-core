@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 
+require "dotenv"
+Dotenv.load
+
 require File.expand_path("../../app/workers/dependency_file_fetcher", __FILE__)
 require File.expand_path("../../lib/github", __FILE__)
 require "highline/import"
-require "dotenv"
-Dotenv.load
 
 repo = ask("Which repo would you like to bump dependencies for? ") do |question|
   question.validate = lambda { |repo_name|
