@@ -113,14 +113,16 @@ RSpec.describe PullRequestCreator do
       repo_url = "https://api.github.com/repos/gocardless/bump"
       expect(WebMock).
         to have_requested(:post, "#{repo_url}/pulls").
-        with(body: {
-               base: "master",
-               head: "bump_business_to_1.5.0",
-               title: "Bump business to 1.5.0",
-               body: "Bumps [business](#{dependency.github_repo_url}) to 1.5.0"\
-                     "\n- [Changelog](#{dependency.changelog_url})"\
-                     "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
-             })
+        with(
+          body: {
+            base: "master",
+            head: "bump_business_to_1.5.0",
+            title: "Bump business to 1.5.0",
+            body: "Bumps [business](#{dependency.github_repo_url}) to 1.5.0."\
+                  "\n- [Changelog](#{dependency.changelog_url})"\
+                  "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
+          }
+        )
     end
 
     context "when a branch for this update already exists" do

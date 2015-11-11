@@ -71,9 +71,9 @@ class PullRequestCreator
   def pr_message
     if dependency.github_repo_url
       msg = "Bumps [#{dependency.name}](#{dependency.github_repo_url}) to "\
-            "#{dependency.version}"
+            "#{dependency.version}."
     else
-      msg = "Bumps #{dependency.name} to #{dependency.version}"
+      msg = "Bumps #{dependency.name} to #{dependency.version}."
     end
 
     if dependency.changelog_url
