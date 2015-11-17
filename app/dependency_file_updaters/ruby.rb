@@ -68,13 +68,16 @@ module DependencyFileUpdaters
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
 
-        definition = Bundler::Definition.build(
-          File.join(dir, "Gemfile"),
-          File.join(dir, "Gemfile.lock"),
-          gems: [dependency.name]
-        )
-        definition.resolve_remotely!
-        @updated_gemfile_lock_content = definition.to_lock
+        @updated_gemfile_lock_content =
+          SharedHelpers.in_a_forked_process do
+            definition = Bundler::Definition.build(
+              File.join(dir, "Gemfile"),
+              File.join(dir, "Gemfile.lock"),
+              gems: [dependency.name]
+            )
+            definition.resolve_remotely!
+            definition.to_lock
+          end
       end
 
       @updated_gemfile_lock_content
