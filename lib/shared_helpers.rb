@@ -10,4 +10,21 @@ module SharedHelpers
       yield dir
     end
   end
+
+  def self.in_a_forked_process
+    read, write = IO.pipe
+
+    pid = fork do
+      read.close
+      result = yield
+      Marshal.dump(result, write)
+      exit!(0) # skips exit handlers.
+    end
+
+    write.close
+    result = read.read
+    Process.wait(pid)
+    raise "Child failed" if result.empty?
+    Marshal.load(result)
+  end
 end
