@@ -43,16 +43,32 @@ RSpec.describe Workers::DependencyFileUpdater do
     end
 
     context "if an error is raised" do
-      before do
-        allow(DependencyFileUpdaters::Ruby).
-          to receive(:new).
-          and_raise("hell")
+      context "for a version conflict" do
+        before do
+          allow_any_instance_of(DependencyFileUpdaters::Ruby).
+            to receive(:updated_dependency_files).
+            and_raise(DependencyFileUpdaters::VersionConflict)
+        end
+
+        it "quietly deletes the job" do
+          expect(Raven).to_not receive(:capture_exception)
+          expect(sqs_message).to receive(:delete)
+          expect { perform }.to_not raise_error
+        end
       end
 
-      it "sends the error to sentry, deletes the job and raise" do
-        expect(Raven).to receive(:capture_exception).and_call_original
-        expect(sqs_message).to receive(:delete)
-        expect { perform }.to raise_error(/hell/)
+      context "for a runtime error" do
+        before do
+          allow(DependencyFileUpdaters::Ruby).
+            to receive(:new).
+            and_raise("hell")
+        end
+
+        it "sends the error to sentry, deletes the job and raises" do
+          expect(Raven).to receive(:capture_exception).and_call_original
+          expect(sqs_message).to receive(:delete)
+          expect { perform }.to raise_error(/hell/)
+        end
       end
     end
   end

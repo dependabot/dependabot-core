@@ -31,14 +31,13 @@ module Workers
         dependency_files: dependency_files
       )
 
-      open_pull_request_for(
-        body["repo"],
-        body["updated_dependency"],
-        file_updater.updated_dependency_files
-      )
+      open_pull_request_for(body["repo"],
+                            body["updated_dependency"],
+                            file_updater.updated_dependency_files)
+    rescue DependencyFileUpdaters::VersionConflict
+      sqs_message.delete
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
-      # We don't want to retry these ones
       sqs_message.delete
       raise
     end

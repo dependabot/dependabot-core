@@ -2,6 +2,7 @@ require "gemnasium/parser"
 require "./app/dependency_file"
 require "bundler"
 require "./lib/shared_helpers"
+require "./app/dependency_file_updaters/errors"
 
 module DependencyFileUpdaters
   class Ruby
@@ -67,20 +68,33 @@ module DependencyFileUpdaters
       SharedHelpers.in_a_temporary_directory do |dir|
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
-
-        @updated_gemfile_lock_content =
-          SharedHelpers.in_a_forked_process do
-            definition = Bundler::Definition.build(
-              File.join(dir, "Gemfile"),
-              File.join(dir, "Gemfile.lock"),
-              gems: [dependency.name]
-            )
-            definition.resolve_remotely!
-            definition.to_lock
-          end
+        @updated_gemfile_lock_content = build_updated_gemfile_lock_content
       end
 
       @updated_gemfile_lock_content
+    end
+
+    def build_updated_gemfile_lock_content
+      SharedHelpers.in_a_temporary_directory do |dir|
+        File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
+        File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
+
+        SharedHelpers.in_a_forked_process do
+          definition = Bundler::Definition.build(
+            File.join(dir, "Gemfile"),
+            File.join(dir, "Gemfile.lock"),
+            gems: [dependency.name]
+          )
+          definition.resolve_remotely!
+          definition.to_lock
+        end
+      end
+    rescue SharedHelpers::ChildProcessFailed => error
+      if error.error_class == "Bundler::VersionConflict"
+        raise DependencyFileUpdaters::VersionConflict
+      else
+        raise
+      end
     end
   end
 end
