@@ -68,13 +68,13 @@ module DependencyFileUpdaters
       SharedHelpers.in_a_temporary_directory do |dir|
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
-        @updated_gemfile_lock_content = build_updated_gemfile_lock_content
+        @updated_gemfile_lock_content = build_updated_gemfile_lock
       end
 
       @updated_gemfile_lock_content
     end
 
-    def build_updated_gemfile_lock_content
+    def build_updated_gemfile_lock
       SharedHelpers.in_a_temporary_directory do |dir|
         File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
         File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
