@@ -89,5 +89,24 @@ RSpec.describe DependencyFileUpdaters::Ruby do
         expect(file.content).to include "statesman (1.2.1)"
       end
     end
+
+    context "when the Gem can't be found" do
+      let(:gemfile_body) { fixture("gemfiles", "unavailable_gem") }
+
+      it "raises a DependencyFileUpdaters::VersionConflict error" do
+        expect { updater.updated_gemfile_lock }.
+          to raise_error(SharedHelpers::ChildProcessFailed)
+      end
+    end
+
+    context "when there is a version conflict" do
+      let(:gemfile_body) { fixture("gemfiles", "version_conflict") }
+      let(:dependency) { Dependency.new(name: "ibandit", version: "0.8.5") }
+
+      it "raises a DependencyFileUpdaters::VersionConflict error" do
+        expect { updater.updated_gemfile_lock }.
+          to raise_error(DependencyFileUpdaters::VersionConflict)
+      end
+    end
   end
 end
