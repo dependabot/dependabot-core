@@ -4,7 +4,7 @@ require "./app/dependency_source_code_finders/base"
 module DependencySourceCodeFinders
   class Ruby < Base
     SOURCE_KEYS = %w(source_code_uri homepage_uri wiki_uri bug_tracker_uri
-                     documentation_uri)
+                     documentation_uri).freeze
 
     private
 

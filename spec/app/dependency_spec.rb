@@ -63,7 +63,7 @@ RSpec.describe Dependency do
       let(:github_status) { 200 }
 
       before do
-        stub_request(:get, "#{github_url}").
+        stub_request(:get, github_url).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })

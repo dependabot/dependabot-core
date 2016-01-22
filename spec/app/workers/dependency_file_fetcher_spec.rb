@@ -19,10 +19,12 @@ RSpec.describe Workers::DependencyFileFetcher do
     before do
       allow_any_instance_of(DependencyFileFetchers::Ruby).
         to receive(:files).
-        and_return([
-          DependencyFile.new(name: "Gemfile", content: "xyz"),
-          DependencyFile.new(name: "Gemfile.lock", content: "abc")
-        ])
+        and_return(
+          [
+            DependencyFile.new(name: "Gemfile", content: "xyz"),
+            DependencyFile.new(name: "Gemfile.lock", content: "abc")
+          ]
+        )
     end
 
     it "enqueues an DependencyFileParser with the correct arguments" do
