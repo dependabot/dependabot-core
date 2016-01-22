@@ -9,7 +9,7 @@ gem "bundler", "~> 1.10.6"
 gem "shoryuken", "~> 2.0.2"
 
 group :development do
-  gem "rspec", "~> 3.3.0"
+  gem "rspec", "~> 3.4.0"
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 1.22.6"
   gem "rubocop", "~> 0.34.2"
