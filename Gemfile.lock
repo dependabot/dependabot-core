@@ -17,7 +17,7 @@ GEM
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
     diff-lcs (1.2.5)
-    dotenv (2.0.2)
+    dotenv (2.1.0)
     fake_sqs (0.3.0)
       builder
       sinatra
