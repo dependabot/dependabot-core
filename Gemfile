@@ -4,7 +4,7 @@ gem "gemnasium-parser", "~> 0.1.9"
 gem "octokit", "~> 4.1.1"
 gem "prius", "~> 1.0.0"
 gem "gems", "~> 0.8.3"
-gem "sentry-raven", "~> 0.15.2"
+gem "sentry-raven", "~> 0.15.3"
 gem "bundler", "~> 1.10.6"
 gem "shoryuken", "~> 2.0.2"
 
