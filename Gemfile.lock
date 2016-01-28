@@ -47,19 +47,19 @@ GEM
     multipart-post (2.0.0)
     octokit (4.2.0)
       sawyer (~> 0.6.0, >= 0.5.3)
-    parser (2.3.0.1)
+    parser (2.3.0.2)
       ast (~> 2.2)
     powerpack (0.1.1)
     prius (1.0.0)
     rack (1.6.4)
     rack-protection (1.5.3)
       rack
-    rainbow (2.0.0)
+    rainbow (2.1.0)
     rspec (3.4.0)
       rspec-core (~> 3.4.0)
       rspec-expectations (~> 3.4.0)
       rspec-mocks (~> 3.4.0)
-    rspec-core (3.4.1)
+    rspec-core (3.4.2)
       rspec-support (~> 3.4.0)
     rspec-expectations (3.4.0)
       diff-lcs (>= 1.2.0, < 2.0)
@@ -104,7 +104,7 @@ PLATFORMS
 
 DEPENDENCIES
   aws-sdk
-  bundler (~> 1.10.6)
+  bundler (~> 1.11.2)
   dotenv
   fake_sqs
   foreman (~> 0.78.0)
@@ -121,4 +121,4 @@ DEPENDENCIES
   webmock (~> 1.22.6)
 
 BUNDLED WITH
-   1.10.6
+   1.11.2

@@ -5,7 +5,7 @@ gem "octokit", "~> 4.2.0"
 gem "prius", "~> 1.0.0"
 gem "gems", "~> 0.8.3"
 gem "sentry-raven", "~> 0.15.4"
-gem "bundler", "~> 1.10.6"
+gem "bundler", "~> 1.11.2"
 gem "shoryuken", "~> 2.0.3"
 
 group :development do
