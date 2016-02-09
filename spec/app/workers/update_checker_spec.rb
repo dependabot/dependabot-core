@@ -3,7 +3,7 @@ require "./app/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
+  let(:sqs_message) { double("sqs_message", delete: true) }
   let(:body) do
     {
       "repo" => {
