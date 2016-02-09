@@ -3,7 +3,7 @@ require "./app/workers/dependency_file_parser"
 
 RSpec.describe Workers::DependencyFileParser do
   subject(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
+  let(:sqs_message) { double("sqs_message", delete: true) }
   let(:body) do
     {
       "repo" => {

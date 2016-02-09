@@ -17,7 +17,7 @@ module Workers
       auto_delete: true
     )
 
-    def perform(_sqs_message, body)
+    def perform(sqs_message, body)
       dependency = Dependency.new(name: body["dependency"]["name"],
                                   version: body["dependency"]["version"])
       dependency_files = body["dependency_files"].map do |file|
@@ -36,6 +36,7 @@ module Workers
                                        version: update_checker.latest_version))
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
+      sqs_message.delete
       raise
     end
 

@@ -16,7 +16,7 @@ module Workers
       auto_delete: true
     )
 
-    def perform(_sqs_message, body)
+    def perform(sqs_message, body)
       parser = parser_for(body["repo"]["language"])
       dependency_files = body["dependency_files"].map do |file|
         DependencyFile.new(name: file["name"], content: file["content"])
@@ -32,6 +32,7 @@ module Workers
       end
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
+      sqs_message.delete
       raise
     end
 
