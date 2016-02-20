@@ -1,23 +1,20 @@
-require "shoryuken"
+require "sidekiq"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
 require "./app/update_checkers/ruby"
 require "./app/update_checkers/node"
+require "./app/workers/dependency_file_updater"
 
 $stdout.sync = true
 
 module Workers
   class UpdateChecker
-    include Shoryuken::Worker
+    include Sidekiq::Worker
 
-    shoryuken_options(
-      queue: "bump-dependencies_to_check",
-      body_parser: :json,
-      auto_delete: true
-    )
+    sidekiq_options queue: "bump-dependencies_to_check", retry: false
 
-    def perform(sqs_message, body)
+    def perform(body)
       dependency = Dependency.new(name: body["dependency"]["name"],
                                   version: body["dependency"]["version"])
       dependency_files = body["dependency_files"].map do |file|
@@ -36,7 +33,6 @@ module Workers
                                        version: update_checker.latest_version))
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
-      sqs_message.delete
       raise
     end
 

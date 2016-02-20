@@ -1,36 +1,52 @@
 #!/usr/bin/env ruby
 
-require "dotenv"
-Dotenv.load
+unless ENV["RACK_ENV"] == "production"
+  require "highline/import"
+  require "dotenv"
+  Dotenv.load
+end
 
 require File.expand_path("../../app/workers/dependency_file_fetcher", __FILE__)
 require File.expand_path("../../lib/github", __FILE__)
-require "highline/import"
 
-repo = ask("Which repo would you like to bump dependencies for? ") do |question|
-  question.validate = lambda { |repo_name|
-    begin
-      Github.client.repository(repo_name)
-      true
-    rescue Octokit::NotFound
-      false
-    end
-  }
-
-  question.responses[:invalid_type] =
-    "Could not access that repo. Make sure you use the format "\
-    "'gocardless/bump', and that your GitHub token has read/write "\
-    "access to the given repo."
+repo_validator = lambda do |repo_name|
+  begin
+    Github.client.repository(repo_name)
+    true
+  rescue Octokit::NotFound
+    false
+  end
 end
 
-language = choose do |menu|
-  menu.header = "Which language would you like to bump dependencies for?"
-  menu.index = :none
-  menu.choices(:ruby, :node)
+language_validator = ->(l) { %w(ruby node).include?(l) }
+
+if ARGV.empty?
+  repo =
+    ask("Which repo would you like to bump dependencies for? ") do |question|
+      question.validate = repo_validator
+      question.responses[:invalid_type] =
+        "Could not access that repo. Make sure you use the format "\
+        "'gocardless/bump', and that your GitHub token has read/write "\
+        "access to the given repo."
+    end
+
+  language = ARGV[1] || choose do |menu|
+    menu.header = "Which language would you like to bump dependencies for?"
+    menu.index = :none
+    menu.choices(:ruby, :node)
+  end
+else
+  repo = ARGV[0]
+  language = ARGV[1]
+
+  unless repo_validator.call(repo) && language_validator.call(language)
+    puts "Bad repo/language"
+    raise
+  end
 end
 
 Workers::DependencyFileFetcher.
   perform_async("repo" => { "language" => language, "name" => repo })
 
-say "Great success - a job has been added to the SQS queue to fetch the "\
-    "#{language} dependency files for #{repo}."
+puts "Great success - a job has been enqueued to bump the "\
+  "#{language} dependency files for #{repo}."

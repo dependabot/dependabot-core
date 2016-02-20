@@ -3,7 +3,6 @@ require "./app/workers/dependency_file_updater"
 
 RSpec.describe Workers::DependencyFileUpdater do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message", delete: true) }
   let(:body) do
     {
       "repo" => {
@@ -22,7 +21,7 @@ RSpec.describe Workers::DependencyFileUpdater do
   end
 
   describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+    subject(:perform) { worker.perform(body) }
     before do
       allow_any_instance_of(DependencyFileUpdaters::Ruby).
         to receive(:updated_dependency_files).
@@ -50,9 +49,8 @@ RSpec.describe Workers::DependencyFileUpdater do
             and_raise(DependencyFileUpdaters::VersionConflict)
         end
 
-        it "quietly deletes the job" do
+        it "quietly finishes" do
           expect(Raven).to_not receive(:capture_exception)
-          expect(sqs_message).to receive(:delete)
           expect { perform }.to_not raise_error
         end
       end
@@ -64,9 +62,8 @@ RSpec.describe Workers::DependencyFileUpdater do
             and_raise("hell")
         end
 
-        it "sends the error to sentry, deletes the job and raises" do
+        it "sends the error to sentry and raises" do
           expect(Raven).to receive(:capture_exception).and_call_original
-          expect(sqs_message).to receive(:delete)
           expect { perform }.to raise_error(/hell/)
         end
       end

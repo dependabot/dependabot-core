@@ -26,30 +26,28 @@ the dependencies you'd like to update.
   # token with access to your project and all of its private dependencies.
   ```
 
-2. Set up a local SQS compatible message queue. We use [fake_sqs](https://github.com/iain/fake_sqs):
-  ```bash
-  bundle exec fake_sqs
-  ```
-
-3. In a new window, create queues (persisted in memory only) for each of Bump's services:
-  ```bash
-  bundle exec bin/set_up_sqs_queues
-  ```
-
-4. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
+2. Start a worker for each queue. We use [foreman](http://ddollar.github.io/foreman/) to automate the process:
   ```bash
   bundle exec foreman start
   ```
 
-5. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
+3. In a new window, push a message to `DependencyFileFetcher` (the first of Bump's services):
   ```bash
   bundle exec bin/bump_dependencies_for_repo
   ```
 
-### Hosting bump on AWS
+### Hosting Bump
+You can launch your own instance of Bump via Heroku
 
-Bump is designed to be easily deployed to AWS's Elastic Container Service (ECS)
-so you can set it up to run daily. More details TBC.
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
+Once you've deployed, you'll want to click through to heroku scheduler in the
+list of addons and set up a scheduled task to bump your dependencies each day.
+
+You can use the `./bin/bump_dependencies_for_repo` script to do this:
+```
+./bin/bump_dependencies_for_repo gocardles/bump ruby
+```
 
 # The code / contributing
 
@@ -75,6 +73,7 @@ We'd love to see the following improvements to Bump:
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
 - Support for more languages. Python should be relatively easy, for example.
+
 
 ---
 

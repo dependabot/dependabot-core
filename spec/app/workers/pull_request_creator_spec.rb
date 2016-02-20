@@ -3,7 +3,6 @@ require "./app/workers/pull_request_creator"
 
 RSpec.describe Workers::PullRequestCreator do
   subject(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -22,7 +21,7 @@ RSpec.describe Workers::PullRequestCreator do
   end
 
   describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+    subject(:perform) { worker.perform(body) }
     let(:stubbed_creator) { double("PullRequestCreator", create: nil) }
 
     it "passes the correct arguments to pull request creator" do

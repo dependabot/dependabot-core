@@ -1,5 +1,2 @@
-file_fetcher: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-repos_to_fetch_files_for -r ./app/init_shoryuken.rb -C ./config/shoryuken.yml
-file_parser: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependency_files_to_parse -r ./app/init_shoryuken.rb -C ./config/shoryuken.yml
-update_checker: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependencies_to_check -r ./app/init_shoryuken.rb -C ./config/shoryuken.yml
-file_updater: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-dependencies_to_update -r ./app/init_shoryuken.rb -C ./config/shoryuken.yml
-pull_request_creator: AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake AWS_SQS_ENDPOINT="http://localhost:4568" bundle exec shoryuken -q bump-updated_dependency_files -r ./app/init_shoryuken.rb -C ./config/shoryuken.yml
+worker: bundle exec sidekiq -q bump-repos_to_fetch_files_for -q bump-dependency_files_to_parse -q bump-dependencies_to_check -q bump-dependencies_to_update -q bump-updated_dependency_files -r ./app/init_sidekiq.rb -c 1
+web: bundle exec rackup ./sidekiq_web.ru -p $PORT

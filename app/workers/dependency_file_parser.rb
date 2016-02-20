@@ -1,22 +1,19 @@
-require "shoryuken"
+require "sidekiq"
 require "./app/boot"
 require "./app/dependency_file"
 require "./app/dependency_file_parsers/ruby"
 require "./app/dependency_file_parsers/node"
+require "./app/workers/update_checker"
 
 $stdout.sync = true
 
 module Workers
   class DependencyFileParser
-    include Shoryuken::Worker
+    include Sidekiq::Worker
 
-    shoryuken_options(
-      queue: "bump-dependency_files_to_parse",
-      body_parser: :json,
-      auto_delete: true
-    )
+    sidekiq_options queue: "bump-dependency_files_to_parse", retry: false
 
-    def perform(sqs_message, body)
+    def perform(body)
       parser = parser_for(body["repo"]["language"])
       dependency_files = body["dependency_files"].map do |file|
         DependencyFile.new(name: file["name"], content: file["content"])
@@ -32,7 +29,6 @@ module Workers
       end
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
-      sqs_message.delete
       raise
     end
 

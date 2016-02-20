@@ -3,7 +3,6 @@ require "./app/workers/update_checker"
 
 RSpec.describe Workers::UpdateChecker do
   let(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message", delete: true) }
   let(:body) do
     {
       "repo" => {
@@ -22,7 +21,7 @@ RSpec.describe Workers::UpdateChecker do
   end
 
   describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+    subject(:perform) { worker.perform(body) }
 
     context "when an update is required" do
       before do

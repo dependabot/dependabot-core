@@ -1,22 +1,19 @@
-require "shoryuken"
+require "sidekiq"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file_updaters/ruby"
 require "./app/dependency_file_updaters/node"
+require "./app/workers/pull_request_creator"
 
 $stdout.sync = true
 
 module Workers
   class DependencyFileUpdater
-    include Shoryuken::Worker
+    include Sidekiq::Worker
 
-    shoryuken_options(
-      queue: "bump-dependencies_to_update",
-      body_parser: :json,
-      auto_delete: true
-    )
+    sidekiq_options queue: "bump-dependencies_to_update", retry: false
 
-    def perform(sqs_message, body)
+    def perform(body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"]
@@ -35,10 +32,9 @@ module Workers
                             body["updated_dependency"],
                             file_updater.updated_dependency_files)
     rescue DependencyFileUpdaters::VersionConflict
-      sqs_message.delete
+      nil
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
-      sqs_message.delete
       raise
     end
 

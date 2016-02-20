@@ -1,5 +1,5 @@
 require "prius"
-require "shoryuken"
+require "sidekiq"
 require "raven"
 require "./lib/null_logger"
 
