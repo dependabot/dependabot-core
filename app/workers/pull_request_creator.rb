@@ -1,4 +1,4 @@
-require "shoryuken"
+require "sidekiq"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
@@ -8,16 +8,13 @@ $stdout.sync = true
 
 module Workers
   class PullRequestCreator
-    include Shoryuken::Worker
+    include Sidekiq::Worker
 
-    shoryuken_options(
-      queue: "bump-updated_dependency_files",
-      body_parser: :json,
-      auto_delete: true,
-      retry_intervals: [60, 300, 3_600, 36_000] # specified in seconds
-    )
+    sidekiq_options queue: "bump-updated_dependency_files", retry: 4
 
-    def perform(_sqs_message, body)
+    sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
+
+    def perform(body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"],

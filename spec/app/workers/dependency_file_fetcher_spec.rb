@@ -3,7 +3,6 @@ require "./app/workers/dependency_file_fetcher"
 
 RSpec.describe Workers::DependencyFileFetcher do
   subject(:worker) { described_class.new }
-  let(:sqs_message) { double("sqs_message") }
   let(:body) do
     {
       "repo" => {
@@ -14,7 +13,7 @@ RSpec.describe Workers::DependencyFileFetcher do
   end
 
   describe "#perform" do
-    subject(:perform) { worker.perform(sqs_message, body) }
+    subject(:perform) { worker.perform(body) }
 
     before do
       allow_any_instance_of(DependencyFileFetchers::Ruby).
