@@ -77,4 +77,4 @@ We'd love to see the following improvements to Bump:
 
 ---
 
-GoCardless ♥ open source. If you do too, come [join us](https://gocardless.com/jobs#software-engineer).
+GoCardless ♥ open source. If you do too, come [join us](https://gocardless.com/about/jobs/software-engineer/).
