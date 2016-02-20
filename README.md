@@ -10,6 +10,19 @@ Bump helps you keep your project's Ruby and Node dependencies up to date. It:
 
 All that's left for you to do is review the change.
 
+### Hosting Bump
+You can launch your own instance of Bump via Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
+Once you've deployed, you'll want to click through to heroku scheduler in the
+list of addons and set up a scheduled task to bump your dependencies each day.
+
+You can use the `./bin/bump_dependencies_for_repo` script to do this:
+```
+./bin/bump_dependencies_for_repo gocardles/bump ruby
+```
+
 ### Using Bump from your local machine
 
 You can run Bump locally to kick-off a one-off update of your project's
@@ -35,19 +48,6 @@ the dependencies you'd like to update.
   ```bash
   bundle exec bin/bump_dependencies_for_repo
   ```
-
-### Hosting Bump
-You can launch your own instance of Bump via Heroku
-
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
-
-Once you've deployed, you'll want to click through to heroku scheduler in the
-list of addons and set up a scheduled task to bump your dependencies each day.
-
-You can use the `./bin/bump_dependencies_for_repo` script to do this:
-```
-./bin/bump_dependencies_for_repo gocardles/bump ruby
-```
 
 # The code / contributing
 
