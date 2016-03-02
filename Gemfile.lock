@@ -69,7 +69,7 @@ GEM
     thor (0.19.1)
     tilt (2.0.2)
     unicode-display_width (0.3.1)
-    webmock (1.24.1)
+    webmock (1.24.2)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff
@@ -89,7 +89,7 @@ DEPENDENCIES
   rspec (~> 3.4.0)
   rspec-its (~> 1.2.0)
   rubocop (~> 0.37.2)
-  sentry-raven (~> 0.15.5)
+  sentry-raven (~> 0.15.6)
   sidekiq (~> 4.1.0)
   sinatra
   webmock (~> 1.24.0)
