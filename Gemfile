@@ -10,11 +10,11 @@ gem "bundler", "~> 1.11.2"
 gem "sidekiq", "~> 4.1.0"
 gem "sinatra"
 
-group :development, :test do
+group :development do
   gem "rspec", "~> 3.4.0"
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 1.24.0"
-  gem "rubocop", "~> 0.36.0"
+  gem "rubocop", "~> 0.37.2"
   gem "foreman", "~> 0.78.0"
   gem "dotenv", require: false
   gem "highline", "~> 1.7.8"
