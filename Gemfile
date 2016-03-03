@@ -10,7 +10,7 @@ gem "bundler", "~> 1.11.2"
 gem "sidekiq", "~> 4.1.0"
 gem "sinatra"
 
-group :development do
+group :development, :test do
   gem "rspec", "~> 3.4.0"
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 1.24.0"
