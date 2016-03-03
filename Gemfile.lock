@@ -92,7 +92,7 @@ DEPENDENCIES
   sentry-raven (~> 0.15.6)
   sidekiq (~> 4.1.0)
   sinatra
-  webmock (~> 1.24.0)
+  webmock (~> 1.24.2)
 
 BUNDLED WITH
    1.11.2
