@@ -65,13 +65,7 @@ module DependencyFileUpdaters
     def updated_gemfile_lock_content
       return @updated_gemfile_lock_content if @updated_gemfile_lock_content
 
-      SharedHelpers.in_a_temporary_directory do |dir|
-        File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
-        File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
-        @updated_gemfile_lock_content = build_updated_gemfile_lock
-      end
-
-      @updated_gemfile_lock_content
+      @updated_gemfile_lock_content ||= build_updated_gemfile_lock
     end
 
     def build_updated_gemfile_lock
