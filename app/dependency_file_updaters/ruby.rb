@@ -70,8 +70,7 @@ module DependencyFileUpdaters
 
     def build_updated_gemfile_lock
       SharedHelpers.in_a_temporary_directory do |dir|
-        File.write(File.join(dir, "Gemfile"), updated_gemfile_content)
-        File.write(File.join(dir, "Gemfile.lock"), gemfile_lock.content)
+        write_temporary_dependency_files_to(dir)
 
         SharedHelpers.in_a_forked_process do
           definition = Bundler::Definition.build(
@@ -80,15 +79,38 @@ module DependencyFileUpdaters
             gems: [dependency.name]
           )
           definition.resolve_remotely!
-          definition.to_lock
+          definition.to_lock.gsub(
+            "https://#{bump_github_token}:x-oauth-basic@github.com/",
+            "git@github.com:"
+          )
         end
       end
     rescue SharedHelpers::ChildProcessFailed => error
       if error.error_class == "Bundler::VersionConflict"
         raise DependencyFileUpdaters::VersionConflict
-      else
-        raise
+      else raise
       end
+    end
+
+    def write_temporary_dependency_files_to(dir)
+      File.write(
+        File.join(dir, "Gemfile"),
+        updated_gemfile_content.gsub(
+          "git@github.com:",
+          "https://#{bump_github_token}:x-oauth-basic@github.com/"
+        )
+      )
+      File.write(
+        File.join(dir, "Gemfile.lock"),
+        gemfile_lock.content.gsub(
+          "git@github.com:",
+          "https://#{bump_github_token}:x-oauth-basic@github.com/"
+        )
+      )
+    end
+
+    def bump_github_token
+      Prius.get(:bump_github_token)
     end
   end
 end
