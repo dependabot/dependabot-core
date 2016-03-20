@@ -24,13 +24,16 @@ RSpec.describe Workers::DependencyFileFetcher do
             DependencyFile.new(name: "Gemfile.lock", content: "abc")
           ]
         )
+
+      allow_any_instance_of(DependencyFileFetchers::Ruby).
+        to receive(:commit).and_return("commitsha")
     end
 
     it "enqueues an DependencyFileParser with the correct arguments" do
       expect(Workers::DependencyFileParser).
         to receive(:perform_async).
         with(
-          "repo" => body["repo"],
+          "repo" => body["repo"].merge("commit" => "commitsha"),
           "dependency_files" => [
             {
               "name" => "Gemfile",

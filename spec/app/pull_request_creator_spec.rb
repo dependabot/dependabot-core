@@ -5,7 +5,10 @@ require "./app/pull_request_creator"
 
 RSpec.describe PullRequestCreator do
   subject(:creator) do
-    PullRequestCreator.new(repo: repo, dependency: dependency, files: files)
+    PullRequestCreator.new(repo: repo,
+                           base_commit: base_commit,
+                           dependency: dependency,
+                           files: files)
   end
 
   let(:dependency) do
@@ -13,6 +16,7 @@ RSpec.describe PullRequestCreator do
   end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
+  let(:base_commit) { "basecommitsha" }
 
   let(:gemfile) do
     DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
@@ -30,10 +34,6 @@ RSpec.describe PullRequestCreator do
     stub_request(:get, watched_repo_url).
       to_return(status: 200,
                 body: fixture("github", "bump_repo.json"),
-                headers: json_header)
-    stub_request(:get, "#{watched_repo_url}/git/refs/heads/master").
-      to_return(status: 200,
-                body: fixture("github", "ref.json"),
                 headers: json_header)
     stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
       to_return(status: 404,
@@ -75,7 +75,7 @@ RSpec.describe PullRequestCreator do
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/trees").
         with(body: {
-               base_tree: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+               base_tree: "basecommitsha",
                tree: [
                  {
                    path: "Gemfile",

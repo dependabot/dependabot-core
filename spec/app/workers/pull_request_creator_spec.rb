@@ -7,7 +7,8 @@ RSpec.describe Workers::PullRequestCreator do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby"
+        "language" => "ruby",
+        "commit" => "commitsha"
       },
       "updated_dependency" => {
         "name" => "business",
@@ -28,6 +29,7 @@ RSpec.describe Workers::PullRequestCreator do
       expect(PullRequestCreator).
         to receive(:new).
         with(repo: "gocardless/bump",
+             base_commit: "commitsha",
              dependency: an_instance_of(Dependency),
              files: an_instance_of(Array)).
         and_return(stubbed_creator)

@@ -13,6 +13,12 @@ module DependencyFileFetchers
       raise NotImplementedError
     end
 
+    def commit
+      default_branch = Github.client.repository(repo).default_branch
+
+      Github.client.ref(repo, "heads/#{default_branch}").object.sha
+    end
+
     private
 
     def fetch_file_from_github(name)

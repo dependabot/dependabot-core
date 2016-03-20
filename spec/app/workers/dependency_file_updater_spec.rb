@@ -7,7 +7,8 @@ RSpec.describe Workers::DependencyFileUpdater do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby"
+        "language" => "ruby",
+        "commit" => "commitsha"
       },
       "updated_dependency" => {
         "name" => "business",

@@ -1,11 +1,12 @@
 require "./lib/github"
 
 class PullRequestCreator
-  attr_reader :watched_repo, :dependency, :files
+  attr_reader :watched_repo, :dependency, :files, :base_commit
 
-  def initialize(repo:, dependency:, files:)
+  def initialize(repo:, base_commit:, dependency:, files:)
     @dependency = dependency
     @watched_repo = repo
+    @base_commit = base_commit
     @files = files
   end
 
@@ -34,7 +35,7 @@ class PullRequestCreator
       watched_repo,
       "Bump #{dependency.name} to #{dependency.version}",
       tree.sha,
-      default_branch_sha
+      base_commit
     )
   end
 
@@ -46,7 +47,7 @@ class PullRequestCreator
     Github.client.create_tree(
       watched_repo,
       file_trees,
-      base_tree: default_branch_sha
+      base_tree: base_commit
     )
   end
 
@@ -89,11 +90,6 @@ class PullRequestCreator
 
   def default_branch
     @default_branch ||= Github.client.repository(watched_repo).default_branch
-  end
-
-  def default_branch_sha
-    @default_branch_sha ||=
-      Github.client.ref(watched_repo, "heads/#{default_branch}").object.sha
   end
 
   def new_branch_name

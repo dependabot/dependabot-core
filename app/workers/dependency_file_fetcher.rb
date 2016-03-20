@@ -15,16 +15,18 @@ module Workers
     sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
 
     def perform(body)
-      file_fetcher = file_fetcher_for(body["repo"]["language"])
+      file_fetcher =
+        file_fetcher_for(body["repo"]["language"]).new(body["repo"]["name"])
 
-      dependency_files =
-        file_fetcher.new(body["repo"]["name"]).files.map do |file|
-          { "name" => file.name, "content" => file.content }
-        end
+      dependency_files = file_fetcher.files.map do |file|
+        { "name" => file.name, "content" => file.content }
+      end
+
+      repo = body["repo"].merge("commit" => file_fetcher.commit)
 
       Workers::DependencyFileParser.perform_async(
-        "repo" => body["repo"],
-        "dependency_files" => dependency_files
+        "repo" => repo,
+        "dependency_files" => dependency_files,
       )
     rescue => error
       Raven.capture_exception(error, extra: { body: body })

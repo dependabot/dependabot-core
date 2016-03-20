@@ -27,6 +27,7 @@ module Workers
 
       pull_request_creator = ::PullRequestCreator.new(
         repo: body["repo"]["name"],
+        base_commit: body["repo"]["commit"],
         dependency: updated_dependency,
         files: updated_dependency_files
       )

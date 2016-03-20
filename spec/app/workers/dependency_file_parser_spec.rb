@@ -7,7 +7,8 @@ RSpec.describe Workers::DependencyFileParser do
     {
       "repo" => {
         "name" => "gocardless/bump",
-        "language" => "ruby"
+        "language" => "ruby",
+        "commit" => "commitsha"
       },
       "dependency_files" => [
         { "name" => "Gemfile", "content" => fixture("Gemfile") },
