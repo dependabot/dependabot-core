@@ -26,7 +26,7 @@ module Workers
 
       Workers::DependencyFileParser.perform_async(
         "repo" => repo,
-        "dependency_files" => dependency_files,
+        "dependency_files" => dependency_files
       )
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
