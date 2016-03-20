@@ -14,7 +14,7 @@ group :development do
   gem "rspec", "~> 3.4.0"
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 1.24.2"
-  gem "rubocop", "~> 0.37.2"
+  gem "rubocop", "~> 0.38.0"
   gem "foreman", "~> 0.78.0"
   gem "dotenv", require: false
   gem "highline", "~> 1.7.8"
