@@ -7,7 +7,7 @@ gem "prius", "~> 1.0.0"
 gem "gems", "~> 0.8.3"
 gem "sentry-raven", "~> 0.15.6"
 gem "bundler", "~> 1.11.2"
-gem "sidekiq", "~> 4.1.0"
+gem "sidekiq", "~> 4.1.1"
 gem "sinatra"
 
 group :development do
