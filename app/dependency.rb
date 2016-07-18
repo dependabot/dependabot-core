@@ -6,7 +6,7 @@ require "./app/dependency_source_code_finders/node"
 class Dependency
   attr_reader :name, :version, :language
 
-  CHANGELOG_NAMES = %w(changelog history news).freeze
+  CHANGELOG_NAMES = %w(changelog history news changes).freeze
   GITHUB_REGEX    = %r{github\.com/(?<repo>[^/]+/[^/]+)/?}
   SOURCE_KEYS     = %w(source_code_uri homepage_uri wiki_uri bug_tracker_uri
                        documentation_uri).freeze
