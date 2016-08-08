@@ -11,7 +11,7 @@ gem "sidekiq", "~> 4.1.4"
 gem "sinatra"
 
 group :development do
-  gem "rspec", "~> 3.4.0"
+  gem "rspec", "~> 3.5.0"
   gem "rspec-its", "~> 1.2.0"
   gem "webmock", "~> 2.1.0"
   gem "rubocop", "~> 0.38.0"
