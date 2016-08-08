@@ -43,7 +43,8 @@ RSpec.describe Workers::DependencyFileFetcher do
               "name" => "Gemfile.lock",
               "content" => "abc"
             }
-          ])
+          ]
+        )
       perform
     end
 

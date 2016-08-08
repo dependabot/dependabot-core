@@ -29,7 +29,8 @@ RSpec.describe Workers::DependencyFileParser do
           "dependency" => {
             "name" => "business",
             "version" => "1.4.0"
-          })
+          }
+        )
 
       expect(Workers::UpdateChecker).
         to receive(:perform_async).
@@ -39,7 +40,8 @@ RSpec.describe Workers::DependencyFileParser do
           "dependency" => {
             "name" => "statesman",
             "version" => "1.2.0"
-          })
+          }
+        )
 
       perform
     end

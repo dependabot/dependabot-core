@@ -41,7 +41,8 @@ RSpec.describe Workers::UpdateChecker do
             "updated_dependency" => {
               "name" => "business",
               "version" => "1.5.0"
-            })
+            }
+          )
         perform
       end
     end
