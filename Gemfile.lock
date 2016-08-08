@@ -79,7 +79,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.11.2)
+  bundler (~> 1.12.5)
   dotenv
   foreman (~> 0.78.0)
   gemnasium-parser (~> 0.1.9)
@@ -95,5 +95,8 @@ DEPENDENCIES
   sinatra
   webmock (~> 1.24.2)
 
+RUBY VERSION
+   ruby 2.2.4p230
+
 BUNDLED WITH
-   1.11.2
+   1.12.5
