@@ -11,7 +11,7 @@ GEM
     dotenv (2.1.0)
     faraday (0.9.2)
       multipart-post (>= 1.2, < 3)
-    foreman (0.78.0)
+    foreman (0.82.0)
       thor (~> 0.19.1)
     gemnasium-parser (0.1.9)
     gems (0.8.3)
@@ -81,7 +81,7 @@ PLATFORMS
 DEPENDENCIES
   bundler (~> 1.12.5)
   dotenv
-  foreman (~> 0.78.0)
+  foreman (~> 0.82.0)
   gemnasium-parser (~> 0.1.9)
   gems (~> 0.8.3)
   highline (~> 1.7.8)
