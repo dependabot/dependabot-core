@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.3.8)
+    addressable (2.4.0)
     ast (2.2.0)
     concurrent-ruby (1.0.2)
     connection_pool (2.2.0)
@@ -70,7 +70,7 @@ GEM
     thor (0.19.1)
     tilt (2.0.5)
     unicode-display_width (1.0.3)
-    webmock (1.24.2)
+    webmock (2.1.0)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff
@@ -93,7 +93,7 @@ DEPENDENCIES
   sentry-raven (~> 0.15.6)
   sidekiq (~> 4.1.4)
   sinatra
-  webmock (~> 1.24.2)
+  webmock (~> 2.1.0)
 
 RUBY VERSION
    ruby 2.2.4p230
