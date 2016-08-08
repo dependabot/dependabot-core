@@ -38,7 +38,8 @@ RSpec.describe Workers::DependencyFileUpdater do
           "updated_dependency_files" => [{
             "name" => "Gemfile",
             "content" => "xyz"
-          }])
+          }]
+        )
       perform
     end
 
