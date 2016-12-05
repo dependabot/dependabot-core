@@ -1,11 +1,12 @@
 ruby "2.2.4"
 source "https://rubygems.org"
 
-gem "bundler", "~> 1.12.5"
+gem "bundler", "~> 1.13.6"
 gem "gemnasium-parser", "~> 0.1.9"
 gem "gems", "~> 0.8.3"
 gem "octokit", "~> 4.3.0"
 gem "prius", "~> 1.0.0"
+gem "rake"
 gem "sentry-raven", "~> 2.1.4"
 gem "sidekiq", "~> 4.2.7"
 gem "sinatra"
