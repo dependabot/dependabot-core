@@ -3,7 +3,7 @@ language: ruby
 sudo: false
 
 bundler_args: ''
+before_install:
+ - gem update --system
+ - gem install bundler
 
-script:
-  - bundle exec rubocop
-  - bundle exec rspec
