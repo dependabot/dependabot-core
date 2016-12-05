@@ -13,7 +13,7 @@ All that's left for you to do is review the change.
 ### Hosting Bump
 You can launch your own instance of Bump via Heroku.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 Once you've deployed, you'll want to click through to Heroku Scheduler in the
 list of addons and set up a scheduled task to bump your dependencies each day.
