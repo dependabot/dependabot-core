@@ -15,7 +15,7 @@ GEM
       thor (~> 0.19.1)
     gemnasium-parser (0.1.9)
     gems (0.8.3)
-    hashdiff (0.3.0)
+    hashdiff (0.3.1)
     highline (1.7.8)
     multipart-post (2.0.0)
     octokit (4.3.0)
@@ -70,7 +70,7 @@ GEM
     thor (0.19.1)
     tilt (2.0.5)
     unicode-display_width (1.1.1)
-    webmock (2.1.0)
+    webmock (2.3.0)
       addressable (>= 2.3.6)
       crack (>= 0.3.2)
       hashdiff
@@ -93,7 +93,7 @@ DEPENDENCIES
   sentry-raven (~> 2.1.4)
   sidekiq (~> 4.2.7)
   sinatra
-  webmock (~> 2.1.0)
+  webmock (~> 2.3.0)
 
 RUBY VERSION
    ruby 2.2.4p230
