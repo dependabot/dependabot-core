@@ -5,20 +5,18 @@ require "./lib/shared_helpers"
 
 module DependencyFileUpdaters
   class Node
-    attr_reader :package_json, :shrinkwrap, :dependency
+    attr_reader :package_json, :yarn_lock, :dependency
 
     def initialize(dependency_files:, dependency:)
       @package_json = dependency_files.find { |f| f.name == "package.json" }
-      @shrinkwrap = dependency_files.find do |file|
-        file.name == "npm-shrinkwrap.json"
-      end
+      @yarn_lock = dependency_files.find { |file| file.name == "yarn.lock" }
       validate_files_are_present!
 
       @dependency = dependency
     end
 
     def updated_dependency_files
-      [updated_package_json_file, updated_shrinkwrap]
+      [updated_package_json_file, updated_yarn_lock]
     end
 
     def updated_package_json_file
@@ -28,10 +26,10 @@ module DependencyFileUpdaters
       )
     end
 
-    def updated_shrinkwrap
+    def updated_yarn_lock
       DependencyFile.new(
-        name: "npm-shrinkwrap.json",
-        content: updated_shrinkwrap_content
+        name: "yarn.lock",
+        content: updated_yarn_lock_content
       )
     end
 
@@ -39,7 +37,7 @@ module DependencyFileUpdaters
 
     def validate_files_are_present!
       raise "No package.json!" unless package_json
-      raise "No npm-shrinkwrap.json!" unless shrinkwrap
+      raise "No yarn.lock!" unless yarn_lock
     end
 
     def updated_package_json_content
@@ -59,13 +57,14 @@ module DependencyFileUpdaters
         JSON.pretty_generate(parsed_content) + "\n"
     end
 
-    def updated_shrinkwrap_content
-      return @updated_shrinkwrap_content if @updated_shrinkwrap_content
+    def updated_yarn_lock_content
+      return @updated_yarn_lock_content if @updated_yarn_lock_content
       SharedHelpers.in_a_temporary_directory do |dir|
+        File.write(File.join(dir, "yarn.lock"), @yarn_lock.content)
         File.write(File.join(dir, "package.json"), updated_package_json_content)
-        `cd #{dir} && npm i --silent && npm shrinkwrap --silent`
-        @updated_shrinkwrap_content =
-          File.read(File.join(dir, "npm-shrinkwrap.json"))
+        puts `cd #{dir} && yarn install --ignore-scripts`
+        @updated_yarn_lock_content =
+          File.read(File.join(dir, "yarn.lock"))
       end
     end
 

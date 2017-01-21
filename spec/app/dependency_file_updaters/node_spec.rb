@@ -8,7 +8,7 @@ RSpec.describe DependencyFileUpdaters::Node do
   after { WebMock.enable! }
   let(:updater) do
     described_class.new(
-      dependency_files: [package_json, npm_shrinkwrap_json],
+      dependency_files: [package_json, yarn_lock],
       dependency: dependency
     )
   end
@@ -16,10 +16,10 @@ RSpec.describe DependencyFileUpdaters::Node do
     DependencyFile.new(content: package_json_body, name: "package.json")
   end
   let(:package_json_body) { fixture("package_files", "package.json") }
-  let(:npm_shrinkwrap_json) do
+  let(:yarn_lock) do
     DependencyFile.new(
-      name: "npm-shrinkwrap.json",
-      content: fixture("npm-shrinkwrap.json")
+      name: "yarn.lock",
+      content: fixture("package_files", "yarn.lock")
     )
   end
   let(:dependency) { Dependency.new(name: "fetch-factory", version: "0.0.2") }
@@ -63,11 +63,11 @@ RSpec.describe DependencyFileUpdaters::Node do
     end
   end
 
-  describe "#updated_shrinkwrap" do
-    subject(:file) { updater.updated_shrinkwrap }
+  describe "#updated_yarn_lock" do
+    subject(:file) { updater.updated_yarn_lock }
     it "has details of the updated item" do
       expect(file.content).
-        to include("\"fetch-factory\": {\n      \"version\": \"0.0.2\"")
+        to include("fetch-factory@^0.0.2")
     end
   end
 end
