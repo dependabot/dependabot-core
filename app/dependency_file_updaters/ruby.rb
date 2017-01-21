@@ -63,8 +63,6 @@ module DependencyFileUpdaters
     end
 
     def updated_gemfile_lock_content
-      return @updated_gemfile_lock_content if @updated_gemfile_lock_content
-
       @updated_gemfile_lock_content ||= build_updated_gemfile_lock
     end
 
