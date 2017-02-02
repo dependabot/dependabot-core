@@ -82,7 +82,12 @@ class PullRequestCreator
     end
 
     if dependency.github_repo_url
-      msg += "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
+      title = if dependency.previous_version
+                "Changes since #{dependency.previous_version}"
+              else
+                "Commits"
+              end
+      msg += "\n- [#{title}](#{dependency.github_compare_url})"
     end
 
     msg

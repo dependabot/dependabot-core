@@ -40,7 +40,8 @@ RSpec.describe Workers::UpdateChecker do
             "dependency_files" => body["dependency_files"],
             "updated_dependency" => {
               "name" => "business",
-              "version" => "1.5.0"
+              "version" => "1.5.0",
+              "previous_version" => "1.4.0"
             }
           )
         perform

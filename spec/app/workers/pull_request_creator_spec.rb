@@ -12,7 +12,8 @@ RSpec.describe Workers::PullRequestCreator do
       },
       "updated_dependency" => {
         "name" => "business",
-        "version" => "1.5.0"
+        "version" => "1.5.0",
+        "previous_version" => "1.4.0"
       },
       "updated_dependency_files" => [
         { "name" => "Gemfile", "content" => "xyz" },

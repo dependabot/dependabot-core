@@ -12,7 +12,10 @@ RSpec.describe PullRequestCreator do
   end
 
   let(:dependency) do
-    Dependency.new(name: "business", version: "1.5.0", language: "ruby")
+    Dependency.new(name: "business",
+                   version: "1.5.0",
+                   previous_version: "1.4.0",
+                   language: "ruby")
   end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
@@ -63,6 +66,10 @@ RSpec.describe PullRequestCreator do
     stub_request(:get, "#{business_repo_url}/contents/").
       to_return(status: 200,
                 body: fixture("github", "business_files.json"),
+                headers: json_header)
+    stub_request(:get, "#{business_repo_url}/tags").
+      to_return(status: 200,
+                body: fixture("github", "business_tags.json"),
                 headers: json_header)
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
       to_return(status: 200, body: fixture("rubygems_response.yaml"))
@@ -120,7 +127,8 @@ RSpec.describe PullRequestCreator do
             title: "Bump business to 1.5.0",
             body: "Bumps [business](#{dependency.github_repo_url}) to 1.5.0."\
                   "\n- [Changelog](#{dependency.changelog_url})"\
-                  "\n- [Commits](#{dependency.github_repo_url + '/commits'})"
+                  "\n- [Changes since 1.4.0](#{dependency.github_repo_url}/"\
+                    "compare/v1.4.0...v1.5.0)"
           }
         )
     end

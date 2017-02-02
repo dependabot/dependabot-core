@@ -18,6 +18,7 @@ module Workers
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
         version: body["updated_dependency"]["version"],
+        previous_version: body["updated_dependency"]["previous_version"],
         language: body["repo"]["language"]
       )
 

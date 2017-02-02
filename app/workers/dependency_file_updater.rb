@@ -16,7 +16,8 @@ module Workers
     def perform(body)
       updated_dependency = Dependency.new(
         name: body["updated_dependency"]["name"],
-        version: body["updated_dependency"]["version"]
+        version: body["updated_dependency"]["version"],
+        previous_version: body["updated_dependency"]["previous_version"]
       )
 
       dependency_files = body["dependency_files"].map do |file|
