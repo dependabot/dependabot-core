@@ -2,9 +2,14 @@ require "spec_helper"
 require "./app/dependency"
 
 RSpec.describe Dependency do
-  subject(:dependency) { described_class.new(name: name, version: version) }
+  subject(:dependency) do
+    described_class.new(name: name,
+                        version: version,
+                        previous_version: previous_version)
+  end
   let(:name) { "business" }
   let(:version) { "1.4.0" }
+  let(:previous_version) { nil }
 
   describe "#github_repo" do
     subject { dependency.github_repo }
@@ -38,6 +43,73 @@ RSpec.describe Dependency do
       end
 
       it { is_expected.to eq("https://github.com/gocardless/business") }
+    end
+
+    context "without a github repo" do
+      before { allow(dependency).to receive(:github_repo).and_return(nil) }
+      it { is_expected.to be_nil }
+    end
+  end
+
+  context "#github_compare_url" do
+    subject { dependency.github_compare_url }
+
+    context "with a github repo and old/new tags" do
+      let(:previous_version) { "1.3.0" }
+
+      before do
+        allow(dependency).
+          to receive(:github_repo).
+          and_return("gocardless/business")
+
+        stub_request(:get,
+                     "https://api.github.com/repos/gocardless/business/tags").
+          to_return(status: 200,
+                    body: fixture("github", "business_tags.json"),
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it do
+        is_expected.to eq("https://github.com/gocardless/business/"\
+                          "compare/v1.3.0...v1.4.0")
+      end
+    end
+
+    context "with a github repo and only a new tag" do
+      before do
+        allow(dependency).
+          to receive(:github_repo).
+          and_return("gocardless/business")
+
+        stub_request(:get,
+                     "https://api.github.com/repos/gocardless/business/tags").
+          to_return(status: 200,
+                    body: fixture("github", "business_tags.json"),
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it do
+        is_expected.
+          to eq("https://github.com/gocardless/business/commits/v1.4.0")
+      end
+    end
+
+    context "with a github repo and no tags found" do
+      before do
+        allow(dependency).
+          to receive(:github_repo).
+          and_return("gocardless/business")
+
+        stub_request(:get,
+                     "https://api.github.com/repos/gocardless/business/tags").
+          to_return(status: 200,
+                    body: "[]",
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it do
+        is_expected.to eq("https://github.com/gocardless/business/commits")
+      end
     end
 
     context "without a github repo" do

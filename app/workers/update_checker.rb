@@ -27,10 +27,13 @@ module Workers
       )
       return unless update_checker.needs_update?
 
-      update_dependency(body["repo"],
-                        body["dependency_files"],
-                        Dependency.new(name: dependency.name,
-                                       version: update_checker.latest_version))
+      updated_dep = Dependency.new(
+        name: dependency.name,
+        version: update_checker.latest_version,
+        previous_version: update_checker.dependency_version.to_s
+      )
+
+      update_dependency(body["repo"], body["dependency_files"], updated_dep)
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
       raise
@@ -44,7 +47,8 @@ module Workers
         "dependency_files" => dependency_files,
         "updated_dependency" => {
           "name" => updated_dependency.name,
-          "version" => updated_dependency.version
+          "version" => updated_dependency.version,
+          "previous_version" => updated_dependency.previous_version
         }
       )
     end
