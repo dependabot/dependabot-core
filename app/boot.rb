@@ -10,3 +10,7 @@ Raven.configure do |config|
   config.dsn = Prius.get(:sentry_dsn) if Prius.get(:sentry_dsn)
   config.logger = NullLogger.new(STDOUT) unless Prius.get(:sentry_dsn)
 end
+
+# Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
+# However, we actually *want* to manipulate Gemfiles for other repos.
+Bundler.settings[:frozen] = "0"
