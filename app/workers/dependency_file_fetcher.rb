@@ -3,8 +3,10 @@ require "./app/boot"
 require "./app/dependency_file"
 require "./app/dependency_file_fetchers/ruby"
 require "./app/dependency_file_fetchers/node"
+require "./app/dependency_file_fetchers/python"
 require "./app/dependency_file_parsers/ruby"
 require "./app/dependency_file_parsers/node"
+require "./app/dependency_file_parsers/python"
 
 $stdout.sync = true
 
@@ -55,6 +57,7 @@ module Workers
       case language
       when "ruby" then DependencyFileFetchers::Ruby
       when "node" then DependencyFileFetchers::Node
+      when "python" then DependencyFileFetchers::Python
       else raise "Invalid language #{language}"
       end
     end
@@ -63,6 +66,7 @@ module Workers
       case language
       when "ruby" then ::DependencyFileParsers::Ruby
       when "node" then ::DependencyFileParsers::Node
+      when "python" then ::DependencyFileParsers::Python
       else raise "Invalid language #{language}"
       end
     end

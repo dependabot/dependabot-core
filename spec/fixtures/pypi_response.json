@@ -1,0 +1,677 @@
+{
+    "info": {
+        "maintainer": "", 
+        "docs_url": null, 
+        "requires_python": "", 
+        "maintainer_email": "", 
+        "cheesecake_code_kwalitee_id": null, 
+        "keywords": "", 
+        "package_url": "http://pypi.python.org/pypi/luigi", 
+        "author": "The Luigi Authors", 
+        "author_email": "", 
+        "download_url": "", 
+        "platform": "", 
+        "version": "2.6.0", 
+        "cheesecake_documentation_id": null, 
+        "_pypi_hidden": false, 
+        "description": ".. note::\n\n   For the latest source, discussion, etc, please visit the\n   `GitHub repository <https://github.com/spotify/luigi>`_\n\n\n.. figure:: https://raw.githubusercontent.com/spotify/luigi/master/doc/luigi.png\n   :alt: Luigi Logo\n   :align: center\n\n.. image:: https://img.shields.io/travis/spotify/luigi/master.svg?style=flat\n    :target: https://travis-ci.org/spotify/luigi\n\n.. image:: https://img.shields.io/codecov/c/github/spotify/luigi/master.svg?style=flat\n    :target: https://codecov.io/gh/spotify/luigi?branch=master\n\n.. image:: https://landscape.io/github/spotify/luigi/master/landscape.svg?style=flat\n   :target: https://landscape.io/github/spotify/luigi/master\n\n.. image:: https://img.shields.io/pypi/v/luigi.svg?style=flat\n   :target: https://pypi.python.org/pypi/luigi\n\n.. image:: https://img.shields.io/pypi/l/luigi.svg?style=flat\n   :target: https://pypi.python.org/pypi/luigi\n\nLuigi is a Python (2.7, 3.3, 3.4, 3.5) package that helps you build complex pipelines of batch\njobs. It handles dependency resolution, workflow management, visualization,\nhandling failures, command line integration, and much more.\n\nGetting Started\n---------------\n\nRun ``pip install luigi`` to install the latest stable version from `PyPI\n<https://pypi.python.org/pypi/luigi>`_. Documentation for the latest release is\nhosted `here <https://luigi.readthedocs.io/en/stable/>`__.\n\nFor the bleeding edge code, ``pip install\ngit+https://github.com/spotify/luigi.git``. Bleeding edge documentation can be\nfound `here <https://luigi.readthedocs.io/en/latest/>`__.\n\nBackground\n----------\n\nThe purpose of Luigi is to address all the plumbing typically associated\nwith long-running batch processes. You want to chain many tasks,\nautomate them, and failures *will* happen. These tasks can be anything,\nbut are typically long running things like\n`Hadoop <http://hadoop.apache.org/>`_ jobs, dumping data to/from\ndatabases, running machine learning algorithms, or anything else.\n\nThere are other software packages that focus on lower level aspects of\ndata processing, like `Hive <http://hive.apache.org/>`__,\n`Pig <http://pig.apache.org/>`_, or\n`Cascading <http://www.cascading.org/>`_. Luigi is not a framework to\nreplace these. Instead it helps you stitch many tasks together, where\neach task can be a `Hive query <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.hive.html>`__,\na `Hadoop job in Java <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.hadoop_jar.html>`_,\na  `Spark job in Scala or Python <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.spark.html>`_\na Python snippet,\n`dumping a table <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.sqla.html>`_\nfrom a database, or anything else. It's easy to build up\nlong-running pipelines that comprise thousands of tasks and take days or\nweeks to complete. Luigi takes care of a lot of the workflow management\nso that you can focus on the tasks themselves and their dependencies.\n\nYou can build pretty much any task you want, but Luigi also comes with a\n*toolbox* of several common task templates that you use. It includes\nsupport for running\n`Python mapreduce jobs <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.hadoop.html>`_\nin Hadoop, as well as\n`Hive <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.hive.html>`__,\nand `Pig <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.pig.html>`__,\njobs. It also comes with\n`file system abstractions for HDFS <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.hdfs.html>`_,\nand local files that ensures all file system operations are atomic. This\nis important because it means your data pipeline will not crash in a\nstate containing partial data.\n\nVisualiser page\n---------------\n\nThe Luigi server comes with a web interface too, so you can search and filter\namong all your tasks.\n\n.. figure:: https://raw.githubusercontent.com/spotify/luigi/master/doc/visualiser_front_page.png\n   :alt: Visualiser page\n\nDependency graph example\n------------------------\n\nJust to give you an idea of what Luigi does, this is a screen shot from\nsomething we are running in production. Using Luigi's visualiser, we get\na nice visual overview of the dependency graph of the workflow. Each\nnode represents a task which has to be run. Green tasks are already\ncompleted whereas yellow tasks are yet to be run. Most of these tasks\nare Hadoop jobs, but there are also some things that run locally and\nbuild up data files.\n\n.. figure:: https://raw.githubusercontent.com/spotify/luigi/master/doc/user_recs.png\n   :alt: Dependency graph\n\nPhilosophy\n----------\n\nConceptually, Luigi is similar to `GNU\nMake <http://www.gnu.org/software/make/>`_ where you have certain tasks\nand these tasks in turn may have dependencies on other tasks. There are\nalso some similarities to `Oozie <http://oozie.apache.org/>`_\nand `Azkaban <http://data.linkedin.com/opensource/azkaban>`_. One major\ndifference is that Luigi is not just built specifically for Hadoop, and\nit's easy to extend it with other kinds of tasks.\n\nEverything in Luigi is in Python. Instead of XML configuration or\nsimilar external data files, the dependency graph is specified *within\nPython*. This makes it easy to build up complex dependency graphs of\ntasks, where the dependencies can involve date algebra or recursive\nreferences to other versions of the same task. However, the workflow can\ntrigger things not in Python, such as running\n`Pig scripts <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.pig.html>`_\nor `scp'ing files <https://luigi.readthedocs.io/en/latest/api/luigi.contrib.ssh.html>`_.\n\nWho uses Luigi?\n---------------\n\nWe use Luigi internally at `Spotify <https://www.spotify.com/us/>`_ to run\nthousands of tasks every day, organized in complex dependency graphs.\nMost of these tasks are Hadoop jobs. Luigi provides an infrastructure\nthat powers all kinds of stuff including recommendations, toplists, A/B\ntest analysis, external reports, internal dashboards, etc.\n\nSince Luigi is open source and without any registration walls, the exact number\nof Luigi users is unknown. But based on the number of unique contributors, we\nexpect hundreds of enterprises to use it. Some users have written blog posts\nor held presentations about Luigi:\n\n* `Spotify (NYC Data Science) <http://www.slideshare.net/erikbern/luigi-presentation-nyc-data-science>`_\n* `Foursquare <http://www.slideshare.net/OpenAnayticsMeetup/luigi-presentation-17-23199897>`_\n* `Mortar Data <http://help.mortardata.com/technologies/luigi>`_\n* `Stripe <http://www.slideshare.net/PyData/python-as-part-of-a-production-machine-learning-stack-by-michael-manapat-pydata-sv-2014>`_\n* `Asana <https://eng.asana.com/2014/11/stable-accessible-data-infrastructure-startup/>`_\n* `Buffer <https://overflow.bufferapp.com/2014/10/31/buffers-new-data-architecture/>`_\n* `SeatGeek <http://chairnerd.seatgeek.com/building-out-the-seatgeek-data-pipeline/>`_\n* `Treasure Data <http://blog.treasuredata.com/blog/2015/02/25/managing-the-data-pipeline-with-git-luigi/>`_\n* `Growth Intelligence <http://www.slideshare.net/growthintel/a-beginners-guide-to-building-data-pipelines-with-luigi>`_\n* `AdRoll <http://tech.adroll.com/blog/data/2015/09/22/data-pipelines-docker.html>`_\n* `Schibsted <http://www.schibsted.com/>`_\n* `17zuoye <https://speakerdeck.com/mvj3/luiti-an-offline-task-management-framework>`_\n* `enbrite.ly <http://enbrite.ly/>`_\n* `Dow Jones / The Wall Street Journal <http://wsj.com>`_\n* `Hotels.com <https://hotels.com>`_\n* `Custobar (Metrics Monday Helsinki) <http://www.slideshare.net/teemukurppa/managing-data-workflows-with-luigi>`_\n* `Blendle <http://www.anneschuth.nl/wp-content/uploads/sea-anneschuth-streamingblendle.pdf#page=126>`_\n* `TrustYou (PyData Berlin 2015) <https://speakerdeck.com/mfcabrera/pydata-berlin-2015-processing-hotel-reviews-with-python>`_\n* `Groupon / OrderUp <https://github.com/groupon/luigi-warehouse>`_\n\nWe're more than happy to have your company added here. Just send a PR on GitHub.\n\nExternal links\n--------------\n\n* `Mailing List <https://groups.google.com/d/forum/luigi-user/>`_ for discussions and asking questions. (Google Groups)\n* `Releases <https://pypi.python.org/pypi/luigi>`_ (PyPI)\n* `Source code <https://github.com/spotify/luigi>`_ (Github)\n* `Hubot Integration <https://github.com/houzz/hubot-luigi>`_ plugin for Slack, Hipchat, etc (Github)\n\nAuthors\n-------\n\nLuigi was built at `Spotify <https://www.spotify.com/us/>`_, mainly by\n`Erik Bernhardsson <https://github.com/erikbern>`_ and\n`Elias Freider <https://github.com/freider>`_.\n`Many other people <https://github.com/spotify/luigi/graphs/contributors>`_\nhave contributed since open sourcing in late 2012.\n`Arash Rouhani <https://github.com/tarrasch>`_ is currently the chief\nmaintainer of Luigi.\n", 
+        "release_url": "http://pypi.python.org/pypi/luigi/2.6.0", 
+        "downloads": {
+            "last_month": 0, 
+            "last_week": 0, 
+            "last_day": 0
+        }, 
+        "_pypi_ordering": 41, 
+        "classifiers": [
+            "Development Status :: 5 - Production/Stable", 
+            "Environment :: Console", 
+            "Environment :: Web Environment", 
+            "Intended Audience :: Developers", 
+            "Intended Audience :: System Administrators", 
+            "License :: OSI Approved :: Apache Software License", 
+            "Programming Language :: Python :: 2.7", 
+            "Programming Language :: Python :: 3.3", 
+            "Programming Language :: Python :: 3.4", 
+            "Programming Language :: Python :: 3.5", 
+            "Topic :: System :: Monitoring"
+        ], 
+        "bugtrack_url": null, 
+        "name": "luigi", 
+        "license": "Apache License 2.0", 
+        "summary": "Workflow mgmgt + task scheduling + dependency resolution", 
+        "home_page": "https://github.com/spotify/luigi", 
+        "cheesecake_installability_id": null
+    }, 
+    "releases": {
+        "1.1.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-03-16T13:02:09", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/59/d2/5f32dc62bfa1b430cb902bcd26c652f9fe4c9462a3b06bc1ca6e80127d85/luigi-1.1.1.tar.gz", 
+                "md5_digest": "5659011287f08ff6f1a36f9b9ab04269", 
+                "downloads": 2776, 
+                "filename": "luigi-1.1.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "59/d2/5f32dc62bfa1b430cb902bcd26c652f9fe4c9462a3b06bc1ca6e80127d85/luigi-1.1.1.tar.gz", 
+                "size": 357235
+            }
+        ], 
+        "1.1.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-03-07T17:29:44", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/85/b8/7a89ec0981570ae1fd30f102c8410381770db7898bbfdea3e1aa3ddd3b43/luigi-1.1.0.tar.gz", 
+                "md5_digest": "742e9d7acbdceb007c5280b9e9f0f00d", 
+                "downloads": 2713, 
+                "filename": "luigi-1.1.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "85/b8/7a89ec0981570ae1fd30f102c8410381770db7898bbfdea3e1aa3ddd3b43/luigi-1.1.0.tar.gz", 
+                "size": 349728
+            }
+        ], 
+        "1.0.6": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-07T23:47:21", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/e9/3d/68c6ca27f4bda9aabfef3c58c2866cf5db6e05524162d36b3adb4e8fa8e5/luigi-1.0.6.tar.gz", 
+                "md5_digest": "173f1868d0f8c318b2f9e91036d9bff2", 
+                "downloads": 2153, 
+                "filename": "luigi-1.0.6.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "e9/3d/68c6ca27f4bda9aabfef3c58c2866cf5db6e05524162d36b3adb4e8fa8e5/luigi-1.0.6.tar.gz", 
+                "size": 225527
+            }
+        ], 
+        "1.1.2": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-03-18T00:50:52", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/3d/26/191da8144fd2a881f72c6d87df68ee654e684989dcaa3559dcbc9c0a6355/luigi-1.1.2.tar.gz", 
+                "md5_digest": "a617f82f1354c49cb227b7877d3defa2", 
+                "downloads": 44221, 
+                "filename": "luigi-1.1.2.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "3d/26/191da8144fd2a881f72c6d87df68ee654e684989dcaa3559dcbc9c0a6355/luigi-1.1.2.tar.gz", 
+                "size": 357305
+            }
+        ], 
+        "1.0.5": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-07T23:44:22", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/8c/16/4ac01f87ecb5f1cd1b083003cdaa485f1d4445817dd67fa4145d35243936/luigi-1.0.5.tar.gz", 
+                "md5_digest": "15ab75ef16b5c9164f8cf7dfbbd78ef8", 
+                "downloads": 2159, 
+                "filename": "luigi-1.0.5.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "8c/16/4ac01f87ecb5f1cd1b083003cdaa485f1d4445817dd67fa4145d35243936/luigi-1.0.5.tar.gz", 
+                "size": 225340
+            }
+        ], 
+        "1.0.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-04-23T00:07:42", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1.0.1.tar.gz", 
+                "md5_digest": "884b7bd6b966ef4b00ec8a99d1cb5f98", 
+                "downloads": 2280, 
+                "filename": "luigi-1.0.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1.0.1.tar.gz", 
+                "size": 93270
+            }
+        ], 
+        "2.0.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-12-05T18:01:06", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/d4/2a/d6bff91d5ebb22449acb84b8212fd05d19e70713c16b092bfea4c2d2ce21/luigi-2.0.1.tar.gz", 
+                "md5_digest": "625b7609fd6566fb14c25c8f2592d95f", 
+                "downloads": 40965, 
+                "filename": "luigi-2.0.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "d4/2a/d6bff91d5ebb22449acb84b8212fd05d19e70713c16b092bfea4c2d2ce21/luigi-2.0.1.tar.gz", 
+                "size": 1089311
+            }
+        ], 
+        "2.0.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-10-23T12:32:11", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/f6/b6/92a5de1c1d04e579183b97cc2aa1e9fabface3d096ebba5a28842b9db1bf/luigi-2.0.0.tar.gz", 
+                "md5_digest": "06258afcfcdd2f829167450fd5fed604", 
+                "downloads": 28712, 
+                "filename": "luigi-2.0.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "f6/b6/92a5de1c1d04e579183b97cc2aa1e9fabface3d096ebba5a28842b9db1bf/luigi-2.0.0.tar.gz", 
+                "size": 1089886
+            }
+        ], 
+        "1.0.8": [], 
+        "1.0.9": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-09T16:05:56", 
+                "comment_text": "built for Darwin-11.4.2", 
+                "python_version": "any", 
+                "url": "https://pypi.python.org/packages/b4/76/0a96b93f10d6b1cbfec203c8b07fcfe67f209ac1c43f22572ff9e42fc8ca/luigi-1.0.9.macosx-10.7-intel.tar.gz", 
+                "md5_digest": "c64aeabe850d1f6235ba353cc89f9174", 
+                "downloads": 2115, 
+                "filename": "luigi-1.0.9.macosx-10.7-intel.tar.gz", 
+                "packagetype": "bdist_dumb", 
+                "path": "b4/76/0a96b93f10d6b1cbfec203c8b07fcfe67f209ac1c43f22572ff9e42fc8ca/luigi-1.0.9.macosx-10.7-intel.tar.gz", 
+                "size": 284105
+            }, 
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-09T16:05:58", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/01/75/6fa1e73a8fda67c02da29189541be78577c8535ea7b721e4c5c3b62a7fcc/luigi-1.0.9.tar.gz", 
+                "md5_digest": "024834d21a13276e84346fc000ff8cb4", 
+                "downloads": 2156, 
+                "filename": "luigi-1.0.9.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "01/75/6fa1e73a8fda67c02da29189541be78577c8535ea7b721e4c5c3b62a7fcc/luigi-1.0.9.tar.gz", 
+                "size": 228183
+            }
+        ], 
+        "1.0.7": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-08T00:03:23", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/2b/e1/551931e19ff0aa49489be78f471bfaaed6c5ae2da4b368c3fb4ccc3293ff/luigi-1.0.7.tar.gz", 
+                "md5_digest": "38b4c984f1d3e702115a697d1637878c", 
+                "downloads": 2184, 
+                "filename": "luigi-1.0.7.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "2b/e1/551931e19ff0aa49489be78f471bfaaed6c5ae2da4b368c3fb4ccc3293ff/luigi-1.0.7.tar.gz", 
+                "size": 226592
+            }
+        ], 
+        "2.2.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-07-08T10:53:59", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/ab/f2/487cc0a14227f92d18291ea85bed2acbe09e23b717f42626af13f8a91fbe/luigi-2.2.0.tar.gz", 
+                "md5_digest": "9e304df7d11dc54b5cc702ccd59f0012", 
+                "downloads": 7715, 
+                "filename": "luigi-2.2.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "ab/f2/487cc0a14227f92d18291ea85bed2acbe09e23b717f42626af13f8a91fbe/luigi-2.2.0.tar.gz", 
+                "size": 1098276
+            }
+        ], 
+        "1.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2012-10-21T18:51:38", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/fd/e9/cf3edb46c2be2d5f6e1cb345af929e5240473c310a1a004d42aa1c69e718/luigi-1.0.tar.gz", 
+                "md5_digest": "eef9f05d7b9930943c6f631253a90cf6", 
+                "downloads": 2664, 
+                "filename": "luigi-1.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "fd/e9/cf3edb46c2be2d5f6e1cb345af929e5240473c310a1a004d42aa1c69e718/luigi-1.0.tar.gz", 
+                "size": 64636
+            }
+        ], 
+        "2.1.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-04-01T22:30:41", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/3b/e8/1935ca0d61e89c135b06e27ebeb39e819d73cd162f8b8fabb3cb62fe4852/luigi-2.1.0.tar.gz", 
+                "md5_digest": "1f2b1e7de7a17d025163cff8d05f7a7a", 
+                "downloads": 328, 
+                "filename": "luigi-2.1.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "3b/e8/1935ca0d61e89c135b06e27ebeb39e819d73cd162f8b8fabb3cb62fe4852/luigi-2.1.0.tar.gz", 
+                "size": 1122512
+            }
+        ], 
+        "2.1.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-04-06T07:17:35", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/47/ef/50c8d8b71b6613bb17088cf7b02319dd907d8bd05f6280e27a4199c68402/luigi-2.1.1.tar.gz", 
+                "md5_digest": "f05aab98f4212d807b5ab348239058ec", 
+                "downloads": 24120, 
+                "filename": "luigi-2.1.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "47/ef/50c8d8b71b6613bb17088cf7b02319dd907d8bd05f6280e27a4199c68402/luigi-2.1.1.tar.gz", 
+                "size": 1129059
+            }
+        ], 
+        "1.0.2": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-04-25T17:18:57", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/9a/d5/6351a5b71f2bb6501211f6fc3d5e102d72017ef289b6729610208765617f/luigi-1.0.2.tar.gz", 
+                "md5_digest": "9ef8a6a5783f0bd5dbdbe4b8a889bb84", 
+                "downloads": 2215, 
+                "filename": "luigi-1.0.2.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "9a/d5/6351a5b71f2bb6501211f6fc3d5e102d72017ef289b6729610208765617f/luigi-1.0.2.tar.gz", 
+                "size": 78573
+            }
+        ], 
+        "1.0.3": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-04-25T17:20:20", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/d6/8a/d9bd49a8ce0cb8e5e26f35436e5dafab01bb4fb13d7189a59f95b52a8a7b/luigi-1.0.3.tar.gz", 
+                "md5_digest": "8fb2043ccf28c6034c3b2e1c8b0a92ff", 
+                "downloads": 10655, 
+                "filename": "luigi-1.0.3.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "d6/8a/d9bd49a8ce0cb8e5e26f35436e5dafab01bb4fb13d7189a59f95b52a8a7b/luigi-1.0.3.tar.gz", 
+                "size": 93196
+            }
+        ], 
+        "1.0.16": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-05-17T16:34:18", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/be/43/d9c21e162f3412833ab57d8fb22e328dbfec9e68e562e09e612f8bb8afd0/luigi-1.0.16.tar.gz", 
+                "md5_digest": "edbebf80d6c332fcd07907c14da4d326", 
+                "downloads": 30433, 
+                "filename": "luigi-1.0.16.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "be/43/d9c21e162f3412833ab57d8fb22e328dbfec9e68e562e09e612f8bb8afd0/luigi-1.0.16.tar.gz", 
+                "size": 277787
+            }
+        ], 
+        "1.0.17": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-08-26T14:32:35", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/ba/f5/b3d877f760ae4cd741ba90ca4b0fcf0527b1e7e72ec34d13a8762afbdbc0/luigi-1.0.17.tar.gz", 
+                "md5_digest": "13151df79c743df21358560f0e7e9321", 
+                "downloads": 3871, 
+                "filename": "luigi-1.0.17.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "ba/f5/b3d877f760ae4cd741ba90ca4b0fcf0527b1e7e72ec34d13a8762afbdbc0/luigi-1.0.17.tar.gz", 
+                "size": 296199
+            }
+        ], 
+        "1.0.14": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-05-14T11:56:59", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/31/7a/697567f198c3187d329bd5239380595c18b1d4cec2100abb8683a5431449/luigi-1.0.14.tar.gz", 
+                "md5_digest": "f9212f6cd1dc046739664b5bedcc3415", 
+                "downloads": 1802, 
+                "filename": "luigi-1.0.14.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "31/7a/697567f198c3187d329bd5239380595c18b1d4cec2100abb8683a5431449/luigi-1.0.14.tar.gz", 
+                "size": 277355
+            }
+        ], 
+        "1.0.15": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-05-14T14:18:30", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/e9/a4/229f2ba9f070bb167249989c872b1e6bd84afcaba5aa14d16f913e2a3388/luigi-1.0.15.tar.gz", 
+                "md5_digest": "7222e00a048b66d6e92af253fc86810b", 
+                "downloads": 1949, 
+                "filename": "luigi-1.0.15.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "e9/a4/229f2ba9f070bb167249989c872b1e6bd84afcaba5aa14d16f913e2a3388/luigi-1.0.15.tar.gz", 
+                "size": 277722
+            }
+        ], 
+        "1.0.12": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-11-26T04:18:10", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/5a/09/38185b73e7ea6d477ea01cc85f075b77730595b1f8b0e55a4edbeac66d53/luigi-1.0.12.tar.gz", 
+                "md5_digest": "58d33b2f940bd4ad2baa5281d4240345", 
+                "downloads": 18087, 
+                "filename": "luigi-1.0.12.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "5a/09/38185b73e7ea6d477ea01cc85f075b77730595b1f8b0e55a4edbeac66d53/luigi-1.0.12.tar.gz", 
+                "size": 238722
+            }
+        ], 
+        "1.0.13": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-02-03T05:44:54", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/bb/d8/ec43a5bbbf963675a198dd0c050f61df859c326b9373d26ac22bee00aa95/luigi-1.0.13.tar.gz", 
+                "md5_digest": "3150d20f66026df00887625f11720acb", 
+                "downloads": 5096, 
+                "filename": "luigi-1.0.13.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "bb/d8/ec43a5bbbf963675a198dd0c050f61df859c326b9373d26ac22bee00aa95/luigi-1.0.13.tar.gz", 
+                "size": 293454
+            }
+        ], 
+        "1.0.10": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-09T16:06:37", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/07/c1/26b984d5f1084e57ff9207a9b1873ce0a0c3d4c1c857f20fa38e93c45b3b/luigi-1.0.10.tar.gz", 
+                "md5_digest": "7f6a390a7d928f3866f13bd5be55a91d", 
+                "downloads": 4379, 
+                "filename": "luigi-1.0.10.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "07/c1/26b984d5f1084e57ff9207a9b1873ce0a0c3d4c1c857f20fa38e93c45b3b/luigi-1.0.10.tar.gz", 
+                "size": 228201
+            }
+        ], 
+        "1.0.11": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-11-21T23:07:21", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/bd/f4/8828fbced3792398065560a5d7203df45b85199f230bde9364d9ce37726e/luigi-1.0.11.tar.gz", 
+                "md5_digest": "d5858aeeb5deef91ae819376ebefd83d", 
+                "downloads": 2062, 
+                "filename": "luigi-1.0.11.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "bd/f4/8828fbced3792398065560a5d7203df45b85199f230bde9364d9ce37726e/luigi-1.0.11.tar.gz", 
+                "size": 238741
+            }
+        ], 
+        "1.0.18": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-09-15T11:40:39", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/0b/9a/f51f96ca7ee9a330d6912d08c5fe237008de1c10c52114722f68d15bdee8/luigi-1.0.18.tar.gz", 
+                "md5_digest": "e7cda3de5128d697ecb89b126522aa21", 
+                "downloads": 2150, 
+                "filename": "luigi-1.0.18.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "0b/9a/f51f96ca7ee9a330d6912d08c5fe237008de1c10c52114722f68d15bdee8/luigi-1.0.18.tar.gz", 
+                "size": 297983
+            }
+        ], 
+        "1.0.19": [
+            {
+                "has_sig": false, 
+                "upload_time": "2014-09-22T12:14:38", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/f5/a2/ee698ff0e301b321ffccf0a254df5e30e5ab734d23886606937f73b5ccb6/luigi-1.0.19.tar.gz", 
+                "md5_digest": "3170554e32a7a630f9457d3298741538", 
+                "downloads": 207006, 
+                "filename": "luigi-1.0.19.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "f5/a2/ee698ff0e301b321ffccf0a254df5e30e5ab734d23886606937f73b5ccb6/luigi-1.0.19.tar.gz", 
+                "size": 300167
+            }
+        ], 
+        "2.3.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-08-12T03:20:41", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/25/64/5383d94b5b44e9c1443c1a6b857210ace8205954359f8353a50c16deb664/luigi-2.3.0.tar.gz", 
+                "md5_digest": "3b7e0b4c8d684a168c97a4fb2d9340ca", 
+                "downloads": 1188, 
+                "filename": "luigi-2.3.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "25/64/5383d94b5b44e9c1443c1a6b857210ace8205954359f8353a50c16deb664/luigi-2.3.0.tar.gz", 
+                "size": 1113879
+            }
+        ], 
+        "2.3.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-08-25T02:41:26", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/55/8d/0842fbdb05a18d4a9e578f7c1661fbc719c625b1d1f0f9ceb08ea8bea518/luigi-2.3.1.tar.gz", 
+                "md5_digest": "e48786e9ac71d8fd58694529d3f5539d", 
+                "downloads": 7557, 
+                "filename": "luigi-2.3.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "55/8d/0842fbdb05a18d4a9e578f7c1661fbc719c625b1d1f0f9ceb08ea8bea518/luigi-2.3.1.tar.gz", 
+                "size": 1114644
+            }
+        ], 
+        "2.3.2": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-09-20T09:46:25", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/d5/0b/531d2efe721a7195bd593ff2d92d41720b10dae0093f9abfd2c073560dcf/luigi-2.3.2.tar.gz", 
+                "md5_digest": "cd622f6fbae981bc1b8f9b0132b189b8", 
+                "downloads": 8558, 
+                "filename": "luigi-2.3.2.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "d5/0b/531d2efe721a7195bd593ff2d92d41720b10dae0093f9abfd2c073560dcf/luigi-2.3.2.tar.gz", 
+                "size": 1116310
+            }
+        ], 
+        "2.3.3": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-10-21T04:04:56", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/80/83/f1f805266ba83964b90e31890d8f8f9ee4b82c40e9778fac350bdf830fba/luigi-2.3.3.tar.gz", 
+                "md5_digest": "dea3b1cb636f7ac141c6054717728830", 
+                "downloads": 7910, 
+                "filename": "luigi-2.3.3.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "80/83/f1f805266ba83964b90e31890d8f8f9ee4b82c40e9778fac350bdf830fba/luigi-2.3.3.tar.gz", 
+                "size": 1119561
+            }
+        ], 
+        "1.3.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-06-26T13:19:38", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/7a/3d/da7ebf732a295098ec7b72aefd6580cc68dad461fdbce9265ddb8a3544f8/luigi-1.3.0.tar.gz", 
+                "md5_digest": "948a6574e4d4e1d1d8b8a355ca0cdaf7", 
+                "downloads": 44182, 
+                "filename": "luigi-1.3.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "7a/3d/da7ebf732a295098ec7b72aefd6580cc68dad461fdbce9265ddb8a3544f8/luigi-1.3.0.tar.gz", 
+                "size": 457934
+            }
+        ], 
+        "1.2.1": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-05-26T10:00:32", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/3f/c7/7f5e1f5016a23c6cf2b3152bd27d994ad3b384e59e3c1bfdec444669853d/luigi-1.2.1.tar.gz", 
+                "md5_digest": "a147bba0bb1999b5856f4910bf15a9c0", 
+                "downloads": 25856, 
+                "filename": "luigi-1.2.1.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "3f/c7/7f5e1f5016a23c6cf2b3152bd27d994ad3b384e59e3c1bfdec444669853d/luigi-1.2.1.tar.gz", 
+                "size": 449107
+            }
+        ], 
+        "2.4.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2016-12-02T04:52:12", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/6a/84/42bea7839bc6eee8c219775f6afe3e296a554985a0aa216fb6090478a3e5/luigi-2.4.0.tar.gz", 
+                "md5_digest": "76303fa7281ac0c6a95aa9ada13acc3e", 
+                "downloads": 5965, 
+                "filename": "luigi-2.4.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "6a/84/42bea7839bc6eee8c219775f6afe3e296a554985a0aa216fb6090478a3e5/luigi-2.4.0.tar.gz", 
+                "size": 1128461
+            }
+        ], 
+        "2.5.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2017-01-10T07:54:38", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/9a/f2/7f7bf85e1e380375cc8a291ed648c733b4f310fe43a00073fff12bb61692/luigi-2.5.0.tar.gz", 
+                "md5_digest": "26c29cd4d18381b1f148a7a43cbee335", 
+                "downloads": 0, 
+                "filename": "luigi-2.5.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "9a/f2/7f7bf85e1e380375cc8a291ed648c733b4f310fe43a00073fff12bb61692/luigi-2.5.0.tar.gz", 
+                "size": 1130701
+            }
+        ], 
+        "1.0.4": [
+            {
+                "has_sig": false, 
+                "upload_time": "2013-08-07T18:46:38", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/56/09/d3776490559b62d53b7cf87cb066b76b9a7f91d6749325d146c76a2adc42/luigi-1.0.4.tar.gz", 
+                "md5_digest": "d5eef08fb8f76875bc28680ec72511f8", 
+                "downloads": 2175, 
+                "filename": "luigi-1.0.4.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "56/09/d3776490559b62d53b7cf87cb066b76b9a7f91d6749325d146c76a2adc42/luigi-1.0.4.tar.gz", 
+                "size": 71168
+            }
+        ], 
+        "2.6.0": [
+            {
+                "has_sig": false, 
+                "upload_time": "2017-02-10T06:57:18", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz", 
+                "md5_digest": "8c36cf3d37525ccc57f6ecc24431bdef", 
+                "downloads": 0, 
+                "filename": "luigi-2.6.0.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz", 
+                "size": 1158747
+            }
+        ], 
+        "1.0.24": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-02-11T12:01:07", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/3c/a5/3bc272eb6317147ddaf8c0c3bf7ba47a684216f5e16c4fdf80f05ac94d60/luigi-1.0.24.tar.gz", 
+                "md5_digest": "44c6f413dff37e6cd295e696f2cdea19", 
+                "downloads": 23418, 
+                "filename": "luigi-1.0.24.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "3c/a5/3bc272eb6317147ddaf8c0c3bf7ba47a684216f5e16c4fdf80f05ac94d60/luigi-1.0.24.tar.gz", 
+                "size": 333339
+            }
+        ], 
+        "1.0.23": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-02-10T11:53:49", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/2e/5c/d53458d78415079fef6bc2231f7b5f5e5876e90f39cc2c57a054379df0cc/luigi-1.0.23.tar.gz", 
+                "md5_digest": "0c9d7dd091b913f9076b5517dc41cd91", 
+                "downloads": 2542, 
+                "filename": "luigi-1.0.23.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "2e/5c/d53458d78415079fef6bc2231f7b5f5e5876e90f39cc2c57a054379df0cc/luigi-1.0.23.tar.gz", 
+                "size": 333182
+            }
+        ], 
+        "1.0.22": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-02-10T04:20:16", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/b7/8b/d7751ae52e30e1b872bcaaf4626b202e0fc61c2c91fef91912b6e901545e/luigi-1.0.22.tar.gz", 
+                "md5_digest": "10762c7d1999babdb38471a26b1d2880", 
+                "downloads": 1072, 
+                "filename": "luigi-1.0.22.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "b7/8b/d7751ae52e30e1b872bcaaf4626b202e0fc61c2c91fef91912b6e901545e/luigi-1.0.22.tar.gz", 
+                "size": 333175
+            }
+        ], 
+        "1.0.21": [], 
+        "1.0.20": [
+            {
+                "has_sig": false, 
+                "upload_time": "2015-01-21T16:27:35", 
+                "comment_text": "", 
+                "python_version": "source", 
+                "url": "https://pypi.python.org/packages/2b/88/804830f0c78ebe1a2b1dfbf723bfcd97f6822f4e139da5909cd87baf2374/luigi-1.0.20.tar.gz", 
+                "md5_digest": "f1edc408bb19ffaf18a88693abc0d765", 
+                "downloads": 6245, 
+                "filename": "luigi-1.0.20.tar.gz", 
+                "packagetype": "sdist", 
+                "path": "2b/88/804830f0c78ebe1a2b1dfbf723bfcd97f6822f4e139da5909cd87baf2374/luigi-1.0.20.tar.gz", 
+                "size": 324700
+            }
+        ]
+    }, 
+    "urls": [
+        {
+            "has_sig": false, 
+            "upload_time": "2017-02-10T06:57:18", 
+            "comment_text": "", 
+            "python_version": "source", 
+            "url": "https://pypi.python.org/packages/9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz", 
+            "md5_digest": "8c36cf3d37525ccc57f6ecc24431bdef", 
+            "downloads": 0, 
+            "filename": "luigi-2.6.0.tar.gz", 
+            "packagetype": "sdist", 
+            "path": "9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz", 
+            "size": 1158747
+        }
+    ]
+}

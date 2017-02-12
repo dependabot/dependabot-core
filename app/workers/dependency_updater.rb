@@ -5,8 +5,10 @@ require "./app/dependency_file"
 require "./app/repo"
 require "./app/update_checkers/ruby"
 require "./app/update_checkers/node"
+require "./app/update_checkers/python"
 require "./app/dependency_file_updaters/ruby"
 require "./app/dependency_file_updaters/node"
+require "./app/dependency_file_updaters/python"
 require "./app/pull_request_creator"
 
 $stdout.sync = true
@@ -70,6 +72,7 @@ module Workers
       case repo.language
       when "ruby" then UpdateCheckers::Ruby
       when "node" then UpdateCheckers::Node
+      when "python" then UpdateCheckers::Python
       else raise "Invalid language #{language}"
       end
     end
@@ -78,6 +81,7 @@ module Workers
       case repo.language
       when "ruby" then DependencyFileUpdaters::Ruby
       when "node" then DependencyFileUpdaters::Node
+      when "python" then DependencyFileUpdaters::Python
       else raise "Invalid language #{language}"
       end
     end

@@ -2,6 +2,7 @@ require "gems"
 require "./lib/github"
 require "./app/dependency_source_code_finders/ruby"
 require "./app/dependency_source_code_finders/node"
+require "./app/dependency_source_code_finders/python"
 
 class Dependency
   attr_reader :name, :version, :previous_version, :language
@@ -92,6 +93,7 @@ class Dependency
           case language
           when "ruby" then DependencySourceCodeFinders::Ruby
           when "node" then DependencySourceCodeFinders::Node
+          when "python" then DependencySourceCodeFinders::Python
           else raise "Invalid language #{language}"
           end
 
