@@ -1,7 +1,7 @@
 require "spec_helper"
-require "./app/workers/update_checker"
+require "./app/workers/dependency_updater"
 
-RSpec.describe Workers::UpdateChecker do
+RSpec.describe Workers::DependencyUpdater do
   let(:worker) { described_class.new }
   let(:body) do
     {

@@ -32,8 +32,8 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:commit).and_return("commitsha")
     end
 
-    it "enqueues UpdateCheckers with the correct arguments" do
-      expect(Workers::UpdateChecker).
+    it "enqueues DependencyUpdaters with the correct arguments" do
+      expect(Workers::DependencyUpdater).
         to receive(:perform_async).
         with(
           "repo" => body["repo"].merge("commit" => "commitsha"),
@@ -44,7 +44,7 @@ RSpec.describe Workers::DependencyFileFetcher do
           }
         )
 
-      expect(Workers::UpdateChecker).
+      expect(Workers::DependencyUpdater).
         to receive(:perform_async).
         with(
           "repo" => body["repo"].merge("commit" => "commitsha"),

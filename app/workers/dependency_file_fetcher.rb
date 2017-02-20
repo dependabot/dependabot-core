@@ -24,7 +24,7 @@ module Workers
       dependencies = parser.new(dependency_files: file_fetcher.files).parse
 
       dependencies.each do |dependency|
-        Workers::UpdateChecker.perform_async(
+        Workers::DependencyUpdater.perform_async(
           "repo" => body["repo"].merge("commit" => file_fetcher.commit),
           "dependency_files" => body["dependeny_files"],
           "dependency" => {

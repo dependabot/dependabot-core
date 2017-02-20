@@ -12,7 +12,7 @@ require "./app/workers/pull_request_creator"
 $stdout.sync = true
 
 module Workers
-  class UpdateChecker
+  class DependencyUpdater
     include Sidekiq::Worker
 
     sidekiq_options queue: "bump-dependencies_to_check", retry: false
