@@ -5,4 +5,8 @@ class DependencyFile
     @name = name
     @content = content
   end
+
+  def to_h
+    { "name" => name, "content" => content }
+  end
 end

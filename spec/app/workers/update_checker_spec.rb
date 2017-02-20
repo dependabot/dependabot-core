@@ -30,19 +30,30 @@ RSpec.describe Workers::UpdateChecker do
           to receive(:needs_update?).and_return(true)
         allow_any_instance_of(UpdateCheckers::Ruby).
           to receive(:latest_version).and_return("1.5.0")
+
+        allow_any_instance_of(DependencyFileUpdaters::Ruby).
+          to receive(:updated_dependency_files).
+          and_return([DependencyFile.new(name: "Gemfile", content: "xyz")])
       end
 
-      it "enqueues a DependencyFileUpdater with the correct arguments" do
-        expect(Workers::DependencyFileUpdater).
+      it "enqueues a PullRequestCreator with the correct arguments" do
+        expect(Workers::PullRequestCreator).
           to receive(:perform_async).
           with(
-            "repo" => body["repo"],
-            "dependency_files" => body["dependency_files"],
+            "repo" => {
+              "name" => "gocardless/bump",
+              "language" => "ruby",
+              "commit" => "commitsha"
+            },
             "updated_dependency" => {
               "name" => "business",
               "version" => "1.5.0",
               "previous_version" => "1.4.0"
-            }
+            },
+            "updated_dependency_files" => [{
+              "name" => "Gemfile",
+              "content" => "xyz"
+            }]
           )
         perform
       end
@@ -55,17 +66,41 @@ RSpec.describe Workers::UpdateChecker do
       end
 
       it "doesn't write a message into the queue" do
-        expect(Workers::DependencyFileUpdater).to_not receive(:perform_async)
+        expect(Workers::PullRequestCreator).to_not receive(:perform_async)
         perform
       end
     end
 
     context "if an error is raised" do
-      before { allow(UpdateCheckers::Ruby).to receive(:new).and_raise("hell") }
+      before do
+        allow_any_instance_of(UpdateCheckers::Ruby).
+          to receive(:latest_version).and_return("1.7.0")
+      end
 
-      it "still raises, but also sends the error to sentry" do
-        expect(Raven).to receive(:capture_exception).and_call_original
-        expect { perform }.to raise_error("hell")
+      context "for a version conflict" do
+        before do
+          allow_any_instance_of(DependencyFileUpdaters::Ruby).
+            to receive(:updated_dependency_files).
+            and_raise(DependencyFileUpdaters::VersionConflict)
+        end
+
+        it "quietly finishes" do
+          expect(Raven).to_not receive(:capture_exception)
+          expect { perform }.to_not raise_error
+        end
+      end
+
+      context "for a runtime error" do
+        before do
+          allow(DependencyFileUpdaters::Ruby).
+            to receive(:new).
+            and_raise("hell")
+        end
+
+        it "sends the error to sentry and raises" do
+          expect(Raven).to receive(:capture_exception).and_call_original
+          expect { perform }.to raise_error(/hell/)
+        end
       end
     end
   end

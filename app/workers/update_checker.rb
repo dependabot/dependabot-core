@@ -2,9 +2,12 @@ require "sidekiq"
 require "./app/boot"
 require "./app/dependency"
 require "./app/dependency_file"
+require "./app/repo"
 require "./app/update_checkers/ruby"
 require "./app/update_checkers/node"
-require "./app/workers/dependency_file_updater"
+require "./app/dependency_file_updaters/ruby"
+require "./app/dependency_file_updaters/node"
+require "./app/workers/pull_request_creator"
 
 $stdout.sync = true
 
@@ -15,25 +18,23 @@ module Workers
     sidekiq_options queue: "bump-dependencies_to_check", retry: false
 
     def perform(body)
-      dependency = Dependency.new(name: body["dependency"]["name"],
-                                  version: body["dependency"]["version"])
-      dependency_files = body["dependency_files"].map do |file|
-        DependencyFile.new(name: file["name"], content: file["content"])
+      @repo = Repo.new(**body["repo"].symbolize_keys)
+      @dependency = Dependency.new(**body["dependency"].symbolize_keys)
+      @dependency_files = body["dependency_files"].map do |file|
+        DependencyFile.new(**file.symbolize_keys)
       end
 
-      update_checker = update_checker_for(body["repo"]["language"]).new(
-        dependency: dependency,
-        dependency_files: dependency_files
-      )
-      return unless update_checker.needs_update?
+      updated_dependency, updated_dependency_files = update_dependency!
 
-      updated_dep = Dependency.new(
-        name: dependency.name,
-        version: update_checker.latest_version,
-        previous_version: update_checker.dependency_version.to_s
-      )
+      return if updated_dependency.nil?
 
-      update_dependency(body["repo"], body["dependency_files"], updated_dep)
+      Workers::PullRequestCreator.perform_async(
+        "repo" => repo.to_h,
+        "updated_dependency" => updated_dependency.to_h,
+        "updated_dependency_files" => updated_dependency_files.map(&:to_h)
+      )
+    rescue DependencyFileUpdaters::VersionConflict
+      nil
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
       raise
@@ -41,22 +42,38 @@ module Workers
 
     private
 
-    def update_dependency(repo, dependency_files, updated_dependency)
-      Workers::DependencyFileUpdater.perform_async(
-        "repo" => repo,
-        "dependency_files" => dependency_files,
-        "updated_dependency" => {
-          "name" => updated_dependency.name,
-          "version" => updated_dependency.version,
-          "previous_version" => updated_dependency.previous_version
-        }
+    attr_reader :dependency, :dependency_files, :repo
+
+    def update_dependency!
+      checker = update_checker.new(
+        dependency: dependency,
+        dependency_files: dependency_files
       )
+
+      return unless checker.needs_update?
+
+      updated_dependency = checker.updated_dependency
+
+      updated_dependency_files = file_updater.new(
+        dependency: updated_dependency,
+        dependency_files: dependency_files
+      ).updated_dependency_files
+
+      [updated_dependency, updated_dependency_files]
     end
 
-    def update_checker_for(language)
-      case language
+    def update_checker
+      case repo.language
       when "ruby" then UpdateCheckers::Ruby
       when "node" then UpdateCheckers::Node
+      else raise "Invalid language #{language}"
+      end
+    end
+
+    def file_updater
+      case repo.language
+      when "ruby" then DependencyFileUpdaters::Ruby
+      when "node" then DependencyFileUpdaters::Node
       else raise "Invalid language #{language}"
       end
     end
