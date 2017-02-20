@@ -82,7 +82,7 @@ RSpec.describe DependencyFileUpdaters::Ruby do
       let(:gemfile_body) { fixture("gemfiles", "version_not_specified") }
 
       it "locks the updated gem to the latest version" do
-        expect(file.content).to include "business (1.7.0)"
+        expect(file.content).to include "business (1.8.0)"
       end
 
       it "doesn't change the version of the other (also outdated) gem" do
