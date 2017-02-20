@@ -23,6 +23,7 @@ RSpec.describe Workers::DependencyUpdater do
 
   describe "#perform" do
     subject(:perform) { worker.perform(body) }
+    let(:stubbed_creator) { double("PullRequestCreator", create: nil) }
 
     context "when an update is required" do
       before do
@@ -37,24 +38,18 @@ RSpec.describe Workers::DependencyUpdater do
       end
 
       it "enqueues a PullRequestCreator with the correct arguments" do
-        expect(Workers::PullRequestCreator).
-          to receive(:perform_async).
-          with(
-            "repo" => {
-              "name" => "gocardless/bump",
-              "language" => "ruby",
-              "commit" => "commitsha"
-            },
-            "updated_dependency" => {
-              "name" => "business",
-              "version" => "1.5.0",
-              "previous_version" => "1.4.0"
-            },
-            "updated_dependency_files" => [{
-              "name" => "Gemfile",
-              "content" => "xyz"
-            }]
+        expect(PullRequestCreator).to receive(:new) do |args|
+          expect(args[:repo]).to eq("gocardless/bump")
+          expect(args[:base_commit]).to eq("commitsha")
+          expect(args[:dependency].to_h).to eq(
+            "name" => "business",
+            "version" => "1.5.0",
+            "previous_version" => "1.4.0"
           )
+          expect(args[:files].map(&:to_h)).to eq(
+            [{ "name" => "Gemfile", "content" => "xyz" }]
+          )
+        end.and_return(double(create: nil))
         perform
       end
     end
@@ -65,8 +60,8 @@ RSpec.describe Workers::DependencyUpdater do
           to receive(:needs_update?).and_return(false)
       end
 
-      it "doesn't write a message into the queue" do
-        expect(Workers::PullRequestCreator).to_not receive(:perform_async)
+      it "doesn't create a PR" do
+        expect(PullRequestCreator).to_not receive(:new)
         perform
       end
     end

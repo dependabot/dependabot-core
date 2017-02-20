@@ -15,18 +15,18 @@ module Workers
     sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
 
     def perform(body)
-      file_fetcher = file_fetcher_for(
-        body["repo"]["language"]
-      ).new(body["repo"]["name"])
+      @body = body
 
-      parser = parser_for(body["repo"]["language"])
+      file_fetcher = file_fetcher_for(repo.language).new(repo.name)
+
+      parser = parser_for(repo.language)
 
       dependencies = parser.new(dependency_files: file_fetcher.files).parse
 
       dependencies.each do |dependency|
         Workers::DependencyUpdater.perform_async(
-          "repo" => body["repo"].merge("commit" => file_fetcher.commit),
-          "dependency_files" => body["dependeny_files"],
+          "repo" => repo.to_h.merge("commit" => file_fetcher.commit),
+          "dependency_files" => body["dependency_files"],
           "dependency" => {
             "name" => dependency.name,
             "version" => dependency.version
@@ -40,6 +40,14 @@ module Workers
     end
 
     private
+
+    def repo
+      @repo ||= Repo.new(
+        name: @body["repo"]["name"],
+        language: @body["repo"]["language"],
+        commit: nil
+      )
+    end
 
     def file_fetcher_for(language)
       case language

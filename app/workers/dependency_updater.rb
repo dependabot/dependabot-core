@@ -7,7 +7,7 @@ require "./app/update_checkers/ruby"
 require "./app/update_checkers/node"
 require "./app/dependency_file_updaters/ruby"
 require "./app/dependency_file_updaters/node"
-require "./app/workers/pull_request_creator"
+require "./app/pull_request_creator"
 
 $stdout.sync = true
 
@@ -15,7 +15,9 @@ module Workers
   class DependencyUpdater
     include Sidekiq::Worker
 
-    sidekiq_options queue: "bump-dependencies_to_check", retry: false
+    sidekiq_options queue: "bump-dependencies_to_update", retry: 4
+
+    sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
 
     def perform(body)
       @repo = Repo.new(**body["repo"].symbolize_keys)
@@ -28,11 +30,13 @@ module Workers
 
       return if updated_dependency.nil?
 
-      Workers::PullRequestCreator.perform_async(
-        "repo" => repo.to_h,
-        "updated_dependency" => updated_dependency.to_h,
-        "updated_dependency_files" => updated_dependency_files.map(&:to_h)
-      )
+      PullRequestCreator.new(
+        repo: repo.name,
+        base_commit: repo.commit,
+        dependency: updated_dependency,
+        files: updated_dependency_files
+      ).create
+
     rescue DependencyFileUpdaters::VersionConflict
       nil
     rescue => error
