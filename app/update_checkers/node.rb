@@ -7,13 +7,19 @@ module UpdateCheckers
     def latest_version
       @latest_version ||=
         begin
-          url = URI("http://registry.npmjs.org/#{dependency.name}")
-          JSON.parse(Net::HTTP.get(url))["dist-tags"]["latest"]
+          JSON.parse(Net::HTTP.get(dependency_url))["dist-tags"]["latest"]
         end
     end
 
     def dependency_version
       Gem::Version.new(dependency.version)
+    end
+
+    private
+
+    def dependency_url
+      path = dependency.name.gsub("/", "%2F")
+      URI("http://registry.npmjs.org/#{path}")
     end
   end
 end

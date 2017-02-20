@@ -26,6 +26,15 @@ RSpec.describe UpdateCheckers::Node do
       let(:dependency) { Dependency.new(name: "etag", version: "1.7.0") }
       it { is_expected.to be_falsey }
     end
+
+    context "for a scoped package name" do
+      before do
+        stub_request(:get, "http://registry.npmjs.org/@blep%2Fblep").
+          to_return(status: 200, body: fixture("npm_response.json"))
+      end
+      let(:dependency) { Dependency.new(name: "@blep/blep", version: "1.0.0") }
+      it { is_expected.to be_truthy }
+    end
   end
 
   describe "#latest_version" do
