@@ -3,6 +3,8 @@ require "./app/boot"
 require "./app/dependency_file"
 require "./app/dependency_file_fetchers/ruby"
 require "./app/dependency_file_fetchers/node"
+require "./app/dependency_file_parsers/ruby"
+require "./app/dependency_file_parsers/node"
 
 $stdout.sync = true
 
@@ -26,7 +28,7 @@ module Workers
       dependencies.each do |dependency|
         Workers::DependencyUpdater.perform_async(
           "repo" => repo.to_h.merge("commit" => file_fetcher.commit),
-          "dependency_files" => body["dependency_files"],
+          "dependency_files" => file_fetcher.files.map(&:to_h),
           "dependency" => {
             "name" => dependency.name,
             "version" => dependency.version
@@ -59,8 +61,8 @@ module Workers
 
     def parser_for(language)
       case language
-      when "ruby" then DependencyFileParsers::Ruby
-      when "node" then DependencyFileParsers::Node
+      when "ruby" then ::DependencyFileParsers::Ruby
+      when "node" then ::DependencyFileParsers::Node
       else raise "Invalid language #{language}"
       end
     end
