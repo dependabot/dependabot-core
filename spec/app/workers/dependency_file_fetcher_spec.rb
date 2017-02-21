@@ -1,5 +1,6 @@
 require "spec_helper"
 require "./app/workers/dependency_file_fetcher"
+require "./app/workers/dependency_updater"
 
 RSpec.describe Workers::DependencyFileFetcher do
   subject(:worker) { described_class.new }
@@ -37,7 +38,10 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:perform_async).
         with(
           "repo" => body["repo"].merge("commit" => "commitsha"),
-          "dependency_files" => body["dependency_files"],
+          "dependency_files" => [
+            { "name" => "Gemfile", "content" => fixture("Gemfile") },
+            { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") }
+          ],
           "dependency" => {
             "name" => "business",
             "version" => "1.4.0"
@@ -48,7 +52,10 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:perform_async).
         with(
           "repo" => body["repo"].merge("commit" => "commitsha"),
-          "dependency_files" => body["dependency_files"],
+          "dependency_files" => [
+            { "name" => "Gemfile", "content" => fixture("Gemfile") },
+            { "name" => "Gemfile.lock", "content" => fixture("Gemfile.lock") }
+          ],
           "dependency" => {
             "name" => "statesman",
             "version" => "1.2.0"
