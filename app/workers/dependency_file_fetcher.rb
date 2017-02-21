@@ -1,8 +1,8 @@
 require "sidekiq"
 require "./app/boot"
+require "./app/dependency_file"
 require "./app/dependency_file_fetchers/ruby"
 require "./app/dependency_file_fetchers/node"
-require "./app/workers/dependency_file_parser"
 
 $stdout.sync = true
 
@@ -15,19 +15,25 @@ module Workers
     sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
 
     def perform(body)
-      file_fetcher =
-        file_fetcher_for(body["repo"]["language"]).new(body["repo"]["name"])
+      @body = body
 
-      dependency_files = file_fetcher.files.map do |file|
-        { "name" => file.name, "content" => file.content }
+      file_fetcher = file_fetcher_for(repo.language).new(repo.name)
+
+      parser = parser_for(repo.language)
+
+      dependencies = parser.new(dependency_files: file_fetcher.files).parse
+
+      dependencies.each do |dependency|
+        Workers::DependencyUpdater.perform_async(
+          "repo" => repo.to_h.merge("commit" => file_fetcher.commit),
+          "dependency_files" => body["dependency_files"],
+          "dependency" => {
+            "name" => dependency.name,
+            "version" => dependency.version
+          }
+        )
       end
 
-      repo = body["repo"].merge("commit" => file_fetcher.commit)
-
-      Workers::DependencyFileParser.perform_async(
-        "repo" => repo,
-        "dependency_files" => dependency_files
-      )
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
       raise
@@ -35,10 +41,26 @@ module Workers
 
     private
 
+    def repo
+      @repo ||= Repo.new(
+        name: @body["repo"]["name"],
+        language: @body["repo"]["language"],
+        commit: nil
+      )
+    end
+
     def file_fetcher_for(language)
       case language
       when "ruby" then DependencyFileFetchers::Ruby
       when "node" then DependencyFileFetchers::Node
+      else raise "Invalid language #{language}"
+      end
+    end
+
+    def parser_for(language)
+      case language
+      when "ruby" then DependencyFileParsers::Ruby
+      when "node" then DependencyFileParsers::Node
       else raise "Invalid language #{language}"
       end
     end

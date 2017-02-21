@@ -13,7 +13,19 @@ module UpdateCheckers
       Gem::Version.new(latest_version) > dependency_version
     end
 
+    def updated_dependency
+      Dependency.new(
+        name: dependency.name,
+        version: latest_version,
+        previous_version: dependency_version.to_s
+      )
+    end
+
     def latest_version
+      raise NotImplementedError
+    end
+
+    def dependency_version
       raise NotImplementedError
     end
   end

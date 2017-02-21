@@ -20,8 +20,11 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:files).
         and_return(
           [
-            DependencyFile.new(name: "Gemfile", content: "xyz"),
-            DependencyFile.new(name: "Gemfile.lock", content: "abc")
+            DependencyFile.new(name: "Gemfile", content: fixture("Gemfile")),
+            DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("Gemfile.lock")
+            )
           ]
         )
 
@@ -29,22 +32,29 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:commit).and_return("commitsha")
     end
 
-    it "enqueues an DependencyFileParser with the correct arguments" do
-      expect(Workers::DependencyFileParser).
+    it "enqueues DependencyUpdaters with the correct arguments" do
+      expect(Workers::DependencyUpdater).
         to receive(:perform_async).
         with(
           "repo" => body["repo"].merge("commit" => "commitsha"),
-          "dependency_files" => [
-            {
-              "name" => "Gemfile",
-              "content" => "xyz"
-            },
-            {
-              "name" => "Gemfile.lock",
-              "content" => "abc"
-            }
-          ]
+          "dependency_files" => body["dependency_files"],
+          "dependency" => {
+            "name" => "business",
+            "version" => "1.4.0"
+          }
         )
+
+      expect(Workers::DependencyUpdater).
+        to receive(:perform_async).
+        with(
+          "repo" => body["repo"].merge("commit" => "commitsha"),
+          "dependency_files" => body["dependency_files"],
+          "dependency" => {
+            "name" => "statesman",
+            "version" => "1.2.0"
+          }
+        )
+
       perform
     end
 

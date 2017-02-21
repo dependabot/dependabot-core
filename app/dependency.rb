@@ -51,6 +51,14 @@ class Dependency
     look_up_changelog_url
   end
 
+  def to_h
+    {
+      "name" => name,
+      "version" => version,
+      "previous_version" => previous_version
+    }
+  end
+
   private
 
   def look_up_github_repo
