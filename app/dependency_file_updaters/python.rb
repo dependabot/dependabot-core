@@ -1,15 +1,15 @@
 require "./app/dependency_file"
-require "bundler"
-require "./lib/shared_helpers"
-require "./lib/python_helpers"
+require "./app/dependency"
+require "./app/dependency_file_parsers/python"
 
 module DependencyFileUpdaters
   class Python
     attr_reader :requirements, :dependency
 
     def initialize(dependency_files:, dependency:)
-      @requirements = dependency_files.find { |f| f.name == "requirements.txt" }
-      validate_files_are_present!
+      @packages = DependencyFileParsers::Python.new(
+        dependency_files: dependency_files
+      ).parse
 
       @dependency = dependency
     end
@@ -27,25 +27,22 @@ module DependencyFileUpdaters
 
     private
 
-    def validate_files_are_present!
-      raise "No requirements.txt!" unless requirements
-    end
-
     def updated_requirements_content
       return @updated_requirements_content if @updated_requirements_content
 
-      packages = PythonHelpers.requirements_parse(@requirements.content)
+      packages = @packages.map do |pkg|
+        next pkg unless pkg.name == dependency.name
+        next pkg unless pkg.version
+        old_version = pkg.version
 
-      packages.each do |pkg|
-        next unless pkg[0] == dependency.name
-        old_version_string = pkg[1]
-        next unless old_version_string
-
-        pkg[1] = updated_version_string(old_version_string, dependency.version)
+        Dependency.new(
+          name: pkg.name,
+          version: updated_version_string(old_version, dependency.version)
+        )
       end
 
       @updated_requirements_content = packages.map do |pkg|
-        "#{pkg[0]}==#{pkg[1]}"
+        "#{pkg.name}==#{pkg.version}"
       end.join("\n") + "\n"
     end
 

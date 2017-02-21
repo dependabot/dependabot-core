@@ -9,11 +9,9 @@ module DependencyFileParsers
     end
 
     def parse
-      PythonHelpers.requirements_parse(@requirements.content).
-        each_with_object([]) do |pkg, deps|
-        deps << Dependency.new(name: pkg[0],
-                               version: pkg[1].match(/[\d\.]+/).to_s)
-      end
+      PythonHelpers.
+        parse_requirements(@requirements.content).
+        map { |dep| Dependency.new(name: dep[0], version: dep[1]) }
     end
   end
 end

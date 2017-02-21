@@ -45,7 +45,7 @@ RSpec.describe DependencyFileUpdaters::Python do
     its(:content) { is_expected.to include "psycopg2==2.6.1" }
     its(:content) { is_expected.to include "luigi==2.2.0" }
 
-    context "when the minor version is specified" do
+    context "when only the minor version is specified" do
       let(:dependency) do
         Dependency.new(name: "psycopg2", version: "2.6.1")
       end

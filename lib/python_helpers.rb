@@ -1,15 +1,13 @@
 module PythonHelpers
   SEPARATOR_MATCH = /[===,==,>=,<=,<,>,~=,!=]/
 
-  def self.requirements_parse(content)
-    dependencies = []
-    content.each_line.map(&:chomp).each do |line|
-      next if line.start_with?("#") || line.nil?
-      next if line.nil?
-      next unless line.match(SEPARATOR_MATCH)
-      dependencies << PythonHelpers.parse_line(line)
-    end
-    dependencies
+  def self.parse_requirements(content)
+    content.
+      each_line.
+      map(&:chomp).
+      reject { |line| line.nil? || line.start_with?("#") }.
+      select { |line| line.match(SEPARATOR_MATCH) }.
+      map { |line| PythonHelpers.parse_line(line) }
   end
 
   def self.parse_line(line)
