@@ -13,9 +13,9 @@ RSpec.describe DependencyFileFetchers::Node do
         to_return(status: 200,
                   body: fixture("github", "package_json_content.json"),
                   headers: { "content-type" => "application/json" })
-      stub_request(:get, url + "npm-shrinkwrap.json").
+      stub_request(:get, url + "yarn.lock").
         to_return(status: 200,
-                  body: fixture("github", "npm_shrinkwrap_json_content.json"),
+                  body: fixture("github", "yarn_lock_content.json"),
                   headers: { "content-type" => "application/json" })
     end
 
@@ -28,8 +28,8 @@ RSpec.describe DependencyFileFetchers::Node do
       its(:content) { is_expected.to include("lodash") }
     end
 
-    describe "the npm-shrinkwrap.json" do
-      subject { files.find { |file| file.name == "npm-shrinkwrap.json" } }
+    describe "the yarn.lock" do
+      subject { files.find { |file| file.name == "yarn.lock" } }
 
       it { is_expected.to be_a(DependencyFile) }
       its(:content) { is_expected.to include("lodash") }

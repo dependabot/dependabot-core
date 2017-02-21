@@ -1,0 +1,11 @@
+machine:
+  ruby:
+    version: 2.3.1
+  node:
+    version: 6.9.0
+  environment:
+    PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
+
+test:
+  pre:
+    - bundle exec rubocop

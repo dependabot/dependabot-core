@@ -5,7 +5,7 @@ module DependencyFileFetchers
     def files
       @files ||= [
         fetch_file_from_github("package.json"),
-        fetch_file_from_github("npm-shrinkwrap.json")
+        fetch_file_from_github("yarn.lock")
       ]
     end
   end

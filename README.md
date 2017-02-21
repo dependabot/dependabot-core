@@ -10,6 +10,8 @@ Bump helps you keep your project's Ruby and Node dependencies up to date. It:
 
 All that's left for you to do is review the change.
 
+Note: to run Bump on Node projects, they need to be using [Yarn](https://yarnpkg.com).
+
 ### Hosting Bump
 You can launch your own instance of Bump via Heroku.
 

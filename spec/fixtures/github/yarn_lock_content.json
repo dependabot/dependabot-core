@@ -1,18 +1,18 @@
 {
-  "name": "npm-shrinkwrap.json",
-  "path": "npm-shrinkwrap.json",
+  "name": "yarn.lock",
+  "path": "yarn.lock",
   "sha": "8f50bce3970295ac624936269c61c3cc41c2c76d",
   "size": 233,
-  "url": "https://api.github.com/repos/gocardless/bump/contents/npm-shrinkwrap.json?ref=master",
-  "html_url": "https://github.com/gocardless/bump/blob/master/npm-shrinkwrap.json",
+  "url": "https://api.github.com/repos/gocardless/bump/contents/yarn.lock?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/yarn.lock",
   "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8f50bce3970295ac624936269c61c3cc41c2c76d",
-  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/npm-shrinkwrap.json?token=ABMwe8vXxd4DBCEsxz3jMusk5sr_fFsoks5WJWE-wA%3D%3D",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/yarn.lock",
   "type": "file",
   "content": "ewogICJuYW1lIjogImJ1bXAtdGVzdCIsCiAgInZlcnNpb24iOiAiMC4wLjEi\nLAogICJkZXBlbmRlbmNpZXMiOiB7CiAgICAibG9kYXNoIjogewogICAgICAi\ndmVyc2lvbiI6ICIxLjMuMSIsCiAgICAgICJmcm9tIjogImxvZGFzaEA+PTEu\nMy4xIDwyLjAuMCIsCiAgICAgICJyZXNvbHZlZCI6ICJodHRwczovL3JlZ2lz\ndHJ5Lm5wbWpzLm9yZy9sb2Rhc2gvLS9sb2Rhc2gtMS4zLjEudGd6IgogICAg\nfQogIH0KfQo=\n",
   "encoding": "base64",
   "_links": {
-    "self": "https://api.github.com/repos/gocardless/bump/contents/npm-shrinkwrap.json?ref=master",
+    "self": "https://api.github.com/repos/gocardless/bump/contents/yarn.lock?ref=master",
     "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8f50bce3970295ac624936269c61c3cc41c2c76d",
-    "html": "https://github.com/gocardless/bump/blob/master/npm-shrinkwrap.json"
+    "html": "https://github.com/gocardless/bump/blob/master/yarn.lock"
   }
 }
