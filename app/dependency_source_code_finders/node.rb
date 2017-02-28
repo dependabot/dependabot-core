@@ -16,12 +16,11 @@ module DependencySourceCodeFinders
         all_versions.map { |v| v["homepage"] } +
         all_versions.map { |v| get_url(v.fetch("bugs", {})) }
 
-      potential_source_urls = potential_source_urls.reject(&:nil?)
+      potential_source_urls = potential_source_urls.compact
 
       source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
 
-      @github_repo =
-        source_url.nil? ? nil : source_url.match(GITHUB_REGEX)[:repo]
+      @github_repo = source_url.match(GITHUB_REGEX)[:repo] if source_url
     end
 
     def get_url(details)
