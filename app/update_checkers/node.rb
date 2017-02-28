@@ -21,5 +21,9 @@ module UpdateCheckers
       path = dependency.name.gsub("/", "%2F")
       URI("http://registry.npmjs.org/#{path}")
     end
+
+    def language
+      "node"
+    end
   end
 end

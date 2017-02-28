@@ -29,10 +29,7 @@ module Workers
         Workers::DependencyUpdater.perform_async(
           "repo" => repo.to_h.merge("commit" => file_fetcher.commit),
           "dependency_files" => file_fetcher.files.map(&:to_h),
-          "dependency" => {
-            "name" => dependency.name,
-            "version" => dependency.version
-          }
+          "dependency" => dependency.to_h
         )
       end
 

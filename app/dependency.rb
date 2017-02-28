@@ -55,7 +55,8 @@ class Dependency
     {
       "name" => name,
       "version" => version,
-      "previous_version" => previous_version
+      "previous_version" => previous_version,
+      "language" => language
     }
   end
 

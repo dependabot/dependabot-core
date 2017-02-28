@@ -22,5 +22,9 @@ module UpdateCheckers
       raise "No Gemfile.lock!" unless lockfile
       lockfile
     end
+
+    def language
+      "ruby"
+    end
   end
 end
