@@ -12,7 +12,8 @@ RSpec.describe Workers::DependencyUpdater do
       },
       "dependency" => {
         "name" => "business",
-        "version" => "1.4.0"
+        "version" => "1.4.0",
+        "language" => "ruby"
       },
       "dependency_files" => [
         { "name" => "Gemfile", "content" => fixture("Gemfile") },
@@ -44,7 +45,8 @@ RSpec.describe Workers::DependencyUpdater do
           expect(args[:dependency].to_h).to eq(
             "name" => "business",
             "version" => "1.5.0",
-            "previous_version" => "1.4.0"
+            "previous_version" => "1.4.0",
+            "language" => "ruby"
           )
           expect(args[:files].map(&:to_h)).to eq(
             [{ "name" => "Gemfile", "content" => "xyz" }]

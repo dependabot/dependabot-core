@@ -17,7 +17,8 @@ module UpdateCheckers
       Dependency.new(
         name: dependency.name,
         version: latest_version,
-        previous_version: dependency_version.to_s
+        previous_version: dependency_version.to_s,
+        language: language
       )
     end
 
@@ -26,6 +27,10 @@ module UpdateCheckers
     end
 
     def dependency_version
+      raise NotImplementedError
+    end
+
+    def language
       raise NotImplementedError
     end
   end
