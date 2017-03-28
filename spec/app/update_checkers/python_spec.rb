@@ -32,4 +32,14 @@ RSpec.describe UpdateCheckers::Python do
     subject { checker.latest_version }
     it { is_expected.to eq("2.6.0") }
   end
+
+  describe "#updated_dependency" do
+    subject { checker.updated_dependency }
+    it "returns an instance of Dependency" do
+      expect(subject.name).to eq("luigi")
+      expect(subject.version).to eq("2.6.0")
+      expect(subject.previous_version).to eq("2.0.0")
+      expect(subject.language).to eq("python")
+    end
+  end
 end
