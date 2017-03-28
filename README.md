@@ -2,7 +2,7 @@
 
 [![Build Status](https://circleci.com/gh/gocardless/bump/tree/master.svg?style=svg)](https://circleci.com/gh/gocardless/bump)
 
-Bump helps you keep your project's Ruby and Node dependencies up to date. It:
+Bump helps you keep your project's Ruby, Node and Python dependencies up to date. It:
 
 - Checks for updates to each of your dependencies.
 - Builds an updated dependency file for each update required.
@@ -72,7 +72,6 @@ We'd love to see the following improvements to Bump:
 - A faster `DependencyFileUpdater` for Node. This might need its own,
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
-- Support for more languages. Python should be relatively easy, for example.
 
 ---
 
