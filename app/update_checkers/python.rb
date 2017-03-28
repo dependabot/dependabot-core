@@ -14,5 +14,9 @@ module UpdateCheckers
     def dependency_version
       Gem::Version.new(dependency.version)
     end
+
+    def language
+      "python"
+    end
   end
 end
