@@ -1,3 +1,4 @@
+require "open-uri"
 require "./app/dependency_source_code_finders/base"
 
 module DependencySourceCodeFinders
@@ -9,7 +10,7 @@ module DependencySourceCodeFinders
 
       npm_url = URI("http://registry.npmjs.org/#{dependency_name}")
       all_versions =
-        JSON.parse(Net::HTTP.get(npm_url)).fetch("versions", {}).values
+        JSON.parse(open(npm_url).read).fetch("versions", {}).values
 
       potential_source_urls =
         all_versions.map { |v| get_url(v.fetch("repository", {})) } +
