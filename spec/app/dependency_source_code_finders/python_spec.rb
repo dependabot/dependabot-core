@@ -35,5 +35,20 @@ RSpec.describe DependencySourceCodeFinders::Python do
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
+
+    context "when the link resolves to a redirect" do
+      let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
+      let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
+      let(:pypi_response) { fixture("pypi_response.json") }
+
+      before do
+        stub_request(:get, pypi_url).
+          to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url).
+          to_return(status: 200, body: pypi_response)
+      end
+
+      it { is_expected.to eq("spotify/luigi") }
+    end
   end
 end

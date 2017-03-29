@@ -1,13 +1,13 @@
 require "./app/update_checkers/base"
 require "json"
-require "net/http"
+require "open-uri"
 
 module UpdateCheckers
   class Node < Base
     def latest_version
       @latest_version ||=
         begin
-          JSON.parse(Net::HTTP.get(dependency_url))["dist-tags"]["latest"]
+          JSON.parse(open(dependency_url).read)["dist-tags"]["latest"]
         end
     end
 

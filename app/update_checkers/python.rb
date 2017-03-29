@@ -1,5 +1,5 @@
 require "./app/update_checkers/base"
-require "net/http"
+require "open-uri"
 
 module UpdateCheckers
   class Python < Base
@@ -7,7 +7,7 @@ module UpdateCheckers
       @latest_version ||=
         begin
           url = URI("https://pypi.python.org/pypi/#{dependency.name}/json")
-          JSON.parse(Net::HTTP.get(url))["info"]["version"]
+          JSON.parse(open(url).read)["info"]["version"]
         end
     end
 

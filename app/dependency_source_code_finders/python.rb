@@ -1,4 +1,5 @@
 require "gems"
+require "open-uri"
 require "./app/dependency_source_code_finders/base"
 
 module DependencySourceCodeFinders
@@ -8,7 +9,7 @@ module DependencySourceCodeFinders
     def look_up_github_repo
       @github_repo_lookup_attempted = true
       pypi_url = URI("https://pypi.python.org/pypi/#{dependency_name}/json")
-      package = JSON.parse(Net::HTTP.get(pypi_url))
+      package = JSON.parse(open(pypi_url).read)
 
       all_versions = package.fetch("releases", {}).values
       info = package.fetch("info", {})
