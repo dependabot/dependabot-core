@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 unless ENV["RACK_ENV"] == "production"
   require "highline/import"

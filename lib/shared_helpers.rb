@@ -1,8 +1,9 @@
+# frozen_string_literal: true
 require "tmpdir"
 
 module SharedHelpers
-  BUMP_TMP_FILE_PREFIX = "bump_".freeze
-  BUMP_TMP_DIR_PATH = "tmp".freeze
+  BUMP_TMP_FILE_PREFIX = "bump_"
+  BUMP_TMP_DIR_PATH = "tmp"
 
   class ChildProcessFailed < StandardError
     attr_reader :error_class, :error_message

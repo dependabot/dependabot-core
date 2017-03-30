@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "gems"
 require "./lib/github"
 require "./app/dependency_source_code_finders/ruby"

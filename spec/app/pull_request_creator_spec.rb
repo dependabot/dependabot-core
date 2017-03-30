@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "spec_helper"
 require "./app/dependency"
 require "./app/dependency_file"

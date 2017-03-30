@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "./app/dependency_file_fetchers/base"
 
 module DependencyFileFetchers
