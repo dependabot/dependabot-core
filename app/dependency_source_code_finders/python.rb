@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "gems"
 require "open-uri"
 require "./app/dependency_source_code_finders/base"

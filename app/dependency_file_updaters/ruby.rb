@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "gemnasium/parser"
 require "./app/dependency_file"
 require "bundler"

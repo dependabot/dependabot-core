@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "./app/update_checkers/base"
 require "json"
 require "open-uri"

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "./app/dependency_file"
 require "./app/dependency"
 require "./app/dependency_file_parsers/python"
