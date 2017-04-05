@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 require "./app/update_checkers/base"
 require "json"
-require "open-uri"
+require "excon"
 
 module UpdateCheckers
   class Node < Base
     def latest_version
       @latest_version ||=
         begin
-          JSON.parse(open(dependency_url).read)["dist-tags"]["latest"]
+          JSON.parse(Excon.get(dependency_url).body)["dist-tags"]["latest"]
         end
     end
 
@@ -20,7 +20,7 @@ module UpdateCheckers
 
     def dependency_url
       path = dependency.name.gsub("/", "%2F")
-      URI("http://registry.npmjs.org/#{path}")
+      "http://registry.npmjs.org/#{path}"
     end
 
     def language

@@ -2,6 +2,7 @@
 require "prius"
 require "sidekiq"
 require "raven"
+require "excon"
 require "./lib/null_logger"
 
 Prius.load(:bump_github_token)
@@ -15,3 +16,6 @@ end
 # Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
 # However, we actually *want* to manipulate Gemfiles for other repos.
 Bundler.settings[:frozen] = "0"
+
+# Configure Excon to follow redirects
+Excon.defaults[:middlewares] << Excon::Middleware::RedirectFollower
