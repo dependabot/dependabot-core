@@ -3,6 +3,7 @@ ruby "2.3.3"
 source "https://rubygems.org"
 
 gem "bundler", "~> 1.14.3"
+gem "excon"
 gem "gemnasium-parser", "~> 0.1.9"
 gem "gems", "~> 0.8.3"
 gem "octokit", "~> 4.6.2"

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 require "./app/update_checkers/base"
-require "open-uri"
+require "excon"
 
 module UpdateCheckers
   class Python < Base
     def latest_version
       @latest_version ||=
         begin
-          url = URI("https://pypi.python.org/pypi/#{dependency.name}/json")
-          JSON.parse(open(url).read)["info"]["version"]
+          url = "https://pypi.python.org/pypi/#{dependency.name}/json"
+          JSON.parse(Excon.get(url).body)["info"]["version"]
         end
     end
 

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "open-uri"
+require "excon"
 require "./app/dependency_source_code_finders/base"
 
 module DependencySourceCodeFinders
@@ -9,9 +9,9 @@ module DependencySourceCodeFinders
     def look_up_github_repo
       @github_repo_lookup_attempted = true
 
-      npm_url = URI("http://registry.npmjs.org/#{dependency_name}")
+      npm_url = "http://registry.npmjs.org/#{dependency_name}"
       all_versions =
-        JSON.parse(open(npm_url).read).fetch("versions", {}).values
+        JSON.parse(Excon.get(npm_url).body).fetch("versions", {}).values
 
       potential_source_urls =
         all_versions.map { |v| get_url(v.fetch("repository", {})) } +
