@@ -35,7 +35,7 @@ module Bump
 
       Github.client.create_commit(
         watched_repo,
-        "Bump #{dependency.name} to #{dependency.version}",
+        commit_message,
         tree.sha,
         base_commit
       )
@@ -66,9 +66,17 @@ module Bump
         watched_repo,
         default_branch,
         new_branch_name,
-        "Bump #{dependency.name} to #{dependency.version}",
+        pr_name,
         pr_message
       )
+    end
+
+    def commit_message
+      pr_name + "\n\n" + pr_message
+    end
+
+    def pr_name
+      "Bump #{dependency.name} to #{dependency.version}"
     end
 
     def pr_message
