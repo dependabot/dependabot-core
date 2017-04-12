@@ -23,7 +23,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
       content: fixture("package_files", "yarn.lock")
     )
   end
-  let(:dependency) { Bump::Dependency.new(name: "fetch-factory", version: "0.0.2") }
+  let(:dependency) do
+    Bump::Dependency.new(name: "fetch-factory", version: "0.0.2")
+  end
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -43,7 +45,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
     subject(:updated_files) { updater.updated_dependency_files }
     specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
     specify { expect { updated_files }.to_not output.to_stdout }
-    specify { updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) } }
+    specify do
+      updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) }
+    end
     its(:length) { is_expected.to eq(2) }
   end
 

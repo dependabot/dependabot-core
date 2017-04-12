@@ -6,7 +6,10 @@ module Bump
   module DependencyFileParsers
     class Python
       def initialize(dependency_files:)
-        @requirements = dependency_files.find { |f| f.name == "requirements.txt" }
+        @requirements = dependency_files.find do |f|
+          f.name == "requirements.txt"
+        end
+
         raise "No requirements.txt!" unless @requirements
       end
 

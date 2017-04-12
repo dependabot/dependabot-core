@@ -6,7 +6,10 @@ require "bump/dependency_file_parsers/python"
 RSpec.describe Bump::DependencyFileParsers::Python do
   let(:files) { [requirements] }
   let(:requirements) do
-    Bump::DependencyFile.new(name: "requirements.txt", content: requirements_body)
+    Bump::DependencyFile.new(
+      name: "requirements.txt",
+      content: requirements_body
+    )
   end
   let(:requirements_body) { fixture("requirements", "requirements.txt") }
   let(:parser) { described_class.new(dependency_files: files) }

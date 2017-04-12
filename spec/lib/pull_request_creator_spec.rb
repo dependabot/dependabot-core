@@ -26,7 +26,10 @@ RSpec.describe Bump::PullRequestCreator do
     Bump::DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
   end
   let(:gemfile_lock) do
-    Bump::DependencyFile.new(name: "Gemfile.lock", content: fixture("Gemfile.lock"))
+    Bump::DependencyFile.new(
+      name: "Gemfile.lock",
+      content: fixture("Gemfile.lock")
+    )
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }

@@ -22,7 +22,10 @@ RSpec.describe Workers::DependencyFileFetcher do
         to receive(:files).
         and_return(
           [
-            Bump::DependencyFile.new(name: "Gemfile", content: fixture("Gemfile")),
+            Bump::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("Gemfile")
+            ),
             Bump::DependencyFile.new(
               name: "Gemfile.lock",
               content: fixture("Gemfile.lock")

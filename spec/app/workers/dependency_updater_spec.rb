@@ -36,7 +36,9 @@ RSpec.describe Workers::DependencyUpdater do
 
         allow_any_instance_of(Bump::DependencyFileUpdaters::Ruby).
           to receive(:updated_dependency_files).
-          and_return([Bump::DependencyFile.new(name: "Gemfile", content: "xyz")])
+          and_return(
+            [Bump::DependencyFile.new(name: "Gemfile", content: "xyz")]
+          )
       end
 
       it "enqueues a PullRequestCreator with the correct arguments" do

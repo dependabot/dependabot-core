@@ -13,7 +13,8 @@ module Bump
         @error_class = error_class
         @error_message = error_message
 
-        msg = "Child process raised #{error_class} with message: #{error_message}"
+        msg = "Child process raised #{error_class} with message: "\
+              "#{error_message}"
         super(msg)
       end
     end

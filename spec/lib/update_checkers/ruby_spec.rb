@@ -21,7 +21,10 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
     Bump::DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
   end
   let(:gemfile_lock) do
-    Bump::DependencyFile.new(content: gemfile_lock_content, name: "Gemfile.lock")
+    Bump::DependencyFile.new(
+      content: gemfile_lock_content,
+      name: "Gemfile.lock"
+    )
   end
   let(:gemfile_lock_content) { fixture("Gemfile.lock") }
 
@@ -39,7 +42,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
 
     context "given an out-of-date bundler as a dependency" do
       before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
-      let(:dependency) { Bump::Dependency.new(name: "bundler", version: "1.10.5") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "bundler", version: "1.10.5")
+      end
       let(:gemfile_lock_content) { fixture("gemfile_with_bundler.lock") }
 
       it { is_expected.to be_truthy }

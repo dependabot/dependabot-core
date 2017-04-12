@@ -33,7 +33,9 @@ RSpec.describe Bump::UpdateCheckers::Node do
         stub_request(:get, "http://registry.npmjs.org/@blep%2Fblep").
           to_return(status: 200, body: fixture("npm_response.json"))
       end
-      let(:dependency) { Bump::Dependency.new(name: "@blep/blep", version: "1.0.0") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "@blep/blep", version: "1.0.0")
+      end
       it { is_expected.to be_truthy }
     end
   end

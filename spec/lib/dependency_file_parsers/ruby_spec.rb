@@ -5,7 +5,9 @@ require "bump/dependency_file_parsers/ruby"
 
 RSpec.describe Bump::DependencyFileParsers::Ruby do
   let(:files) { [gemfile] }
-  let(:gemfile) { Bump::DependencyFile.new(name: "Gemfile", content: gemfile_body) }
+  let(:gemfile) do
+    Bump::DependencyFile.new(name: "Gemfile", content: gemfile_body)
+  end
   let(:gemfile_body) { fixture("gemfiles", "version_specified") }
   let(:parser) { described_class.new(dependency_files: files) }
 

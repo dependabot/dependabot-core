@@ -13,10 +13,15 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       dependency: dependency
     )
   end
-  let(:gemfile) { Bump::DependencyFile.new(content: gemfile_body, name: "Gemfile") }
+  let(:gemfile) do
+    Bump::DependencyFile.new(content: gemfile_body, name: "Gemfile")
+  end
   let(:gemfile_body) { fixture("Gemfile") }
   let(:gemfile_lock) do
-    Bump::DependencyFile.new(content: fixture("Gemfile.lock"), name: "Gemfile.lock")
+    Bump::DependencyFile.new(
+      content: fixture("Gemfile.lock"),
+      name: "Gemfile.lock"
+    )
   end
   let(:dependency) { Bump::Dependency.new(name: "business", version: "1.5.0") }
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -38,7 +43,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     subject(:updated_files) { updater.updated_dependency_files }
 
     specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify { updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) } }
+    specify do
+      updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) }
+    end
     its(:length) { is_expected.to eq(2) }
   end
 
@@ -102,7 +109,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
     context "when there is a version conflict" do
       let(:gemfile_body) { fixture("gemfiles", "version_conflict") }
-      let(:dependency) { Bump::Dependency.new(name: "ibandit", version: "0.8.5") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "ibandit", version: "0.8.5")
+      end
 
       it "raises a DependencyFileUpdaters::VersionConflict error" do
         expect { updater.updated_gemfile_lock }.
