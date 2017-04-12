@@ -63,7 +63,7 @@ module DependencyFileUpdaters
       SharedHelpers.in_a_temporary_directory do |dir|
         File.write(File.join(dir, "yarn.lock"), @yarn_lock.content)
         File.write(File.join(dir, "package.json"), updated_package_json_content)
-        puts `cd #{dir} && yarn install --ignore-scripts`
+        `cd #{dir} && yarn install --ignore-scripts 2>&1`
         @updated_yarn_lock_content =
           File.read(File.join(dir, "yarn.lock"))
       end
