@@ -8,7 +8,7 @@ RSpec.describe DependencySourceCodeFinders::Ruby do
 
   describe "#github_repo" do
     subject(:github_repo) { finder.github_repo }
-    let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.yaml" }
+    let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
 
     before do
       stub_request(:get, rubygems_url).
@@ -16,7 +16,7 @@ RSpec.describe DependencySourceCodeFinders::Ruby do
     end
 
     context "when there is a github link in the rubygems response" do
-      let(:rubygems_response) { fixture("rubygems_response.yaml") }
+      let(:rubygems_response) { fixture("rubygems_response.json") }
 
       it { is_expected.to eq("gocardless/business") }
 
@@ -27,7 +27,7 @@ RSpec.describe DependencySourceCodeFinders::Ruby do
 
       context "that contains a .git suffix" do
         let(:rubygems_response) do
-          fixture("rubygems_response_period_github.yaml")
+          fixture("rubygems_response_period_github.json")
         end
 
         it { is_expected.to eq("gocardless/business.rb") }
@@ -35,7 +35,7 @@ RSpec.describe DependencySourceCodeFinders::Ruby do
     end
 
     context "when there isn't github link in the rubygems response" do
-      let(:rubygems_response) { fixture("rubygems_response_no_github.yaml") }
+      let(:rubygems_response) { fixture("rubygems_response_no_github.json") }
 
       it { is_expected.to be_nil }
 

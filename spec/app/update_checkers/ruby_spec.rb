@@ -6,8 +6,8 @@ require "./app/update_checkers/ruby"
 
 RSpec.describe UpdateCheckers::Ruby do
   before do
-    stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
-      to_return(status: 200, body: fixture("rubygems_response.yaml"))
+    stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+      to_return(status: 200, body: fixture("rubygems_response.json"))
   end
 
   let(:checker) do

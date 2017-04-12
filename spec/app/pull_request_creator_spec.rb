@@ -72,8 +72,8 @@ RSpec.describe PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "business_tags.json"),
                 headers: json_header)
-    stub_request(:get, "https://rubygems.org/api/v1/gems/business.yaml").
-      to_return(status: 200, body: fixture("rubygems_response.yaml"))
+    stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+      to_return(status: 200, body: fixture("rubygems_response.json"))
   end
 
   describe "#create" do
