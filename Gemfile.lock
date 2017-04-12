@@ -15,9 +15,11 @@ GEM
     foreman (0.82.0)
       thor (~> 0.19.1)
     gemnasium-parser (0.1.9)
-    gems (0.8.3)
+    gems (1.0.0)
+      json
     hashdiff (0.3.1)
     highline (1.7.8)
+    json (2.0.4)
     multipart-post (2.0.0)
     octokit (4.6.2)
       sawyer (~> 0.8.0, >= 0.5.3)
@@ -86,7 +88,7 @@ DEPENDENCIES
   excon
   foreman (~> 0.82.0)
   gemnasium-parser (~> 0.1.9)
-  gems (~> 0.8.3)
+  gems (~> 1.0.0)
   highline (~> 1.7.8)
   octokit (~> 4.6.2)
   prius (~> 1.0.0)
