@@ -24,6 +24,14 @@ RSpec.describe DependencySourceCodeFinders::Ruby do
         2.times { github_repo }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
+
+      context "that contains a .git suffix" do
+        let(:rubygems_response) do
+          fixture("rubygems_response_period_github.yaml")
+        end
+
+        it { is_expected.to eq("gocardless/business.rb") }
+      end
     end
 
     context "when there isn't github link in the rubygems response" do

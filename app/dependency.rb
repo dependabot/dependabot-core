@@ -9,9 +9,6 @@ class Dependency
   attr_reader :name, :version, :previous_version, :language
 
   CHANGELOG_NAMES = %w(changelog history news changes).freeze
-  GITHUB_REGEX    = %r{github\.com/(?<repo>[^/]+/[^/]+)/?}
-  SOURCE_KEYS     = %w(source_code_uri homepage_uri wiki_uri bug_tracker_uri
-                       documentation_uri).freeze
   TAG_PREFIX      = /^v/
 
   def initialize(name:, version:, previous_version: nil, language: nil)

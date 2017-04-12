@@ -3,7 +3,7 @@ require "gems"
 
 module DependencySourceCodeFinders
   class Base
-    GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/[^\./]+)[\./]?}
+    GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?}
 
     attr_reader :dependency_name
 
