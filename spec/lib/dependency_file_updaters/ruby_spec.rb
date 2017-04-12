@@ -69,6 +69,13 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       let(:dependency) { Bump::Dependency.new(name: "i18n", version: "1.5.0") }
       its(:content) { is_expected.to include "\"i18n\", \"~> 1.5.0\"" }
     end
+
+    context "when there is a comment" do
+      let(:gemfile_body) { fixture("gemfiles", "comments") }
+      its(:content) do
+        is_expected.to include "\"business\", \"~> 1.5.0\"   # Business time"
+      end
+    end
   end
 
   describe "#updated_gemfile_lock" do
