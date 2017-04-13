@@ -50,12 +50,18 @@ module Bump
           to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
           find { Regexp.last_match[:name] == dependency.name }
 
-        original_gem_declaration_string = $&
+        original_gem_declaration_string = Regexp.last_match.to_s
         updated_gem_declaration_string =
-          original_gem_declaration_string.sub(/(,.*?)[\d\.]+/) do |old_version|
-            matcher = Regexp.last_match[1]
+          original_gem_declaration_string.
+          sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_requirements|
+            old_version =
+              old_requirements.match(Gemnasium::Parser::Patterns::VERSION)[0]
+
             precision = old_version.split(".").count
-            matcher + dependency.version.split(".").first(precision).join(".")
+            new_version =
+              dependency.version.split(".").first(precision).join(".")
+
+            old_requirements.sub(old_version, new_version)
           end
 
         @updated_gemfile_content = gemfile.content.gsub(
