@@ -24,8 +24,8 @@ RSpec.describe Bump::Dependency do
         described_class.new(name: name, version: version, language: "ruby")
       end
 
-      it "delegates to a Bump::DependencySourceCodeFinder" do
-        expect_any_instance_of(Bump::DependencySourceCodeFinders::Ruby).
+      it "delegates to a Bump::DependencyMetadataFinder" do
+        expect_any_instance_of(Bump::DependencyMetadataFinders::Ruby).
           to receive(:github_repo).
           and_return("gocardless/business")
         dependency.github_repo

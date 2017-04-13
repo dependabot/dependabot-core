@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 require "gems"
 require "excon"
-require "bump/dependency_source_code_finders/base"
+require "bump/dependency_metadata_finders/base"
 
 module Bump
-  module DependencySourceCodeFinders
+  module DependencyMetadataFinders
     class Python < Base
       private
 
       def look_up_github_repo
         @github_repo_lookup_attempted = true
-        pypi_url = "https://pypi.python.org/pypi/#{dependency_name}/json"
+        pypi_url = "https://pypi.python.org/pypi/#{dependency.name}/json"
         package = JSON.parse(Excon.get(pypi_url).body)
 
         all_versions = package.fetch("releases", {}).values

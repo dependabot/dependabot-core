@@ -2,14 +2,14 @@
 require "gems"
 
 module Bump
-  module DependencySourceCodeFinders
+  module DependencyMetadataFinders
     class Base
       GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?}
 
-      attr_reader :dependency_name
+      attr_reader :dependency
 
-      def initialize(dependency_name:)
-        @dependency_name = dependency_name
+      def initialize(dependency:)
+        @dependency = dependency
       end
 
       def github_repo

@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "bump/dependency_source_code_finders/python"
+require "bump/dependency"
+require "bump/dependency_metadata_finders/python"
 
-RSpec.describe Bump::DependencySourceCodeFinders::Python do
-  subject(:finder) { described_class.new(dependency_name: dependency_name) }
+RSpec.describe Bump::DependencyMetadataFinders::Python do
+  let(:dependency) do
+    Bump::Dependency.new(name: dependency_name, version: "1.0")
+  end
+  subject(:finder) { described_class.new(dependency: dependency) }
   let(:dependency_name) { "luigi" }
 
   describe "#github_repo" do

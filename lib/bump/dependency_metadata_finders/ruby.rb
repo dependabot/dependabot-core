@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 require "gems"
-require "bump/dependency_source_code_finders/base"
+require "bump/dependency_metadata_finders/base"
 
 module Bump
-  module DependencySourceCodeFinders
+  module DependencyMetadataFinders
     class Ruby < Base
       SOURCE_KEYS = %w(
         source_code_uri
@@ -19,7 +19,7 @@ module Bump
         @github_repo_lookup_attempted = true
 
         source_url = Gems.
-                     info(dependency_name).
+                     info(dependency.name).
                      values_at(*SOURCE_KEYS).
                      compact.
                      find { |url| url =~ GITHUB_REGEX }

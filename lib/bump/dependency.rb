@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 require "gems"
 require "bump/github"
-require "bump/dependency_source_code_finders/ruby"
-require "bump/dependency_source_code_finders/node"
-require "bump/dependency_source_code_finders/python"
+require "bump/dependency_metadata_finders/ruby"
+require "bump/dependency_metadata_finders/python"
+require "bump/dependency_metadata_finders/node"
 
 module Bump
   class Dependency
@@ -64,7 +64,7 @@ module Bump
 
     def look_up_github_repo
       @github_repo_lookup_attempted = true
-      @github_repo = source_code_finder.github_repo
+      @github_repo = metadata_finder.github_repo
     end
 
     def look_up_changelog_url
@@ -86,18 +86,18 @@ module Bump
       []
     end
 
-    def source_code_finder
-      @source_code_finder ||=
+    def metadata_finder
+      @metadata_finder ||=
         begin
           finder_class =
             case language
-            when "ruby" then DependencySourceCodeFinders::Ruby
-            when "node" then DependencySourceCodeFinders::Node
-            when "python" then DependencySourceCodeFinders::Python
+            when "ruby" then DependencyMetadataFinders::Ruby
+            when "node" then DependencyMetadataFinders::Node
+            when "python" then DependencyMetadataFinders::Python
             else raise "Invalid language #{language}"
             end
 
-          finder_class.new(dependency_name: name)
+          finder_class.new(dependency: self)
         end
     end
   end
