@@ -1,3 +1,4 @@
-.bundle/
-.env
+/.bundle/
+/.env
 /tmp
+/bump-*.gem

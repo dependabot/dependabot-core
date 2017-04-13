@@ -2,11 +2,10 @@
 ruby "2.3.3"
 source "https://rubygems.org"
 
-gem "bundler", "~> 1.14.3"
-gem "excon"
-gem "gemnasium-parser", "~> 0.1.9"
-gem "gems", "~> 1.0.0"
-gem "octokit", "~> 4.6.2"
+# Dependencies necessary for using bump as a library are in the gemspec
+gemspec
+
+# Dependencies necessary for running bump as an app are here
 gem "prius", "~> 1.0.0"
 gem "rake"
 gem "sentry-raven", "~> 2.1.4"
