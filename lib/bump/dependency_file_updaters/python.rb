@@ -8,11 +8,12 @@ module Bump
     class Python
       attr_reader :requirements, :dependency
 
-      def initialize(dependency_files:, dependency:)
+      def initialize(dependency_files:, dependency:, github_access_token:)
         @packages = DependencyFileParsers::Python.new(
           dependency_files: dependency_files
         ).parse
 
+        @github_access_token = github_access_token
         @dependency = dependency
       end
 

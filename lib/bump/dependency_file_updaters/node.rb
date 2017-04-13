@@ -9,11 +9,12 @@ module Bump
     class Node
       attr_reader :package_json, :yarn_lock, :dependency
 
-      def initialize(dependency_files:, dependency:)
+      def initialize(dependency_files:, dependency:, github_access_token:)
         @package_json = dependency_files.find { |f| f.name == "package.json" }
         @yarn_lock = dependency_files.find { |file| file.name == "yarn.lock" }
         validate_files_are_present!
 
+        @github_access_token = github_access_token
         @dependency = dependency
       end
 

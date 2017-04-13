@@ -10,7 +10,8 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
   let(:updater) do
     described_class.new(
       dependency_files: [package_json, yarn_lock],
-      dependency: dependency
+      dependency: dependency,
+      github_access_token: "token"
     )
   end
   let(:package_json) do
@@ -34,7 +35,11 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
     context "when the package.json is missing" do
       subject { -> { updater } }
       let(:updater) do
-        described_class.new(dependency_files: [], dependency: dependency)
+        described_class.new(
+          dependency_files: [],
+          dependency: dependency,
+          github_access_token: "token"
+        )
       end
 
       it { is_expected.to raise_error(/No package.json!/) }

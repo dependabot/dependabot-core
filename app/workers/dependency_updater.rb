@@ -63,7 +63,8 @@ module Workers
 
       updated_dependency_files = file_updater.new(
         dependency: updated_dependency,
-        dependency_files: dependency_files
+        dependency_files: dependency_files,
+        github_access_token: bump_github_token
       ).updated_dependency_files
 
       [updated_dependency, updated_dependency_files]
@@ -85,6 +86,10 @@ module Workers
       when "python" then Bump::DependencyFileUpdaters::Python
       else raise "Invalid language #{language}"
       end
+    end
+
+    def bump_github_token
+      Prius.get(:bump_github_token)
     end
   end
 end
