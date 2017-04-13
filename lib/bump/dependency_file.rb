@@ -1,13 +1,15 @@
 # frozen_string_literal: true
-class DependencyFile
-  attr_reader :name, :content
+module Bump
+  class DependencyFile
+    attr_reader :name, :content
 
-  def initialize(name:, content:)
-    @name = name
-    @content = content
-  end
+    def initialize(name:, content:)
+      @name = name
+      @content = content
+    end
 
-  def to_h
-    { "name" => name, "content" => content }
+    def to_h
+      { "name" => name, "content" => content }
+    end
   end
 end

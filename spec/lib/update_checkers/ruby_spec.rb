@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/update_checkers/ruby"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/update_checkers/ruby"
 
-RSpec.describe UpdateCheckers::Ruby do
+RSpec.describe Bump::UpdateCheckers::Ruby do
   before do
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
       to_return(status: 200, body: fixture("rubygems_response.json"))
@@ -15,13 +15,13 @@ RSpec.describe UpdateCheckers::Ruby do
                         dependency_files: [gemfile, gemfile_lock])
   end
 
-  let(:dependency) { Dependency.new(name: "business", version: "1.3") }
+  let(:dependency) { Bump::Dependency.new(name: "business", version: "1.3") }
 
   let(:gemfile) do
-    DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
+    Bump::DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
   end
   let(:gemfile_lock) do
-    DependencyFile.new(content: gemfile_lock_content, name: "Gemfile.lock")
+    Bump::DependencyFile.new(content: gemfile_lock_content, name: "Gemfile.lock")
   end
   let(:gemfile_lock_content) { fixture("Gemfile.lock") }
 
@@ -39,7 +39,7 @@ RSpec.describe UpdateCheckers::Ruby do
 
     context "given an out-of-date bundler as a dependency" do
       before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
-      let(:dependency) { Dependency.new(name: "bundler", version: "1.10.5") }
+      let(:dependency) { Bump::Dependency.new(name: "bundler", version: "1.10.5") }
       let(:gemfile_lock_content) { fixture("gemfile_with_bundler.lock") }
 
       it { is_expected.to be_truthy }

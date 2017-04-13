@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_file_fetchers/ruby"
+require "bump/dependency_file_fetchers/ruby"
 
-RSpec.describe DependencyFileFetchers::Ruby do
+RSpec.describe Bump::DependencyFileFetchers::Ruby do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 
@@ -25,14 +25,14 @@ RSpec.describe DependencyFileFetchers::Ruby do
     describe "the Gemfile" do
       subject { files.find { |file| file.name == "Gemfile" } }
 
-      it { is_expected.to be_a(DependencyFile) }
+      it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("octokit") }
     end
 
     describe "the Gemfile.lock" do
       subject { files.find { |file| file.name == "Gemfile.lock" } }
 
-      it { is_expected.to be_a(DependencyFile) }
+      it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("octokit") }
     end
   end

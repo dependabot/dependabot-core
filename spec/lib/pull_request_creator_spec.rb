@@ -1,32 +1,32 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/pull_request_creator"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/pull_request_creator"
 
-RSpec.describe PullRequestCreator do
+RSpec.describe Bump::PullRequestCreator do
   subject(:creator) do
-    PullRequestCreator.new(repo: repo,
-                           base_commit: base_commit,
-                           dependency: dependency,
-                           files: files)
+    Bump::PullRequestCreator.new(repo: repo,
+                                 base_commit: base_commit,
+                                 dependency: dependency,
+                                 files: files)
   end
 
   let(:dependency) do
-    Dependency.new(name: "business",
-                   version: "1.5.0",
-                   previous_version: "1.4.0",
-                   language: "ruby")
+    Bump::Dependency.new(name: "business",
+                         version: "1.5.0",
+                         previous_version: "1.4.0",
+                         language: "ruby")
   end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
 
   let(:gemfile) do
-    DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
+    Bump::DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
   end
   let(:gemfile_lock) do
-    DependencyFile.new(name: "Gemfile.lock", content: fixture("Gemfile.lock"))
+    Bump::DependencyFile.new(name: "Gemfile.lock", content: fixture("Gemfile.lock"))
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }

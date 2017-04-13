@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/dependency_file_updaters/python"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/dependency_file_updaters/python"
+require "bump/shared_helpers"
 
-RSpec.describe DependencyFileUpdaters::Python do
+RSpec.describe Bump::DependencyFileUpdaters::Python do
   before { WebMock.disable! }
   after { WebMock.enable! }
   let(:updater) do
@@ -14,11 +15,11 @@ RSpec.describe DependencyFileUpdaters::Python do
     )
   end
   let(:requirements) do
-    DependencyFile.new(content: requirements_body, name: "requirements.txt")
+    Bump::DependencyFile.new(content: requirements_body, name: "requirements.txt")
   end
   let(:requirements_body) { fixture("requirements", "requirements.txt") }
-  let(:dependency) { Dependency.new(name: "psycopg2", version: "2.6.1") }
-  let(:tmp_path) { SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:dependency) { Bump::Dependency.new(name: "psycopg2", version: "2.6.1") }
+  let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -36,7 +37,7 @@ RSpec.describe DependencyFileUpdaters::Python do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
     specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
+    specify { updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) } }
     its(:length) { is_expected.to eq(1) }
   end
 
@@ -48,7 +49,7 @@ RSpec.describe DependencyFileUpdaters::Python do
 
     context "when only the minor version is specified" do
       let(:dependency) do
-        Dependency.new(name: "psycopg2", version: "2.6.1")
+        Bump::Dependency.new(name: "psycopg2", version: "2.6.1")
       end
       let(:requirements_body) do
         fixture("requirements", "requirements-minor-specified.txt")

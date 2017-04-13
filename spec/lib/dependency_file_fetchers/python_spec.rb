@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_file_fetchers/python"
+require "bump/dependency_file_fetchers/python"
 
-RSpec.describe DependencyFileFetchers::Python do
+RSpec.describe Bump::DependencyFileFetchers::Python do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 
@@ -21,7 +21,7 @@ RSpec.describe DependencyFileFetchers::Python do
     describe "the requirements.txt" do
       subject { files.find { |file| file.name == "requirements.txt" } }
 
-      it { is_expected.to be_a(DependencyFile) }
+      it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("psycopg2") }
     end
   end

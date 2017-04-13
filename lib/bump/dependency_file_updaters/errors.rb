@@ -1,4 +1,6 @@
 # frozen_string_literal: true
-module DependencyFileUpdaters
-  class VersionConflict < StandardError; end
+module Bump
+  module DependencyFileUpdaters
+    class VersionConflict < StandardError; end
+  end
 end

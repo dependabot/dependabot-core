@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 require "sidekiq"
 require "./app/boot"
-require "./app/dependency_file"
-require "./app/dependency_file_fetchers/ruby"
-require "./app/dependency_file_fetchers/node"
-require "./app/dependency_file_fetchers/python"
-require "./app/dependency_file_parsers/ruby"
-require "./app/dependency_file_parsers/node"
-require "./app/dependency_file_parsers/python"
+require "bump/dependency_file"
+require "bump/dependency_file_fetchers/ruby"
+require "bump/dependency_file_fetchers/node"
+require "bump/dependency_file_fetchers/python"
+require "bump/dependency_file_parsers/ruby"
+require "bump/dependency_file_parsers/node"
+require "bump/dependency_file_parsers/python"
 
 $stdout.sync = true
 
@@ -44,7 +44,7 @@ module Workers
     private
 
     def repo
-      @repo ||= Repo.new(
+      @repo ||= Bump::Repo.new(
         name: @body["repo"]["name"],
         language: @body["repo"]["language"],
         commit: nil
@@ -53,18 +53,18 @@ module Workers
 
     def file_fetcher_for(language)
       case language
-      when "ruby" then DependencyFileFetchers::Ruby
-      when "node" then DependencyFileFetchers::Node
-      when "python" then DependencyFileFetchers::Python
+      when "ruby" then Bump::DependencyFileFetchers::Ruby
+      when "node" then Bump::DependencyFileFetchers::Node
+      when "python" then Bump::DependencyFileFetchers::Python
       else raise "Invalid language #{language}"
       end
     end
 
     def parser_for(language)
       case language
-      when "ruby" then ::DependencyFileParsers::Ruby
-      when "node" then ::DependencyFileParsers::Node
-      when "python" then ::DependencyFileParsers::Python
+      when "ruby" then Bump::DependencyFileParsers::Ruby
+      when "node" then Bump::DependencyFileParsers::Node
+      when "python" then Bump::DependencyFileParsers::Python
       else raise "Invalid language #{language}"
       end
     end

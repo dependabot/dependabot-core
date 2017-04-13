@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_file_fetchers/node"
+require "bump/dependency_file_fetchers/node"
 
-RSpec.describe DependencyFileFetchers::Node do
+RSpec.describe Bump::DependencyFileFetchers::Node do
   let(:file_fetcher) { described_class.new(repo) }
   let(:repo) { "gocardless/bump" }
 
@@ -25,14 +25,14 @@ RSpec.describe DependencyFileFetchers::Node do
     describe "the package.json" do
       subject { files.find { |file| file.name == "package.json" } }
 
-      it { is_expected.to be_a(DependencyFile) }
+      it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("lodash") }
     end
 
     describe "the yarn.lock" do
       subject { files.find { |file| file.name == "yarn.lock" } }
 
-      it { is_expected.to be_a(DependencyFile) }
+      it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("lodash") }
     end
   end

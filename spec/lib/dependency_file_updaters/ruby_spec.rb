@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/dependency_file_updaters/ruby"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/dependency_file_updaters/ruby"
 
-RSpec.describe DependencyFileUpdaters::Ruby do
+RSpec.describe Bump::DependencyFileUpdaters::Ruby do
   before { WebMock.disable! }
   after { WebMock.enable! }
   let(:updater) do
@@ -13,13 +13,13 @@ RSpec.describe DependencyFileUpdaters::Ruby do
       dependency: dependency
     )
   end
-  let(:gemfile) { DependencyFile.new(content: gemfile_body, name: "Gemfile") }
+  let(:gemfile) { Bump::DependencyFile.new(content: gemfile_body, name: "Gemfile") }
   let(:gemfile_body) { fixture("Gemfile") }
   let(:gemfile_lock) do
-    DependencyFile.new(content: fixture("Gemfile.lock"), name: "Gemfile.lock")
+    Bump::DependencyFile.new(content: fixture("Gemfile.lock"), name: "Gemfile.lock")
   end
-  let(:dependency) { Dependency.new(name: "business", version: "1.5.0") }
-  let(:tmp_path) { SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:dependency) { Bump::Dependency.new(name: "business", version: "1.5.0") }
+  let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -38,7 +38,7 @@ RSpec.describe DependencyFileUpdaters::Ruby do
     subject(:updated_files) { updater.updated_dependency_files }
 
     specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
+    specify { updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) } }
     its(:length) { is_expected.to eq(2) }
   end
 
@@ -59,7 +59,7 @@ RSpec.describe DependencyFileUpdaters::Ruby do
 
     context "with a gem whose name includes a number" do
       let(:gemfile_body) { fixture("gemfiles", "gem_with_number") }
-      let(:dependency) { Dependency.new(name: "i18n", version: "1.5.0") }
+      let(:dependency) { Bump::Dependency.new(name: "i18n", version: "1.5.0") }
       its(:content) { is_expected.to include "\"i18n\", \"~> 1.5.0\"" }
     end
   end
@@ -96,17 +96,17 @@ RSpec.describe DependencyFileUpdaters::Ruby do
 
       it "raises a DependencyFileUpdaters::VersionConflict error" do
         expect { updater.updated_gemfile_lock }.
-          to raise_error(SharedHelpers::ChildProcessFailed)
+          to raise_error(Bump::SharedHelpers::ChildProcessFailed)
       end
     end
 
     context "when there is a version conflict" do
       let(:gemfile_body) { fixture("gemfiles", "version_conflict") }
-      let(:dependency) { Dependency.new(name: "ibandit", version: "0.8.5") }
+      let(:dependency) { Bump::Dependency.new(name: "ibandit", version: "0.8.5") }
 
       it "raises a DependencyFileUpdaters::VersionConflict error" do
         expect { updater.updated_gemfile_lock }.
-          to raise_error(DependencyFileUpdaters::VersionConflict)
+          to raise_error(Bump::DependencyFileUpdaters::VersionConflict)
       end
     end
   end

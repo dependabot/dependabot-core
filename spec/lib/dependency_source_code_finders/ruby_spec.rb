@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_source_code_finders/ruby"
+require "bump/dependency_source_code_finders/ruby"
 
-RSpec.describe DependencySourceCodeFinders::Ruby do
+RSpec.describe Bump::DependencySourceCodeFinders::Ruby do
   subject(:finder) { described_class.new(dependency_name: dependency_name) }
   let(:dependency_name) { "business" }
 

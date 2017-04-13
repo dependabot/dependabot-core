@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/update_checkers/python"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/update_checkers/python"
 
-RSpec.describe UpdateCheckers::Python do
+RSpec.describe Bump::UpdateCheckers::Python do
   before do
     stub_request(:get, "https://pypi.python.org/pypi/luigi/json").
       to_return(status: 200, body: fixture("pypi_response.json"))
@@ -14,7 +14,7 @@ RSpec.describe UpdateCheckers::Python do
     described_class.new(dependency: dependency, dependency_files: [])
   end
 
-  let(:dependency) { Dependency.new(name: "luigi", version: "2.0.0") }
+  let(:dependency) { Bump::Dependency.new(name: "luigi", version: "2.0.0") }
 
   describe "#needs_update?" do
     subject { checker.needs_update? }
@@ -24,7 +24,7 @@ RSpec.describe UpdateCheckers::Python do
     end
 
     context "given an up-to-date dependency" do
-      let(:dependency) { Dependency.new(name: "luigi", version: "2.6.0") }
+      let(:dependency) { Bump::Dependency.new(name: "luigi", version: "2.6.0") }
       it { is_expected.to be_falsey }
     end
   end

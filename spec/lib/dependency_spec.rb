@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
+require "bump/dependency"
 
-RSpec.describe Dependency do
+RSpec.describe Bump::Dependency do
   subject(:dependency) do
     described_class.new(name: name,
                         version: version,
@@ -24,8 +24,8 @@ RSpec.describe Dependency do
         described_class.new(name: name, version: version, language: "ruby")
       end
 
-      it "delegates to a DependencySourceCodeFinder" do
-        expect_any_instance_of(DependencySourceCodeFinders::Ruby).
+      it "delegates to a Bump::DependencySourceCodeFinder" do
+        expect_any_instance_of(Bump::DependencySourceCodeFinders::Ruby).
           to receive(:github_repo).
           and_return("gocardless/business")
         dependency.github_repo

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_source_code_finders/node"
+require "bump/dependency_source_code_finders/node"
 
-RSpec.describe DependencySourceCodeFinders::Node do
+RSpec.describe Bump::DependencySourceCodeFinders::Node do
   subject(:finder) { described_class.new(dependency_name: dependency_name) }
   let(:dependency_name) { "etag" }
 

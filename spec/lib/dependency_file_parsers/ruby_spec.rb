@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency_file"
-require "./app/dependency_file_parsers/ruby"
+require "bump/dependency_file"
+require "bump/dependency_file_parsers/ruby"
 
-RSpec.describe DependencyFileParsers::Ruby do
+RSpec.describe Bump::DependencyFileParsers::Ruby do
   let(:files) { [gemfile] }
-  let(:gemfile) { DependencyFile.new(name: "Gemfile", content: gemfile_body) }
+  let(:gemfile) { Bump::DependencyFile.new(name: "Gemfile", content: gemfile_body) }
   let(:gemfile_body) { fixture("gemfiles", "version_specified") }
   let(:parser) { described_class.new(dependency_files: files) }
 
@@ -18,7 +18,7 @@ RSpec.describe DependencyFileParsers::Ruby do
       describe "the first dependency" do
         subject { dependencies.first }
 
-        it { is_expected.to be_a(Dependency) }
+        it { is_expected.to be_a(Bump::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
       end
@@ -30,7 +30,7 @@ RSpec.describe DependencyFileParsers::Ruby do
       describe "the first dependency" do
         subject { dependencies.first }
 
-        it { is_expected.to be_a(Dependency) }
+        it { is_expected.to be_a(Bump::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("0") }
       end

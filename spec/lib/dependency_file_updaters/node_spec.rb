@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/dependency_file_updaters/node"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/dependency_file_updaters/node"
 
-RSpec.describe DependencyFileUpdaters::Node do
+RSpec.describe Bump::DependencyFileUpdaters::Node do
   before { WebMock.disable! }
   after { WebMock.enable! }
   let(:updater) do
@@ -14,17 +14,17 @@ RSpec.describe DependencyFileUpdaters::Node do
     )
   end
   let(:package_json) do
-    DependencyFile.new(content: package_json_body, name: "package.json")
+    Bump::DependencyFile.new(content: package_json_body, name: "package.json")
   end
   let(:package_json_body) { fixture("package_files", "package.json") }
   let(:yarn_lock) do
-    DependencyFile.new(
+    Bump::DependencyFile.new(
       name: "yarn.lock",
       content: fixture("package_files", "yarn.lock")
     )
   end
-  let(:dependency) { Dependency.new(name: "fetch-factory", version: "0.0.2") }
-  let(:tmp_path) { SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:dependency) { Bump::Dependency.new(name: "fetch-factory", version: "0.0.2") }
+  let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -43,7 +43,7 @@ RSpec.describe DependencyFileUpdaters::Node do
     subject(:updated_files) { updater.updated_dependency_files }
     specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
     specify { expect { updated_files }.to_not output.to_stdout }
-    specify { updated_files.each { |f| expect(f).to be_a(DependencyFile) } }
+    specify { updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) } }
     its(:length) { is_expected.to eq(2) }
   end
 
@@ -55,7 +55,7 @@ RSpec.describe DependencyFileUpdaters::Node do
 
     context "when the minor version is specified" do
       let(:dependency) do
-        Dependency.new(name: "fetch-factory", version: "0.2.1")
+        Bump::Dependency.new(name: "fetch-factory", version: "0.2.1")
       end
       let(:package_json_body) do
         fixture("package_files", "minor_version_specified.json")
