@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "sidekiq"
+require "octokit"
 require "./app/boot"
 require "bump/dependency"
 require "bump/dependency_file"
@@ -37,7 +38,8 @@ module Workers
         repo: repo.name,
         base_commit: repo.commit,
         dependency: updated_dependency,
-        files: updated_dependency_files
+        files: updated_dependency_files,
+        github_client: github_client
       ).create
 
     rescue Bump::DependencyFileUpdaters::VersionConflict
@@ -90,6 +92,10 @@ module Workers
 
     def bump_github_token
       Prius.get(:bump_github_token)
+    end
+
+    def github_client
+      Octokit::Client.new(access_token: bump_github_token)
     end
   end
 end

@@ -8,6 +8,7 @@ module Bump
       private
 
       def look_up_github_repo
+        return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
 
         npm_url = "http://registry.npmjs.org/#{dependency.name}"

@@ -3,6 +3,8 @@ require "prius"
 require "sidekiq"
 require "raven"
 require "excon"
+
+$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
 require "bump/null_logger"
 
 Prius.load(:bump_github_token)

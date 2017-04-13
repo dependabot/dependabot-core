@@ -1,68 +1,47 @@
 # frozen_string_literal: true
+require "octokit"
 require "spec_helper"
 require "bump/dependency"
+require "bump/dependency_metadata_finders/base"
 
-RSpec.describe Bump::Dependency do
-  subject(:dependency) do
-    described_class.new(name: name,
-                        version: version,
-                        previous_version: previous_version)
+RSpec.describe Bump::DependencyMetadataFinders::Base do
+  subject(:finder) do
+    described_class.new(dependency: dependency, github_client: github_client)
   end
-  let(:name) { "business" }
-  let(:version) { "1.4.0" }
-  let(:previous_version) { nil }
-
-  describe "#github_repo" do
-    subject { dependency.github_repo }
-
-    context "with no language" do
-      it { is_expected.to be_nil }
-    end
-
-    context "for a Ruby dependency" do
-      subject(:dependency) do
-        described_class.new(name: name, version: version, language: "ruby")
-      end
-
-      it "delegates to a Bump::DependencyMetadataFinder" do
-        expect_any_instance_of(Bump::DependencyMetadataFinders::Ruby).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-        dependency.github_repo
-      end
-    end
+  let(:dependency) do
+    Bump::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      previous_version: dependency_previous_version
+    )
+  end
+  let(:dependency_name) { "business" }
+  let(:dependency_version) { "1.4.0" }
+  let(:dependency_previous_version) { nil }
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  before do
+    allow(finder).
+      to receive(:github_repo).
+      and_return("gocardless/#{dependency_name}")
   end
 
   describe "#github_repo_url" do
-    subject { dependency.github_repo_url }
-
-    context "with a github repo" do
-      before do
-        allow(dependency).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-      end
-
-      it { is_expected.to eq("https://github.com/gocardless/business") }
-    end
+    subject { finder.github_repo_url }
+    it { is_expected.to eq("https://github.com/gocardless/business") }
 
     context "without a github repo" do
-      before { allow(dependency).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
 
   context "#github_compare_url" do
-    subject { dependency.github_compare_url }
+    subject { finder.github_compare_url }
 
     context "with a github repo and old/new tags" do
-      let(:previous_version) { "1.3.0" }
+      let(:dependency_previous_version) { "1.3.0" }
 
       before do
-        allow(dependency).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-
         stub_request(:get,
                      "https://api.github.com/repos/gocardless/business/tags").
           to_return(status: 200,
@@ -78,10 +57,6 @@ RSpec.describe Bump::Dependency do
 
     context "with a github repo and only a new tag" do
       before do
-        allow(dependency).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-
         stub_request(:get,
                      "https://api.github.com/repos/gocardless/business/tags").
           to_return(status: 200,
@@ -97,10 +72,6 @@ RSpec.describe Bump::Dependency do
 
     context "with a github repo and no tags found" do
       before do
-        allow(dependency).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-
         stub_request(:get,
                      "https://api.github.com/repos/gocardless/business/tags").
           to_return(status: 200,
@@ -114,21 +85,15 @@ RSpec.describe Bump::Dependency do
     end
 
     context "without a github repo" do
-      before { allow(dependency).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
 
   describe "#changelog_url" do
-    subject { dependency.changelog_url }
+    subject { finder.changelog_url }
 
     context "with a github repo" do
-      before do
-        allow(dependency).
-          to receive(:github_repo).
-          and_return("gocardless/business")
-      end
-
       let(:github_url) do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
@@ -146,14 +111,14 @@ RSpec.describe Bump::Dependency do
         let(:github_response) { fixture("github", "business_files.json") }
 
         it "gets the right URL" do
-          expect(dependency.changelog_url).
+          expect(subject).
             to eq(
               "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
             )
         end
 
         it "caches the call to github" do
-          2.times { dependency.changelog_url }
+          2.times { finder.changelog_url }
           expect(WebMock).to have_requested(:get, github_url).once
         end
       end
@@ -166,7 +131,7 @@ RSpec.describe Bump::Dependency do
         it { is_expected.to be_nil }
 
         it "caches the call to github" do
-          2.times { dependency.changelog_url }
+          2.times { finder.changelog_url }
           expect(WebMock).to have_requested(:get, github_url).once
         end
       end
@@ -180,7 +145,7 @@ RSpec.describe Bump::Dependency do
     end
 
     context "without a github repo" do
-      before { allow(dependency).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end

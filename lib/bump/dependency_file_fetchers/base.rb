@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 require "bump/dependency_file"
-require "bump/github"
 
 module Bump
   module DependencyFileFetchers
     class Base
-      attr_reader :repo
+      attr_reader :repo, :github_client
 
-      def initialize(repo)
+      def initialize(repo:, github_client:)
         @repo = repo
+        @github_client = github_client
       end
 
       def files
@@ -16,17 +16,15 @@ module Bump
       end
 
       def commit
-        default_branch = Github.client.repository(repo).default_branch
-
-        Github.client.ref(repo, "heads/#{default_branch}").object.sha
+        default_branch = github_client.repository(repo.name).default_branch
+        github_client.ref(repo.name, "heads/#{default_branch}").object.sha
       end
 
       private
 
-      def fetch_file_from_github(name)
-        content = Github.client.contents(repo, path: name).content
-
-        DependencyFile.new(name: name, content: Base64.decode64(content))
+      def fetch_file_from_github(file_name)
+        content = github_client.contents(repo.name, path: file_name).content
+        DependencyFile.new(name: file_name, content: Base64.decode64(content))
       end
     end
   end

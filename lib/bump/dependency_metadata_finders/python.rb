@@ -9,6 +9,7 @@ module Bump
       private
 
       def look_up_github_repo
+        return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
         pypi_url = "https://pypi.python.org/pypi/#{dependency.name}/json"
         package = JSON.parse(Excon.get(pypi_url).body)
