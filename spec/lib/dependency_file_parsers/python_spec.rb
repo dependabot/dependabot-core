@@ -54,6 +54,19 @@ RSpec.describe Bump::DependencyFileParsers::Python do
       end
     end
 
+    context "with invalid lines" do
+      let(:requirements_body) { fixture("requirements", "invalid_lines.txt") }
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Bump::Dependency) }
+        its(:name) { is_expected.to eq("psycopg2") }
+        its(:version) { is_expected.to eq("2.6.1") }
+      end
+    end
+
     context "with no version specified" do
       let(:requirements_body) do
         fixture("requirements", "version_not_specified.txt")

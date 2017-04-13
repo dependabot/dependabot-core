@@ -69,5 +69,11 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
       let(:requirements_body) { fixture("requirements", "comments.txt") }
       its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
     end
+
+    context "when there are unused lines" do
+      let(:requirements_body) { fixture("requirements", "invalid_lines.txt") }
+      its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+      its(:content) { is_expected.to include "# This is just a comment" }
+    end
   end
 end
