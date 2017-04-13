@@ -12,6 +12,7 @@ module Bump
       end
 
       def needs_update?
+        return false if dependency_version.nil?
         Gem::Version.new(latest_version) > dependency_version
       end
 
