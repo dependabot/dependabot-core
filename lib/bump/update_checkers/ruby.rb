@@ -17,9 +17,13 @@ module Bump
           return Gem::Version.new(Bundler::VERSION)
         end
 
+        # The safe navigation operator is necessary because not all files in
+        # the Gemfile will appear in the Gemfile.lock. For instance, if a gem
+        # specifies `platform: [:windows]`, and the Gemfile.lock is generated
+        # on a Linux machine, the gem will be not appear in the lockfile.
         parsed_lockfile.
           specs.
-          find { |spec| spec.name == dependency.name }.
+          find { |spec| spec.name == dependency.name }&.
           version
       end
 

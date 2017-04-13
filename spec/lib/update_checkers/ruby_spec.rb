@@ -40,6 +40,11 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       it { is_expected.to be_falsey }
     end
 
+    context "given a dependency that doesn't appear in the lockfile" do
+      let(:dependency) { Bump::Dependency.new(name: "x", version: "1.0") }
+      it { is_expected.to be_falsey }
+    end
+
     context "given an out-of-date bundler as a dependency" do
       before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
       let(:dependency) do
