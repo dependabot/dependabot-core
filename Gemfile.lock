@@ -1,3 +1,13 @@
+PATH
+  remote: .
+  specs:
+    bump (0.1.0)
+      bundler (~> 1.14)
+      excon (~> 0.55)
+      gemnasium-parser (~> 0.1)
+      gems (~> 1.0)
+      octokit (~> 4.6)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -83,14 +93,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.14.3)
+  bump!
   dotenv
-  excon
   foreman (~> 0.82.0)
-  gemnasium-parser (~> 0.1.9)
-  gems (~> 1.0.0)
   highline (~> 1.7.8)
-  octokit (~> 4.6.2)
   prius (~> 1.0.0)
   rake
   rspec (~> 3.5.0)
