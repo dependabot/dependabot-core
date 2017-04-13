@@ -107,6 +107,18 @@ RSpec.describe Bump::PullRequestCreator do
         to have_requested(:post, "#{watched_repo_url}/git/commits")
     end
 
+    it "has the right commit message" do
+      creator.create
+
+      expect(WebMock).
+        to have_requested(:post, "#{watched_repo_url}/git/commits").
+        with(body: {
+               parents: ["basecommitsha"],
+               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+               message: /Bump business to 1\.5\.0\n\nBumps \[business\]/
+             })
+    end
+
     it "creates a branch for that commit" do
       creator.create
 
