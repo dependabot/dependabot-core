@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 require "sidekiq"
 require "./app/boot"
-require "./app/dependency"
-require "./app/dependency_file"
-require "./app/repo"
-require "./app/update_checkers/ruby"
-require "./app/update_checkers/node"
-require "./app/update_checkers/python"
-require "./app/dependency_file_updaters/ruby"
-require "./app/dependency_file_updaters/node"
-require "./app/dependency_file_updaters/python"
-require "./app/pull_request_creator"
+require "bump/dependency"
+require "bump/dependency_file"
+require "bump/repo"
+require "bump/update_checkers/ruby"
+require "bump/update_checkers/node"
+require "bump/update_checkers/python"
+require "bump/dependency_file_updaters/ruby"
+require "bump/dependency_file_updaters/node"
+require "bump/dependency_file_updaters/python"
+require "bump/pull_request_creator"
 
 $stdout.sync = true
 
@@ -23,24 +23,24 @@ module Workers
     sidekiq_retry_in { |count| [60, 300, 3_600, 36_000][count] }
 
     def perform(body)
-      @repo = Repo.new(**body["repo"].symbolize_keys)
-      @dependency = Dependency.new(**body["dependency"].symbolize_keys)
+      @repo = Bump::Repo.new(**body["repo"].symbolize_keys)
+      @dependency = Bump::Dependency.new(**body["dependency"].symbolize_keys)
       @dependency_files = body["dependency_files"].map do |file|
-        DependencyFile.new(**file.symbolize_keys)
+        Bump::DependencyFile.new(**file.symbolize_keys)
       end
 
       updated_dependency, updated_dependency_files = update_dependency!
 
       return if updated_dependency.nil?
 
-      PullRequestCreator.new(
+      Bump::PullRequestCreator.new(
         repo: repo.name,
         base_commit: repo.commit,
         dependency: updated_dependency,
         files: updated_dependency_files
       ).create
 
-    rescue DependencyFileUpdaters::VersionConflict
+    rescue Bump::DependencyFileUpdaters::VersionConflict
       nil
     rescue => error
       Raven.capture_exception(error, extra: { body: body })
@@ -71,18 +71,18 @@ module Workers
 
     def update_checker
       case repo.language
-      when "ruby" then UpdateCheckers::Ruby
-      when "node" then UpdateCheckers::Node
-      when "python" then UpdateCheckers::Python
+      when "ruby" then Bump::UpdateCheckers::Ruby
+      when "node" then Bump::UpdateCheckers::Node
+      when "python" then Bump::UpdateCheckers::Python
       else raise "Invalid language #{language}"
       end
     end
 
     def file_updater
       case repo.language
-      when "ruby" then DependencyFileUpdaters::Ruby
-      when "node" then DependencyFileUpdaters::Node
-      when "python" then DependencyFileUpdaters::Python
+      when "ruby" then Bump::DependencyFileUpdaters::Ruby
+      when "node" then Bump::DependencyFileUpdaters::Node
+      when "python" then Bump::DependencyFileUpdaters::Python
       else raise "Invalid language #{language}"
       end
     end

@@ -18,19 +18,22 @@ RSpec.describe Workers::DependencyFileFetcher do
     subject(:perform) { worker.perform(body) }
 
     before do
-      allow_any_instance_of(DependencyFileFetchers::Ruby).
+      allow_any_instance_of(Bump::DependencyFileFetchers::Ruby).
         to receive(:files).
         and_return(
           [
-            DependencyFile.new(name: "Gemfile", content: fixture("Gemfile")),
-            DependencyFile.new(
+            Bump::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("Gemfile")
+            ),
+            Bump::DependencyFile.new(
               name: "Gemfile.lock",
               content: fixture("Gemfile.lock")
             )
           ]
         )
 
-      allow_any_instance_of(DependencyFileFetchers::Ruby).
+      allow_any_instance_of(Bump::DependencyFileFetchers::Ruby).
         to receive(:commit).and_return("commitsha")
     end
 
@@ -72,7 +75,7 @@ RSpec.describe Workers::DependencyFileFetcher do
 
     context "if an error is raised" do
       before do
-        allow_any_instance_of(DependencyFileFetchers::Ruby).
+        allow_any_instance_of(Bump::DependencyFileFetchers::Ruby).
           to receive(:files).and_raise("hell")
       end
 

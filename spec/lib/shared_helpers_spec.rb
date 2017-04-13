@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "./lib/shared_helpers"
+require "bump/shared_helpers"
 
-RSpec.describe SharedHelpers do
+RSpec.describe Bump::SharedHelpers do
   describe ".in_a_forked_process" do
     subject(:run_sub_process) do
-      SharedHelpers.in_a_forked_process { task.call }
+      Bump::SharedHelpers.in_a_forked_process { task.call }
     end
 
     context "when the forked process returns a value" do
@@ -29,7 +29,7 @@ RSpec.describe SharedHelpers do
 
       it "raises a ChildProcessFailed error" do
         expect { run_sub_process }.
-          to raise_error(SharedHelpers::ChildProcessFailed)
+          to raise_error(Bump::SharedHelpers::ChildProcessFailed)
       end
     end
   end

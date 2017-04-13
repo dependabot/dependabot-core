@@ -29,18 +29,20 @@ RSpec.describe Workers::DependencyUpdater do
 
     context "when an update is required" do
       before do
-        allow_any_instance_of(UpdateCheckers::Ruby).
+        allow_any_instance_of(Bump::UpdateCheckers::Ruby).
           to receive(:needs_update?).and_return(true)
-        allow_any_instance_of(UpdateCheckers::Ruby).
+        allow_any_instance_of(Bump::UpdateCheckers::Ruby).
           to receive(:latest_version).and_return("1.5.0")
 
-        allow_any_instance_of(DependencyFileUpdaters::Ruby).
+        allow_any_instance_of(Bump::DependencyFileUpdaters::Ruby).
           to receive(:updated_dependency_files).
-          and_return([DependencyFile.new(name: "Gemfile", content: "xyz")])
+          and_return(
+            [Bump::DependencyFile.new(name: "Gemfile", content: "xyz")]
+          )
       end
 
       it "enqueues a PullRequestCreator with the correct arguments" do
-        expect(PullRequestCreator).to receive(:new) do |args|
+        expect(Bump::PullRequestCreator).to receive(:new) do |args|
           expect(args[:repo]).to eq("gocardless/bump")
           expect(args[:base_commit]).to eq("commitsha")
           expect(args[:dependency].to_h).to eq(
@@ -59,27 +61,27 @@ RSpec.describe Workers::DependencyUpdater do
 
     context "when no update is required" do
       before do
-        allow_any_instance_of(UpdateCheckers::Ruby).
+        allow_any_instance_of(Bump::UpdateCheckers::Ruby).
           to receive(:needs_update?).and_return(false)
       end
 
       it "doesn't create a PR" do
-        expect(PullRequestCreator).to_not receive(:new)
+        expect(Bump::PullRequestCreator).to_not receive(:new)
         perform
       end
     end
 
     context "if an error is raised" do
       before do
-        allow_any_instance_of(UpdateCheckers::Ruby).
+        allow_any_instance_of(Bump::UpdateCheckers::Ruby).
           to receive(:latest_version).and_return("1.7.0")
       end
 
       context "for a version conflict" do
         before do
-          allow_any_instance_of(DependencyFileUpdaters::Ruby).
+          allow_any_instance_of(Bump::DependencyFileUpdaters::Ruby).
             to receive(:updated_dependency_files).
-            and_raise(DependencyFileUpdaters::VersionConflict)
+            and_raise(Bump::DependencyFileUpdaters::VersionConflict)
         end
 
         it "quietly finishes" do
@@ -90,7 +92,7 @@ RSpec.describe Workers::DependencyUpdater do
 
       context "for a runtime error" do
         before do
-          allow(DependencyFileUpdaters::Ruby).
+          allow(Bump::DependencyFileUpdaters::Ruby).
             to receive(:new).
             and_raise("hell")
         end
