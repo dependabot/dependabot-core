@@ -78,6 +78,10 @@ RSpec.describe Bump::PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "business_tags.json"),
                 headers: json_header)
+    stub_request(:get, "#{business_repo_url}/releases").
+      to_return(status: 200,
+                body: fixture("github", "business_releases.json"),
+                headers: json_header)
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
       to_return(status: 200, body: fixture("rubygems_response.json"))
   end
@@ -145,9 +149,11 @@ RSpec.describe Bump::PullRequestCreator do
             head: "bump_business_to_1.5.0",
             title: "Bump business to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
-                  "to 1.5.0.\n- [Changelog]"\
+                  "to 1.5.0.\n- [Release notes]"\
+                  "(https://github.com/gocardless/business/releases/tag"\
+                  "/v1.5.0)\n- [Changelog]"\
                   "(https://github.com/gocardless/business/blob/master"\
-                  "/CHANGELOG.md)\n- [Changes since 1.4.0]"\
+                  "/CHANGELOG.md)\n- [Commits]"\
                   "(https://github.com/gocardless/business/"\
                   "compare/v1.4.0...v1.5.0)"
           }
