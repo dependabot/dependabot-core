@@ -116,11 +116,8 @@ module Bump
 
     def dependency_metadata_finder
       @dependency_metadata_finder ||=
-        begin
-          finder_class =
-            DependencyMetadataFinders.for_language(dependency.language)
-          finder_class.new(dependency: dependency, github_client: github_client)
-        end
+        DependencyMetadataFinders.for_language(dependency.language).
+        new(dependency: dependency, github_client: github_client)
     end
   end
 end
