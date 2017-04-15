@@ -17,7 +17,7 @@ module Bump
           content.
           each_line.
           each_with_object([]) do |line, dependencies|
-            dependency = LineParser.new(line).parse
+            dependency = LineParser.parse(line)
 
             next if dependency.nil?
             next if dependency[:requirements].length.zero?
@@ -26,12 +26,9 @@ module Bump
             # cause trouble at the dependency update step
             next if dependency[:requirements].length > 1
 
-            version =
-              dependency[:requirements].first.match(LineParser::VERSION)[0]
-
             dependencies << Dependency.new(
               name: dependency[:name],
-              version: version,
+              version: dependency[:requirements].first[:version],
               language: "python"
             )
           end
@@ -42,7 +39,7 @@ module Bump
         EXTRA = /[a-zA-Z0-9\-_\.]+/
         COMPARISON = /===|==|>=|<=|<|>|~=|!=/
         VERSION = /[a-zA-Z0-9\-_\.]+/
-        REQUIREMENT = /#{COMPARISON}\s*#{VERSION}/
+        REQUIREMENT = /(?<comparison>#{COMPARISON})\s*(?<version>#{VERSION})/
 
         REQUIREMENT_LINE =
           /^\s*(?<name>#{NAME})
@@ -51,19 +48,23 @@ module Bump
             \s*#*\s*(?<comment>.+)?$
           /x
 
-        attr_reader :line
-
-        def initialize(line)
-          @line = line
-        end
-
-        def parse
+        def self.parse(line)
           requirement = line.chomp.match(REQUIREMENT_LINE)
           return if requirement.nil?
 
+          requirements =
+            requirement[:requirements].to_s.
+            to_enum(:scan, REQUIREMENT).
+            map do
+              {
+                comparison: Regexp.last_match[:comparison],
+                version: Regexp.last_match[:version]
+              }
+            end
+
           {
             name: requirement[:name],
-            requirements: (requirement[:requirements] || "").scan(REQUIREMENT)
+            requirements: requirements
           }
         end
       end
