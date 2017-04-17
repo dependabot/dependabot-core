@@ -4,7 +4,7 @@ module Bump
     class Base
       GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?}
       CHANGELOG_NAMES = %w(changelog history news changes).freeze
-      TAG_PREFIX      = /^v/
+      TAG_PREFIX      = /^[vV]/
 
       attr_reader :dependency, :github_client
 
@@ -46,6 +46,13 @@ module Bump
         look_up_changelog_url
       end
 
+      def release_url
+        return unless github_repo
+        return @release_url if @release_url_lookup_attempted
+
+        look_up_release_url
+      end
+
       private
 
       def look_up_changelog_url
@@ -57,6 +64,18 @@ module Bump
         @changelog_url = file.nil? ? nil : file.html_url
       rescue Octokit::NotFound
         @changelog_url = nil
+      end
+
+      def look_up_release_url
+        @release_url_lookup_attempted = true
+
+        release = github_client.releases(github_repo).find do |r|
+          r.name.to_s.gsub(TAG_PREFIX, "") == dependency.version
+        end
+
+        @release_url = release&.html_url
+      rescue Octokit::NotFound
+        @release_url = nil
       end
 
       def look_up_repo_tags

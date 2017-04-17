@@ -89,18 +89,16 @@ module Bump
         msg = "Bumps #{dependency.name} to #{dependency.version}."
       end
 
+      if dependency_metadata_finder.release_url
+        msg += "\n- [Release notes](#{dependency_metadata_finder.release_url})"
+      end
+
       if dependency_metadata_finder.changelog_url
         msg += "\n- [Changelog](#{dependency_metadata_finder.changelog_url})"
       end
 
       if dependency_metadata_finder.github_repo_url
-        title = if dependency.previous_version
-                  "Changes since #{dependency.previous_version}"
-                else
-                  "Commits"
-                end
-        msg += "\n- [#{title}]"\
-               "(#{dependency_metadata_finder.github_compare_url})"
+        msg += "\n- [Commits](#{dependency_metadata_finder.github_compare_url})"
       end
 
       msg
