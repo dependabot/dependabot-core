@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "octokit"
 require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
@@ -9,7 +10,8 @@ RSpec.describe Bump::PullRequestCreator do
     Bump::PullRequestCreator.new(repo: repo,
                                  base_commit: base_commit,
                                  dependency: dependency,
-                                 files: files)
+                                 files: files,
+                                 github_client: github_client)
   end
 
   let(:dependency) do
@@ -21,6 +23,7 @@ RSpec.describe Bump::PullRequestCreator do
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
 
   let(:gemfile) do
     Bump::DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
@@ -141,10 +144,12 @@ RSpec.describe Bump::PullRequestCreator do
             base: "master",
             head: "bump_business_to_1.5.0",
             title: "Bump business to 1.5.0",
-            body: "Bumps [business](#{dependency.github_repo_url}) to 1.5.0."\
-                  "\n- [Changelog](#{dependency.changelog_url})"\
-                  "\n- [Changes since 1.4.0](#{dependency.github_repo_url}/"\
-                    "compare/v1.4.0...v1.5.0)"
+            body: "Bumps [business](https://github.com/gocardless/business) "\
+                  "to 1.5.0.\n- [Changelog]"\
+                  "(https://github.com/gocardless/business/blob/master"\
+                  "/CHANGELOG.md)\n- [Changes since 1.4.0]"\
+                  "(https://github.com/gocardless/business/"\
+                  "compare/v1.4.0...v1.5.0)"
           }
         )
     end

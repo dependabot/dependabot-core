@@ -1,9 +1,21 @@
 # frozen_string_literal: true
+require "octokit"
 require "spec_helper"
-require "bump/dependency_source_code_finders/ruby"
+require "bump/dependency"
+require "bump/dependency_metadata_finders/ruby"
 
-RSpec.describe Bump::DependencySourceCodeFinders::Ruby do
-  subject(:finder) { described_class.new(dependency_name: dependency_name) }
+RSpec.describe Bump::DependencyMetadataFinders::Ruby do
+  let(:dependency) do
+    Bump::Dependency.new(
+      name: dependency_name,
+      version: "1.0",
+      language: "ruby"
+    )
+  end
+  subject(:finder) do
+    described_class.new(dependency: dependency, github_client: github_client)
+  end
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "business" }
 
   describe "#github_repo" do

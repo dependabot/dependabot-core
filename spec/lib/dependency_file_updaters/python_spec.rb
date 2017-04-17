@@ -11,7 +11,8 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
   let(:updater) do
     described_class.new(
       dependency_files: [requirements],
-      dependency: dependency
+      dependency: dependency,
+      github_access_token: "token"
     )
   end
   let(:requirements) do
@@ -30,7 +31,11 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
     context "when the requirements.txt is missing" do
       subject { -> { updater } }
       let(:updater) do
-        described_class.new(dependency_files: [], dependency: dependency)
+        described_class.new(
+          dependency_files: [],
+          dependency: dependency,
+          github_access_token: "token"
+        )
       end
 
       it { is_expected.to raise_error(/No requirements.txt!/) }

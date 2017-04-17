@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 require "excon"
-require "bump/dependency_source_code_finders/base"
+require "bump/dependency_metadata_finders/base"
 
 module Bump
-  module DependencySourceCodeFinders
+  module DependencyMetadataFinders
     class Node < Base
       private
 
       def look_up_github_repo
+        return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
 
-        npm_url = "http://registry.npmjs.org/#{dependency_name}"
+        npm_url = "http://registry.npmjs.org/#{dependency.name}"
         all_versions =
           JSON.parse(Excon.get(npm_url).body).fetch("versions", {}).values
 

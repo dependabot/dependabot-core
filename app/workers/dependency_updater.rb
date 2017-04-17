@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "sidekiq"
+require "octokit"
 require "./app/boot"
 require "bump/dependency"
 require "bump/dependency_file"
@@ -37,7 +38,8 @@ module Workers
         repo: repo.name,
         base_commit: repo.commit,
         dependency: updated_dependency,
-        files: updated_dependency_files
+        files: updated_dependency_files,
+        github_client: github_client
       ).create
 
     rescue Bump::DependencyFileUpdaters::VersionConflict
@@ -63,7 +65,8 @@ module Workers
 
       updated_dependency_files = file_updater.new(
         dependency: updated_dependency,
-        dependency_files: dependency_files
+        dependency_files: dependency_files,
+        github_access_token: bump_github_token
       ).updated_dependency_files
 
       [updated_dependency, updated_dependency_files]
@@ -85,6 +88,14 @@ module Workers
       when "python" then Bump::DependencyFileUpdaters::Python
       else raise "Invalid language #{language}"
       end
+    end
+
+    def bump_github_token
+      Prius.get(:bump_github_token)
+    end
+
+    def github_client
+      Octokit::Client.new(access_token: bump_github_token)
     end
   end
 end

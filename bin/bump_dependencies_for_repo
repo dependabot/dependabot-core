@@ -7,12 +7,15 @@ unless ENV["RACK_ENV"] == "production"
   Dotenv.load
 end
 
-require File.expand_path("../../app/workers/dependency_file_fetcher", __FILE__)
-require File.expand_path("../../lib/github", __FILE__)
+require "octokit"
+require "prius"
 
+require File.expand_path("../../app/workers/dependency_file_fetcher", __FILE__)
+
+github_client = Octokit::Client.new(access_token: Prius.get(:bump_github_token))
 repo_validator = lambda do |repo_name|
   begin
-    Github.client.repository(repo_name)
+    github_client.repository(repo_name)
     true
   rescue Octokit::NotFound
     false

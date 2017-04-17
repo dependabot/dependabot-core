@@ -1,14 +1,21 @@
 # frozen_string_literal: true
+require "octokit"
 require "spec_helper"
+require "bump/repo"
 require "bump/dependency_file_fetchers/ruby"
 
 RSpec.describe Bump::DependencyFileFetchers::Ruby do
-  let(:file_fetcher) { described_class.new(repo) }
-  let(:repo) { "gocardless/bump" }
+  let(:file_fetcher) do
+    described_class.new(repo: repo, github_client: github_client)
+  end
+  let(:repo) do
+    Bump::Repo.new(name: "gocardless/bump", language: nil, commit: nil)
+  end
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
 
   describe "#files" do
     subject(:files) { file_fetcher.files }
-    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    let(:url) { "https://api.github.com/repos/#{repo.name}/contents/" }
     before do
       stub_request(:get, url + "Gemfile").
         to_return(status: 200,

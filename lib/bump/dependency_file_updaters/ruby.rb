@@ -8,13 +8,14 @@ require "bump/dependency_file_updaters/errors"
 module Bump
   module DependencyFileUpdaters
     class Ruby
-      attr_reader :gemfile, :gemfile_lock, :dependency
+      attr_reader :gemfile, :gemfile_lock, :dependency, :github_access_token
 
-      def initialize(dependency_files:, dependency:)
+      def initialize(dependency_files:, dependency:, github_access_token:)
         @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
         @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
         validate_files_are_present!
 
+        @github_access_token = github_access_token
         @dependency = dependency
       end
 
@@ -80,7 +81,7 @@ module Bump
             )
             definition.resolve_remotely!
             definition.to_lock.gsub(
-              "https://#{bump_github_token}:x-oauth-basic@github.com/",
+              "https://#{github_access_token}:x-oauth-basic@github.com/",
               "git@github.com:"
             )
           end
@@ -98,20 +99,16 @@ module Bump
           File.join(dir, "Gemfile"),
           updated_gemfile_content.gsub(
             "git@github.com:",
-            "https://#{bump_github_token}:x-oauth-basic@github.com/"
+            "https://#{github_access_token}:x-oauth-basic@github.com/"
           )
         )
         File.write(
           File.join(dir, "Gemfile.lock"),
           gemfile_lock.content.gsub(
             "git@github.com:",
-            "https://#{bump_github_token}:x-oauth-basic@github.com/"
+            "https://#{github_access_token}:x-oauth-basic@github.com/"
           )
         )
-      end
-
-      def bump_github_token
-        Prius.get(:bump_github_token)
       end
     end
   end

@@ -1,15 +1,16 @@
 # frozen_string_literal: true
-require "bump/github"
+require "bump/dependency_metadata_finders"
 
 module Bump
   class PullRequestCreator
-    attr_reader :watched_repo, :dependency, :files, :base_commit
+    attr_reader :watched_repo, :dependency, :files, :base_commit, :github_client
 
-    def initialize(repo:, base_commit:, dependency:, files:)
+    def initialize(repo:, base_commit:, dependency:, files:, github_client:)
       @dependency = dependency
       @watched_repo = repo
       @base_commit = base_commit
       @files = files
+      @github_client = github_client
     end
 
     def create
@@ -24,7 +25,7 @@ module Bump
     private
 
     def branch_exists?
-      Github.client.ref(watched_repo, "heads/#{new_branch_name}")
+      github_client.ref(watched_repo, "heads/#{new_branch_name}")
       true
     rescue Octokit::NotFound
       false
@@ -33,7 +34,7 @@ module Bump
     def create_commit
       tree = create_tree
 
-      Github.client.create_commit(
+      github_client.create_commit(
         watched_repo,
         commit_message,
         tree.sha,
@@ -46,7 +47,7 @@ module Bump
         { path: file.name, mode: "100644", type: "blob", content: file.content }
       end
 
-      Github.client.create_tree(
+      github_client.create_tree(
         watched_repo,
         file_trees,
         base_tree: base_commit
@@ -54,7 +55,7 @@ module Bump
     end
 
     def create_branch(commit)
-      Github.client.create_ref(
+      github_client.create_ref(
         watched_repo,
         "heads/#{new_branch_name}",
         commit.sha
@@ -62,7 +63,7 @@ module Bump
     end
 
     def create_pull_request
-      Github.client.create_pull_request(
+      github_client.create_pull_request(
         watched_repo,
         default_branch,
         new_branch_name,
@@ -80,35 +81,43 @@ module Bump
     end
 
     def pr_message
-      if dependency.github_repo_url
-        msg = "Bumps [#{dependency.name}](#{dependency.github_repo_url}) to "\
+      if dependency_metadata_finder.github_repo_url
+        msg = "Bumps [#{dependency.name}]"\
+              "(#{dependency_metadata_finder.github_repo_url}) to "\
               "#{dependency.version}."
       else
         msg = "Bumps #{dependency.name} to #{dependency.version}."
       end
 
-      if dependency.changelog_url
-        msg += "\n- [Changelog](#{dependency.changelog_url})"
+      if dependency_metadata_finder.changelog_url
+        msg += "\n- [Changelog](#{dependency_metadata_finder.changelog_url})"
       end
 
-      if dependency.github_repo_url
+      if dependency_metadata_finder.github_repo_url
         title = if dependency.previous_version
                   "Changes since #{dependency.previous_version}"
                 else
                   "Commits"
                 end
-        msg += "\n- [#{title}](#{dependency.github_compare_url})"
+        msg += "\n- [#{title}]"\
+               "(#{dependency_metadata_finder.github_compare_url})"
       end
 
       msg
     end
 
     def default_branch
-      @default_branch ||= Github.client.repository(watched_repo).default_branch
+      @default_branch ||= github_client.repository(watched_repo).default_branch
     end
 
     def new_branch_name
       "bump_#{dependency.name}_to_#{dependency.version}"
+    end
+
+    def dependency_metadata_finder
+      @dependency_metadata_finder ||=
+        DependencyMetadataFinders.for_language(dependency.language).
+        new(dependency: dependency, github_client: github_client)
     end
   end
 end

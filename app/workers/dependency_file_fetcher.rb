@@ -22,7 +22,10 @@ module Workers
     def perform(body)
       @body = body
 
-      file_fetcher = file_fetcher_for(repo.language).new(repo.name)
+      file_fetcher = file_fetcher_for(repo.language).new(
+        repo: repo,
+        github_client: github_client
+      )
 
       parser = parser_for(repo.language)
 
@@ -67,6 +70,10 @@ module Workers
       when "python" then Bump::DependencyFileParsers::Python
       else raise "Invalid language #{language}"
       end
+    end
+
+    def github_client
+      Octokit::Client.new(access_token: Prius.get(:bump_github_token))
     end
   end
 end

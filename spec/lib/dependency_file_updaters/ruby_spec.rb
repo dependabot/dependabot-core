@@ -10,7 +10,8 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
   let(:updater) do
     described_class.new(
       dependency_files: [gemfile, gemfile_lock],
-      dependency: dependency
+      dependency: dependency,
+      github_access_token: "token"
     )
   end
   let(:gemfile) do
@@ -32,7 +33,11 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     context "when the gemfile.lock is missing" do
       subject { -> { updater } }
       let(:updater) do
-        described_class.new(dependency_files: [gemfile], dependency: dependency)
+        described_class.new(
+          dependency_files: [gemfile],
+          dependency: dependency,
+          github_access_token: "token"
+        )
       end
 
       it { is_expected.to raise_error(/No Gemfile.lock/) }
