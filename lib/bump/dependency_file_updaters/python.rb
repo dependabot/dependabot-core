@@ -9,9 +9,10 @@ module Bump
       attr_reader :requirements, :dependency
 
       def initialize(dependency_files:, dependency:, github_access_token:)
-        @packages = DependencyFileParsers::Python.new(
-          dependency_files: dependency_files
-        ).parse
+        @requirements =
+          dependency_files.find { |f| f.name == "requirements.txt" }
+
+        raise "No requirements.txt!" unless requirements
 
         @github_access_token = github_access_token
         @dependency = dependency
@@ -33,27 +34,29 @@ module Bump
       def updated_requirements_content
         return @updated_requirements_content if @updated_requirements_content
 
-        packages = @packages.map do |pkg|
-          next pkg unless pkg.name == dependency.name
-          next pkg unless pkg.version
-          old_version = pkg.version
+        requirements.content.
+          to_enum(:scan,
+                  DependencyFileParsers::Python::LineParser::REQUIREMENT_LINE).
+          find { Regexp.last_match[:name] == dependency.name }
 
-          Dependency.new(
-            name: pkg.name,
-            version: updated_version_string(old_version, dependency.version)
-          )
-        end
+        original_dep_declaration_string = Regexp.last_match.to_s
+        updated_dep_declaration_string =
+          original_dep_declaration_string.
+          sub(DependencyFileParsers::Python::LineParser::REQUIREMENT) do |old|
+            old_version =
+              old.match(DependencyFileParsers::Python::LineParser::VERSION)[0]
 
-        @updated_requirements_content = packages.map do |pkg|
-          "#{pkg.name}==#{pkg.version}"
-        end.join("\n") + "\n"
-      end
+            precision = old_version.split(".").count
+            new_version =
+              dependency.version.split(".").first(precision).join(".")
 
-      def updated_version_string(old_version_string, new_version_number)
-        old_version_string.sub(/[\d\.]*\d/) do |old_version_number|
-          precision = old_version_number.split(".").count
-          new_version_number.split(".").first(precision).join(".")
-        end
+            old.sub(old_version, new_version)
+          end
+
+        @updated_requirements_content = requirements.content.gsub(
+          original_dep_declaration_string,
+          updated_dep_declaration_string
+        )
       end
     end
   end

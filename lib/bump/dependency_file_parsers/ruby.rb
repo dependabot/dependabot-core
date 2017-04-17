@@ -12,7 +12,10 @@ module Bump
 
       def parse
         parser.dependencies.map do |dependency|
+          # Ignore dependencies with multiple requirements, since they would
+          # cause trouble at the gem update step
           next if dependency.requirement.requirements.count > 1
+
           version = dependency.requirement.to_s.match(/[\d\.]+/)[0]
           Dependency.new(
             name: dependency.name,

@@ -21,8 +21,8 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
       name: "requirements.txt"
     )
   end
-  let(:requirements_body) { fixture("requirements", "requirements.txt") }
-  let(:dependency) { Bump::Dependency.new(name: "psycopg2", version: "2.6.1") }
+  let(:requirements_body) { fixture("requirements", "version_specified.txt") }
+  let(:dependency) { Bump::Dependency.new(name: "psycopg2", version: "2.8.1") }
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -54,18 +54,26 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
   describe "#updated_requirements_file" do
     subject(:updated_requirements_file) { updater.updated_requirements_file }
 
-    its(:content) { is_expected.to include "psycopg2==2.6.1" }
-    its(:content) { is_expected.to include "luigi==2.2.0" }
+    its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+    its(:content) { is_expected.to include "luigi==2.2.0\n" }
 
     context "when only the minor version is specified" do
-      let(:dependency) do
-        Bump::Dependency.new(name: "psycopg2", version: "2.6.1")
-      end
       let(:requirements_body) do
-        fixture("requirements", "requirements-minor-specified.txt")
+        fixture("requirements", "minor_version_specified.txt")
       end
 
-      its(:content) { is_expected.to include "psycopg2==2.6" }
+      its(:content) { is_expected.to include "psycopg2==2.8\n" }
+    end
+
+    context "when there is a comment" do
+      let(:requirements_body) { fixture("requirements", "comments.txt") }
+      its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
+    end
+
+    context "when there are unused lines" do
+      let(:requirements_body) { fixture("requirements", "invalid_lines.txt") }
+      its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+      its(:content) { is_expected.to include "# This is just a comment" }
     end
   end
 end
