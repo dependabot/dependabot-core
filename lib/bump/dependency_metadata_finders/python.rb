@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "gems"
 require "excon"
 require "bump/dependency_metadata_finders/base"
 
@@ -12,7 +11,12 @@ module Bump
         return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
         pypi_url = "https://pypi.python.org/pypi/#{dependency.name}/json"
-        package = JSON.parse(Excon.get(pypi_url).body)
+
+        excon_middleware =
+          Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
+
+        pypi_response = Excon.get(pypi_url, middlewares: excon_middleware)
+        package = JSON.parse(pypi_response.body)
 
         all_versions = package.fetch("releases", {}).values
         info = package.fetch("info", {})
