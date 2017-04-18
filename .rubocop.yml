@@ -1,5 +1,6 @@
 AllCops:
   DisplayCopNames: true
+  TargetRubyVersion: 2.3
   Exclude:
     - vendor/**/*
     - bin/**/*
