@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "bundler", "~> 1.14"
+  spec.add_dependency "bundler", ">= 1.12.0"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gemnasium-parser", "~> 0.1"
   spec.add_dependency "gems", "~> 1.0"
