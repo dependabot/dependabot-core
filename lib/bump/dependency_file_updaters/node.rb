@@ -49,8 +49,7 @@ module Bump
         parsed_content = JSON.parse(@package_json.content)
 
         %w(dependencies devDependencies).each do |dep_type|
-          old_version_string =
-            parsed_content.fetch(dep_type, {}).fetch(dependency.name, nil)
+          old_version_string = parsed_content.dig(dep_type, dependency.name)
           next unless old_version_string
 
           parsed_content[dep_type][dependency.name] =
