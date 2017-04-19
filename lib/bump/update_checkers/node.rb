@@ -2,6 +2,7 @@
 require "json"
 require "excon"
 require "bump/update_checkers/base"
+require "bump/shared_helpers"
 
 module Bump
   module UpdateCheckers
@@ -9,7 +10,12 @@ module Bump
       def latest_version
         @latest_version ||=
           begin
-            JSON.parse(Excon.get(dependency_url).body)["dist-tags"]["latest"]
+            npm_response = Excon.get(
+              dependency_url,
+              middlewares: SharedHelpers.excon_middleware
+            )
+
+            JSON.parse(npm_response.body)["dist-tags"]["latest"]
           end
       end
 

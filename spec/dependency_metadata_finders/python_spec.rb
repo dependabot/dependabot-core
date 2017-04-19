@@ -23,8 +23,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Python do
     let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
 
     before do
-      stub_request(:get, pypi_url).
-        to_return(status: 200, body: pypi_response)
+      stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     end
 
     context "when there is a github link in the pypi response" do
@@ -49,8 +48,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Python do
       end
     end
 
-    context "when the link resolves to a redirect" do
-      let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
+    context "when the pypi link resolves to a redirect" do
       let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
       let(:pypi_response) { fixture("pypi_response.json") }
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "tmpdir"
+require "excon"
 
 module Bump
   module SharedHelpers
@@ -49,6 +50,10 @@ module Bump
 
       return result unless result.is_a?(Hash) && result[:_error_details]
       raise ChildProcessFailed, result[:_error_details]
+    end
+
+    def self.excon_middleware
+      Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
     end
   end
 end

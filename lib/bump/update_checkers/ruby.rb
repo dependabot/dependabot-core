@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "gems"
 require "bump/update_checkers/base"
 
 module Bump

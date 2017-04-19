@@ -6,9 +6,10 @@ require "bump/update_checkers/python"
 
 RSpec.describe Bump::UpdateCheckers::Python do
   before do
-    stub_request(:get, "https://pypi.python.org/pypi/luigi/json").
-      to_return(status: 200, body: fixture("pypi_response.json"))
+    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+  let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
+  let(:pypi_response) { fixture("pypi_response.json") }
 
   let(:checker) do
     described_class.new(dependency: dependency, dependency_files: [])
@@ -32,6 +33,19 @@ RSpec.describe Bump::UpdateCheckers::Python do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq("2.6.0") }
+
+    context "when the pypi link resolves to a redirect" do
+      let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
+
+      before do
+        stub_request(:get, pypi_url).
+          to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url).
+          to_return(status: 200, body: pypi_response)
+      end
+
+      it { is_expected.to eq("2.6.0") }
+    end
   end
 
   describe "#updated_dependency" do

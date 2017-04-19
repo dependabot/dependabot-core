@@ -43,5 +43,18 @@ RSpec.describe Bump::UpdateCheckers::Node do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq("1.7.0") }
+
+    context "when the npm link resolves to a redirect" do
+      let(:redirect_url) { "http://registry.npmjs.org/eTag" }
+
+      before do
+        stub_request(:get, "http://registry.npmjs.org/etag").
+          to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url).
+          to_return(status: 200, body: fixture("npm_response.json"))
+      end
+
+      it { is_expected.to eq("1.7.0") }
+    end
   end
 end
