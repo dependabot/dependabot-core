@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "excon"
 require "bump/dependency_metadata_finders/base"
+require "bump/shared_helpers"
 
 module Bump
   module DependencyMetadataFinders
@@ -12,8 +13,9 @@ module Bump
         @github_repo_lookup_attempted = true
 
         npm_url = "http://registry.npmjs.org/#{dependency.name}"
-        all_versions =
-          JSON.parse(Excon.get(npm_url).body).fetch("versions", {}).values
+        npm_response =
+          Excon.get(npm_url, middlewares: SharedHelpers.excon_middleware)
+        all_versions = JSON.parse(npm_response.body)["versions"]&.values
 
         potential_source_urls =
           all_versions.map { |v| get_url(v.fetch("repository", {})) } +

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "excon"
 require "bump/dependency_metadata_finders/base"
+require "bump/shared_helpers"
 
 module Bump
   module DependencyMetadataFinders
@@ -12,10 +13,8 @@ module Bump
         @github_repo_lookup_attempted = true
         pypi_url = "https://pypi.python.org/pypi/#{dependency.name}/json"
 
-        excon_middleware =
-          Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
-
-        pypi_response = Excon.get(pypi_url, middlewares: excon_middleware)
+        pypi_response =
+          Excon.get(pypi_url, middlewares: SharedHelpers.excon_middleware)
         package = JSON.parse(pypi_response.body)
 
         all_versions = package.fetch("releases", {}).values

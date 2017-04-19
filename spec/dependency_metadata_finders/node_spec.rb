@@ -23,8 +23,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Node do
     let(:npm_url) { "http://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, "http://registry.npmjs.org/etag").
-        to_return(status: 200, body: npm_response)
+      stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
     end
 
     context "when there is a github link in the npm response" do
@@ -49,7 +48,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Node do
       end
     end
 
-    context "when there isn't github link in the npm response" do
+    context "when there isn't a github link in the npm response" do
       let(:npm_response) { fixture("npm_response_no_github.json") }
 
       it { is_expected.to be_nil }
@@ -58,6 +57,20 @@ RSpec.describe Bump::DependencyMetadataFinders::Node do
         2.times { github_repo }
         expect(WebMock).to have_requested(:get, npm_url).once
       end
+    end
+
+    context "when the npm link resolves to a redirect" do
+      let(:redirect_url) { "http://registry.npmjs.org/eTag" }
+      let(:npm_response) { fixture("npm_response.json") }
+
+      before do
+        stub_request(:get, npm_url).
+          to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url).
+          to_return(status: 200, body: npm_response)
+      end
+
+      it { is_expected.to eq("kesla/etag") }
     end
   end
 end
