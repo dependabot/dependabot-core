@@ -21,7 +21,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
       name: "requirements.txt"
     )
   end
-  let(:requirements_body) { fixture("requirements", "version_specified.txt") }
+  let(:requirements_body) do
+    fixture("python", "requirements", "version_specified.txt")
+  end
   let(:dependency) { Bump::Dependency.new(name: "psycopg2", version: "2.8.1") }
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
@@ -59,19 +61,23 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
 
     context "when only the minor version is specified" do
       let(:requirements_body) do
-        fixture("requirements", "minor_version_specified.txt")
+        fixture("python", "requirements", "minor_version_specified.txt")
       end
 
       its(:content) { is_expected.to include "psycopg2==2.8\n" }
     end
 
     context "when there is a comment" do
-      let(:requirements_body) { fixture("requirements", "comments.txt") }
+      let(:requirements_body) do
+        fixture("python", "requirements", "comments.txt")
+      end
       its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
     end
 
     context "when there are unused lines" do
-      let(:requirements_body) { fixture("requirements", "invalid_lines.txt") }
+      let(:requirements_body) do
+        fixture("python", "requirements", "invalid_lines.txt")
+      end
       its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       its(:content) { is_expected.to include "# This is just a comment" }
     end

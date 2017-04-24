@@ -17,10 +17,10 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
   let(:gemfile) do
     Bump::DependencyFile.new(content: gemfile_body, name: "Gemfile")
   end
-  let(:gemfile_body) { fixture("Gemfile") }
+  let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
-      content: fixture("Gemfile.lock"),
+      content: fixture("ruby", "lockfiles", "Gemfile.lock"),
       name: "Gemfile.lock"
     )
   end
@@ -58,25 +58,27 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     subject(:updated_gemfile) { updater.updated_gemfile }
 
     context "when the full version is specified" do
-      let(:gemfile_body) { fixture("gemfiles", "version_specified") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
       its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
       its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
     end
 
     context "when the minor version is specified" do
-      let(:gemfile_body) { fixture("gemfiles", "minor_version_specified") }
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "minor_version_specified")
+      end
       its(:content) { is_expected.to include "\"business\", \"~> 1.5\"" }
       its(:content) { is_expected.to include "\"statesman\", \"~> 1.2\"" }
     end
 
     context "with a gem whose name includes a number" do
-      let(:gemfile_body) { fixture("gemfiles", "gem_with_number") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "gem_with_number") }
       let(:dependency) { Bump::Dependency.new(name: "i18n", version: "1.5.0") }
       its(:content) { is_expected.to include "\"i18n\", \"~> 1.5.0\"" }
     end
 
     context "when there is a comment" do
-      let(:gemfile_body) { fixture("gemfiles", "comments") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "comments") }
       its(:content) do
         is_expected.to include "\"business\", \"~> 1.5.0\"   # Business time"
       end
@@ -87,7 +89,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     subject(:file) { updater.updated_gemfile_lock }
 
     context "when the old Gemfile specified the version" do
-      let(:gemfile_body) { fixture("gemfiles", "version_specified") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
 
       it "locks the updated gem to the latest version" do
         expect(file.content).to include "business (1.5.0)"
@@ -99,7 +101,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     end
 
     context "when the old Gemfile didn't specify the version" do
-      let(:gemfile_body) { fixture("gemfiles", "version_not_specified") }
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "version_not_specified")
+      end
 
       it "locks the updated gem to the latest version" do
         expect(file.content).to include "business (1.8.0)"
@@ -111,7 +115,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     end
 
     context "when the Gem can't be found" do
-      let(:gemfile_body) { fixture("gemfiles", "unavailable_gem") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
 
       it "raises a DependencyFileUpdaters::VersionConflict error" do
         expect { updater.updated_gemfile_lock }.
@@ -120,7 +124,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     end
 
     context "when there is a version conflict" do
-      let(:gemfile_body) { fixture("gemfiles", "version_conflict") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
       let(:dependency) do
         Bump::Dependency.new(name: "ibandit", version: "0.8.5")
       end

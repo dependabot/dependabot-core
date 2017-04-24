@@ -11,7 +11,9 @@ RSpec.describe Bump::DependencyFileParsers::Python do
       content: requirements_body
     )
   end
-  let(:requirements_body) { fixture("requirements", "version_specified.txt") }
+  let(:requirements_body) do
+    fixture("python", "requirements", "version_specified.txt")
+  end
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
@@ -30,7 +32,9 @@ RSpec.describe Bump::DependencyFileParsers::Python do
     end
 
     context "with comments" do
-      let(:requirements_body) { fixture("requirements", "comments.txt") }
+      let(:requirements_body) do
+        fixture("python", "requirements", "comments.txt")
+      end
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -43,7 +47,9 @@ RSpec.describe Bump::DependencyFileParsers::Python do
     end
 
     context "with extras" do
-      let(:requirements_body) { fixture("requirements", "extras.txt") }
+      let(:requirements_body) do
+        fixture("python", "requirements", "extras.txt")
+      end
 
       describe "the first dependency" do
         subject { dependencies.first }
@@ -55,7 +61,9 @@ RSpec.describe Bump::DependencyFileParsers::Python do
     end
 
     context "with invalid lines" do
-      let(:requirements_body) { fixture("requirements", "invalid_lines.txt") }
+      let(:requirements_body) do
+        fixture("python", "requirements", "invalid_lines.txt")
+      end
       its(:length) { is_expected.to eq(1) }
 
       describe "the first dependency" do
@@ -69,7 +77,7 @@ RSpec.describe Bump::DependencyFileParsers::Python do
 
     context "with no version specified" do
       let(:requirements_body) do
-        fixture("requirements", "version_not_specified.txt")
+        fixture("python", "requirements", "version_not_specified.txt")
       end
 
       # If no version is specified, Python will always use the latest, and we
@@ -79,7 +87,7 @@ RSpec.describe Bump::DependencyFileParsers::Python do
 
     context "with a version specified as between two constraints" do
       let(:requirements_body) do
-        fixture("requirements", "version_between_bounds.txt")
+        fixture("python", "requirements", "version_between_bounds.txt")
       end
 
       # TODO: For now we ignore dependencies with multiple requirements, because
