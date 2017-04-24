@@ -8,7 +8,7 @@ RSpec.describe Bump::DependencyFileParsers::Node do
   let(:package_json) do
     Bump::DependencyFile.new(name: "package.json", content: package_json_body)
   end
-  let(:package_json_body) { fixture("package_files", "package.json") }
+  let(:package_json_body) { fixture("node", "package_files", "package.json") }
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
