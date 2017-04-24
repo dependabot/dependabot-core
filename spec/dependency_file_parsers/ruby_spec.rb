@@ -8,7 +8,7 @@ RSpec.describe Bump::DependencyFileParsers::Ruby do
   let(:gemfile) do
     Bump::DependencyFile.new(name: "Gemfile", content: gemfile_body)
   end
-  let(:gemfile_body) { fixture("gemfiles", "version_specified") }
+  let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
@@ -27,7 +27,9 @@ RSpec.describe Bump::DependencyFileParsers::Ruby do
     end
 
     context "with no version specified" do
-      let(:gemfile_body) { fixture("gemfiles", "version_not_specified") }
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "version_not_specified")
+      end
 
       describe "the first dependency" do
         subject { dependencies.first }
@@ -39,7 +41,9 @@ RSpec.describe Bump::DependencyFileParsers::Ruby do
     end
 
     context "with a version specified as between two constraints" do
-      let(:gemfile_body) { fixture("gemfiles", "version_between_bounds") }
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "version_between_bounds")
+      end
 
       # TODO: For now we ignore gems with multiple requirements, because they'd
       # cause trouble at the Gemfile update step.

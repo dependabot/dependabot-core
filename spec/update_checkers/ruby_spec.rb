@@ -18,7 +18,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
   let(:dependency) { Bump::Dependency.new(name: "business", version: "1.3") }
 
   let(:gemfile) do
-    Bump::DependencyFile.new(content: fixture("Gemfile"), name: "Gemfile")
+    Bump::DependencyFile.new(
+      content: fixture("ruby", "gemfiles", "Gemfile"), name: "Gemfile"
+    )
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
@@ -26,7 +28,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       name: "Gemfile.lock"
     )
   end
-  let(:gemfile_lock_content) { fixture("Gemfile.lock") }
+  let(:gemfile_lock_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
   describe "#needs_update?" do
     subject { checker.needs_update? }
@@ -36,7 +38,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
     end
 
     context "given an up-to-date dependency" do
-      let(:gemfile_lock_content) { fixture("up_to_date_gemfile.lock") }
+      let(:gemfile_lock_content) do
+        fixture("ruby", "lockfiles", "up_to_date_gemfile.lock")
+      end
       it { is_expected.to be_falsey }
     end
 
@@ -50,7 +54,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       let(:dependency) do
         Bump::Dependency.new(name: "bundler", version: "1.10.5")
       end
-      let(:gemfile_lock_content) { fixture("gemfile_with_bundler.lock") }
+      let(:gemfile_lock_content) do
+        fixture("ruby", "lockfiles", "gemfile_with_bundler.lock")
+      end
 
       it { is_expected.to be_truthy }
     end

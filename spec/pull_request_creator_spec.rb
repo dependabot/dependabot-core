@@ -26,12 +26,15 @@ RSpec.describe Bump::PullRequestCreator do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
 
   let(:gemfile) do
-    Bump::DependencyFile.new(name: "Gemfile", content: fixture("Gemfile"))
+    Bump::DependencyFile.new(
+      name: "Gemfile",
+      content: fixture("ruby", "gemfiles", "Gemfile")
+    )
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("Gemfile.lock")
+      content: fixture("ruby", "lockfiles", "Gemfile.lock")
     )
   end
 
@@ -99,13 +102,13 @@ RSpec.describe Bump::PullRequestCreator do
                    path: "Gemfile",
                    mode: "100644",
                    type: "blob",
-                   content: fixture("Gemfile")
+                   content: fixture("ruby", "gemfiles", "Gemfile")
                  },
                  {
                    path: "Gemfile.lock",
                    mode: "100644",
                    type: "blob",
-                   content: fixture("Gemfile.lock")
+                   content: fixture("ruby", "lockfiles", "Gemfile.lock")
                  }
                ]
              })
