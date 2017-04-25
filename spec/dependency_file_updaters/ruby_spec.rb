@@ -5,8 +5,8 @@ require "bump/dependency_file"
 require "bump/dependency_file_updaters/ruby"
 
 RSpec.describe Bump::DependencyFileUpdaters::Ruby do
-  before { WebMock.disable! }
-  after { WebMock.enable! }
+  before { WebMock.allow_net_connect! }
+  after { WebMock.disable_net_connect! }
   let(:updater) do
     described_class.new(
       dependency_files: [gemfile, gemfile_lock],
