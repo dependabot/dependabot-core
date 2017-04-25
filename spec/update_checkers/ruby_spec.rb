@@ -8,6 +8,11 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
   before do
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
       to_return(status: 200, body: fixture("rubygems_response.json"))
+    stub_request(:get, gemfury_business_url).
+      to_return(status: 200, body: fixture("gemfury_response"))
+  end
+  let(:gemfury_business_url) do
+    "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
   end
 
   let(:checker) do
@@ -65,5 +70,19 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq("1.5.0") }
+
+    context "given a lockfile with a non-rubygems source" do
+      let(:gemfile_lock_content) do
+        fixture("ruby", "lockfiles", "specified_source.lock")
+      end
+      let(:gemfile) do
+        Bump::DependencyFile.new(
+          content: fixture("ruby", "gemfiles", "specified_source"),
+          name: "Gemfile"
+        )
+      end
+
+      it { is_expected.to eq("1.9.0") }
+    end
   end
 end
