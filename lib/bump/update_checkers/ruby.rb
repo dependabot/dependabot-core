@@ -54,24 +54,25 @@ module Bump
       end
 
       def gem_remotes
-        SharedHelpers.in_a_temporary_directory do |dir|
-          write_temporary_dependency_files_to(dir)
+        @gem_remotes ||=
+          SharedHelpers.in_a_temporary_directory do |dir|
+            write_temporary_dependency_files_to(dir)
 
-          SharedHelpers.in_a_forked_process do
-            definition = Bundler::Definition.build(
-              File.join(dir, "Gemfile"),
-              File.join(dir, "Gemfile.lock"),
-              nil
-            )
+            SharedHelpers.in_a_forked_process do
+              definition = Bundler::Definition.build(
+                File.join(dir, "Gemfile"),
+                File.join(dir, "Gemfile.lock"),
+                nil
+              )
 
-            remotes =
-              definition.dependencies.
-              find { |dep| dep.name == dependency.name }.
-              source&.options&.fetch("remotes")
+              remotes =
+                definition.dependencies.
+                find { |dep| dep.name == dependency.name }.
+                source&.options&.fetch("remotes")
 
-            remotes || []
+              remotes || []
+            end
           end
-        end
       end
 
       def gemfile_lock
