@@ -6,8 +6,6 @@ require "bump/dependency_file_updaters/python"
 require "bump/shared_helpers"
 
 RSpec.describe Bump::DependencyFileUpdaters::Python do
-  before { WebMock.disable! }
-  after { WebMock.enable! }
   let(:updater) do
     described_class.new(
       dependency_files: [requirements],
