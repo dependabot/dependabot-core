@@ -34,7 +34,7 @@ module Bump
         begin
           read.close
           result = yield
-        rescue => error
+        rescue Exception => error # rubocop:disable Lint/RescueException
           result = { _error_details: { error_class: error.class.to_s,
                                        error_message: error.message } }
         ensure
