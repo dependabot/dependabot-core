@@ -25,7 +25,7 @@ RSpec.describe Bump::SharedHelpers do
     end
 
     context "when the forked process raises an error" do
-      let(:task) { -> { raise "hell" } }
+      let(:task) { -> { raise Exception, "hell" } }
 
       it "raises a ChildProcessFailed error" do
         expect { run_sub_process }.
