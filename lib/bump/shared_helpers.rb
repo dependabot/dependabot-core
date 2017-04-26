@@ -8,15 +8,17 @@ module Bump
     BUMP_TMP_DIR_PATH = "tmp"
 
     class ChildProcessFailed < StandardError
-      attr_reader :error_class, :error_message
+      attr_reader :error_class, :error_message, :error_backtrace
 
-      def initialize(error_class:, error_message:)
+      def initialize(error_class:, error_message:, error_backtrace:)
         @error_class = error_class
         @error_message = error_message
+        @error_backtrace = error_backtrace
 
         msg = "Child process raised #{error_class} with message: "\
               "#{error_message}"
         super(msg)
+        set_backtrace(error_backtrace)
       end
     end
 
@@ -36,7 +38,8 @@ module Bump
           result = yield
         rescue Exception => error # rubocop:disable Lint/RescueException
           result = { _error_details: { error_class: error.class.to_s,
-                                       error_message: error.message } }
+                                       error_message: error.message,
+                                       error_backtrace: error.backtrace } }
         ensure
           Marshal.dump(result, write)
           exit!(0)
