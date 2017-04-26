@@ -103,10 +103,7 @@ module Bump
       def write_temporary_dependency_files_to(dir)
         File.write(
           File.join(dir, "Gemfile"),
-          updated_gemfile_content.gsub(
-            "git@github.com:",
-            "https://#{github_access_token}:x-oauth-basic@github.com/"
-          )
+          prepare_gemfile_for_resolution(updated_gemfile_content)
         )
         File.write(
           File.join(dir, "Gemfile.lock"),
@@ -115,6 +112,24 @@ module Bump
             "https://#{github_access_token}:x-oauth-basic@github.com/"
           )
         )
+      end
+
+      def prepare_gemfile_for_resolution(gemfile_content)
+        # Prepend auth details to any git remotes
+        gemfile_content =
+          gemfile_content.gsub(
+            "git@github.com:",
+            "https://#{github_access_token}:x-oauth-basic@github.com/"
+          )
+
+        # Remove any explicit Ruby version, as a mismatch with the system Ruby
+        # version during dependency resolution will cause an error.
+        #
+        # Ideally we would run this class using whichever Ruby version was
+        # specified, but that's impractical, and it's better to produce a PR
+        # for the user with gems that require a bump to their Ruby version than
+        # not to produce a PR at all.
+        gemfile_content.gsub(/^ruby\b/, "# ruby")
       end
     end
   end

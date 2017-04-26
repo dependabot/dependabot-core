@@ -100,6 +100,14 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       end
     end
 
+    context "when the Gemfile specifies a Ruby version" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
+
+      it "locks the updated gem to the latest version" do
+        expect(file.content).to include "business (1.5.0)"
+      end
+    end
+
     context "when the old Gemfile didn't specify the version" do
       let(:gemfile_body) do
         fixture("ruby", "gemfiles", "version_not_specified")
