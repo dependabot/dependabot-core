@@ -39,6 +39,14 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
         let(:gemfile_content) { fixture("ruby", "gemfiles", "explicit_ruby") }
         it { is_expected.to be_truthy }
       end
+
+      context "that is a development dependency" do
+        let(:gemfile_content) do
+          fixture("ruby", "gemfiles", "development_dependencies")
+        end
+
+        it { is_expected.to be_truthy }
+      end
     end
 
     context "given an up-to-date dependency" do

@@ -49,5 +49,13 @@ RSpec.describe Bump::DependencyFileParsers::Ruby do
       # cause trouble at the Gemfile update step.
       its(:length) { is_expected.to eq(1) }
     end
+
+    context "with development dependencies" do
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "development_dependencies")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end
