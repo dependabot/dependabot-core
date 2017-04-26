@@ -18,9 +18,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
   let(:dependency) { Bump::Dependency.new(name: "business", version: "1.3") }
 
   let(:gemfile) do
-    Bump::DependencyFile.new(
-      content: fixture("ruby", "gemfiles", "Gemfile"), name: "Gemfile"
-    )
+    Bump::DependencyFile.new(content: gemfile_content, name: "Gemfile")
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
@@ -28,6 +26,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       name: "Gemfile.lock"
     )
   end
+  let(:gemfile_content) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:gemfile_lock_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
   describe "#needs_update?" do
@@ -35,6 +34,11 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
 
     context "given an outdated dependency" do
       it { is_expected.to be_truthy }
+
+      context "with a Gemfile that specifies a Ruby version" do
+        let(:gemfile_content) { fixture("ruby", "gemfiles", "explicit_ruby") }
+        it { is_expected.to be_truthy }
+      end
     end
 
     context "given an up-to-date dependency" do
