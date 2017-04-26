@@ -20,7 +20,7 @@ RSpec.describe Bump::SharedHelpers do
       let(:task) { -> { @bundle_setting = "new" } }
 
       it "doesn't persist the change" do
-        expect { run_sub_process }.to_not change { @bundle_setting }
+        expect { run_sub_process }.to_not(change { @bundle_setting })
       end
     end
 

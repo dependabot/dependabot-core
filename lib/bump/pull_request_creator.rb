@@ -81,13 +81,14 @@ module Bump
     end
 
     def pr_message
-      if dependency_metadata_finder.github_repo_url
-        msg = "Bumps [#{dependency.name}]"\
-              "(#{dependency_metadata_finder.github_repo_url}) to "\
-              "#{dependency.version}."
-      else
-        msg = "Bumps #{dependency.name} to #{dependency.version}."
-      end
+      msg =
+        if dependency_metadata_finder.github_repo_url
+          "Bumps [#{dependency.name}]"\
+          "(#{dependency_metadata_finder.github_repo_url}) to "\
+          "#{dependency.version}."
+        else
+          "Bumps #{dependency.name} to #{dependency.version}."
+        end
 
       if dependency_metadata_finder.release_url
         msg += "\n- [Release notes](#{dependency_metadata_finder.release_url})"

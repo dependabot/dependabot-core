@@ -49,7 +49,7 @@ module Bump
       write.close
       result = read.read
       Process.wait(pid)
-      result = Marshal.load(result)
+      result = Marshal.load(result) # rubocop:disable Security/MarshalLoad
 
       return result unless result.is_a?(Hash) && result[:_error_details]
       raise ChildProcessFailed, result[:_error_details]

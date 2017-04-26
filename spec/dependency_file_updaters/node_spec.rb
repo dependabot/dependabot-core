@@ -48,11 +48,16 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
-    specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify { expect { updated_files }.to_not output.to_stdout }
-    specify do
+
+    it "doesn't store the files permanently" do
+      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+    end
+
+    it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) }
     end
+
+    specify { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(2) }
   end
 

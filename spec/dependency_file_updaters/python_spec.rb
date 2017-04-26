@@ -44,10 +44,15 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
-    specify { expect { updated_files }.to_not change { Dir.entries(tmp_path) } }
-    specify do
+
+    it "doesn't store the files permanently" do
+      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+    end
+
+    it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) }
     end
+
     its(:length) { is_expected.to eq(1) }
   end
 

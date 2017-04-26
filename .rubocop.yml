@@ -14,6 +14,13 @@ Metrics/AbcSize:
 Metrics/MethodLength:
   Max: 20
 
+Metrics/BlockLength:
+  Exclude:
+    - spec/**/*
+
+Style/EmptyLineAfterMagicComment:
+  Enabled: false
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
@@ -25,3 +32,10 @@ Style/Documentation:
 
 Style/DotPosition:
   EnforcedStyle: trailing
+
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    '%i': ()
+    '%I': ()
+    '%w': ()
+    '%W': ()
