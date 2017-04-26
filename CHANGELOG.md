@@ -1,3 +1,7 @@
+## v0.1.3, 27 April 2017
+
+- Ignore Ruby version specified in the Gemfile (for now) (see #10)
+
 ## v0.1.2, 26 April 2017
 
 - Support non-Rubygems sources (so private gems can now be bumped) (see #8)
