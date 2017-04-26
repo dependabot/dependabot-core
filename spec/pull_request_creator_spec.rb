@@ -163,6 +163,11 @@ RSpec.describe Bump::PullRequestCreator do
         )
     end
 
+    it "returns details of the created pull request" do
+      expect(creator.create.title).to eq("new-feature")
+      expect(creator.create.number).to eq(1347)
+    end
+
     context "when a branch for this update already exists" do
       before do
         stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
