@@ -5,8 +5,22 @@ require "bump/dependency_file"
 require "bump/dependency_file_updaters/ruby"
 
 RSpec.describe Bump::DependencyFileUpdaters::Ruby do
-  before { WebMock.allow_net_connect! }
-  after { WebMock.disable_net_connect! }
+  before do
+    stub_request(:get, "https://index.rubygems.org/versions").
+      to_return(status: 200, body: fixture("rubygems-index"))
+
+    stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
+      to_return(status: 200)
+
+    stub_request(
+      :get,
+      "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
+    ).to_return(
+      status: 200,
+      body: fixture("rubygems-dependencies-business-statesman")
+    )
+  end
+
   let(:updater) do
     described_class.new(
       dependency_files: [gemfile, gemfile_lock],
@@ -129,7 +143,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     context "when the Gem can't be found" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
 
-      it "raises a DependencyFileUpdaters::VersionConflict error" do
+      it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
         expect { updater.updated_gemfile_lock }.
           to raise_error(Bump::SharedHelpers::ChildProcessFailed)
       end
@@ -139,6 +153,19 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
       let(:dependency) do
         Bump::Dependency.new(name: "ibandit", version: "0.8.5")
+      end
+
+      before do
+        url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n,ibandit"
+        stub_request(:get, url).
+          to_return(
+            status: 200,
+            body: fixture("rubygems-dependencies-i18n-ibandit")
+          )
+
+        url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
+        stub_request(:get, url).
+          to_return(status: 200, body: fixture("rubygems-dependencies-i18n"))
       end
 
       it "raises a DependencyFileUpdaters::VersionConflict error" do
