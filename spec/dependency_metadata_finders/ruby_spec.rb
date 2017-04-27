@@ -21,10 +21,11 @@ RSpec.describe Bump::DependencyMetadataFinders::Ruby do
   describe "#github_repo" do
     subject(:github_repo) { finder.github_repo }
     let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+    let(:rubygems_response_code) { 200 }
 
     before do
       stub_request(:get, rubygems_url).
-        to_return(status: 200, body: rubygems_response)
+        to_return(status: rubygems_response_code, body: rubygems_response)
     end
 
     context "when there is a github link in the rubygems response" do
@@ -55,6 +56,13 @@ RSpec.describe Bump::DependencyMetadataFinders::Ruby do
         2.times { github_repo }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
+    end
+
+    context "when the gem isn't on Rubygems" do
+      let(:rubygems_response_code) { 404 }
+      let(:rubygems_response) { "This rubygem could not be found." }
+
+      it { is_expected.to be_nil }
     end
   end
 end
