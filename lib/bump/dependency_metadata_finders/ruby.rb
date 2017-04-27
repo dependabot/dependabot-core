@@ -26,6 +26,10 @@ module Bump
                      find { |url| url =~ GITHUB_REGEX }
 
         @github_repo = source_url.match(GITHUB_REGEX)[:repo] if source_url
+      rescue JSON::ParserError
+        # Replace with Gems::NotFound error if/when
+        # https://github.com/rubygems/gems/pull/38 is merged.
+        @github_repo = nil
       end
     end
   end
