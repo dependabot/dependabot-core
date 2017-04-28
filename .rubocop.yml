@@ -5,6 +5,9 @@ AllCops:
     - vendor/**/*
     - bin/**/*
 
+Metrics/ClassLength:
+  Max: 150
+
 Metrics/LineLength:
   Max: 80
 

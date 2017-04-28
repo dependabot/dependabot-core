@@ -10,6 +10,8 @@ module Bump
     class Ruby
       attr_reader :gemfile, :gemfile_lock, :dependency, :github_access_token
 
+      LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+
       def initialize(dependency_files:, dependency:, github_access_token:)
         @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
         @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
@@ -76,28 +78,25 @@ module Bump
       end
 
       def build_updated_gemfile_lock
-        SharedHelpers.in_a_temporary_directory do |dir|
-          write_temporary_dependency_files_to(dir)
+        lockfile_body =
+          SharedHelpers.in_a_temporary_directory do |dir|
+            write_temporary_dependency_files_to(dir)
 
-          SharedHelpers.in_a_forked_process do
-            definition = Bundler::Definition.build(
-              File.join(dir, "Gemfile"),
-              File.join(dir, "Gemfile.lock"),
-              gems: [dependency.name]
-            )
-            definition.resolve_remotely!
-            definition.to_lock.gsub(
-              "https://#{github_access_token}:x-oauth-basic@github.com/",
-              "git@github.com:"
-            )
+            SharedHelpers.in_a_forked_process do
+              definition = Bundler::Definition.build(
+                File.join(dir, "Gemfile"),
+                File.join(dir, "Gemfile.lock"),
+                gems: [dependency.name]
+              )
+              definition.resolve_remotely!
+              definition.to_lock
+            end
           end
-        end
+        post_process_lockfile(lockfile_body)
       rescue SharedHelpers::ChildProcessFailed => error
-        if error.error_class == "Bundler::VersionConflict"
-          raise DependencyFileUpdaters::VersionConflict
-        end
+        raise unless error.error_class == "Bundler::VersionConflict"
 
-        raise
+        raise DependencyFileUpdaters::VersionConflict
       end
 
       def write_temporary_dependency_files_to(dir)
@@ -130,6 +129,21 @@ module Bump
         # for the user with gems that require a bump to their Ruby version than
         # not to produce a PR at all.
         gemfile_content.gsub(/^ruby\b/, "# ruby")
+      end
+
+      def post_process_lockfile(lockfile_body)
+        # Remove any auth details we prepended to git remotes
+        lockfile_body =
+          lockfile_body.gsub(
+            "https://#{github_access_token}:x-oauth-basic@github.com/",
+            "git@github.com:"
+          )
+
+        # Re-add any explicit Ruby version, and the old `BUNDLED WITH` version
+        lockfile_body.gsub(
+          LOCKFILE_ENDING,
+          gemfile_lock.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
+        )
       end
     end
   end

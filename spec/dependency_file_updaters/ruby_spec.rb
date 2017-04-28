@@ -33,11 +33,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
   end
   let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:gemfile_lock) do
-    Bump::DependencyFile.new(
-      content: fixture("ruby", "lockfiles", "Gemfile.lock"),
-      name: "Gemfile.lock"
-    )
+    Bump::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
+  let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
   let(:dependency) { Bump::Dependency.new(name: "business", version: "1.5.0") }
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
@@ -116,13 +114,36 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       it "doesn't change the version of the other (also outdated) gem" do
         expect(file.content).to include "statesman (1.2.1)"
       end
+
+      it "preserves the BUNDLED WITH line in the lockfile" do
+        expect(file.content).to include "BUNDLED WITH\n   1.10.6"
+      end
+
+      it "doesn't add in a RUBY VERSION" do
+        expect(file.content).to_not include "RUBY VERSION"
+      end
     end
 
     context "when the Gemfile specifies a Ruby version" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
+      let(:lockfile_body) { fixture("ruby", "lockfiles", "explicit_ruby.lock") }
 
       it "locks the updated gem to the latest version" do
         expect(file.content).to include "business (1.5.0)"
+      end
+
+      it "preserves the Ruby version in the lockfile" do
+        expect(file.content).to include "RUBY VERSION\n   ruby 2.2.0p0"
+      end
+    end
+
+    context "when the Gemfile.lock didn't have a BUNDLED WITH line" do
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "no_bundled_with.lock")
+      end
+
+      it "doesn't add in a BUNDLED WITH" do
+        expect(file.content).to_not include "BUNDLED WITH"
       end
     end
 
