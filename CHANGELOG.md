@@ -1,3 +1,8 @@
+## v0.1.5, 28 April 2017
+
+- Add PullRequestUpdate class (see #15)
+- Raise a Bump::DependencyFileNotFound error if files can't be found (see #16)
+
 ## v0.1.4, 27 April 2017
 
 - Handle 404s for Rubygems when creating PRs (see #13)

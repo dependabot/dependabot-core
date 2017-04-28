@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    bump-core (0.1.4)
+    bump-core (0.1.5)
       bundler (>= 1.12.0)
       excon (~> 0.55)
       gemnasium-parser (~> 0.1)
@@ -19,7 +19,7 @@ GEM
     diff-lcs (1.3)
     dotenv (2.2.0)
     excon (0.55.0)
-    faraday (0.12.0.1)
+    faraday (0.12.1)
       multipart-post (>= 1.2, < 3)
     gemnasium-parser (0.1.9)
     gems (1.0.0)
