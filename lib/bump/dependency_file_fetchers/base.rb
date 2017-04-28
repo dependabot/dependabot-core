@@ -27,7 +27,7 @@ module Bump
         content = github_client.contents(repo.name, path: file_name).content
         DependencyFile.new(name: file_name, content: Base64.decode64(content))
       rescue Octokit::NotFound
-        raise Bump::DependencyFileNotFound
+        raise Bump::DependencyFileNotFound, file_name
       end
     end
   end

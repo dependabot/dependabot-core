@@ -48,7 +48,9 @@ RSpec.describe Bump::DependencyFileFetchers::Ruby do
 
       it "raises a custom error" do
         expect { file_fetcher.files }.
-          to raise_error(Bump::DependencyFileNotFound)
+          to raise_error(Bump::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("Gemfile")
+          end
       end
     end
   end
