@@ -42,5 +42,14 @@ RSpec.describe Bump::DependencyFileFetchers::Ruby do
       it { is_expected.to be_a(Bump::DependencyFile) }
       its(:content) { is_expected.to include("octokit") }
     end
+
+    context "when a dependency file can't be found" do
+      before { stub_request(:get, url + "Gemfile").to_return(status: 404) }
+
+      it "raises a custom error" do
+        expect { file_fetcher.files }.
+          to raise_error(Bump::DependencyFileNotFound)
+      end
+    end
   end
 end
