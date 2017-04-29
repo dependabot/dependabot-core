@@ -4,6 +4,7 @@ require "bundler"
 require "bump/dependency_file"
 require "bump/shared_helpers"
 require "bump/dependency_file_updaters/errors"
+require "bump/errors"
 
 module Bump
   module DependencyFileUpdaters
@@ -78,6 +79,9 @@ module Bump
       end
 
       def build_updated_gemfile_lock
+        previous_stderr = $stderr
+        $stderr = StringIO.new
+
         lockfile_body =
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files_to(dir)
@@ -94,9 +98,20 @@ module Bump
           end
         post_process_lockfile(lockfile_body)
       rescue SharedHelpers::ChildProcessFailed => error
-        raise unless error.error_class == "Bundler::VersionConflict"
+        handle_bundler_errors(error)
+      ensure
+        $stderr = previous_stderr
+      end
 
-        raise DependencyFileUpdaters::VersionConflict
+      def handle_bundler_errors(error)
+        case error.error_class
+        when "Bundler::VersionConflict"
+          raise DependencyFileUpdaters::VersionConflict
+        when "Bundler::Source::Git::GitCommandError"
+          raise Bump::GitDependencyNotFound
+        else
+          raise
+        end
       end
 
       def write_temporary_dependency_files_to(dir)
