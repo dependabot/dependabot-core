@@ -1,3 +1,8 @@
+## v0.1.6, 02 May 2017
+
+- Stop updating RUBY VERSION and BUNDLED WITH details in Ruby lockfiles (#18)
+- Handle public git sources gracefully (#19)
+
 ## v0.1.5, 28 April 2017
 
 - Add PullRequestUpdate class (see #15)
