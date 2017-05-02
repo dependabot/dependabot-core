@@ -1,3 +1,7 @@
+## v0.1.7, 02 May 2017
+
+- Add DependencyFileNotEvaluatable error (#17)
+
 ## v0.1.6, 02 May 2017
 
 - Stop updating RUBY VERSION and BUNDLED WITH details in Ruby lockfiles (#18)
