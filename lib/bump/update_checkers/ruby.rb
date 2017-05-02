@@ -2,6 +2,7 @@
 require "gems"
 require "bump/update_checkers/base"
 require "bump/shared_helpers"
+require "bump/errors"
 
 module Bump
   module UpdateCheckers
@@ -73,6 +74,11 @@ module Bump
                 source
             end
           end
+      rescue Bump::SharedHelpers::ChildProcessFailed => err
+        raise unless err.error_class == "Bundler::Dsl::DSLError"
+
+        msg = err.error_class + " with message: " + err.error_message
+        raise Bump::DependencyFileNotEvaluatable, msg
       end
 
       def gemfile_lock

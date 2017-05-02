@@ -88,7 +88,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
     subject { checker.latest_version }
     it { is_expected.to eq("1.5.0") }
 
-    context "given a lockfile with a non-rubygems source" do
+    context "given a Gemfile with a non-rubygems source" do
       let(:gemfile_lock_content) do
         fixture("ruby", "lockfiles", "specified_source.lock")
       end
@@ -103,6 +103,20 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       end
 
       it { is_expected.to eq("1.9.0") }
+    end
+
+    context "given an unreadable Gemfile" do
+      let(:gemfile) do
+        Bump::DependencyFile.new(
+          content: fixture("ruby", "gemfiles", "includes_requires"),
+          name: "Gemfile"
+        )
+      end
+
+      it "blows up with a useful error" do
+        expect { checker.latest_version }.
+          to raise_error(Bump::DependencyFileNotEvaluatable)
+      end
     end
   end
 end
