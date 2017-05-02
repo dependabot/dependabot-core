@@ -18,3 +18,11 @@ end
 def fixture(*name)
   File.read(File.join("spec", "fixtures", File.join(*name)))
 end
+
+def capture_stderr
+  previous_stderr = $stderr
+  $stderr = StringIO.new
+  yield
+ensure
+  $stderr = previous_stderr
+end

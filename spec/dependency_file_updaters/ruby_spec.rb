@@ -179,6 +179,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
       context "that is private" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "private_git_source") }
+        around { |example| capture_stderr { example.run } }
 
         it "raises a helpful error" do
           expect { updater.updated_gemfile_lock }.

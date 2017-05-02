@@ -79,9 +79,6 @@ module Bump
       end
 
       def build_updated_gemfile_lock
-        previous_stderr = $stderr
-        $stderr = StringIO.new
-
         lockfile_body =
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files_to(dir)
@@ -99,8 +96,6 @@ module Bump
         post_process_lockfile(lockfile_body)
       rescue SharedHelpers::ChildProcessFailed => error
         handle_bundler_errors(error)
-      ensure
-        $stderr = previous_stderr
       end
 
       def handle_bundler_errors(error)
