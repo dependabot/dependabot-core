@@ -3,6 +3,8 @@
 module Bump
   class BumpError < StandardError; end
 
+  class VersionConflict < BumpError; end
+  class GitCommandError < BumpError; end
   class DependencyFileNotEvaluatable < BumpError; end
 
   class DependencyFileNotFound < BumpError
@@ -13,6 +15,4 @@ module Bump
       super(msg)
     end
   end
-
-  class GitCommandError < BumpError; end
 end
