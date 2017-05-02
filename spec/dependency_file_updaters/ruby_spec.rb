@@ -207,9 +207,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
           to_return(status: 200, body: fixture("rubygems-dependencies-i18n"))
       end
 
-      it "raises a DependencyFileUpdaters::VersionConflict error" do
+      it "raises a Bump::VersionConflict error" do
         expect { updater.updated_gemfile_lock }.
-          to raise_error(Bump::DependencyFileUpdaters::VersionConflict)
+          to raise_error(Bump::VersionConflict)
       end
     end
   end

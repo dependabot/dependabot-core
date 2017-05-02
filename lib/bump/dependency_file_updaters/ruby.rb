@@ -3,7 +3,6 @@ require "gemnasium/parser"
 require "bundler"
 require "bump/dependency_file"
 require "bump/shared_helpers"
-require "bump/dependency_file_updaters/errors"
 require "bump/errors"
 
 module Bump
@@ -101,7 +100,7 @@ module Bump
       def handle_bundler_errors(error)
         case error.error_class
         when "Bundler::VersionConflict"
-          raise DependencyFileUpdaters::VersionConflict
+          raise Bump::VersionConflict
         when "Bundler::Source::Git::GitCommandError"
           raise Bump::GitCommandError
         else
