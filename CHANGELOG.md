@@ -1,3 +1,7 @@
+## v0.2.0, 02 May 2017
+
+- BREAKING: Rename Bump::DependencyFileUpdaters::VersionConflict (#20)
+
 ## v0.1.7, 02 May 2017
 
 - Add DependencyFileNotEvaluatable error (#17)
