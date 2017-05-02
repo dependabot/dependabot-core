@@ -31,7 +31,7 @@ module Bump
       private
 
       def fetch_latest_version
-        # If this dependency doesn't have a source specified we use the detault
+        # If this dependency doesn't have a source specified we use the default
         # one, which is Rubygems.
         return Gems.info(dependency.name)["version"] if gem_source.nil?
 

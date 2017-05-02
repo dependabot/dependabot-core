@@ -103,7 +103,7 @@ module Bump
         when "Bundler::VersionConflict"
           raise DependencyFileUpdaters::VersionConflict
         when "Bundler::Source::Git::GitCommandError"
-          raise Bump::GitDependencyNotFound
+          raise Bump::GitCommandError
         else
           raise
         end

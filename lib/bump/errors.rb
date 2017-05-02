@@ -12,5 +12,5 @@ module Bump
     end
   end
 
-  class GitDependencyNotFound < BumpError; end
+  class GitCommandError < BumpError; end
 end

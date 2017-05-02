@@ -183,7 +183,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
         it "raises a helpful error" do
           expect { updater.updated_gemfile_lock }.
-            to raise_error(Bump::GitDependencyNotFound)
+            to raise_error(Bump::GitCommandError)
         end
       end
     end
