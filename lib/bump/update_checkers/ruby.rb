@@ -31,14 +31,17 @@ module Bump
       private
 
       def fetch_latest_version
-        # If this dependency doesn't have a source specified we can just use
-        # Rubygems to get the latest version.
-        return Gems.info(dependency.name)["version"] if gem_remotes.none?
+        # If this dependency doesn't have a source specified we use the default
+        # one, which is Rubygems.
+        return Gems.info(dependency.name)["version"] if gem_source.nil?
 
-        # Otherwise, we need to look at the versions in each of the specified
-        # sources. To start with, get an array of Bundler::Dependency::Fetchers
-        # for the remotes we need to look for this dependency at.
-        gem_source = Bundler::Source::Rubygems.new("remotes" => gem_remotes)
+        # Otherwise, if the source is anything other than a Rubygems server
+        # we just return `nil` and ignore the gem. This happens in the case of
+        # a `git` or `path` source.
+        return unless gem_source.is_a?(Bundler::Source::Rubygems)
+
+        # Finally, when the source is a Rubygems server we piggyback off Bundler
+        # to get the latest version.
         gem_fetchers =
           gem_source.fetchers.flat_map(&:fetchers).
           select { |f| f.is_a?(Bundler::Fetcher::Dependency) }
@@ -53,8 +56,8 @@ module Bump
         versions.reject(&:prerelease?).sort.last.version
       end
 
-      def gem_remotes
-        @gem_remotes ||=
+      def gem_source
+        @gem_source ||=
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files_to(dir)
 
@@ -65,12 +68,9 @@ module Bump
                 nil
               )
 
-              remotes =
-                definition.dependencies.
+              definition.dependencies.
                 find { |dep| dep.name == dependency.name }.
-                source&.options&.fetch("remotes")
-
-              remotes || []
+                source
             end
           end
       end

@@ -72,6 +72,16 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
 
       it { is_expected.to be_truthy }
     end
+
+    context "given a git source" do
+      let(:gemfile_lock_content) do
+        fixture("ruby", "lockfiles", "git_source.lock")
+      end
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "git_source") }
+      let(:dependency) { Bump::Dependency.new(name: "prius", version: "0.9") }
+
+      it { is_expected.to be_falsey }
+    end
   end
 
   describe "#latest_version" do
@@ -82,12 +92,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       let(:gemfile_lock_content) do
         fixture("ruby", "lockfiles", "specified_source.lock")
       end
-      let(:gemfile) do
-        Bump::DependencyFile.new(
-          content: fixture("ruby", "gemfiles", "specified_source"),
-          name: "Gemfile"
-        )
-      end
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "specified_source") }
       let(:gemfury_business_url) do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end

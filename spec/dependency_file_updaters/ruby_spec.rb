@@ -170,6 +170,24 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       end
     end
 
+    context "when another gem in the Gemfile has a git source" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+
+      it "updates the gem just fine" do
+        expect(file.content).to include "business (1.5.0)"
+      end
+
+      context "that is private" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "private_git_source") }
+        around { |example| capture_stderr { example.run } }
+
+        it "raises a helpful error" do
+          expect { updater.updated_gemfile_lock }.
+            to raise_error(Bump::GitCommandError)
+        end
+      end
+    end
+
     context "when there is a version conflict" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
       let(:dependency) do

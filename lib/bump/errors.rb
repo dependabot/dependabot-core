@@ -11,4 +11,6 @@ module Bump
       super(msg)
     end
   end
+
+  class GitCommandError < BumpError; end
 end
