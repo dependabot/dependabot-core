@@ -11,6 +11,7 @@ module Bump
       attr_reader :gemfile, :gemfile_lock, :dependency, :github_access_token
 
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+      GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
       def initialize(dependency_files:, dependency:, github_access_token:)
         @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
@@ -102,7 +103,8 @@ module Bump
         when "Bundler::VersionConflict"
           raise Bump::VersionConflict
         when "Bundler::Source::Git::GitCommandError"
-          raise Bump::GitCommandError
+          command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
+          raise Bump::GitCommandError, command
         else
           raise
         end

@@ -183,7 +183,10 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
         it "raises a helpful error" do
           expect { updater.updated_gemfile_lock }.
-            to raise_error(Bump::GitCommandError)
+            to raise_error do |error|
+              expect(error).to be_a(Bump::GitCommandError)
+              expect(error.command).to start_with("git clone 'https://github")
+            end
         end
       end
     end
