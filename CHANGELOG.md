@@ -1,3 +1,7 @@
+## v0.2.1, 03 May 2017
+
+-  Store the failed git command on GitCommandError (#21)
+
 ## v0.2.0, 02 May 2017
 
 - BREAKING: Rename Bump::DependencyFileUpdaters::VersionConflict (#20)
