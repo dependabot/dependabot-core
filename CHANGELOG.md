@@ -1,3 +1,8 @@
+## v0.3.1, 09 May 2017
+
+-  Support fetching dependency files from a specified directory (#23)
+
+
 ## v0.3.0, 09 May 2017
 
 -  BREAKING: Rename Node to JavaScript everywhere (#22)
