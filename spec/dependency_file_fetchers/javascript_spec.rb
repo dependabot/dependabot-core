@@ -2,9 +2,9 @@
 require "octokit"
 require "spec_helper"
 require "bump/repo"
-require "bump/dependency_file_fetchers/node"
+require "bump/dependency_file_fetchers/javascript"
 
-RSpec.describe Bump::DependencyFileFetchers::Node do
+RSpec.describe Bump::DependencyFileFetchers::Javascript do
   let(:file_fetcher) do
     described_class.new(repo: repo, github_client: github_client)
   end

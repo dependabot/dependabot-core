@@ -2,9 +2,9 @@
 require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
-require "bump/dependency_file_updaters/node"
+require "bump/dependency_file_updaters/javascript"
 
-RSpec.describe Bump::DependencyFileUpdaters::Node do
+RSpec.describe Bump::DependencyFileUpdaters::Javascript do
   before { WebMock.allow_net_connect! }
   after { WebMock.disable_net_connect! }
   let(:updater) do
@@ -17,11 +17,13 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
   let(:package_json) do
     Bump::DependencyFile.new(content: package_json_body, name: "package.json")
   end
-  let(:package_json_body) { fixture("node", "package_files", "package.json") }
+  let(:package_json_body) do
+    fixture("javascript", "package_files", "package.json")
+  end
   let(:yarn_lock) do
     Bump::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("node", "package_files", "yarn.lock")
+      content: fixture("javascript", "package_files", "yarn.lock")
     )
   end
   let(:dependency) do
@@ -72,7 +74,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Node do
         Bump::Dependency.new(name: "fetch-factory", version: "0.2.1")
       end
       let(:package_json_body) do
-        fixture("node", "package_files", "minor_version_specified.json")
+        fixture("javascript", "package_files", "minor_version_specified.json")
       end
 
       its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }

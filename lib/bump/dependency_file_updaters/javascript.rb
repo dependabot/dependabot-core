@@ -6,7 +6,7 @@ require "bump/shared_helpers"
 
 module Bump
   module DependencyFileUpdaters
-    class Node
+    class Javascript
       attr_reader :package_json, :yarn_lock, :dependency
 
       def initialize(dependency_files:, dependency:, github_access_token:)

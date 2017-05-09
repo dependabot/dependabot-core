@@ -5,7 +5,7 @@ require "bump/shared_helpers"
 
 module Bump
   module DependencyMetadataFinders
-    class Node < Base
+    class Javascript < Base
       private
 
       def look_up_github_repo
