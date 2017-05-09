@@ -27,17 +27,15 @@ module Bump
       end
 
       def updated_gemfile
-        DependencyFile.new(
-          name: "Gemfile",
-          content: updated_gemfile_content
-        )
+        new_gemfile = gemfile.dup
+        new_gemfile.content = updated_gemfile_content
+        new_gemfile
       end
 
       def updated_gemfile_lock
-        DependencyFile.new(
-          name: "Gemfile.lock",
-          content: updated_gemfile_lock_content
-        )
+        new_lockfile = gemfile_lock.dup
+        new_lockfile.content = updated_gemfile_lock_content
+        new_lockfile
       end
 
       private
