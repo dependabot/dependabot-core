@@ -1,3 +1,7 @@
+## v0.3.2, 09 May 2017
+
+-  Don't discard DependencyFile details when updating (#24)
+
 ## v0.3.1, 09 May 2017
 
 -  Support fetching dependency files from a specified directory (#23)
