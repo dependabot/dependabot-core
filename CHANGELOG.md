@@ -1,3 +1,7 @@
+## v0.3.0, 09 May 2017
+
+-  BREAKING: Rename Node to JavaScript everywhere (#22)
+
 ## v0.2.1, 03 May 2017
 
 -  Store the failed git command on GitCommandError (#21)
