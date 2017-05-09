@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 module Bump
   class DependencyFile
-    attr_reader :name, :content, :directory
+    attr_accessor :name, :content, :directory
 
     def initialize(name:, content:, directory: "/")
       @name = name

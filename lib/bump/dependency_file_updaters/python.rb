@@ -23,10 +23,9 @@ module Bump
       end
 
       def updated_requirements_file
-        DependencyFile.new(
-          name: "requirements.txt",
-          content: updated_requirements_content
-        )
+        new_requirements = requirements.dup
+        new_requirements.content = updated_requirements_content
+        new_requirements
       end
 
       private

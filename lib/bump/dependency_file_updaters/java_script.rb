@@ -23,17 +23,15 @@ module Bump
       end
 
       def updated_package_json_file
-        DependencyFile.new(
-          name: "package.json",
-          content: updated_package_json_content
-        )
+        new_package_json = package_json.dup
+        new_package_json.content = updated_package_json_content
+        new_package_json
       end
 
       def updated_yarn_lock
-        DependencyFile.new(
-          name: "yarn.lock",
-          content: updated_yarn_lock_content
-        )
+        new_yarn_lock = yarn_lock.dup
+        new_yarn_lock.content = updated_yarn_lock_content
+        new_yarn_lock
       end
 
       private
