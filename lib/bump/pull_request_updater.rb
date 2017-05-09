@@ -46,7 +46,12 @@ module Bump
 
     def create_tree
       file_trees = files.map do |file|
-        { path: file.name, mode: "100644", type: "blob", content: file.content }
+        {
+          path: file.path.sub(%r{^/}, ""),
+          mode: "100644",
+          type: "blob",
+          content: file.content
+        }
       end
 
       github_client.create_tree(

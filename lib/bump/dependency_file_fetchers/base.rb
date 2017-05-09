@@ -5,11 +5,12 @@ require "bump/errors"
 module Bump
   module DependencyFileFetchers
     class Base
-      attr_reader :repo, :github_client
+      attr_reader :repo, :github_client, :directory
 
-      def initialize(repo:, github_client:)
+      def initialize(repo:, github_client:, directory: "/")
         @repo = repo
         @github_client = github_client
+        @directory = directory
       end
 
       def files
@@ -24,10 +25,16 @@ module Bump
       private
 
       def fetch_file_from_github(file_name)
-        content = github_client.contents(repo.name, path: file_name).content
-        DependencyFile.new(name: file_name, content: Base64.decode64(content))
+        file_path = File.join(directory, file_name)
+        content = github_client.contents(repo.name, path: file_path).content
+
+        DependencyFile.new(
+          name: file_name,
+          content: Base64.decode64(content),
+          directory: directory
+        )
       rescue Octokit::NotFound
-        raise Bump::DependencyFileNotFound, file_name
+        raise Bump::DependencyFileNotFound, file_path
       end
     end
   end

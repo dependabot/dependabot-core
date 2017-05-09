@@ -23,13 +23,15 @@ RSpec.describe Bump::PullRequestUpdater do
   let(:gemfile) do
     Bump::DependencyFile.new(
       name: "Gemfile",
-      content: fixture("ruby", "gemfiles", "Gemfile")
+      content: fixture("ruby", "gemfiles", "Gemfile"),
+      directory: "files/are/here"
     )
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
+      content: fixture("ruby", "lockfiles", "Gemfile.lock"),
+      directory: "files/are/here"
     )
   end
 
@@ -68,13 +70,13 @@ RSpec.describe Bump::PullRequestUpdater do
                base_tree: "basecommitsha",
                tree: [
                  {
-                   path: "Gemfile",
+                   path: "files/are/here/Gemfile",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "gemfiles", "Gemfile")
                  },
                  {
-                   path: "Gemfile.lock",
+                   path: "files/are/here/Gemfile.lock",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "lockfiles", "Gemfile.lock")
