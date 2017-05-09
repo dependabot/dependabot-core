@@ -7,11 +7,20 @@ module Bump
   class DependencyFileNotEvaluatable < BumpError; end
 
   class DependencyFileNotFound < BumpError
-    attr_reader :file_name
+    attr_reader :file_path
 
-    def initialize(file_name, msg = nil)
-      @file_name = file_name
+    def initialize(file_path, msg = nil)
+      @file_path = file_path
       super(msg)
+    end
+
+    def file_name
+      file_path.split("/").last
+    end
+
+    def directory
+      # Directory should always start with a `/`
+      file_path.split("/")[0..-2].join("/").sub(%r{^/*}, "/")
     end
   end
 
