@@ -6,7 +6,7 @@ require "bump/shared_helpers"
 
 module Bump
   module UpdateCheckers
-    class Node < Base
+    class JavaScript < Base
       def latest_version
         @latest_version ||=
           begin
@@ -31,7 +31,7 @@ module Bump
       end
 
       def language
-        "node"
+        "javascript"
       end
     end
   end

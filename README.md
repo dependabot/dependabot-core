@@ -1,7 +1,7 @@
 # Bump Core
 
-Bump Core is a library containing the logic to keep a project's Ruby, Node and
-Python dependencies up to date. It is used by applications like
+Bump Core is a library containing the logic to keep a project's Ruby,
+JavaScript and Python dependencies up to date. It is used by applications like
 [gocardless/bump](https://github.com/gocardless/bump).
 
 # The code / contributing
@@ -20,7 +20,7 @@ Bump Core has helper classes for five concerns:
 
 We'd love to see the following improvements to Bump Core:
 
-- A faster `DependencyFileUpdater` for Node. This might need its own,
+- A faster `DependencyFileUpdater` for JavaScript. This might need its own,
   language-specific worker that borrows from NPM internals to avoid doing an
   actual install.
 
