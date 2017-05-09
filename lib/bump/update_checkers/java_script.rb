@@ -6,7 +6,7 @@ require "bump/shared_helpers"
 
 module Bump
   module UpdateCheckers
-    class Javascript < Base
+    class JavaScript < Base
       def latest_version
         @latest_version ||=
           begin

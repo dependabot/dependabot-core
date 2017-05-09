@@ -2,9 +2,9 @@
 require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
-require "bump/update_checkers/javascript"
+require "bump/update_checkers/java_script"
 
-RSpec.describe Bump::UpdateCheckers::Javascript do
+RSpec.describe Bump::UpdateCheckers::JavaScript do
   before do
     stub_request(:get, "http://registry.npmjs.org/etag").
       to_return(status: 200, body: fixture("npm_response.json"))

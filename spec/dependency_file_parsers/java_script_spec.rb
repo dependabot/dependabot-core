@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 require "spec_helper"
 require "bump/dependency_file"
-require "bump/dependency_file_parsers/javascript"
+require "bump/dependency_file_parsers/java_script"
 
-RSpec.describe Bump::DependencyFileParsers::Javascript do
+RSpec.describe Bump::DependencyFileParsers::JavaScript do
   let(:files) { [package_json] }
   let(:package_json) do
     Bump::DependencyFile.new(name: "package.json", content: package_json_body)

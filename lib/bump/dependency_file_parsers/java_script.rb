@@ -4,7 +4,7 @@ require "bump/dependency"
 
 module Bump
   module DependencyFileParsers
-    class Javascript
+    class JavaScript
       def initialize(dependency_files:)
         @package_json = dependency_files.find { |f| f.name == "package.json" }
         raise "No package.json!" unless @package_json

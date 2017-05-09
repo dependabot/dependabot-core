@@ -2,9 +2,9 @@
 require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
-require "bump/dependency_file_updaters/javascript"
+require "bump/dependency_file_updaters/java_script"
 
-RSpec.describe Bump::DependencyFileUpdaters::Javascript do
+RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
   before { WebMock.allow_net_connect! }
   after { WebMock.disable_net_connect! }
   let(:updater) do

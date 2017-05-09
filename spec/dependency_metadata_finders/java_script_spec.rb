@@ -2,9 +2,9 @@
 require "octokit"
 require "spec_helper"
 require "bump/dependency"
-require "bump/dependency_metadata_finders/javascript"
+require "bump/dependency_metadata_finders/java_script"
 
-RSpec.describe Bump::DependencyMetadataFinders::Javascript do
+RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
   let(:dependency) do
     Bump::Dependency.new(
       name: dependency_name,
