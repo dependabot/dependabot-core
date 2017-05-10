@@ -33,21 +33,6 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "new" do
-    context "when the package.json is missing" do
-      subject { -> { updater } }
-      let(:updater) do
-        described_class.new(
-          dependency_files: [],
-          dependency: dependency,
-          github_access_token: "token"
-        )
-      end
-
-      it { is_expected.to raise_error(/No package.json!/) }
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 

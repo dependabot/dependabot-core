@@ -48,6 +48,7 @@ module Bump
 
       def updated_yarn_lock_content
         return @updated_yarn_lock_content if @updated_yarn_lock_content
+
         SharedHelpers.in_a_temporary_directory do |dir|
           File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
           File.write(File.join(dir, "package.json"),

@@ -41,21 +41,6 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "new" do
-    context "when the gemfile.lock is missing" do
-      subject { -> { updater } }
-      let(:updater) do
-        described_class.new(
-          dependency_files: [gemfile],
-          dependency: dependency,
-          github_access_token: "token"
-        )
-      end
-
-      it { is_expected.to raise_error(/No Gemfile.lock/) }
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
