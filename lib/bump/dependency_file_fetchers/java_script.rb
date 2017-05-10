@@ -4,11 +4,8 @@ require "bump/dependency_file_fetchers/base"
 module Bump
   module DependencyFileFetchers
     class JavaScript < Base
-      def files
-        @files ||= [
-          fetch_file_from_github("package.json"),
-          fetch_file_from_github("yarn.lock")
-        ]
+      def required_files
+        %w(package.json yarn.lock)
       end
     end
   end

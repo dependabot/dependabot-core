@@ -4,10 +4,8 @@ require "bump/dependency_file_fetchers/base"
 module Bump
   module DependencyFileFetchers
     class Python < Base
-      def files
-        @files ||= [
-          fetch_file_from_github("requirements.txt")
-        ]
+      def required_files
+        %w(requirements.txt)
       end
     end
   end

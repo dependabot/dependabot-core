@@ -14,12 +14,16 @@ module Bump
       end
 
       def files
-        raise NotImplementedError
+        @files ||= required_files.map { |name| fetch_file_from_github(name) }
       end
 
       def commit
         default_branch = github_client.repository(repo.name).default_branch
         github_client.ref(repo.name, "heads/#{default_branch}").object.sha
+      end
+
+      def required_files
+        raise NotImplementedError
       end
 
       private
