@@ -5,14 +5,6 @@ require "bump/dependency_file_parsers/python"
 module Bump
   module DependencyFileUpdaters
     class Python < Base
-      attr_reader :requirements
-
-      def initialize(**args)
-        super(args)
-
-        @requirements = get_original_file("requirements.txt")
-      end
-
       def updated_dependency_files
         [updated_requirements_file]
       end
@@ -21,7 +13,15 @@ module Bump
         updated_file(file: requirements, content: updated_requirements_content)
       end
 
+      def required_files
+        %w(requirements.txt)
+      end
+
       private
+
+      def requirements
+        @requirements ||= get_original_file("requirements.txt")
+      end
 
       def updated_requirements_content
         return @updated_requirements_content if @updated_requirements_content

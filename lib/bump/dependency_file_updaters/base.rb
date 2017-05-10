@@ -8,19 +8,24 @@ module Bump
         @dependency = dependency
         @dependency_files = dependency_files
         @github_access_token = github_access_token
+
+        required_files.each do |filename|
+          raise "No #{filename}!" unless get_original_file(filename)
+        end
       end
 
       def updated_dependency_files
         raise NotImplementedError
       end
 
+      def required_files
+        raise NotImplementedError
+      end
+
       private
 
       def get_original_file(filename)
-        file = dependency_files.find { |f| f.name == filename }
-
-        raise "No #{filename}!" unless file
-        file
+        dependency_files.find { |f| f.name == filename }
       end
 
       def updated_file(file:, content:)

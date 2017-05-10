@@ -8,20 +8,15 @@ require "bump/dependency_file_updaters/base"
 module Bump
   module DependencyFileUpdaters
     class Ruby < Base
-      attr_reader :gemfile, :lockfile
-
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
-      def initialize(**args)
-        super(args)
-
-        @gemfile = get_original_file("Gemfile")
-        @lockfile = get_original_file("Gemfile.lock")
-      end
-
       def updated_dependency_files
         [updated_gemfile, updated_lockfile]
+      end
+
+      def required_files
+        %w(Gemfile Gemfile.lock)
       end
 
       def updated_gemfile
@@ -33,6 +28,14 @@ module Bump
       end
 
       private
+
+      def gemfile
+        @gemfile ||= get_original_file("Gemfile")
+      end
+
+      def lockfile
+        @lockfile ||= get_original_file("Gemfile.lock")
+      end
 
       def updated_gemfile_content
         return @updated_gemfile_content if @updated_gemfile_content

@@ -5,15 +5,6 @@ require "bump/shared_helpers"
 module Bump
   module DependencyFileUpdaters
     class JavaScript < Base
-      attr_reader :package_json, :yarn_lock
-
-      def initialize(**args)
-        super(args)
-
-        @package_json = get_original_file("package.json")
-        @yarn_lock = get_original_file("yarn.lock")
-      end
-
       def updated_dependency_files
         [updated_package_json_file, updated_yarn_lock]
       end
@@ -26,12 +17,24 @@ module Bump
         updated_file(file: yarn_lock, content: updated_yarn_lock_content)
       end
 
+      def required_files
+        %w(package.json yarn.lock)
+      end
+
       private
+
+      def package_json
+        @package_json ||= get_original_file("package.json")
+      end
+
+      def yarn_lock
+        @yarn_lock ||= get_original_file("yarn.lock")
+      end
 
       def updated_package_json_content
         return @updated_package_json_content if @updated_package_json_content
 
-        parsed_content = JSON.parse(@package_json.content)
+        parsed_content = JSON.parse(package_json.content)
 
         %w(dependencies devDependencies).each do |dep_type|
           old_version_string = parsed_content.dig(dep_type, dependency.name)
@@ -48,7 +51,7 @@ module Bump
       def updated_yarn_lock_content
         return @updated_yarn_lock_content if @updated_yarn_lock_content
         SharedHelpers.in_a_temporary_directory do |dir|
-          File.write(File.join(dir, "yarn.lock"), @yarn_lock.content)
+          File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
           File.write(File.join(dir, "package.json"),
                      updated_package_json_content)
           `cd #{dir} && yarn install --ignore-scripts 2>&1`
