@@ -11,20 +11,15 @@ module Bump
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
-      def updated_dependency_files
-        [updated_gemfile, updated_lockfile]
-      end
-
       def required_files
         %w(Gemfile Gemfile.lock)
       end
 
-      def updated_gemfile
-        updated_file(file: gemfile, content: updated_gemfile_content)
-      end
-
-      def updated_lockfile
-        updated_file(file: lockfile, content: updated_lockfile_content)
+      def updated_dependency_files
+        [
+          updated_file(file: gemfile, content: updated_gemfile_content),
+          updated_file(file: lockfile, content: updated_lockfile_content)
+        ]
       end
 
       private

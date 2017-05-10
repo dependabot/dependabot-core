@@ -5,16 +5,17 @@ require "bump/dependency_file_parsers/python"
 module Bump
   module DependencyFileUpdaters
     class Python < Base
-      def updated_dependency_files
-        [updated_requirements_file]
-      end
-
-      def updated_requirements_file
-        updated_file(file: requirements, content: updated_requirements_content)
-      end
-
       def required_files
         %w(requirements.txt)
+      end
+
+      def updated_dependency_files
+        [
+          updated_file(
+            file: requirements,
+            content: updated_requirements_content
+          )
+        ]
       end
 
       private

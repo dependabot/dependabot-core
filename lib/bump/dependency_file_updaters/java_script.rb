@@ -5,20 +5,18 @@ require "bump/shared_helpers"
 module Bump
   module DependencyFileUpdaters
     class JavaScript < Base
-      def updated_dependency_files
-        [updated_package_json_file, updated_yarn_lock]
-      end
-
-      def updated_package_json_file
-        updated_file(file: package_json, content: updated_package_json_content)
-      end
-
-      def updated_yarn_lock
-        updated_file(file: yarn_lock, content: updated_yarn_lock_content)
-      end
-
       def required_files
         %w(package.json yarn.lock)
+      end
+
+      def updated_dependency_files
+        [
+          updated_file(
+            file: package_json,
+            content: updated_package_json_content
+          ),
+          updated_file(file: yarn_lock, content: updated_yarn_lock_content)
+        ]
       end
 
       private
