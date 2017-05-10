@@ -23,7 +23,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [gemfile, gemfile_lock],
+      dependency_files: [gemfile, lockfile],
       dependency: dependency,
       github_access_token: "token"
     )
@@ -32,7 +32,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     Bump::DependencyFile.new(content: gemfile_body, name: "Gemfile")
   end
   let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-  let(:gemfile_lock) do
+  let(:lockfile) do
     Bump::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
   let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
@@ -101,8 +101,8 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     end
   end
 
-  describe "#updated_gemfile_lock" do
-    subject(:file) { updater.updated_gemfile_lock }
+  describe "#updated_lockfile" do
+    subject(:file) { updater.updated_lockfile }
 
     context "when the old Gemfile specified the version" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
@@ -165,7 +165,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
 
       it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
-        expect { updater.updated_gemfile_lock }.
+        expect { updater.updated_lockfile }.
           to raise_error(Bump::SharedHelpers::ChildProcessFailed)
       end
     end
@@ -182,7 +182,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
         around { |example| capture_stderr { example.run } }
 
         it "raises a helpful error" do
-          expect { updater.updated_gemfile_lock }.
+          expect { updater.updated_lockfile }.
             to raise_error do |error|
               expect(error).to be_a(Bump::GitCommandError)
               expect(error.command).to start_with("git clone 'https://github")
@@ -211,7 +211,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       end
 
       it "raises a Bump::VersionConflict error" do
-        expect { updater.updated_gemfile_lock }.
+        expect { updater.updated_lockfile }.
           to raise_error(Bump::VersionConflict)
       end
     end

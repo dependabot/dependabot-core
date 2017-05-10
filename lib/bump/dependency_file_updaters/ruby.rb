@@ -8,7 +8,7 @@ require "bump/dependency_file_updaters/base"
 module Bump
   module DependencyFileUpdaters
     class Ruby < Base
-      attr_reader :gemfile, :gemfile_lock
+      attr_reader :gemfile, :lockfile
 
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
@@ -17,19 +17,19 @@ module Bump
         super(args)
 
         @gemfile = get_original_file("Gemfile")
-        @gemfile_lock = get_original_file("Gemfile.lock")
+        @lockfile = get_original_file("Gemfile.lock")
       end
 
       def updated_dependency_files
-        [updated_gemfile, updated_gemfile_lock]
+        [updated_gemfile, updated_lockfile]
       end
 
       def updated_gemfile
         updated_file(file: gemfile, content: updated_gemfile_content)
       end
 
-      def updated_gemfile_lock
-        updated_file(file: gemfile_lock, content: updated_gemfile_lock_content)
+      def updated_lockfile
+        updated_file(file: lockfile, content: updated_lockfile_content)
       end
 
       private
@@ -61,11 +61,11 @@ module Bump
         )
       end
 
-      def updated_gemfile_lock_content
-        @updated_gemfile_lock_content ||= build_updated_gemfile_lock
+      def updated_lockfile_content
+        @updated_lockfile_content ||= build_updated_lockfile
       end
 
-      def build_updated_gemfile_lock
+      def build_updated_lockfile
         lockfile_body =
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files_to(dir)
@@ -104,7 +104,7 @@ module Bump
         )
         File.write(
           File.join(dir, "Gemfile.lock"),
-          gemfile_lock.content.gsub(
+          lockfile.content.gsub(
             "git@github.com:",
             "https://#{github_access_token}:x-oauth-basic@github.com/"
           )
@@ -140,7 +140,7 @@ module Bump
         # Re-add any explicit Ruby version, and the old `BUNDLED WITH` version
         lockfile_body.gsub(
           LOCKFILE_ENDING,
-          gemfile_lock.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
+          lockfile.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
         )
       end
     end
