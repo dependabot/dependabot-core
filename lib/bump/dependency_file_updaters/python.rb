@@ -1,21 +1,16 @@
 # frozen_string_literal: true
-require "bump/dependency_file"
-require "bump/dependency"
+require "bump/dependency_file_updaters/base"
 require "bump/dependency_file_parsers/python"
 
 module Bump
   module DependencyFileUpdaters
-    class Python
-      attr_reader :requirements, :dependency
+    class Python < Base
+      attr_reader :requirements
 
-      def initialize(dependency_files:, dependency:, github_access_token:)
-        @requirements =
-          dependency_files.find { |f| f.name == "requirements.txt" }
+      def initialize(**args)
+        super(args)
 
-        raise "No requirements.txt!" unless requirements
-
-        @github_access_token = github_access_token
-        @dependency = dependency
+        @requirements = get_original_file("requirements.txt")
       end
 
       def updated_dependency_files
@@ -23,9 +18,7 @@ module Bump
       end
 
       def updated_requirements_file
-        new_requirements = requirements.dup
-        new_requirements.content = updated_requirements_content
-        new_requirements
+        updated_file(file: requirements, content: updated_requirements_content)
       end
 
       private

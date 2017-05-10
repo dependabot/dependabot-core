@@ -1,25 +1,23 @@
 # frozen_string_literal: true
 require "gemnasium/parser"
 require "bundler"
-require "bump/dependency_file"
 require "bump/shared_helpers"
 require "bump/errors"
+require "bump/dependency_file_updaters/base"
 
 module Bump
   module DependencyFileUpdaters
-    class Ruby
-      attr_reader :gemfile, :gemfile_lock, :dependency, :github_access_token
+    class Ruby < Base
+      attr_reader :gemfile, :gemfile_lock
 
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
-      def initialize(dependency_files:, dependency:, github_access_token:)
-        @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
-        @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
-        validate_files_are_present!
+      def initialize(**args)
+        super(args)
 
-        @github_access_token = github_access_token
-        @dependency = dependency
+        @gemfile = get_original_file("Gemfile")
+        @gemfile_lock = get_original_file("Gemfile.lock")
       end
 
       def updated_dependency_files
@@ -27,23 +25,14 @@ module Bump
       end
 
       def updated_gemfile
-        new_gemfile = gemfile.dup
-        new_gemfile.content = updated_gemfile_content
-        new_gemfile
+        updated_file(file: gemfile, content: updated_gemfile_content)
       end
 
       def updated_gemfile_lock
-        new_lockfile = gemfile_lock.dup
-        new_lockfile.content = updated_gemfile_lock_content
-        new_lockfile
+        updated_file(file: gemfile_lock, content: updated_gemfile_lock_content)
       end
 
       private
-
-      def validate_files_are_present!
-        raise "No Gemfile!" unless gemfile
-        raise "No Gemfile.lock!" unless gemfile_lock
-      end
 
       def updated_gemfile_content
         return @updated_gemfile_content if @updated_gemfile_content

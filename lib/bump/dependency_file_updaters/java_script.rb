@@ -1,21 +1,17 @@
 # frozen_string_literal: true
-require "gemnasium/parser"
-require "bundler"
-require "bump/dependency_file"
+require "bump/dependency_file_updaters/base"
 require "bump/shared_helpers"
 
 module Bump
   module DependencyFileUpdaters
-    class JavaScript
-      attr_reader :package_json, :yarn_lock, :dependency
+    class JavaScript < Base
+      attr_reader :package_json, :yarn_lock
 
-      def initialize(dependency_files:, dependency:, github_access_token:)
-        @package_json = dependency_files.find { |f| f.name == "package.json" }
-        @yarn_lock = dependency_files.find { |file| file.name == "yarn.lock" }
-        validate_files_are_present!
+      def initialize(**args)
+        super(args)
 
-        @github_access_token = github_access_token
-        @dependency = dependency
+        @package_json = get_original_file("package.json")
+        @yarn_lock = get_original_file("yarn.lock")
       end
 
       def updated_dependency_files
@@ -23,23 +19,14 @@ module Bump
       end
 
       def updated_package_json_file
-        new_package_json = package_json.dup
-        new_package_json.content = updated_package_json_content
-        new_package_json
+        updated_file(file: package_json, content: updated_package_json_content)
       end
 
       def updated_yarn_lock
-        new_yarn_lock = yarn_lock.dup
-        new_yarn_lock.content = updated_yarn_lock_content
-        new_yarn_lock
+        updated_file(file: yarn_lock, content: updated_yarn_lock_content)
       end
 
       private
-
-      def validate_files_are_present!
-        raise "No package.json!" unless package_json
-        raise "No yarn.lock!" unless yarn_lock
-      end
 
       def updated_package_json_content
         return @updated_package_json_content if @updated_package_json_content
