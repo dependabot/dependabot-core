@@ -15,12 +15,16 @@ module Bump
         npm_url = "http://registry.npmjs.org/#{dependency.name}"
         npm_response =
           Excon.get(npm_url, middlewares: SharedHelpers.excon_middleware)
-        all_versions = JSON.parse(npm_response.body)["versions"]&.values
+
+        all_versions =
+          JSON.parse(npm_response.body)["versions"].
+          sort_by { |version, _| Gem::Version.new(version) }.
+          reverse
 
         potential_source_urls =
-          all_versions.map { |v| get_url(v.fetch("repository", {})) } +
-          all_versions.map { |v| v["homepage"] } +
-          all_versions.map { |v| get_url(v.fetch("bugs", {})) }
+          all_versions.map { |_, v| get_url(v.fetch("repository", {})) } +
+          all_versions.map { |_, v| v["homepage"] } +
+          all_versions.map { |_, v| get_url(v.fetch("bugs", {})) }
 
         potential_source_urls = potential_source_urls.compact
 
