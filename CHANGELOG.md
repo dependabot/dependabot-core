@@ -1,3 +1,8 @@
+## v0.3.3, 11 May 2017
+
+- Escape scoped package names in Bump::DependencyMetadataFinders::JavaScript
+- Look for JavaScript GitHub link in most recent releases first
+
 ## v0.3.2, 09 May 2017
 
 -  Don't discard DependencyFile details when updating (#24)
