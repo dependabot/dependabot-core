@@ -29,7 +29,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
     context "when there is a github link in the npm response" do
       let(:npm_response) { fixture("npm_response.json") }
 
-      it { is_expected.to eq("kesla/etag") }
+      it { is_expected.to eq("jshttp/etag") }
 
       it "caches the call to npm" do
         2.times { github_repo }
@@ -40,7 +40,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
     context "when there's a link without the expected structure" do
       let(:npm_response) { fixture("npm_response_string_link.json") }
 
-      it { is_expected.to eq("kesla/etag") }
+      it { is_expected.to eq("jshttp/etag") }
 
       it "caches the call to npm" do
         2.times { github_repo }
@@ -70,7 +70,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
           to_return(status: 200, body: npm_response)
       end
 
-      it { is_expected.to eq("kesla/etag") }
+      it { is_expected.to eq("jshttp/etag") }
     end
 
     context "for a scoped package name" do
