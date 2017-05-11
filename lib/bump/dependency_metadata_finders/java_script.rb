@@ -12,7 +12,6 @@ module Bump
         return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
 
-        npm_url = "http://registry.npmjs.org/#{dependency.name}"
         npm_response =
           Excon.get(npm_url, middlewares: SharedHelpers.excon_middleware)
         all_versions = JSON.parse(npm_response.body)["versions"]&.values
@@ -34,6 +33,12 @@ module Bump
         when String then details
         when Hash then details.fetch("url", nil)
         end
+      end
+
+      def npm_url
+        # NPM registry expects slashes to be escaped
+        path = dependency.name.gsub("/", "%2f")
+        "http://registry.npmjs.org/#{path}"
       end
     end
   end

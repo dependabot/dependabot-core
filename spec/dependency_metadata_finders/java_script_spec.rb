@@ -72,5 +72,21 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
 
       it { is_expected.to eq("kesla/etag") }
     end
+
+    context "for a scoped package name" do
+      before do
+        stub_request(:get, "http://registry.npmjs.org/@etag%2Fsomething").
+          to_return(status: 200, body: npm_response)
+      end
+      let(:dependency_name) { "@etag/something" }
+      let(:npm_response) { fixture("npm_response.json") }
+
+      it "requests the escaped name" do
+        finder.github_repo
+
+        expect(WebMock).
+          to have_requested(:get, "http://registry.npmjs.org/@etag%2Fsomething")
+      end
+    end
   end
 end
