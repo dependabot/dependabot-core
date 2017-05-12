@@ -154,7 +154,7 @@ RSpec.describe Bump::PullRequestCreator do
             head: "bump_business_to_1.5.0",
             title: "Bump business to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
-                  "to 1.5.0.\n- [Release notes]"\
+                  "from 1.4.0 to 1.5.0.\n- [Release notes]"\
                   "(https://github.com/gocardless/business/releases/tag"\
                   "/v1.5.0)\n- [Changelog]"\
                   "(https://github.com/gocardless/business/blob/master"\

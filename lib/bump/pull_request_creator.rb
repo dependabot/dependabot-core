@@ -86,27 +86,20 @@ module Bump
     end
 
     def pr_message
-      msg =
-        if dependency_metadata_finder.github_repo_url
-          "Bumps [#{dependency.name}]"\
-          "(#{dependency_metadata_finder.github_repo_url}) to "\
-          "#{dependency.version}."
-        else
-          "Bumps #{dependency.name} to #{dependency.version}."
-        end
+      msg = if github_repo_url
+              "Bumps [#{dependency.name}](#{github_repo_url}) "
+            else
+              "Bumps #{dependency.name} "
+            end
 
-      if dependency_metadata_finder.release_url
-        msg += "\n- [Release notes](#{dependency_metadata_finder.release_url})"
+      if dependency.previous_version
+        msg += "from #{dependency.previous_version} "
       end
 
-      if dependency_metadata_finder.changelog_url
-        msg += "\n- [Changelog](#{dependency_metadata_finder.changelog_url})"
-      end
-
-      if dependency_metadata_finder.github_repo_url
-        msg += "\n- [Commits](#{dependency_metadata_finder.github_compare_url})"
-      end
-
+      msg += "to #{dependency.version}."
+      msg += "\n- [Release notes](#{release_url})" if release_url
+      msg += "\n- [Changelog](#{changelog_url})" if changelog_url
+      msg += "\n- [Commits](#{github_compare_url})" if github_compare_url
       msg
     end
 
@@ -116,6 +109,22 @@ module Bump
 
     def new_branch_name
       "bump_#{dependency.name}_to_#{dependency.version}"
+    end
+
+    def release_url
+      dependency_metadata_finder.release_url
+    end
+
+    def changelog_url
+      dependency_metadata_finder.changelog_url
+    end
+
+    def github_compare_url
+      dependency_metadata_finder.github_compare_url
+    end
+
+    def github_repo_url
+      dependency_metadata_finder.github_repo_url
     end
 
     def dependency_metadata_finder
