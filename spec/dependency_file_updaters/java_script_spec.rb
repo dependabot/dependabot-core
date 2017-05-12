@@ -33,21 +33,6 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "new" do
-    context "when the package.json is missing" do
-      subject { -> { updater } }
-      let(:updater) do
-        described_class.new(
-          dependency_files: [],
-          dependency: dependency,
-          github_access_token: "token"
-        )
-      end
-
-      it { is_expected.to raise_error(/No package.json!/) }
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -61,31 +46,36 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
 
     specify { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(2) }
-  end
 
-  describe "#updated_package_json_file" do
-    subject(:updated_package_json_file) { updater.updated_package_json_file }
-
-    its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-    its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
-
-    context "when the minor version is specified" do
-      let(:dependency) do
-        Bump::Dependency.new(name: "fetch-factory", version: "0.2.1")
-      end
-      let(:package_json_body) do
-        fixture("javascript", "package_files", "minor_version_specified.json")
+    describe "the updated package_json_file" do
+      subject(:updated_package_json_file) do
+        updated_files.find { |f| f.name == "package.json" }
       end
 
-      its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
+      its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+
+      context "when the minor version is specified" do
+        let(:dependency) do
+          Bump::Dependency.new(name: "fetch-factory", version: "0.2.1")
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "minor_version_specified.json")
+        end
+
+        its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      end
     end
-  end
 
-  describe "#updated_yarn_lock" do
-    subject(:file) { updater.updated_yarn_lock }
-    it "has details of the updated item" do
-      expect(file.content).
-        to include("fetch-factory@^0.0.2")
+    describe "the updated yarn_lock" do
+      subject(:updated_yarn_lock_file) do
+        updated_files.find { |f| f.name == "yarn.lock" }
+      end
+
+      it "has details of the updated item" do
+        expect(updated_yarn_lock_file.content).
+          to include("fetch-factory@^0.0.2")
+      end
     end
   end
 end

@@ -1,50 +1,38 @@
 # frozen_string_literal: true
-require "gemnasium/parser"
-require "bundler"
-require "bump/dependency_file"
+require "bump/dependency_file_updaters/base"
 require "bump/shared_helpers"
 
 module Bump
   module DependencyFileUpdaters
-    class JavaScript
-      attr_reader :package_json, :yarn_lock, :dependency
-
-      def initialize(dependency_files:, dependency:, github_access_token:)
-        @package_json = dependency_files.find { |f| f.name == "package.json" }
-        @yarn_lock = dependency_files.find { |file| file.name == "yarn.lock" }
-        validate_files_are_present!
-
-        @github_access_token = github_access_token
-        @dependency = dependency
+    class JavaScript < Base
+      def required_files
+        %w(package.json yarn.lock)
       end
 
       def updated_dependency_files
-        [updated_package_json_file, updated_yarn_lock]
-      end
-
-      def updated_package_json_file
-        new_package_json = package_json.dup
-        new_package_json.content = updated_package_json_content
-        new_package_json
-      end
-
-      def updated_yarn_lock
-        new_yarn_lock = yarn_lock.dup
-        new_yarn_lock.content = updated_yarn_lock_content
-        new_yarn_lock
+        [
+          updated_file(
+            file: package_json,
+            content: updated_package_json_content
+          ),
+          updated_file(file: yarn_lock, content: updated_yarn_lock_content)
+        ]
       end
 
       private
 
-      def validate_files_are_present!
-        raise "No package.json!" unless package_json
-        raise "No yarn.lock!" unless yarn_lock
+      def package_json
+        @package_json ||= get_original_file("package.json")
+      end
+
+      def yarn_lock
+        @yarn_lock ||= get_original_file("yarn.lock")
       end
 
       def updated_package_json_content
         return @updated_package_json_content if @updated_package_json_content
 
-        parsed_content = JSON.parse(@package_json.content)
+        parsed_content = JSON.parse(package_json.content)
 
         %w(dependencies devDependencies).each do |dep_type|
           old_version_string = parsed_content.dig(dep_type, dependency.name)
@@ -60,8 +48,9 @@ module Bump
 
       def updated_yarn_lock_content
         return @updated_yarn_lock_content if @updated_yarn_lock_content
+
         SharedHelpers.in_a_temporary_directory do |dir|
-          File.write(File.join(dir, "yarn.lock"), @yarn_lock.content)
+          File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
           File.write(File.join(dir, "package.json"),
                      updated_package_json_content)
           `cd #{dir} && yarn install --ignore-scripts 2>&1`

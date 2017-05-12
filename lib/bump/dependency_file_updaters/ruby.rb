@@ -1,48 +1,35 @@
 # frozen_string_literal: true
 require "gemnasium/parser"
 require "bundler"
-require "bump/dependency_file"
 require "bump/shared_helpers"
 require "bump/errors"
+require "bump/dependency_file_updaters/base"
 
 module Bump
   module DependencyFileUpdaters
-    class Ruby
-      attr_reader :gemfile, :gemfile_lock, :dependency, :github_access_token
-
+    class Ruby < Base
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
-      def initialize(dependency_files:, dependency:, github_access_token:)
-        @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
-        @gemfile_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }
-        validate_files_are_present!
-
-        @github_access_token = github_access_token
-        @dependency = dependency
+      def required_files
+        %w(Gemfile Gemfile.lock)
       end
 
       def updated_dependency_files
-        [updated_gemfile, updated_gemfile_lock]
-      end
-
-      def updated_gemfile
-        new_gemfile = gemfile.dup
-        new_gemfile.content = updated_gemfile_content
-        new_gemfile
-      end
-
-      def updated_gemfile_lock
-        new_lockfile = gemfile_lock.dup
-        new_lockfile.content = updated_gemfile_lock_content
-        new_lockfile
+        [
+          updated_file(file: gemfile, content: updated_gemfile_content),
+          updated_file(file: lockfile, content: updated_lockfile_content)
+        ]
       end
 
       private
 
-      def validate_files_are_present!
-        raise "No Gemfile!" unless gemfile
-        raise "No Gemfile.lock!" unless gemfile_lock
+      def gemfile
+        @gemfile ||= get_original_file("Gemfile")
+      end
+
+      def lockfile
+        @lockfile ||= get_original_file("Gemfile.lock")
       end
 
       def updated_gemfile_content
@@ -72,11 +59,11 @@ module Bump
         )
       end
 
-      def updated_gemfile_lock_content
-        @updated_gemfile_lock_content ||= build_updated_gemfile_lock
+      def updated_lockfile_content
+        @updated_lockfile_content ||= build_updated_lockfile
       end
 
-      def build_updated_gemfile_lock
+      def build_updated_lockfile
         lockfile_body =
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files_to(dir)
@@ -115,7 +102,7 @@ module Bump
         )
         File.write(
           File.join(dir, "Gemfile.lock"),
-          gemfile_lock.content.gsub(
+          lockfile.content.gsub(
             "git@github.com:",
             "https://#{github_access_token}:x-oauth-basic@github.com/"
           )
@@ -151,7 +138,7 @@ module Bump
         # Re-add any explicit Ruby version, and the old `BUNDLED WITH` version
         lockfile_body.gsub(
           LOCKFILE_ENDING,
-          gemfile_lock.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
+          lockfile.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
         )
       end
     end
