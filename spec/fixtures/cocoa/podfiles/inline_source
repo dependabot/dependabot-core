@@ -2,8 +2,7 @@ platform :ios, '9.0'
 use_frameworks!
 
 def core_pods
-  pod 'Alamofire', '~> 3.0.0'
-  pod 'Nimble', '~> 2.0.0'
+  pod 'Alamofire', :source => 'https://github.com/dependabot/Specs.git'
 end
 
 target 'MyApp' do

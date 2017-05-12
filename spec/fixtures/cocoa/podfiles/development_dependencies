@@ -6,7 +6,7 @@ def core_pods
 end
 
 def test_pods
-  pod 'Nimble', '~> 2.0.1'
+  pod 'Nimble', '~> 2.0.0'
 end
 
 target 'MyApp' do

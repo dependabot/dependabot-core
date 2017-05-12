@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "bundler", ">= 1.12.0"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gemnasium-parser", "~> 0.1"
+  spec.add_dependency "cocoapods", "~> 1.2.1"
   spec.add_dependency "cocoapods-core", "~> 1.2.1"
   spec.add_dependency "gems", "~> 1.0"
   spec.add_dependency "octokit", "~> 4.6"
