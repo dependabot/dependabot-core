@@ -12,11 +12,8 @@ module Bump
         return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
 
-        npm_response =
-          Excon.get(npm_url, middlewares: SharedHelpers.excon_middleware)
-
         all_versions =
-          JSON.parse(npm_response.body)["versions"].
+          npm_listing["versions"].
           sort_by { |version, _| Gem::Version.new(version) }.
           reverse
 
@@ -39,10 +36,14 @@ module Bump
         end
       end
 
-      def npm_url
+      def npm_listing
+        return @npm_listing unless @npm_listing.nil?
+
         # NPM registry expects slashes to be escaped
-        path = dependency.name.gsub("/", "%2f")
-        "http://registry.npmjs.org/#{path}"
+        url = "http://registry.npmjs.org/#{dependency.name.gsub('/', '%2f')}"
+        response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+
+        @npm_listing = JSON.parse(response.body)
       end
     end
   end
