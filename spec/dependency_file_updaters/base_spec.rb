@@ -27,7 +27,13 @@ RSpec.describe Bump::DependencyFileUpdaters::Base do
       directory: "/path/to"
     )
   end
-  let(:dependency) { Bump::Dependency.new(name: "business", version: "1.5.0") }
+  let(:dependency) do
+    Bump::Dependency.new(
+      name: "business",
+      version: "1.5.0",
+      language: "ruby"
+    )
+  end
   let(:github_access_token) { "token" }
   let(:files) { [gemfile] }
 

@@ -12,7 +12,8 @@ RSpec.describe Bump::DependencyMetadataFinders::Base do
     Bump::Dependency.new(
       name: dependency_name,
       version: dependency_version,
-      previous_version: dependency_previous_version
+      previous_version: dependency_previous_version,
+      language: "ruby"
     )
   end
   let(:dependency_name) { "business" }

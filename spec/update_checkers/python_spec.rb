@@ -15,7 +15,13 @@ RSpec.describe Bump::UpdateCheckers::Python do
     described_class.new(dependency: dependency, dependency_files: [])
   end
 
-  let(:dependency) { Bump::Dependency.new(name: "luigi", version: "2.0.0") }
+  let(:dependency) do
+    Bump::Dependency.new(
+      name: "luigi",
+      version: "2.0.0",
+      language: "python"
+    )
+  end
 
   describe "#needs_update?" do
     subject { checker.needs_update? }
@@ -25,7 +31,13 @@ RSpec.describe Bump::UpdateCheckers::Python do
     end
 
     context "given an up-to-date dependency" do
-      let(:dependency) { Bump::Dependency.new(name: "luigi", version: "2.6.0") }
+      let(:dependency) do
+        Bump::Dependency.new(
+          name: "luigi",
+          version: "2.6.0",
+          language: "python"
+        )
+      end
       it { is_expected.to be_falsey }
     end
   end

@@ -39,7 +39,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
     Bump::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
   let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
-  let(:dependency) { Bump::Dependency.new(name: "business", version: "1.5.0") }
+  let(:dependency) do
+    Bump::Dependency.new(name: "business", version: "1.5.0", language: "ruby")
+  end
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -79,7 +81,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       context "with a gem whose name includes a number" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "gem_with_number") }
         let(:dependency) do
-          Bump::Dependency.new(name: "i18n", version: "0.5.0")
+          Bump::Dependency.new(name: "i18n", version: "0.5.0", language: "ruby")
         end
         before do
           url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
@@ -194,7 +196,11 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       context "when there is a version conflict" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
         let(:dependency) do
-          Bump::Dependency.new(name: "ibandit", version: "0.8.5")
+          Bump::Dependency.new(
+            name: "ibandit",
+            version: "0.8.5",
+            language: "ruby"
+          )
         end
 
         before do

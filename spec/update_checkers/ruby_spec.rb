@@ -15,7 +15,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
                         dependency_files: [gemfile, gemfile_lock])
   end
 
-  let(:dependency) { Bump::Dependency.new(name: "business", version: "1.3") }
+  let(:dependency) do
+    Bump::Dependency.new(name: "business", version: "1.3", language: "ruby")
+  end
 
   let(:gemfile) do
     Bump::DependencyFile.new(content: gemfile_content, name: "Gemfile")
@@ -57,14 +59,20 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
     end
 
     context "given a dependency that doesn't appear in the lockfile" do
-      let(:dependency) { Bump::Dependency.new(name: "x", version: "1.0") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "x", version: "1.0", language: "ruby")
+      end
       it { is_expected.to be_falsey }
     end
 
     context "given an out-of-date bundler as a dependency" do
       before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
       let(:dependency) do
-        Bump::Dependency.new(name: "bundler", version: "1.10.5")
+        Bump::Dependency.new(
+          name: "bundler",
+          version: "1.10.5",
+          language: "ruby"
+        )
       end
       let(:gemfile_lock_content) do
         fixture("ruby", "lockfiles", "gemfile_with_bundler.lock")
@@ -78,7 +86,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
         fixture("ruby", "lockfiles", "git_source.lock")
       end
       let(:gemfile_content) { fixture("ruby", "gemfiles", "git_source") }
-      let(:dependency) { Bump::Dependency.new(name: "prius", version: "0.9") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "prius", version: "0.9", language: "ruby")
+      end
 
       it { is_expected.to be_falsey }
     end

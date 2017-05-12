@@ -3,7 +3,7 @@ module Bump
   class Dependency
     attr_reader :name, :version, :previous_version, :language
 
-    def initialize(name:, version:, previous_version: nil, language: nil)
+    def initialize(name:, version:, language:, previous_version: nil)
       @name = name
       @version = version
       @previous_version = previous_version
