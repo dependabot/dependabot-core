@@ -3,8 +3,11 @@ require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
 require "bump/dependency_file_updaters/ruby"
+require_relative "./shared_examples_for_file_updaters"
 
 RSpec.describe Bump::DependencyFileUpdaters::Ruby do
+  it_behaves_like "a dependency file updater"
+
   before do
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(status: 200, body: fixture("rubygems-index"))

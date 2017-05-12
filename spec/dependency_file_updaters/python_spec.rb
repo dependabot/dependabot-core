@@ -4,8 +4,11 @@ require "bump/dependency"
 require "bump/dependency_file"
 require "bump/dependency_file_updaters/python"
 require "bump/shared_helpers"
+require_relative "./shared_examples_for_file_updaters"
 
 RSpec.describe Bump::DependencyFileUpdaters::Python do
+  it_behaves_like "a dependency file updater"
+
   let(:updater) do
     described_class.new(
       dependency_files: [requirements],
