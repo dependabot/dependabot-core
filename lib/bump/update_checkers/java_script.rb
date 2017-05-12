@@ -19,6 +19,9 @@ module Bump
           end
       end
 
+      # TODO: Parsing the package.json file here is naive - the version info
+      #       found there is more likely in node-semver format than the exact
+      #       current version. In future we should parse the yarn.lock file.
       def dependency_version
         Gem::Version.new(dependency.version)
       end
