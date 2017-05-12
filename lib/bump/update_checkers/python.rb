@@ -22,10 +22,6 @@ module Bump
         Gem::Version.new(dependency.version)
       end
 
-      def language
-        "python"
-      end
-
       def dependency_url
         "https://pypi.python.org/pypi/#{dependency.name}/json"
       end

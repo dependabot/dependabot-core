@@ -21,7 +21,7 @@ module Bump
           name: dependency.name,
           version: latest_version,
           previous_version: dependency_version.to_s,
-          language: language
+          language: dependency.language
         )
       end
 
@@ -30,10 +30,6 @@ module Bump
       end
 
       def dependency_version
-        raise NotImplementedError
-      end
-
-      def language
         raise NotImplementedError
       end
     end

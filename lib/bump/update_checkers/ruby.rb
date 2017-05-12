@@ -93,10 +93,6 @@ module Bump
         gemfile
       end
 
-      def language
-        "ruby"
-      end
-
       def write_temporary_dependency_files_to(dir)
         File.write(
           File.join(dir, "Gemfile"),

@@ -30,7 +30,11 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
     )
   end
   let(:dependency) do
-    Bump::Dependency.new(name: "fetch-factory", version: "0.0.2")
+    Bump::Dependency.new(
+      name: "fetch-factory",
+      version: "0.0.2",
+      language: "javascript"
+    )
   end
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
@@ -60,7 +64,11 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
 
       context "when the minor version is specified" do
         let(:dependency) do
-          Bump::Dependency.new(name: "fetch-factory", version: "0.2.1")
+          Bump::Dependency.new(
+            name: "fetch-factory",
+            version: "0.2.1",
+            language: "javascript"
+          )
         end
         let(:package_json_body) do
           fixture("javascript", "package_files", "minor_version_specified.json")

@@ -33,10 +33,6 @@ module Bump
         path = dependency.name.gsub("/", "%2F")
         "http://registry.npmjs.org/#{path}"
       end
-
-      def language
-        "javascript"
-      end
     end
   end
 end

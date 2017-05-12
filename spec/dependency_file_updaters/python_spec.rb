@@ -25,7 +25,13 @@ RSpec.describe Bump::DependencyFileUpdaters::Python do
   let(:requirements_body) do
     fixture("python", "requirements", "version_specified.txt")
   end
-  let(:dependency) { Bump::Dependency.new(name: "psycopg2", version: "2.8.1") }
+  let(:dependency) do
+    Bump::Dependency.new(
+      name: "psycopg2",
+      version: "2.8.1",
+      language: "python"
+    )
+  end
   let(:tmp_path) { Bump::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }

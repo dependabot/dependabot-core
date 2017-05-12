@@ -14,7 +14,9 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
     described_class.new(dependency: dependency, dependency_files: [])
   end
 
-  let(:dependency) { Bump::Dependency.new(name: "etag", version: "1.0.0") }
+  let(:dependency) do
+    Bump::Dependency.new(name: "etag", version: "1.0.0", language: "javascript")
+  end
 
   describe "#needs_update?" do
     subject { checker.needs_update? }
@@ -24,7 +26,14 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
     end
 
     context "given an up-to-date dependency" do
-      let(:dependency) { Bump::Dependency.new(name: "etag", version: "1.7.0") }
+      let(:dependency) do
+        Bump::Dependency.new(
+          name: "etag",
+          version: "1.7.0",
+          language: "javascript"
+        )
+      end
+
       it { is_expected.to be_falsey }
     end
 
@@ -34,7 +43,11 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
           to_return(status: 200, body: fixture("npm_response.json"))
       end
       let(:dependency) do
-        Bump::Dependency.new(name: "@blep/blep", version: "1.0.0")
+        Bump::Dependency.new(
+          name: "@blep/blep",
+          version: "1.0.0",
+          language: "javascript"
+        )
       end
       it { is_expected.to be_truthy }
     end
