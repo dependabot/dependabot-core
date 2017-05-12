@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 require "bump/dependency_file_updaters/base"
 require "bump/dependency_file_parsers/python"
+require "bump/dependency_file_fetchers/python"
 
 module Bump
   module DependencyFileUpdaters
     class Python < Base
-      def required_files
-        %w(requirements.txt)
-      end
-
       def updated_dependency_files
         [
           updated_file(
@@ -19,6 +16,10 @@ module Bump
       end
 
       private
+
+      def required_files
+        Bump::DependencyFileFetchers::Python.required_files
+      end
 
       def requirements
         @requirements ||= get_original_file("requirements.txt")

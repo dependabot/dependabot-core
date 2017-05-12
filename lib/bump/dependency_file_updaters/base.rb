@@ -18,11 +18,11 @@ module Bump
         raise NotImplementedError
       end
 
+      private
+
       def required_files
         raise NotImplementedError
       end
-
-      private
 
       def get_original_file(filename)
         dependency_files.find { |f| f.name == filename }

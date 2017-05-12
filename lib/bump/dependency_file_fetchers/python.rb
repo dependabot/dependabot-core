@@ -4,7 +4,7 @@ require "bump/dependency_file_fetchers/base"
 module Bump
   module DependencyFileFetchers
     class Python < Base
-      def required_files
+      def self.required_files
         %w(requirements.txt)
       end
     end

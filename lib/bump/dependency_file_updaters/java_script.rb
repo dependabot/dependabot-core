@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 require "bump/dependency_file_updaters/base"
+require "bump/dependency_file_fetchers/java_script"
 require "bump/shared_helpers"
 
 module Bump
   module DependencyFileUpdaters
     class JavaScript < Base
-      def required_files
-        %w(package.json yarn.lock)
-      end
-
       def updated_dependency_files
         [
           updated_file(
@@ -20,6 +17,10 @@ module Bump
       end
 
       private
+
+      def required_files
+        Bump::DependencyFileFetchers::JavaScript.required_files
+      end
 
       def package_json
         @package_json ||= get_original_file("package.json")

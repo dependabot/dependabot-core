@@ -17,7 +17,7 @@ RSpec.shared_examples "a dependency file updater" do
     end
 
     it "implements required_files" do
-      expect(described_class.public_instance_methods(false)).
+      expect(described_class.private_instance_methods(false)).
         to include(:required_files)
     end
 

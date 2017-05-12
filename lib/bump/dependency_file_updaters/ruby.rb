@@ -4,16 +4,13 @@ require "bundler"
 require "bump/shared_helpers"
 require "bump/errors"
 require "bump/dependency_file_updaters/base"
+require "bump/dependency_file_fetchers/ruby"
 
 module Bump
   module DependencyFileUpdaters
     class Ruby < Base
       LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
       GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
-
-      def required_files
-        %w(Gemfile Gemfile.lock)
-      end
 
       def updated_dependency_files
         [
@@ -23,6 +20,10 @@ module Bump
       end
 
       private
+
+      def required_files
+        Bump::DependencyFileFetchers::Ruby.required_files
+      end
 
       def gemfile
         @gemfile ||= get_original_file("Gemfile")

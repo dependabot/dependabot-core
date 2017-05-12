@@ -12,7 +12,7 @@ RSpec.describe Bump::DependencyFileFetchers::Base do
 
   let(:child_class) do
     Class.new(described_class) do
-      def required_files
+      def self.required_files
         ["Gemfile"]
       end
     end

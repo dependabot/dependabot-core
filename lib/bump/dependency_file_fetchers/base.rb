@@ -7,6 +7,10 @@ module Bump
     class Base
       attr_reader :repo, :github_client, :directory
 
+      def self.required_files
+        raise NotImplementedError
+      end
+
       def initialize(repo:, github_client:, directory: "/")
         @repo = repo
         @github_client = github_client
@@ -14,16 +18,14 @@ module Bump
       end
 
       def files
-        @files ||= required_files.map { |name| fetch_file_from_github(name) }
+        @files ||= self.class.required_files.map do |name|
+          fetch_file_from_github(name)
+        end
       end
 
       def commit
         default_branch = github_client.repository(repo.name).default_branch
         github_client.ref(repo.name, "heads/#{default_branch}").object.sha
-      end
-
-      def required_files
-        raise NotImplementedError
       end
 
       private
