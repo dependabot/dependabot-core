@@ -12,17 +12,19 @@ module Bump
         return @github_repo if @github_repo_lookup_attempted
         @github_repo_lookup_attempted = true
 
-        all_versions =
+        version_listings =
           npm_listing["versions"].
           sort_by { |version, _| Gem::Version.new(version) }.
           reverse
 
         potential_source_urls =
-          all_versions.map { |_, v| get_url(v.fetch("repository", {})) } +
-          all_versions.map { |_, v| v["homepage"] } +
-          all_versions.map { |_, v| get_url(v.fetch("bugs", {})) }
-
-        potential_source_urls = potential_source_urls.compact
+          version_listings.flat_map do |_, listing|
+            [
+              get_url(listing["repository"]),
+              listing["homepage"],
+              get_url(listing["bugs"])
+            ]
+          end.compact
 
         source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
 
