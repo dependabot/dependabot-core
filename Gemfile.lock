@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    bump-core (0.3.3)
+    bump-core (0.3.4)
       bundler (>= 1.12.0)
       excon (~> 0.55)
       gemnasium-parser (~> 0.1)

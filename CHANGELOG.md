@@ -1,3 +1,8 @@
+## v0.3.4, 12 May 2017
+
+- Better JavaScript and Python metadata finding
+- Exposed `.required_files` method on dependency file fetchers
+
 ## v0.3.3, 11 May 2017
 
 - Escape scoped package names in Bump::DependencyMetadataFinders::JavaScript
