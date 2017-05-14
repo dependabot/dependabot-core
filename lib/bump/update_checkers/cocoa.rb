@@ -11,15 +11,6 @@ module Bump
         @latest_version ||= fetch_latest_version
       end
 
-      # Parse the Podfile.lock to get the pod version. Better than just relying
-      # on the dependency's specified version, which may have had a ~> matcher.
-      def dependency_version
-        lockfile_hash = Pod::YAMLHelper.load_string(lockfile.content)
-        parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
-
-        Gem::Version.new(parsed_lockfile.version(dependency.name))
-      end
-
       private
 
       def fetch_latest_version

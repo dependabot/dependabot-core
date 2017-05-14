@@ -3,8 +3,11 @@ require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
 require "bump/update_checkers/cocoa"
+require_relative "./shared_examples_for_update_checkers"
 
 RSpec.describe Bump::UpdateCheckers::Cocoa do
+  it_behaves_like "an update checker"
+
   before do
     master_url = "https://api.github.com/repos/CocoaPods/Specs/commits/master"
     stub_request(:get, master_url).to_return(status: 304)
@@ -33,32 +36,6 @@ RSpec.describe Bump::UpdateCheckers::Cocoa do
   end
   let(:podfile_content) { fixture("cocoa", "podfiles", "version_specified") }
   let(:lockfile_content) { fixture("cocoa", "lockfiles", "version_specified") }
-
-  describe "#dependency_version" do
-    subject { checker.dependency_version }
-
-    context "for a dependency with differing podfile and lockfile versions" do
-      it { is_expected.to eq(Gem::Version.new("3.0.1")) }
-    end
-
-    context "for a development dependency" do
-      let(:podfile_content) do
-        fixture("cocoa", "podfiles", "development_dependencies")
-      end
-      let(:lockfile_content) do
-        fixture("cocoa", "lockfiles", "development_dependencies")
-      end
-
-      it { is_expected.to eq(Gem::Version.new("3.0.1")) }
-    end
-
-    context "for a dependency with a git source" do
-      let(:podfile_content) { fixture("cocoa", "podfiles", "git_source") }
-      let(:lockfile_content) { fixture("cocoa", "lockfiles", "git_source") }
-
-      it { is_expected.to eq(Gem::Version.new("4.4.0")) }
-    end
-  end
 
   describe "#latest_version" do
     subject { checker.latest_version }
