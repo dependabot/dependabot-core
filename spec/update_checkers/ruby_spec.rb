@@ -31,72 +31,9 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
   let(:gemfile_content) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:gemfile_lock_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
-  describe "#needs_update?" do
-    subject { checker.needs_update? }
-
-    context "given an outdated dependency" do
-      it { is_expected.to be_truthy }
-
-      context "with a Gemfile that specifies a Ruby version" do
-        let(:gemfile_content) { fixture("ruby", "gemfiles", "explicit_ruby") }
-        it { is_expected.to be_truthy }
-      end
-
-      context "that is a development dependency" do
-        let(:gemfile_content) do
-          fixture("ruby", "gemfiles", "development_dependencies")
-        end
-
-        it { is_expected.to be_truthy }
-      end
-    end
-
-    context "given an up-to-date dependency" do
-      let(:gemfile_lock_content) do
-        fixture("ruby", "lockfiles", "up_to_date_gemfile.lock")
-      end
-      it { is_expected.to be_falsey }
-    end
-
-    context "given a dependency that doesn't appear in the lockfile" do
-      let(:dependency) do
-        Bump::Dependency.new(name: "x", version: "1.0", language: "ruby")
-      end
-      it { is_expected.to be_falsey }
-    end
-
-    context "given an out-of-date bundler as a dependency" do
-      before { allow(checker).to receive(:latest_version).and_return("10.0.0") }
-      let(:dependency) do
-        Bump::Dependency.new(
-          name: "bundler",
-          version: "1.10.5",
-          language: "ruby"
-        )
-      end
-      let(:gemfile_lock_content) do
-        fixture("ruby", "lockfiles", "gemfile_with_bundler.lock")
-      end
-
-      it { is_expected.to be_truthy }
-    end
-
-    context "given a git source" do
-      let(:gemfile_lock_content) do
-        fixture("ruby", "lockfiles", "git_source.lock")
-      end
-      let(:gemfile_content) { fixture("ruby", "gemfiles", "git_source") }
-      let(:dependency) do
-        Bump::Dependency.new(name: "prius", version: "0.9", language: "ruby")
-      end
-
-      it { is_expected.to be_falsey }
-    end
-  end
-
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq("1.5.0") }
+    it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
     context "given a Gemfile with a non-rubygems source" do
       let(:gemfile_lock_content) do
@@ -112,7 +49,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
           to_return(status: 200, body: fixture("gemfury_response"))
       end
 
-      it { is_expected.to eq("1.9.0") }
+      it { is_expected.to eq(Gem::Version.new("1.9.0")) }
     end
 
     context "given an unreadable Gemfile" do
@@ -127,6 +64,23 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
         expect { checker.latest_version }.
           to raise_error(Bump::DependencyFileNotEvaluatable)
       end
+    end
+
+    context "given a git source" do
+      let(:gemfile_lock_content) do
+        fixture("ruby", "lockfiles", "git_source.lock")
+      end
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "git_source") }
+      let(:dependency) do
+        Bump::Dependency.new(name: "prius", version: "0.9", language: "ruby")
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "given a Gemfile that specifies a Ruby version" do
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "explicit_ruby") }
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
   end
 end

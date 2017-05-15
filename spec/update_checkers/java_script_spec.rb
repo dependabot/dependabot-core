@@ -55,7 +55,7 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq("1.7.0") }
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "http://registry.npmjs.org/eTag" }
@@ -67,7 +67,7 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
           to_return(status: 200, body: fixture("npm_response.json"))
       end
 
-      it { is_expected.to eq("1.7.0") }
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
   end
 end

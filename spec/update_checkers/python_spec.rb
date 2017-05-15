@@ -44,7 +44,7 @@ RSpec.describe Bump::UpdateCheckers::Python do
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq("2.6.0") }
+    it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
     context "when the pypi link resolves to a redirect" do
       let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
@@ -56,7 +56,7 @@ RSpec.describe Bump::UpdateCheckers::Python do
           to_return(status: 200, body: pypi_response)
       end
 
-      it { is_expected.to eq("2.6.0") }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
   end
 

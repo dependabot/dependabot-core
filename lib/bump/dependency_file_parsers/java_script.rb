@@ -16,6 +16,11 @@ module Bump
         dependencies_hash = parsed_content["dependencies"] || {}
         dependencies_hash.merge!(parsed_content["devDependencies"] || {})
 
+        # TODO: Taking the version from the package.json file here is naive -
+        #       the version info found there is more likely in node-semver
+        #       format than the exact current version. In future we should
+        #       parse the yarn.lock file.
+
         dependencies_hash.map do |name, version|
           Dependency.new(
             name: name,
