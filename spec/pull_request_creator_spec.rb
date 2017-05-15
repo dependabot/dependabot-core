@@ -193,5 +193,22 @@ RSpec.describe Bump::PullRequestCreator do
           to_not have_requested(:post, "#{watched_repo_url}/pulls")
       end
     end
+
+    context "when there's a race to create the new branch, and we lose" do
+      before do
+        stub_request(:post, "#{watched_repo_url}/git/refs").
+          to_return(status: 422,
+                    body: fixture("github", "create_ref_error.json"),
+                    headers: json_header)
+      end
+
+      specify { expect { creator.create }.to_not raise_error }
+
+      it "doesn't try to re-create the PR" do
+        creator.create
+        expect(WebMock).
+          to_not have_requested(:post, "#{watched_repo_url}/pulls")
+      end
+    end
   end
 end

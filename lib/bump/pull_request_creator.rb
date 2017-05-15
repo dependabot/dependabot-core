@@ -17,7 +17,7 @@ module Bump
       return if branch_exists?
 
       commit = create_commit
-      create_branch(commit)
+      return unless create_branch(commit)
 
       create_pull_request
     end
@@ -65,6 +65,10 @@ module Bump
         "heads/#{new_branch_name}",
         commit.sha
       )
+    rescue Octokit::UnprocessableEntity => error
+      # Return quietly in the case of a race
+      return nil if error.message =~ /Reference already exists/
+      raise
     end
 
     def create_pull_request
