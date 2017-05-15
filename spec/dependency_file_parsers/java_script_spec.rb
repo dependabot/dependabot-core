@@ -2,14 +2,23 @@
 require "spec_helper"
 require "bump/dependency_file"
 require "bump/dependency_file_parsers/java_script"
+require_relative "./shared_examples_for_file_parsers"
 
 RSpec.describe Bump::DependencyFileParsers::JavaScript do
-  let(:files) { [package_json] }
+  it_behaves_like "a dependency file parser"
+
+  let(:files) { [package_json, lockfile] }
   let(:package_json) do
     Bump::DependencyFile.new(name: "package.json", content: package_json_body)
   end
+  let(:lockfile) do
+    Bump::DependencyFile.new(name: "yarn.lock", content: lockfile_body)
+  end
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
+  end
+  let(:lockfile_body) do
+    fixture("javascript", "package_files", "yarn.lock")
   end
   let(:parser) { described_class.new(dependency_files: files) }
 

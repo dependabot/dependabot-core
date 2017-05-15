@@ -2,8 +2,11 @@
 require "spec_helper"
 require "bump/dependency_file"
 require "bump/dependency_file_parsers/ruby"
+require_relative "./shared_examples_for_file_parsers"
 
 RSpec.describe Bump::DependencyFileParsers::Ruby do
+  it_behaves_like "a dependency file parser"
+
   let(:files) { [gemfile, lockfile] }
   let(:gemfile) do
     Bump::DependencyFile.new(name: "Gemfile", content: gemfile_content)

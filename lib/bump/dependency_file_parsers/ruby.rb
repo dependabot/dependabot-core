@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 require "gemnasium/parser"
 require "bump/dependency"
+require "bump/dependency_file_parsers/base"
+require "bump/dependency_file_fetchers/ruby"
 
 module Bump
   module DependencyFileParsers
-    class Ruby
-      def initialize(dependency_files:)
-        @gemfile = dependency_files.find { |f| f.name == "Gemfile" }
-        @lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" }
-        raise "No Gemfile!" unless @gemfile
-        raise "No Gemfile.lock!" unless @lockfile
-      end
-
+    class Ruby < Base
       def parse
         gemfile_parser.dependencies.map do |dependency|
           # Ignore dependencies with multiple requirements, since they would
@@ -34,6 +29,18 @@ module Bump
       private
 
       attr_reader :gemfile, :lockfile
+
+      def required_files
+        Bump::DependencyFileFetchers::Ruby.required_files
+      end
+
+      def gemfile
+        @gemfile ||= get_original_file("Gemfile")
+      end
+
+      def lockfile
+        @lockfile ||= get_original_file("Gemfile.lock")
+      end
 
       def gemfile_parser
         Gemnasium::Parser.gemfile(gemfile.content)

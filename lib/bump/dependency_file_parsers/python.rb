@@ -1,19 +1,13 @@
 # frozen_string_literal: true
 require "bump/dependency"
+require "bump/dependency_file_parsers/base"
+require "bump/dependency_file_fetchers/python"
 
 module Bump
   module DependencyFileParsers
-    class Python
-      def initialize(dependency_files:)
-        @requirements = dependency_files.find do |f|
-          f.name == "requirements.txt"
-        end
-
-        raise "No requirements.txt!" unless @requirements
-      end
-
+    class Python < Base
       def parse
-        @requirements.
+        requirements.
           content.
           each_line.
           each_with_object([]) do |line, dependencies|
@@ -32,6 +26,16 @@ module Bump
               language: "python"
             )
           end
+      end
+
+      private
+
+      def required_files
+        Bump::DependencyFileFetchers::Python.required_files
+      end
+
+      def requirements
+        @requirements ||= get_original_file("requirements.txt")
       end
 
       class LineParser

@@ -1,15 +1,12 @@
 # frozen_string_literal: true
 require "json"
 require "bump/dependency"
+require "bump/dependency_file_parsers/base"
+require "bump/dependency_file_fetchers/java_script"
 
 module Bump
   module DependencyFileParsers
-    class JavaScript
-      def initialize(dependency_files:)
-        @package_json = dependency_files.find { |f| f.name == "package.json" }
-        raise "No package.json!" unless @package_json
-      end
-
+    class JavaScript < Base
       def parse
         parsed_content = parser
 
@@ -32,8 +29,16 @@ module Bump
 
       private
 
+      def required_files
+        Bump::DependencyFileFetchers::JavaScript.required_files
+      end
+
+      def package_json
+        @package_json ||= get_original_file("package.json")
+      end
+
       def parser
-        JSON.parse(@package_json.content)
+        JSON.parse(package_json.content)
       end
     end
   end
