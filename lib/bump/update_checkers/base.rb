@@ -12,7 +12,7 @@ module Bump
       end
 
       def needs_update?
-        latest_version > Gem::Version.new(dependency.version)
+        latest_version && latest_version > Gem::Version.new(dependency.version)
       end
 
       def updated_dependency

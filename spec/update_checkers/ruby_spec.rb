@@ -3,8 +3,11 @@ require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_file"
 require "bump/update_checkers/ruby"
+require_relative "./shared_examples_for_update_checkers"
 
 RSpec.describe Bump::UpdateCheckers::Ruby do
+  it_behaves_like "an update checker"
+
   before do
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
       to_return(status: 200, body: fixture("rubygems_response.json"))

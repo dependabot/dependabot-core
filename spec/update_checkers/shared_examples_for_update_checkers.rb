@@ -1,22 +1,17 @@
 # frozen_string_literal: true
 require "spec_helper"
-require "bump/dependency_file_updaters/base"
+require "bump/update_checkers/base"
 
-RSpec.shared_examples "a dependency file updater" do
+RSpec.shared_examples "an update checker" do
   describe "the class" do
     subject { described_class }
-    let(:base_class) { Bump::DependencyFileUpdaters::Base }
+    let(:base_class) { Bump::UpdateCheckers::Base }
 
     its(:superclass) { is_expected.to eq(base_class) }
 
-    it "implements updated_dependency_files" do
+    it "implements latest_version" do
       expect(described_class.public_instance_methods(false)).
-        to include(:updated_dependency_files)
-    end
-
-    it "implements required_files" do
-      expect(described_class.private_instance_methods(false)).
-        to include(:required_files)
+        to include(:latest_version)
     end
 
     it "doesn't define any additional public instance methods" do
