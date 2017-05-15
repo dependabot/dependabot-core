@@ -21,6 +21,9 @@ Metrics/BlockLength:
   Exclude:
     - spec/**/*
 
+Metrics/ParameterLists:
+  Max: 10
+
 Style/EmptyLineAfterMagicComment:
   Enabled: false
 
