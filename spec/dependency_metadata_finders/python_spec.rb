@@ -3,8 +3,11 @@ require "octokit"
 require "spec_helper"
 require "bump/dependency"
 require "bump/dependency_metadata_finders/python"
+require_relative "./shared_examples_for_metadata_finders"
 
 RSpec.describe Bump::DependencyMetadataFinders::Python do
+  it_behaves_like "a dependency metadata finder"
+
   let(:dependency) do
     Bump::Dependency.new(
       name: dependency_name,

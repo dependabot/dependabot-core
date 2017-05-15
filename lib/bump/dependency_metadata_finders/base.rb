@@ -15,7 +15,8 @@ module Bump
 
       def github_repo
         return @github_repo if @github_repo_lookup_attempted
-        look_up_github_repo
+        @github_repo_lookup_attempted = true
+        @github_repo = look_up_github_repo
       end
 
       def github_repo_url

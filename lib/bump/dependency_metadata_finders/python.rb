@@ -9,9 +9,6 @@ module Bump
       private
 
       def look_up_github_repo
-        return @github_repo if @github_repo_lookup_attempted
-        @github_repo_lookup_attempted = true
-
         potential_source_urls = [
           pypi_listing.dig("info", "home_page"),
           pypi_listing.dig("info", "bugtrack_url"),
@@ -21,7 +18,7 @@ module Bump
 
         source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
 
-        @github_repo = source_url.match(GITHUB_REGEX)[:repo] if source_url
+        source_url.match(GITHUB_REGEX)[:repo] if source_url
       end
 
       def pypi_listing
