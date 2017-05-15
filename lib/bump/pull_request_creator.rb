@@ -3,14 +3,17 @@ require "bump/dependency_metadata_finders"
 
 module Bump
   class PullRequestCreator
-    attr_reader :watched_repo, :dependency, :files, :base_commit, :github_client
+    attr_reader :watched_repo, :dependency, :files, :base_commit,
+                :github_client, :pr_message_footer
 
-    def initialize(repo:, base_commit:, dependency:, files:, github_client:)
+    def initialize(repo:, base_commit:, dependency:, files:, github_client:,
+                   pr_message_footer: nil)
       @dependency = dependency
       @watched_repo = repo
       @base_commit = base_commit
       @files = files
       @github_client = github_client
+      @pr_message_footer = pr_message_footer
     end
 
     def create
@@ -77,7 +80,7 @@ module Bump
         default_branch,
         new_branch_name,
         pr_name,
-        pr_message
+        pr_message_with_custom_footer
       )
     end
 
@@ -105,6 +108,11 @@ module Bump
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{github_compare_url})" if github_compare_url
       msg
+    end
+
+    def pr_message_with_custom_footer
+      return pr_message unless pr_message_footer
+      pr_message + "\n\n#{pr_message_footer}"
     end
 
     def default_branch

@@ -145,9 +145,8 @@ RSpec.describe Bump::PullRequestCreator do
     it "creates a PR with the right details" do
       creator.create
 
-      repo_url = "https://api.github.com/repos/gocardless/bump"
       expect(WebMock).
-        to have_requested(:post, "#{repo_url}/pulls").
+        to have_requested(:post, "#{watched_repo_url}/pulls").
         with(
           body: {
             base: "master",
@@ -208,6 +207,32 @@ RSpec.describe Bump::PullRequestCreator do
         creator.create
         expect(WebMock).
           to_not have_requested(:post, "#{watched_repo_url}/pulls")
+      end
+    end
+
+    context "with a custom footer" do
+      subject(:creator) do
+        Bump::PullRequestCreator.new(repo: repo,
+                                     base_commit: base_commit,
+                                     dependency: dependency,
+                                     files: files,
+                                     github_client: github_client,
+                                     pr_message_footer: "Example text")
+      end
+
+      it "includes the custom text in the PR message" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "bump_business_to_1.5.0",
+              title: "Bump business to 1.5.0",
+              body: /\n\nExample text/
+            }
+          )
       end
     end
   end
