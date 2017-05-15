@@ -1,3 +1,7 @@
+## v0.4.1, 15 May 2017
+
+- Allow a `pr_message_footer` argument to be passed to `PullRequestCreator`
+
 ## v0.4.0, 15 May 2017
 
 - BREAKING: Make language a required attribute for Bump::Dependency (#29)
