@@ -1,3 +1,9 @@
+## v0.4.0, 15 May 2017
+
+- BREAKING: Make language a required attribute for Bump::Dependency (#29)
+- Handle PR creation races gracefully (#31)
+- Minor improvement to PR text
+
 ## v0.3.4, 12 May 2017
 
 - Better JavaScript and Python metadata finding
