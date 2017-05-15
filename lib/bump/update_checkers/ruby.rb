@@ -8,25 +8,12 @@ module Bump
   module UpdateCheckers
     class Ruby < Base
       def latest_version
-        @latest_version ||= fetch_latest_version
-      end
-
-      # Parse the Gemfile.lock to get the gem version. Better than just relying
-      # on the dependency's specified version, which may have had a ~> matcher.
-      def dependency_version
-        parsed_lockfile = Bundler::LockfileParser.new(gemfile_lock.content)
-
-        if dependency.name == "bundler"
-          return Gem::Version.new(Bundler::VERSION)
-        end
-
-        # The safe navigation operator is necessary because not all files in
-        # the Gemfile will appear in the Gemfile.lock. For instance, if a gem
-        # specifies `platform: [:windows]`, and the Gemfile.lock is generated
-        # on a Linux machine, the gem will be not appear in the lockfile.
-        parsed_lockfile.specs.
-          find { |spec| spec.name == dependency.name }&.
-          version
+        @latest_version ||=
+          if fetch_latest_version.nil?
+            nil
+          else
+            Gem::Version.new(fetch_latest_version)
+          end
       end
 
       private
@@ -81,7 +68,7 @@ module Bump
         raise Bump::DependencyFileNotEvaluatable, msg
       end
 
-      def gemfile_lock
+      def lockfile
         lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" }
         raise "No Gemfile.lock!" unless lockfile
         lockfile
@@ -100,7 +87,7 @@ module Bump
         )
         File.write(
           File.join(dir, "Gemfile.lock"),
-          gemfile_lock.content
+          lockfile.content
         )
       end
     end

@@ -12,24 +12,19 @@ module Bump
       end
 
       def needs_update?
-        return false if dependency_version.nil?
-        Gem::Version.new(latest_version) > dependency_version
+        latest_version > Gem::Version.new(dependency.version)
       end
 
       def updated_dependency
         Dependency.new(
           name: dependency.name,
-          version: latest_version,
-          previous_version: dependency_version.to_s,
+          version: latest_version.to_s,
+          previous_version: dependency.version,
           language: dependency.language
         )
       end
 
       def latest_version
-        raise NotImplementedError
-      end
-
-      def dependency_version
         raise NotImplementedError
       end
     end

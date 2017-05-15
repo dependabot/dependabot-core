@@ -2,7 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     business (1.4.0)
-    statesman (1.2.1)
+    statesman (1.2.5)
 
 PLATFORMS
   ruby
@@ -10,7 +10,6 @@ PLATFORMS
 DEPENDENCIES
   business (~> 1.4.0)
   statesman (~> 1.2.0)
-  bundler (~> 1.10.5)
 
 BUNDLED WITH
-   1.10.6
+   1.14.6

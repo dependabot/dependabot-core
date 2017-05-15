@@ -2,8 +2,11 @@
 require "spec_helper"
 require "bump/dependency_file"
 require "bump/dependency_file_parsers/python"
+require_relative "./shared_examples_for_file_parsers"
 
 RSpec.describe Bump::DependencyFileParsers::Python do
+  it_behaves_like "a dependency file parser"
+
   let(:files) { [requirements] }
   let(:requirements) do
     Bump::DependencyFile.new(
