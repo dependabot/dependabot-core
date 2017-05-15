@@ -2,3 +2,4 @@
 /.env
 /tmp
 /bump-*.gem
+Gemfile.lock
