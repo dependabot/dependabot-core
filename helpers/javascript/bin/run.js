@@ -15,7 +15,7 @@ process.stdin.on("end", () => {
   const method = methodMap[request.method];
   if (!method) {
     output({ error: `Invalid method ${request.method}` });
-    return;
+    process.exit(1);
   }
 
   method
@@ -25,5 +25,6 @@ process.stdin.on("end", () => {
     })
     .catch(error => {
       console.log(error.message);
+      process.exit(1);
     });
 });
