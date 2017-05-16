@@ -6,6 +6,10 @@ machine:
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
+dependencies:
+  post:
+    - cd helpers/javascript && yarn install
+
 test:
   pre:
     - bundle exec rubocop
