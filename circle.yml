@@ -13,3 +13,7 @@ dependencies:
 test:
   pre:
     - bundle exec rubocop
+    - cd helpers/javascript && eslint lib test bin
+  override:
+    - bundle exec rspec spec
+    - cd helpers/javascript && jest
