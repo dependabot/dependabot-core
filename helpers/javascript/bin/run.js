@@ -9,16 +9,17 @@ function output(obj) {
 }
 
 const input = [];
-process.stdin.on('data', (data) => input.push(data));
-process.stdin.on('end', () => {
+process.stdin.on("data", data => input.push(data));
+process.stdin.on("end", () => {
   const request = JSON.parse(input.join(""));
   const method = methodMap[request.method];
   if (!method) {
-    output({ error: `Invalid method ${request.method}` })
+    output({ error: `Invalid method ${request.method}` });
     return;
   }
 
-  method.apply(null, request.args)
+  method
+    .apply(null, request.args)
     .then(result => {
       output({ result: result });
     })

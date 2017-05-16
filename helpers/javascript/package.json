@@ -4,6 +4,9 @@
     "yarn": "^0.24.4"
   },
   "devDependencies": {
-    "jest": "^20.0.1"
+    "eslint": "^3.19.0",
+    "eslint-plugin-prettier": "^2.0.1",
+    "jest": "^20.0.1",
+    "prettier": "^1.3.1"
   }
 }
