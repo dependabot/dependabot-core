@@ -1,6 +1,6 @@
 ## v0.4.1, 15 May 2017
 
-- Allow a `pr_message_footer` argument to be passed to `PullRequestCreator`
+- Allow `pr_message_footer` argument to be passed to `PullRequestCreator` (#32)
 
 ## v0.4.0, 15 May 2017
 
@@ -15,8 +15,8 @@
 
 ## v0.3.3, 11 May 2017
 
-- Escape scoped package names in Bump::DependencyMetadataFinders::JavaScript
-- Look for JavaScript GitHub link in most recent releases first
+- Escape scoped package names in DependencyMetadataFinders::JavaScript (#27)
+- Look for JavaScript GitHub link in most recent releases first (#28)
 
 ## v0.3.2, 09 May 2017
 
