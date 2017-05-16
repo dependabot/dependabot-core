@@ -7,7 +7,8 @@ RSpec.describe Bump::UpdateCheckers::Base do
   let(:updater_instance) do
     described_class.new(
       dependency: dependency,
-      dependency_files: []
+      dependency_files: [],
+      github_access_token: "token"
     )
   end
   let(:dependency) do

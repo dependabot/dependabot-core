@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "excon"
 require "bump/update_checkers/base"
+require "bump/shared_helpers"
 
 module Bump
   module UpdateCheckers
