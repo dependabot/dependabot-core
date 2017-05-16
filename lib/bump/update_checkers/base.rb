@@ -4,11 +4,12 @@ require "json"
 module Bump
   module UpdateCheckers
     class Base
-      attr_reader :dependency, :dependency_files
+      attr_reader :dependency, :dependency_files, :github_access_token
 
-      def initialize(dependency:, dependency_files:)
+      def initialize(dependency:, dependency_files:, github_access_token:)
         @dependency = dependency
         @dependency_files = dependency_files
+        @github_access_token = github_access_token
       end
 
       def needs_update?

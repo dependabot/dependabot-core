@@ -15,7 +15,11 @@ RSpec.describe Bump::UpdateCheckers::Python do
   let(:pypi_response) { fixture("pypi_response.json") }
 
   let(:checker) do
-    described_class.new(dependency: dependency, dependency_files: [])
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      github_access_token: "token"
+    )
   end
 
   let(:dependency) do

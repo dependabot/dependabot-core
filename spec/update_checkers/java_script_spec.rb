@@ -14,7 +14,11 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
   end
 
   let(:checker) do
-    described_class.new(dependency: dependency, dependency_files: [])
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      github_access_token: "token"
+    )
   end
 
   let(:dependency) do
