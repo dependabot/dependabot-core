@@ -55,6 +55,27 @@ module Bump
       raise ChildProcessFailed, result[:_error_details]
     end
 
+    class HelperSubprocessFailed < StandardError
+      def initialize(message, command)
+        super(message)
+        @command = command
+      end
+    end
+
+    def self.run_helper_subprocess(command, method, args)
+      IO.popen(command, "w+") do |process|
+        process.write(JSON.dump(method: method, args: args))
+        process.close_write
+        raw_response = process.read
+        begin
+          response = JSON.parse(raw_response)
+        rescue JSON::ParserError
+          raise HelperSubprocessFailed.new(raw_response, command)
+        end
+        return response["result"]
+      end
+    end
+
     def self.excon_middleware
       Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
     end

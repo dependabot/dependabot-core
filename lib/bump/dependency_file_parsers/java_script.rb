@@ -3,25 +3,16 @@ require "json"
 require "bump/dependency"
 require "bump/dependency_file_parsers/base"
 require "bump/dependency_file_fetchers/java_script"
+require "bump/shared_helpers"
 
 module Bump
   module DependencyFileParsers
     class JavaScript < Base
       def parse
-        parsed_content = parser
-
-        dependencies_hash = parsed_content["dependencies"] || {}
-        dependencies_hash.merge!(parsed_content["devDependencies"] || {})
-
-        # TODO: Taking the version from the package.json file here is naive -
-        #       the version info found there is more likely in node-semver
-        #       format than the exact current version. In future we should
-        #       parse the yarn.lock file.
-
-        dependencies_hash.map do |name, version|
+        dependency_versions.map do |dep|
           Dependency.new(
-            name: name,
-            version: version.match(/[\d\.]+/).to_s,
+            name: dep["name"],
+            version: dep["version"],
             language: "javascript"
           )
         end
@@ -29,12 +20,31 @@ module Bump
 
       private
 
+      def dependency_versions
+        SharedHelpers.in_a_temporary_directory do |dir|
+          File.write(File.join(dir, "package.json"), package_json.content)
+          File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
+
+          command = "node #{js_helper_path}"
+          SharedHelpers.run_helper_subprocess(command, "parse", [dir])
+        end
+      end
+
+      def js_helper_path
+        project_root = File.join(File.dirname(__FILE__), "../../..")
+        File.join(project_root, "helpers/javascript/bin/run.js")
+      end
+
       def required_files
         Bump::DependencyFileFetchers::JavaScript.required_files
       end
 
       def package_json
         @package_json ||= get_original_file("package.json")
+      end
+
+      def yarn_lock
+        @yarn_lock ||= get_original_file("yarn.lock")
       end
 
       def parser

@@ -1,0 +1,9 @@
+{
+  "name": "bump-core",
+  "dependencies": {
+    "yarn": "^0.24.4"
+  },
+  "devDependencies": {
+    "jest": "^20.0.1"
+  }
+}

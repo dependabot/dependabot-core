@@ -33,4 +33,31 @@ RSpec.describe Bump::SharedHelpers do
       end
     end
   end
+
+  describe ".run_helper_subprocess" do
+    let(:method) { "example" }
+    let(:args) { ["foo"] }
+
+    subject(:run_subprocess) do
+      project_root = File.join(File.dirname(__FILE__), "..")
+      bin_path = File.join(project_root, "helpers/test/run.rb")
+      command = "ruby #{bin_path}"
+      Bump::SharedHelpers.run_helper_subprocess(command, method, args)
+    end
+
+    context "when the subprocess is successful" do
+      it "returns the result" do
+        expect(run_subprocess).to eq("method" => method, "args" => args)
+      end
+    end
+
+    context "when the subprocess fails" do
+      let(:method) { "error" }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }.
+          to raise_error(Bump::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
+  end
 end
