@@ -4,7 +4,19 @@ Bump Core is a library containing the logic to keep a project's Ruby,
 JavaScript and Python dependencies up to date. It is used by applications like
 [gocardless/bump](https://github.com/gocardless/bump).
 
-# The code / contributing
+## Setup
+
+To run Bump Core, you'll need both Ruby and Node installed. The main library is
+written in Ruby, and JavaScript is required for dealing with package.json and
+yarn.lock files.
+
+Before running Bump Core, install dependencies for the core library and the
+helpers:
+
+1. `bundle install`
+2. `cd helpers/javascript && yarn install && cd -`
+
+## Internals
 
 Bump Core has helper classes for five concerns:
 
@@ -16,7 +28,7 @@ Bump Core has helper classes for five concerns:
 | `Bump::DependencyFileUpdaters` | Updates a dependency file to use the latest version of a given dependency.                    |
 | `Bump::PullRequestCreator`     | Creates a Pull Request to the original repo with the updated dependency file.                 |
 
-### Contributing
+## Contributing
 
 We'd love to see the following improvements to Bump Core:
 
