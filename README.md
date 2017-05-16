@@ -6,7 +6,7 @@ JavaScript and Python dependencies up to date. It is used by applications like
 
 # The code / contributing
 
-Bump Core has helper classes for five concerns:
+Bump Core has helper classes for six concerns:
 
 | Service                        | Description                                                                                   |
 |--------------------------------|-----------------------------------------------------------------------------------------------|
@@ -15,6 +15,7 @@ Bump Core has helper classes for five concerns:
 | `Bump::UpdateCheckers`         | Checks whether a given dependency is up-to-date.                                              |
 | `Bump::DependencyFileUpdaters` | Updates a dependency file to use the latest version of a given dependency.                    |
 | `Bump::PullRequestCreator`     | Creates a Pull Request to the original repo with the updated dependency file.                 |
+| `Bump::PullRequestUpdater`     | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
 ### Contributing
 
