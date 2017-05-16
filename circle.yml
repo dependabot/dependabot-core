@@ -6,6 +6,14 @@ machine:
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
+dependencies:
+  post:
+    - cd helpers/javascript && yarn install
+
 test:
   pre:
     - bundle exec rubocop
+    - cd helpers/javascript && node_modules/.bin/eslint lib test bin
+  override:
+    - bundle exec rspec spec
+    - cd helpers/javascript && node_modules/.bin/jest

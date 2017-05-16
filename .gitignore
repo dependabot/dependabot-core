@@ -3,3 +3,4 @@
 /tmp
 /bump-*.gem
 Gemfile.lock
+/helpers/javascript/node_modules
