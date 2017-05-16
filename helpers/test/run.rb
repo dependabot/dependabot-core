@@ -2,8 +2,13 @@
 require "json"
 
 request = JSON.parse($stdin.read)
-if request["method"] == "error"
-  puts "An error occurred"
+case request["function"]
+when "error"
+  $stdout.write(JSON.dump(error: "Something went wrong"))
+  exit 1
+when "hard_error"
+  puts "Oh no!"
+  exit 0
 else
   $stdout.write(JSON.dump(result: request))
 end

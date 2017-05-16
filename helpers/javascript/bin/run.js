@@ -1,6 +1,6 @@
 const parser = require("../lib/parser");
 
-const methodMap = {
+const functionMap = {
   parse: parser.parse
 };
 
@@ -12,19 +12,19 @@ const input = [];
 process.stdin.on("data", data => input.push(data));
 process.stdin.on("end", () => {
   const request = JSON.parse(input.join(""));
-  const method = methodMap[request.method];
-  if (!method) {
-    output({ error: `Invalid method ${request.method}` });
+  const func = functionMap[request.function];
+  if (!func) {
+    output({ error: `Invalid function ${request.function}` });
     process.exit(1);
   }
 
-  method
+  func
     .apply(null, request.args)
     .then(result => {
       output({ result: result });
     })
     .catch(error => {
-      console.log(error.message);
+      output({ error: error.message });
       process.exit(1);
     });
 });

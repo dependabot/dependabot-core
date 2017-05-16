@@ -25,8 +25,11 @@ module Bump
           File.write(File.join(dir, "package.json"), package_json.content)
           File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
 
-          command = "node #{js_helper_path}"
-          SharedHelpers.run_helper_subprocess(command, "parse", [dir])
+          SharedHelpers.run_helper_subprocess(
+            command: "node #{js_helper_path}",
+            function: "parse",
+            args: [dir]
+          )
         end
       end
 

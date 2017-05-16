@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "tmpdir"
 require "excon"
+require "English"
 
 module Bump
   module SharedHelpers
@@ -62,18 +63,21 @@ module Bump
       end
     end
 
-    def self.run_helper_subprocess(command, method, args)
+    def self.run_helper_subprocess(command:, function:, args:)
+      raw_response = nil
       IO.popen(command, "w+") do |process|
-        process.write(JSON.dump(method: method, args: args))
+        process.write(JSON.dump(function: function, args: args))
         process.close_write
         raw_response = process.read
-        begin
-          response = JSON.parse(raw_response)
-        rescue JSON::ParserError
-          raise HelperSubprocessFailed.new(raw_response, command)
-        end
-        return response["result"]
       end
+
+      response = JSON.parse(raw_response)
+      return response["result"] if $CHILD_STATUS.success?
+
+      raise HelperSubprocessFailed.new(response["error"], command)
+    rescue JSON::ParserError
+      raise HelperSubprocessFailed.new(raw_response, command) if raw_response
+      raise HelperSubprocessFailed.new("No output from command", command)
     end
 
     def self.excon_middleware
