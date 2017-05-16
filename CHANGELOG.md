@@ -1,3 +1,9 @@
+## v0.5.0, 16 May 2017
+
+- Extract the correct versions of JavaScript dependencies in the parser (#36)
+- Consider resolvability when calculating latest_version in Ruby (#35)
+- BREAKING: require `github_access_token` when creating an UpdateChecker
+
 ## v0.4.1, 15 May 2017
 
 - Allow `pr_message_footer` argument to be passed to `PullRequestCreator` (#32)
