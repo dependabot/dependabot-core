@@ -1,3 +1,7 @@
+## v0.5.2, 17 May 2017
+
+- Include details of the directory (if present) in the PR name (#40)
+
 ## v0.5.1, 17 May 2017
 
 - Raise Bump::VersionConflict if a conflict stops us getting a gem version (#38)
