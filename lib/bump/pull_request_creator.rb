@@ -89,7 +89,10 @@ module Bump
     end
 
     def pr_name
-      "Bump #{dependency.name} to #{dependency.version}"
+      base = "Bump #{dependency.name} to #{dependency.version}"
+      return base if files.first.directory == "/"
+
+      base + " in #{files.first.directory}"
     end
 
     def pr_message
