@@ -23,7 +23,7 @@ module Bump
             version: dependency_version(dependency.name).to_s,
             language: "ruby"
           )
-        end.reject(&:nil?)
+        end.compact
       end
 
       private

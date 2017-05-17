@@ -120,7 +120,7 @@ module Bump
     end
 
     def new_branch_name
-      path = ["bump", dependency.language, files.first.directory].reject(&:nil?)
+      path = ["bump", dependency.language, files.first.directory].compact
       File.join(*path, "bump_#{dependency.name}_to_#{dependency.version}")
     end
 
