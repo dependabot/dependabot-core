@@ -29,21 +29,21 @@ RSpec.describe Bump::PullRequestCreator do
     Bump::DependencyFile.new(
       name: "Gemfile",
       content: fixture("ruby", "gemfiles", "Gemfile"),
-      directory: "files/are/here"
+      directory: "directory"
     )
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
       name: "Gemfile.lock",
       content: fixture("ruby", "lockfiles", "Gemfile.lock"),
-      directory: "files/are/here"
+      directory: "directory"
     )
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
-  let(:branch_name) { "bump_business_to_1.5.0" }
+  let(:branch_name) { "bump/ruby/directory/bump_business_to_1.5.0" }
 
   before do
     stub_request(:get, watched_repo_url).
@@ -101,13 +101,13 @@ RSpec.describe Bump::PullRequestCreator do
                base_tree: "basecommitsha",
                tree: [
                  {
-                   path: "files/are/here/Gemfile",
+                   path: "directory/Gemfile",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "gemfiles", "Gemfile")
                  },
                  {
-                   path: "files/are/here/Gemfile.lock",
+                   path: "directory/Gemfile.lock",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "lockfiles", "Gemfile.lock")
@@ -137,7 +137,7 @@ RSpec.describe Bump::PullRequestCreator do
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/refs").
         with(body: {
-               ref: "refs/heads/bump_business_to_1.5.0",
+               ref: "refs/heads/bump/ruby/directory/bump_business_to_1.5.0",
                sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
              })
     end
@@ -150,7 +150,7 @@ RSpec.describe Bump::PullRequestCreator do
         with(
           body: {
             base: "master",
-            head: "bump_business_to_1.5.0",
+            head: "bump/ruby/directory/bump_business_to_1.5.0",
             title: "Bump business to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
                   "from 1.4.0 to 1.5.0.\n- [Release notes]"\
@@ -228,7 +228,7 @@ RSpec.describe Bump::PullRequestCreator do
           with(
             body: {
               base: "master",
-              head: "bump_business_to_1.5.0",
+              head: "bump/ruby/directory/bump_business_to_1.5.0",
               title: "Bump business to 1.5.0",
               body: /\n\nExample text/
             }
