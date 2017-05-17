@@ -1,7 +1,9 @@
 const parser = require("../lib/parser");
+const updater = require("../lib/updater");
 
 const functionMap = {
-  parse: parser.parse
+  parse: parser.parse,
+  update: updater.updateDependencyFiles
 };
 
 function output(obj) {
