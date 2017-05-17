@@ -42,6 +42,8 @@ module Bump
 
       def handle_bundler_errors(error)
         case error.error_class
+        when "Bundler::VersionConflict"
+          raise Bump::VersionConflict
         when "Bundler::Dsl::DSLError"
           msg = error.error_class + " with message: " + error.error_message
           raise Bump::DependencyFileNotEvaluatable, msg
