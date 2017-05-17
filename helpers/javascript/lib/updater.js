@@ -40,7 +40,7 @@ class LightweightAdd extends Add {
 }
 
 async function updateDependencyFiles(directory, depName, desiredVersion) {
-  // Setup for some Yarn internals
+  // Setup for Yarn internals
   const flags = { ignoreScripts: true };
   const reporter = new NoopReporter();
   const config = new Config(reporter);
@@ -48,8 +48,12 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
+  // Just as if we'd run `yarn add package@^version`, but using our lightweight
+  // implementation of Add that doesn't actually download and install packages
   const args = [`${depName}@^${desiredVersion}`];
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
+
+  // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
 
   const updatedYarnLock = fs
