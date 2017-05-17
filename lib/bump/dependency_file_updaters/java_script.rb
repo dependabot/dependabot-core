@@ -10,11 +10,11 @@ module Bump
         [
           updated_file(
             file: package_json,
-            content: updated_dependency_files_content["package.json"],
+            content: updated_dependency_files_content["package.json"]
           ),
           updated_file(
             file: yarn_lock,
-            content: updated_dependency_files_content["yarn.lock"],
+            content: updated_dependency_files_content["yarn.lock"]
           )
         ]
       end
