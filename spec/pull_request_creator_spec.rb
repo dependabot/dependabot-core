@@ -28,22 +28,20 @@ RSpec.describe Bump::PullRequestCreator do
   let(:gemfile) do
     Bump::DependencyFile.new(
       name: "Gemfile",
-      content: fixture("ruby", "gemfiles", "Gemfile"),
-      directory: "directory"
+      content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
   let(:gemfile_lock) do
     Bump::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock"),
-      directory: "directory"
+      content: fixture("ruby", "lockfiles", "Gemfile.lock")
     )
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
-  let(:branch_name) { "bump/ruby/directory/bump_business_to_1.5.0" }
+  let(:branch_name) { "bump/ruby/bump_business_to_1.5.0" }
 
   before do
     stub_request(:get, watched_repo_url).
@@ -101,13 +99,13 @@ RSpec.describe Bump::PullRequestCreator do
                base_tree: "basecommitsha",
                tree: [
                  {
-                   path: "directory/Gemfile",
+                   path: "Gemfile",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "gemfiles", "Gemfile")
                  },
                  {
-                   path: "directory/Gemfile.lock",
+                   path: "Gemfile.lock",
                    mode: "100644",
                    type: "blob",
                    content: fixture("ruby", "lockfiles", "Gemfile.lock")
@@ -137,7 +135,7 @@ RSpec.describe Bump::PullRequestCreator do
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/refs").
         with(body: {
-               ref: "refs/heads/bump/ruby/directory/bump_business_to_1.5.0",
+               ref: "refs/heads/bump/ruby/bump_business_to_1.5.0",
                sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
              })
     end
@@ -150,7 +148,7 @@ RSpec.describe Bump::PullRequestCreator do
         with(
           body: {
             base: "master",
-            head: "bump/ruby/directory/bump_business_to_1.5.0",
+            head: "bump/ruby/bump_business_to_1.5.0",
             title: "Bump business to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
                   "from 1.4.0 to 1.5.0.\n- [Release notes]"\
@@ -228,9 +226,96 @@ RSpec.describe Bump::PullRequestCreator do
           with(
             body: {
               base: "master",
-              head: "bump/ruby/directory/bump_business_to_1.5.0",
+              head: "bump/ruby/bump_business_to_1.5.0",
               title: "Bump business to 1.5.0",
               body: /\n\nExample text/
+            }
+          )
+      end
+    end
+
+    context "with a directory specified" do
+      let(:gemfile) do
+        Bump::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("ruby", "gemfiles", "Gemfile"),
+          directory: "directory"
+        )
+      end
+      let(:gemfile_lock) do
+        Bump::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("ruby", "lockfiles", "Gemfile.lock"),
+          directory: "directory"
+        )
+      end
+      let(:branch_name) { "bump/ruby/directory/bump_business_to_1.5.0" }
+
+      it "includes the directory in the path of the files pushed to GitHub" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [
+                   {
+                     path: "directory/Gemfile",
+                     mode: "100644",
+                     type: "blob",
+                     content: fixture("ruby", "gemfiles", "Gemfile")
+                   },
+                   {
+                     path: "directory/Gemfile.lock",
+                     mode: "100644",
+                     type: "blob",
+                     content: fixture("ruby", "lockfiles", "Gemfile.lock")
+                   }
+                 ]
+               })
+      end
+
+      it "includes the directory in the commit message" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          with(body: {
+                 parents: ["basecommitsha"],
+                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                 message: %r{Bump business to 1\.5\.0\ in /directory}
+               })
+      end
+
+      it "includes the directory in the branch name" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/refs").
+          with(body: {
+                 ref: "refs/heads/bump/ruby/directory/bump_business_to_1.5.0",
+                 sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+               })
+      end
+
+      it "includes the directory in the PR title" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "bump/ruby/directory/bump_business_to_1.5.0",
+              title: "Bump business to 1.5.0 in /directory",
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "from 1.4.0 to 1.5.0.\n- [Release notes]"\
+                    "(https://github.com/gocardless/business/releases/tag"\
+                    "/v1.5.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md)\n- [Commits]"\
+                    "(https://github.com/gocardless/business/"\
+                    "compare/v1.4.0...v1.5.0)"
             }
           )
       end
