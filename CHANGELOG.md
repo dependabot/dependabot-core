@@ -1,3 +1,8 @@
+## v0.5.1, 17 May 2017
+
+- Raise Bump::VersionConflict if a conflict stops us getting a gem version (#38)
+- Use folders for branch names, and namespace under language and directory (#39)
+
 ## v0.5.0, 16 May 2017
 
 - Extract the correct versions of JavaScript dependencies in the parser (#36)
