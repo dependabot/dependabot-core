@@ -61,6 +61,21 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
 
       its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
       its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+
+      context "when the minor version is specified" do
+        let(:dependency) do
+          Bump::Dependency.new(
+            name: "fetch-factory",
+            version: "0.2.1",
+            language: "javascript"
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "minor_version_specified.json")
+        end
+
+        its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      end
     end
 
     describe "the updated yarn_lock" do

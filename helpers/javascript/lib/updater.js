@@ -39,6 +39,17 @@ class LightweightAdd extends Add {
   }
 }
 
+async function allDependencyPatterns(config) {
+  const manifest = await config.readRootManifest();
+  return Object.assign(
+    {},
+    manifest.peerDependencies,
+    manifest.optionalDependencies,
+    manifest.devDependencies,
+    manifest.dependencies
+  );
+}
+
 async function updateDependencyFiles(directory, depName, desiredVersion) {
   // Setup for Yarn internals
   const flags = { ignoreScripts: true };
@@ -46,11 +57,19 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   const config = new Config(reporter);
   await config.init({ cwd: directory });
 
+  // Find the old dependency pattern from the package.json, so we can construct
+  // a new pattern that contains the new version but maintains the old format
+  const currentPattern = (await allDependencyPatterns(config))[depName];
+  const newPattern = currentPattern.replace(/[\d\.]*\d/, oldVersion => {
+    const precision = oldVersion.split(".").length;
+    return desiredVersion.split(".").slice(0, precision).join(".");
+  });
+
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
-  // Just as if we'd run `yarn add package@^version`, but using our lightweight
+  // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
-  const args = [`${depName}@^${desiredVersion}`];
+  const args = [`${depName}@${newPattern}`];
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
 
   // Despite the innocent-sounding name, this actually does all the hard work
