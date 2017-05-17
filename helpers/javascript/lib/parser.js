@@ -14,21 +14,19 @@ const Config = require("yarn/lib/config").default;
 const { NoopReporter } = require("yarn/lib/reporters");
 const Lockfile = require("yarn/lib/lockfile/wrapper").default;
 
-function parse(directory) {
+async function parse(directory) {
   const flags = { ignoreScripts: true };
   const reporter = new NoopReporter();
+  const lockfile = await Lockfile.fromDirectory(directory, reporter);
+
   const config = new Config(reporter);
-  return config
-    .init({ cwd: directory })
-    .then(() => Lockfile.fromDirectory(directory, reporter))
-    .then(lockfile => {
-      const install = new Install(flags, config, reporter, lockfile);
-      return install
-        .fetchRequestFromCwd()
-        .then(({ requests }) => requests.map(request => request.pattern))
-        .then(patterns => patterns.map(pattern => lockfile.getLocked(pattern)))
-        .then(deps => deps.map(d => ({ name: d.name, version: d.version })));
-    });
+  await config.init({ cwd: directory });
+
+  const install = new Install(flags, config, reporter, lockfile);
+  const { requests } = await install.fetchRequestFromCwd();
+  const deps = requests.map(request => lockfile.getLocked(request.pattern));
+
+  return deps.map(dep => ({ name: dep.name, version: dep.version }));
 }
 
 module.exports = { parse };
