@@ -14,7 +14,7 @@ module Bump
           pypi_listing.dig("info", "bugtrack_url"),
           pypi_listing.dig("info", "download_url"),
           pypi_listing.dig("info", "docs_url")
-        ].reject(&:nil?)
+        ].compact
 
         source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
 

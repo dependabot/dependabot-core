@@ -120,7 +120,8 @@ module Bump
     end
 
     def new_branch_name
-      "bump_#{dependency.name}_to_#{dependency.version}"
+      path = ["bump", dependency.language, files.first.directory].compact
+      File.join(*path, "bump_#{dependency.name}_to_#{dependency.version}")
     end
 
     def release_url
