@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "rspec/its"
 require "webmock/rspec"
+require_relative "../cocoapods_core_monkey_patch"
 
 RSpec.configure do |config|
   config.color = true
