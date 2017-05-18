@@ -1,8 +1,7 @@
 ## v0.5.3, 18 May 2017
 
 - Slightly shorter branch names (#43)
-- Do JavaScript file updating in JavaScript (#41_)
-
+- Do JavaScript file updating in JavaScript (#41)
 
 ## v0.5.2, 17 May 2017
 
