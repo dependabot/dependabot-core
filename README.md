@@ -1,8 +1,8 @@
 # Bump Core
 
 Bump Core is a library containing the logic to keep a project's Ruby,
-JavaScript and Python dependencies up to date. It is used by applications like
-[gocardless/bump](https://github.com/gocardless/bump).
+JavaScript, Python and Cocoa dependencies up to date. It is used by applications
+like [gocardless/bump](https://github.com/gocardless/bump).
 
 ## Setup
 
