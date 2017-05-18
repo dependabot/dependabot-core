@@ -2,7 +2,7 @@ machine:
   ruby:
     version: 2.3.3
   node:
-    version: 6.9.0
+    version: 7.10.0
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
