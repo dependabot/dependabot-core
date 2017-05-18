@@ -29,9 +29,20 @@ const Lockfile = require("yarn/lib/lockfile/wrapper").default;
 // manifest. Fotunately, overriding bailout() gives us an opportunity to skip
 // over the intermediate steps in a relatively painless fashion.
 class LightweightAdd extends Add {
+  // This method is called by init() at the end of the resolve step, and is
+  // responsible for checking if any dependnecies need to be updated locally.
+  // If everything is up to date, it'll save a new lockfile and return true,
+  // which causes init() to skip over the next few steps (fetching and
+  // installing packages). If there are packages that need updating, it'll
+  // return false, and init() will continue on to the fetching and installing
+  // steps.
+  //
+  // Add overrides Install's implementation to always return false - meaning
+  // that it will always continue to the fetch and install steps. We want to
+  // do the opposite - just save the new lockfile and stop there.
   async bailout(patterns) {
     // This is the only part of the original bailout implementation that
-    // matters - save the new lockfile
+    // matters: saving the new lockfile
     await this.saveLockfileAndIntegrity(patterns);
 
     // Skip over the unnecessary steps - fetching and linking packages, etc.
@@ -51,7 +62,6 @@ async function allDependencyPatterns(config) {
 }
 
 async function updateDependencyFiles(directory, depName, desiredVersion) {
-  // Setup for Yarn internals
   const flags = { ignoreScripts: true };
   const reporter = new NoopReporter();
   const config = new Config(reporter);
