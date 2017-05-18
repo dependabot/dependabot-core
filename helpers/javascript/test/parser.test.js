@@ -1,5 +1,4 @@
 const parser = require("../lib/parser");
-const helpers = require("./helpers");
 
 describe("parser", () => {
   const dir = "test/fixtures/parser";

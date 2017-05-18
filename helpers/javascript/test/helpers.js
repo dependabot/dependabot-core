@@ -1,3 +1,7 @@
+const path = require("path");
+const fs = require("fs");
+
 module.exports = {
-  loadFixture: path => fs.readFileSync(path).toString()
+  loadFixture: fixturePath =>
+    fs.readFileSync(path.join("test", "fixtures", fixturePath)).toString()
 };
