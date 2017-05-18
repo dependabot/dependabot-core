@@ -40,9 +40,22 @@ RSpec.describe Bump::UpdateCheckers::Cocoa do
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    # Stubbing the CocoaPods spec repo is hard. Instead just spec that the
-    # latest version is high
-    it { is_expected.to be >= Gem::Version.new("4.4.0") }
+    context "for a dependency from the master source" do
+      # Stubbing the CocoaPods spec repo is hard. Instead just spec that the
+      # latest version is high
+      it { is_expected.to be >= Gem::Version.new("4.4.0") }
+
+      context "with a version conflict at the latest version" do
+        let(:podfile_content) do
+          fixture("cocoa", "podfiles", "version_conflict")
+        end
+        let(:lockfile_content) do
+          fixture("cocoa", "lockfiles", "version_conflict")
+        end
+
+        it { is_expected.to eq(Gem::Version.new("3.5.1")) }
+      end
+    end
 
     context "for a dependency with a git source" do
       let(:podfile_content) { fixture("cocoa", "podfiles", "git_source") }
@@ -64,7 +77,7 @@ RSpec.describe Bump::UpdateCheckers::Cocoa do
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
     end
 
-    context "for a dependency with a specified source repo" do
+    context "for a dependency with a specified source repo (inline)" do
       before do
         specs_url =
           "https://api.github.com/repos/dependabot/Specs/commits/master"
