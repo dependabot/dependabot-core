@@ -43,8 +43,8 @@
     "comments_url": "https://api.github.com/repos/dependabot/bump-test/issues/18/comments",
     "statuses_url": "https://api.github.com/repos/dependabot/bump-test/statuses/1e2d2afe8320998baecdfe127a49dca9a6650e07",
     "head": {
-        "label": "dependabot:bump_business_to_1.5.0",
-        "ref": "bump_business_to_1.5.0",
+        "label": "dependabot:business-1.5.0",
+        "ref": "bump/ruby/business-1.5.0",
         "sha": "1e2d2afe8320998baecdfe127a49dca9a6650e07",
         "user": {
             "login": "dependabot",

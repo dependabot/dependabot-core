@@ -1,6 +1,6 @@
 {
-  "ref": "refs/heads/bump_business_to_1.5.0",
-  "url": "https://api.github.com/repos/gocardless/bump/git/refs/heads/bump_business_to_1.5.0",
+  "ref": "refs/heads/bump/ruby/business-1.5.0",
+  "url": "https://api.github.com/repos/gocardless/bump/git/refs/heads/bump/ruby/business-1.5.0",
   "object": {
     "type": "commit",
     "sha": "1e2d2afe8320998baecdfe127a49dca9a6650e07",

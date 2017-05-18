@@ -39,7 +39,7 @@ RSpec.describe Bump::PullRequestUpdater do
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
-  let(:branch_name) { "bump_business_to_1.5.0" }
+  let(:branch_name) { "bump/ruby/business-1.5.0" }
 
   before do
     stub_request(:get, pull_request_url).
