@@ -2,7 +2,8 @@
 
 Bump Core is a library containing the logic to keep a project's Ruby,
 JavaScript, Python and Cocoa dependencies up to date. It is used by applications
-like [gocardless/bump](https://github.com/gocardless/bump).
+like [gocardless/bump](https://github.com/gocardless/bump) and
+[Dependabot](https://dependabot.com).
 
 ## Setup
 
@@ -33,9 +34,9 @@ Bump Core has helper classes for six concerns:
 
 We'd love to see the following improvements to Bump Core:
 
-- A faster `DependencyFileUpdater` for JavaScript. This might need its own,
-  language-specific worker that borrows from NPM internals to avoid doing an
-  actual install.
+- Support for [Pipenv](https://github.com/kennethreitz/pipenv) in Python.
+- Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript.
+- Support for additional languages (Elixir, anyone?)
 
 ---
 
