@@ -177,11 +177,17 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
           expect(file.content).to include "business (1.5.0)"
         end
 
-        context "that is private" do
+        context "that is private and therefore unreachable" do
+          before do
+            # Stub the Bundler git clone call to fail. Speeds up specs
+            allow_any_instance_of(Bundler::Source::Git::GitProxy).
+              to receive(:`).
+              with(%r{^git clone 'https://github\.com/fundingcircle/prius'}).
+              and_return(`(exit 128)`)
+          end
           let(:gemfile_body) do
             fixture("ruby", "gemfiles", "private_git_source")
           end
-          around { |example| capture_stderr { example.run } }
 
           it "raises a helpful error" do
             expect { updater.updated_dependency_files }.
