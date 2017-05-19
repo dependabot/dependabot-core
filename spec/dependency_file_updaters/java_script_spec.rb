@@ -8,8 +8,6 @@ require_relative "./shared_examples_for_file_updaters"
 RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
   it_behaves_like "a dependency file updater"
 
-  before { WebMock.allow_net_connect! }
-  after { WebMock.disable_net_connect! }
   let(:updater) do
     described_class.new(
       dependency_files: [package_json, yarn_lock],
