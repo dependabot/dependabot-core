@@ -18,7 +18,7 @@ RSpec.describe Bump::DependencyFileParsers::JavaScript do
     fixture("javascript", "package_files", "package.json")
   end
   let(:lockfile_body) do
-    fixture("javascript", "package_files", "yarn.lock")
+    fixture("javascript", "lockfiles", "yarn.lock")
   end
   let(:parser) { described_class.new(dependency_files: files) }
 

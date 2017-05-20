@@ -24,7 +24,7 @@ RSpec.describe Bump::DependencyFileUpdaters::JavaScript do
   let(:yarn_lock) do
     Bump::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("javascript", "package_files", "yarn.lock")
+      content: fixture("javascript", "lockfiles", "yarn.lock")
     )
   end
   let(:dependency) do

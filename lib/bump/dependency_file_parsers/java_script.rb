@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "json"
 require "bump/dependency"
 require "bump/dependency_file_parsers/base"
 require "bump/dependency_file_fetchers/java_script"
@@ -48,10 +47,6 @@ module Bump
 
       def yarn_lock
         @yarn_lock ||= get_original_file("yarn.lock")
-      end
-
-      def parser
-        JSON.parse(package_json.content)
       end
     end
   end
