@@ -1,0 +1,6 @@
+{
+    "require": {
+        "symfony/console": "2.7.3",
+        "symfony/event-dispatcher": "2.0.4"
+    }
+}
