@@ -10,7 +10,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
   before do
     stub_request(:get, "https://index.rubygems.org/versions").
-      to_return(status: 200, body: fixture("rubygems-index"))
+      to_return(status: 200, body: fixture("ruby", "rubygems-index"))
 
     stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
       to_return(status: 200)
@@ -20,7 +20,7 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
       "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
     ).to_return(
       status: 200,
-      body: fixture("rubygems-dependencies-business-statesman")
+      body: fixture("ruby", "rubygems-dependencies-business-statesman")
     )
   end
 
@@ -86,7 +86,10 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
         before do
           url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
           stub_request(:get, url).
-            to_return(status: 200, body: fixture("rubygems-dependencies-i18n"))
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-dependencies-i18n")
+            )
         end
         its(:content) { is_expected.to include "\"i18n\", \"~> 0.5.0\"" }
       end
@@ -215,12 +218,15 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
           stub_request(:get, url).
             to_return(
               status: 200,
-              body: fixture("rubygems-dependencies-i18n-ibandit")
+              body: fixture("ruby", "rubygems-dependencies-i18n-ibandit")
             )
 
           url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
           stub_request(:get, url).
-            to_return(status: 200, body: fixture("rubygems-dependencies-i18n"))
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-dependencies-i18n")
+            )
         end
 
         it "raises a Bump::VersionConflict error" do

@@ -30,7 +30,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Python do
     end
 
     context "when there is a github link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("python", "pypi_response.json") }
 
       it { is_expected.to eq("spotify/luigi") }
 
@@ -41,7 +41,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Python do
     end
 
     context "when there is not a github link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response_no_github.json") }
+      let(:pypi_response) { fixture("python", "pypi_response_no_github.json") }
 
       it { is_expected.to be_nil }
 
@@ -53,7 +53,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Python do
 
     context "when the pypi link resolves to a redirect" do
       let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("python", "pypi_response.json") }
 
       before do
         stub_request(:get, pypi_url).

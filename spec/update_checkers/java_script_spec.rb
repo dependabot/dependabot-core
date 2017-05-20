@@ -10,7 +10,7 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
 
   before do
     stub_request(:get, "http://registry.npmjs.org/etag").
-      to_return(status: 200, body: fixture("npm_response.json"))
+      to_return(status: 200, body: fixture("javascript", "npm_response.json"))
   end
 
   let(:checker) do
@@ -47,7 +47,10 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
     context "for a scoped package name" do
       before do
         stub_request(:get, "http://registry.npmjs.org/@blep%2Fblep").
-          to_return(status: 200, body: fixture("npm_response.json"))
+          to_return(
+            status: 200,
+            body: fixture("javascript", "npm_response.json")
+          )
       end
       let(:dependency) do
         Bump::Dependency.new(
@@ -71,7 +74,10 @@ RSpec.describe Bump::UpdateCheckers::JavaScript do
         stub_request(:get, "http://registry.npmjs.org/etag").
           to_return(status: 302, headers: { "Location" => redirect_url })
         stub_request(:get, redirect_url).
-          to_return(status: 200, body: fixture("npm_response.json"))
+          to_return(
+            status: 200,
+            body: fixture("javascript", "npm_response.json")
+          )
       end
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }

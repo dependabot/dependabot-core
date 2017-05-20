@@ -32,7 +32,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Cocoa do
     end
 
     context "when there is a github link in the Cocoapods response" do
-      let(:cocoapods_response) { fixture("cocoapods_response.html") }
+      let(:cocoapods_response) { fixture("cocoa", "cocoapods_response.html") }
 
       it { is_expected.to eq("Alamofire/Alamofire") }
 
@@ -44,7 +44,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Cocoa do
 
     context "when the pod isn't on Cocoapods" do
       let(:cocoapods_response_code) { 404 }
-      let(:cocoapods_response) { fixture("cocoapods_not_found.html") }
+      let(:cocoapods_response) { fixture("cocoa", "cocoapods_not_found.html") }
 
       it { is_expected.to be_nil }
     end

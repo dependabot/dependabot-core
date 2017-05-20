@@ -86,7 +86,7 @@ RSpec.describe Bump::PullRequestCreator do
                 body: fixture("github", "business_releases.json"),
                 headers: json_header)
     stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
-      to_return(status: 200, body: fixture("rubygems_response.json"))
+      to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
   end
 
   describe "#create" do

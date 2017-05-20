@@ -10,7 +10,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
 
   before do
     stub_request(:get, "https://index.rubygems.org/versions").
-      to_return(status: 200, body: fixture("rubygems-index"))
+      to_return(status: 200, body: fixture("ruby", "rubygems-index"))
 
     stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
       to_return(status: 200)
@@ -20,7 +20,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
     ).to_return(
       status: 200,
-      body: fixture("rubygems-dependencies-business-statesman")
+      body: fixture("ruby", "rubygems-dependencies-business-statesman")
     )
   end
 
@@ -70,12 +70,15 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
           stub_request(:get, url).
             to_return(
               status: 200,
-              body: fixture("rubygems-dependencies-i18n-ibandit")
+              body: fixture("ruby", "rubygems-dependencies-i18n-ibandit")
             )
 
           url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
           stub_request(:get, url).
-            to_return(status: 200, body: fixture("rubygems-dependencies-i18n"))
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-dependencies-i18n")
+            )
         end
 
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
@@ -92,7 +95,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       let(:gemfury_url) { "https://repo.fury.io/greysteil/" }
       before do
         stub_request(:get, gemfury_url + "versions").
-          to_return(status: 200, body: fixture("gemfury-index"))
+          to_return(status: 200, body: fixture("ruby", "gemfury-index"))
 
         stub_request(:get, gemfury_url + "api/v1/dependencies").
           to_return(status: 200)
@@ -100,7 +103,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
         stub_request(
           :get,
           gemfury_url + "api/v1/dependencies?gems=business,statesman"
-        ).to_return(status: 200, body: fixture("gemfury_response"))
+        ).to_return(status: 200, body: fixture("ruby", "gemfury_response"))
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }

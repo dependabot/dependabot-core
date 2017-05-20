@@ -32,7 +32,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Ruby do
     end
 
     context "when there is a github link in the rubygems response" do
-      let(:rubygems_response) { fixture("rubygems_response.json") }
+      let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
 
       it { is_expected.to eq("gocardless/business") }
 
@@ -43,7 +43,7 @@ RSpec.describe Bump::DependencyMetadataFinders::Ruby do
 
       context "that contains a .git suffix" do
         let(:rubygems_response) do
-          fixture("rubygems_response_period_github.json")
+          fixture("ruby", "rubygems_response_period_github.json")
         end
 
         it { is_expected.to eq("gocardless/business.rb") }
@@ -51,7 +51,9 @@ RSpec.describe Bump::DependencyMetadataFinders::Ruby do
     end
 
     context "when there isn't github link in the rubygems response" do
-      let(:rubygems_response) { fixture("rubygems_response_no_github.json") }
+      let(:rubygems_response) do
+        fixture("ruby", "rubygems_response_no_github.json")
+      end
 
       it { is_expected.to be_nil }
 

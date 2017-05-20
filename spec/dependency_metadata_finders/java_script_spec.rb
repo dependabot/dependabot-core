@@ -30,7 +30,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
     end
 
     context "when there is a github link in the npm response" do
-      let(:npm_response) { fixture("npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       it { is_expected.to eq("jshttp/etag") }
 
@@ -41,7 +41,9 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
     end
 
     context "when there's a link without the expected structure" do
-      let(:npm_response) { fixture("npm_response_string_link.json") }
+      let(:npm_response) do
+        fixture("javascript", "npm_response_string_link.json")
+      end
 
       it { is_expected.to eq("jshttp/etag") }
 
@@ -52,7 +54,9 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
     end
 
     context "when there isn't a github link in the npm response" do
-      let(:npm_response) { fixture("npm_response_no_github.json") }
+      let(:npm_response) do
+        fixture("javascript", "npm_response_no_github.json")
+      end
 
       it { is_expected.to be_nil }
 
@@ -64,7 +68,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
 
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "http://registry.npmjs.org/eTag" }
-      let(:npm_response) { fixture("npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       before do
         stub_request(:get, npm_url).
@@ -82,7 +86,7 @@ RSpec.describe Bump::DependencyMetadataFinders::JavaScript do
           to_return(status: 200, body: npm_response)
       end
       let(:dependency_name) { "@etag/something" }
-      let(:npm_response) { fixture("npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       it "requests the escaped name" do
         finder.github_repo

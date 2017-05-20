@@ -12,7 +12,7 @@ RSpec.describe Bump::UpdateCheckers::Python do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
-  let(:pypi_response) { fixture("pypi_response.json") }
+  let(:pypi_response) { fixture("python", "pypi_response.json") }
 
   let(:checker) do
     described_class.new(
