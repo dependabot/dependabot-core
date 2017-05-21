@@ -26,31 +26,31 @@ module Bump
       end
 
       def updated_requirements_content
-        return @updated_requirements_content if @updated_requirements_content
-
-        requirements.content.
-          to_enum(:scan,
-                  DependencyFileParsers::Python::LineParser::REQUIREMENT_LINE).
-          find { Regexp.last_match[:name] == dependency.name }
-
-        original_dep_declaration_string = Regexp.last_match.to_s
-        updated_dep_declaration_string =
-          original_dep_declaration_string.
-          sub(DependencyFileParsers::Python::LineParser::REQUIREMENT) do |old|
-            old_version =
-              old.match(DependencyFileParsers::Python::LineParser::VERSION)[0]
-
-            precision = old_version.split(".").count
-            new_version =
-              dependency.version.split(".").first(precision).join(".")
-
-            old.sub(old_version, new_version)
-          end
-
-        @updated_requirements_content = requirements.content.gsub(
-          original_dep_declaration_string,
-          updated_dep_declaration_string
+        @updated_requirements_content ||= requirements.content.gsub(
+          original_dependency_declaration_string,
+          updated_dependency_declaration_string
         )
+      end
+
+      def original_dependency_declaration_string
+        @original_dependency_declaration_string ||=
+          begin
+            regex = DependencyFileParsers::Python::LineParser::REQUIREMENT_LINE
+            matches = []
+
+            requirements.content.scan(regex) { matches << Regexp.last_match }
+            matches.find { |match| match[:name] == dependency.name }.to_s
+          end
+      end
+
+      def updated_dependency_declaration_string
+        original_dependency_declaration_string.
+          sub(DependencyFileParsers::Python::LineParser::REQUIREMENT) do |req|
+            req.sub(DependencyFileParsers::Python::LineParser::VERSION) do |ver|
+              precision = ver.split(".").count
+              dependency.version.split(".").first(precision).join(".")
+            end
+          end
       end
     end
   end

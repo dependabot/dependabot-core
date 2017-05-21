@@ -34,30 +34,32 @@ module Bump
       end
 
       def updated_gemfile_content
-        return @updated_gemfile_content if @updated_gemfile_content
+        @updated_gemfile_content ||=
+          gemfile.content.gsub(
+            original_gem_declaration_string,
+            updated_gem_declaration_string
+          )
+      end
 
-        gemfile.content.
-          to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
-          find { Regexp.last_match[:name] == dependency.name }
+      def original_gem_declaration_string
+        @original_gem_declaration_string ||=
+          begin
+            regex = Gemnasium::Parser::Patterns::GEM_CALL
+            matches = []
 
-        original_gem_declaration_string = Regexp.last_match.to_s
-        updated_gem_declaration_string =
-          original_gem_declaration_string.
-          sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_requirements|
-            old_version =
-              old_requirements.match(Gemnasium::Parser::Patterns::VERSION)[0]
-
-            precision = old_version.split(".").count
-            new_version =
-              dependency.version.split(".").first(precision).join(".")
-
-            old_requirements.sub(old_version, new_version)
+            gemfile.content.scan(regex) { matches << Regexp.last_match }
+            matches.find { |match| match[:name] == dependency.name }.to_s
           end
+      end
 
-        @updated_gemfile_content = gemfile.content.gsub(
-          original_gem_declaration_string,
-          updated_gem_declaration_string
-        )
+      def updated_gem_declaration_string
+        original_gem_declaration_string.
+          sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
+            old_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
+              precision = old_version.split(".").count
+              dependency.version.split(".").first(precision).join(".")
+            end
+          end
       end
 
       def updated_lockfile_content
