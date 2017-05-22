@@ -180,6 +180,20 @@ RSpec.describe Bump::DependencyMetadataFinders::Base do
                 "https://github.com/gocardless/business/releases/tag/v1.8.0"
               )
           end
+
+          context "but prefixed" do
+            let(:github_response) do
+              fixture("github", "prefixed_releases.json")
+            end
+
+            it "gets the right URL" do
+              expect(subject).
+                to eq(
+                  "https://github.com/gocardless/business/releases/tag/"\
+                  "business-1.8.0"
+                )
+            end
+          end
         end
 
         context "when the release is not present" do
