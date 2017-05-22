@@ -9,9 +9,6 @@ machine:
 dependencies:
   post:
     - cd helpers/javascript && yarn install
-    - bundle exec pod setup
-  cache_directories:
-    - ~/.cocoapods
 
 test:
   pre:

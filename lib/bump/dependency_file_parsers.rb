@@ -2,7 +2,6 @@
 require "bump/dependency_file_parsers/ruby"
 require "bump/dependency_file_parsers/python"
 require "bump/dependency_file_parsers/java_script"
-require "bump/dependency_file_parsers/cocoa"
 
 module Bump
   module DependencyFileParsers
@@ -11,7 +10,6 @@ module Bump
       when "ruby" then DependencyFileParsers::Ruby
       when "javascript" then DependencyFileParsers::JavaScript
       when "python" then DependencyFileParsers::Python
-      when "cocoa" then DependencyFileParsers::Cocoa
       else raise "Invalid language #{language}"
       end
     end
