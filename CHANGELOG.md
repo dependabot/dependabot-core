@@ -1,3 +1,7 @@
+## v0.5.4, 22 May 2017
+
+- Look for any release ending with the dependency version (#49)
+
 ## v0.5.3, 18 May 2017
 
 - Slightly shorter branch names (#43)
