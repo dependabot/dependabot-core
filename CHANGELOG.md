@@ -1,3 +1,7 @@
+## v0.5.5, 22 May 2017
+
+- Back out CocoaPods support, since it pins ActiveSupport to < 5 (#50)
+
 ## v0.5.4, 22 May 2017
 
 - Look for any release ending with the dependency version (#49)
