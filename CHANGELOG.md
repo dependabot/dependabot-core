@@ -1,3 +1,7 @@
+## v0.5.6, 23 May 2017
+
+- Raise a bespoke error for Ruby path sources (#51)
+
 ## v0.5.5, 22 May 2017
 
 - Back out CocoaPods support, since it pins ActiveSupport to < 5 (#50)

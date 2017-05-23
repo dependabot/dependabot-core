@@ -52,7 +52,7 @@ module Bump
           raise Bump::GitCommandError, command
         when "Bundler::PathError"
           raise if path_based_dependencies.none?
-          raise Bump::PathBasedDependencies, path_based_dependencies
+          raise Bump::PathBasedDependencies, path_based_dependencies.map(&:name)
         else
           raise
         end
