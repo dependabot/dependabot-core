@@ -80,6 +80,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
       context "with a gem whose name includes a number" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "gem_with_number") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "gem_with_number.lock")
+        end
         let(:dependency) do
           Bump::Dependency.new(name: "i18n", version: "0.5.0", language: "ruby")
         end
@@ -204,6 +207,9 @@ RSpec.describe Bump::DependencyFileUpdaters::Ruby do
 
       context "when there is a version conflict" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict.lock")
+        end
         let(:dependency) do
           Bump::Dependency.new(
             name: "ibandit",
