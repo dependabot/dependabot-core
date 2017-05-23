@@ -109,6 +109,32 @@ RSpec.describe Bump::UpdateCheckers::Ruby do
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
     end
 
+    context "given a gem with a path source" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
+      let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
+
+      it "raises a Bump::PathBasedDependencies error" do
+        expect { checker.latest_version }.
+          to raise_error(Bump::PathBasedDependencies)
+      end
+
+      context "when Bundler raises a PathError but there are no path gems" do
+        # This shouldn't happen, but Bundler uses PathError for exaceptions
+        # other than resolving a gem's path (e.g., when removing files)
+        before do
+          allow(Bundler::Definition).
+            to receive(:build).and_raise(Bundler::PathError)
+        end
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+
+        it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
+          expect { checker.latest_version }.
+            to raise_error(Bump::SharedHelpers::ChildProcessFailed)
+        end
+      end
+    end
+
     context "given a gem with a git source" do
       let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
       let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }

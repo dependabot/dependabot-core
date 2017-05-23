@@ -32,4 +32,15 @@ module Bump
       super(msg)
     end
   end
+
+  class PathBasedDependencies < BumpError
+    attr_reader :dependencies
+
+    def initialize(*dependencies)
+      @dependencies = dependencies.flatten
+      msg = "Path based dependencies are not supported. "\
+            "Path based dependencies found: #{dependencies.join(', ')}"
+      super(msg)
+    end
+  end
 end
