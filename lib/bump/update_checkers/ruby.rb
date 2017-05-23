@@ -50,6 +50,9 @@ module Bump
         when "Bundler::Source::Git::GitCommandError"
           command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
           raise Bump::GitCommandError, command
+        when "Bundler::PathError"
+          raise if path_based_dependencies.none?
+          raise Bump::PathBasedDependencies, path_based_dependencies
         else
           raise
         end
@@ -74,6 +77,12 @@ module Bump
       def get_latest_resolvable_version(definition, dependency)
         definition.resolve_remotely!
         definition.resolve.find { |dep| dep.name == dependency.name }.version
+      end
+
+      def path_based_dependencies
+        Bundler::LockfileParser.new(lockfile.content).specs.select do |spec|
+          spec.source.is_a?(Bundler::Source::Path)
+        end
       end
 
       def write_temporary_dependency_files_to(dir)

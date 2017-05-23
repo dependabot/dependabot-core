@@ -1,0 +1,38 @@
+PATH
+  remote: ../bump-core
+  specs:
+    bump-core (0.5.5)
+      bundler (>= 1.12.0)
+      excon (~> 0.55)
+      gemnasium-parser (~> 0.1)
+      gems (~> 1.0)
+      octokit (~> 4.6)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.5.1)
+      public_suffix (~> 2.0, >= 2.0.2)
+    excon (0.55.0)
+    faraday (0.12.1)
+      multipart-post (>= 1.2, < 3)
+    gemnasium-parser (0.1.9)
+    gems (1.0.0)
+      json
+    json (2.1.0)
+    multipart-post (2.0.0)
+    octokit (4.7.0)
+      sawyer (~> 0.8.0, >= 0.5.3)
+    public_suffix (2.0.5)
+    sawyer (0.8.1)
+      addressable (>= 2.3.5, < 2.6)
+      faraday (~> 0.8, < 1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bump-core!
+
+BUNDLED WITH
+   1.15.0
