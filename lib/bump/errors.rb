@@ -5,6 +5,7 @@ module Bump
 
   class VersionConflict < BumpError; end
   class DependencyFileNotEvaluatable < BumpError; end
+  class DependencyFileNotResolvable < BumpError; end
 
   class DependencyFileNotFound < BumpError
     attr_reader :file_path

@@ -44,15 +44,25 @@ module Bump
 
         def handle_bundler_errors(error)
           case error.error_class
-          when "Bundler::VersionConflict"
-            raise Bump::VersionConflict
           when "Bundler::Dsl::DSLError"
+            # We couldn't evaluate the Gemfile, let alone resolve it
             msg = error.error_class + " with message: " + error.error_message
             raise Bump::DependencyFileNotEvaluatable, msg
+          when "Bundler::VersionConflict", "Bundler::GemNotFound"
+            # We successfully evaluated the Gemfile, but couldn't resolve it
+            # (e.g., because a gem couldn't be found in any of the specified
+            # sources, or because it specified conflicting versions)
+            msg = error.error_class + " with message: " + error.error_message
+            raise Bump::DependencyFileNotResolvable, msg
           when "Bundler::Source::Git::GitCommandError"
+            # A git command failed. This is usually because we don't have access
+            # to the specified repo, and gets a special error so it can be
+            # handled separately
             command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
             raise Bump::GitCommandError, command
           when "Bundler::PathError"
+            # A dependency was specified using a path which we don't have access
+            # to (and therefore can't resolve)
             raise if path_based_dependencies.none?
             raise Bump::PathBasedDependencies,
                   path_based_dependencies.map(&:name)

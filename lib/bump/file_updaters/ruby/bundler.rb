@@ -83,20 +83,6 @@ module Bump
               end
             end
           post_process_lockfile(lockfile_body)
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
-        end
-
-        def handle_bundler_errors(error)
-          case error.error_class
-          when "Bundler::VersionConflict"
-            raise Bump::VersionConflict
-          when "Bundler::Source::Git::GitCommandError"
-            command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
-            raise Bump::GitCommandError, command
-          else
-            raise
-          end
         end
 
         def write_temporary_dependency_files_to(dir)

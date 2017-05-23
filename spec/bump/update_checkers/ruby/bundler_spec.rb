@@ -123,7 +123,7 @@ RSpec.describe Bump::UpdateCheckers::Ruby::Bundler do
       end
 
       context "when Bundler raises a PathError but there are no path gems" do
-        # This shouldn't happen, but Bundler uses PathError for exaceptions
+        # This shouldn't happen, but Bundler uses PathError for exceptions
         # other than resolving a gem's path (e.g., when removing files)
         before do
           allow(::Bundler::Definition).
@@ -136,6 +136,51 @@ RSpec.describe Bump::UpdateCheckers::Ruby::Bundler do
           expect { checker.latest_version }.
             to raise_error(Bump::SharedHelpers::ChildProcessFailed)
         end
+      end
+    end
+
+    context "when a gem has been yanked" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      let(:lockfile_body) { fixture("ruby", "lockfiles", "yanked_gem.lock") }
+
+      context "and it's that gem that we're attempting to bump" do
+        it "finds an updated version just fine" do
+          expect(checker.latest_version).to eq(Gem::Version.new("1.8.0"))
+        end
+      end
+
+      context "and it's another gem that we're attempting to bump" do
+        let(:dependency) do
+          Bump::Dependency.new(
+            name: "statesman",
+            version: "1.2",
+            package_manager: "ruby"
+          )
+        end
+
+        it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
+          expect { checker.latest_version }.
+            to raise_error(Bump::DependencyFileNotResolvable)
+        end
+      end
+    end
+
+    context "when the Gem can't be found" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
+      before do
+        stub_request(
+          :get,
+          "https://index.rubygems.org/api/v1/dependencies?"\
+          "gems=business,statesman,unresolvable_gem_name"
+        ).to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-dependencies-business-statesman")
+        )
+      end
+
+      it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
+        expect { checker.latest_version }.
+          to raise_error(Bump::DependencyFileNotResolvable)
       end
     end
 
