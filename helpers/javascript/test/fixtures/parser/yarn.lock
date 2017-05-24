@@ -12,6 +12,9 @@ is-buffer@^1.1.5:
   dependencies:
     kind-of "^3.0.2"
 
+"is-promise@file:/tmp/is-promise":
+  version "2.1.0"
+
 kind-of@^3.0.2:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-3.2.2.tgz#31ea21a734bab9bbb0f32466d893aea51e4a3c64"
