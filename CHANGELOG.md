@@ -1,3 +1,7 @@
+## v0.5.8, 24 May 2017
+
+- Don't change yarn.lock version comments (#53)
+
 ## v0.5.7, 24 May 2017
 
 - Ignore exotic (git, path, etc) JavaScript dependencies (#52)
