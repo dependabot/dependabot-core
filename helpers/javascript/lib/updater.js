@@ -61,7 +61,22 @@ async function allDependencyPatterns(config) {
   );
 }
 
+// Replace the version comments in the new lockfile with the ones from the old
+// lockfile. If they weren't present in the old lockfile, delete them.
+function recoverVersionComments(oldLockfile, newLockfile) {
+  const yarnRegex = /^# yarn v(\S+)\n/gm;
+  const nodeRegex = /^# node v(\S+)\n/gm;
+  const oldMatch = regex => [].concat(oldLockfile.match(regex))[0];
+  return newLockfile
+    .replace(yarnRegex, match => oldMatch(yarnRegex) || "")
+    .replace(nodeRegex, match => oldMatch(nodeRegex) || "");
+}
+
 async function updateDependencyFiles(directory, depName, desiredVersion) {
+  const readFile = fileName =>
+    fs.readFileSync(path.join(directory, fileName)).toString();
+  const originalYarnLock = readFile("yarn.lock");
+
   const flags = { ignoreScripts: true };
   const reporter = new NoopReporter();
   const config = new Config(reporter);
@@ -85,15 +100,11 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
 
-  const updatedYarnLock = fs
-    .readFileSync(path.join(directory, "yarn.lock"))
-    .toString();
-  const updatedPackageJson = fs
-    .readFileSync(path.join(directory, "package.json"))
-    .toString();
+  const updatedYarnLock = readFile("yarn.lock");
+  const updatedPackageJson = readFile("package.json");
 
   return {
-    "yarn.lock": updatedYarnLock,
+    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock),
     "package.json": updatedPackageJson
   };
 }
