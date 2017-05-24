@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "is-number": "https://github.com/jonschlinkert/is-number.git",
+    "is-promise": "file:/tmp/is-promise",
     "left-pad": "^1.1.0",
     "lodash": "^4.17.4"
   }

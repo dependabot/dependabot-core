@@ -13,6 +13,12 @@ const { Install } = require("yarn/lib/cli/commands/install");
 const Config = require("yarn/lib/config").default;
 const { NoopReporter } = require("yarn/lib/reporters");
 const Lockfile = require("yarn/lib/lockfile/wrapper").default;
+const PackageRequest = require("yarn/lib/package-request").default;
+
+function isNotExotic(request) {
+  const { range } = PackageRequest.normalizePattern(request.pattern);
+  return !PackageRequest.getExoticResolver(range);
+}
 
 async function parse(directory) {
   const flags = { ignoreScripts: true };
@@ -23,8 +29,10 @@ async function parse(directory) {
   await config.init({ cwd: directory });
 
   const install = new Install(flags, config, reporter, lockfile);
-  const { requests } = await install.fetchRequestFromCwd();
-  const deps = requests.map(request => lockfile.getLocked(request.pattern));
+  const { requests, patterns } = await install.fetchRequestFromCwd();
+  const deps = requests
+    .filter(isNotExotic)
+    .map(request => lockfile.getLocked(request.pattern));
 
   return deps.map(dep => ({ name: dep.name, version: dep.version }));
 }
