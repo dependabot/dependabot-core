@@ -3,9 +3,16 @@ const parser = require("../lib/parser");
 describe("parser", () => {
   const dir = "test/fixtures/parser";
 
-  it("returns an entry for each dependency", async () => {
+  it("returns an entry for each npm dependency", async () => {
     const deps = await parser.parse(dir);
-    expect(deps.length).toEqual(2);
+    expect(deps.map(d => d.name).sort()).toEqual(
+      expect.arrayContaining(["left-pad", "lodash"])
+    );
+  });
+
+  it("excludes 'exotic' dependencies (git, path, etc.)", async () => {
+    const deps = await parser.parse(dir);
+    expect(deps.map(d => d.name).sort()).not.toContain("is-number");
   });
 
   it("gets the version from the yarn.lock, not the package.json", async () => {
