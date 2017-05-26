@@ -3,6 +3,8 @@ require "excon"
 require "bump/update_checkers/base"
 require "bump/shared_helpers"
 
+require "json"
+
 module Bump
   module UpdateCheckers
     module Php
@@ -22,15 +24,20 @@ module Bump
               SharedHelpers.run_helper_subprocess(
                 command: "php #{php_helper_path}",
                 function: "get_latest_resolvable_version",
-                args: [dir]
+                args: [dir, dependency.name]
               )
             end
 
-          latest_version.nil? ? nil : Gem::Version.new(latest_resolvable_version)
+          if latest_resolvable_version.nil?
+            nil
+          else
+            Gem::Version.new(latest_resolvable_version)
+          end
         end
 
         def composer_file
-          composer_file = dependency_files.find { |f| f.name == "composer.json" }
+          composer_file =
+            dependency_files.find { |f| f.name == "composer.json" }
           raise "No composer.json!" unless composer_file
           composer_file
         end

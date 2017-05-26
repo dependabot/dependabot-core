@@ -1,6 +1,6 @@
 {
     "require": {
-        "symfony/console": "2.7.3",
-        "symfony/event-dispatcher": "2.0.4"
+        "doctrine/common": "2.1.3",
+        "doctrine/dbal": "2.1.5"
     }
 }

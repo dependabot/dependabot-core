@@ -40,27 +40,30 @@ RSpec.describe Bump::FileUpdaters::Php::Composer do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
-    pending "doesn't store the files permanently" do
+    it "doesn't store the files permanently" do
       expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
     end
 
-    pending "returns DependencyFile objects" do
+    it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Bump::DependencyFile) }
     end
 
-    pending { expect { updated_files }.to_not output.to_stdout }
-    pending(:length) { is_expected.to eq(2) }
+    it { expect { updated_files }.to_not output.to_stdout }
+    its(:length) { is_expected.to eq(2) }
 
     describe "the updated composer_file" do
-      subject(:updated_composer_file) do
-        updated_files.find { |f| f.name == "composer.json" }
+      subject(:updated_composer_file_content) do
+        # Parse and marshal, so we know the formatting
+        raw = updated_files.find { |f| f.name == "composer.json" }.content
+        JSON.parse(raw).to_json
       end
 
-      pending(:content) do
-        is_expected.to include "\"monolog/monolog\": \"1.22.1\""
+      it do
+        is_expected.to include "\"monolog/monolog\":\"1.22.1\""
       end
-      pending(:content) do
-        is_expected.to include "\"symfony/polyfill-mbstring\": \"1.0.1\""
+
+      it do
+        is_expected.to include "\"symfony/polyfill-mbstring\":\"1.0.1\""
       end
 
       context "when the minor version is specified" do
@@ -68,20 +71,21 @@ RSpec.describe Bump::FileUpdaters::Php::Composer do
           fixture("php", "composer_files", "minor_version")
         end
 
-        pending(:content) do
-          is_expected.to include "\"monolog/monolog\": \"1.22.x\""
+        it do
+          is_expected.to include "\"monolog/monolog\":\"1.22.*\""
         end
       end
     end
 
     describe "the updated lockfile" do
-      subject(:updated_lockfile) do
-        updated_files.find { |f| f.name == "composer.lock" }
+      subject(:updated_lockfile_content) do
+        raw = updated_files.find { |f| f.name == "composer.lock" }.content
+        JSON.parse(raw).to_json
       end
 
-      pending "has details of the updated item" do
-        expect(updated_lockfile.content).
-          to include("\"version\": \"1.22.1\"")
+      it "has details of the updated item" do
+        expect(updated_lockfile_content).
+          to include("\"version\":\"1.22.1\"")
       end
     end
   end

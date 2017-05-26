@@ -44,13 +44,13 @@ RSpec.describe Bump::UpdateCheckers::Php::Composer do
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    pending { is_expected.to be >= Gem::Version.new("1.22.0") }
+    it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
     context "with a version conflict at the latest version" do
       let(:dependency) do
         Bump::Dependency.new(
-          name: "symfony/console",
-          version: "2.7.3",
+          name: "doctrine/dbal",
+          version: "2.1.5",
           package_manager: "composer"
         )
       end
@@ -62,7 +62,31 @@ RSpec.describe Bump::UpdateCheckers::Php::Composer do
         fixture("php", "lockfiles", "version_conflict")
       end
 
-      pending { is_expected.to be < Gem::Version.new("3.0.0") }
+      it { is_expected.to be < Gem::Version.new("3.0.0") }
+      it { is_expected.to be > Gem::Version.new("2.0.0") }
+    end
+
+    context "with a dependency with a git source" do
+      let(:lockfile_content) { fixture("php", "lockfiles", "git_source") }
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "git_source")
+      end
+
+      context "that is the gem we're checking" do
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not the gem we're checking" do
+        let(:dependency) do
+          Bump::Dependency.new(
+            name: "symfony/polyfill-mbstring",
+            version: "1.0.1",
+            package_manager: "composer"
+          )
+        end
+
+        it { is_expected.to be >= Gem::Version.new("1.3.0") }
+      end
     end
   end
 end

@@ -6,7 +6,9 @@ require "bump/shared_helpers"
 module Bump
   module FileUpdaters
     module Php
-      class Composer < Bump::FileUpdaters::Base
+      class Composer < Base
+        VERSION = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
+
         def updated_dependency_files
           [
             updated_file(
@@ -34,10 +36,24 @@ module Bump
           @lockfile ||= get_original_file("composer.lock")
         end
 
+        def updated_composer_file_content
+          parsed_composer_json = JSON.parse(composer_json.content)
+          old_requirement = parsed_composer_json["require"][dependency.name]
+
+          new_requirement = old_requirement.sub(VERSION) do |old_version|
+            precision = old_version.split(".").count
+            dependency.version.split(".").first(precision).join(".")
+          end
+
+          parsed_composer_json["require"][dependency.name] = new_requirement
+          JSON.dump(parsed_composer_json)
+        end
+
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
             SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "composer.json"), composer_json.content)
+              File.write(File.join(dir, "composer.json"),
+                         updated_composer_file_content)
               File.write(File.join(dir, "composer.lock"), lockfile.content)
 
               SharedHelpers.run_helper_subprocess(

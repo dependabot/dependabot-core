@@ -23,7 +23,8 @@ module Bump
         private
 
         def dependency_version(name)
-          package = parsed_lockfile["packages"].find { |dep| dep["name"] == name }
+          package =
+            parsed_lockfile["packages"].find { |dep| dep["name"] == name }
           package["version"]
         end
 

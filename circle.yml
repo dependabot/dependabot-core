@@ -9,6 +9,7 @@ machine:
 dependencies:
   post:
     - cd helpers/javascript && yarn install
+    - cd helpers/php && composer install
 
 test:
   pre:
