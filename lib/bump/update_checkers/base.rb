@@ -21,7 +21,7 @@ module Bump
           name: dependency.name,
           version: latest_version.to_s,
           previous_version: dependency.version,
-          language: dependency.language
+          package_manager: dependency.package_manager
         )
       end
 

@@ -123,7 +123,7 @@ module Bump
     end
 
     def new_branch_name
-      path = ["bump", dependency.language, files.first.directory].compact
+      path = ["bump", dependency.package_manager, files.first.directory].compact
       File.join(*path, "#{dependency.name}-#{dependency.version}")
     end
 
@@ -145,7 +145,8 @@ module Bump
 
     def dependency_metadata_finder
       @dependency_metadata_finder ||=
-        DependencyMetadataFinders.for_language(dependency.language).
+        DependencyMetadataFinders.
+        for_package_manager(dependency.package_manager).
         new(dependency: dependency, github_client: github_client)
     end
   end
