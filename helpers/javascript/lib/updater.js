@@ -85,11 +85,7 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   // Find the old dependency pattern from the package.json, so we can construct
   // a new pattern that contains the new version but maintains the old format
   const currentPattern = (await allDependencyPatterns(config))[depName];
-  const versionRegex = /[0-9]+(\.[A-Za-z0-9\-_]+)*/;
-  const newPattern = currentPattern.replace(versionRegex, oldVersion => {
-    const precision = oldVersion.split(".").length;
-    return desiredVersion.split(".").slice(0, precision).join(".");
-  });
+  const newPattern = updateVersionPattern(currentPattern, desiredVersion);
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -110,4 +106,15 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   };
 }
 
-module.exports = { updateDependencyFiles };
+function updateVersionPattern(currentPattern, desiredVersion) {
+  const versionRegex = /[0-9]+(\.[A-Za-z0-9\-_]+)*/;
+  return currentPattern.replace(versionRegex, oldVersion => {
+    const oldParts = oldVersion.split(".");
+    const newParts = desiredVersion.split(".");
+    return oldParts
+      .map((part, i) => (part.match(/^x\b/) ? "x" : newParts[i]))
+      .join(".");
+  });
+}
+
+module.exports = { updateDependencyFiles, updateVersionPattern };

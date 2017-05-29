@@ -2,7 +2,10 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs-extra");
 const nock = require("nock");
-const updateDependencyFiles = require("../lib/updater").updateDependencyFiles;
+const {
+  updateDependencyFiles,
+  updateVersionPattern
+} = require("../lib/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {
@@ -60,5 +63,23 @@ describe("updater", () => {
     } catch (error) {
       expect(error).not.toBeNull();
     }
+  });
+});
+
+describe("updateVersionPattern", () => {
+  it("handles exact versions", () => {
+    expect(updateVersionPattern("1.2.3", "4.5.6")).toEqual("4.5.6");
+  });
+
+  it("handles caret versions", () => {
+    expect(updateVersionPattern("^1.2.3", "4.5.6")).toEqual("^4.5.6");
+  });
+
+  it("handles pre-release versions", () => {
+    expect(updateVersionPattern("^1.2.3-rc1", "4.5.6")).toEqual("^4.5.6");
+  });
+
+  it("handles x.x versions", () => {
+    expect(updateVersionPattern("^1.x.x-rc1", "4.5.6")).toEqual("^4.x.x");
   });
 });
