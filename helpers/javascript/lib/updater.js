@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 const { Add } = require("yarn/lib/cli/commands/add");
 const Config = require("yarn/lib/config").default;
-const { NoopReporter } = require("yarn/lib/reporters");
+const { EventReporter } = require("yarn/lib/reporters");
 const Lockfile = require("yarn/lib/lockfile/wrapper").default;
 
 // Add is a subclass of the Install CLI command, which is responsible for
@@ -78,9 +78,9 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   const originalYarnLock = readFile("yarn.lock");
 
   const flags = { ignoreScripts: true };
-  const reporter = new NoopReporter();
+  const reporter = new EventReporter();
   const config = new Config(reporter);
-  await config.init({ cwd: directory });
+  await config.init({ cwd: directory, nonInteractive: true });
 
   // Find the old dependency pattern from the package.json, so we can construct
   // a new pattern that contains the new version but maintains the old format

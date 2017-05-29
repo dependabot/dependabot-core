@@ -49,4 +49,16 @@ describe("updater", () => {
     expect(result["yarn.lock"]).not.toContain("\n# yarn v");
     expect(result["yarn.lock"]).not.toContain("\n# node");
   });
+
+  it("doesn't show an interactive prompt when resolution fails", async () => {
+    await copyDependencies("original", tempDir);
+
+    expect.assertions(1);
+    try {
+      // Change this test if left-pad ever reaches v99.99.99
+      await updateDependencyFiles(tempDir, "left-pad", "99.99.99");
+    } catch (error) {
+      expect(error).not.toBeNull();
+    }
+  });
 });
