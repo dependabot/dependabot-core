@@ -74,6 +74,13 @@ RSpec.describe Bump::FileUpdaters::Ruby::Bundler do
         its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
       end
 
+      context "when a pre-release is specified" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "prerelease_specified")
+        end
+        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+      end
+
       context "when the minor version is specified" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "minor_version_specified")
