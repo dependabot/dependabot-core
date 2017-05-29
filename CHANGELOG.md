@@ -1,3 +1,8 @@
+## v0.6.0, 29 May 2017
+
+- BREAKING: Organise by package manager, not language (#55)
+- BREAKING: Refactor error handling (#54)
+
 ## v0.5.8, 24 May 2017
 
 - Don't change yarn.lock version comments (#53)
