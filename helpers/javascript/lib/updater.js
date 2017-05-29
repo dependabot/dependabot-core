@@ -112,6 +112,7 @@ function updateVersionPattern(currentPattern, desiredVersion) {
     const oldParts = oldVersion.split(".");
     const newParts = desiredVersion.split(".");
     return oldParts
+      .slice(0, newParts.length)
       .map((part, i) => (part.match(/^x\b/) ? "x" : newParts[i]))
       .join(".");
   });
