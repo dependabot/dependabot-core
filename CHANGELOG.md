@@ -55,7 +55,7 @@
 
 ## v0.3.3, 11 May 2017
 
-- Escape scoped package names in DependencyMetadataFinders::JavaScript (#27)
+- Escape scoped package names in MetadataFinders::JavaScript (#27)
 - Look for JavaScript GitHub link in most recent releases first (#28)
 
 ## v0.3.2, 09 May 2017
@@ -77,7 +77,7 @@
 
 ## v0.2.0, 02 May 2017
 
-- BREAKING: Rename Bump::DependencyFileUpdaters::VersionConflict (#20)
+- BREAKING: Rename Bump::FileUpdaters::VersionConflict (#20)
 
 ## v0.1.7, 02 May 2017
 

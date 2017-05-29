@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "bump/dependency_metadata_finders"
+require "bump/metadata_finders"
 
 module Bump
   class PullRequestCreator
@@ -123,29 +123,30 @@ module Bump
     end
 
     def new_branch_name
-      path = ["bump", dependency.language, files.first.directory].compact
+      path = ["bump", dependency.package_manager, files.first.directory].compact
       File.join(*path, "#{dependency.name}-#{dependency.version}")
     end
 
     def release_url
-      dependency_metadata_finder.release_url
+      metadata_finder.release_url
     end
 
     def changelog_url
-      dependency_metadata_finder.changelog_url
+      metadata_finder.changelog_url
     end
 
     def github_compare_url
-      dependency_metadata_finder.github_compare_url
+      metadata_finder.github_compare_url
     end
 
     def github_repo_url
-      dependency_metadata_finder.github_repo_url
+      metadata_finder.github_repo_url
     end
 
-    def dependency_metadata_finder
-      @dependency_metadata_finder ||=
-        DependencyMetadataFinders.for_language(dependency.language).
+    def metadata_finder
+      @metadata_finder ||=
+        MetadataFinders.
+        for_package_manager(dependency.package_manager).
         new(dependency: dependency, github_client: github_client)
     end
   end

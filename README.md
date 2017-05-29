@@ -19,16 +19,17 @@ helpers:
 
 ## Internals
 
-Bump Core has helper classes for six concerns:
+Bump Core has helper classes for seven concerns:
 
-| Service                        | Description                                                                                   |
-|--------------------------------|-----------------------------------------------------------------------------------------------|
-| `Bump::DependencyFileFetchers` | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
-| `Bump::DependencyFileParsers`  | Parses a dependency file and extracts a list of dependencies for a project.                   |
-| `Bump::UpdateCheckers`         | Checks whether a given dependency is up-to-date.                                              |
-| `Bump::DependencyFileUpdaters` | Updates a dependency file to use the latest version of a given dependency.                    |
-| `Bump::PullRequestCreator`     | Creates a Pull Request to the original repo with the updated dependency file.                 |
-| `Bump::PullRequestUpdater`     | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
+| Service                    | Description                                                                                   |
+|----------------------------|-----------------------------------------------------------------------------------------------|
+| `Bump::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
+| `Bump::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project.                   |
+| `Bump::UpdateCheckers`     | Checks whether a given dependency is up-to-date.                                              |
+| `Bump::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency.                    |
+| `Bump::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL.                                 |
+| `Bump::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
+| `Bump::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
 ## Contributing
 

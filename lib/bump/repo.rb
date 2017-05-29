@@ -1,16 +1,18 @@
 # frozen_string_literal: true
 module Bump
   class Repo
-    attr_reader :name, :language, :commit
+    attr_reader :name, :package_manager, :commit
 
-    def initialize(name:, language:, commit:)
+    def initialize(name:, commit:)
       @name = name
-      @language = language
       @commit = commit
     end
 
     def to_h
-      { "name" => name, "language" => language, "commit" => commit }
+      {
+        "name" => name,
+        "commit" => commit
+      }
     end
   end
 end
