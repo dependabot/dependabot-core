@@ -71,6 +71,14 @@ describe("updateVersionPattern", () => {
     expect(updateVersionPattern("1.2.3", "4.5.6")).toEqual("4.5.6");
   });
 
+  it("handles unspecific patterns", () => {
+    expect(updateVersionPattern("1", "4.5.6")).toEqual("4");
+  });
+
+  it("handles unspecific versions", () => {
+    expect(updateVersionPattern("1.2.3", "4")).toEqual("4");
+  });
+
   it("handles caret versions", () => {
     expect(updateVersionPattern("^1.2.3", "4.5.6")).toEqual("^4.5.6");
   });
@@ -79,7 +87,15 @@ describe("updateVersionPattern", () => {
     expect(updateVersionPattern("^1.2.3-rc1", "4.5.6")).toEqual("^4.5.6");
   });
 
+  it("handles pre-release versions using four places", () => {
+    expect(updateVersionPattern("^1.2.3.rc1", "4.5.6")).toEqual("^4.5.6");
+  });
+
   it("handles x.x versions", () => {
     expect(updateVersionPattern("^1.x.x-rc1", "4.5.6")).toEqual("^4.x.x");
+  });
+
+  it("handles x.x versions using four places", () => {
+    expect(updateVersionPattern("^1.x.x.rc1", "4.5.6")).toEqual("^4.x.x");
   });
 });
