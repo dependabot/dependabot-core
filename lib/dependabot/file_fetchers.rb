@@ -8,6 +8,7 @@ require "dependabot/file_fetchers/java/maven"
 require "dependabot/file_fetchers/php/composer"
 require "dependabot/file_fetchers/git/submodules"
 require "dependabot/file_fetchers/docker/docker"
+require "dependabot/file_fetchers/elixir/hex"
 
 module Dependabot
   module FileFetchers
@@ -22,6 +23,7 @@ module Dependabot
       when "composer" then FileFetchers::Php::Composer
       when "submodules" then FileFetchers::Git::Submodules
       when "docker" then FileFetchers::Docker::Docker
+      when "hex" then FileFetchers::Elixir::Hex
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
