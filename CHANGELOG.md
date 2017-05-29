@@ -1,3 +1,7 @@
+## v0.6.1, 29 May 2017
+
+- Make yarn run in non-interactive mode
+
 ## v0.6.0, 29 May 2017
 
 - BREAKING: Organise by package manager, not language (#55)
