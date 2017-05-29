@@ -1,3 +1,7 @@
+## v0.6.3, 30 May 2017
+
+- Even better version pattern updating for JS
+
 ## v0.6.2, 29 May 2017
 
 - Better version pattern updating for JS
