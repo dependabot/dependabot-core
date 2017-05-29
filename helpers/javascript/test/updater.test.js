@@ -61,4 +61,20 @@ describe("updater", () => {
       expect(error).not.toBeNull();
     }
   });
+
+  it("correctly updates versions currently targeting prereleases", async () => {
+    nock("https://registry.yarnpkg.com")
+      .get("/lodash")
+      .reply(200, helpers.loadFixture("yarnpkg-lodash.json"));
+
+    await copyDependencies("original-prerelease", tempDir);
+
+    const result = await updateDependencyFiles(tempDir, "lodash", "4.17.4");
+    expect(result).toEqual({
+      "package.json": helpers.loadFixture(
+        "updater/updated-prerelease/package.json"
+      ),
+      "yarn.lock": helpers.loadFixture("updater/updated-prerelease/yarn.lock")
+    });
+  });
 });

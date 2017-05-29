@@ -85,7 +85,8 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   // Find the old dependency pattern from the package.json, so we can construct
   // a new pattern that contains the new version but maintains the old format
   const currentPattern = (await allDependencyPatterns(config))[depName];
-  const newPattern = currentPattern.replace(/[\d\.]*\d/, oldVersion => {
+  const versionRegex = /[0-9]+(\.[A-Za-z0-9\-_]+)*/;
+  const newPattern = currentPattern.replace(versionRegex, oldVersion => {
     const precision = oldVersion.split(".").length;
     return desiredVersion.split(".").slice(0, precision).join(".");
   });
