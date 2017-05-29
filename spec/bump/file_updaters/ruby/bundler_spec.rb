@@ -175,77 +175,11 @@ RSpec.describe Bump::FileUpdaters::Ruby::Bundler do
         end
       end
 
-      context "when the Gem can't be found" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
-
-        it "raises a Bump::SharedHelpers::ChildProcessFailed error" do
-          expect { updater.updated_dependency_files }.
-            to raise_error(Bump::SharedHelpers::ChildProcessFailed)
-        end
-      end
-
       context "when another gem in the Gemfile has a git source" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
 
         it "updates the gem just fine" do
           expect(file.content).to include "business (1.5.0)"
-        end
-
-        context "that is private and therefore unreachable" do
-          before do
-            # Stub the Bundler git clone call to fail. Speeds up specs
-            allow_any_instance_of(::Bundler::Source::Git::GitProxy).
-              to receive(:`).
-              with(%r{^git clone 'https://github\.com/fundingcircle/prius'}).
-              and_return(`(exit 128)`)
-          end
-          let(:gemfile_body) do
-            fixture("ruby", "gemfiles", "private_git_source")
-          end
-
-          it "raises a helpful error" do
-            expect { updater.updated_dependency_files }.
-              to raise_error do |error|
-                expect(error).to be_a(Bump::GitCommandError)
-                expect(error.command).to start_with("git clone 'https://github")
-              end
-          end
-        end
-      end
-
-      context "when there is a version conflict" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "version_conflict.lock")
-        end
-        let(:dependency) do
-          Bump::Dependency.new(
-            name: "ibandit",
-            version: "0.8.5",
-            package_manager: "bundler"
-          )
-        end
-
-        before do
-          url = "https://index.rubygems.org/api/v1/dependencies?"\
-                "gems=i18n,ibandit"
-          stub_request(:get, url).
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-dependencies-i18n-ibandit")
-            )
-
-          url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
-          stub_request(:get, url).
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-dependencies-i18n")
-            )
-        end
-
-        it "raises a Bump::VersionConflict error" do
-          expect { updater.updated_dependency_files }.
-            to raise_error(Bump::VersionConflict)
         end
       end
     end
