@@ -4,6 +4,7 @@ AllCops:
   Exclude:
     - vendor/**/*
     - bin/**/*
+    - tmp/**/*
 
 Metrics/ClassLength:
   Max: 150
