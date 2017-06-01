@@ -1,3 +1,7 @@
+## v0.6.4, 01 Jun 2017
+
+- Add support for PHP (Composer) projects
+
 ## v0.6.3, 30 May 2017
 
 - Even better version pattern updating for JS
