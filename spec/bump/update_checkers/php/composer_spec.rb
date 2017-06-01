@@ -44,6 +44,10 @@ RSpec.describe Bump::UpdateCheckers::Php::Composer do
   describe "#latest_version" do
     subject { checker.latest_version }
 
+    it "returns a non-normalized version, following semver" do
+      expect(subject.segments.count).to eq(3)
+    end
+
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
     context "with a version conflict at the latest version" do

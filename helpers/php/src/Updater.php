@@ -14,6 +14,10 @@ class Updater
 
     $composerJson = json_decode(file_get_contents('composer.json'), true);
 
+    $existingDependencyVersion = $composerJson["require"][$dependencyName];
+    $newDependencyVersion = self::relaxVersionToUserPreference($existingDependencyVersion, $dependencyVersion);
+    $composerJson["require"][$dependencyName] = $newDependencyVersion;
+
     // When encoding JSON in PHP, it'll escape forward slashes by default.
     // We're not expecting this transform from the original data, which means
     // by default we mutate the JSON that arrives back in the ruby portion of
@@ -23,9 +27,8 @@ class Updater
     // slashes, mitigating this issue.
     //
     // https://stackoverflow.com/questions/1580647/json-why-are-forward-slashes-escaped
-    $composerJsonEncoded = json_encode($composerJson, JSON_UNESCAPED_SLASHES);
-
-    file_put_contents('composer.json', $composerJsonEncoded);
+    $jsonFile = new \Composer\Json\JsonFile('composer.json');
+    $jsonFile->write($composerJson);
 
     date_default_timezone_set("Europe/London");
     $io = new \Composer\IO\NullIO();
@@ -49,7 +52,6 @@ class Updater
     $install
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
-      ->setPreferStable(true)
       ->setWriteLock(true)
       ;
 
@@ -63,5 +65,27 @@ class Updater
     chdir($originalDir);
 
     return $result;
+  }
+
+
+  // Make PHP rules match the rest of bump's libraries, keeping the
+  // unconstrained version if they're defined and can be maintained. For
+  // example:
+  //
+  //     Applying 3.1.5 -> 3.1.* => 3.1.*
+  //     Applying 3.1.* -> 3.2.3 => 3.2.*
+  //     Applying 3.1.* -> 4.0.0 => 4.0.*
+  //     Applying 1.2.3-pre -> 4.1.2 => 4.1.2
+  //
+  // See more examples at https://github.com/composer/semver/blob/master/tests/VersionParserTest.php#L52
+  public static function relaxVersionToUserPreference($existingDependencyVersion, $suggestedDependencyVersion) {
+    $version_regex = '/[0-9]+(?:\.[a-zA-Z0-9]+)*/';
+    preg_match($version_regex, $existingDependencyVersion, $matches);
+    $precision = count(explode(".", $matches[0]));
+
+    $suggestedVersionSegments = array_slice(explode(".", $suggestedDependencyVersion), 0, $precision);
+    $newDependencyVersion = str_replace($matches[0], implode(".", $suggestedVersionSegments), $existingDependencyVersion);
+
+    return $newDependencyVersion;
   }
 }

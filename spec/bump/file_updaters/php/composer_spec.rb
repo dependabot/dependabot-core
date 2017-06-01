@@ -62,18 +62,22 @@ RSpec.describe Bump::FileUpdaters::Php::Composer do
         is_expected.to include "\"monolog/monolog\":\"1.22.1\""
       end
 
-      it do
-        is_expected.to include "\"symfony/polyfill-mbstring\":\"1.0.1\""
-      end
+      it { is_expected.to include "\"symfony/polyfill-mbstring\":\"1.0.1\"" }
 
       context "when the minor version is specified" do
         let(:composer_body) do
           fixture("php", "composer_files", "minor_version")
         end
 
-        it do
-          is_expected.to include "\"monolog/monolog\":\"1.22.*\""
+        it { is_expected.to include "\"monolog/monolog\":\"1.22.*\"" }
+      end
+
+      context "when a pre-release version is specified" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "prerelease_version")
         end
+
+        it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
       end
     end
 
