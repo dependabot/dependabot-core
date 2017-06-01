@@ -1,3 +1,7 @@
+## v0.6.5, 01 Jun 2017
+
+- Fix PHP issues from initial beta test (#61)
+
 ## v0.6.4, 01 Jun 2017
 
 - Add support for PHP (Composer) projects
