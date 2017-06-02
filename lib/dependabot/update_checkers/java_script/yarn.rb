@@ -11,6 +11,12 @@ module Dependabot
           @latest_version ||= Gem::Version.new(fetch_latest_version)
         end
 
+        def latest_resolvable_version
+          # Javascript doesn't have the concept of version conflicts, so the
+          # latest version is always resolvable.
+          latest_version
+        end
+
         private
 
         def fetch_latest_version

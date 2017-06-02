@@ -12,7 +12,12 @@ module Dependabot
         GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
         def latest_version
-          @latest_version ||= updated_gem_version
+          # TODO: Implement latest version checking.
+          latest_resolvable_version
+        end
+
+        def latest_resolvable_version
+          @latest_resolvable_version ||= updated_gem_version
         end
 
         private

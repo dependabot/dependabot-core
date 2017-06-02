@@ -10,7 +10,12 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         def latest_version
-          @latest_version ||= fetch_latest_version
+          # TODO: Implement latest version checking.
+          latest_resolvable_version
+        end
+
+        def latest_resolvable_version
+          @latest_resolvable_version ||= fetch_latest_version
         end
 
         private

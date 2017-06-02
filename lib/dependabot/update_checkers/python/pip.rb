@@ -11,6 +11,11 @@ module Dependabot
           @latest_version ||= Gem::Version.new(fetch_latest_version)
         end
 
+        def latest_resolvable_version
+          # TODO: Implement resolvability checking for Python.
+          latest_version
+        end
+
         private
 
         def fetch_latest_version
