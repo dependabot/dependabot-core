@@ -1,7 +1,7 @@
 PATH
-  remote: ../bump-core
+  remote: ../dependabot-core
   specs:
-    bump-core (0.5.5)
+    dependabot-core (0.1.0)
       bundler (>= 1.12.0)
       excon (~> 0.55)
       gemnasium-parser (~> 0.1)
@@ -32,7 +32,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bump-core!
+  dependabot-core!
 
 BUNDLED WITH
    1.15.0

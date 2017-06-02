@@ -8,7 +8,7 @@
     "number": 18,
     "state": "open",
     "locked": false,
-    "title": "Bump business to 1.5.0",
+    "title": "Dependabot business to 1.5.0",
     "user": {
         "login": "dependabot[bot]",
         "id": 27856297,
@@ -44,7 +44,7 @@
     "statuses_url": "https://api.github.com/repos/dependabot/bump-test/statuses/1e2d2afe8320998baecdfe127a49dca9a6650e07",
     "head": {
         "label": "dependabot:business-1.5.0",
-        "ref": "bump/ruby/business-1.5.0",
+        "ref": "dependabot/ruby/business-1.5.0",
         "sha": "1e2d2afe8320998baecdfe127a49dca9a6650e07",
         "user": {
             "login": "dependabot",
@@ -67,7 +67,7 @@
         },
         "repo": {
             "id": 88632334,
-            "name": "bump-test",
+            "name": "dependabot-test",
             "full_name": "dependabot/bump-test",
             "owner": {
                 "login": "dependabot",
@@ -180,7 +180,7 @@
         },
         "repo": {
             "id": 88632334,
-            "name": "bump-test",
+            "name": "dependabot-test",
             "full_name": "dependabot/bump-test",
             "owner": {
                 "login": "dependabot",

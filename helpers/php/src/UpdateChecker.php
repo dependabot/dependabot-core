@@ -8,7 +8,7 @@ use \Composer\DependencyResolver\Operation\InstallOperation;
 use \Composer\DependencyResolver\Operation\UpdateOperation;
 use \Composer\DependencyResolver\Operation\UninstallOperation;
 
-class BumpInstallationManager extends InstallationManager
+class DependabotInstallationManager extends InstallationManager
 {
     private $installed = array();
     private $updated = array();
@@ -64,7 +64,7 @@ class UpdateChecker
     $io = new \Composer\IO\NullIO();
     $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
 
-    $installationManager = new BumpInstallationManager();
+    $installationManager = new DependabotInstallationManager();
     $install = new \Composer\Installer(
       $io,
       $composer->getConfig(),

@@ -1,3 +1,7 @@
+## v0.7.0, 2 June 2017
+
+- Rename to dependabot-core
+
 ## v0.6.5, 01 Jun 2017
 
 - Fix PHP issues from initial beta test (#61)

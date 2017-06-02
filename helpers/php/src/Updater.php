@@ -21,7 +21,7 @@ class Updater
     // When encoding JSON in PHP, it'll escape forward slashes by default.
     // We're not expecting this transform from the original data, which means
     // by default we mutate the JSON that arrives back in the ruby portion of
-    // Bump.
+    // Dependabot.
     //
     // The JSON_UNESCAPED_SLASHES option prevents escaping for forward
     // slashes, mitigating this issue.
@@ -34,7 +34,7 @@ class Updater
     $io = new \Composer\IO\NullIO();
     $composer = \Composer\Factory::create($io);
 
-    $installationManager = new BumpInstallationManager();
+    $installationManager = new DependabotInstallationManager();
 
     $install = new \Composer\Installer(
       $io,

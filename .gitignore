@@ -1,7 +1,7 @@
 /.bundle/
 /.env
 /tmp
-/bump-*.gem
+/dependabot-*.gem
 Gemfile.lock
 /helpers/javascript/node_modules
 vendor

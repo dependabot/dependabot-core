@@ -1,5 +1,5 @@
 {
-  "name": "bump-core",
+  "name": "dependabot-core",
   "dependencies": {
     "yarn": "https://github.com/dependabot/yarn.git"
   },
