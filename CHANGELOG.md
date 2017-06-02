@@ -1,3 +1,7 @@
+## v0.7.1, 2 June 2017
+
+- Add short-circuit lookup for update checkers
+
 ## v0.7.0, 2 June 2017
 
 - Rename to dependabot-core
