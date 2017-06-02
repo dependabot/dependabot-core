@@ -43,6 +43,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+    it { is_expected.to be >= Gem::Version.new("1.22.0") }
+  end
+
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_resolvable_version }
 
     it "returns a non-normalized version, following semver" do
       expect(subject.segments.count).to eq(3)

@@ -15,12 +15,12 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          @latest_resolvable_version ||= fetch_latest_version
+          @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
         private
 
-        def fetch_latest_version
+        def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do |dir|
               File.write(File.join(dir, "composer.json"), composer_file.content)

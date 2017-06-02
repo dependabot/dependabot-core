@@ -67,6 +67,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
   end
 
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_version }
+    it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+  end
+
   describe "#updated_dependency" do
     subject { checker.updated_dependency }
     it "returns an instance of Dependency" do

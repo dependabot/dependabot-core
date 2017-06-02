@@ -67,8 +67,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     end
   end
 
-  describe "#latest_version" do
-    subject { checker.latest_version }
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_resolvable_version }
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "when the npm link resolves to a redirect" do
@@ -86,5 +86,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
+  end
+
+  describe "#latest_version" do
+    subject { checker.latest_version }
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
   end
 end
