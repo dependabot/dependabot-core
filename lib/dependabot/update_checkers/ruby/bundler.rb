@@ -12,18 +12,17 @@ module Dependabot
         GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
         def latest_version
-          # TODO: Implement latest version checking.
-          latest_resolvable_version
+          @latest_version ||= fetch_latest_version
         end
 
         def latest_resolvable_version
-          @latest_resolvable_version ||= updated_gem_version
+          @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
         private
 
-        def updated_gem_version
-          @updated_gem_version ||=
+        def fetch_latest_version
+          source =
             SharedHelpers.in_a_temporary_directory do |dir|
               write_temporary_dependency_files_to(dir)
 
@@ -34,15 +33,41 @@ module Dependabot
                   gems: [dependency.name]
                 )
 
-                dependency_source =
-                  get_dependency_source(definition, dependency)
-
-                # We don't want to bump gems with a git source, so exit early
-                next nil if dependency_source.is_a?(::Bundler::Source::Git)
-
-                get_latest_resolvable_version(definition, dependency)
+                definition.dependencies.
+                  find { |dep| dep.name == dependency.name }.source
               end
             end
+
+          case source
+          when NilClass then latest_rubygems_version
+          when ::Bundler::Source::Rubygems then latest_private_version(source)
+          end
+        rescue SharedHelpers::ChildProcessFailed => error
+          handle_bundler_errors(error)
+        end
+
+        def fetch_latest_resolvable_version
+          SharedHelpers.in_a_temporary_directory do |dir|
+            write_temporary_dependency_files_to(dir)
+
+            SharedHelpers.in_a_forked_process do
+              definition = ::Bundler::Definition.build(
+                File.join(dir, "Gemfile"),
+                File.join(dir, "Gemfile.lock"),
+                gems: [dependency.name]
+              )
+
+              dependency_source = definition.dependencies.
+                                  find { |d| d.name == dependency.name }.source
+
+              # We don't want to bump gems with a git source, so exit early
+              next nil if dependency_source.is_a?(::Bundler::Source::Git)
+
+              definition.resolve_remotely!
+              definition.resolve.
+                find { |dep| dep.name == dependency.name }.version
+            end
+          end
         rescue SharedHelpers::ChildProcessFailed => error
           handle_bundler_errors(error)
         end
@@ -76,6 +101,24 @@ module Dependabot
           end
         end
 
+        def latest_rubygems_version
+          return nil if Gems.info(dependency.name)["version"].nil?
+          Gem::Version.new(Gems.info(dependency.name)["version"])
+        end
+
+        def latest_private_version(dependency_source)
+          gem_fetchers =
+            dependency_source.fetchers.flat_map(&:fetchers).
+            select { |f| f.is_a?(::Bundler::Fetcher::Dependency) }
+
+          versions =
+            gem_fetchers.
+            flat_map { |f| f.unmarshalled_dep_gems([dependency.name]) }.
+            map { |details| Gem::Version.new(details.fetch(:number)) }
+
+          versions.reject(&:prerelease?).sort.last
+        end
+
         def gemfile
           gemfile = dependency_files.find { |f| f.name == "Gemfile" }
           raise "No Gemfile!" unless gemfile
@@ -86,15 +129,6 @@ module Dependabot
           lockfile = dependency_files.find { |f| f.name == "Gemfile.lock" }
           raise "No Gemfile.lock!" unless lockfile
           lockfile
-        end
-
-        def get_dependency_source(definition, dependency)
-          definition.dependencies.find { |d| d.name == dependency.name }.source
-        end
-
-        def get_latest_resolvable_version(definition, dependency)
-          definition.resolve_remotely!
-          definition.resolve.find { |dep| dep.name == dependency.name }.version
         end
 
         def path_based_dependencies

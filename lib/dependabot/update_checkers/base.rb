@@ -16,8 +16,10 @@ module Dependabot
         # Look at the very latest version before considering resolvability. If
         # we're already up-to-date with it then we don't need to bother doing
         # resolution (which is generally slow).
-        return false if latest_version.nil?
-        return false if latest_version <= Gem::Version.new(dependency.version)
+        if latest_version &&
+           latest_version <= Gem::Version.new(dependency.version)
+          return false
+        end
 
         # If we're not on the latest version, consider resolvability.
         return false if latest_resolvable_version.nil?

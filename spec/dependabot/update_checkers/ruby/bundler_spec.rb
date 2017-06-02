@@ -22,6 +22,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       status: 200,
       body: fixture("ruby", "rubygems-dependencies-business-statesman")
     )
+
+    stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+      to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
   end
 
   let(:checker) do
@@ -49,8 +52,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
-  describe "#latest_version" do
-    subject { checker.latest_version }
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_resolvable_version }
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -118,7 +121,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
 
       it "raises a Dependabot::PathBasedDependencies error" do
-        expect { checker.latest_version }.
+        expect { checker.latest_resolvable_version }.
           to raise_error(Dependabot::PathBasedDependencies)
       end
 
@@ -133,7 +136,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
         it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
-          expect { checker.latest_version }.
+          expect { checker.latest_resolvable_version }.
             to raise_error(Dependabot::SharedHelpers::ChildProcessFailed)
         end
       end
@@ -145,7 +148,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       context "and it's that gem that we're attempting to bump" do
         it "finds an updated version just fine" do
-          expect(checker.latest_version).to eq(Gem::Version.new("1.8.0"))
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("1.8.0"))
         end
       end
 
@@ -159,7 +163,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
-          expect { checker.latest_version }.
+          expect { checker.latest_resolvable_version }.
             to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
@@ -179,7 +183,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
-        expect { checker.latest_version }.
+        expect { checker.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
@@ -210,7 +214,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           around { |example| capture_stderr { example.run } }
 
           it "raises a helpful error" do
-            expect { checker.latest_version }.
+            expect { checker.latest_resolvable_version }.
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitCommandError)
                 expect(error.command).to start_with("git clone 'https://github")
@@ -229,7 +233,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       it "blows up with a useful error" do
-        expect { checker.latest_version }.
+        expect { checker.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
@@ -237,6 +241,63 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "given a Gemfile that specifies a Ruby version" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+    end
+  end
+
+  describe "#latest_version" do
+    subject { checker.latest_version }
+    it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+    context "given a Gemfile with a non-rubygems source" do
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "specified_source.lock")
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "specified_source") }
+      let(:gemfury_business_url) do
+        "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
+      end
+      before do
+        # Note: returns details of three versions: 1.5.0, 1.9.0, and 1.10.0.beta
+        stub_request(:get, gemfury_business_url).
+          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.9.0")) }
+    end
+
+    context "given an unreadable Gemfile" do
+      let(:gemfile) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "gemfiles", "includes_requires"),
+          name: "Gemfile"
+        )
+      end
+
+      it "blows up with a useful error" do
+        expect { checker.latest_version }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "given a git source" do
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "git_source.lock")
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "prius",
+          version: "0.9",
+          package_manager: "bundler"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "given a Gemfile that specifies a Ruby version" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
   end
 end
