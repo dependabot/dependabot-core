@@ -125,7 +125,7 @@ RSpec.describe Dependabot::PullRequestCreator do
         with(body: {
                parents: ["basecommitsha"],
                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: /Dependabot business to 1\.5\.0\n\nBumps \[business\]/
+               message: /Bump business from 1.4.0 to 1\.5\.0\n\nBumps \[busines/
              })
     end
 
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           body: {
             base: "master",
             head: "dependabot/bundler/business-1.5.0",
-            title: "Dependabot business to 1.5.0",
+            title: "Bump business from 1.4.0 to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
                   "from 1.4.0 to 1.5.0.\n- [Release notes]"\
                   "(https://github.com/gocardless/business/releases/tag"\
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             body: {
               base: "master",
               head: "dependabot/bundler/business-1.5.0",
-              title: "Dependabot business to 1.5.0",
+              title: "Bump business from 1.4.0 to 1.5.0",
               body: /\n\nExample text/
             }
           )
@@ -283,7 +283,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: %r{Dependabot business to 1\.5\.0\ in /directory}
+                 message: %r{Bump business from 1.4.0 to 1\.5\.0\ in /directory}
                })
       end
 
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             body: {
               base: "master",
               head: "dependabot/bundler/directory/business-1.5.0",
-              title: "Dependabot business to 1.5.0 in /directory",
+              title: "Bump business from 1.4.0 to 1.5.0 in /directory",
               body: "Bumps [business](https://github.com/gocardless/business) "\
                     "from 1.4.0 to 1.5.0.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases/tag"\

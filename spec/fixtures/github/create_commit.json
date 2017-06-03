@@ -11,7 +11,7 @@
     "name": "Grey Baker",
     "email": "greysteil@gmail.com"
   },
-  "message": "Dependabot business to 1.5.0",
+  "message": "Bump business from 1.4.0 to 1.5.0",
   "tree": {
     "url": "https://api.github.com/repos/gocardless/bump/git/trees/cd8274d15fa3ae2ab983129fb037999f264ba9a7",
     "sha": "cd8274d15fa3ae2ab983129fb037999f264ba9a7"

@@ -14,6 +14,14 @@ module Dependabot
       @files = files
       @github_client = github_client
       @pr_message_footer = pr_message_footer
+
+      check_dependency_has_previous_version
+    end
+
+    def check_dependency_has_previous_version
+      return unless dependency.previous_version.nil?
+      raise "Dependency must have a previous version to have a pull request " \
+            "created for it!"
     end
 
     def create
@@ -89,7 +97,8 @@ module Dependabot
     end
 
     def pr_name
-      base = "Dependabot #{dependency.name} to #{dependency.version}"
+      base = "Bump #{dependency.name} from #{dependency.previous_version} " \
+             "to #{dependency.version}"
       return base if files.first.directory == "/"
 
       base + " in #{files.first.directory}"
@@ -102,11 +111,7 @@ module Dependabot
               "Bumps #{dependency.name} "
             end
 
-      if dependency.previous_version
-        msg += "from #{dependency.previous_version} "
-      end
-
-      msg += "to #{dependency.version}."
+      msg += "from #{dependency.previous_version} to #{dependency.version}."
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{github_compare_url})" if github_compare_url

@@ -96,7 +96,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
         with(body: {
                parents: ["basecommitsha"],
                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: /Dependabot business to 1\.5\.0\n\nBumps \[business\]/
+               message: /Bump business from 1.4.0 to 1\.5\.0\n\nBumps \[busines/
              })
     end
 

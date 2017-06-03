@@ -8,7 +8,7 @@
     "number": 18,
     "state": "open",
     "locked": false,
-    "title": "Dependabot business to 1.5.0",
+    "title": "Bump business from 1.4.0 to 1.5.0",
     "user": {
         "login": "dependabot[bot]",
         "id": 27856297,
@@ -28,7 +28,7 @@
         "type": "Bot",
         "site_admin": false
     },
-    "body": "Bumps [business](https://github.com/gocardless/business) to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)",
+    "body": "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)",
     "created_at": "2017-04-26T17:23:51Z",
     "updated_at": "2017-04-26T17:23:51Z",
     "closed_at": null,

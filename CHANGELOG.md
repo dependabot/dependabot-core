@@ -1,3 +1,7 @@
+## v0.7.2, 3 June 2017
+
+- Update pull request titles to include from-version
+
 ## v0.7.1, 2 June 2017
 
 - Add short-circuit lookup for update checkers
