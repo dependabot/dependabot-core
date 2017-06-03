@@ -1,3 +1,8 @@
+## v0.7.3, 3 June 2017
+
+- Minor improvement to GitHub release finding (finds unnamed releases)
+
+
 ## v0.7.2, 3 June 2017
 
 - Update pull request titles to include from-version
