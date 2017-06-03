@@ -194,6 +194,20 @@ RSpec.describe Dependabot::MetadataFinders::Base do
                 )
             end
           end
+
+          context "but in the tag_name section" do
+            let(:github_response) do
+              fixture("github", "unnamed_releases.json")
+            end
+
+            it "gets the right URL" do
+              expect(subject).
+                to eq(
+                  "https://github.com/gocardless/business/releases/tag/"\
+                  "v1.8.0"
+                )
+            end
+          end
         end
 
         context "when the release is not present" do

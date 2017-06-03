@@ -71,8 +71,10 @@ module Dependabot
         @release_url_lookup_attempted = true
 
         release_regex = /[^0-9\.]#{Regexp.escape(dependency.version)}\z/
-        release = github_client.releases(github_repo).
-                  find { |r| r.name.to_s =~ release_regex }
+        release =
+          github_client.releases(github_repo).find do |r|
+            r.name.to_s =~ release_regex || r.tag_name.to_s =~ release_regex
+          end
 
         @release_url = release&.html_url
       rescue Octokit::NotFound
