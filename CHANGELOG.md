@@ -1,3 +1,7 @@
+## v0.7.7, 7 June 2017
+
+- Return fetched dependency file contents as UTF-8
+
 ## v0.7.6, 7 June 2017
 
 - Don't blow up when deps are missing from yarn.lock
