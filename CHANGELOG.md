@@ -1,3 +1,8 @@
+## v0.7.5, 7 June 2017
+
+- Ignore JS prerelease versions
+- Use HTTPS when talking to the NPM registry
+
 ## v0.7.4, 7 June 2017
 
 - Handle PHP composer.json files that specify a PHP version / extensions
