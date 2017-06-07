@@ -36,7 +36,7 @@ module Dependabot
 
         DependencyFile.new(
           name: file_name,
-          content: Base64.decode64(content).force_encoding('UTF-8').encode,
+          content: Base64.decode64(content).force_encoding("UTF-8").encode,
           directory: directory
         )
       rescue Octokit::NotFound
