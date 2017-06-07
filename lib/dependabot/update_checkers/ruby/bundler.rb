@@ -102,6 +102,8 @@ module Dependabot
         end
 
         def latest_rubygems_version
+          # Note: Rubygems excludes pre-releases from the `Gems.info` response,
+          # so no need to filter them out.
           return nil if Gems.info(dependency.name)["version"].nil?
           Gem::Version.new(Gems.info(dependency.name)["version"])
         end
