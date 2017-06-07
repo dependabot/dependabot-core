@@ -42,5 +42,22 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         its(:version) { is_expected.to eq("1.0.2") }
       end
     end
+
+    pending "for development dependencies" do
+      let(:composer_json_body) do
+        fixture("php", "composer_files", "development_dependencies")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with the PHP version specified" do
+      let(:composer_json_body) do
+        fixture("php", "composer_files", "php_specified")
+      end
+      let(:lockfile_body) { fixture("php", "lockfiles", "php_specified") }
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end

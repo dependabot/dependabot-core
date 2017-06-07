@@ -11,21 +11,31 @@ module Dependabot
         def parse
           parsed_composer_json = JSON.parse(composer_json.content)
 
-          parsed_composer_json["require"].map do |name, _|
+          dependencies = parsed_composer_json.fetch("require", {}).keys
+
+          # TODO: Add support for development dependencies. Will need to be
+          # added to file updaters, too.
+
+          dependencies.map do |name|
+            # Ignore dependencies which appear in the composer.json but not the
+            # composer.lock. For instance, if a specific PHP version or
+            # extension is required, it won't appear in the packages section of
+            # the lockfile.
+            next if dependency_version(name).nil?
+
             Dependency.new(
               name: name,
               version: dependency_version(name),
               package_manager: "composer"
             )
-          end
+          end.compact
         end
 
         private
 
         def dependency_version(name)
-          package =
-            parsed_lockfile["packages"].find { |dep| dep["name"] == name }
-          package["version"]
+          package = parsed_lockfile["packages"].find { |d| d["name"] == name }
+          package&.fetch("version")
         end
 
         def required_files
