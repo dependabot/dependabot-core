@@ -1,7 +1,10 @@
+## v0.7.4, 7 June 2017
+
+- Handle PHP composer.json files that specify a PHP version / extensions
+
 ## v0.7.3, 3 June 2017
 
 - Minor improvement to GitHub release finding (finds unnamed releases)
-
 
 ## v0.7.2, 3 June 2017
 
