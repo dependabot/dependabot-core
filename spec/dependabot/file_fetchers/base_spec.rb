@@ -36,6 +36,17 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to be_a(Dependabot::DependencyFile) }
       its(:content) { is_expected.to include("octokit") }
+
+      context "when there are non-ASCII characters" do
+        before do
+          stub_request(:get, url + "Gemfile").
+            to_return(status: 200,
+                      body: fixture("github", "gemfile_content_non_ascii.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        its(:content) { is_expected.to eq("öäöä") }
+      end
     end
 
     context "with a directory specified" do
