@@ -1,3 +1,7 @@
+## v0.7.6, 7 June 2017
+
+- Don't blow up when deps are missing from yarn.lock
+
 ## v0.7.5, 7 June 2017
 
 - Ignore JS prerelease versions
