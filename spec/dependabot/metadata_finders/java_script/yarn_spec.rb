@@ -92,7 +92,8 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
         finder.github_repo
 
         expect(WebMock).
-          to have_requested(:get, "https://registry.npmjs.org/@etag%2Fsomething")
+          to have_requested(:get,
+                            "https://registry.npmjs.org/@etag%2Fsomething")
       end
     end
   end

@@ -25,7 +25,12 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          JSON.parse(npm_response.body)["dist-tags"]["latest"]
+          JSON.parse(npm_response.body)["versions"].
+            keys.
+            map { |v| Gem::Version.new(v) }.
+            reject(&:prerelease?).
+            sort.
+            last
         end
 
         def dependency_url
