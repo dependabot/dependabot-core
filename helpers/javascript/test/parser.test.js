@@ -25,4 +25,9 @@ describe("parser", () => {
     const leftPad = deps.find(d => d.name === "left-pad");
     expect(leftPad.version).toEqual("1.1.1");
   });
+
+  it("ignores dependencies that are missing from the yarn.lock", async () => {
+    const deps = await parser.parse(dir + "/yarn-lock-missing-dep");
+    expect(deps.length).toEqual(0);
+  });
 });

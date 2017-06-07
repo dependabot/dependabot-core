@@ -32,7 +32,8 @@ async function parse(directory) {
   const { requests, patterns } = await install.fetchRequestFromCwd();
   const deps = requests
     .filter(isNotExotic)
-    .map(request => lockfile.getLocked(request.pattern));
+    .map(request => lockfile.getLocked(request.pattern))
+    .filter(dep => dep);
 
   return deps.map(dep => ({ name: dep.name, version: dep.version }));
 }
