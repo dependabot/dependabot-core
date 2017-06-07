@@ -23,7 +23,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
 
   describe "#github_repo" do
     subject(:github_repo) { finder.github_repo }
-    let(:npm_url) { "http://registry.npmjs.org/etag" }
+    let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
       stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
     end
 
     context "when the npm link resolves to a redirect" do
-      let(:redirect_url) { "http://registry.npmjs.org/eTag" }
+      let(:redirect_url) { "https://registry.npmjs.org/eTag" }
       let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       before do
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "http://registry.npmjs.org/@etag%2Fsomething").
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
           to_return(status: 200, body: npm_response)
       end
       let(:dependency_name) { "@etag/something" }
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
         finder.github_repo
 
         expect(WebMock).
-          to have_requested(:get, "http://registry.npmjs.org/@etag%2Fsomething")
+          to have_requested(:get, "https://registry.npmjs.org/@etag%2Fsomething")
       end
     end
   end

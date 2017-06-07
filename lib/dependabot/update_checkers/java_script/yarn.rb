@@ -31,7 +31,7 @@ module Dependabot
         def dependency_url
           # NPM registry expects slashes to be escaped
           path = dependency.name.gsub("/", "%2F")
-          "http://registry.npmjs.org/#{path}"
+          "https://registry.npmjs.org/#{path}"
         end
       end
     end

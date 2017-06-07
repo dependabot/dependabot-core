@@ -40,7 +40,7 @@ module Dependabot
           return @npm_listing unless @npm_listing.nil?
 
           # NPM registry expects slashes to be escaped
-          url = "http://registry.npmjs.org/#{dependency.name.gsub('/', '%2f')}"
+          url = "https://registry.npmjs.org/#{dependency.name.gsub('/', '%2f')}"
           response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
 
           @npm_listing = JSON.parse(response.body)

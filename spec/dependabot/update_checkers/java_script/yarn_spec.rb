@@ -9,7 +9,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
   it_behaves_like "an update checker"
 
   before do
-    stub_request(:get, "http://registry.npmjs.org/etag").
+    stub_request(:get, "https://registry.npmjs.org/etag").
       to_return(status: 200, body: fixture("javascript", "npm_response.json"))
   end
 
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "http://registry.npmjs.org/@blep%2Fblep").
+        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           to_return(
             status: 200,
             body: fixture("javascript", "npm_response.json")
@@ -72,10 +72,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "when the npm link resolves to a redirect" do
-      let(:redirect_url) { "http://registry.npmjs.org/eTag" }
+      let(:redirect_url) { "https://registry.npmjs.org/eTag" }
 
       before do
-        stub_request(:get, "http://registry.npmjs.org/etag").
+        stub_request(:get, "https://registry.npmjs.org/etag").
           to_return(status: 302, headers: { "Location" => redirect_url })
         stub_request(:get, redirect_url).
           to_return(
