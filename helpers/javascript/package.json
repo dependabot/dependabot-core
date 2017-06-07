@@ -5,7 +5,7 @@
   },
   "devDependencies": {
     "eslint": "^3.19.0",
-    "eslint-plugin-prettier": "^2.0.1",
+    "eslint-plugin-prettier": "^2.1.1",
     "fs-extra": "^3.0.1",
     "jest": "^20.0.1",
     "nock": "^9.0.13",
