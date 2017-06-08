@@ -1,3 +1,7 @@
+## v0.7.8, 8 June 2017
+
+- Strip leading 'v' prefix from PHP version strings
+
 ## v0.7.7, 7 June 2017
 
 - Return fetched dependency file contents as UTF-8
