@@ -35,7 +35,7 @@ module Dependabot
 
         def dependency_version(name)
           package = parsed_lockfile["packages"].find { |d| d["name"] == name }
-          package&.fetch("version")
+          package&.fetch("version")&.sub(/^v?/, "")
         end
 
         def required_files
