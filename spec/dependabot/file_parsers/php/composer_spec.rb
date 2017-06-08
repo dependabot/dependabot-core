@@ -59,5 +59,13 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
 
       its(:length) { is_expected.to eq(2) }
     end
+
+    context "with a version with a 'v' prefix" do
+      let(:lockfile_body) { fixture("php", "lockfiles", "v_prefix") }
+
+      it "strips the prefix" do
+        expect(dependencies.first.version).to eq("1.0.2")
+      end
+    end
   end
 end
