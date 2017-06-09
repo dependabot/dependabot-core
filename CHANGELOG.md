@@ -1,3 +1,7 @@
+## v0.7.9, 9 June 2017
+
+- Handle npm packages with an old 'latest' tag
+
 ## v0.7.8, 8 June 2017
 
 - Strip leading 'v' prefix from PHP version strings
