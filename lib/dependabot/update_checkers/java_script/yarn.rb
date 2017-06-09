@@ -25,6 +25,10 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
+          latest_dist_tag = JSON.parse(npm_response.body)["dist-tags"]["latest"]
+          latest_version = Gem::Version.new(latest_dist_tag)
+          return latest_version unless latest_version.prerelease?
+
           JSON.parse(npm_response.body)["versions"].
             keys.
             map { |v| Gem::Version.new(v) }.

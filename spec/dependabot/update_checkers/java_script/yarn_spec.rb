@@ -101,5 +101,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
+
+    context "when the latest version is older than another, non-prerelease" do
+      before do
+        body = fixture("javascript", "npm_response_old_latest.json")
+        stub_request(:get, "https://registry.npmjs.org/etag").
+          to_return(status: 200, body: body)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
   end
 end
