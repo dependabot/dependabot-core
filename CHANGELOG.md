@@ -1,3 +1,7 @@
+## v0.7.10, 12 June 2017
+
+- Improve commit comparison URL generation (handle arbitrary prefixes)
+
 ## v0.7.9, 9 June 2017
 
 - Handle npm packages with an old 'latest' tag
