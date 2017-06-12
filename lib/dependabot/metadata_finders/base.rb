@@ -4,7 +4,6 @@ module Dependabot
     class Base
       GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?}
       CHANGELOG_NAMES = %w(changelog history news changes).freeze
-      TAG_PREFIX      = /^[vV]/
 
       attr_reader :dependency, :github_client
 
@@ -29,12 +28,15 @@ module Dependabot
 
         @tags ||= look_up_repo_tags
 
+        current_version = dependency.version
         previous_version = dependency.previous_version
-        version = dependency.version
-        if @tags.include?(previous_version) && @tags.include?(version)
-          "#{github_repo_url}/compare/v#{previous_version}...v#{version}"
-        elsif @tags.include?(version)
-          "#{github_repo_url}/commits/v#{version}"
+        current_tag = @tags.find { |t| t =~ version_regex(current_version) }
+        previous_tag = @tags.find { |t| t =~ version_regex(previous_version) }
+
+        if current_tag && previous_tag
+          "#{github_repo_url}/compare/#{previous_tag}...#{current_tag}"
+        elsif current_tag
+          "#{github_repo_url}/commits/#{current_tag}"
         else
           "#{github_repo_url}/commits"
         end
@@ -70,11 +72,10 @@ module Dependabot
       def look_up_release_url
         @release_url_lookup_attempted = true
 
-        release_regex = /[^0-9\.]#{Regexp.escape(dependency.version)}\z/
-        release =
-          github_client.releases(github_repo).find do |r|
-            r.name.to_s =~ release_regex || r.tag_name.to_s =~ release_regex
-          end
+        release_regex = version_regex(dependency.version)
+        release = github_client.releases(github_repo).find do |r|
+          r.name.to_s =~ release_regex || r.tag_name.to_s =~ release_regex
+        end
 
         @release_url = release&.html_url
       rescue Octokit::NotFound
@@ -82,15 +83,17 @@ module Dependabot
       end
 
       def look_up_repo_tags
-        github_client.tags(github_repo).map do |tag|
-          tag["name"].to_s.gsub(TAG_PREFIX, "")
-        end
+        github_client.tags(github_repo).map { |tag| tag["name"] }
       rescue Octokit::NotFound
         []
       end
 
       def look_up_github_repo
         raise NotImplementedError
+      end
+
+      def version_regex(version)
+        /[^0-9\.]#{Regexp.escape(version)}\z/
       end
     end
   end

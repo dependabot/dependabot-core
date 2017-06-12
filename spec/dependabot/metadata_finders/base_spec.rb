@@ -18,7 +18,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   end
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
-  let(:dependency_previous_version) { nil }
+  let(:dependency_previous_version) { "1.0.0" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   before do
     allow(finder).
@@ -68,6 +68,21 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       it do
         is_expected.
           to eq("https://github.com/gocardless/business/commits/v1.4.0")
+      end
+    end
+
+    context "with a github repo and tags with surprising names" do
+      before do
+        stub_request(:get,
+                     "https://api.github.com/repos/gocardless/business/tags").
+          to_return(status: 200,
+                    body: fixture("github", "prefixed_tags.json"),
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it do
+        is_expected.to eq("https://github.com/gocardless/business/"\
+                          "commits/business-1.4.0")
       end
     end
 
