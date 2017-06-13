@@ -1,3 +1,8 @@
+## v0.8.0, 13 June 2017
+
+- BREAKING: drop support for Ruby 2.3
+- Link to Bitbucket dependency sources (and lay groundwork for changelogs etc.)
+
 ## v0.7.10, 12 June 2017
 
 - Improve commit comparison URL generation (handle arbitrary prefixes)
