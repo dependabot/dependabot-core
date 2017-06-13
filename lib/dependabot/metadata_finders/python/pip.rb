@@ -17,9 +17,11 @@ module Dependabot
             pypi_listing.dig("info", "docs_url")
           ].compact
 
-          source_url = potential_source_urls.find { |url| url =~ GITHUB_REGEX }
+          source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
 
-          source_url.match(GITHUB_REGEX)[:repo] if source_url
+          return nil unless source_url
+          return nil unless source_url.match(SOURCE_REGEX)[:host] == "github"
+          source_url.match(SOURCE_REGEX)[:repo]
         end
 
         def pypi_listing

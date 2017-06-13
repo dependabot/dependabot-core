@@ -2,7 +2,11 @@
 module Dependabot
   module MetadataFinders
     class Base
-      GITHUB_REGEX = %r{github\.com/(?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?}
+      SOURCE_REGEX = %r{
+        (?<host>github(?=\.com)|bitbucket(?=\.org))
+        (?:\.com|\.org)/
+        (?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?
+      }x
       CHANGELOG_NAMES = %w(changelog history news changes).freeze
 
       attr_reader :dependency, :github_client

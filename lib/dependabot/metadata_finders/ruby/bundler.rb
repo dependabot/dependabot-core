@@ -17,17 +17,24 @@ module Dependabot
         private
 
         def look_up_github_repo
-          source_url = Gems.
-                       info(dependency.name).
+          source_url = rubygems_listing.
                        values_at(*SOURCE_KEYS).
                        compact.
-                       find { |url| url =~ GITHUB_REGEX }
+                       find { |url| url =~ SOURCE_REGEX }
 
-          source_url.match(GITHUB_REGEX)[:repo] if source_url
+          return nil unless source_url
+          return nil unless source_url.match(SOURCE_REGEX)[:host] == "github"
+          source_url.match(SOURCE_REGEX)[:repo]
+        end
+
+        def rubygems_listing
+          return @rubygems_listing unless @rubygems_listing.nil?
+
+          Gems.info(dependency.name)
         rescue JSON::ParserError
           # Replace with Gems::NotFound error if/when
           # https://github.com/rubygems/gems/pull/38 is merged.
-          nil
+          {}
         end
       end
     end
