@@ -1,3 +1,7 @@
+## v0.8.1, 13 June 2017
+
+- Link to GitLab dependency sources, too
+
 ## v0.8.0, 13 June 2017
 
 - BREAKING: drop support for Ruby 2.3
