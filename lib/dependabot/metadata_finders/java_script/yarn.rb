@@ -9,7 +9,7 @@ module Dependabot
       class Yarn < Dependabot::MetadataFinders::Base
         private
 
-        def look_up_github_repo
+        def look_up_source
           version_listings =
             npm_listing["versions"].
             sort_by { |version, _| Gem::Version.new(version) }.
@@ -27,8 +27,7 @@ module Dependabot
           source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
 
           return nil unless source_url
-          return nil unless source_url.match(SOURCE_REGEX)[:host] == "github"
-          source_url.match(SOURCE_REGEX)[:repo]
+          source_url.match(SOURCE_REGEX).named_captures
         end
 
         def get_url(details)

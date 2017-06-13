@@ -16,10 +16,15 @@ module Dependabot
         @github_client = github_client
       end
 
+      def source
+        return @source if @source_lookup_attempted
+        @source_lookup_attempted = true
+        @source = look_up_source
+      end
+
       def github_repo
-        return @github_repo if @github_repo_lookup_attempted
-        @github_repo_lookup_attempted = true
-        @github_repo = look_up_github_repo
+        return unless source && source["host"] == "github"
+        source["repo"]
       end
 
       def github_repo_url
@@ -92,7 +97,7 @@ module Dependabot
         []
       end
 
-      def look_up_github_repo
+      def look_up_source
         raise NotImplementedError
       end
 

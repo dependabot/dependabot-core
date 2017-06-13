@@ -9,9 +9,9 @@ RSpec.shared_examples "a dependency metadata finder" do
 
     its(:superclass) { is_expected.to eq(base_class) }
 
-    it "implements look_up_github_repo" do
+    it "implements look_up_source" do
       expect(described_class.private_instance_methods(false)).
-        to include(:look_up_github_repo)
+        to include(:look_up_source)
     end
 
     it "doesn't define any additional public instance methods" do

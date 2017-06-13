@@ -16,15 +16,14 @@ module Dependabot
 
         private
 
-        def look_up_github_repo
+        def look_up_source
           source_url = rubygems_listing.
                        values_at(*SOURCE_KEYS).
                        compact.
                        find { |url| url =~ SOURCE_REGEX }
 
           return nil unless source_url
-          return nil unless source_url.match(SOURCE_REGEX)[:host] == "github"
-          source_url.match(SOURCE_REGEX)[:repo]
+          source_url.match(SOURCE_REGEX).named_captures
         end
 
         def rubygems_listing
