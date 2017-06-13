@@ -1,3 +1,7 @@
+## v0.8.2, 13 June 2017
+
+- Full support for GitLab changelogs, release notes, and commit comparisons
+
 ## v0.8.1, 13 June 2017
 
 - Link to GitLab dependency sources, too
