@@ -158,6 +158,54 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
     end
 
+    context "with a bitbucket source" do
+      let(:bitbucket_url) do
+        "https://api.bitbucket.org/2.0/repositories/org/business/refs/tags"\
+        "?pagelen=100"
+      end
+
+      let(:bitbucket_status) { 200 }
+      let(:bitbucket_response) { fixture("bitbucket", "business_tags.json") }
+
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "bitbucket", "repo" => "org/#{dependency_name}")
+
+        stub_request(:get, bitbucket_url).
+          to_return(status: bitbucket_status,
+                    body: bitbucket_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      context "with old and new tags" do
+        let(:dependency_previous_version) { "1.3.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://bitbucket.org/org/business/"\
+                            "branches/compare/v1.4.0..v1.3.0")
+        end
+      end
+
+      context "with only a new tag" do
+        let(:dependency_previous_version) { "0.3.0" }
+
+        it "gets the right URL" do
+          is_expected.
+            to eq("https://bitbucket.org/org/business/commits/tag/v1.4.0")
+        end
+      end
+
+      context "no tags" do
+        let(:dependency_previous_version) { "0.3.0" }
+        let(:dependency_version) { "0.5.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://bitbucket.org/org/business/commits")
+        end
+      end
+    end
+
     context "without a recognised source" do
       before { allow(finder).to receive(:source).and_return(nil) }
       it { is_expected.to be_nil }
@@ -241,6 +289,44 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         is_expected.to eq(
           "https://gitlab.com/org/business/blob/master/CHANGELOG.md"
         )
+      end
+
+      context "that can't be found exists" do
+        let(:gitlab_status) { 404 }
+        let(:gitlab_response) { fixture("gitlab", "not_found.json") }
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "with a bitbucket source" do
+      let(:bitbucket_url) do
+        "https://api.bitbucket.org/2.0/repositories/org/business/src"\
+        "?pagelen=100"
+      end
+
+      let(:bitbucket_status) { 200 }
+      let(:bitbucket_response) { fixture("bitbucket", "business_files.json") }
+
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "bitbucket", "repo" => "org/#{dependency_name}")
+
+        stub_request(:get, bitbucket_url).
+          to_return(status: bitbucket_status,
+                    body: bitbucket_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it "gets the right URL" do
+        is_expected.to eq(
+          "https://bitbucket.org/org/business/src/master/CHANGELOG.md"
+        )
+      end
+
+      context "that can't be found exists" do
+        let(:bitbucket_status) { 404 }
+        it { is_expected.to be_nil }
       end
     end
 

@@ -88,16 +88,7 @@ module Dependabot
         current_tag = tags.find { |t| t =~ version_regex(current_version) }
         previous_tag = tags.find { |t| t =~ version_regex(previous_version) }
 
-        @commits_url =
-          if current_tag && previous_tag
-            "#{source_url}/compare/#{previous_tag}...#{current_tag}"
-          elsif current_tag
-            "#{source_url}/commits/#{current_tag}"
-          elsif source.fetch("host") == "gitlab"
-            "#{source_url}/commits/master"
-          else
-            "#{source_url}/commits"
-          end
+        @commits_url = build_compare_commits_url(current_tag, previous_tag)
       end
 
       def look_up_source
@@ -115,7 +106,7 @@ module Dependabot
         when "github"
           github_client.contents(source["repo"])
         when "bitbucket"
-          [] # TODO: add Bitbucket support
+          fetch_bitbucket_file_tree
         when "gitlab"
           gitlab_client.repo_tree(source["repo"]).map do |file|
             OpenStruct.new(
@@ -136,7 +127,7 @@ module Dependabot
         when "github"
           github_client.tags(source["repo"]).map(&:name)
         when "bitbucket"
-          [] # TODO: add Bitbucket support
+          fetch_bitbucket_tags
         when "gitlab"
           gitlab_client.tags(source["repo"]).map(&:name)
         else raise "Unexpected repo host '#{source.fetch('host')}'"
@@ -152,7 +143,7 @@ module Dependabot
         when "github"
           github_client.releases(source["repo"])
         when "bitbucket"
-          [] # TODO: add Bitbucket support
+          [] # Bitbucket doesn't support releases
         when "gitlab"
           gitlab_client.tags(source["repo"]).select(&:release).map do |tag|
             OpenStruct.new(
@@ -165,6 +156,71 @@ module Dependabot
         end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         []
+      end
+
+      def build_compare_commits_url(current_tag, previous_tag)
+        case source.fetch("host")
+        when "github"
+          build_github_compare_url(current_tag, previous_tag)
+        when "bitbucket"
+          build_bitbucket_compare_url(current_tag, previous_tag)
+        when "gitlab"
+          build_gitlab_compare_url(current_tag, previous_tag)
+        else raise "Unexpected repo host '#{source.fetch('host')}'"
+        end
+      end
+
+      def build_github_compare_url(current_tag, previous_tag)
+        if current_tag && previous_tag
+          "#{source_url}/compare/#{previous_tag}...#{current_tag}"
+        elsif current_tag
+          "#{source_url}/commits/#{current_tag}"
+        else
+          "#{source_url}/commits"
+        end
+      end
+
+      def build_bitbucket_compare_url(current_tag, previous_tag)
+        if current_tag && previous_tag
+          "#{source_url}/branches/compare/#{current_tag}..#{previous_tag}"
+        elsif current_tag
+          "#{source_url}/commits/tag/#{current_tag}"
+        else
+          "#{source_url}/commits"
+        end
+      end
+
+      def build_gitlab_compare_url(current_tag, previous_tag)
+        if current_tag && previous_tag
+          "#{source_url}/compare/#{previous_tag}...#{current_tag}"
+        elsif current_tag
+          "#{source_url}/commits/#{current_tag}"
+        else
+          "#{source_url}/commits/master"
+        end
+      end
+
+      def fetch_bitbucket_file_tree
+        url = "https://api.bitbucket.org/2.0/repositories/"\
+              "#{source.fetch('repo')}/src?pagelen=100"
+        response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+        return [] if response.status >= 300
+
+        JSON.parse(response.body).fetch("values", []).map do |file|
+          OpenStruct.new(
+            name: file["path"].split("/").last,
+            html_url: "#{source_url}/src/master/#{file['path']}"
+          )
+        end
+      end
+
+      def fetch_bitbucket_tags
+        url = "https://api.bitbucket.org/2.0/repositories/"\
+              "#{source.fetch('repo')}/refs/tags?pagelen=100"
+        response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+        return [] if response.status >= 300
+
+        JSON.parse(response.body).fetch("values", []).map { |tag| tag["name"] }
       end
 
       def gitlab_client
