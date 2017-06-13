@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "etag" }
 
-  describe "#source" do
-    subject(:source) { finder.source }
+  describe "#source_url" do
+    subject(:source_url) { finder.source_url }
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
@@ -32,10 +32,10 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
     context "when there is a github link in the npm response" do
       let(:npm_response) { fixture("javascript", "npm_response.json") }
 
-      its(["repo"]) { is_expected.to eq("jshttp/etag") }
+      it { is_expected.to eq("https://github.com/jshttp/etag") }
 
       it "caches the call to npm" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, npm_url).once
       end
     end
@@ -45,10 +45,10 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
         fixture("javascript", "npm_response_bitbucket.json")
       end
 
-      its(["repo"]) { is_expected.to eq("jshttp/etag") }
+      it { is_expected.to eq("https://bitbucket.org/jshttp/etag") }
 
       it "caches the call to npm" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, npm_url).once
       end
     end
@@ -58,10 +58,10 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
         fixture("javascript", "npm_response_string_link.json")
       end
 
-      its(["repo"]) { is_expected.to eq("jshttp/etag") }
+      it { is_expected.to eq("https://github.com/jshttp/etag") }
 
       it "caches the call to npm" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, npm_url).once
       end
     end
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
       it { is_expected.to be_nil }
 
       it "caches the call to npm" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, npm_url).once
       end
     end
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
           to_return(status: 200, body: npm_response)
       end
 
-      its(["repo"]) { is_expected.to eq("jshttp/etag") }
+      it { is_expected.to eq("https://github.com/jshttp/etag") }
     end
 
     context "for a scoped package name" do
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
       let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       it "requests the escaped name" do
-        finder.source
+        finder.source_url
 
         expect(WebMock).
           to have_requested(:get,

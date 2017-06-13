@@ -1,0 +1,65 @@
+[
+  {
+    "name": "v1.5.0",
+    "message": "Gracious bug fix by ttdonovan",
+    "commit": {
+        "id": "4025952e450ff240ece797314e18b1aad10461fe",
+        "message": "bumped version, to release a bug fix and test coverage.\n",
+        "parent_ids": [
+            "19a617f1d2edd7060fc2cf4bdc280a7b080667bd"
+        ],
+        "authored_date": "2016-02-03T02:32:19.000-06:00",
+        "author_name": "Zachary Daniel",
+        "author_email": "zachary.s.daniel@gmail.com",
+        "committed_date": "2016-02-03T02:32:19.000-06:00",
+        "committer_name": "Zachary Daniel",
+        "committer_email": "zachary.s.daniel@gmail.com"
+    },
+    "release": {
+        "tag_name": "v1.5.0",
+        "description": "Some release notes"
+    }
+  },
+  {
+    "name": "v1.4.0",
+    "message": "Gracious bug fix by ttdonovan",
+    "commit": {
+        "id": "4025952e450ff240ece797314e18b1aad10461fe",
+        "message": "bumped version, to release a bug fix and test coverage.\n",
+        "parent_ids": [
+            "19a617f1d2edd7060fc2cf4bdc280a7b080667bd"
+        ],
+        "authored_date": "2016-02-03T02:32:19.000-06:00",
+        "author_name": "Zachary Daniel",
+        "author_email": "zachary.s.daniel@gmail.com",
+        "committed_date": "2016-02-03T02:32:19.000-06:00",
+        "committer_name": "Zachary Daniel",
+        "committer_email": "zachary.s.daniel@gmail.com"
+    },
+    "release": {
+        "tag_name": "v1.4.0",
+        "description": "Some release notes"
+    }
+  },
+  {
+    "name": "v1.3.0",
+    "message": "Gracious bug fix by ttdonovan",
+    "commit": {
+        "id": "4025952e450ff240ece797314e18b1aad10461fe",
+        "message": "bumped version, to release a bug fix and test coverage.\n",
+        "parent_ids": [
+            "19a617f1d2edd7060fc2cf4bdc280a7b080667bd"
+        ],
+        "authored_date": "2016-02-03T02:32:19.000-06:00",
+        "author_name": "Zachary Daniel",
+        "author_email": "zachary.s.daniel@gmail.com",
+        "committed_date": "2016-02-03T02:32:19.000-06:00",
+        "committer_name": "Zachary Daniel",
+        "committer_email": "zachary.s.daniel@gmail.com"
+    },
+    "release": {
+        "tag_name": "v1.3.0",
+        "description": "Some release notes"
+    }
+  }
+]

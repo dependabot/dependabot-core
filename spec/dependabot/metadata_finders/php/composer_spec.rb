@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "monolog/monolog" }
 
-  describe "#source" do
-    subject(:source) { finder.source }
+  describe "#source_url" do
+    subject(:source_url) { finder.source_url }
     let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
 
     before do
@@ -33,21 +33,23 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
     context "when there is a github link in the packagist response" do
       let(:packagist_response) { fixture("php", "packagist_response.json") }
 
-      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
+      it { is_expected.to eq("https://github.com/Seldaek/monolog") }
 
       it "caches the call to packagist" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
     end
 
     context "when there is a bitbucket link in the packagist response" do
-      let(:packagist_response) { fixture("php", "packagist_response.json") }
+      let(:packagist_response) do
+        fixture("php", "packagist_response_bitbucket.json")
+      end
 
-      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
+      it { is_expected.to eq("https://bitbucket.org/Seldaek/monolog") }
 
       it "caches the call to packagist" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
     end
@@ -60,7 +62,7 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
       it { is_expected.to be_nil }
 
       it "caches the call to packagist" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
     end
@@ -76,7 +78,7 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
           to_return(status: 200, body: packagist_response)
       end
 
-      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
+      it { is_expected.to eq("https://github.com/Seldaek/monolog") }
     end
   end
 end

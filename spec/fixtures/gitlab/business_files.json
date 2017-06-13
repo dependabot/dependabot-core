@@ -1,0 +1,65 @@
+[
+    {
+        "name": ".gitignore",
+        "path": ".gitignore",
+        "id": "d87d4be66f458acd52878902bbf1391732ad21e1",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": ".travis.yml",
+        "path": ".travis.yml",
+        "id": "f43cdbe6b5209ece7ba65b452e1a70e64799a069",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "CHANGELOG.md",
+        "path": "CHANGELOG.md",
+        "id": "07d18f5e02c002bfbca35e51ec4b5ec1faddeb75",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "Gemfile",
+        "path": "Gemfile",
+        "id": "a7c2a571018c7994b7e18e6ab67bfee11efa60c5",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "LICENSE",
+        "path": "LICENSE",
+        "id": "f06f3849f61f2c6b0c0188e900548d3dc458ec5f",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "README.md",
+        "path": "README.md",
+        "id": "f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "business.gemspec",
+        "path": "business.gemspec",
+        "id": "7ac321e0e1b20c05042f3af419beb322db0e4cc1",
+        "type": "blob",
+        "mode": "100644"
+    },
+    {
+        "name": "lib",
+        "path": "lib",
+        "id": "9a243198d483ad8407f8ee38d8e5bb1b18564d8f",
+        "type": "tree",
+        "mode": "040000"
+    },
+    {
+        "name": "spec",
+        "path": "spec",
+        "id": "ddaa472673172f2407888ec366282a08b23f681c",
+        "type": "tree",
+        "mode": "040000"
+    }
+]

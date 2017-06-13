@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "octokit"
+require "gitlab"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/metadata_finders/base"
@@ -31,7 +32,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     it { is_expected.to eq("https://github.com/gocardless/business") }
 
-    context "with a bitbucket" do
+    context "with a bitbucket source" do
       before do
         allow(finder).
           to receive(:source).
@@ -111,8 +112,54 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
     end
 
-    context "without a github repo" do
-      before { allow(finder).to receive(:github_repo?).and_return(nil) }
+    context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+      end
+
+      let(:gitlab_status) { 200 }
+      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
+
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "gitlab", "repo" => "org/#{dependency_name}")
+
+        stub_request(:get, gitlab_url).
+          to_return(status: gitlab_status,
+                    body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      context "with old and new tags" do
+        let(:dependency_previous_version) { "1.3.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://gitlab.com/org/business/"\
+                            "compare/v1.3.0...v1.4.0")
+        end
+      end
+
+      context "with only a new tag" do
+        let(:dependency_previous_version) { "0.3.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://gitlab.com/org/business/commits/v1.4.0")
+        end
+      end
+
+      context "no tags" do
+        let(:dependency_previous_version) { "0.3.0" }
+        let(:dependency_version) { "0.5.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://gitlab.com/org/business/commits/master")
+        end
+      end
+    end
+
+    context "without a recognised source" do
+      before { allow(finder).to receive(:source).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
@@ -171,8 +218,34 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
     end
 
-    context "without a github repo" do
-      before { allow(finder).to receive(:github_repo?).and_return(nil) }
+    context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
+      end
+
+      let(:gitlab_status) { 200 }
+      let(:gitlab_response) { fixture("gitlab", "business_files.json") }
+
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "gitlab", "repo" => "org/#{dependency_name}")
+
+        stub_request(:get, gitlab_url).
+          to_return(status: gitlab_status,
+                    body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it "gets the right URL" do
+        is_expected.to eq(
+          "https://gitlab.com/org/business/blob/master/CHANGELOG.md"
+        )
+      end
+    end
+
+    context "without a recognised source" do
+      before { allow(finder).to receive(:source).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
@@ -266,8 +339,41 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
     end
 
-    context "without a github repo" do
-      before { allow(finder).to receive(:github_repo?).and_return(nil) }
+    context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+      end
+
+      let(:gitlab_status) { 200 }
+      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
+
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "gitlab", "repo" => "org/#{dependency_name}")
+
+        stub_request(:get, gitlab_url).
+          to_return(status: gitlab_status,
+                    body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      context "with the current release" do
+        let(:dependency_version) { "1.3.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://gitlab.com/org/business/tags/v1.3.0")
+        end
+      end
+
+      context "without the current release" do
+        let(:dependency_version) { "1.6.0" }
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "without a recognised source" do
+      before { allow(finder).to receive(:source).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end

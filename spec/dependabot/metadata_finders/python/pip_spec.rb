@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "luigi" }
 
-  describe "#source" do
-    subject(:source) { finder.source }
+  describe "#source_url" do
+    subject(:source_url) { finder.source_url }
     let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
 
     before do
@@ -32,10 +32,10 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     context "when there is a github link in the pypi response" do
       let(:pypi_response) { fixture("python", "pypi_response.json") }
 
-      its(["repo"]) { is_expected.to eq("spotify/luigi") }
+      it { is_expected.to eq("https://github.com/spotify/luigi") }
 
       it "caches the call to pypi" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
@@ -43,10 +43,10 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     context "when there is a bitbucket link in the pypi response" do
       let(:pypi_response) { fixture("python", "pypi_response_bitbucket.json") }
 
-      its(["repo"]) { is_expected.to eq("spotify/luigi") }
+      it { is_expected.to eq("https://bitbucket.org/spotify/luigi") }
 
       it "caches the call to pypi" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
       it { is_expected.to be_nil }
 
       it "caches the call to pypi" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
           to_return(status: 200, body: pypi_response)
       end
 
-      its(["repo"]) { is_expected.to eq("spotify/luigi") }
+      it { is_expected.to eq("https://github.com/spotify/luigi") }
     end
   end
 end
