@@ -1,0 +1,44 @@
+{
+    "name": "result-monad",
+    "downloads": 3806,
+    "version": "0.2.1",
+    "version_downloads": 770,
+    "platform": "ruby",
+    "authors": "Zachary Daniel",
+    "info": "The Result Monad implemented in ruby. Designed to maximize usefulness, as sticking to the category theoretical Monad is not really feasible without an evolved static type system.",
+    "licenses": [
+        "MIT"
+    ],
+    "metadata": {},
+    "sha": "f1ae176c1e4b02fcc2123825634ee380086929243614d3c5f714f29a546a5230",
+    "project_uri": "https://rubygems.org/gems/result-monad",
+    "gem_uri": "https://rubygems.org/gems/result-monad-0.2.1.gem",
+    "homepage_uri": "http://gitlab.com/zachdaniel/result-monad",
+    "wiki_uri": null,
+    "documentation_uri": "http://www.rubydoc.info/gems/result-monad/0.2.1",
+    "mailing_list_uri": null,
+    "source_code_uri": null,
+    "bug_tracker_uri": null,
+    "changelog_uri": null,
+    "dependencies": {
+        "development": [
+            {
+                "name": "bundler",
+                "requirements": "~> 1.10"
+            },
+            {
+                "name": "byebug",
+                "requirements": ">= 0"
+            },
+            {
+                "name": "rake",
+                "requirements": "~> 10.0"
+            },
+            {
+                "name": "rspec",
+                "requirements": ">= 0"
+            }
+        ],
+        "runtime": []
+    }
+}

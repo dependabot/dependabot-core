@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "business" }
 
-  describe "#source" do
-    subject(:source) { finder.source }
+  describe "#source_url" do
+    subject(:source_url) { finder.source_url }
     let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
     let(:rubygems_response_code) { 200 }
 
@@ -34,10 +34,10 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     context "when there is a github link in the rubygems response" do
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
 
-      its(["repo"]) { is_expected.to eq("gocardless/business") }
+      it { is_expected.to eq("https://github.com/gocardless/business") }
 
       it "caches the call to rubygems" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
 
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           fixture("ruby", "rubygems_response_period_github.json")
         end
 
-        its(["repo"]) { is_expected.to eq("gocardless/business.rb") }
+        it { is_expected.to eq("https://github.com/gocardless/business.rb") }
       end
     end
 
@@ -55,10 +55,23 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         fixture("ruby", "rubygems_response_bitbucket.json")
       end
 
-      its(["repo"]) { is_expected.to eq("gocardless/business") }
+      it { is_expected.to eq("https://bitbucket.org/gocardless/business") }
 
       it "caches the call to rubygems" do
-        2.times { source }
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, rubygems_url).once
+      end
+    end
+
+    context "when there is a gitlab link in the rubygems response" do
+      let(:rubygems_response) do
+        fixture("ruby", "rubygems_response_gitlab.json")
+      end
+
+      it { is_expected.to eq("https://gitlab.com/zachdaniel/result-monad") }
+
+      it "caches the call to rubygems" do
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
     end
@@ -71,7 +84,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       it { is_expected.to be_nil }
 
       it "caches the call to rubygems" do
-        2.times { source }
+        2.times { source_url }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
     end

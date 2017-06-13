@@ -3,7 +3,7 @@ module Dependabot
   module MetadataFinders
     class Base
       SOURCE_REGEX = %r{
-        (?<host>github(?=\.com)|bitbucket(?=\.org))
+        (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
         (?:\.com|\.org)/
         (?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?
       }x
@@ -29,6 +29,7 @@ module Dependabot
         when nil then nil
         when "github" then github_client.web_endpoint + source.fetch("repo")
         when "bitbucket" then "https://bitbucket.org/" + source.fetch("repo")
+        when "gitlab" then "https://gitlab.com/" + source.fetch("repo")
         else raise "Unexpected repo host '#{source.fetch('host')}'"
         end
       end
