@@ -22,22 +22,33 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   before do
     allow(finder).
-      to receive(:github_repo).
-      and_return("gocardless/#{dependency_name}")
+      to receive(:source).
+      and_return("host" => "github", "repo" => "gocardless/#{dependency_name}")
   end
 
-  describe "#github_repo_url" do
-    subject { finder.github_repo_url }
+  describe "#source_url" do
+    subject { finder.source_url }
+
     it { is_expected.to eq("https://github.com/gocardless/business") }
 
-    context "without a github repo" do
-      before { allow(finder).to receive(:github_repo).and_return(nil) }
+    context "with a bitbucket" do
+      before do
+        allow(finder).
+          to receive(:source).
+          and_return("host" => "bitbucket", "repo" => "org/#{dependency_name}")
+      end
+
+      it { is_expected.to eq("https://bitbucket.org/org/business") }
+    end
+
+    context "without a source" do
+      before { allow(finder).to receive(:source).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
 
-  context "#github_compare_url" do
-    subject { finder.github_compare_url }
+  context "#commits_url" do
+    subject { finder.commits_url }
 
     context "with a github repo and old/new tags" do
       let(:dependency_previous_version) { "1.3.0" }
@@ -101,7 +112,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     context "without a github repo" do
-      before { allow(finder).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo?).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
@@ -161,7 +172,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     context "without a github repo" do
-      before { allow(finder).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo?).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end
@@ -256,7 +267,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     context "without a github repo" do
-      before { allow(finder).to receive(:github_repo).and_return(nil) }
+      before { allow(finder).to receive(:github_repo?).and_return(nil) }
       it { is_expected.to be_nil }
     end
   end

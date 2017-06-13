@@ -22,44 +22,30 @@ module Dependabot
         @source = look_up_source
       end
 
-      def github_repo
-        return unless source && source["host"] == "github"
-        source["repo"]
-      end
+      def source_url
+        return unless source
 
-      def github_repo_url
-        return unless github_repo
-        github_client.web_endpoint + github_repo
-      end
-
-      def github_compare_url
-        return unless github_repo
-
-        @tags ||= look_up_repo_tags
-
-        current_version = dependency.version
-        previous_version = dependency.previous_version
-        current_tag = @tags.find { |t| t =~ version_regex(current_version) }
-        previous_tag = @tags.find { |t| t =~ version_regex(previous_version) }
-
-        if current_tag && previous_tag
-          "#{github_repo_url}/compare/#{previous_tag}...#{current_tag}"
-        elsif current_tag
-          "#{github_repo_url}/commits/#{current_tag}"
-        else
-          "#{github_repo_url}/commits"
+        case source.fetch("host")
+        when nil then nil
+        when "github" then github_client.web_endpoint + source.fetch("repo")
+        when "bitbucket" then "https://bitbucket.org/" + source.fetch("repo")
+        else raise "Unexpected repo host '#{source.fetch('host')}'"
         end
       end
 
+      def commits_url
+        return @commits_url if @commits_url_lookup_attempted
+
+        look_up_commits_url
+      end
+
       def changelog_url
-        return unless github_repo
         return @changelog_url if @changelog_url_lookup_attempted
 
         look_up_changelog_url
       end
 
       def release_url
-        return unless github_repo
         return @release_url if @release_url_lookup_attempted
 
         look_up_release_url
@@ -67,10 +53,16 @@ module Dependabot
 
       private
 
+      def github_repo?
+        source && source["host"] == "github"
+      end
+
       def look_up_changelog_url
         @changelog_url_lookup_attempted = true
 
-        files = github_client.contents(github_repo)
+        return @changelog_url = nil unless github_repo?
+
+        files = github_client.contents(source["repo"])
         file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
 
         @changelog_url = file.nil? ? nil : file.html_url
@@ -81,8 +73,10 @@ module Dependabot
       def look_up_release_url
         @release_url_lookup_attempted = true
 
+        return @release_url = nil unless github_repo?
+
         release_regex = version_regex(dependency.version)
-        release = github_client.releases(github_repo).find do |r|
+        release = github_client.releases(source["repo"]).find do |r|
           r.name.to_s =~ release_regex || r.tag_name.to_s =~ release_regex
         end
 
@@ -91,8 +85,26 @@ module Dependabot
         @release_url = nil
       end
 
-      def look_up_repo_tags
-        github_client.tags(github_repo).map { |tag| tag["name"] }
+      def look_up_commits_url
+        @commits_url_lookup_attempted = true
+
+        return @commits_url = nil unless github_repo?
+
+        @tags ||= github_client.tags(source["repo"]).map { |tag| tag["name"] }
+
+        current_version = dependency.version
+        previous_version = dependency.previous_version
+        current_tag = @tags.find { |t| t =~ version_regex(current_version) }
+        previous_tag = @tags.find { |t| t =~ version_regex(previous_version) }
+
+        @commits_url =
+          if current_tag && previous_tag
+            "#{source_url}/compare/#{previous_tag}...#{current_tag}"
+          elsif current_tag
+            "#{source_url}/commits/#{current_tag}"
+          else
+            "#{source_url}/commits"
+          end
       rescue Octokit::NotFound
         []
       end

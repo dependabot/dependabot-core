@@ -105,8 +105,8 @@ module Dependabot
     end
 
     def pr_message
-      msg = if github_repo_url
-              "Bumps [#{dependency.name}](#{github_repo_url}) "
+      msg = if source_url
+              "Bumps [#{dependency.name}](#{source_url}) "
             else
               "Bumps #{dependency.name} "
             end
@@ -114,7 +114,7 @@ module Dependabot
       msg += "from #{dependency.previous_version} to #{dependency.version}."
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
-      msg += "\n- [Commits](#{github_compare_url})" if github_compare_url
+      msg += "\n- [Commits](#{commits_url})" if commits_url
       msg
     end
 
@@ -141,12 +141,12 @@ module Dependabot
       metadata_finder.changelog_url
     end
 
-    def github_compare_url
-      metadata_finder.github_compare_url
+    def commits_url
+      metadata_finder.commits_url
     end
 
-    def github_repo_url
-      metadata_finder.github_repo_url
+    def source_url
+      metadata_finder.source_url
     end
 
     def metadata_finder

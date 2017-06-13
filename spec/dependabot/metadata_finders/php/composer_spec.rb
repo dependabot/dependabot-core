@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "monolog/monolog" }
 
-  describe "#github_repo" do
-    subject(:github_repo) { finder.github_repo }
+  describe "#source" do
+    subject(:source) { finder.source }
     let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
 
     before do
@@ -33,23 +33,34 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
     context "when there is a github link in the packagist response" do
       let(:packagist_response) { fixture("php", "packagist_response.json") }
 
-      it { is_expected.to eq("Seldaek/monolog") }
+      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
 
       it "caches the call to packagist" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
     end
 
-    context "when there is not a github link in the packagist response" do
+    context "when there is a bitbucket link in the packagist response" do
+      let(:packagist_response) { fixture("php", "packagist_response.json") }
+
+      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
+
+      it "caches the call to packagist" do
+        2.times { source }
+        expect(WebMock).to have_requested(:get, packagist_url).once
+      end
+    end
+
+    context "when there is not a source link in the packagist response" do
       let(:packagist_response) do
-        fixture("php", "packagist_response_no_github.json")
+        fixture("php", "packagist_response_no_source.json")
       end
 
       it { is_expected.to be_nil }
 
       it "caches the call to packagist" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
     end
@@ -65,7 +76,7 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
           to_return(status: 200, body: packagist_response)
       end
 
-      it { is_expected.to eq("Seldaek/monolog") }
+      its(["repo"]) { is_expected.to eq("Seldaek/monolog") }
     end
   end
 end

@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "business" }
 
-  describe "#github_repo" do
-    subject(:github_repo) { finder.github_repo }
+  describe "#source" do
+    subject(:source) { finder.source }
     let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
     let(:rubygems_response_code) { 200 }
 
@@ -34,10 +34,10 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     context "when there is a github link in the rubygems response" do
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
 
-      it { is_expected.to eq("gocardless/business") }
+      its(["repo"]) { is_expected.to eq("gocardless/business") }
 
       it "caches the call to rubygems" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
 
@@ -46,19 +46,32 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           fixture("ruby", "rubygems_response_period_github.json")
         end
 
-        it { is_expected.to eq("gocardless/business.rb") }
+        its(["repo"]) { is_expected.to eq("gocardless/business.rb") }
       end
     end
 
-    context "when there isn't github link in the rubygems response" do
+    context "when there is a bitbucket link in the rubygems response" do
       let(:rubygems_response) do
-        fixture("ruby", "rubygems_response_no_github.json")
+        fixture("ruby", "rubygems_response_bitbucket.json")
+      end
+
+      its(["repo"]) { is_expected.to eq("gocardless/business") }
+
+      it "caches the call to rubygems" do
+        2.times { source }
+        expect(WebMock).to have_requested(:get, rubygems_url).once
+      end
+    end
+
+    context "when there isn't a source link in the rubygems response" do
+      let(:rubygems_response) do
+        fixture("ruby", "rubygems_response_no_source.json")
       end
 
       it { is_expected.to be_nil }
 
       it "caches the call to rubygems" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, rubygems_url).once
       end
     end

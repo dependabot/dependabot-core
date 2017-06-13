@@ -21,8 +21,8 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:dependency_name) { "luigi" }
 
-  describe "#github_repo" do
-    subject(:github_repo) { finder.github_repo }
+  describe "#source" do
+    subject(:source) { finder.source }
     let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
 
     before do
@@ -32,21 +32,32 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     context "when there is a github link in the pypi response" do
       let(:pypi_response) { fixture("python", "pypi_response.json") }
 
-      it { is_expected.to eq("spotify/luigi") }
+      its(["repo"]) { is_expected.to eq("spotify/luigi") }
 
       it "caches the call to pypi" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
 
-    context "when there is not a github link in the pypi response" do
-      let(:pypi_response) { fixture("python", "pypi_response_no_github.json") }
+    context "when there is a bitbucket link in the pypi response" do
+      let(:pypi_response) { fixture("python", "pypi_response_bitbucket.json") }
+
+      its(["repo"]) { is_expected.to eq("spotify/luigi") }
+
+      it "caches the call to pypi" do
+        2.times { source }
+        expect(WebMock).to have_requested(:get, pypi_url).once
+      end
+    end
+
+    context "when there is not a recognised source link in the pypi response" do
+      let(:pypi_response) { fixture("python", "pypi_response_no_source.json") }
 
       it { is_expected.to be_nil }
 
       it "caches the call to pypi" do
-        2.times { github_repo }
+        2.times { source }
         expect(WebMock).to have_requested(:get, pypi_url).once
       end
     end
@@ -62,7 +73,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
           to_return(status: 200, body: pypi_response)
       end
 
-      it { is_expected.to eq("spotify/luigi") }
+      its(["repo"]) { is_expected.to eq("spotify/luigi") }
     end
   end
 end
