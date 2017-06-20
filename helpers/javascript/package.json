@@ -1,6 +1,7 @@
 {
   "name": "dependabot-core",
   "dependencies": {
+    "semver": "^5.3.0",
     "yarn": "^0.26.1"
   },
   "devDependencies": {

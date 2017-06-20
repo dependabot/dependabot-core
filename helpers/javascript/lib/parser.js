@@ -14,6 +14,7 @@ const Config = require("yarn/lib/config").default;
 const { NoopReporter } = require("yarn/lib/reporters");
 const Lockfile = require("yarn/lib/lockfile/wrapper").default;
 const PackageRequest = require("yarn/lib/package-request").default;
+const semver = require("semver");
 
 function isNotExotic(request) {
   const { range } = PackageRequest.normalizePattern(request.pattern);
@@ -35,7 +36,10 @@ async function parse(directory) {
     .map(request => lockfile.getLocked(request.pattern))
     .filter(dep => dep);
 
-  return deps.map(dep => ({ name: dep.name, version: dep.version }));
+  return deps.map(dep => ({
+    name: dep.name,
+    version: semver.clean(dep.version)
+  }));
 }
 
 module.exports = { parse };

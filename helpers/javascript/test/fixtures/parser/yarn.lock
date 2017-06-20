@@ -15,6 +15,16 @@ is-buffer@^1.1.5:
 "is-promise@file:/tmp/is-promise":
   version "2.1.0"
 
+jq-accordion@^v1.0.1:
+  version v1.0.1
+  resolved "https://registry.yarnpkg.com/jq-accordion/-/jq-accordion-1.0.1.tgz#7425c2f52bfeba82913f5f18df3f0e13a539de58"
+  dependencies:
+    jquery ">=1.11.1"
+
+jquery@>=1.11.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.2.1.tgz#5c4d9de652af6cd0a770154a631bba12b015c787"
+
 kind-of@^3.0.2:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-3.2.2.tgz#31ea21a734bab9bbb0f32466d893aea51e4a3c64"

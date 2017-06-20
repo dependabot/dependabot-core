@@ -6,7 +6,7 @@ describe("parser", () => {
   it("returns an entry for each npm dependency", async () => {
     const deps = await parser.parse(dir);
     expect(deps.map(d => d.name).sort()).toEqual(
-      expect.arrayContaining(["left-pad", "lodash"])
+      expect.arrayContaining(["jq-accordion", "left-pad", "lodash"])
     );
   });
 
@@ -24,6 +24,12 @@ describe("parser", () => {
     const deps = await parser.parse(dir);
     const leftPad = deps.find(d => d.name === "left-pad");
     expect(leftPad.version).toEqual("1.1.1");
+  });
+
+  it("cleans the version string (e.g. strip leading 'v')", async () => {
+    const deps = await parser.parse(dir);
+    const jqAccordion = deps.find(d => d.name === "jq-accordion");
+    expect(jqAccordion.version).toEqual("1.0.1");
   });
 
   it("ignores dependencies that are missing from the yarn.lock", async () => {
