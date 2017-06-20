@@ -1,3 +1,7 @@
+## v0.8.5, 20 June 2017
+
+- Clean version strings in JavaScript parser
+
 ## v0.8.4, 20 June 2017
 
 - FIX: Require Octokit and Gitlab where used
