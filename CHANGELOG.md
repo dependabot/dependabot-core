@@ -1,3 +1,7 @@
+## v0.8.4, 20 June 2017
+
+- FIX: Require Octokit and Gitlab where used
+
 ## v0.8.3, 14 June 2017
 
 - Full support for Bitbucket changelogs and commit comparisons
