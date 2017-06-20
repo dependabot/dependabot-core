@@ -81,6 +81,7 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({ cwd: directory, nonInteractive: true });
+  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
   // Find the old dependency pattern from the package.json, so we can construct
   // a new pattern that contains the new version but maintains the old format

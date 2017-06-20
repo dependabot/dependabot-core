@@ -1,7 +1,7 @@
 {
   "name": "dependabot-core",
   "dependencies": {
-    "yarn": "https://github.com/dependabot/yarn.git"
+    "yarn": "^0.26.1"
   },
   "devDependencies": {
     "eslint": "^4.0.0",
