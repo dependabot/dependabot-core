@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+require "gitlab"
+require "octokit"
+
 module Dependabot
   module MetadataFinders
     class Base

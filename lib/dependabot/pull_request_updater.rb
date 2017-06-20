@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require "octokit"
+
 module Dependabot
   class PullRequestUpdater
     attr_reader :watched_repo, :files, :base_commit, :github_client,

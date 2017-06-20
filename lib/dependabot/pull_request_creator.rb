@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/metadata_finders"
+require "octokit"
 
 module Dependabot
   class PullRequestCreator
