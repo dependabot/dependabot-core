@@ -94,7 +94,7 @@ module Dependabot
             File.join(dir, "Gemfile.lock"),
             lockfile.content.gsub(
               "git@github.com:",
-              "https://#{github_access_token}:x-oauth-basic@github.com/"
+              "https://x-access-token:#{github_access_token}@github.com/"
             )
           )
         end
@@ -104,7 +104,7 @@ module Dependabot
           gemfile_content =
             gemfile_content.gsub(
               "git@github.com:",
-              "https://#{github_access_token}:x-oauth-basic@github.com/"
+              "https://x-access-token:#{github_access_token}@github.com/"
             )
 
           # Remove any explicit Ruby version, as a mismatch with the system Ruby
@@ -121,7 +121,7 @@ module Dependabot
           # Remove any auth details we prepended to git remotes
           lockfile_body =
             lockfile_body.gsub(
-              "https://#{github_access_token}:x-oauth-basic@github.com/",
+              "https://x-access-token:#{github_access_token}@github.com/",
               "git@github.com:"
             )
 

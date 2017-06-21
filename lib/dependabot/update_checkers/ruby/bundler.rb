@@ -183,7 +183,7 @@ module Dependabot
         def prepend_git_auth_details(gemfile_content)
           gemfile_content.gsub(
             "git@github.com:",
-            "https://#{github_access_token}:x-oauth-basic@github.com/"
+            "https://x-access-token:#{github_access_token}@github.com/"
           )
         end
 
