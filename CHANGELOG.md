@@ -1,3 +1,9 @@
+## v0.8.6, 21 June 2017
+
+- FIX: Pass GitHub credentials as `x-access-token` password. This allows us to
+  clone private repos using app access tokens, whilst maintaining support for
+  doing so using OAuth tokens.
+
 ## v0.8.5, 20 June 2017
 
 - Clean version strings in JavaScript parser
