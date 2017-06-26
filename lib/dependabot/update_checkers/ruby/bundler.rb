@@ -162,8 +162,8 @@ module Dependabot
           prepend_git_auth_details(lockfile_content)
         end
 
-        # Replace the original gem requirements with nothing, to fully "unlock"
-        # the gem during version checking
+        # Replace the original gem requirements with a ">=" requirement to
+        # unlock the gem during version checking
         def remove_dependency_requirement(gemfile_content)
           gemfile_content.
             to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
@@ -172,7 +172,15 @@ module Dependabot
           original_gem_declaration_string = Regexp.last_match.to_s
           updated_gem_declaration_string =
             original_gem_declaration_string.
-            sub(/,[ \t]*#{Gemnasium::Parser::Patterns::REQUIREMENTS}/, "")
+            sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
+              if old_req.match?(Gemnasium::Parser::Patterns::MATCHER)
+                old_req.sub(Gemnasium::Parser::Patterns::MATCHER, ">=")
+              else
+                old_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_v|
+                  ">= #{old_v}"
+                end
+              end
+            end
 
           gemfile_content.gsub(
             original_gem_declaration_string,
