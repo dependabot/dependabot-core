@@ -1,3 +1,7 @@
+## v0.8.7, 26 June 2017
+
+- FIX: Work around Bundler bug when doing Ruby update checks
+
 ## v0.8.6, 21 June 2017
 
 - FIX: Pass GitHub credentials as `x-access-token` password. This allows us to
