@@ -1,3 +1,7 @@
+## v0.8.8, 26 June 2017
+
+- FIX: Improved Bundler bug workaround, with specs
+
 ## v0.8.7, 26 June 2017
 
 - FIX: Work around Bundler bug when doing Ruby update checks
