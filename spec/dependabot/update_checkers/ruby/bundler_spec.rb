@@ -92,6 +92,24 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         # version compatible with the version of i18n in the Gemfile.
         it { is_expected.to eq(Gem::Version.new("0.3.4")) }
       end
+
+      context "with no version specified" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_not_specified")
+        end
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_not_specified.lock")
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
+
+      context "with a greater than or equal to matcher" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "gte_matcher") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "gte_matcher.lock") }
+
+        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
     end
 
     context "given a gem from a private gem source" do
