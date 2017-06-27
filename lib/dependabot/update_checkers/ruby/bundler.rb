@@ -1,21 +1,10 @@
 # frozen_string_literal: true
+require "bundler_definition_version_patch"
 require "gems"
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-
-module BundlerDefinitionVersionPatch
-  def index
-    @index ||= super.tap do |index|
-      if ruby_version
-        requested_version = ruby_version.to_gem_version_with_patchlevel
-        index << Gem::Specification.new("ruby\0", requested_version)
-      end
-    end
-  end
-end
-Bundler::Definition.prepend(BundlerDefinitionVersionPatch)
 
 module Dependabot
   module UpdateCheckers

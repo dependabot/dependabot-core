@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "gemnasium/parser"
 require "bundler"
+require "bundler_definition_version_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
@@ -101,20 +102,10 @@ module Dependabot
 
         def prepare_gemfile_for_resolution(gemfile_content)
           # Prepend auth details to any git remotes
-          gemfile_content =
-            gemfile_content.gsub(
-              "git@github.com:",
-              "https://x-access-token:#{github_access_token}@github.com/"
-            )
-
-          # Remove any explicit Ruby version, as a mismatch with the system Ruby
-          # version during dependency resolution will cause an error.
-          #
-          # Ideally we would run this class using whichever Ruby version was
-          # specified, but that's impractical, and it's better to produce a PR
-          # for the user with gems that require a bump to their Ruby version
-          # than not to produce a PR at all.
-          gemfile_content.gsub(/^ruby\b/, "# ruby")
+          gemfile_content.gsub(
+            "git@github.com:",
+            "https://x-access-token:#{github_access_token}@github.com/"
+          )
         end
 
         def post_process_lockfile(lockfile_body)
