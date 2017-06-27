@@ -11,7 +11,7 @@ module Dependabot
   module FileUpdaters
     module Ruby
       class Bundler < Dependabot::FileUpdaters::Base
-        LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+        LOCKFILE_ENDING = /(?<ending>\s*BUNDLED WITH.*)/m
         GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
         def updated_dependency_files
@@ -116,7 +116,7 @@ module Dependabot
               "git@github.com:"
             )
 
-          # Re-add any explicit Ruby version, and the old `BUNDLED WITH` version
+          # Re-add the old `BUNDLED WITH` version
           lockfile_body.gsub(
             LOCKFILE_ENDING,
             lockfile.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
