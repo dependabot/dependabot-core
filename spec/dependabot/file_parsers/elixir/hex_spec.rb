@@ -5,7 +5,7 @@ require "dependabot/file_parsers/elixir/hex"
 require_relative "../shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::FileParsers::Elixir::Hex do
-  it_behaves_like "a dependency file parser"
+  # it_behaves_like "a dependency file parser"
 
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
@@ -14,11 +14,11 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "mix.lock", content: lockfile_body)
   end
-  let(:mixfile_body) { fixture("elixir", "mixfiles", "mix.exs") }
-  let(:lockfile_body) { fixture("elixir", "lockfiles", "mix.lock") }
+  let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version_specified") }
+  let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version_specified") }
   let(:parser) { described_class.new(dependency_files: files) }
 
-  pending "parse" do
+  describe "parse" do
     subject(:dependencies) { parser.parse }
 
     its(:length) { is_expected.to eq(6) }

@@ -9,3 +9,5 @@ Gemfile.lock
 /helpers/php/.php_cs.cache
 vendor
 *.pyc
+/helpers/elixir/deps
+/helpers/elixir/_build

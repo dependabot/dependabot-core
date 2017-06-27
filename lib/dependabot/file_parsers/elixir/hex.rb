@@ -13,7 +13,13 @@ module Dependabot
             Dependency.new(
               name: dep["name"],
               version: dep["version"],
-              language: "elixir"
+              requirements: [{
+                requirement: dep["requirement"],
+                groups: [],
+                source: nil,
+                file: "mix.exs"
+              }],
+              package_manager: "hex",
             )
           end
         end
@@ -24,13 +30,35 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "mix.exs"), mixfile.content)
             File.write(File.join(dir, "mix.lock"), lockfile.content)
+            FileUtils.cp(elixir_helper_load_deps_path, File.join(dir, "load_deps.exs"))
 
             SharedHelpers.run_helper_subprocess(
-              command: "elixir #{elixir_helper_path}",
+              env: {
+                "MIX_EXS" => elixir_helper_mix_exs_path,
+                "MIX_LOCK" => elixir_helper_mix_lock_path,
+                "MIX_DEPS" => elixir_helper_mix_deps_path,
+                "MIX_QUIET" => "1",
+              },
+              command: "mix run #{elixir_helper_path}",
               function: "parse",
               args: [dir]
             )
           end
+        end
+
+        def elixir_helper_mix_exs_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/elixir/mix.exs")
+        end
+
+        def elixir_helper_mix_deps_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/elixir/deps")
+        end
+
+        def elixir_helper_mix_lock_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/elixir/mix.lock")
         end
 
         def elixir_helper_path
@@ -38,8 +66,19 @@ module Dependabot
           File.join(project_root, "helpers/elixir/bin/run.exs")
         end
 
+        def elixir_helper_load_deps_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/elixir/bin/load_deps.exs")
+        end
+
+
         def required_files
           Dependabot::FileFetchers::Elixir::Hex.required_files
+        end
+
+        def check_required_files
+          # TODO
+          return
         end
 
         def mixfile

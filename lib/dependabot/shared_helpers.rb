@@ -65,9 +65,9 @@ module Dependabot
       end
     end
 
-    def self.run_helper_subprocess(command:, function:, args:)
+    def self.run_helper_subprocess(env:, command:, function:, args:)
       raw_response = nil
-      IO.popen(command, "w+") do |process|
+      IO.popen(env, command, "w+") do |process|
         process.write(JSON.dump(function: function, args: args))
         process.close_write
         raw_response = process.read
