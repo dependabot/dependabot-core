@@ -1,0 +1,16 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    public_suffix (1.3.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  public_suffix (~> 1.3.0)
+
+RUBY VERSION
+   ruby 1.9.3p551
+
+BUNDLED WITH
+   1.15.1

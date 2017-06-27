@@ -8,25 +8,6 @@ require_relative "../shared_examples_for_update_checkers"
 RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   it_behaves_like "an update checker"
 
-  before do
-    stub_request(:get, "https://index.rubygems.org/versions").
-      to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-    stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
-      to_return(status: 200)
-
-    stub_request(
-      :get,
-      "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
-    ).to_return(
-      status: 200,
-      body: fixture("ruby", "rubygems-dependencies-business-statesman")
-    )
-
-    stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
-      to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
-  end
-
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -54,6 +35,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
+
+    before do
+      stub_request(:get, "https://index.rubygems.org/versions").
+        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+
+      stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
+        to_return(status: 200)
+
+      stub_request(
+        :get,
+        "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
+      ).to_return(
+        status: 200,
+        body: fixture("ruby", "rubygems-dependencies-business-statesman")
+      )
+    end
+
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -91,6 +89,32 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.
         it { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      end
+
+      context "with a legacy Ruby which disallows the latest version" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "legacy_ruby") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "legacy_ruby.lock") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "public_suffix",
+            version: "1.3.3",
+            package_manager: "bundler"
+          )
+        end
+
+        before do
+          url = "https://index.rubygems.org/api/v1/dependencies" \
+                "?gems=public_suffix"
+          stub_request(:get, url).
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-dependencies-public-suffix")
+            )
+        end
+
+        # The latest version of public_suffix is > 2.0.0, but requires Ruby 2.1
+        # or greater.
+        it { is_expected.to eq(Gem::Version.new("1.4.6")) }
       end
 
       context "with no version specified" do
@@ -264,6 +288,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
+    before do
+      stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
+    end
+
     it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
     context "given a Gemfile with a non-rubygems source" do
