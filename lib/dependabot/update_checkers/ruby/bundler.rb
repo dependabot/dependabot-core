@@ -165,7 +165,7 @@ module Dependabot
         def gemfile_for_update_check
           gemfile_content = gemfile.content
           gemfile_content = remove_dependency_requirement(gemfile_content)
-          gemfile_content = prepend_git_auth_details(gemfile_content)
+          prepend_git_auth_details(gemfile_content)
         end
 
         def lockfile_for_update_check
