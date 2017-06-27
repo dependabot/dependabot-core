@@ -5,6 +5,18 @@ require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+module BundlerDefinitionVersionPatch
+  def index
+    @index ||= super.tap do |index|
+      if ruby_version
+        requested_version = ruby_version.to_gem_version_with_patchlevel
+        index << Gem::Specification.new("ruby\0", requested_version)
+      end
+    end
+  end
+end
+Bundler::Definition.prepend(BundlerDefinitionVersionPatch)
+
 module Dependabot
   module UpdateCheckers
     module Ruby
@@ -154,7 +166,6 @@ module Dependabot
           gemfile_content = gemfile.content
           gemfile_content = remove_dependency_requirement(gemfile_content)
           gemfile_content = prepend_git_auth_details(gemfile_content)
-          remove_ruby_declaration(gemfile_content)
         end
 
         def lockfile_for_update_check
@@ -194,17 +205,6 @@ module Dependabot
             "git@github.com:",
             "https://x-access-token:#{github_access_token}@github.com/"
           )
-        end
-
-        def remove_ruby_declaration(gemfile_content)
-          # Remove any explicit Ruby version, as a mismatch with the system Ruby
-          # version during dependency resolution will cause an error.
-          #
-          # Ideally we would run this class using whichever Ruby version was
-          # specified, but that's impractical, and it's better to produce a PR
-          # for the user with gems that require a bump to their Ruby version
-          # than not to produce a PR at all.
-          gemfile_content.gsub(/^ruby\b/, "# ruby")
         end
       end
     end
