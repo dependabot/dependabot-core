@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "bundler_definition_version_patch"
 require "gems"
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"
@@ -153,8 +154,7 @@ module Dependabot
         def gemfile_for_update_check
           gemfile_content = gemfile.content
           gemfile_content = remove_dependency_requirement(gemfile_content)
-          gemfile_content = prepend_git_auth_details(gemfile_content)
-          remove_ruby_declaration(gemfile_content)
+          prepend_git_auth_details(gemfile_content)
         end
 
         def lockfile_for_update_check
@@ -194,17 +194,6 @@ module Dependabot
             "git@github.com:",
             "https://x-access-token:#{github_access_token}@github.com/"
           )
-        end
-
-        def remove_ruby_declaration(gemfile_content)
-          # Remove any explicit Ruby version, as a mismatch with the system Ruby
-          # version during dependency resolution will cause an error.
-          #
-          # Ideally we would run this class using whichever Ruby version was
-          # specified, but that's impractical, and it's better to produce a PR
-          # for the user with gems that require a bump to their Ruby version
-          # than not to produce a PR at all.
-          gemfile_content.gsub(/^ruby\b/, "# ruby")
         end
       end
     end
