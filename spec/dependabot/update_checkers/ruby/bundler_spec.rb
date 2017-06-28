@@ -219,16 +219,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "when the Gem can't be found" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
-      before do
-        stub_request(
-          :get,
-          "https://index.rubygems.org/api/v1/dependencies?"\
-          "gems=business,statesman,unresolvable_gem_name"
-        ).to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-dependencies-business-statesman")
-        )
-      end
 
       it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
         expect { checker.latest_resolvable_version }.
