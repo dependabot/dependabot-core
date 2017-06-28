@@ -1,3 +1,7 @@
+## v0.8.9, 28 June 2017
+
+- FIX: Honour Ruby version when determining latest resolvable version
+
 ## v0.8.8, 26 June 2017
 
 - FIX: Improved Bundler bug workaround, with specs
