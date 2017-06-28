@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require "spec_helper"
+require "bundler/compact_index_client"
+require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_updaters/ruby/bundler"
@@ -9,19 +11,26 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   it_behaves_like "a dependency file updater"
 
   before do
+    allow_any_instance_of(Bundler::CompactIndexClient::Updater).
+      to receive(:etag_for).
+      and_return("")
+  end
+
+  before do
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(status: 200, body: fixture("ruby", "rubygems-index"))
 
-    stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
-      to_return(status: 200)
+    stub_request(:get, "https://index.rubygems.org/info/business").
+      to_return(
+        status: 200,
+        body: fixture("ruby", "rubygems-info-business")
+      )
 
-    stub_request(
-      :get,
-      "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
-    ).to_return(
-      status: 200,
-      body: fixture("ruby", "rubygems-dependencies-business-statesman")
-    )
+    stub_request(:get, "https://index.rubygems.org/info/statesman").
+      to_return(
+        status: 200,
+        body: fixture("ruby", "rubygems-info-statesman")
+      )
   end
 
   let(:updater) do
@@ -102,11 +111,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         before do
-          url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
-          stub_request(:get, url).
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems-dependencies-i18n")
+              body: fixture("ruby", "rubygems-info-i18n")
             )
         end
         its(:content) { is_expected.to include "\"i18n\", \"~> 0.5.0\"" }
@@ -155,6 +163,36 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
         it "preserves the Ruby version in the lockfile" do
           expect(file.content).to include "RUBY VERSION\n   ruby 2.2.0p0"
+        end
+
+        context "that is legacy" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "legacy_ruby") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "legacy_ruby.lock")
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "curses",
+              version: "1.0.2",
+              package_manager: "bundler"
+            )
+          end
+
+          before do
+            stub_request(:get, "https://index.rubygems.org/info/curses").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-info-curses")
+              )
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include "curses (1.0.2)"
+          end
+
+          it "preserves the Ruby version in the lockfile" do
+            expect(file.content).to include "RUBY VERSION\n   ruby 1.9.3p551"
+          end
         end
       end
 

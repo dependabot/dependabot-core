@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require "spec_helper"
+require "bundler/compact_index_client"
+require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/bundler"
@@ -33,6 +35,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
+  before do
+    allow_any_instance_of(Bundler::CompactIndexClient::Updater).
+      to receive(:etag_for).
+      and_return("")
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
@@ -40,18 +48,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       stub_request(:get, "https://index.rubygems.org/versions").
         to_return(status: 200, body: fixture("ruby", "rubygems-index"))
 
-      stub_request(:get, "https://index.rubygems.org/api/v1/dependencies").
-        to_return(status: 200)
+      stub_request(:get, "https://index.rubygems.org/info/business").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-business")
+        )
 
-      stub_request(
-        :get,
-        "https://index.rubygems.org/api/v1/dependencies?gems=business,statesman"
-      ).to_return(
-        status: 200,
-        body: fixture("ruby", "rubygems-dependencies-business-statesman")
-      )
+      stub_request(:get, "https://index.rubygems.org/info/statesman").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-statesman")
+        )
     end
-
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -70,19 +78,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         before do
-          url = "https://index.rubygems.org/api/v1/dependencies?"\
-                "gems=i18n,ibandit"
-          stub_request(:get, url).
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems-dependencies-i18n-ibandit")
+              body: fixture("ruby", "rubygems-info-i18n")
             )
 
-          url = "https://index.rubygems.org/api/v1/dependencies?gems=i18n"
-          stub_request(:get, url).
+          stub_request(:get, "https://index.rubygems.org/info/ibandit").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems-dependencies-i18n")
+              body: fixture("ruby", "rubygems-info-ibandit")
             )
         end
 
@@ -96,25 +101,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:lockfile_body) { fixture("ruby", "lockfiles", "legacy_ruby.lock") }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "public_suffix",
-            version: "1.3.3",
+            name: "curses",
+            version: "1.0.1",
             package_manager: "bundler"
           )
         end
 
         before do
-          url = "https://index.rubygems.org/api/v1/dependencies" \
-                "?gems=public_suffix"
-          stub_request(:get, url).
+          stub_request(:get, "https://index.rubygems.org/info/curses").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems-dependencies-public-suffix")
+              body: fixture("ruby", "rubygems-info-curses")
             )
         end
 
-        # The latest version of public_suffix is > 2.0.0, but requires Ruby 2.1
+        # The latest version of curses is > 1.0.2, but requires Ruby 2.1
         # or greater.
-        it { is_expected.to eq(Gem::Version.new("1.4.6")) }
+        it { is_expected.to eq(Gem::Version.new("1.0.2")) }
       end
 
       context "with no version specified" do
@@ -145,6 +148,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       before do
         stub_request(:get, gemfury_url + "versions").
           to_return(status: 200, body: fixture("ruby", "gemfury-index"))
+
+        stub_request(:get, gemfury_url + "info/business").
+          to_return(status: 404)
 
         stub_request(:get, gemfury_url + "api/v1/dependencies").
           to_return(status: 200)
