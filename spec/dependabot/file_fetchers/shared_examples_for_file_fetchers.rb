@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require "spec_helper"
 require "octokit"
-require "dependabot/repo"
 require "dependabot/file_fetchers/base"
 
 RSpec.shared_examples "a dependency file fetcher" do

@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 require "octokit"
 require "spec_helper"
-require "dependabot/repo"
 require "dependabot/file_fetchers/ruby/bundler"
 
 RSpec.describe Dependabot::FileFetchers::Base do
-  let(:repo) { Dependabot::Repo.new(name: "gocardless/bump", commit: nil) }
+  let(:repo) { "gocardless/bump" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
 
   let(:child_class) do
@@ -21,7 +20,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
-    let(:url) { "https://api.github.com/repos/#{repo.name}/contents/" }
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
     before do
       stub_request(:get, url + "Gemfile").
         to_return(status: 200,
@@ -60,7 +59,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "that ends in a slash" do
         let(:directory) { "app/" }
-        let(:url) { "https://api.github.com/repos/#{repo.name}/contents/app/" }
+        let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
 
         it "hits the right GitHub URL" do
           files
@@ -70,7 +69,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "that begins in a slash" do
         let(:directory) { "/app" }
-        let(:url) { "https://api.github.com/repos/#{repo.name}/contents/app/" }
+        let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
 
         it "hits the right GitHub URL" do
           files
@@ -80,7 +79,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "that includes a slash" do
         let(:directory) { "a/pp" }
-        let(:url) { "https://api.github.com/repos/#{repo.name}/contents/a/pp/" }
+        let(:url) { "https://api.github.com/repos/#{repo}/contents/a/pp/" }
 
         it "hits the right GitHub URL" do
           files
