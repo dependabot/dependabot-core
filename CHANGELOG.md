@@ -1,3 +1,7 @@
+## v0.9.1, 29 June 2017
+
+- Cache `commit` in file fetcher, and ensure files fetched are for that commit
+
 ## v0.9.0, 29 June 2017
 
 - BREAKING: Drop Dependabot::Repo in favour of just passing the repo's name
