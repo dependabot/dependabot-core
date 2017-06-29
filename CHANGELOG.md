@@ -1,3 +1,7 @@
+## v0.8.10, 29 June 2017
+
+- Better tag/release lookup: handle completely unprefixed tags/releases
+
 ## v0.8.9, 28 June 2017
 
 - FIX: Honour Ruby version when determining latest resolvable version
