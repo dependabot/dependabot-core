@@ -79,7 +79,8 @@ module Dependabot
             # We couldn't evaluate the Gemfile, let alone resolve it
             msg = error.error_class + " with message: " + error.error_message
             raise Dependabot::DependencyFileNotEvaluatable, msg
-          when "Bundler::VersionConflict", "Bundler::GemNotFound"
+          when "Bundler::VersionConflict", "Bundler::GemNotFound",
+               "Gem::InvalidSpecificationException"
             # We successfully evaluated the Gemfile, but couldn't resolve it
             # (e.g., because a gem couldn't be found in any of the specified
             # sources, or because it specified conflicting versions)
@@ -97,8 +98,7 @@ module Dependabot
             raise if path_based_dependencies.none?
             raise Dependabot::PathBasedDependencies,
                   path_based_dependencies.map(&:name)
-          else
-            raise
+          else raise
           end
         end
 
