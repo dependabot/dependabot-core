@@ -25,15 +25,19 @@ module Dependabot
       end
 
       def commit
-        default_branch = github_client.repository(repo).default_branch
-        github_client.ref(repo, "heads/#{default_branch}").object.sha
+        @commit ||=
+          begin
+            default_branch = github_client.repository(repo).default_branch
+            github_client.ref(repo, "heads/#{default_branch}").object.sha
+          end
       end
 
       private
 
       def fetch_file_from_github(file_name)
         file_path = File.join(directory, file_name)
-        content = github_client.contents(repo, path: file_path).content
+        content =
+          github_client.contents(repo, path: file_path, ref: commit).content
 
         DependencyFile.new(
           name: file_name,
