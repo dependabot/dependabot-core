@@ -98,6 +98,21 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
     end
 
+    context "with a github repo and tags with no prefix" do
+      before do
+        stub_request(:get,
+                     "https://api.github.com/repos/gocardless/business/tags").
+          to_return(status: 200,
+                    body: fixture("github", "unprefixed_tags.json"),
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it do
+        is_expected.to eq("https://github.com/gocardless/business/"\
+                          "commits/1.4.0")
+      end
+    end
+
     context "with a github repo and no tags found" do
       before do
         stub_request(:get,
@@ -376,6 +391,19 @@ RSpec.describe Dependabot::MetadataFinders::Base do
                 to eq(
                   "https://github.com/gocardless/business/releases/tag/"\
                   "business-1.8.0"
+                )
+            end
+          end
+
+          context "but unprefixed" do
+            let(:github_response) do
+              fixture("github", "unprefixed_releases.json")
+            end
+
+            it "gets the right URL" do
+              expect(subject).
+                to eq(
+                  "https://github.com/gocardless/business/releases/tag/1.8.0"
                 )
             end
           end

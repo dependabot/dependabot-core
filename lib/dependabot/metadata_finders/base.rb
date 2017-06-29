@@ -99,7 +99,7 @@ module Dependabot
       end
 
       def version_regex(version)
-        /[^0-9\.]#{Regexp.escape(version)}\z/
+        /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/
       end
 
       def fetch_dependency_file_tree

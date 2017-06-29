@@ -6,6 +6,12 @@ AllCops:
     - bin/**/*
     - tmp/**/*
 
+Layout/EmptyLineAfterMagicComment:
+  Enabled: false
+
+Layout/DotPosition:
+  EnforcedStyle: trailing
+
 Metrics/ClassLength:
   Max: 200
 
@@ -25,9 +31,6 @@ Metrics/BlockLength:
 Metrics/ParameterLists:
   Max: 10
 
-Style/EmptyLineAfterMagicComment:
-  Enabled: false
-
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
@@ -36,9 +39,6 @@ Style/SignalException:
 
 Style/Documentation:
   Enabled: false
-
-Style/DotPosition:
-  EnforcedStyle: trailing
 
 Style/PercentLiteralDelimiters:
   PreferredDelimiters:

@@ -1,6 +1,6 @@
 [
   {
-    "name": "business-1.8.0.beta",
+    "name": "business-1.4.0.beta",
     "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/business-1.8.0.beta",
     "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/business-1.8.0.beta",
     "commit": {
@@ -9,7 +9,7 @@
     }
   },
   {
-    "name": "business-21.8.0",
+    "name": "business-21.4.0",
     "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/business-21.8.0",
     "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/business-21.8.0",
     "commit": {
@@ -18,7 +18,7 @@
     }
   },
   {
-    "name": "business-2.1.8.0",
+    "name": "business-2.1.4.0",
     "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/business-2.1.8.0",
     "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/business-2.1.8.0",
     "commit": {

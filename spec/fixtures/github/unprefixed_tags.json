@@ -1,0 +1,29 @@
+[
+  {
+    "name": "1.5.0",
+    "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/1.5.0",
+    "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/1.5.0",
+    "commit": {
+      "sha": "55d39bf3042fac0b770bca2bfb200cfdffcd0175",
+      "url": "https://api.github.com/repos/gocardless/business/commits/55d39bf3042fac0b770bca2bfb200cfdffcd0175"
+    }
+  },
+  {
+    "name": "1.4.0",
+    "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/1.4.0",
+    "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/1.4.0",
+    "commit": {
+      "sha": "26f4887ec647493f044836363537e329d9d213aa",
+      "url": "https://api.github.com/repos/gocardless/business/commits/26f4887ec647493f044836363537e329d9d213aa"
+    }
+  },
+  {
+    "name": "1.3.0",
+    "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/1.3.0",
+    "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/1.3.0",
+    "commit": {
+      "sha": "469dacb70fafd72ed9571748036642df0d0857fa",
+      "url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa"
+    }
+  }
+]
