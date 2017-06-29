@@ -1,3 +1,7 @@
+## v0.9.0, 29 June 2017
+
+- BREAKING: Drop Dependabot::Repo in favour of just passing the repo's name
+
 ## v0.8.10, 29 June 2017
 
 - Better tag/release lookup: handle completely unprefixed tags/releases
