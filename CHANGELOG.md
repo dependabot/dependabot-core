@@ -1,3 +1,7 @@
+## v0.9.2, 30 June 2017
+
+- Bump yarn (fixes non-deterministic lockfile generation)
+
 ## v0.9.1, 29 June 2017
 
 - Cache `commit` in file fetcher, and ensure files fetched are for that commit
