@@ -1,25 +1,20 @@
 # frozen_string_literal: true
-lib = File.expand_path("../lib", __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "English"
-require "dependabot/version"
-
-summary = "Automated dependency management"
+require_relative "lib/dependabot/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "dependabot-core"
-  spec.version       = Dependabot::VERSION
-  spec.authors       = ["Dependabot"]
-  spec.email         = ["support@dependabot.com"]
-  spec.summary       = summary
-  spec.description   = summary
-  spec.homepage      = "https://github.com/hmarr/dependabot-core"
-  spec.licenses      = ["MIT"]
+  spec.name         = "dependabot-core"
+  spec.version      = Dependabot::VERSION
+  spec.summary      = "Automated dependency management"
+  spec.description  = "Core logic for updating a GitHub repos dependencies"
 
-  spec.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ["lib"]
+  spec.author       = "Dependabot"
+  spec.email        = "support@dependabot.com"
+  spec.homepage     = "https://github.com/hmarr/dependabot-core"
+  spec.license      = "MIT"
+
+  spec.require_path = "lib"
+  spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
+                          "lib/**/*", "helpers/**/*"]
 
   spec.required_ruby_version = ">= 2.4.0"
   spec.required_rubygems_version = ">= 2.6.11"
