@@ -126,6 +126,16 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           is_expected.to include "\"business\", \"~> 1.5.0\"   # Business time"
         end
       end
+
+      context "with a greater than or equal to matcher" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "gte_matcher") }
+        its(:content) { is_expected.to include "\"business\", \">= 1.5.0\"" }
+      end
+
+      context "with a less than matcher" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "less_than_matcher") }
+        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+      end
     end
 
     describe "the updated lockfile" do

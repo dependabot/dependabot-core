@@ -58,7 +58,8 @@ module Dependabot
         def updated_gem_declaration_string
           original_gem_declaration_string.
             sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
-              old_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
+              new_req = old_req.dup.gsub(/<=?/, "~>")
+              new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
                 precision = old_version.split(".").count
                 dependency.version.split(".").first(precision).join(".")
               end
