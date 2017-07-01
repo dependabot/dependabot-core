@@ -2,6 +2,7 @@
 require "gemnasium/parser"
 require "bundler"
 require "bundler_definition_version_patch"
+require "bundler_metadata_dependencies_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"

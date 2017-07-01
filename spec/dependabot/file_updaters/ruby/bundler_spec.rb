@@ -172,22 +172,22 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           end
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "curses",
-              version: "1.0.2",
+              name: "public_suffix",
+              version: "1.4.6",
               package_manager: "bundler"
             )
           end
 
           before do
-            stub_request(:get, "https://index.rubygems.org/info/curses").
+            stub_request(:get, "https://index.rubygems.org/info/public_suffix").
               to_return(
                 status: 200,
-                body: fixture("ruby", "rubygems-info-curses")
+                body: fixture("ruby", "rubygems-info-public_suffix")
               )
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include "curses (1.0.2)"
+            expect(file.content).to include "public_suffix (1.4.6)"
           end
 
           it "preserves the Ruby version in the lockfile" do
