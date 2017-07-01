@@ -1,3 +1,8 @@
+## v0.9.3, 1 July 2017
+
+- Replace less than matcher (and <= matcher) with ~> during file updates
+- Handle Ruby version constraints for dependencies Dependabot itself relies on
+
 ## v0.9.2, 30 June 2017
 
 - Bump yarn (fixes non-deterministic lockfile generation)
