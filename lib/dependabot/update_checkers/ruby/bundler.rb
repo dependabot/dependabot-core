@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "bundler_definition_version_patch"
+require "bundler_metadata_dependencies_patch"
 require "gems"
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"

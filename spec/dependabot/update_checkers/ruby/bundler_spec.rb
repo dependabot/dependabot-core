@@ -101,23 +101,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:lockfile_body) { fixture("ruby", "lockfiles", "legacy_ruby.lock") }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "curses",
+            name: "public_suffix",
             version: "1.0.1",
             package_manager: "bundler"
           )
         end
 
         before do
-          stub_request(:get, "https://index.rubygems.org/info/curses").
+          stub_request(:get, "https://index.rubygems.org/info/public_suffix").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems-info-curses")
+              body: fixture("ruby", "rubygems-info-public_suffix")
             )
         end
 
-        # The latest version of curses is > 1.0.2, but requires Ruby 2.1
+        # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0
         # or greater.
-        it { is_expected.to eq(Gem::Version.new("1.0.2")) }
+        it { is_expected.to eq(Gem::Version.new("1.4.6")) }
       end
 
       context "with no version specified" do
