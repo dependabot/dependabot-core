@@ -170,7 +170,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it "raises a Dependabot::PathBasedDependencies error" do
         expect { checker.latest_resolvable_version }.
-          to raise_error(Dependabot::PathBasedDependencies)
+          to raise_error(
+            Dependabot::PathBasedDependencies,
+            "Path based dependencies are not supported. " \
+            "Path based dependencies found: dependabot-core"
+          )
       end
 
       context "when Bundler raises a PathError but there are no path gems" do

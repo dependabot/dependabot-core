@@ -137,7 +137,7 @@ module Dependabot
 
         def path_based_dependencies
           ::Bundler::LockfileParser.new(lockfile.content).specs.select do |spec|
-            spec.source.is_a?(::Bundler::Source::Path)
+            spec.source.instance_of?(::Bundler::Source::Path)
           end
         end
 
