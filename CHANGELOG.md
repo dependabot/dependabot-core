@@ -1,3 +1,7 @@
+## v0.9.4, 2 July 2017
+
+- Correctly list path-based dependencies
+
 ## v0.9.3, 1 July 2017
 
 - Replace less than matcher (and <= matcher) with ~> during file updates
