@@ -29,7 +29,10 @@ module Dependabot
               write_temporary_dependency_files_to(dir)
 
               SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+                ::Bundler.instance_variable_set(
+                  :@root,
+                  Pathname.new(dir).expand_path(::Bundler.root)
+                )
 
                 definition = ::Bundler::Definition.build(
                   File.join(dir, "Gemfile"),

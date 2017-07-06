@@ -22,7 +22,7 @@ Metrics/AbcSize:
   Max: 30
 
 Metrics/MethodLength:
-  Max: 20
+  Max: 25
 
 Metrics/BlockLength:
   Exclude:
