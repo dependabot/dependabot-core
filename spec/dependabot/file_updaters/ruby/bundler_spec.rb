@@ -232,13 +232,22 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       context "when another gem in the Gemfile has a git source" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
 
         it "updates the gem just fine" do
           expect(file.content).to include "business (1.5.0)"
         end
 
-        it "doesn't leave details of the access token in the lockfile" do
-          expect(file.content).to_not include "https://x-access-token"
+        it "doesn't update the remote (e.g., by leaving auth details in)" do
+          %w(prius que uk_phone_numbers).each do |dep|
+            original_remote_line = lockfile_body.split(/^/).
+                                   find { |l| l.include?("gocardless/#{dep}") }
+
+            new_remote_line = file.content.split(/^/).
+                              find { |l| l.include?("gocardless/#{dep}") }
+
+            expect(new_remote_line).to eq(original_remote_line)
+          end
         end
       end
 

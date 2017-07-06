@@ -1,4 +1,16 @@
 GIT
+  remote: git@github.com:gocardless/que
+  revision: 5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3
+  specs:
+    que (0.11.7)
+
+GIT
+  remote: http://github.com/gocardless/uk_phone_numbers
+  revision: 1530024bd6a68d36ac18e04836ce110e0d433c36
+  specs:
+    uk_phone_numbers (0.1.1)
+
+GIT
   remote: https://github.com/gocardless/prius
   revision: cff701b3bfb182afc99a85657d7c9f3d6c1ccce2
   specs:
@@ -16,7 +28,9 @@ PLATFORMS
 DEPENDENCIES
   business (~> 1.4.0)
   prius!
+  que!
   statesman (~> 1.2.0)
+  uk_phone_numbers!
 
 BUNDLED WITH
-   1.14.6
+   1.15.1
