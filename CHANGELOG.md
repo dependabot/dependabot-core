@@ -1,3 +1,7 @@
+## v0.10.2, 6 July 2017
+
+- Robust support for https auth details
+
 ## v0.10.1, 6 July 2017
 
 - Revert handling git auth details for https specifications
