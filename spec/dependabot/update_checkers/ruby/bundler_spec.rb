@@ -168,12 +168,56 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
       let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
 
+      context "with a downloaded gemspec" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: gemspec_body,
+            name: "plugins/example/example.gemspec"
+          )
+        end
+        let(:checker) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [gemfile, lockfile, gemspec],
+            github_access_token: "token"
+          )
+        end
+
+        before do
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-i18n")
+            )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+
+        it "doesn't persist any temporary changes to Bundler's root" do
+          expect { checker.latest_resolvable_version }.
+            to_not(change { ::Bundler.root })
+        end
+
+        context "that is the gem we're checking" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "example",
+              version: "0.9.3",
+              package_manager: "bundler"
+            )
+          end
+
+          it { is_expected.to be_nil }
+        end
+      end
+
       it "raises a Dependabot::PathBasedDependencies error" do
         expect { checker.latest_resolvable_version }.
           to raise_error(
             Dependabot::PathBasedDependencies,
             "Path based dependencies are not supported. " \
-            "Path based dependencies found: dependabot-core"
+            "Path based dependencies found: example"
           )
       end
 
@@ -351,6 +395,53 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       it { is_expected.to be_nil }
+    end
+
+    context "given a path source" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
+      let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
+
+      it "raises a Dependabot::PathBasedDependencies error" do
+        expect { checker.latest_resolvable_version }.
+          to raise_error(
+            Dependabot::PathBasedDependencies,
+            "Path based dependencies are not supported. " \
+            "Path based dependencies found: example"
+          )
+      end
+
+      context "with a downloaded gemspec" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: gemspec_body,
+            name: "plugins/example/example.gemspec"
+          )
+        end
+        let(:checker) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [gemfile, lockfile, gemspec],
+            github_access_token: "token"
+          )
+        end
+
+        context "that is not the gem we're checking" do
+          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+        end
+
+        context "that is the gem we're checking" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "example",
+              version: "0.9.3",
+              package_manager: "bundler"
+            )
+          end
+
+          it { is_expected.to be_nil }
+        end
+      end
     end
 
     context "given a Gemfile that specifies a Ruby version" do

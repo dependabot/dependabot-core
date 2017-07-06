@@ -29,6 +29,8 @@ module Dependabot
               write_temporary_dependency_files_to(dir)
 
               SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+
                 definition = ::Bundler::Definition.build(
                   File.join(dir, "Gemfile"),
                   File.join(dir, "Gemfile.lock"),
@@ -53,6 +55,8 @@ module Dependabot
             write_temporary_dependency_files_to(dir)
 
             SharedHelpers.in_a_forked_process do
+              ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+
               definition = ::Bundler::Definition.build(
                 File.join(dir, "Gemfile"),
                 File.join(dir, "Gemfile.lock"),
@@ -62,8 +66,8 @@ module Dependabot
               dependency_source = definition.dependencies.
                                   find { |d| d.name == dependency.name }.source
 
-              # We don't want to bump gems with a git source, so exit early
-              next nil if dependency_source.is_a?(::Bundler::Source::Git)
+              # We don't want to bump gems with a path/git source, so exit early
+              next nil if dependency_source.is_a?(::Bundler::Source::Path)
 
               definition.resolve_remotely!
               definition.resolve.
@@ -152,6 +156,15 @@ module Dependabot
             File.join(dir, "Gemfile.lock"),
             lockfile_for_update_check
           )
+          gemspecs.each do |gemspec|
+            path = File.join(dir, gemspec.name)
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, gemspec.content)
+          end
+        end
+
+        def gemspecs
+          dependency_files.select { |f| f.name.end_with?(".gemspec") }
         end
 
         def gemfile_for_update_check

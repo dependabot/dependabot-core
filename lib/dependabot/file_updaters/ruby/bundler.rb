@@ -100,6 +100,15 @@ module Dependabot
               "https://x-access-token:#{github_access_token}@github.com/"
             )
           )
+          gemspecs.each do |gemspec|
+            path = File.join(dir, gemspec.name)
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, gemspec.content)
+          end
+        end
+
+        def gemspecs
+          dependency_files.select { |f| f.name.end_with?(".gemspec") }
         end
 
         def prepare_gemfile_for_resolution(gemfile_content)

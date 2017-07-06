@@ -237,6 +237,40 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           expect(file.content).to include "business (1.5.0)"
         end
       end
+
+      context "when another gem in the Gemfile has a path source" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
+
+        context "that we've downloaded" do
+          let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              content: gemspec_body,
+              name: "plugins/example/example.gemspec"
+            )
+          end
+
+          let(:updater) do
+            described_class.new(
+              dependency_files: [gemfile, lockfile, gemspec],
+              dependency: dependency,
+              github_access_token: "token"
+            )
+          end
+
+          before do
+            stub_request(:get, "https://index.rubygems.org/info/i18n").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-info-i18n")
+              )
+          end
+
+          it "updates the gem just fine" do
+            expect(file.content).to include "business (1.5.0)"
+          end
+        end
+      end
     end
   end
 end
