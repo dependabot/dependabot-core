@@ -296,6 +296,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
+    it "only hits Rubygems once" do
+      checker.latest_version
+
+      expect(WebMock).
+        to have_requested(
+          :get,
+          "https://rubygems.org/api/v1/gems/business.json"
+        ).once
+    end
+
     context "given a Gemfile with a non-rubygems source" do
       let(:lockfile_body) do
         fixture("ruby", "lockfiles", "specified_source.lock")
