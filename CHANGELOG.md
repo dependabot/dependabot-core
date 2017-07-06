@@ -1,3 +1,10 @@
+## v0.10.0, 6 July 2017
+
+- More robust file URL generation
+- Notify about all unreachable git dependencies at once
+- Handle git auth details for https specifications
+- BREAKING: renamed GitCommandError and PathBasedDependencies errors
+
 ## v0.9.8, 6 July 2017
 
 - Set path in Ruby File Updater, to fix path based dependencies (v2)
