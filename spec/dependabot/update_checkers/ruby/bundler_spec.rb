@@ -211,31 +211,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           it { is_expected.to be_nil }
         end
       end
-
-      it "raises a Dependabot::PathBasedDependencies error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error(
-            Dependabot::PathBasedDependencies,
-            "Path based dependencies are not supported. " \
-            "Path based dependencies found: example"
-          )
-      end
-
-      context "when Bundler raises a PathError but there are no path gems" do
-        # This shouldn't happen, but Bundler uses PathError for exceptions
-        # other than resolving a gem's path (e.g., when removing files)
-        before do
-          allow(::Bundler::Definition).
-            to receive(:build).and_raise(::Bundler::PathError)
-        end
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
-
-        it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error(Dependabot::SharedHelpers::ChildProcessFailed)
-        end
-      end
     end
 
     context "when a gem has been yanked" do
@@ -400,15 +375,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "given a path source" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
       let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
-
-      it "raises a Dependabot::PathBasedDependencies error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error(
-            Dependabot::PathBasedDependencies,
-            "Path based dependencies are not supported. " \
-            "Path based dependencies found: example"
-          )
-      end
 
       context "with a downloaded gemspec" do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }

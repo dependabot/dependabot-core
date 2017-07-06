@@ -97,12 +97,6 @@ module Dependabot
             # handled separately
             command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
             raise Dependabot::GitCommandError, command
-          when "Bundler::PathError"
-            # A dependency was specified using a path which we don't have access
-            # to (and therefore can't resolve)
-            raise if path_based_dependencies.none?
-            raise Dependabot::PathBasedDependencies,
-                  path_based_dependencies.map(&:name)
           else raise
           end
         end

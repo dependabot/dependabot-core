@@ -5,7 +5,7 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   it_behaves_like "a dependency file fetcher"
 
-  context "with path dependency" do
+  context "with a path dependency" do
     let(:github_client) { Octokit::Client.new(access_token: "token") }
     let(:file_fetcher_instance) do
       described_class.new(repo: "gocardless/bump", github_client: github_client)
@@ -29,19 +29,39 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           body: fixture("github", "gemfile_lock_with_path_content.json"),
           headers: { "content-type" => "application/json" }
         )
-
-      stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
-        to_return(
-          status: 200,
-          body: fixture("github", "gemspec_content.json"),
-          headers: { "content-type" => "application/json" }
-        )
     end
 
-    it "fetches gemspec from path dependency" do
-      expect(file_fetcher_instance.files.count).to eq(3)
-      expect(file_fetcher_instance.files.map(&:name)).
-        to include("plugins/bump-core/bump-core.gemspec")
+    context "that has a fetchable path" do
+      before do
+        stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "gemspec_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches gemspec from path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("plugins/bump-core/bump-core.gemspec")
+      end
+    end
+
+    context "that has an unfetchable path" do
+      before do
+        stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
+          to_return(status: 404)
+      end
+
+      it "raises a PathBasedDependencies error with details of the gem" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(
+            Dependabot::PathBasedDependencies,
+            "The following path based dependencies could not be retrieved: " \
+            "bump-core"
+          )
+      end
     end
   end
 end

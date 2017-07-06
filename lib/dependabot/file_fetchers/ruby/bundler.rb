@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/file_fetchers/base"
+require "dependabot/errors"
 
 module Dependabot
   module FileFetchers
@@ -18,13 +19,24 @@ module Dependabot
             spec.source.instance_of?(::Bundler::Source::Path)
           end
 
-          path_specs.map do |spec|
-            dir, base = spec.source.path.split
-            file = File.join(dir, base, "#{base}.gemspec")
+          fetched_files = []
+          unfetchable_gems = []
 
-            # TODO: Handle bad paths, probably by catching GitHub errors
-            fetch_file_from_github(file)
+          path_specs.each do |spec|
+            file = File.join(spec.source.path, "#{spec.source.name}.gemspec")
+
+            begin
+              fetched_files << fetch_file_from_github(file)
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_gems << spec.name
+            end
           end
+
+          if unfetchable_gems.any?
+            raise Dependabot::PathBasedDependencies, unfetchable_gems
+          end
+
+          fetched_files
         end
 
         def gemfile_lock
