@@ -108,6 +108,63 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
     end
 
+    context "with an interesting filename" do
+      let(:file_fetcher_instance) do
+        child_class.new(
+          repo: repo,
+          github_client: github_client,
+          directory: directory
+        )
+      end
+
+      before do
+        stub_request(:get, file_url).
+          to_return(status: 200,
+                    body: fixture("github", "gemfile_content.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      context "with a '.'" do
+        let(:directory) { "/" }
+        let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+        let(:file_url) do
+          "https://api.github.com/repos/#{repo}/contents/some/file?ref=sha"
+        end
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files
+              ["./some/file"]
+            end
+          end
+        end
+
+        it "hits the right GitHub URL" do
+          files
+          expect(WebMock).to have_requested(:get, file_url)
+        end
+      end
+
+      context "with a '..'" do
+        let(:directory) { "app" }
+        let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+        let(:file_url) do
+          "https://api.github.com/repos/#{repo}/contents/some/file?ref=sha"
+        end
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files
+              ["../some/file"]
+            end
+          end
+        end
+
+        it "hits the right GitHub URL" do
+          files
+          expect(WebMock).to have_requested(:get, file_url)
+        end
+      end
+    end
+
     context "when a dependency file can't be found" do
       before do
         stub_request(:get, url + "Gemfile?ref=sha").to_return(status: 404)

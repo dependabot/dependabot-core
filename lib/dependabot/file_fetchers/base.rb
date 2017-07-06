@@ -44,6 +44,7 @@ module Dependabot
 
       def fetch_file_from_github(file_name)
         file_path = File.join(directory, file_name)
+        file_path = Pathname.new(file_path).cleanpath.to_path
         content =
           github_client.contents(repo, path: file_path, ref: commit).content
 
