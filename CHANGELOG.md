@@ -1,3 +1,7 @@
+## v0.10.1, 6 July 2017
+
+- Revert handling git auth details for https specifications
+
 ## v0.10.0, 6 July 2017
 
 - More robust file URL generation
