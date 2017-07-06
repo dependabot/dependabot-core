@@ -118,9 +118,24 @@ module Dependabot
 
         def prepare_gemfile_for_resolution(gemfile_content)
           # Prepend auth details to any git remotes
+          gemfile_content =
+            gemfile_content.gsub(
+              "git@github.com:",
+              "https://x-access-token:#{github_access_token},x-original:ssh"\
+              "@github.com/"
+            )
+
+          gemfile_content =
+            gemfile_content.gsub(
+              "https://github.com/",
+              "https://x-access-token:#{github_access_token},x-original:https"\
+              "@github.com/"
+            )
+
           gemfile_content.gsub(
-            "git@github.com",
-            "https://x-access-token:#{github_access_token}@github.com/"
+            "http://github.com/",
+            "https://x-access-token:#{github_access_token},x-original:http"\
+            "@github.com/"
           )
         end
 
@@ -128,8 +143,23 @@ module Dependabot
           # Remove any auth details we prepended to git remotes
           lockfile_body =
             lockfile_body.gsub(
-              "https://x-access-token:#{github_access_token}@github.com/",
+              "https://x-access-token:#{github_access_token},x-original:ssh"\
+              "@github.com/",
               "git@github.com:"
+            )
+
+          lockfile_body =
+            lockfile_body.gsub(
+              "https://x-access-token:#{github_access_token},x-original:https"\
+              "@github.com/",
+              "https://github.com/"
+            )
+
+          lockfile_body =
+            lockfile_body.gsub(
+              "https://x-access-token:#{github_access_token},x-original:http"\
+              "@github.com/",
+              "http://github.com/"
             )
 
           # Re-add the old `BUNDLED WITH` version
