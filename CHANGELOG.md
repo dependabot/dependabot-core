@@ -1,3 +1,7 @@
+## v0.9.6, 6 July 2017
+
+- Raise PathBasedDependencies error at file fetcher time for bad paths
+
 ## v0.9.5, 6 July 2017
 
 - Only hit Rubygems once for each latest_version lookup
