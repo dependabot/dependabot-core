@@ -1,3 +1,7 @@
+## v0.9.7, 6 July 2017
+
+- Set path in Ruby File Updater, to fix path based dependencies
+
 ## v0.9.6, 6 July 2017
 
 - Raise PathBasedDependencies error at file fetcher time for bad paths
