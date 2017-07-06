@@ -1,3 +1,8 @@
+## v0.9.5, 6 July 2017
+
+- Only hit Rubygems once for each latest_version lookup
+- Handle path-based Ruby dependencies, if possible
+
 ## v0.9.4, 2 July 2017
 
 - Correctly list path-based dependencies
