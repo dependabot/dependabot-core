@@ -33,7 +33,7 @@ module Dependabot
           end
 
           if unfetchable_gems.any?
-            raise Dependabot::PathBasedDependencies, unfetchable_gems
+            raise Dependabot::PathDependenciesNotReachable, unfetchable_gems
           end
 
           fetched_files

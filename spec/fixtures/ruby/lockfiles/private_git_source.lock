@@ -1,0 +1,22 @@
+GIT
+  remote: https://github.com/fundingcircle/prius
+  revision: cff701b3bfb182afc99a85657d7c9f3d6c1ccce2
+  specs:
+    prius (1.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  prius!
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   1.14.6

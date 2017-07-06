@@ -3,7 +3,10 @@
 module Dependabot
   class DependabotError < StandardError; end
 
-  class VersionConflict < DependabotError; end
+  #####################
+  # File level errors #
+  #####################
+
   class DependencyFileNotEvaluatable < DependabotError; end
   class DependencyFileNotResolvable < DependabotError; end
 
@@ -25,16 +28,24 @@ module Dependabot
     end
   end
 
-  class GitCommandError < DependabotError
-    attr_reader :command
+  ###########################
+  # Dependency level errors #
+  ###########################
 
-    def initialize(command, msg = nil)
-      @command = command
+  class GitDependenciesNotReachable < DependabotError
+    attr_reader :dependency_urls
+
+    def initialize(*dependency_urls)
+      @dependency_urls =
+        dependency_urls.flatten.map { |uri| uri.gsub(/x-access-token.*?@/, "") }
+
+      msg = "The following git URLs could not be retrieved: "\
+            "#{dependency_urls.join(', ')}"
       super(msg)
     end
   end
 
-  class PathBasedDependencies < DependabotError
+  class PathDependenciesNotReachable < DependabotError
     attr_reader :dependencies
 
     def initialize(*dependencies)

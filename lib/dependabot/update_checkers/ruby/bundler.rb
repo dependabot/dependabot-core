@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "bundler_definition_version_patch"
 require "bundler_metadata_dependencies_patch"
+require "excon"
 require "gems"
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"
@@ -96,12 +97,25 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Source::Git::GitCommandError"
             # A git command failed. This is usually because we don't have access
-            # to the specified repo, and gets a special error so it can be
-            # handled separately
-            command = error.message.match(GIT_COMMAND_ERROR_REGEX)[:command]
-            raise Dependabot::GitCommandError, command
+            # to the specified repo.
+            #
+            # Check if there are any repos we don't have access to, and raise an
+            # error with details if so. Otherwise re-raise.
+            raise unless inaccessible_git_dependencies.any?
+            raise(
+              Dependabot::GitDependenciesNotReachable,
+              inaccessible_git_dependencies.map { |s| s.source.uri }
+            )
           else raise
           end
+        end
+
+        def inaccessible_git_dependencies
+          ::Bundler::LockfileParser.new(lockfile_for_update_check).
+            specs.select do |spec|
+              next false unless spec.source.is_a?(::Bundler::Source::Git)
+              Excon.get(spec.source.uri).status == 404
+            end
         end
 
         def latest_rubygems_version
@@ -204,7 +218,7 @@ module Dependabot
 
         def prepend_git_auth_details(gemfile_content)
           gemfile_content.gsub(
-            "git@github.com:",
+            %r{(git@github\.com:)|(https?://github\.com/)},
             "https://x-access-token:#{github_access_token}@github.com/"
           )
         end

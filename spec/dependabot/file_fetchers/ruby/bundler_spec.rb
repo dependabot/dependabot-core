@@ -54,10 +54,10 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           to_return(status: 404)
       end
 
-      it "raises a PathBasedDependencies error with details of the gem" do
+      it "raises a PathDependenciesNotReachable error with details" do
         expect { file_fetcher_instance.files }.
           to raise_error(
-            Dependabot::PathBasedDependencies,
+            Dependabot::PathDependenciesNotReachable,
             "The following path based dependencies could not be retrieved: " \
             "bump-core"
           )

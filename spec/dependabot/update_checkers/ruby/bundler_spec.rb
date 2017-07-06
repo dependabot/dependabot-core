@@ -14,9 +14,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     described_class.new(
       dependency: dependency,
       dependency_files: [gemfile, lockfile],
-      github_access_token: "token"
+      github_access_token: github_token
     )
   end
+  let(:github_token) { "token" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -180,7 +181,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           described_class.new(
             dependency: dependency,
             dependency_files: [gemfile, lockfile, gemspec],
-            github_access_token: "token"
+            github_access_token: github_token
           )
         end
 
@@ -272,13 +273,26 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_body) do
             fixture("ruby", "gemfiles", "private_git_source")
           end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "private_git_source.lock")
+          end
+          let(:token) do
+            Base64.encode64("x-access-token:#{github_token}").strip
+          end
           around { |example| capture_stderr { example.run } }
+
+          before do
+            stub_request(:get, "https://github.com/fundingcircle/prius").
+              with(headers: { "Authorization" => "Basic #{token}" }).
+              to_return(status: 404)
+          end
 
           it "raises a helpful error" do
             expect { checker.latest_resolvable_version }.
               to raise_error do |error|
-                expect(error).to be_a(Dependabot::GitCommandError)
-                expect(error.command).to start_with("git clone 'https://github")
+                expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+                expect(error.dependency_urls).
+                  to eq(["https://github.com/fundingcircle/prius"])
               end
           end
         end
@@ -388,7 +402,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           described_class.new(
             dependency: dependency,
             dependency_files: [gemfile, lockfile, gemspec],
-            github_access_token: "token"
+            github_access_token: github_token
           )
         end
 
