@@ -43,10 +43,8 @@ module Dependabot
       end
 
       def fetch_file_from_github(file_name)
-        file_path = File.join(directory, file_name)
-        file_path = Pathname.new(file_path).cleanpath.to_path
-        content =
-          github_client.contents(repo, path: file_path, ref: commit).content
+        path = Pathname.new(File.join(directory, file_name)).cleanpath.to_path
+        content = github_client.contents(repo, path: path, ref: commit).content
 
         DependencyFile.new(
           name: file_name,
@@ -54,7 +52,7 @@ module Dependabot
           directory: directory
         )
       rescue Octokit::NotFound
-        raise Dependabot::DependencyFileNotFound, file_path
+        raise Dependabot::DependencyFileNotFound, path
       end
     end
   end
