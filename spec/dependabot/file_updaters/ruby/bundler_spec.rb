@@ -236,6 +236,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         it "updates the gem just fine" do
           expect(file.content).to include "business (1.5.0)"
         end
+
+        it "doesn't leave details of the access token in the lockfile" do
+          expect(file.content).to_not include "https://x-access-token"
+        end
       end
 
       context "when another gem in the Gemfile has a path source" do

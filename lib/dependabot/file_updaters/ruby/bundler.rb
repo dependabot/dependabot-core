@@ -119,7 +119,7 @@ module Dependabot
         def prepare_gemfile_for_resolution(gemfile_content)
           # Prepend auth details to any git remotes
           gemfile_content.gsub(
-            "git@github.com:",
+            %r{(git@github\.com:)|(https?://github\.com/)},
             "https://x-access-token:#{github_access_token}@github.com/"
           )
         end
