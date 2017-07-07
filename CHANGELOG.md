@@ -1,3 +1,8 @@
+## v0.10.4, 7 July 2017
+
+- Avoid using SSH to fetch dependencies - always use HTTPS. Ensures the
+  GitHub credentials we pass to Bundler are used.
+
 ## v0.10.3, 7 July 2017
 
 - Use Bundler settings to handle GitHub credentials
