@@ -1,6 +1,6 @@
 GIT
   remote: git@github.com:gocardless/que
-  revision: 5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3
+  revision: c10d4457531648b217ee19c9ea7e7f1030a5ec67
   specs:
     que (0.11.7)
 

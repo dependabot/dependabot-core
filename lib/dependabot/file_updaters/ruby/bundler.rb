@@ -101,7 +101,7 @@ module Dependabot
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
-            lockfile.content
+            replace_ssh_links_with_https(lockfile.content)
           )
           gemspecs.each do |gemspec|
             path = File.join(dir, gemspec.name)

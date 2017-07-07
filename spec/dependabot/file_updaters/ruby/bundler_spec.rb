@@ -238,15 +238,23 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           expect(file.content).to include "business (1.5.0)"
         end
 
-        it "doesn't update the remote (e.g., by leaving auth details in)" do
-          %w(prius que uk_phone_numbers).each do |dep|
-            original_remote_line = lockfile_body.split(/^/).
-                                   find { |l| l.include?("gocardless/#{dep}") }
+        it "doesn't update the git dependencies" do
+          old_lock = lockfile_body.split(/^/)
+          new_lock = file.content.split(/^/)
 
-            new_remote_line = file.content.split(/^/).
-                              find { |l| l.include?("gocardless/#{dep}") }
+          %w(prius que uk_phone_numbers).each do |dep|
+            original_remote_line =
+              old_lock.find { |l| l.include?("gocardless/#{dep}") }
+            original_revision_line =
+              old_lock[old_lock.find_index(original_remote_line) + 1]
+
+            new_remote_line =
+              new_lock.find { |l| l.include?("gocardless/#{dep}") }
+            new_revision_line =
+              new_lock[new_lock.find_index(original_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
+            expect(new_revision_line).to eq(original_revision_line)
           end
         end
       end
