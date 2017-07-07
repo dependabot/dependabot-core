@@ -1,3 +1,7 @@
+## v0.10.5, 7 July 2017
+
+- Ensure git dependencies aren't updated as a result of https change
+
 ## v0.10.4, 7 July 2017
 
 - Avoid using SSH to fetch dependencies - always use HTTPS. Ensures the
