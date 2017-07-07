@@ -28,7 +28,7 @@
         "type": "Bot",
         "site_admin": false
     },
-    "body": "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)",
+    "body": "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)\n\nSome other custom gubbins.",
     "created_at": "2017-04-26T17:23:51Z",
     "updated_at": "2017-04-26T17:23:51Z",
     "closed_at": null,
@@ -41,11 +41,11 @@
     "review_comments_url": "https://api.github.com/repos/dependabot/bump-test/pulls/18/comments",
     "review_comment_url": "https://api.github.com/repos/dependabot/bump-test/pulls/comments{/number}",
     "comments_url": "https://api.github.com/repos/dependabot/bump-test/issues/18/comments",
-    "statuses_url": "https://api.github.com/repos/dependabot/bump-test/statuses/1e2d2afe8320998baecdfe127a49dca9a6650e07",
+    "statuses_url": "https://api.github.com/repos/dependabot/bump-test/statuses/old_pr_sha",
     "head": {
         "label": "dependabot:business-1.5.0",
         "ref": "dependabot/ruby/business-1.5.0",
-        "sha": "1e2d2afe8320998baecdfe127a49dca9a6650e07",
+        "sha": "old_pr_sha",
         "user": {
             "login": "dependabot",
             "id": 27347476,
@@ -291,7 +291,7 @@
             "href": "https://api.github.com/repos/dependabot/bump-test/pulls/18/commits"
         },
         "statuses": {
-            "href": "https://api.github.com/repos/dependabot/bump-test/statuses/1e2d2afe8320998baecdfe127a49dca9a6650e07"
+            "href": "https://api.github.com/repos/dependabot/bump-test/statuses/old_pr_sha"
         }
     },
     "merged": false,

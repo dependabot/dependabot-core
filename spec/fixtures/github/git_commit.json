@@ -1,0 +1,27 @@
+{
+    "sha": "old_pr_sha",
+    "url": "https://api.github.com/repos/gocardless/bump/git/commits/old_pr_sha",
+    "html_url": "https://github.com/gocardless/bump/commit/old_pr_sha",
+    "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-07-04T07:02:09Z"
+    },
+    "committer": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-07-04T07:02:09Z"
+    },
+    "tree": {
+        "sha": "945a8b5b1e408f95d548b9401d8a1bfb402bf688",
+        "url": "https://api.github.com/repos/gocardless/bump/git/trees/945a8b5b1e408f95d548b9401d8a1bfb402bf688"
+    },
+    "message": "Bump business from 1.4.0 to 1.5.0\n\nBumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)",
+    "parents": [
+        {
+            "sha": "82457f83ed6126f4ceb0328525f0a018f687374d",
+            "url": "https://api.github.com/repos/gocardless/bump/git/commits/82457f83ed6126f4ceb0328525f0a018f687374d",
+            "html_url": "https://github.com/gocardless/bump/commit/82457f83ed6126f4ceb0328525f0a018f687374d"
+        }
+    ]
+}

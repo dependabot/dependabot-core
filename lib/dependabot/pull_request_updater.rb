@@ -73,7 +73,7 @@ module Dependabot
     end
 
     def commit_message
-      pull_request.title + "\n\n" + pull_request.body
+      github_client.git_commit(watched_repo, pull_request.head.sha).message
     end
   end
 end

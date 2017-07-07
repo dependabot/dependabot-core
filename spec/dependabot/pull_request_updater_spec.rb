@@ -54,6 +54,10 @@ RSpec.describe Dependabot::PullRequestUpdater do
       to_return(status: 200,
                 body: fixture("github", "create_commit.json"),
                 headers: json_header)
+    stub_request(:get, "#{watched_repo_url}/git/commits/old_pr_sha").
+      to_return(status: 200,
+                body: fixture("github", "git_commit.json"),
+                headers: json_header)
     stub_request(:patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
       to_return(status: 200,
                 body: fixture("github", "update_ref.json"),
@@ -93,11 +97,19 @@ RSpec.describe Dependabot::PullRequestUpdater do
 
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/commits").
-        with(body: {
-               parents: ["basecommitsha"],
-               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: /Bump business from 1.4.0 to 1\.5\.0\n\nBumps \[busines/
-             })
+        with(
+          body: {
+            parents: ["basecommitsha"],
+            tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+            message: "Bump business from 1.4.0 to 1.5.0\n\n"\
+                     "Bumps [business](https://github.com/gocardless/business)"\
+                     " from 1.4.0 to 1.5.0.\n"\
+                     "- [Changelog](https://github.com/gocardless/business/blo"\
+                     "b/master/CHANGELOG.md)\n"\
+                     "- [Commits](https://github.com/gocardless/business/compa"\
+                     "re/v3.0.0...v1.5.0)"
+          }
+        )
     end
 
     it "updates the PR's branch to point to that commit" do
