@@ -1,3 +1,7 @@
+## v0.10.3, 7 July 2017
+
+- Use Bundler settings to handle GitHub credentials
+
 ## v0.10.2, 6 July 2017
 
 - Robust support for https auth details
