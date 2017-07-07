@@ -97,7 +97,7 @@ module Dependabot
         def write_temporary_dependency_files_to(dir)
           File.write(
             File.join(dir, "Gemfile"),
-            updated_gemfile_content
+            replace_ssh_links_with_https(updated_gemfile_content)
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
@@ -114,7 +114,23 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".gemspec") }
         end
 
+        def replace_ssh_links_with_https(content)
+          # NOTE: we use the full x-access-token format so that we can identify
+          # the links we changed when post-processing the lockfile
+          content.gsub(
+            "git@github.com:",
+            "https://x-access-token:#{github_access_token}@github.com/"
+          )
+        end
+
         def post_process_lockfile(lockfile_body)
+          # Remove any auth details we prepended to git remotes
+          lockfile_body =
+            lockfile_body.gsub(
+              "https://x-access-token:#{github_access_token}@github.com/",
+              "git@github.com:"
+            )
+
           # Re-add the old `BUNDLED WITH` version
           lockfile_body.gsub(
             LOCKFILE_ENDING,

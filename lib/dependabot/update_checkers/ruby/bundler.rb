@@ -110,7 +110,11 @@ module Dependabot
         end
 
         def inaccessible_git_dependencies
-          ::Bundler::LockfileParser.new(lockfile.content).
+          ::Bundler.settings["github.com"] =
+            "x-access-token:#{github_access_token}"
+
+          dependencies =
+            ::Bundler::LockfileParser.new(lockfile_for_update_check).
             specs.select do |spec|
               next false unless spec.source.is_a?(::Bundler::Source::Git)
 
@@ -120,6 +124,9 @@ module Dependabot
               uri = git_proxy.send(:configured_uri_for, spec.source.uri)
               Excon.get(uri).status == 404
             end
+
+          ::Bundler.settings["github.com"] = nil
+          dependencies
         end
 
         def latest_rubygems_version
@@ -169,7 +176,7 @@ module Dependabot
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
-            lockfile.content
+            lockfile_for_update_check
           )
           gemspecs.each do |gemspec|
             path = File.join(dir, gemspec.name)
@@ -183,7 +190,12 @@ module Dependabot
         end
 
         def gemfile_for_update_check
-          remove_dependency_requirement(gemfile.content)
+          content = remove_dependency_requirement(gemfile.content)
+          replace_ssh_links_with_https(content)
+        end
+
+        def lockfile_for_update_check
+          replace_ssh_links_with_https(lockfile.content)
         end
 
         # Replace the original gem requirements with a ">=" requirement to
@@ -211,6 +223,10 @@ module Dependabot
             original_gem_declaration_string,
             updated_gem_declaration_string
           )
+        end
+
+        def replace_ssh_links_with_https(content)
+          content.gsub("git@github.com:", "https://github.com/")
         end
       end
     end
