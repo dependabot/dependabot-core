@@ -28,10 +28,9 @@ module Dependabot
               write_temporary_dependency_files_to(dir)
 
               SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(
-                  :@root,
-                  Pathname.new(dir).expand_path(::Bundler.root)
-                )
+                ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+                ::Bundler.settings["github.com"] =
+                  "x-access-token:#{github_access_token}"
 
                 definition = ::Bundler::Definition.build(
                   File.join(dir, "Gemfile"),
@@ -58,6 +57,8 @@ module Dependabot
 
             SharedHelpers.in_a_forked_process do
               ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+              ::Bundler.settings["github.com"] =
+                "x-access-token:#{github_access_token}"
 
               definition = ::Bundler::Definition.build(
                 File.join(dir, "Gemfile"),
@@ -109,10 +110,15 @@ module Dependabot
         end
 
         def inaccessible_git_dependencies
-          ::Bundler::LockfileParser.new(lockfile_for_update_check).
+          ::Bundler::LockfileParser.new(lockfile.content).
             specs.select do |spec|
               next false unless spec.source.is_a?(::Bundler::Source::Git)
-              Excon.get(spec.source.uri).status == 404
+
+              # Piggy-back off some private Bundler methods to configure the
+              # URI with auth details in the same way Bundler does.
+              git_proxy = spec.source.send(:git_proxy)
+              uri = git_proxy.send(:configured_uri_for, spec.source.uri)
+              Excon.get(uri).status == 404
             end
         end
 
@@ -163,7 +169,7 @@ module Dependabot
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
-            lockfile_for_update_check
+            lockfile.content
           )
           gemspecs.each do |gemspec|
             path = File.join(dir, gemspec.name)
@@ -177,14 +183,7 @@ module Dependabot
         end
 
         def gemfile_for_update_check
-          gemfile_content = gemfile.content
-          gemfile_content = remove_dependency_requirement(gemfile_content)
-          prepend_git_auth_details(gemfile_content)
-        end
-
-        def lockfile_for_update_check
-          lockfile_content = lockfile.content
-          prepend_git_auth_details(lockfile_content)
+          remove_dependency_requirement(gemfile.content)
         end
 
         # Replace the original gem requirements with a ">=" requirement to
@@ -211,13 +210,6 @@ module Dependabot
           gemfile_content.gsub(
             original_gem_declaration_string,
             updated_gem_declaration_string
-          )
-        end
-
-        def prepend_git_auth_details(gemfile_content)
-          gemfile_content.gsub(
-            %r{(git@github\.com:)|(https?://github\.com/)},
-            "https://x-access-token:#{github_access_token}@github.com/"
           )
         end
       end

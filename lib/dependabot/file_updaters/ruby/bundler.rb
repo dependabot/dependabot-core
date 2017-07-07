@@ -79,6 +79,8 @@ module Dependabot
                   :@root,
                   Pathname.new(dir).expand_path(::Bundler.root)
                 )
+                ::Bundler.settings["github.com"] =
+                  "x-access-token:#{github_access_token}"
 
                 definition = ::Bundler::Definition.build(
                   File.join(dir, "Gemfile"),
@@ -95,11 +97,11 @@ module Dependabot
         def write_temporary_dependency_files_to(dir)
           File.write(
             File.join(dir, "Gemfile"),
-            gemfile_for_resolution
+            updated_gemfile_content
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
-            lockfile_for_resolution
+            lockfile.content
           )
           gemspecs.each do |gemspec|
             path = File.join(dir, gemspec.name)
@@ -112,62 +114,7 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".gemspec") }
         end
 
-        def gemfile_for_resolution
-          gemfile_content = updated_gemfile_content
-          prepend_git_auth_details(gemfile_content)
-        end
-
-        def lockfile_for_resolution
-          lockfile_content = lockfile.content
-          prepend_git_auth_details(lockfile_content)
-        end
-
-        def prepend_git_auth_details(content)
-          # Prepend auth details to any git remotes
-          content =
-            content.gsub(
-              "git@github.com:",
-              "https://x-access-token:#{github_access_token},x-original:ssh"\
-              "@github.com/"
-            )
-
-          content =
-            content.gsub(
-              "https://github.com/",
-              "https://x-access-token:#{github_access_token},x-original:https"\
-              "@github.com/"
-            )
-
-          content.gsub(
-            "http://github.com/",
-            "https://x-access-token:#{github_access_token},x-original:http"\
-            "@github.com/"
-          )
-        end
-
         def post_process_lockfile(lockfile_body)
-          # Remove any auth details we prepended to git remotes
-          lockfile_body =
-            lockfile_body.gsub(
-              "https://x-access-token:#{github_access_token},x-original:ssh"\
-              "@github.com/",
-              "git@github.com:"
-            )
-
-          lockfile_body =
-            lockfile_body.gsub(
-              "https://x-access-token:#{github_access_token},x-original:https"\
-              "@github.com/",
-              "https://github.com/"
-            )
-
-          lockfile_body =
-            lockfile_body.gsub(
-              "https://x-access-token:#{github_access_token},x-original:http"\
-              "@github.com/",
-              "http://github.com/"
-            )
-
           # Re-add the old `BUNDLED WITH` version
           lockfile_body.gsub(
             LOCKFILE_ENDING,
