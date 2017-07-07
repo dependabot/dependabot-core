@@ -1,3 +1,9 @@
+## v0.10.6, 7 July 2017
+
+- Fetch old commit message when updating a PR. Previously we would try to
+  rebuild the commit message from the PR message, but that often caused us
+  to include extra, irrelevant details.
+
 ## v0.10.5, 7 July 2017
 
 - Ensure git dependencies aren't updated as a result of https change
