@@ -13,7 +13,6 @@ module Dependabot
     module Ruby
       class Bundler < Dependabot::FileUpdaters::Base
         LOCKFILE_ENDING = /(?<ending>\s*BUNDLED WITH.*)/m
-        GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
 
         def updated_dependency_files
           [
@@ -96,14 +95,11 @@ module Dependabot
         def write_temporary_dependency_files_to(dir)
           File.write(
             File.join(dir, "Gemfile"),
-            prepare_gemfile_for_resolution(updated_gemfile_content)
+            gemfile_for_resolution
           )
           File.write(
             File.join(dir, "Gemfile.lock"),
-            lockfile.content.gsub(
-              "git@github.com:",
-              "https://x-access-token:#{github_access_token}@github.com/"
-            )
+            lockfile_for_resolution
           )
           gemspecs.each do |gemspec|
             path = File.join(dir, gemspec.name)
@@ -116,23 +112,33 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".gemspec") }
         end
 
-        def prepare_gemfile_for_resolution(gemfile_content)
+        def gemfile_for_resolution
+          gemfile_content = updated_gemfile_content
+          prepend_git_auth_details(gemfile_content)
+        end
+
+        def lockfile_for_resolution
+          lockfile_content = lockfile.content
+          prepend_git_auth_details(lockfile_content)
+        end
+
+        def prepend_git_auth_details(content)
           # Prepend auth details to any git remotes
-          gemfile_content =
-            gemfile_content.gsub(
+          content =
+            content.gsub(
               "git@github.com:",
               "https://x-access-token:#{github_access_token},x-original:ssh"\
               "@github.com/"
             )
 
-          gemfile_content =
-            gemfile_content.gsub(
+          content =
+            content.gsub(
               "https://github.com/",
               "https://x-access-token:#{github_access_token},x-original:https"\
               "@github.com/"
             )
 
-          gemfile_content.gsub(
+          content.gsub(
             "http://github.com/",
             "https://x-access-token:#{github_access_token},x-original:http"\
             "@github.com/"

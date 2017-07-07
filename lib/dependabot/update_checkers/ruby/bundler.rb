@@ -12,8 +12,6 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
-        GIT_COMMAND_ERROR_REGEX = /`(?<command>.*)`/
-
         def latest_version
           @latest_version ||= fetch_latest_version
         end
