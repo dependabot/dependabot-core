@@ -21,6 +21,8 @@ module Dependabot
         private
 
         def fetch_latest_version
+          # TODO: Support private repos, as described at
+          # https://gemfury.com/help/pypi-server#requirements-txt
           pypi_response = Excon.get(
             dependency_url,
             middlewares: SharedHelpers.excon_middleware
