@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/file_parsers/ruby/bundler"
+require "dependabot/file_parsers/cocoa/cocoa_pods"
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_parsers/java_script/yarn"
 require "dependabot/file_parsers/php/composer"
@@ -9,6 +10,7 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then FileParsers::Ruby::Bundler
+      when "cocoapods" then FileParsers::Cocoa::CocoaPods
       when "yarn" then FileParsers::JavaScript::Yarn
       when "pip" then FileParsers::Python::Pip
       when "composer" then FileParsers::Php::Composer
