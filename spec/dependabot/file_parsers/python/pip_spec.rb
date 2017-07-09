@@ -67,14 +67,10 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements_body) do
         fixture("python", "requirements", "invalid_lines.txt")
       end
-      its(:length) { is_expected.to eq(1) }
 
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 

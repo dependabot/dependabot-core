@@ -2,34 +2,43 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/python/pip"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module FileParsers
     module Python
       class Pip < Dependabot::FileParsers::Base
         def parse
-          requirements.
-            content.
-            each_line.
-            each_with_object([]) do |line, dependencies|
-              dependency = LineParser.parse(line)
-
-              next if dependency.nil?
-              next if dependency[:requirements].length.zero?
-
-              # Ignore dependencies with multiple requirements, since they would
-              # cause trouble at the dependency update step
-              next if dependency[:requirements].length > 1
-
-              dependencies << Dependency.new(
-                name: dependency[:name],
-                version: dependency[:requirements].first[:version],
-                package_manager: "pip"
-              )
-            end
+          dependency_versions.map do |dep|
+            Dependency.new(
+              name: dep["name"],
+              version: dep["version"],
+              package_manager: "pip"
+            )
+          end
         end
 
         private
+
+        def dependency_versions
+          SharedHelpers.in_a_temporary_directory do |dir|
+            File.write(File.join(dir, "requirements.txt"), requirements.content)
+
+            SharedHelpers.run_helper_subprocess(
+              command: "python #{python_helper_path}",
+              function: "parse",
+              args: [dir]
+            )
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.start_with?("InstallationError")
+          raise Dependabot::DependencyFileNotEvaluatable, error.message
+        end
+
+        def python_helper_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/python/run.py")
+        end
 
         def required_files
           Dependabot::FileFetchers::Python::Pip.required_files
@@ -39,6 +48,7 @@ module Dependabot
           @requirements ||= get_original_file("requirements.txt")
         end
 
+        # TODO: Kill this off once it's unused in file_updater
         class LineParser
           NAME = /[a-zA-Z0-9\-_\.]+/
           EXTRA = /[a-zA-Z0-9\-_\.]+/
