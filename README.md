@@ -5,9 +5,9 @@ dependencies up to date. It is used by [Dependabot](https://dependabot.com).
 
 ## Setup
 
-To run Dependabot Core, you'll need both Ruby and Node installed. The main
-library is written in Ruby, and JavaScript is required for dealing with
-package.json and yarn.lock files.
+To run Dependabot Core, you'll need Ruby, PHP and Node installed. The main
+library is written in Ruby, and JavaScript and PHP are required for dealing with
+updates for their respective languages.
 
 Before running Dependabot Core, install dependencies for the core library and
 the helpers:
@@ -34,6 +34,6 @@ Dependabot Core has helper classes for seven concerns:
 
 We'd love to see the following improvements to Dependabot Core:
 
-- Support for [Pipenv](https://github.com/kennethreitz/pipenv) in Python.
+- Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile).
 - Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript.
 - Support for additional languages (Elixir, anyone?)
