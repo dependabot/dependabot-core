@@ -13,14 +13,13 @@ def parse(directory):
 
     try:
         for install_req in requirements:
-            if len(install_req.req.specifier) == 1:
-                specifier = next(spec for spec in install_req.req.specifier)
+            if install_req.is_pinned:
+                specifier = next(iter(install_req.specifier))
 
-                if specifier.operator == "==":
-                    packages.append({
-                        "name": install_req.name,
-                        "version": specifier.version
-                    })
+                packages.append({
+                    "name": install_req.name,
+                    "version": specifier.version
+                })
     except Exception as e:
         print(json.dumps({ "error": repr(e) }))
         exit(1)

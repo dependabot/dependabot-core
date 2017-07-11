@@ -21,13 +21,13 @@ module Dependabot
         private
 
         def dependency_versions
-          SharedHelpers.in_a_temporary_directory do |dir|
-            File.write(File.join(dir, "requirements.txt"), requirements.content)
+          SharedHelpers.in_a_temporary_directory do
+            File.write("requirements.txt", requirements.content)
 
             SharedHelpers.run_helper_subprocess(
               command: "python #{python_helper_path}",
               function: "parse",
-              args: [dir]
+              args: [Dir.pwd]
             )
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
