@@ -38,14 +38,14 @@ module Dependabot
 
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
-            SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "composer.json"), composer_json.content)
-              File.write(File.join(dir, "composer.lock"), lockfile.content)
+            SharedHelpers.in_a_temporary_directory do
+              File.write("composer.json", composer_json.content)
+              File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "php #{php_helper_path}",
                 function: "update",
-                args: [dir, dependency.name, dependency.version]
+                args: [Dir.pwd, dependency.name, dependency.version]
               )
             end
         end

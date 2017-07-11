@@ -24,17 +24,17 @@ module Dependabot
 
         def fetch_latest_version
           source =
-            SharedHelpers.in_a_temporary_directory do |dir|
-              write_temporary_dependency_files_to(dir)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
                 ::Bundler.settings["github.com"] =
                   "x-access-token:#{github_access_token}"
 
                 definition = ::Bundler::Definition.build(
-                  File.join(dir, "Gemfile"),
-                  File.join(dir, "Gemfile.lock"),
+                  "Gemfile",
+                  "Gemfile.lock",
                   gems: [dependency.name]
                 )
 
@@ -52,17 +52,17 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          SharedHelpers.in_a_temporary_directory do |dir|
-            write_temporary_dependency_files_to(dir)
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
 
             SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(dir))
+              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
               ::Bundler.settings["github.com"] =
                 "x-access-token:#{github_access_token}"
 
               definition = ::Bundler::Definition.build(
-                File.join(dir, "Gemfile"),
-                File.join(dir, "Gemfile.lock"),
+                "Gemfile",
+                "Gemfile.lock",
                 gems: [dependency.name]
               )
 
@@ -169,24 +169,23 @@ module Dependabot
           end
         end
 
-        def write_temporary_dependency_files_to(dir)
-          File.write(
-            File.join(dir, "Gemfile"),
-            gemfile_for_update_check
-          )
-          File.write(
-            File.join(dir, "Gemfile.lock"),
-            lockfile_for_update_check
-          )
-          gemspecs.each do |gemspec|
-            path = File.join(dir, gemspec.name)
+        def write_temporary_dependency_files
+          File.write("Gemfile", gemfile_for_update_check)
+          File.write("Gemfile.lock", lockfile_for_update_check)
+
+          [*gemspecs, ruby_version_file].compact.each do |file|
+            path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, gemspec.content)
+            File.write(path, file.content)
           end
         end
 
         def gemspecs
           dependency_files.select { |f| f.name.end_with?(".gemspec") }
+        end
+
+        def ruby_version_file
+          dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
         def gemfile_for_update_check

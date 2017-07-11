@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+ruby File.open('.ruby-version', 'rb') { |f| f.read.chomp }
+
+gem "business", "~> 1.4.0"
+gem "statesman", "~> 1.2.0"

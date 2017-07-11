@@ -22,14 +22,14 @@ module Dependabot
 
         def fetch_latest_resolvable_version
           latest_resolvable_version =
-            SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "composer.json"), composer_file.content)
-              File.write(File.join(dir, "composer.lock"), lockfile.content)
+            SharedHelpers.in_a_temporary_directory do
+              File.write("composer.json", composer_file.content)
+              File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "php #{php_helper_path}",
                 function: "get_latest_resolvable_version",
-                args: [dir, dependency.name]
+                args: [Dir.pwd, dependency.name]
               )
             end
 

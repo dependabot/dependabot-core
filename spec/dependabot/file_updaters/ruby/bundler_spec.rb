@@ -206,6 +206,24 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
 
+      context "given a Gemfile that loads a .ruby-version file" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "ruby_version_file") }
+        let(:ruby_version_file) do
+          Dependabot::DependencyFile.new(content: "2.2", name: ".ruby-version")
+        end
+        let(:updater) do
+          described_class.new(
+            dependency_files: [gemfile, lockfile, ruby_version_file],
+            dependency: dependency,
+            github_access_token: "token"
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+      end
+
       context "when the Gemfile.lock didn't have a BUNDLED WITH line" do
         let(:lockfile_body) do
           fixture("ruby", "lockfiles", "no_bundled_with.lock")

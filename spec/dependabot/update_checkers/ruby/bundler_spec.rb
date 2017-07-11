@@ -428,5 +428,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
+
+    context "given a Gemfile that loads a .ruby-version file" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "ruby_version_file") }
+      let(:ruby_version_file) do
+        Dependabot::DependencyFile.new(content: "2.2.0", name: ".ruby-version")
+      end
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [gemfile, lockfile, ruby_version_file],
+          github_access_token: github_token
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
   end
 end

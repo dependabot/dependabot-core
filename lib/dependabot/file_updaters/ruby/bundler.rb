@@ -71,20 +71,17 @@ module Dependabot
 
         def build_updated_lockfile
           lockfile_body =
-            SharedHelpers.in_a_temporary_directory do |dir|
-              write_temporary_dependency_files_to(dir)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(
-                  :@root,
-                  Pathname.new(dir).expand_path(::Bundler.root)
-                )
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
                 ::Bundler.settings["github.com"] =
                   "x-access-token:#{github_access_token}"
 
                 definition = ::Bundler::Definition.build(
-                  File.join(dir, "Gemfile"),
-                  File.join(dir, "Gemfile.lock"),
+                  "Gemfile",
+                  "Gemfile.lock",
                   gems: [dependency.name]
                 )
                 definition.resolve_remotely!
@@ -94,24 +91,28 @@ module Dependabot
           post_process_lockfile(lockfile_body)
         end
 
-        def write_temporary_dependency_files_to(dir)
+        def write_temporary_dependency_files
           File.write(
-            File.join(dir, "Gemfile"),
+            "Gemfile",
             replace_ssh_links_with_https(updated_gemfile_content)
           )
           File.write(
-            File.join(dir, "Gemfile.lock"),
+            "Gemfile.lock",
             replace_ssh_links_with_https(lockfile.content)
           )
-          gemspecs.each do |gemspec|
-            path = File.join(dir, gemspec.name)
+          [*gemspecs, ruby_version_file].compact.each do |file|
+            path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, gemspec.content)
+            File.write(path, file.content)
           end
         end
 
         def gemspecs
           dependency_files.select { |f| f.name.end_with?(".gemspec") }
+        end
+
+        def ruby_version_file
+          dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
         def replace_ssh_links_with_https(content)

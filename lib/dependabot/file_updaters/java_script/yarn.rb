@@ -36,14 +36,14 @@ module Dependabot
 
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
-            SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
-              File.write(File.join(dir, "package.json"), package_json.content)
+            SharedHelpers.in_a_temporary_directory do
+              File.write("yarn.lock", yarn_lock.content)
+              File.write("package.json", package_json.content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "node #{js_helper_path}",
                 function: "update",
-                args: [dir, dependency.name, dependency.version]
+                args: [Dir.pwd, dependency.name, dependency.version]
               )
             end
         end

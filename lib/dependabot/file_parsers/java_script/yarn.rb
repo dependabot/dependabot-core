@@ -21,14 +21,14 @@ module Dependabot
         private
 
         def dependency_versions
-          SharedHelpers.in_a_temporary_directory do |dir|
-            File.write(File.join(dir, "package.json"), package_json.content)
-            File.write(File.join(dir, "yarn.lock"), yarn_lock.content)
+          SharedHelpers.in_a_temporary_directory do
+            File.write("package.json", package_json.content)
+            File.write("yarn.lock", yarn_lock.content)
 
             SharedHelpers.run_helper_subprocess(
               command: "node #{js_helper_path}",
               function: "parse",
-              args: [dir]
+              args: [Dir.pwd]
             )
           end
         end
