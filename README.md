@@ -5,16 +5,17 @@ dependencies up to date. It is used by [Dependabot](https://dependabot.com).
 
 ## Setup
 
-To run Dependabot Core, you'll need Ruby, PHP and Node installed. The main
-library is written in Ruby, and JavaScript and PHP are required for dealing with
-updates for their respective languages.
+To run Dependabot Core, you'll need Ruby, Python, PHP and Node installed. The
+main library is written in Ruby, while JavaScript, Python and PHP are required
+for dealing with updates for their respective languages.
 
 Before running Dependabot Core, install dependencies for the core library and
 the helpers:
 
 1. `bundle install`
 2. `cd helpers/javascript && yarn install && cd -`
-2. `cd helpers/php && composer install && cd -`
+3. `cd helpers/php && composer install && cd -`
+4. `pip install pip==9.0.1`
 
 ## Internals
 

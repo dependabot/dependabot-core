@@ -1,3 +1,8 @@
+## v0.11.0, 12 July 2017
+
+- Handle Gemfiles that load in a .ruby-version file
+- Move Python parser code into Python helper
+
 ## v0.10.6, 7 July 2017
 
 - Fetch old commit message when updating a PR. Previously we would try to
