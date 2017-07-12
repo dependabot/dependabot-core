@@ -67,14 +67,10 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements_body) do
         fixture("python", "requirements", "invalid_lines.txt")
       end
-      its(:length) { is_expected.to eq(1) }
 
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -96,74 +92,6 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       # TODO: For now we ignore dependencies with multiple requirements, because
       # they'd cause trouble at the dependency update step.
       its(:length) { is_expected.to eq(1) }
-    end
-  end
-
-  describe Dependabot::FileParsers::Python::Pip::LineParser do
-    describe ".parse" do
-      subject { described_class.parse(line) }
-
-      context "with a blank line" do
-        let(:line) { "" }
-        it { is_expected.to be_nil }
-      end
-
-      context "with just a line break" do
-        let(:line) { "\n" }
-        it { is_expected.to be_nil }
-      end
-
-      context "with a non-requirement line" do
-        let(:line) { "# This is just a comment" }
-        it { is_expected.to be_nil }
-      end
-
-      context "with no specification" do
-        let(:line) { "luigi" }
-        its([:name]) { is_expected.to eq "luigi" }
-        its([:requirements]) { is_expected.to eq [] }
-
-        context "with a comment" do
-          let(:line) { "luigi # some comment" }
-          its([:name]) { is_expected.to eq "luigi" }
-          its([:requirements]) { is_expected.to eq [] }
-        end
-      end
-
-      context "with a simple specification" do
-        let(:line) { "luigi == 0.1.0" }
-        its([:requirements]) do
-          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
-        end
-
-        context "without spaces" do
-          let(:line) { "luigi==0.1.0" }
-          its([:name]) { is_expected.to eq "luigi" }
-          its([:requirements]) do
-            is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
-          end
-        end
-      end
-
-      context "with multiple specifications" do
-        let(:line) { "luigi == 0.1.0, <= 1" }
-        its([:requirements]) do
-          is_expected.to eq([
-                              { comparison: "==", version: "0.1.0" },
-                              { comparison: "<=", version: "1" }
-                            ])
-        end
-
-        context "with a comment" do
-          let(:line) { "luigi == 0.1.0, <= 1 # some comment" }
-          its([:requirements]) do
-            is_expected.to eq([
-                                { comparison: "==", version: "0.1.0" },
-                                { comparison: "<=", version: "1" }
-                              ])
-          end
-        end
-      end
     end
   end
 end

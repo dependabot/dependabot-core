@@ -12,13 +12,17 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # TODO: Implement resolvability checking for Python.
+          # pip doesn't (yet) do any dependency resolution. Mad but true.
+          # See https://github.com/pypa/pip/issues/988 for details. This should
+          # change in pip 10, due in August 2017.
           latest_version
         end
 
         private
 
         def fetch_latest_version
+          # TODO: Support private repos, as described at
+          # https://gemfury.com/help/pypi-server#requirements-txt
           pypi_response = Excon.get(
             dependency_url,
             middlewares: SharedHelpers.excon_middleware

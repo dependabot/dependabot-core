@@ -3,6 +3,8 @@ machine:
     version: 2.4.1
   node:
     version: 7.10.0
+  python:
+    version: 3.6.1
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
@@ -10,6 +12,7 @@ dependencies:
   post:
     - cd helpers/javascript && yarn install
     - cd helpers/php && composer install
+    - pip install pip==9.0.1
 
 test:
   pre:
