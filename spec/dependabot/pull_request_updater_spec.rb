@@ -75,7 +75,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
 
       it "doesn't push a commit to GitHub" do
         updater.update
-        expect(WebMock).to_not have_requested(:post, "#{watched_repo_url}/git/trees")
+        expect(WebMock).
+          to_not have_requested(:post, "#{watched_repo_url}/git/trees")
       end
 
       it "returns nil" do
