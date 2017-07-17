@@ -1,3 +1,7 @@
+## v0.11.1, 17 July 2017
+
+- Handle deleted branches in PullRequestUpdater
+
 ## v0.11.0, 12 July 2017
 
 - Handle Gemfiles that load in a .ruby-version file
