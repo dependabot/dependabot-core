@@ -38,6 +38,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
+  let(:branch_url) { watched_repo_url + "/branches/" + branch_name }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
   let(:branch_name) { "dependabot/ruby/business-1.5.0" }
 
@@ -45,6 +46,10 @@ RSpec.describe Dependabot::PullRequestUpdater do
     stub_request(:get, pull_request_url).
       to_return(status: 200,
                 body: fixture("github", "pull_request.json"),
+                headers: json_header)
+    stub_request(:get, branch_url).
+      to_return(status: 200,
+                body: fixture("github", "branch.json"),
                 headers: json_header)
     stub_request(:post, "#{watched_repo_url}/git/trees").
       to_return(status: 200,
@@ -65,6 +70,19 @@ RSpec.describe Dependabot::PullRequestUpdater do
   end
 
   describe "#update" do
+    context "when the branch doesn't exist" do
+      before { stub_request(:get, branch_url).to_return(status: 404) }
+
+      it "doesn't push a commit to GitHub" do
+        updater.update
+        expect(WebMock).to_not have_requested(:post, "#{watched_repo_url}/git/trees")
+      end
+
+      it "returns nil" do
+        expect(updater.update).to be_nil
+      end
+    end
+
     it "pushes a commit to GitHub" do
       updater.update
 
