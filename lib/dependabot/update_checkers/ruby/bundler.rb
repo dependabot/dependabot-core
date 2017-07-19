@@ -189,7 +189,7 @@ module Dependabot
         end
 
         def gemfile_for_update_check
-          content = remove_dependency_requirement(gemfile.content)
+          content = update_dependency_requirement(gemfile.content)
           replace_ssh_links_with_https(content)
         end
 
@@ -199,7 +199,7 @@ module Dependabot
 
         # Replace the original gem requirements with a ">=" requirement to
         # unlock the gem during version checking
-        def remove_dependency_requirement(gemfile_content)
+        def update_dependency_requirement(gemfile_content)
           gemfile_content.
             to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
             find { Regexp.last_match[:name] == dependency.name }
