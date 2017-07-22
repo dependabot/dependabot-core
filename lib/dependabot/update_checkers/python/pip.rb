@@ -8,7 +8,7 @@ module Dependabot
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
         def latest_version
-          @latest_version ||= Gem::Version.new(fetch_latest_version)
+          @latest_version ||= fetch_latest_version
         end
 
         def latest_resolvable_version
@@ -28,7 +28,9 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          JSON.parse(pypi_response.body)["info"]["version"]
+          Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
+        rescue JSON::ParserError
+          nil
         end
 
         def dependency_url

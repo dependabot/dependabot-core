@@ -65,6 +65,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
+
+    context "when the pypi link resolves to a 'Not Found' page" do
+      let(:pypi_response) { "Not Found (no releases)" }
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#latest_resolvable_version" do
