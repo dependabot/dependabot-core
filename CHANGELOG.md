@@ -1,3 +1,7 @@
+## v0.11.2, 23 July 2017
+
+- Ignore Python packages which can't be found at PyPI
+
 ## v0.11.1, 17 July 2017
 
 - Handle deleted branches in PullRequestUpdater
