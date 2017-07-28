@@ -31,6 +31,14 @@ Dependabot Core has helper classes for seven concerns:
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
+## History
+
+Dependabot and Dependabot Core started life as [Bump][bump] and
+[Bump Core][bump-core], back when Harry and Grey were working at
+[GoCardless][gocardless]. We remain grateful for the help and support of
+GoCardless in helping make Dependabot possible - if you need to collect
+recurring payments from Europe, check them out.
+
 ## Contributing
 
 We'd love to see the following improvements to Dependabot Core:
@@ -38,3 +46,7 @@ We'd love to see the following improvements to Dependabot Core:
 - Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile).
 - Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript.
 - Support for additional languages (Elixir, anyone?)
+
+[bump]: https://github.com/gocardless/bump
+[bump-core]: https://github.com/gocardless/bump-core
+[gocardless]: https://gocardless.com
