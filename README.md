@@ -39,14 +39,6 @@ concern will have a language-specific class.
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
-## History
-
-Dependabot and Dependabot Core started life as [Bump][bump] and
-[Bump Core][bump-core], back when Harry and Grey were working at
-[GoCardless][gocardless]. We remain grateful for the help and support of
-GoCardless in helping make Dependabot possible - if you need to collect
-recurring payments from Europe, check them out.
-
 ## Why is this open source?
 
 As the name suggests, Dependabot Core is pretty core to Dependabot - the rest of
@@ -60,6 +52,14 @@ to build and host your own version this library should make doing so a *lot*
 easier.
 
 If you use Dependabot Core we'd love to hear about what you build!
+
+## History
+
+Dependabot and Dependabot Core started life as [Bump][bump] and
+[Bump Core][bump-core], back when Harry and Grey were working at
+[GoCardless][gocardless]. We remain grateful for the help and support of
+GoCardless in helping make Dependabot possible - if you need to collect
+recurring payments from Europe, check them out.
 
 ## Contributing
 
