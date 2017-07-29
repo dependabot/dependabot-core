@@ -1,7 +1,7 @@
 # Dependabot Core
 
 Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python and PHP. It is used by
+updating in Ruby, JavaScript, Python, PHP and CocoaPods. It is used by
 [Dependabot][dependabot]. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
