@@ -1,7 +1,14 @@
 # Dependabot Core
 
-Dependabot Core is a library containing the logic to keep a project's
-dependencies up to date. It is used by [Dependabot](https://dependabot.com).
+Dependabot Core is a collection of helper classes for automating dependency
+updating in Ruby, JavaScript, Python and PHP. It is used by
+[Dependabot][dependabot]. Highlights include:
+
+- Logic to check for the latest version of a dependency *that's resolvable given
+  a project's other dependencies*. With Ruby or PHP (and in future Python) that
+  means tapping into the package manager's dependency resolution logic
+- Logic to generate updated manifest and lockfiles for a new dependency version
+- Logic to find changelogs, release notes, and commits for a dependency update
 
 ## Setup
 
@@ -19,10 +26,11 @@ the helpers:
 
 ## Internals
 
-Dependabot Core has helper classes for seven concerns:
+Dependabot Core has helper classes for seven concerns. Where relevant, each
+concern will have a language-specific class.
 
-| Service                    | Description                                                                                   |
-|----------------------------|-----------------------------------------------------------------------------------------------|
+| Service                          | Description                                                                                   |
+|----------------------------------|-----------------------------------------------------------------------------------------------|
 | `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
 | `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project.                   |
 | `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date.                                              |
@@ -39,14 +47,29 @@ Dependabot and Dependabot Core started life as [Bump][bump] and
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
+## Why is this open source?
+
+As the name suggests, Dependabot Core is pretty core to Dependabot - the rest of
+our app is pretty much just a UI and database. If we were paranoid about someone
+stealing our business then we'd be keeping it under lock and key!
+
+Dependabot Core is open source because we're more interested in it having an
+impact than we are in making a buck from it. We'd love you to use
+[Dependabot][dependabot], so that we can continue to develop it, but if you want
+to build and host your own version this library should make doing so a *lot*
+easier.
+
+If you use Dependabot Core we'd love to hear about what you build!
+
 ## Contributing
 
 We'd love to see the following improvements to Dependabot Core:
 
-- Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile).
-- Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript.
+- Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript
+- Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile)
 - Support for additional languages (Elixir, anyone?)
 
+[dependabot]: https://dependabot.com
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
