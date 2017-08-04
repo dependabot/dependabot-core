@@ -191,6 +191,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               status: 200,
               body: fixture("ruby", "rubygems-info-i18n")
             )
+          stub_request(:get, "https://index.rubygems.org/info/public_suffix").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-public_suffix")
+            )
         end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
