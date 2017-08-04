@@ -48,7 +48,7 @@ module Dependabot
             sub(LineParser::REQUIREMENT) do |req|
               req.sub(LineParser::VERSION) do |ver|
                 precision = ver.split(".").count
-                dependency.version.split(".").first(precision).join(".")
+                dependency.version.segments.first(precision).join(".")
               end
             end
         end

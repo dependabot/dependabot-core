@@ -60,7 +60,7 @@ module Dependabot
               new_req = old_req.dup.gsub(/<=?/, "~>")
               new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
                 precision = old_version.split(".").count
-                dependency.version.split(".").first(precision).join(".")
+                dependency.version.segments.first(precision).join(".")
               end
             end
         end

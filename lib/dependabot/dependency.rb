@@ -5,7 +5,7 @@ module Dependabot
 
     def initialize(name:, version:, package_manager:, previous_version: nil)
       @name = name
-      @version = version
+      @version = Gem::Version.new(version)
       @previous_version = previous_version
       @package_manager = package_manager
     end
@@ -13,7 +13,7 @@ module Dependabot
     def to_h
       {
         "name" => name,
-        "version" => version,
+        "version" => version.to_s,
         "previous_version" => previous_version,
         "package_manager" => package_manager
       }

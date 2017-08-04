@@ -39,7 +39,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
+        its(:version) { is_expected.to eq(Gem::Version.new("1.0.2")) }
       end
     end
 
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       let(:lockfile_body) { fixture("php", "lockfiles", "v_prefix") }
 
       it "strips the prefix" do
-        expect(dependencies.first.version).to eq("1.0.2")
+        expect(dependencies.first.version).to eq(Gem::Version.new("1.0.2"))
       end
     end
   end

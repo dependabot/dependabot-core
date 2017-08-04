@@ -1,3 +1,7 @@
+## Unreleased
+
+- BREAKING: Return `Gem::Version` objects from Dependency#version, not strings
+
 ## v0.11.2, 23 July 2017
 
 - Ignore Python packages which can't be found at PyPI
