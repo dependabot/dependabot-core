@@ -1,4 +1,4 @@
-## Unreleased
+## v0.12.0, 4 August 2017
 
 - BREAKING: Return `Gem::Version` objects from Dependency#version, not strings
 
