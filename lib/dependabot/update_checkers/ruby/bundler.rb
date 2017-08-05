@@ -136,6 +136,10 @@ module Dependabot
 
           return nil if latest_info["version"].nil?
           Gem::Version.new(latest_info["version"])
+        rescue JSON::ParserError
+          # Replace with Gems::NotFound error if/when
+          # https://github.com/rubygems/gems/pull/38 is merged.
+          nil
         end
 
         def latest_private_version(dependency_source)

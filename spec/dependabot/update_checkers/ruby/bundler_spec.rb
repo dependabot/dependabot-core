@@ -449,5 +449,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
+
+    context "when the gem isn't on Rubygems" do
+      before do
+        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+          to_return(status: 404, body: "This rubygem could not be found.")
+      end
+
+      it { is_expected.to be_nil }
+    end
   end
 end
