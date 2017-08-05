@@ -23,6 +23,10 @@ module Dependabot
             # the lockfile.
             next if dependency_version(name).nil?
 
+            # Ignore dependency versions which are non-numeric, since they can't
+            # be compared later in the process.
+            next unless dependency_version(name).match?(/^\d/)
+
             Dependency.new(
               name: name,
               version: dependency_version(name),

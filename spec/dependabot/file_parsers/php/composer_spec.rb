@@ -67,5 +67,13 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         expect(dependencies.first.version).to eq(Gem::Version.new("1.0.2"))
       end
     end
+
+    context "with a non-numeric version" do
+      let(:lockfile_body) { fixture("php", "lockfiles", "git_source") }
+
+      it "skips the dependency" do
+        expect(dependencies.length).to eq(1)
+      end
+    end
   end
 end
