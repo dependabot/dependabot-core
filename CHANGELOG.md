@@ -1,3 +1,8 @@
+## v0.12.1, 5 August 2017
+
+-  Handle 404s from Rubygems in UpdateChecker
+- Skip PHP dependencies with non-numberic versions during file parsing
+
 ## v0.12.0, 4 August 2017
 
 - BREAKING: Return `Gem::Version` objects from Dependency#version, not strings
