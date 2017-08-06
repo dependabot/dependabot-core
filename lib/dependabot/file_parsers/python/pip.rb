@@ -23,6 +23,7 @@ module Dependabot
         def dependency_versions
           SharedHelpers.in_a_temporary_directory do
             File.write("requirements.txt", requirements.content)
+            File.write("setup.py", setup_file.content) if setup_file
 
             SharedHelpers.run_helper_subprocess(
               command: "python #{python_helper_path}",
@@ -46,6 +47,10 @@ module Dependabot
 
         def requirements
           @requirements ||= get_original_file("requirements.txt")
+        end
+
+        def setup_file
+          @setup_file ||= get_original_file("setup.py")
         end
       end
     end

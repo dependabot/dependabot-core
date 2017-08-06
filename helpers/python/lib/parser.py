@@ -13,7 +13,7 @@ def parse(directory):
 
     try:
         for install_req in requirements:
-            if install_req.is_pinned:
+            if (not install_req.original_link and install_req.is_pinned):
                 specifier = next(iter(install_req.specifier))
 
                 packages.append({
