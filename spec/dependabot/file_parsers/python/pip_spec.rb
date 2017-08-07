@@ -94,8 +94,6 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(1) }
     end
 
-    # TODO: we may want to extend this to arbitrary path-based dependencies in
-    # the future.
     context "with reference to its setup.py" do
       let(:files) { [requirements, setup_file] }
       let(:requirements) do

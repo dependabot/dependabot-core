@@ -22,8 +22,7 @@ module Dependabot
 
         def dependency_versions
           SharedHelpers.in_a_temporary_directory do
-            File.write("requirements.txt", requirements.content)
-            File.write("setup.py", setup_file.content) if setup_file
+            write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(
               command: "python #{python_helper_path}",
@@ -34,6 +33,16 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("InstallationError")
           raise Dependabot::DependencyFileNotEvaluatable, error.message
+        end
+
+        def write_temporary_dependency_files
+          File.write("requirements.txt", requirements.content)
+
+          setup_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
         end
 
         def python_helper_path
@@ -49,8 +58,9 @@ module Dependabot
           @requirements ||= get_original_file("requirements.txt")
         end
 
-        def setup_file
-          @setup_file ||= get_original_file("setup.py")
+        def setup_files
+          @setup_files ||=
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
       end
     end
