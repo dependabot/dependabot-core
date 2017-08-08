@@ -1,6 +1,10 @@
+## v0.12.2, 8 August 2017
+
+- Handle requirement.txt files that have path-based dependencies
+
 ## v0.12.1, 5 August 2017
 
--  Handle 404s from Rubygems in UpdateChecker
+- Handle 404s from Rubygems in UpdateChecker
 - Skip PHP dependencies with non-numberic versions during file parsing
 
 ## v0.12.0, 4 August 2017
