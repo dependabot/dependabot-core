@@ -93,5 +93,32 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       # they'd cause trouble at the dependency update step.
       its(:length) { is_expected.to eq(1) }
     end
+
+    context "with reference to its setup.py" do
+      let(:files) { [requirements, setup_file] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("python", "requirements", "with_setup_path.txt")
+        )
+      end
+      let(:setup_file) do
+        Dependabot::DependencyFile.new(
+          name: "setup.py",
+          content: fixture("python", "setup_files", "setup.py")
+        )
+      end
+
+      # Path based dependencies get ignored
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("requests") }
+        its(:version) { is_expected.to eq(Gem::Version.new("2.1.4")) }
+      end
+    end
   end
 end
