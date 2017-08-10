@@ -36,9 +36,7 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          File.write("requirements.txt", requirements.content)
-
-          setup_files.each do |file|
+          dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
@@ -52,15 +50,6 @@ module Dependabot
 
         def required_files
           Dependabot::FileFetchers::Python::Pip.required_files
-        end
-
-        def requirements
-          @requirements ||= get_original_file("requirements.txt")
-        end
-
-        def setup_files
-          @setup_files ||=
-            dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
       end
     end
