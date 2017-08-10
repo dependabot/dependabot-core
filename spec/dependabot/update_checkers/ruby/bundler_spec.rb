@@ -301,6 +301,24 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
           end
         end
+
+        context "that has a bad branch" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "bad_branch.lock")
+          end
+          around { |example| capture_stderr { example.run } }
+
+          before do
+            stub_request(:get, "https://github.com/gocardless/prius").
+              to_return(status: 200)
+          end
+
+          it "raises a helpful error" do
+            expect { checker.latest_resolvable_version }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
       end
     end
 

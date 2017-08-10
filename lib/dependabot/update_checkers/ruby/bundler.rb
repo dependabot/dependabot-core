@@ -95,9 +95,11 @@ module Dependabot
             msg = error.error_class + " with message: " + error.error_message
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Source::Git::GitCommandError"
-            # A git command failed. This is usually because we don't have access
-            # to the specified repo.
-            #
+            # Check if the error happened during branch / commit selection
+            if error.error_message.match?(/git reset --hard/)
+              raise DependencyFileNotResolvable
+            end
+
             # Check if there are any repos we don't have access to, and raise an
             # error with details if so. Otherwise re-raise.
             raise unless inaccessible_git_dependencies.any?
