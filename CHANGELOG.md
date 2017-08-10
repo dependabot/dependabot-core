@@ -1,3 +1,7 @@
+## v0.12.4, 10 August 2017
+
+- Serve a DependencyFileNotResolvable error for bad git branches
+
 ## v0.12.3, 10 August 2017
 
 - Handle requirement.txt files that have cascading requirements
