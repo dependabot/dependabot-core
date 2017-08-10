@@ -1,3 +1,7 @@
+## v0.12.3, 10 August 2017
+
+- Handle requirement.txt files that have cascading requirements
+
 ## v0.12.2, 8 August 2017
 
 - Handle requirement.txt files that have path-based dependencies
