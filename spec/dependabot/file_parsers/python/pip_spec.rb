@@ -90,7 +90,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       # TODO: For now we ignore dependencies with multiple requirements, because
-      # they'd cause trouble at the dependency update step.
+      # they would cause trouble at the dependency update step.
       its(:length) { is_expected.to eq(1) }
     end
 
@@ -119,6 +119,24 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         its(:name) { is_expected.to eq("requests") }
         its(:version) { is_expected.to eq(Gem::Version.new("2.1.4")) }
       end
+    end
+
+    context "with child requirement files" do
+      let(:files) { [requirements, child_requirements] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("python", "requirements", "cascading.txt")
+        )
+      end
+      let(:child_requirements) do
+        Dependabot::DependencyFile.new(
+          name: "more_requirements.txt",
+          content: fixture("python", "requirements", "version_specified.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(3) }
     end
   end
 end
