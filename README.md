@@ -5,8 +5,8 @@ updating in Ruby, JavaScript, Python and PHP. It is used by
 [Dependabot][dependabot]. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
-  a project's other dependencies*. With Ruby or PHP (and in future Python) that
-  means tapping into the package manager's dependency resolution logic
+  a project's other dependencies*. That means tapping into the package manager's
+  dependency resolution logic
 - Logic to generate updated manifest and lockfiles for a new dependency version
 - Logic to find changelogs, release notes, and commits for a dependency update
 
