@@ -22,7 +22,10 @@ module Dependabot
         end
 
         def requirements
-          @requirements ||= get_original_file("requirements.txt")
+          @requirements ||= dependency_files.find do |file|
+            next if file.name.end_with?("setup.py")
+            file.content.match?(/^#{Regexp.escape(dependency.name)}==/)
+          end
         end
 
         def updated_requirements_content

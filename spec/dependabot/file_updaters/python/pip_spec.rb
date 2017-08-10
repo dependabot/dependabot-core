@@ -79,6 +79,36 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
         its(:content) { is_expected.to include "# This is just a comment" }
       end
+
+      context "when the dependency is in a child requirement file" do
+        subject(:updated_requirements_file) do
+          updated_files.find { |f| f.name == "more_requirements.txt" }
+        end
+
+        let(:updater) do
+          described_class.new(
+            dependency_files: [requirements, more_requirements],
+            dependency: dependency,
+            github_access_token: "token"
+          )
+        end
+
+        let(:requirements_body) do
+          fixture("python", "requirements", "cascading.txt")
+        end
+
+        let(:more_requirements) do
+          Dependabot::DependencyFile.new(
+            content: fixture("python", "requirements", "version_specified.txt"),
+            name: "more_requirements.txt"
+          )
+        end
+
+        it "updates and returns the right file" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).to include("psycopg2==2.8.1\n")
+        end
+      end
     end
   end
 
