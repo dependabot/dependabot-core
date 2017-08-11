@@ -145,16 +145,15 @@ module Dependabot
         end
 
         def latest_private_version(dependency_source)
-          gem_fetchers =
-            dependency_source.fetchers.flat_map(&:fetchers).
-            select { |f| f.is_a?(::Bundler::Fetcher::Dependency) }
-
-          versions =
-            gem_fetchers.
-            flat_map { |f| f.unmarshalled_dep_gems([dependency.name]) }.
-            map { |details| Gem::Version.new(details.fetch(:number)) }
-
-          versions.reject(&:prerelease?).sort.last
+          dependency_source.
+            fetchers.flat_map do |fetcher|
+              fetcher.
+                specs_with_retry([dependency.name], dependency_source).
+                search_all(dependency.name).
+                map(&:version).
+                reject(&:prerelease?)
+            end.
+            sort.last
         rescue ::Bundler::Fetcher::AuthenticationRequiredError => error
           regex = /bundle config (?<repo>.*) username:password/
           source = error.message.match(regex)[:repo]

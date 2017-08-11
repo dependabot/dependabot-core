@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+
+source "https://username:password@gems.contribsys.com/" do
+  gem 'sidekiq-pro'
+end
