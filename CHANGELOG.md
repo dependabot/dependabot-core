@@ -1,3 +1,7 @@
+## v0.12.6, 12 August 2017
+
+- Handle Ruby indexes that only implement the old Rubygems index
+
 ## v0.12.5, 11 August 2017
 
 - Raise helpful message for Ruby private sources without auth details
