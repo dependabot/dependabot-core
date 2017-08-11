@@ -55,4 +55,15 @@ module Dependabot
       super(msg)
     end
   end
+
+  class PrivateSourceNotReachable < DependabotError
+    attr_reader :source
+
+    def initialize(source)
+      @source = source
+      msg = "The following source could not be reached as it requires "\
+            "authentication (and any provided details were invalid): #{source}"
+      super(msg)
+    end
+  end
 end

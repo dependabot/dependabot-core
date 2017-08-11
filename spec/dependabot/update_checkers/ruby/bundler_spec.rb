@@ -377,6 +377,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
+
+      context "that we don't have authentication details for" do
+        before do
+          stub_request(:get, gemfury_business_url).to_return(status: 401)
+        end
+
+        it "blows up with a useful error" do
+          expect { checker.latest_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).to eq("repo.fury.io")
+            end
+        end
+      end
     end
 
     context "given an unreadable Gemfile" do
