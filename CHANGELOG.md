@@ -1,3 +1,7 @@
+## v0.12.5, 11 August 2017
+
+- Raise helpful message for Ruby private sources without auth details
+
 ## v0.12.4, 10 August 2017
 
 - Serve a DependencyFileNotResolvable error for bad git branches
