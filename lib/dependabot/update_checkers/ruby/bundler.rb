@@ -155,6 +155,10 @@ module Dependabot
             map { |details| Gem::Version.new(details.fetch(:number)) }
 
           versions.reject(&:prerelease?).sort.last
+        rescue ::Bundler::Fetcher::AuthenticationRequiredError => error
+          regex = /bundle config (?<repo>.*) username:password/
+          source = error.message.match(regex)[:repo]
+          raise Dependabot::PrivateSourceNotReachable, source
         end
 
         def gemfile
