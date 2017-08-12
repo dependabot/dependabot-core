@@ -450,15 +450,33 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         fixture("ruby", "lockfiles", "git_source.lock")
       end
       let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "prius",
-          version: "0.9",
-          package_manager: "bundler"
-        )
+
+      context "that is the gem we're checking for" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "prius",
+            version: "0.9",
+            package_manager: "bundler"
+          )
+        end
+
+        it { is_expected.to be_nil }
       end
 
-      it { is_expected.to be_nil }
+      context "that is not the gem we're checking" do
+        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+        context "that is private" do
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "private_git_source")
+          end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "private_git_source.lock")
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+        end
+      end
     end
 
     context "given a path source" do

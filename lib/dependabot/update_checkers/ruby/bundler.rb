@@ -29,8 +29,6 @@ module Dependabot
 
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-                ::Bundler.settings["github.com"] =
-                  "x-access-token:#{github_access_token}"
 
                 definition = ::Bundler::Definition.build(
                   "Gemfile",
