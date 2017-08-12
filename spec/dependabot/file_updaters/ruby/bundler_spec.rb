@@ -279,6 +279,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       context "when another gem in the Gemfile has a path source" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
 
         context "that we've downloaded" do
           let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
@@ -312,6 +313,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
           it "updates the gem just fine" do
             expect(file.content).to include "business (1.5.0)"
+          end
+
+          context "that requires other files" do
+            let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
+
+            it "updates the gem just fine" do
+              expect(file.content).to include "business (1.5.0)"
+            end
+
+            it "doesn't change the version of the path dependency" do
+              expect(file.content).to include "example (0.9.3)"
+            end
           end
         end
       end

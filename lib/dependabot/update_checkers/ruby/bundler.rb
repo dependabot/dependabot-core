@@ -180,10 +180,16 @@ module Dependabot
           File.write("Gemfile", gemfile_for_update_check)
           File.write("Gemfile.lock", lockfile_for_update_check)
 
-          [*gemspecs, ruby_version_file].compact.each do |file|
+          if ruby_version_file
+            path = ruby_version_file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, ruby_version_file.content)
+          end
+
+          gemspecs.compact.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            File.write(path, gemspec_for_update_check(file))
           end
         end
 
@@ -202,6 +208,15 @@ module Dependabot
 
         def lockfile_for_update_check
           replace_ssh_links_with_https(lockfile.content)
+        end
+
+        def gemspec_for_update_check(gemspec)
+          gemspec_content = gemspec.content.gsub(/^\s?require.*$/, "")
+          gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
+            # No need to set the version correctly - this is just an update
+            # check so we're not going to persist any changes to the lockfile.
+            old_version.sub(/=.*VERSION.*/, "= '0.0.1'")
+          end
         end
 
         # Replace the original gem requirements with a ">=" requirement to
