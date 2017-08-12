@@ -1,3 +1,7 @@
+## v0.12.8, 12 August 2017
+
+- Don't add RUBY VERSION to the Gemfile.lock if it wasn't previously present
+
 ## v0.12.7, 12 August 2017
 
 - Sanitize path-based gemspecs to remove fine requirements
