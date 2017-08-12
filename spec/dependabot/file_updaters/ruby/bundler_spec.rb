@@ -175,6 +175,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           expect(file.content).to include "RUBY VERSION\n   ruby 2.2.0p0"
         end
 
+        context "but the lockfile didn't include that version" do
+          let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+
+          it "doesn't add in a RUBY VERSION" do
+            expect(file.content).to_not include "RUBY VERSION"
+          end
+        end
+
         context "that is legacy" do
           let(:gemfile_body) { fixture("ruby", "gemfiles", "legacy_ruby") }
           let(:lockfile_body) do
