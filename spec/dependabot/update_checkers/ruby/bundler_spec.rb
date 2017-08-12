@@ -205,6 +205,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             to_not(change { ::Bundler.root })
         end
 
+        context "that requires other files" do
+          let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
+
+          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        end
+
         context "that is the gem we're checking" do
           let(:dependency) do
             Dependabot::Dependency.new(

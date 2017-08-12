@@ -100,10 +100,17 @@ module Dependabot
             "Gemfile.lock",
             replace_ssh_links_with_https(lockfile.content)
           )
-          [*gemspecs, ruby_version_file].compact.each do |file|
+
+          if ruby_version_file
+            path = ruby_version_file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, ruby_version_file.content)
+          end
+
+          gemspecs.compact.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            File.write(path, sanitized_gemspec_content(file))
           end
         end
 
@@ -137,6 +144,16 @@ module Dependabot
             LOCKFILE_ENDING,
             lockfile.content.match(LOCKFILE_ENDING)&.[](:ending) || "\n"
           )
+        end
+
+        def sanitized_gemspec_content(gemspec)
+          gemspec_content = gemspec.content.gsub(/^\s?require.*$/, "")
+          gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
+            parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
+            gem_name = gemspec.name.split("/").last.split(".").first
+            spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
+            old_version.sub(/=.*VERSION.*/, "='#{spec.version}'")
+          end
         end
       end
     end
