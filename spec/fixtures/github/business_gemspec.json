@@ -1,0 +1,18 @@
+{
+    "name": "business.gemspec",
+    "path": "business.gemspec",
+    "sha": "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "size": 291,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/business.gemspec?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/business.gemspec",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/business.gemspec?token=ABF4KfGg6a7sE1n1i2rrhUvqAKRhIkPiks5WD8X5wA%3D%3D",
+    "type": "file",
+    "content": "IyBmcm96ZW5fc3RyaW5nX2xpdGVyYWw6IHRydWUKbGliID0gRmlsZS5leHBhbmRfcGF0aCgiLi4vbGliIiwgX19GSUxFX18pCiRMT0FEX1BBVEgudW5zaGlmdChsaWIpIHVubGVzcyAkTE9BRF9QQVRILmluY2x1ZGU/KGxpYikKcmVxdWlyZSAiRW5nbGlzaCIKcmVxdWlyZSAiYnVtcC92ZXJzaW9uIgoKc3VtbWFyeSA9ICJBdXRvbWF0ZWQgZGVwZW5kZW5jeSBtYW5hZ2VtZW50IGZvciBSdWJ5LCBQeXRob24gYW5kIEphdmFzY3JpcHQiCgpHZW06OlNwZWNpZmljYXRpb24ubmV3IGRvIHxzcGVjfAogIHNwZWMubmFtZSAgICAgICAgICA9ICJidW1wLWNvcmUiCiAgc3BlYy52ZXJzaW9uICAgICAgID0gQnVtcDo6VkVSU0lPTgogIHNwZWMuYXV0aG9ycyAgICAgICA9IFsiR29DYXJkbGVzcyJdCiAgc3BlYy5lbWFpbCAgICAgICAgID0gWyJlbmdpbmVlcmluZ0Bnb2NhcmRsZXNzLmNvbSJdCiAgc3BlYy5zdW1tYXJ5ICAgICAgID0gc3VtbWFyeQogIHNwZWMuZGVzY3JpcHRpb24gICA9IHN1bW1hcnkKICBzcGVjLmhvbWVwYWdlICAgICAgPSAiaHR0cHM6Ly9naXRodWIuY29tL2dvY2FyZGxlc3MvYnVtcC1jb3JlIgogIHNwZWMubGljZW5zZXMgICAgICA9IFsiTUlUIl0KCiAgc3BlYy5maWxlcyAgICAgICAgID0gYGdpdCBscy1maWxlc2Auc3BsaXQoJElOUFVUX1JFQ09SRF9TRVBBUkFUT1IpCiAgc3BlYy5leGVjdXRhYmxlcyAgID0gc3BlYy5maWxlcy5ncmVwKCVye15iaW4vfSkgeyB8ZnwgRmlsZS5iYXNlbmFtZShmKSB9CiAgc3BlYy50ZXN0X2ZpbGVzICAgID0gc3BlYy5maWxlcy5ncmVwKCVye14odGVzdHxzcGVjfGZlYXR1cmVzKS99KQogIHNwZWMucmVxdWlyZV9wYXRocyA9IFsibGliIl0KCiAgc3BlYy5hZGRfZGVwZW5kZW5jeSAiYnVuZGxlciIsICI+PSAxLjEyLjAiCiAgc3BlYy5hZGRfZGVwZW5kZW5jeSAiZXhjb24iLCAifj4gMC41NSIKICBzcGVjLmFkZF9kZXBlbmRlbmN5ICJnZW1uYXNpdW0tcGFyc2VyIiwgIn4+IDAuMSIKICBzcGVjLmFkZF9kZXBlbmRlbmN5ICJnZW1zIiwgIn4+IDEuMCIKICBzcGVjLmFkZF9kZXBlbmRlbmN5ICJvY3Rva2l0IiwgIn4+IDQuNiIKCiAgc3BlYy5hZGRfZGV2ZWxvcG1lbnRfZGVwZW5kZW5jeSAid2VibW9jayIsICJ+PiAyLjMuMSIKICBzcGVjLmFkZF9kZXZlbG9wbWVudF9kZXBlbmRlbmN5ICJyc3BlYyIsICJ+PiAzLjUuMCIKICBzcGVjLmFkZF9kZXZlbG9wbWVudF9kZXBlbmRlbmN5ICJyc3BlYy1pdHMiLCAifj4gMS4yLjAiCiAgc3BlYy5hZGRfZGV2ZWxvcG1lbnRfZGVwZW5kZW5jeSAicnVib2NvcCIsICJ+PiAwLjQ4LjAiCiAgc3BlYy5hZGRfZGV2ZWxvcG1lbnRfZGVwZW5kZW5jeSAicmFrZSIKZW5kCg==",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/business.gemspec?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+        "html": "https://github.com/gocardless/bump/blob/master/business.gemspec"
+    }
+}
