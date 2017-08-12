@@ -1,3 +1,7 @@
+## v0.12.7, 12 August 2017
+
+- Sanitize path-based gemspecs to remove fine requirements
+
 ## v0.12.6, 12 August 2017
 
 - Handle Ruby indexes that only implement the old Rubygems index
