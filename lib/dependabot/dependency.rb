@@ -9,9 +9,10 @@ module Dependabot
       if version.nil? && requirement.nil?
         raise ArgumentError, "Either a version or requirement must be provided"
       end
+
       @name = name
-      @version = Gem::Version.new(version) unless requirement
-      @requirement = Gem::Requirement.new(requirement) unless version
+      @version = Gem::Version.new(version) if version
+      @requirement = cleaned_requirement(requirement) if requirement
       @previous_version = previous_version
       @package_manager = package_manager
     end
@@ -24,6 +25,14 @@ module Dependabot
         "previous_version" => previous_version,
         "package_manager" => package_manager
       }
+    end
+
+    private
+
+    def cleaned_requirement(requirement)
+      return unless requirement
+      return requirement if requirement.is_a?(Gem::Requirement)
+      Gem::Requirement.new(requirement)
     end
   end
 end

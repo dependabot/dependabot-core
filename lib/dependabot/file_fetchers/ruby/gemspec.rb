@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/file_fetchers/base"
+require "dependabot/errors"
 
 module Dependabot
   module FileFetchers
