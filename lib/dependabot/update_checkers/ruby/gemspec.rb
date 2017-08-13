@@ -77,16 +77,11 @@ module Dependabot
           end
 
           case op
-          when "=", nil
-            [Gem::Requirement.new("#{op} #{latest_version}")]
-          when "<", "<="
-            [Gem::Requirement.new("#{op} #{updated_greatest_version(version)}")]
-          when "~>"
-            updated_twidle_requirements(r)
-          when "!=", ">", ">="
-            raise UnfixableRequirement
-          else
-            raise "Unexpected operation for requirement: #{op}"
+          when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
+          when "<", "<=" then [updated_greatest_version(r)]
+          when "~>" then updated_twidle_requirements(r)
+          when "!=", ">", ">=" then raise UnfixableRequirement
+          else raise "Unexpected operation for requirement: #{op}"
           end
         end
 
@@ -116,7 +111,9 @@ module Dependabot
 
         # Updates the version in a "<" or "<=" constraint to allow the latest
         # version
-        def updated_greatest_version(version)
+        def updated_greatest_version(requirement)
+          op, version = requirement.requirements.first
+
           index_to_update =
             version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
 
@@ -130,7 +127,7 @@ module Dependabot
             end
           end
 
-          Gem::Version.new(new_segments.join("."))
+          Gem::Requirement.new("#{op} #{new_segments.join(".")}")
         end
       end
     end
