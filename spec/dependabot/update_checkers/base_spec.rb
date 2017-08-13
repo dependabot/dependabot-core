@@ -64,8 +64,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     subject(:updated_dependency) { updater_instance.updated_dependency }
     let(:latest_resolvable_version) { Gem::Version.new("0.9.0") }
 
-    its(:version) { is_expected.to eq(latest_resolvable_version) }
-    its(:previous_version) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    its(:version) { is_expected.to eq("0.9.0") }
+    its(:previous_version) { is_expected.to eq("1.5.0") }
     its(:package_manager) { is_expected.to eq(dependency.package_manager) }
     its(:name) { is_expected.to eq(dependency.name) }
   end

@@ -36,7 +36,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("fetch-factory") }
-        its(:version) { is_expected.to eq(Gem::Version.new("0.0.1")) }
+        its(:version) { is_expected.to eq("0.0.1") }
       end
     end
   end

@@ -11,7 +11,7 @@ module Dependabot
       end
 
       @name = name
-      @version = Gem::Version.new(version) if version
+      @version = version
       @requirement = cleaned_requirement(requirement) if requirement
       @previous_version = previous_version
       @package_manager = package_manager
