@@ -33,7 +33,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:version) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+        its(:version) { is_expected.to eq("1.4.0") }
       end
     end
 
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:version) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+        its(:version) { is_expected.to eq("1.4.0") }
       end
     end
 

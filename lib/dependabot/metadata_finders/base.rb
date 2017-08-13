@@ -48,6 +48,10 @@ module Dependabot
         look_up_release_url
       end
 
+      def latest_version
+        NotImplementedError
+      end
+
       private
 
       def source
@@ -99,7 +103,7 @@ module Dependabot
       end
 
       def version_regex(version)
-        /(?:[^0-9\.]|\A)#{Regexp.escape(version.to_s)}\z/
+        /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/
       end
 
       def fetch_dependency_file_tree

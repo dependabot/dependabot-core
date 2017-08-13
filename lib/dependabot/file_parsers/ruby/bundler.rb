@@ -29,8 +29,6 @@ module Dependabot
 
         private
 
-        attr_reader :gemfile, :lockfile
-
         def required_files
           Dependabot::FileFetchers::Ruby::Bundler.required_files
         end
