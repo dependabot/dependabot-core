@@ -48,6 +48,10 @@ module Dependabot
         look_up_release_url
       end
 
+      def latest_version
+        NotImplementedError
+      end
+
       private
 
       def source

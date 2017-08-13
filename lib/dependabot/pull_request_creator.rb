@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/metadata_finders"
+require "dependabot/update_checkers"
 require "octokit"
 
 module Dependabot
@@ -98,6 +99,8 @@ module Dependabot
     end
 
     def pr_name
+      return library_pr_name if library?
+
       base = "Bump #{dependency.name} from #{dependency.previous_version} " \
              "to #{dependency.version}"
       return base if files.first.directory == "/"
@@ -105,7 +108,14 @@ module Dependabot
       base + " in #{files.first.directory}"
     end
 
+    def library_pr_name
+      "Update dependency requirements to permit #{dependency.name} "\
+      "#{latest_version}"
+    end
+
     def pr_message
+      return library_pr_message if library?
+
       msg = if source_url
               "Bumps [#{dependency.name}](#{source_url}) "
             else
@@ -116,6 +126,19 @@ module Dependabot
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{commits_url})" if commits_url
+      msg
+    end
+
+    def library_pr_message
+      msg = "Updates dependency requirements to permit "
+      msg += if source_url
+               "[#{dependency.name}](#{source_url}) #{latest_version}."
+             else
+               "#{dependency.name} #{latest_version}."
+             end
+
+      msg += "\n- [Release notes](#{release_url})" if release_url
+      msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg
     end
 
@@ -131,7 +154,22 @@ module Dependabot
     def new_branch_name
       path = ["dependabot", dependency.package_manager, files.first.directory]
       path = path.compact
-      File.join(*path, "#{dependency.name}-#{dependency.version}")
+      File.join(*path, "#{dependency.name}-#{sanitized_version}")
+    end
+
+    def sanitized_version
+      return dependency.version unless library?
+
+      dependency.version.
+        delete(" ").
+        gsub("!=", "neq-").
+        gsub(">=", "gte-").
+        gsub("<=", "lte-").
+        gsub("~>", "tw-").
+        gsub("=", "eq-").
+        gsub(">", "gt-").
+        gsub("<", "lt-").
+        gsub(",", "-and-")
     end
 
     def release_url
@@ -150,11 +188,23 @@ module Dependabot
       metadata_finder.source_url
     end
 
+    def latest_version
+      # This method is only for library flows, which use the
+      # `Dependency#version` attribute to hold a requirement string rather than
+      # a version.
+      raise "Called latest_version for a non-library" unless library?
+      metadata_finder.latest_version
+    end
+
     def metadata_finder
       @metadata_finder ||=
         MetadataFinders.
         for_package_manager(dependency.package_manager).
         new(dependency: dependency, github_client: github_client)
+    end
+
+    def library?
+      %w(gemspec).include?(dependency.package_manager)
     end
   end
 end

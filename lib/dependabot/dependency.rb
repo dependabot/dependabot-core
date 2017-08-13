@@ -3,7 +3,7 @@ module Dependabot
   class Dependency
     attr_reader :name, :version, :previous_version, :package_manager
 
-    def initialize(name:, package_manager:, previous_version: nil, version: nil)
+    def initialize(name:, version:, package_manager:, previous_version: nil)
       @name = name
       @version = version
       @previous_version = previous_version

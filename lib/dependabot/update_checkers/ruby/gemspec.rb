@@ -103,7 +103,7 @@ module Dependabot
           lb_segments = version.segments
           lb_segments.pop while lb_segments.last.zero?
 
-          # Pretty up versions to have the same length as each other
+          # Ensure versions have the same length as each other (cosmetic)
           length = [lb_segments.count, ub_segments.count].max
           lb_segments.fill(0, lb_segments.count...length)
           ub_segments.fill(0, ub_segments.count...length)
