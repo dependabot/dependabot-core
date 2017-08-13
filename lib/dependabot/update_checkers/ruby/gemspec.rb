@@ -127,7 +127,7 @@ module Dependabot
             end
           end
 
-          Gem::Requirement.new("#{op} #{new_segments.join(".")}")
+          Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
       end
     end
