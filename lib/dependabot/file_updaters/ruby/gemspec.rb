@@ -9,7 +9,7 @@ module Dependabot
         DEPENDENCY_DECLARATION_REGEX =
           /^\s*\w*\.add(?:_development)?_dependency
             (\s*|\()['"](?<name>.*?)['"],
-            \s*(?<requirements>['"].*['"])\)?/x
+            \s*(?<requirements>.*)\)?/x
 
         def updated_dependency_files
           [

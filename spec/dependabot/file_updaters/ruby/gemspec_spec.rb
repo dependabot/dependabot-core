@@ -50,6 +50,34 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
       its(:content) do
         is_expected.to include(%("octokit", ">= 4.6", "< 6.0"\n))
       end
+
+      context "with an array of requirements" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "excon",
+            version: ">= 4.6, < 6.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%("excon", ">= 4.6", "< 6.0"\n))
+        end
+      end
+
+      context "with brackets around the requirements" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gemnasium-parser",
+            version: ">= 4.6, < 6.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%("gemnasium-parser", ">= 4.6", "< 6.0"\n))
+        end
+      end
     end
   end
 end
