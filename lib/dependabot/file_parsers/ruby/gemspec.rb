@@ -31,11 +31,7 @@ module Dependabot
 
         def sanitized_gemspec
           gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
-          gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
-            # No need to set the version correctly, and we have no way of
-            # doing so anyway...
-            old_version.sub(/=.*VERSION.*/, "= '0.0.1'")
-          end
+          gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
         end
 
         def parsed_gemspec

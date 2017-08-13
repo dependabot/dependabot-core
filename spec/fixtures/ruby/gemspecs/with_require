@@ -7,7 +7,7 @@ require 'example/version'
 Gem::Specification.new do |spec|
   spec.name         = "example"
   spec.version      = Example::VERSION
-  spec.summary      = "Automated dependency management"
+  spec.summary      = "Automated dependency management #{Example::VERSION}"
   spec.description  = "Core logic for updating a GitHub repos dependencies"
 
   spec.author       = "Dependabot"
