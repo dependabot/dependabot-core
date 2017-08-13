@@ -3,6 +3,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/ruby/gemspec"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileParsers
@@ -29,7 +30,7 @@ module Dependabot
         end
 
         def sanitized_gemspec
-          gemspec_content = gemspec.content.gsub(/^\s?require.*$/, "")
+          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
           gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
             # No need to set the version correctly, and we have no way of
             # doing so anyway...
@@ -47,6 +48,9 @@ module Dependabot
                 ::Bundler.load_gemspec_uncached(gemspec.name)
               end
             end
+        rescue SharedHelpers::ChildProcessFailed => error
+          msg = error.error_class + " with message: " + error.error_message
+          raise Dependabot::DependencyFileNotEvaluatable, msg
         end
       end
     end

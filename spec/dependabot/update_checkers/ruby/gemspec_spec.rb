@@ -59,6 +59,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
     context "when the existing requirement blocks the latest version" do
       let(:old_requirement) { Gem::Requirement.new("<= 1.3.0") }
       it { is_expected.to eq(true) }
+
+      context "but we don't know how to fix it" do
+        let(:old_requirement) { Gem::Requirement.new("!= 1.5.0") }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 
@@ -88,7 +93,28 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
     context "when a ~> specifier was used" do
       let(:old_requirement) { Gem::Requirement.new("~> 1.4.0") }
       its(:requirement) do
-        is_expected.to eq(Gem::Requirement.new(">= 1.4.0", "< 1.6.0"))
+        is_expected.to eq(Gem::Requirement.new(">= 1.4", "< 1.6"))
+      end
+
+      context "with two zeros" do
+        let(:old_requirement) { Gem::Requirement.new("~> 1.0.0") }
+        its(:requirement) do
+          is_expected.to eq(Gem::Requirement.new(">= 1.0", "< 1.6"))
+        end
+      end
+
+      context "with no zeros" do
+        let(:old_requirement) { Gem::Requirement.new("~> 1.0.1") }
+        its(:requirement) do
+          is_expected.to eq(Gem::Requirement.new(">= 1.0.1", "< 1.6.0"))
+        end
+      end
+
+      context "with minor precision" do
+        let(:old_requirement) { Gem::Requirement.new("~> 0.1") }
+        its(:requirement) do
+          is_expected.to eq(Gem::Requirement.new(">= 0.1", "< 2.0"))
+        end
       end
     end
 

@@ -35,5 +35,14 @@ RSpec.describe Dependabot::FileParsers::Ruby::Gemspec do
 
       its(:length) { is_expected.to eq(11) }
     end
+
+    context "that can't be evaluated" do
+      let(:gemspec_content) { fixture("ruby", "gemspecs", "unevaluatable") }
+
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
   end
 end
