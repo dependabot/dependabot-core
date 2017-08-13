@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "octokit", "~> 4.6"
   spec.add_dependency "gitlab", "~> 4.1"
 
-  spec.add_development_dependency "webmock", "~> 2.3.1"
+  spec.add_development_dependency "webmock", ">= 2.3.1", "< 3.1.0"
   spec.add_development_dependency "rspec", "~> 3.5.0"
   spec.add_development_dependency "rspec-its", "~> 1.2.0"
   spec.add_development_dependency "rubocop", "~> 0.48.0"
