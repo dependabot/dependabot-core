@@ -55,8 +55,12 @@ module Dependabot
             original_dependency_declaration_string
           )[:requirements]
 
+          quote_character = original_requirement.include?("'") ? "'" : '"'
+
           formatted_new_requirement =
-            dependency.version.split(",").map { |r| %("#{r.strip}") }.join(", ")
+            dependency.version.split(",").
+            map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
+            join(", ")
 
           original_dependency_declaration_string.
             sub(original_requirement, formatted_new_requirement)

@@ -78,6 +78,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           is_expected.to include(%("gemnasium-parser", ">= 4.6", "< 6.0"\n))
         end
       end
+
+      context "with single quotes" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gems",
+            version: ">= 1.0, < 3.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%('gems', '>= 1.0', '< 3.0'\n))
+        end
+      end
     end
   end
 end
