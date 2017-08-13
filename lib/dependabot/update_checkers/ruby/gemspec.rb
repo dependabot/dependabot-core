@@ -84,6 +84,8 @@ module Dependabot
             updated_twidle_requirement(r)
           when "!=", ">", ">="
             raise UnfixableRequirement
+          else
+            raise "Unexpected operation for requirement: #{op}"
           end
         end
 

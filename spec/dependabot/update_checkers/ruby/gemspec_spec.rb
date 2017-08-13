@@ -124,5 +124,25 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
         is_expected.to eq(Gem::Requirement.new("> 1.0.0", "<= 1.6.0"))
       end
     end
+
+    context "when a beta version was used in the old requirement" do
+      let(:old_requirement) { Gem::Requirement.new("< 1.4.0.beta") }
+      its(:requirement) { is_expected.to be_nil }
+    end
+
+    context "when a != specifier was used" do
+      let(:old_requirement) { Gem::Requirement.new("!= 1.5.0") }
+      its(:requirement) { is_expected.to be_nil }
+    end
+
+    context "when a >= specifier was used" do
+      let(:old_requirement) { Gem::Requirement.new(">= 1.6.0") }
+      its(:requirement) { is_expected.to be_nil }
+    end
+
+    context "when a > specifier was used" do
+      let(:old_requirement) { Gem::Requirement.new("> 1.6.0") }
+      its(:requirement) { is_expected.to be_nil }
+    end
   end
 end
