@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 module Bundler
   class Resolver
-    class SpecGroup < Array
+    class SpecGroup
       private
 
       # Bundler uses StubSpecification specs for dependencies that are currently
