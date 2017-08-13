@@ -28,8 +28,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "octokit",
-      version: "5.0.0",
-      requirement: Gem::Requirement.new(">= 4.6", "< 6.0"),
+      version: ">= 4.6, < 6.0",
       package_manager: "gemspec"
     )
   end
@@ -49,7 +48,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
       end
 
       its(:content) do
-        is_expected.to include "octokit\", \"< 6.0\", \">= 4.6\"\n"
+        is_expected.to include(%("octokit", ">= 4.6", "< 6.0"\n))
       end
     end
   end

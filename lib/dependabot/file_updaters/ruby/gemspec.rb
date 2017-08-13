@@ -56,7 +56,7 @@ module Dependabot
           )[:requirements]
 
           formatted_new_requirement =
-            dependency.requirement.as_list.map { |r| "\"#{r}\"" }.join(", ")
+            dependency.version.split(",").map { |r| %("#{r.strip}") }.join(", ")
 
           original_dependency_declaration_string.
             sub(original_requirement, formatted_new_requirement)

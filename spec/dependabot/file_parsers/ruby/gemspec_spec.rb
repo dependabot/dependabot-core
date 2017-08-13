@@ -27,7 +27,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Gemspec do
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("bundler") }
-      its(:requirement) { is_expected.to eq(Gem::Requirement.new(">= 1.12.0")) }
+      its(:version) { is_expected.to eq(">= 1.12.0") }
     end
 
     context "with a gemspec that requires in other files" do

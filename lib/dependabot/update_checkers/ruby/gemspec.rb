@@ -17,15 +17,14 @@ module Dependabot
         end
 
         def needs_update?
-          !dependency.requirement.satisfied_by?(latest_version) &&
+          !original_requirement.satisfied_by?(latest_version) &&
             !updated_requirement.nil?
         end
 
         def updated_dependency
           Dependency.new(
             name: dependency.name,
-            version: dependency.version,
-            requirement: updated_requirement,
+            version: updated_requirement,
             previous_version: dependency.version,
             package_manager: dependency.package_manager
           )
@@ -49,24 +48,26 @@ module Dependabot
           raise "Dependency not found on Rubygems: #{dependency.name}"
         end
 
+        def original_requirement
+          Gem::Requirement.new(*dependency.version.split(","))
+        end
+
         def updated_requirement
           requirements =
-            dependency.requirement.as_list.map { |r| Gem::Requirement.new(r) }
+            original_requirement.as_list.map { |r| Gem::Requirement.new(r) }
 
           updated_requirements =
-            requirements.map do |r|
-              next r if r.satisfied_by?(latest_version)
-              fixed_requirement(r)
+            requirements.flat_map do |r|
+              r.satisfied_by?(latest_version) ? r : fixed_requirements(r)
             end
 
-          updated_requirement = updated_requirements.shift
-          updated_requirement.concat(updated_requirements)
-          updated_requirement
+          updated_requirements.sort_by! { |r| r.requirements.first.last }
+          updated_requirements.map(&:to_s).join(", ")
         rescue UnfixableRequirement
           nil
         end
 
-        def fixed_requirement(r)
+        def fixed_requirements(r)
           op, version = r.requirements.first
 
           if version.segments.any? { |s| !s.instance_of?(Integer) }
@@ -77,11 +78,11 @@ module Dependabot
 
           case op
           when "=", nil
-            Gem::Requirement.new("#{op} #{latest_version}")
+            [Gem::Requirement.new("#{op} #{latest_version}")]
           when "<", "<="
-            Gem::Requirement.new("#{op} #{updated_greatest_version(version)}")
+            [Gem::Requirement.new("#{op} #{updated_greatest_version(version)}")]
           when "~>"
-            updated_twidle_requirement(r)
+            updated_twidle_requirements(r)
           when "!=", ">", ">="
             raise UnfixableRequirement
           else
@@ -89,7 +90,7 @@ module Dependabot
           end
         end
 
-        def updated_twidle_requirement(requirement)
+        def updated_twidle_requirements(requirement)
           version = requirement.requirements.first.last
 
           index_to_update = version.segments.count - 2
@@ -107,10 +108,10 @@ module Dependabot
           lb_segments.fill(0, lb_segments.count...length)
           ub_segments.fill(0, ub_segments.count...length)
 
-          Gem::Requirement.new(
-            ">= #{Gem::Version.new(lb_segments.join('.'))}",
-            "< #{Gem::Version.new(ub_segments.join('.'))}"
-          )
+          [
+            Gem::Requirement.new(">= #{lb_segments.join('.')}"),
+            Gem::Requirement.new("< #{ub_segments.join('.')}")
+          ]
         end
 
         # Updates the version in a "<" or "<=" constraint to allow the latest

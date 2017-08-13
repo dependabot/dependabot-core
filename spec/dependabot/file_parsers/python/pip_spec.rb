@@ -117,7 +117,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("requests") }
-        its(:version) { is_expected.to eq(Gem::Version.new("2.1.4")) }
+        its(:version) { is_expected.to eq("2.1.4") }
       end
     end
 
