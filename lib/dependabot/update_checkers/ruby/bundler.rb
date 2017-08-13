@@ -211,7 +211,7 @@ module Dependabot
         end
 
         def gemspec_for_update_check(gemspec)
-          gemspec_content = gemspec.content.gsub(/^\s?require.*$/, "")
+          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
           gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
             # No need to set the version correctly - this is just an update
             # check so we're not going to persist any changes to the lockfile.

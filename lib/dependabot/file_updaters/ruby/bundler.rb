@@ -148,7 +148,7 @@ module Dependabot
         end
 
         def sanitized_gemspec_content(gemspec)
-          gemspec_content = gemspec.content.gsub(/^\s?require.*$/, "")
+          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
           gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
             parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
             gem_name = gemspec.name.split("/").last.split(".").first
