@@ -1,3 +1,7 @@
+## v0.13.1, 13 August 2017
+
+- More robust gemspec declaration regex
+
 ## v0.13.0, 13 August 2017
 
 - BREAKING: Return strings from Dependency#version, not Gem::Version objects
