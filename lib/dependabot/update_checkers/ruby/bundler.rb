@@ -212,11 +212,9 @@ module Dependabot
 
         def gemspec_for_update_check(gemspec)
           gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
-          gemspec_content.gsub(/[^_]?version\s*=.*VERSION.*$/) do |old_version|
-            # No need to set the version correctly - this is just an update
-            # check so we're not going to persist any changes to the lockfile.
-            old_version.sub(/=.*VERSION.*/, "= '0.0.1'")
-          end
+          # No need to set the version correctly - this is just an update
+          # check so we're not going to persist any changes to the lockfile.
+          gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
         end
 
         # Replace the original gem requirements with a ">=" requirement to

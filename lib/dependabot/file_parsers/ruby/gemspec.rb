@@ -31,6 +31,8 @@ module Dependabot
 
         def sanitized_gemspec
           gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
+          # No need to set the version correctly - this is just an update
+          # check so we're not going to persist any changes to the lockfile.
           gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
         end
 
