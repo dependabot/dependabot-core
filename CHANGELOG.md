@@ -1,3 +1,8 @@
+## v0.13.2, 13 August 2017
+
+- Use original quote character when updating Ruby gemspecs
+- Clearer text for library pull requests
+
 ## v0.13.1, 13 August 2017
 
 - More robust gemspec declaration regex
