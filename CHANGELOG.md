@@ -1,3 +1,8 @@
+## v0.13.0, 13 August 2017
+
+- BREAKING: Return strings from Dependency#version, not Gem::Version objects
+- FEATURE: Add support for Ruby libraries (i.e., gems)
+
 ## v0.12.8, 12 August 2017
 
 - Don't add RUBY VERSION to the Gemfile.lock if it wasn't previously present
