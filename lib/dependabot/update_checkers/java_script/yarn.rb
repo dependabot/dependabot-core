@@ -17,6 +17,19 @@ module Dependabot
           latest_version
         end
 
+        def updated_requirement
+          return unless latest_resolvable_version
+
+          version_regex = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          dependency.requirement.sub(version_regex) do |old_version|
+            old_parts = old_version.split(".")
+            parts = latest_resolvable_version.split(".").first(old_parts.count)
+            parts.map.with_index do |part, i|
+              old_parts[i].match?(/^x\b/) ? "x" : part
+            end.join(".")
+          end
+        end
+
         private
 
         def fetch_latest_version

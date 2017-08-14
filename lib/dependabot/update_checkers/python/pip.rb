@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "excon"
+require "python_requirement_line_parser"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 
@@ -16,6 +17,18 @@ module Dependabot
           # See https://github.com/pypa/pip/issues/988 for details. This should
           # change in pip 10, due in August 2017.
           latest_version
+        end
+
+        def updated_requirement
+          return unless latest_resolvable_version
+          dependency.requirement.
+            sub(PythonRequirementLineParser::VERSION) do |ver|
+              precision = ver.split(".").count
+              latest_resolvable_version.to_s.
+                split(".").
+                first(precision).
+                join(".")
+            end
         end
 
         private

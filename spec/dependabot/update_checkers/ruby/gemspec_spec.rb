@@ -68,72 +68,72 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
     end
   end
 
-  describe "#updated_dependency" do
-    subject { checker.updated_dependency }
+  describe "#updated_requirement" do
+    subject { checker.updated_requirement }
 
     context "when an = specifier was used" do
       let(:old_requirement) { "= 1.4.0" }
-      its(:version) { is_expected.to eq("= 1.5.0") }
+      it { is_expected.to eq("= 1.5.0") }
     end
 
     context "when no specifier was used" do
       let(:old_requirement) { "1.4.0" }
-      its(:version) { is_expected.to eq("= 1.5.0") }
+      it { is_expected.to eq("= 1.5.0") }
     end
 
     context "when a < specifier was used" do
       let(:old_requirement) { "< 1.4.0" }
-      its(:version) { is_expected.to eq("< 1.6.0") }
+      it { is_expected.to eq("< 1.6.0") }
     end
 
     context "when a <= specifier was used" do
       let(:old_requirement) { "<= 1.4.0" }
-      its(:version) { is_expected.to eq("<= 1.6.0") }
+      it { is_expected.to eq("<= 1.6.0") }
     end
 
     context "when a ~> specifier was used" do
       let(:old_requirement) { "~> 1.4.0" }
-      its(:version) { is_expected.to eq(">= 1.4, < 1.6") }
+      it { is_expected.to eq(">= 1.4, < 1.6") }
 
       context "with two zeros" do
         let(:old_requirement) { "~> 1.0.0" }
-        its(:version) { is_expected.to eq(">= 1.0, < 1.6") }
+        it { is_expected.to eq(">= 1.0, < 1.6") }
       end
 
       context "with no zeros" do
         let(:old_requirement) { "~> 1.0.1" }
-        its(:version) { is_expected.to eq(">= 1.0.1, < 1.6.0") }
+        it { is_expected.to eq(">= 1.0.1, < 1.6.0") }
       end
 
       context "with minor precision" do
         let(:old_requirement) { "~> 0.1" }
-        its(:version) { is_expected.to eq(">= 0.1, < 2.0") }
+        it { is_expected.to eq(">= 0.1, < 2.0") }
       end
     end
 
     context "when there are multiple requirements" do
       let(:old_requirement) { "> 1.0.0, <= 1.4.0" }
-      its(:version) { is_expected.to eq("> 1.0.0, <= 1.6.0") }
+      it { is_expected.to eq("> 1.0.0, <= 1.6.0") }
     end
 
     context "when a beta version was used in the old requirement" do
       let(:old_requirement) { "< 1.4.0.beta" }
-      its(:version) { is_expected.to be_nil }
+      it { is_expected.to be_nil }
     end
 
     context "when a != specifier was used" do
       let(:old_requirement) { "!= 1.5.0" }
-      its(:version) { is_expected.to be_nil }
+      it { is_expected.to be_nil }
     end
 
     context "when a >= specifier was used" do
       let(:old_requirement) { ">= 1.6.0" }
-      its(:version) { is_expected.to be_nil }
+      it { is_expected.to be_nil }
     end
 
     context "when a > specifier was used" do
       let(:old_requirement) { "> 1.6.0" }
-      its(:version) { is_expected.to be_nil }
+      it { is_expected.to be_nil }
     end
   end
 end

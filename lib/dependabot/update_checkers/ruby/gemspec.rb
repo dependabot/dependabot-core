@@ -16,20 +16,24 @@ module Dependabot
           latest_version
         end
 
+        def updated_requirement
+          requirements =
+            original_requirement.as_list.map { |r| Gem::Requirement.new(r) }
+
+          updated_requirements =
+            requirements.flat_map do |r|
+              r.satisfied_by?(latest_version) ? r : fixed_requirements(r)
+            end
+
+          updated_requirements.sort_by! { |r| r.requirements.first.last }
+          updated_requirements.map(&:to_s).join(", ")
+        rescue UnfixableRequirement
+          nil
+        end
+
         def needs_update?
           !original_requirement.satisfied_by?(latest_version) &&
             !updated_requirement.nil?
-        end
-
-        def updated_dependency
-          Dependency.new(
-            name: dependency.name,
-            version: updated_requirement,
-            requirement: updated_requirement,
-            previous_version: dependency.version,
-            package_manager: dependency.package_manager,
-            groups: dependency.groups
-          )
         end
 
         private
@@ -52,21 +56,6 @@ module Dependabot
 
         def original_requirement
           Gem::Requirement.new(*dependency.version.split(","))
-        end
-
-        def updated_requirement
-          requirements =
-            original_requirement.as_list.map { |r| Gem::Requirement.new(r) }
-
-          updated_requirements =
-            requirements.flat_map do |r|
-              r.satisfied_by?(latest_version) ? r : fixed_requirements(r)
-            end
-
-          updated_requirements.sort_by! { |r| r.requirements.first.last }
-          updated_requirements.map(&:to_s).join(", ")
-        rescue UnfixableRequirement
-          nil
         end
 
         def fixed_requirements(r)

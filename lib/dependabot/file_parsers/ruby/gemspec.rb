@@ -13,7 +13,6 @@ module Dependabot
           parsed_gemspec.dependencies.map do |dependency|
             Dependency.new(
               name: dependency.name,
-              version: dependency.requirement.to_s,
               requirement: dependency.requirement.to_s,
               package_manager: "gemspec",
               groups: dependency.runtime? ? ["runtime"] : ["development"]

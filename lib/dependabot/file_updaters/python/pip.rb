@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "python_requirement_line_parser"
 require "dependabot/file_updaters/base"
 require "dependabot/file_fetchers/python/pip"
 
@@ -38,7 +39,7 @@ module Dependabot
         def original_dependency_declaration_string
           @original_dependency_declaration_string ||=
             begin
-              regex = LineParser::REQUIREMENT_LINE
+              regex = PythonRequirementLineParser::REQUIREMENT_LINE
               matches = []
 
               requirements.content.scan(regex) { matches << Regexp.last_match }
@@ -48,47 +49,12 @@ module Dependabot
 
         def updated_dependency_declaration_string
           original_dependency_declaration_string.
-            sub(LineParser::REQUIREMENT) do |req|
-              req.sub(LineParser::VERSION) do |ver|
+            sub(PythonRequirementLineParser::REQUIREMENT) do |req|
+              req.sub(PythonRequirementLineParser::VERSION) do |ver|
                 precision = ver.split(".").count
                 dependency.version.split(".").first(precision).join(".")
               end
             end
-        end
-
-        class LineParser
-          NAME = /[a-zA-Z0-9\-_\.]+/
-          EXTRA = /[a-zA-Z0-9\-_\.]+/
-          COMPARISON = /===|==|>=|<=|<|>|~=|!=/
-          VERSION = /[a-zA-Z0-9\-_\.]+/
-          REQUIREMENT = /(?<comparison>#{COMPARISON})\s*(?<version>#{VERSION})/
-
-          REQUIREMENT_LINE =
-            /^\s*(?<name>#{NAME})
-              \s*(\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
-              \s*(?<requirements>#{REQUIREMENT}(\s*,\s*#{REQUIREMENT})*)?
-              \s*#*\s*(?<comment>.+)?$
-            /x
-
-          def self.parse(line)
-            requirement = line.chomp.match(REQUIREMENT_LINE)
-            return if requirement.nil?
-
-            requirements =
-              requirement[:requirements].to_s.
-              to_enum(:scan, REQUIREMENT).
-              map do
-                {
-                  comparison: Regexp.last_match[:comparison],
-                  version: Regexp.last_match[:version]
-                }
-              end
-
-            {
-              name: requirement[:name],
-              requirements: requirements
-            }
-          end
         end
       end
     end

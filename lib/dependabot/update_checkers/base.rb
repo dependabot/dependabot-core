@@ -27,12 +27,15 @@ module Dependabot
       end
 
       def updated_dependency
+        return unless needs_update?
+
         Dependency.new(
           name: dependency.name,
           version: latest_resolvable_version.to_s,
+          requirement: updated_requirement,
           previous_version: dependency.version,
+          previous_requirement: dependency.requirement,
           package_manager: dependency.package_manager,
-          requirement: dependency.requirement, # TODO: store the updated version
           groups: dependency.groups
         )
       end
@@ -42,6 +45,10 @@ module Dependabot
       end
 
       def latest_resolvable_version
+        raise NotImplementedError
+      end
+
+      def updated_requirement
         raise NotImplementedError
       end
     end

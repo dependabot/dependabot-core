@@ -571,4 +571,61 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "#updated_requirement" do
+    subject { checker.updated_requirement }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.3",
+        requirement: original_requirement,
+        package_manager: "bundler",
+        groups: []
+      )
+    end
+
+    let(:original_requirement) { ">= 0" }
+    let(:latest_resolvable_version) { nil }
+
+    before do
+      allow(checker).
+        to receive(:latest_resolvable_version).
+        and_return(latest_resolvable_version)
+    end
+
+    context "when there is no resolvable version" do
+      let(:latest_resolvable_version) { nil }
+      it { is_expected.to be_nil }
+    end
+
+    context "when there is a resolvable version" do
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      context "and a full version was previously specified" do
+        let(:original_requirement) { "~> 1.4.0" }
+        it { is_expected.to eq("~> 1.5.0") }
+      end
+
+      context "and a pre-release was previously specified" do
+        let(:original_requirement) { "~> 1.5.0.beta" }
+        it { is_expected.to eq("~> 1.5.0") }
+      end
+
+      context "and a minor version was previously specified" do
+        let(:original_requirement) { "~> 1.4" }
+        it { is_expected.to eq("~> 1.5") }
+      end
+
+      context "and a greater than or equal to matcher was used" do
+        let(:original_requirement) { ">= 1.4.0" }
+        it { is_expected.to eq(">= 1.5.0") }
+      end
+
+      context "and a less than matcher was used" do
+        let(:original_requirement) { "< 1.4.0" }
+        it { is_expected.to eq("~> 1.5.0") }
+      end
+    end
+  end
 end

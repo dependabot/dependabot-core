@@ -27,7 +27,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Gemspec do
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("bundler") }
-      its(:version) { is_expected.to eq(">= 1.12.0") }
       its(:requirement) { is_expected.to eq(">= 1.12.0") }
       its(:groups) { is_expected.to eq(["runtime"]) }
     end
@@ -37,7 +36,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Gemspec do
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("rake") }
-      its(:version) { is_expected.to eq(">= 0") }
       its(:requirement) { is_expected.to eq(">= 0") }
       its(:groups) { is_expected.to eq(["development"]) }
     end

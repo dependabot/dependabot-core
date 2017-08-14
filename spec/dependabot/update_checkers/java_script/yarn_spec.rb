@@ -118,4 +118,71 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
   end
+
+  describe "#updated_requirement" do
+    subject { checker.updated_requirement }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "1.0.0",
+        requirement: original_requirement,
+        package_manager: "yarn",
+        groups: []
+      )
+    end
+
+    let(:original_requirement) { "^1.0.0" }
+    let(:latest_resolvable_version) { nil }
+
+    before do
+      allow(checker).
+        to receive(:latest_resolvable_version).
+        and_return(latest_resolvable_version)
+    end
+
+    context "when there is no resolvable version" do
+      let(:latest_resolvable_version) { nil }
+      it { is_expected.to be_nil }
+    end
+
+    context "when there is a resolvable version" do
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      context "and a full version was previously specified" do
+        let(:original_requirement) { "1.2.3" }
+        it { is_expected.to eq("1.5.0") }
+      end
+
+      context "and a partial version was previously specified" do
+        let(:original_requirement) { "0.1" }
+        it { is_expected.to eq("1.5") }
+      end
+
+      context "and the new version has fewer digits than the old one§" do
+        let(:original_requirement) { "1.1.0.1" }
+        it { is_expected.to eq("1.5.0") }
+      end
+
+      context "and a caret was previously specified" do
+        let(:original_requirement) { "^1.2.3" }
+        it { is_expected.to eq("^1.5.0") }
+      end
+
+      context "and a pre-release was previously specified" do
+        let(:original_requirement) { "^1.2.3-rc1" }
+        it { is_expected.to eq("^1.5.0") }
+      end
+
+      context "and an x.x was previously specified" do
+        let(:original_requirement) { "^0.x.x-rc1" }
+        it { is_expected.to eq("^1.x.x") }
+      end
+
+      context "and an x.x was previously specified with four places" do
+        let(:original_requirement) { "^0.x.x.rc1" }
+        it { is_expected.to eq("^1.x.x") }
+      end
+    end
+  end
 end

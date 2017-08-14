@@ -21,6 +21,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }
+  let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
   before do
     allow(updater_instance).
@@ -30,6 +31,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     allow(updater_instance).
       to receive(:latest_resolvable_version).
       and_return(latest_resolvable_version)
+
+    allow(updater_instance).
+      to receive(:updated_requirement).
+      and_return(updated_requirement)
   end
 
   describe "#needs_update?" do
@@ -64,9 +69,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
   describe "#updated_dependency" do
     subject(:updated_dependency) { updater_instance.updated_dependency }
-    let(:latest_resolvable_version) { Gem::Version.new("0.9.0") }
+    let(:latest_version) { Gem::Version.new("1.9.0") }
 
-    its(:version) { is_expected.to eq("0.9.0") }
+    its(:version) { is_expected.to eq("1.9.0") }
     its(:previous_version) { is_expected.to eq("1.5.0") }
     its(:package_manager) { is_expected.to eq(dependency.package_manager) }
     its(:name) { is_expected.to eq(dependency.name) }
