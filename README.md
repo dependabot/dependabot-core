@@ -68,6 +68,8 @@ We'd love to see the following improvements to Dependabot Core:
 - Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript
 - Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile)
 - Support for additional languages (Elixir, anyone?)
+- Rationalisation of the `bundler` and `gemspec` strategies into a single,
+  unified Ruby strategy that can create updates for both apps and gems
 
 [dependabot]: https://dependabot.com
 [bump]: https://github.com/gocardless/bump
