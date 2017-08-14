@@ -147,7 +147,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     end
 
     context "when there is a resolvable version" do
-      let(:latest_resolvable_version) { "1.5.0" }
+      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
 
       context "and a full version was previously specified" do
         let(:original_requirement) { "1.2.3" }

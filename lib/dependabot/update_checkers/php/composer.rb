@@ -24,7 +24,7 @@ module Dependabot
           version_regex = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
           dependency.requirement.sub(version_regex) do |old_version|
             precision = old_version.split(".").count
-            latest_resolvable_version.split(".").first(precision).join(".")
+            latest_resolvable_version.to_s.split(".").first(precision).join(".")
           end
         end
 
