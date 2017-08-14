@@ -58,7 +58,7 @@ module Dependabot
           quote_character = original_requirement.include?("'") ? "'" : '"'
 
           formatted_new_requirement =
-            dependency.version.split(",").
+            dependency.requirement.split(",").
             map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
             join(", ")
 

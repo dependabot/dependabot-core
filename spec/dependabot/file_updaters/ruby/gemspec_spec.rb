@@ -28,7 +28,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "octokit",
-      version: ">= 4.6, < 6.0",
+      version: "5.1.0",
       requirement: ">= 4.6, < 6.0",
       package_manager: "gemspec",
       groups: []
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "bundler",
-            version: ">= 4.6, < 6.0",
+            version: "5.1.0",
             requirement: ">= 4.6, < 6.0",
             package_manager: "gemspec",
             groups: []
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "webmock",
-            version: ">= 4.6, < 6.0",
+            version: "5.1.0",
             requirement: ">= 4.6, < 6.0",
             package_manager: "gemspec",
             groups: []
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "excon",
-            version: ">= 4.6, < 6.0",
+            version: "5.1.0",
             requirement: ">= 4.6, < 6.0",
             package_manager: "gemspec",
             groups: []
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "gemnasium-parser",
-            version: ">= 4.6, < 6.0",
+            version: "5.1.0",
             requirement: ">= 4.6, < 6.0",
             package_manager: "gemspec",
             groups: []
@@ -121,23 +121,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "gems",
-            version: ">= 1.0, < 3.0",
-            requirement: ">= 1.0, < 3.0",
-            package_manager: "gemspec",
-            groups: []
-          )
-        end
-
-        its(:content) do
-          is_expected.to include(%('gems', '>= 1.0', '< 3.0'\n))
-        end
-      end
-
-      context "with a runtime dependency" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "gems",
-            version: ">= 1.0, < 3.0",
+            version: "5.1.0",
             requirement: ">= 1.0, < 3.0",
             package_manager: "gemspec",
             groups: []

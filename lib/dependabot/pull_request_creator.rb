@@ -21,7 +21,7 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      return unless dependency.previous_version.nil?
+      return if dependency.previous_version || library?
       raise "Dependency must have a previous version to have a pull request " \
             "created for it!"
     end
@@ -110,7 +110,7 @@ module Dependabot
 
     def library_pr_name
       "Update requirements to permit #{dependency.name} "\
-      "#{latest_version}"
+      "#{dependency.version}"
     end
 
     def pr_message
@@ -132,9 +132,9 @@ module Dependabot
     def library_pr_message
       msg = "Updates requirements to permit "
       msg += if source_url
-               "[#{dependency.name}](#{source_url}) #{latest_version}."
+               "[#{dependency.name} #{dependency.version}](#{source_url})."
              else
-               "#{dependency.name} #{latest_version}."
+               "#{dependency.name} #{dependency.version}."
              end
 
       msg += "\n- [Release notes](#{release_url})" if release_url
@@ -154,13 +154,16 @@ module Dependabot
     def new_branch_name
       path = ["dependabot", dependency.package_manager, files.first.directory]
       path = path.compact
-      File.join(*path, "#{dependency.name}-#{sanitized_version}")
+
+      if library?
+        File.join(*path, "#{dependency.name}-#{sanitized_requirement}")
+      else
+        File.join(*path, "#{dependency.name}-#{dependency.version}")
+      end
     end
 
-    def sanitized_version
-      return dependency.version unless library?
-
-      dependency.version.
+    def sanitized_requirement
+      dependency.requirement.
         delete(" ").
         gsub("!=", "neq-").
         gsub(">=", "gte-").
@@ -186,14 +189,6 @@ module Dependabot
 
     def source_url
       metadata_finder.source_url
-    end
-
-    def latest_version
-      # This method is only for library flows, which use the
-      # `Dependency#version` attribute to hold a requirement string rather than
-      # a version.
-      raise "Called latest_version for a non-library" unless library?
-      metadata_finder.latest_version
     end
 
     def metadata_finder
