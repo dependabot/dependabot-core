@@ -47,7 +47,7 @@ module Dependabot
         content = github_client.contents(repo, path: path, ref: commit).content
 
         DependencyFile.new(
-          name: file_name,
+          name: Pathname.new(file_name).cleanpath.to_path,
           content: Base64.decode64(content).force_encoding("UTF-8").encode,
           directory: directory
         )

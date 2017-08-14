@@ -26,7 +26,7 @@ module Dependabot
           ::Bundler::LockfileParser.new(gemfile_lock).specs.each do |spec|
             next unless spec.source.instance_of?(::Bundler::Source::Path)
 
-            file = File.join(spec.source.path, "#{spec.source.name}.gemspec")
+            file = File.join(spec.source.path, "#{spec.name}.gemspec")
 
             begin
               gemspec_files << fetch_file_from_github(file)

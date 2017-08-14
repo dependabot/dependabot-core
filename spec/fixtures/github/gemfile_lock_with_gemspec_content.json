@@ -1,0 +1,18 @@
+{
+    "name": "Gemfile.lock",
+    "path": "Gemfile.lock",
+    "sha": "edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "size": 1538,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile.lock?token=ABF4KbxDYCwHdSJNkLzB_suWgDZl4os7ks5WD9kmwA%3D%3D",
+    "type": "file",
+    "content": "UEFUSAogIHJlbW90ZTogLgogIHNwZWNzOgogICAgZXhhbXBsZSAoMC45LjMp\nCiAgICAgIGJ1c2luZXNzICh+PiAxLjApCgpHRU0KICByZW1vdGU6IGh0dHBz\nOi8vcnVieWdlbXMub3JnLwogIHNwZWNzOgogICAgYnVzaW5lc3MgKDEuNC4w\nKQogICAgc3RhdGVzbWFuICgxLjIuNSkKClBMQVRGT1JNUwogIHJ1YnkKCkRF\nUEVOREVOQ0lFUwogIGJ1c2luZXNzICh+PiAxLjQuMCkKICBleGFtcGxlIQog\nIHN0YXRlc21hbiAofj4gMS4yLjApCgpCVU5ETEVEIFdJVEgKICAgMS4xNS4z\nCg==\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+        "html": "https://github.com/gocardless/bump/blob/master/Gemfile.lock"
+    }
+}
