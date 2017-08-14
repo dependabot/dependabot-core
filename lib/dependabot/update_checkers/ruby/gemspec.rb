@@ -25,8 +25,10 @@ module Dependabot
           Dependency.new(
             name: dependency.name,
             version: updated_requirement,
+            requirement: updated_requirement,
             previous_version: dependency.version,
-            package_manager: dependency.package_manager
+            package_manager: dependency.package_manager,
+            groups: dependency.groups
           )
         end
 

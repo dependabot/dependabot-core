@@ -26,7 +26,9 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     Dependabot::Dependency.new(
       name: "luigi",
       version: "2.0.0",
-      package_manager: "pip"
+      requirement: "==2.0.0",
+      package_manager: "pip",
+      groups: []
     )
   end
 
@@ -42,7 +44,9 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         Dependabot::Dependency.new(
           name: "luigi",
           version: "2.6.0",
-          package_manager: "pip"
+          requirement: "==2.6.0",
+          package_manager: "pip",
+          groups: []
         )
       end
       it { is_expected.to be_falsey }

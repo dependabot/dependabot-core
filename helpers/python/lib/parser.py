@@ -18,7 +18,8 @@ def parse(directory):
 
                 packages.append({
                     "name": install_req.name,
-                    "version": specifier.version
+                    "version": specifier.version,
+                    "requirement": str(specifier)
                 })
     except Exception as e:
         print(json.dumps({ "error": repr(e) }))

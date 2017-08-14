@@ -29,7 +29,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
     Dependabot::Dependency.new(
       name: "octokit",
       version: ">= 4.6, < 6.0",
-      package_manager: "gemspec"
+      requirement: ">= 4.6, < 6.0",
+      package_manager: "gemspec",
+      groups: []
     )
   end
 
@@ -56,7 +58,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "bundler",
             version: ">= 4.6, < 6.0",
-            package_manager: "gemspec"
+            requirement: ">= 4.6, < 6.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 
@@ -70,7 +74,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "webmock",
             version: ">= 4.6, < 6.0",
-            package_manager: "gemspec"
+            requirement: ">= 4.6, < 6.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 
@@ -84,7 +90,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "excon",
             version: ">= 4.6, < 6.0",
-            package_manager: "gemspec"
+            requirement: ">= 4.6, < 6.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 
@@ -98,7 +106,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "gemnasium-parser",
             version: ">= 4.6, < 6.0",
-            package_manager: "gemspec"
+            requirement: ">= 4.6, < 6.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 
@@ -112,7 +122,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "gems",
             version: ">= 1.0, < 3.0",
-            package_manager: "gemspec"
+            requirement: ">= 1.0, < 3.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 
@@ -126,7 +138,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
           Dependabot::Dependency.new(
             name: "gems",
             version: ">= 1.0, < 3.0",
-            package_manager: "gemspec"
+            requirement: ">= 1.0, < 3.0",
+            package_manager: "gemspec",
+            groups: []
           )
         end
 

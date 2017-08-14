@@ -31,7 +31,9 @@ module Dependabot
           name: dependency.name,
           version: latest_resolvable_version.to_s,
           previous_version: dependency.version,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          requirement: dependency.requirement, # TODO: store the updated version
+          groups: dependency.groups
         )
       end
 

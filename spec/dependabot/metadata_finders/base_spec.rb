@@ -13,8 +13,10 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: dependency_version,
+      requirement: ">= 0",
       previous_version: dependency_previous_version,
-      package_manager: "bundler"
+      package_manager: "bundler",
+      groups: []
     )
   end
   let(:dependency_name) { "business" }

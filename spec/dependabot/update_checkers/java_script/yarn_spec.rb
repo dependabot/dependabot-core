@@ -25,7 +25,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     Dependabot::Dependency.new(
       name: "etag",
       version: "1.0.0",
-      package_manager: "yarn"
+      requirement: "^1.0.0",
+      package_manager: "yarn",
+      groups: []
     )
   end
 
@@ -41,7 +43,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         Dependabot::Dependency.new(
           name: "etag",
           version: "1.7.0",
-          package_manager: "yarn"
+          requirement: "^1.0.0",
+          package_manager: "yarn",
+          groups: []
         )
       end
 
@@ -60,7 +64,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         Dependabot::Dependency.new(
           name: "@blep/blep",
           version: "1.0.0",
-          package_manager: "yarn"
+          requirement: "^1.0.0",
+          package_manager: "yarn",
+          groups: []
         )
       end
       it { is_expected.to be_truthy }

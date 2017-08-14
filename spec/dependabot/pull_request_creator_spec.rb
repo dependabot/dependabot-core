@@ -18,7 +18,9 @@ RSpec.describe Dependabot::PullRequestCreator do
     Dependabot::Dependency.new(name: "business",
                                version: "1.5.0",
                                previous_version: "1.4.0",
-                               package_manager: "bundler")
+                               package_manager: "bundler",
+                               requirement: "~> 1.4.0",
+                               groups: [])
   end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
@@ -171,8 +173,10 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:dependency) do
         Dependabot::Dependency.new(name: "business",
                                    version: ">= 1.0, < 3.0",
+                                   requirement: ">= 1.0, < 3.0",
                                    previous_version: "~> 1.0",
-                                   package_manager: "gemspec")
+                                   package_manager: "gemspec",
+                                   groups: [])
       end
       let(:branch_name) { "dependabot/gemspec/business-gte-1.0-and-lt-3.0" }
 

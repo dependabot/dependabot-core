@@ -22,7 +22,9 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name).to_s,
-              package_manager: "bundler"
+              requirement: dependency.requirement.to_s,
+              package_manager: "bundler",
+              groups: dependency.groups
             )
           end.compact
         end

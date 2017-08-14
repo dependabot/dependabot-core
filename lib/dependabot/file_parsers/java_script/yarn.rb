@@ -10,10 +10,14 @@ module Dependabot
       class Yarn < Dependabot::FileParsers::Base
         def parse
           dependency_versions.map do |dep|
+            dep_group = group(dep["name"])
+
             Dependency.new(
               name: dep["name"],
               version: dep["version"],
-              package_manager: "yarn"
+              package_manager: "yarn",
+              requirement: parsed_package_json.dig(dep_group, dep["name"]),
+              groups: [dep_group]
             )
           end
         end
@@ -44,6 +48,21 @@ module Dependabot
 
         def package_json
           @package_json ||= get_original_file("package.json")
+        end
+
+        def group(dep_name)
+          if parsed_package_json["dependencies"].keys.include?(dep_name)
+            "dependencies"
+          elsif parsed_package_json["devDependencies"].keys.include?(dep_name)
+            "devDependencies"
+          else
+            raise "Expected to find dependency #{dep_name} in `dependencies` "\
+                  "or `devDependencies`, but it wasn't found in either!"
+          end
+        end
+
+        def parsed_package_json
+          JSON.parse(package_json.content)
         end
 
         def yarn_lock

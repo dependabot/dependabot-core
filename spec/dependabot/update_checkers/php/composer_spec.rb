@@ -20,7 +20,9 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
       version: "1.0.1",
-      package_manager: "composer"
+      requirement: "1.0.*",
+      package_manager: "composer",
+      groups: []
     )
   end
 
@@ -60,7 +62,9 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "doctrine/dbal",
           version: "2.1.5",
-          package_manager: "composer"
+          requirement: "1.0.*",
+          package_manager: "composer",
+          groups: []
         )
       end
 
@@ -90,7 +94,9 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           Dependabot::Dependency.new(
             name: "symfony/polyfill-mbstring",
             version: "1.0.1",
-            package_manager: "composer"
+            requirement: "1.0.*",
+            package_manager: "composer",
+            groups: []
           )
         end
 

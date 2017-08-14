@@ -12,7 +12,9 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      package_manager: "bundler"
+      requirement: ">= 0",
+      package_manager: "bundler",
+      groups: []
     )
   end
   subject(:finder) do

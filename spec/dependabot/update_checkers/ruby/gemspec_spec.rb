@@ -19,7 +19,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
     Dependabot::Dependency.new(
       name: "business",
       version: old_requirement,
-      package_manager: "gemspec"
+      requirement: old_requirement,
+      package_manager: "gemspec",
+      groups: []
     )
   end
   let(:old_requirement) { ">= 1.0.0" }

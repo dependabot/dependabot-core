@@ -33,7 +33,9 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
+        its(:requirement) { is_expected.to eq("~> 1.4.0") }
         its(:version) { is_expected.to eq("1.4.0") }
+        its(:groups) { is_expected.to eq(%i(default)) }
       end
     end
 
@@ -51,6 +53,8 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
+        its(:requirement) { is_expected.to eq(">= 0") }
+        its(:groups) { is_expected.to eq(%i(default)) }
       end
     end
 
@@ -72,6 +76,16 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
 
       its(:length) { is_expected.to eq(2) }
+
+      describe "the last dependency" do
+        subject { dependencies.last }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("business") }
+        its(:version) { is_expected.to eq("1.4.0") }
+        its(:requirement) { is_expected.to eq("~> 1.4.0") }
+        its(:groups) { is_expected.to eq(%i(development test)) }
+      end
     end
 
     context "with a dependency that doesn't appear in the lockfile" do

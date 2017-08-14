@@ -36,7 +36,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
       version: "1.22.1",
-      package_manager: "composer"
+      requirement: "1.22.*",
+      package_manager: "composer",
+      groups: []
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }

@@ -29,7 +29,9 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
     Dependabot::Dependency.new(
       name: "psycopg2",
       version: "2.8.1",
-      package_manager: "pip"
+      requirement: "==2.8.1",
+      package_manager: "pip",
+      groups: []
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }

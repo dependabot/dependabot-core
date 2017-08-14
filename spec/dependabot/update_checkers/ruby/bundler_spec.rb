@@ -23,7 +23,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.3",
-      package_manager: "bundler"
+      requirement: ">= 0",
+      package_manager: "bundler",
+      groups: []
     )
   end
 
@@ -74,7 +76,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "ibandit",
             version: "0.1.0",
-            package_manager: "bundler"
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
           )
         end
 
@@ -104,7 +108,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "public_suffix",
             version: "1.0.1",
-            package_manager: "bundler"
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
           )
         end
 
@@ -216,7 +222,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "example",
               version: "0.9.3",
-              package_manager: "bundler"
+              requirement: ">= 0",
+              package_manager: "bundler",
+              groups: []
             )
           end
 
@@ -241,7 +249,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "statesman",
             version: "1.2",
-            package_manager: "ruby"
+            requirement: ">= 0",
+            package_manager: "ruby",
+            groups: []
           )
         end
 
@@ -270,7 +280,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "prius",
             version: "0.9",
-            package_manager: "bundler"
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
           )
         end
 
@@ -413,7 +425,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "sidekiq-pro",
             version: "1.3",
-            package_manager: "bundler"
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
           )
         end
         let(:registry_url) { "https://gems.contribsys.com/" }
@@ -462,7 +476,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "prius",
             version: "0.9",
-            package_manager: "bundler"
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
           )
         end
 
@@ -514,7 +530,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "example",
               version: "0.9.3",
-              package_manager: "bundler"
+              requirement: ">= 0",
+              package_manager: "bundler",
+              groups: []
             )
           end
 

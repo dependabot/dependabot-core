@@ -52,7 +52,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      package_manager: "bundler"
+      requirement: "~> 1.5.0",
+      package_manager: "bundler",
+      groups: []
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -107,7 +109,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "i18n",
             version: "0.5.0",
-            package_manager: "bundler"
+            requirement: "~> 0.5.0",
+            package_manager: "bundler",
+            groups: []
           )
         end
         before do
@@ -192,7 +196,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "public_suffix",
               version: "1.4.6",
-              package_manager: "bundler"
+              requirement: "~> 1.4.0",
+              package_manager: "bundler",
+              groups: []
             )
           end
 

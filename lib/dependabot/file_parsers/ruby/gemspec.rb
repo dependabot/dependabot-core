@@ -14,7 +14,9 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency.requirement.to_s,
-              package_manager: "gemspec"
+              requirement: dependency.requirement.to_s,
+              package_manager: "gemspec",
+              groups: dependency.runtime? ? ["runtime"] : ["development"]
             )
           end
         end

@@ -26,11 +26,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
     context "with a version specified" do
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirement).to eq("==2.6.1")
+        end
       end
     end
 
@@ -41,11 +44,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirement).to eq("==2.6.1")
+        end
       end
     end
 
@@ -55,11 +61,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirement).to eq("==2.6.1")
+        end
       end
     end
 
@@ -113,11 +122,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(1) }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("requests") }
-        its(:version) { is_expected.to eq("2.1.4") }
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("requests")
+          expect(dependency.version).to eq("2.1.4")
+          expect(dependency.requirement).to eq("==2.1.4")
+        end
       end
     end
 

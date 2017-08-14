@@ -15,7 +15,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      package_manager: "bundler"
+      requirement: ">= 0",
+      package_manager: "bundler",
+      groups: []
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }

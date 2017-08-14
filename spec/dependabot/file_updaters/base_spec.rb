@@ -31,7 +31,9 @@ RSpec.describe Dependabot::FileUpdaters::Base do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      package_manager: "bundler"
+      package_manager: "bundler",
+      requirement: "~> 1.4.0",
+      groups: []
     )
   end
   let(:github_access_token) { "token" }

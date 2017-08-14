@@ -15,7 +15,9 @@ module Dependabot
             name: @dependency.name,
             package_manager: @dependency.package_manager,
             previous_version: @dependency.previous_version,
-            version: latest_version
+            version: latest_version,
+            requirement: @dependency.requirement,
+            groups: @dependency.groups
           )
         end
 
