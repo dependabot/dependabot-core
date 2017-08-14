@@ -1,3 +1,8 @@
+## v0.13.4, 14 August 2017
+
+- Better FileUpdaters::Gemspec regex (catch add_runtime_dependency declarations)
+- Extend aggressive gemspec sanitization to Bundler
+
 ## v0.13.3, 13 August 2017
 
 - More aggressive gemspec sanitizing
