@@ -112,6 +112,39 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
 
       its(:length) { is_expected.to eq(2) }
+
+      context "with a large gemspec" do
+        let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
+        let(:lockfile_content) do
+          fixture("ruby", "lockfiles", "imports_gemspec_large.lock")
+        end
+
+        its(:length) { is_expected.to eq(13) }
+
+        describe "the last dependency" do
+          subject { dependencies.last }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("gitlab") }
+          its(:version) { is_expected.to eq("4.2.0") }
+          its(:requirement) { is_expected.to eq("~> 4.1") }
+          its(:groups) { is_expected.to eq(["runtime"]) }
+        end
+
+        context "that needs to be sanitized" do
+          let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
+          its(:length) { is_expected.to eq(13) }
+        end
+
+        context "that can't be evaluated" do
+          let(:gemspec_content) { fixture("ruby", "gemspecs", "unevaluatable") }
+
+          it "raises a helpful error" do
+            expect { parser.parse }.
+              to raise_error(Dependabot::DependencyFileNotEvaluatable)
+          end
+        end
+      end
     end
   end
 end

@@ -9,7 +9,13 @@ module Dependabot
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
         def parse
-          dependencies.map do |dependency|
+          (gemfile_dependencies + gemspec_dependencies).uniq(&:name)
+        end
+
+        private
+
+        def gemfile_dependencies
+          parsed_gemfile.map do |dependency|
             # Ignore dependencies with multiple requirements, since they would
             # cause trouble at the gem update step. TODO: fix!
             next if dependency.requirement.requirements.count > 1
@@ -29,10 +35,21 @@ module Dependabot
           end.compact
         end
 
-        private
+        def gemspec_dependencies
+          return [] unless gemspec
+          parsed_gemspec.dependencies.map do |dependency|
+            Dependency.new(
+              name: dependency.name,
+              version: dependency_version(dependency.name).to_s,
+              requirement: dependency.requirement.to_s,
+              package_manager: "bundler",
+              groups: dependency.runtime? ? ["runtime"] : ["development"]
+            )
+          end
+        end
 
-        def dependencies
-          @dependencies ||=
+        def parsed_gemfile
+          @parsed_gemfile ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
@@ -46,18 +63,53 @@ module Dependabot
                   reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
               end
             end
+        rescue SharedHelpers::ChildProcessFailed => error
+          msg = error.error_class + " with message: " + error.error_message
+          raise Dependabot::DependencyFileNotEvaluatable, msg
+        end
+
+        def parsed_gemspec
+          @parsed_gemspec ||=
+            SharedHelpers.in_a_temporary_directory do
+              File.write(gemspec.name, sanitized_gemspec_content(gemspec))
+
+              SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+                ::Bundler.load_gemspec_uncached(gemspec.name)
+              end
+            end
+        rescue SharedHelpers::ChildProcessFailed => error
+          msg = error.error_class + " with message: " + error.error_message
+          raise Dependabot::DependencyFileNotEvaluatable, msg
         end
 
         def write_temporary_dependency_files
-          dependency_files.each do |file|
+          File.write("Gemfile", gemfile.content)
+          File.write("Gemfile.lock", lockfile.content)
+
+          if ruby_version_file
+            path = ruby_version_file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, ruby_version_file.content)
+          end
+
+          gemspecs.compact.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            File.write(path, sanitized_gemspec_content(file))
           end
         end
 
         def required_files
           Dependabot::FileFetchers::Ruby::Bundler.required_files
+        end
+
+        def gemspecs
+          dependency_files.select { |f| f.name.end_with?(".gemspec") }
+        end
+
+        def ruby_version_file
+          dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
         def gemfile
@@ -68,9 +120,18 @@ module Dependabot
           @lockfile ||= get_original_file("Gemfile.lock")
         end
 
-        # Parse the Gemfile.lock to get the gem version. Better than just
-        # relying on the dependency's specified version, which may have had a
-        # ~> matcher.
+        def gemspec
+          # The gemspec for this project will be at the top level
+          @gemspec ||= gemspecs.find { |f| f.name.split("/").count == 1 }
+        end
+
+        def sanitized_gemspec_content(gemspec)
+          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
+          # No need to set the version correctly - this is just an update
+          # check so we're not going to persist any changes to the lockfile.
+          gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
+        end
+
         def dependency_version(dependency_name)
           @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
 
