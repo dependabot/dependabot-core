@@ -96,5 +96,22 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       its(:length) { is_expected.to eq(1) }
     end
+
+    context "with a Gemfile that imports a gemspec" do
+      let(:files) { [gemfile, lockfile, gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          name: "example.gemspec",
+          content: gemspec_content
+        )
+      end
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "imports_gemspec") }
+      let(:lockfile_content) do
+        fixture("ruby", "lockfiles", "imports_gemspec.lock")
+      end
+      let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end

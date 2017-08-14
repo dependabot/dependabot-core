@@ -39,11 +39,11 @@ module Dependabot
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
 
-                ::Bundler::Definition.build(
-                  "Gemfile",
-                  "Gemfile.lock",
-                  {}
-                ).dependencies
+                ::Bundler::Definition.build("Gemfile", "Gemfile.lock", {}).
+                  dependencies.
+                  # We can't dump gemspec sources, and we wouldn't bump them
+                  # anyway, so we filter them out.
+                  reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
               end
             end
         end
