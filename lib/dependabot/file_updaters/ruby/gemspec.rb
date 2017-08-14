@@ -12,12 +12,7 @@ module Dependabot
             \s*(?<requirements>.*)\)?/x
 
         def updated_dependency_files
-          [
-            updated_file(
-              file: gemspec,
-              content: updated_gemspec_content
-            )
-          ]
+          [updated_file(file: gemspec, content: updated_gemspec_content)]
         end
 
         private
