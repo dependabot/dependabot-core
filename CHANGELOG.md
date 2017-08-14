@@ -1,3 +1,7 @@
+## v0.14.0, 14 August 2017
+
+- Add `requirement` and `previous_requirement` attributes to `Dependency`
+
 ## v0.13.4, 14 August 2017
 
 - Better FileUpdaters::Gemspec regex (catch add_runtime_dependency declarations)
