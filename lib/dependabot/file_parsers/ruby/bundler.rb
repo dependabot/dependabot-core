@@ -1,15 +1,15 @@
 # frozen_string_literal: true
-require "gemnasium/parser"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/ruby/bundler"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module FileParsers
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
         def parse
-          gemfile_parser.dependencies.map do |dependency|
+          dependencies.map do |dependency|
             # Ignore dependencies with multiple requirements, since they would
             # cause trouble at the gem update step. TODO: fix!
             next if dependency.requirement.requirements.count > 1
@@ -29,6 +29,31 @@ module Dependabot
 
         private
 
+        def dependencies
+          @dependencies ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+
+              SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+
+                ::Bundler::Definition.build(
+                  "Gemfile",
+                  "Gemfile.lock",
+                  {}
+                ).dependencies
+              end
+            end
+        end
+
+        def write_temporary_dependency_files
+          dependency_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
+        end
+
         def required_files
           Dependabot::FileFetchers::Ruby::Bundler.required_files
         end
@@ -39,10 +64,6 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Gemfile.lock")
-        end
-
-        def gemfile_parser
-          Gemnasium::Parser.gemfile(gemfile.content)
         end
 
         # Parse the Gemfile.lock to get the gem version. Better than just
