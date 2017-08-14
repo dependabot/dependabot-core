@@ -1,3 +1,7 @@
+## v0.14.2, 14 August 2017
+
+- Fix UpdateCheckers::Ruby::Gemspec (oops)
+
 ## v0.14.1, 14 August 2017
 
 - Fix: convert version to string before splitting in UpdateChecker
