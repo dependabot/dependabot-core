@@ -7,7 +7,7 @@ module Dependabot
     module Ruby
       class Gemspec < Dependabot::FileUpdaters::Base
         DEPENDENCY_DECLARATION_REGEX =
-          /^\s*\w*\.add(?:_development)?_dependency
+          /^\s*\w*\.add(?:_development|_runtime)?_dependency
             (\s*|\()['"](?<name>.*?)['"],
             \s*(?<requirements>.*)\)?/x
 

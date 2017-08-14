@@ -51,6 +51,34 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
         is_expected.to include(%("octokit", ">= 4.6", "< 6.0"\n))
       end
 
+      context "with a runtime dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "bundler",
+            version: ">= 4.6, < 6.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%("bundler", ">= 4.6", "< 6.0"\n))
+        end
+      end
+
+      context "with a development dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "webmock",
+            version: ">= 4.6, < 6.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%("webmock", ">= 4.6", "< 6.0"\n))
+        end
+      end
+
       context "with an array of requirements" do
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -80,6 +108,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Gemspec do
       end
 
       context "with single quotes" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gems",
+            version: ">= 1.0, < 3.0",
+            package_manager: "gemspec"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(%('gems', '>= 1.0', '< 3.0'\n))
+        end
+      end
+
+      context "with a runtime dependency" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "gems",
