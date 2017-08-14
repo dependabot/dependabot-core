@@ -55,7 +55,7 @@ module Dependabot
         end
 
         def original_requirement
-          Gem::Requirement.new(*dependency.version.split(","))
+          Gem::Requirement.new(*dependency.requirement.split(","))
         end
 
         def fixed_requirements(r)
