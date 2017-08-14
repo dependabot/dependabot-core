@@ -1,3 +1,7 @@
+## v0.14.1, 14 August 2017
+
+- Fix: convert version to string before splitting in UpdateChecker
+
 ## v0.14.0, 14 August 2017
 
 - Add `requirement` and `previous_requirement` attributes to `Dependency`
