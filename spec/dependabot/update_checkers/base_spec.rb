@@ -91,6 +91,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         let(:latest_version) { nil }
         it { is_expected.to be_falsey }
       end
+
+      context "that we don't know how to fix" do
+        let(:requirement) { "> 15" }
+        let(:updated_requirement) { nil }
+        it { is_expected.to be_falsey }
+      end
     end
   end
 
