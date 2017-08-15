@@ -1,3 +1,7 @@
+## v0.14.6, 15 August 2017
+
+- Ensure blank strings aren't provided as arguments to Dependency.new
+
 ## v0.14.5, 15 August 2017
 
 - Big refactor of `bundler` and `gemspec` flows to almost combine them.
