@@ -43,6 +43,11 @@ module Dependabot
         def check_required_files
           file_names = dependency_files.map(&:name)
 
+          if file_names.include?("Gemfile.lock") &&
+             !file_names.include?("Gemfile")
+            raise "A Gemfile must be provided if a lockfile is!"
+          end
+
           return if file_names.any? do |name|
             name.end_with?(".gemspec") && !name.include?("/")
           end
