@@ -80,6 +80,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         updated_files.find { |f| f.name == "Gemfile" }
       end
 
+      context "when no change is required" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_not_specified")
+        end
+        it { is_expected.to be_nil }
+      end
+
       context "when the full version is specified" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
@@ -374,6 +381,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       describe "the updated gemspec" do
         subject(:updated_gemspec) { updated_files.first }
+
+        context "when no change is required" do
+          let(:dependency_name) { "rake" }
+          it { is_expected.to be_nil }
+        end
 
         its(:content) do
           is_expected.to include(%("octokit", ">= 4.6", "< 6.0"\n))

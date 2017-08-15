@@ -20,7 +20,7 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          if gemfile
+          if gemfile && gemfile_changed?
             updated_files <<
               updated_file(file: gemfile, content: updated_gemfile_content)
           end
@@ -30,7 +30,7 @@ module Dependabot
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
 
-          if gemspec && !original_gemspec_declaration_string.nil?
+          if gemspec && gemspec_changed?
             updated_files <<
               updated_file(file: gemspec, content: updated_gemspec_content)
           end
@@ -60,6 +60,18 @@ module Dependabot
           @lockfile ||= get_original_file("Gemfile.lock")
         end
 
+        def gemfile_changed?
+          original_gemfile_declaration_string &&
+            original_gemfile_declaration_string !=
+              updated_gemfile_declaration_string
+        end
+
+        def gemspec_changed?
+          original_gemspec_declaration_string &&
+            original_gemspec_declaration_string !=
+              updated_gemspec_declaration_string
+        end
+
         def updated_gemfile_content
           @updated_gemfile_content ||=
             gemfile.content.gsub(
@@ -75,7 +87,7 @@ module Dependabot
               matches = []
 
               gemfile.content.scan(regex) { matches << Regexp.last_match }
-              matches.find { |match| match[:name] == dependency.name }.to_s
+              matches.find { |match| match[:name] == dependency.name }&.to_s
             end
         end
 
