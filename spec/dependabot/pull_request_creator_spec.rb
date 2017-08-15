@@ -184,22 +184,29 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "for a library" do
+      let(:files) { [gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          name: "example.gemspec",
+          content: fixture("ruby", "gemspecs", "example")
+        )
+      end
       let(:dependency) do
         Dependabot::Dependency.new(name: "business",
                                    version: "1.5.0",
                                    requirement: ">= 1.0, < 3.0",
                                    previous_requirement: "~> 1.4.0",
-                                   package_manager: "gemspec",
+                                   package_manager: "bundler",
                                    groups: [])
       end
-      let(:branch_name) { "dependabot/gemspec/business-gte-1.0-and-lt-3.0" }
+      let(:branch_name) { "dependabot/bundler/business-gte-1.0-and-lt-3.0" }
 
       context "without a previous requirement" do
         let(:dependency) do
           Dependabot::Dependency.new(name: "business",
                                      version: "1.5.0",
                                      requirement: ">= 1.0, < 3.0",
-                                     package_manager: "gemspec",
+                                     package_manager: "bundler",
                                      groups: [])
         end
 
@@ -239,7 +246,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(
             body: {
               base: "master",
-              head: "dependabot/gemspec/business-gte-1.0-and-lt-3.0",
+              head: "dependabot/bundler/business-gte-1.0-and-lt-3.0",
               title: "Update requirements to permit business 1.5.0",
               body: "Updates requirements to permit "\
                     "[business 1.5.0](https://github.com/gocardless/business)"\

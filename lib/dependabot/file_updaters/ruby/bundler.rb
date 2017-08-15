@@ -30,7 +30,7 @@ module Dependabot
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
 
-          if gemspec
+          if gemspec && !original_gemspec_declaration_string.nil?
             updated_files <<
               updated_file(file: gemspec, content: updated_gemspec_content)
           end

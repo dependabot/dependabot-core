@@ -21,11 +21,8 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      if library?
-        return if dependency.previous_requirement
-      else
-        return if dependency.previous_version
-      end
+      return if library? && dependency.previous_requirement
+      return if dependency.previous_version
 
       raise "Dependency must have a previous version or a previous " \
             "requirement to have a pull request created for it!"
@@ -204,7 +201,9 @@ module Dependabot
     end
 
     def library?
-      %w(gemspec).include?(dependency.package_manager)
+      files.map(&:name).any? do |name|
+        name.end_with?(".gemspec") && !name.include?("/")
+      end
     end
   end
 end
