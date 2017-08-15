@@ -8,7 +8,7 @@ RSpec.shared_examples "a dependency file parser" do
     subject { described_class }
     let(:base_class) { Dependabot::FileParsers::Base }
 
-    its(:superclass) { is_expected.to eq(base_class) }
+    its(:superclass) { is_expected.to be <= base_class }
 
     it "implements required_files" do
       expect(described_class.private_instance_methods(false)).

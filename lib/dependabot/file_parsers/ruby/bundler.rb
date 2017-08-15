@@ -15,6 +15,7 @@ module Dependabot
         private
 
         def gemfile_dependencies
+          return [] unless gemfile && lockfile
           parsed_gemfile.map do |dependency|
             # Ignore dependencies with multiple requirements, since they would
             # cause trouble at the gem update step. TODO: fix!
@@ -133,6 +134,7 @@ module Dependabot
         end
 
         def dependency_version(dependency_name)
+          return unless lockfile
           @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
 
           if dependency_name == "bundler"
