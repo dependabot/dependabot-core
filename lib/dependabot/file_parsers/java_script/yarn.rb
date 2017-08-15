@@ -51,9 +51,9 @@ module Dependabot
         end
 
         def group(dep_name)
-          if parsed_package_json["dependencies"].keys.include?(dep_name)
+          if parsed_package_json.dig("dependencies", dep_name)
             "dependencies"
-          elsif parsed_package_json["devDependencies"].keys.include?(dep_name)
+          elsif parsed_package_json.dig("devDependencies", dep_name)
             "devDependencies"
           else
             raise "Expected to find dependency #{dep_name} in `dependencies` "\

@@ -20,9 +20,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
   end
-  let(:lockfile_body) do
-    fixture("javascript", "lockfiles", "yarn.lock")
-  end
+  let(:lockfile_body) { fixture("javascript", "lockfiles", "yarn.lock") }
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
@@ -37,6 +35,27 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("fetch-factory") }
         its(:version) { is_expected.to eq("0.0.1") }
+        its(:requirement) { is_expected.to eq("^0.0.1") }
+        its(:groups) { ["dependencies"] }
+      end
+    end
+
+    context "with only dev dependencies" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "only_dev_dependencies.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "lockfiles", "only_dev_dependencies.lock")
+      end
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("etag") }
+        its(:version) { is_expected.to eq("1.8.0") }
+        its(:requirement) { is_expected.to eq("^1.0.0") }
+        its(:groups) { ["devDependencies"] }
       end
     end
   end
