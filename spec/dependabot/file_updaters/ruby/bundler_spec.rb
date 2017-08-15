@@ -540,5 +540,37 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
     end
+
+    context "when provided with only a Gemfile" do
+      let(:dependency_files) { [gemfile] }
+
+      # TODO: It would be nice to support this case. Work needed is in
+      # PullRequestCreator
+      it "raises on initialization" do
+        expect { updater }.to raise_error(/Gemfile and Gemfile\.lock/)
+      end
+    end
+
+    context "when provided with only a Gemfile.lock" do
+      let(:dependency_files) { [lockfile] }
+
+      it "raises on initialization" do
+        expect { updater }.to raise_error(/Gemfile must be provided/)
+      end
+    end
+
+    context "when provided with only a gemspec and Gemfile.lock" do
+      let(:dependency_files) { [lockfile, gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "gemspecs", "example"),
+          name: "example.gemspec"
+        )
+      end
+
+      it "raises on initialization" do
+        expect { updater }.to raise_error(/Gemfile must be provided/)
+      end
+    end
   end
 end
