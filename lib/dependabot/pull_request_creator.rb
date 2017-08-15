@@ -21,9 +21,14 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      return if dependency.previous_version || library?
-      raise "Dependency must have a previous version to have a pull request " \
-            "created for it!"
+      if library?
+        return if dependency.previous_requirement
+      else
+        return if dependency.previous_version
+      end
+
+      raise "Dependency must have a previous version or a previous " \
+            "requirement to have a pull request created for it!"
     end
 
     def create

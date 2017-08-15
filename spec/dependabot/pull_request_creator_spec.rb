@@ -92,6 +92,20 @@ RSpec.describe Dependabot::PullRequestCreator do
   end
 
   describe "#create" do
+    context "without a previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(name: "business",
+                                   version: "1.5.0",
+                                   package_manager: "bundler",
+                                   requirement: "~> 1.4.0",
+                                   groups: [])
+      end
+
+      it "errors out on initialization" do
+        expect { creator }.to raise_error(/must have a/)
+      end
+    end
+
     it "pushes a commit to GitHub" do
       creator.create
 
@@ -179,6 +193,20 @@ RSpec.describe Dependabot::PullRequestCreator do
                                    groups: [])
       end
       let(:branch_name) { "dependabot/gemspec/business-gte-1.0-and-lt-3.0" }
+
+      context "without a previous requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(name: "business",
+                                     version: "1.5.0",
+                                     requirement: ">= 1.0, < 3.0",
+                                     package_manager: "gemspec",
+                                     groups: [])
+        end
+
+        it "errors out on initialization" do
+          expect { creator }.to raise_error(/must have a/)
+        end
+      end
 
       it "has the right commit message" do
         creator.create
