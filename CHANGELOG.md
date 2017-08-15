@@ -1,3 +1,8 @@
+## v0.14.4, 15 August 2017
+
+- Update bundler FileParser to handle gemspecs
+- Update equality matchers to ranges in UpdateCheckers::Ruby::Gemspec
+
 ## v0.14.3, 15 August 2017
 
 - Parse JavaScript files which only have dev dependencies
