@@ -1,3 +1,8 @@
+## v0.14.5, 15 August 2017
+
+- Big refactor of `bundler` and `gemspec` flows to almost combine them.
+  Hopefully no impact on functionality. Releasing to test in the wild.
+
 ## v0.14.4, 15 August 2017
 
 - Update bundler FileParser to handle gemspecs
