@@ -256,6 +256,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       it { is_expected.to be_nil }
     end
 
+    context "with a gemspec and a Gemfile" do
+      let(:dependency_files) { [gemfile, gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "gemspecs", "small_example"),
+          name: "example.gemspec"
+        )
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
+
     context "with only a gemspec" do
       let(:dependency_files) { [gemspec] }
       let(:gemspec) do
@@ -585,6 +598,50 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
     end
 
+    context "with a gemspec and a Gemfile" do
+      let(:dependency_files) { [gemfile, gemspec] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "gemspecs", "small_example"),
+          name: "example.gemspec"
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+
+      context "with a version conflict at the latest version" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "ibandit",
+            version: "0.1.0",
+            requirement: ">= 0",
+            package_manager: "bundler",
+            groups: []
+          )
+        end
+
+        before do
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-i18n")
+            )
+
+          stub_request(:get, "https://index.rubygems.org/info/ibandit").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-ibandit")
+            )
+        end
+
+        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
+        # version compatible with the version of i18n in the Gemfile.
+        it { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      end
+    end
+
     context "with only a gemspec" do
       let(:dependency_files) { [gemspec] }
       let(:gemspec) do
@@ -656,6 +713,38 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "and a less than matcher was used" do
         let(:original_requirement) { "< 1.4.0" }
         it { is_expected.to eq("~> 1.5.0") }
+      end
+    end
+
+    context "with a gemspec and a gemfile" do
+      let(:dependency_files) { [gemspec, gemfile] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: gemspec_body,
+          name: "example.gemspec"
+        )
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          requirement: old_requirement,
+          package_manager: "bundler",
+          groups: []
+        )
+      end
+
+      let(:old_requirement) { "~> 0.9" }
+      let(:latest_version) { Gem::Version.new("1.5.0") }
+
+      before do
+        allow(checker).to receive(:latest_version).and_return(latest_version)
+      end
+
+      it "picks the gemspec to update the requirement in" do
+        expect(checker.updated_requirement).to eq(">= 0.9, < 2.0")
       end
     end
 

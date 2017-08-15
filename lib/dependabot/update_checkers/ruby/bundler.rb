@@ -52,7 +52,7 @@ module Dependabot
 
               definition = ::Bundler::Definition.build(
                 "Gemfile",
-                "Gemfile.lock",
+                nil,
                 gems: [dependency.name]
               )
 
@@ -65,7 +65,7 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          return latest_version unless gemfile && lockfile
+          return latest_version unless gemfile
           if bundler_source_for(dependency).is_a?(::Bundler::Source::Path)
             # We don't want to bump gems with a path/git source, so exit early
             return
@@ -81,7 +81,7 @@ module Dependabot
 
               definition = ::Bundler::Definition.build(
                 "Gemfile",
-                "Gemfile.lock",
+                lockfile ? "Gemfile.lock" : nil,
                 gems: [dependency.name]
               )
 
@@ -188,8 +188,8 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          File.write("Gemfile", gemfile_for_update_check)
-          File.write("Gemfile.lock", lockfile_for_update_check)
+          File.write("Gemfile", gemfile_for_update_check) if gemfile
+          File.write("Gemfile.lock", lockfile_for_update_check) if lockfile
 
           if ruby_version_file
             path = ruby_version_file.name
