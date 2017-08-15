@@ -30,17 +30,6 @@ module Dependabot
           end
         end
 
-        def needs_update?
-          if dependency.version
-            super
-          else
-            original_requirement =
-              Gem::Requirement.new(*dependency.requirement.split(","))
-            !original_requirement.satisfied_by?(latest_version) &&
-              !updated_requirement.nil?
-          end
-        end
-
         private
 
         def fetch_latest_version

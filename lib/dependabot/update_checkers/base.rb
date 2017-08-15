@@ -13,17 +13,27 @@ module Dependabot
       end
 
       def needs_update?
-        # Look at the very latest version before considering resolvability. If
-        # we're already up-to-date with it then we don't need to bother doing
-        # resolution (which is generally slow).
-        if latest_version &&
-           latest_version <= Gem::Version.new(dependency.version)
-          return false
-        end
+        if dependency.version
+          # Check if we're up-to-date with the latest version.
+          # Saves doing resolution if so.
+          if latest_version &&
+             latest_version <= Gem::Version.new(dependency.version)
+            return false
+          end
 
-        # If we're not on the latest version, consider resolvability.
-        return false if latest_resolvable_version.nil?
-        latest_resolvable_version > Gem::Version.new(dependency.version)
+          return false if latest_resolvable_version.nil?
+
+          latest_resolvable_version > Gem::Version.new(dependency.version)
+        else
+          # If the dependency has no version it means we're updating a library.
+          # Check if the dependency's requirement permits the latest version.
+          original_requirement =
+            Gem::Requirement.new(*dependency.requirement.split(","))
+
+          return false if original_requirement.satisfied_by?(latest_version)
+
+          !updated_requirement.nil?
+        end
       end
 
       def updated_dependency
