@@ -7,12 +7,7 @@ RSpec.shared_examples "a dependency file updater" do
     subject { described_class }
     let(:base_class) { Dependabot::FileUpdaters::Base }
 
-    its(:superclass) { is_expected.to eq(base_class) }
-
-    it "implements updated_dependency_files" do
-      expect(described_class.public_instance_methods(false)).
-        to include(:updated_dependency_files)
-    end
+    its(:superclass) { is_expected.to be <= base_class }
 
     it "implements required_files" do
       expect(described_class.private_instance_methods(false)).
