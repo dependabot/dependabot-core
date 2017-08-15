@@ -33,27 +33,30 @@ module Dependabot
         private
 
         def fetch_latest_version
-          source =
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
-
-              SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-                definition = ::Bundler::Definition.build(
-                  "Gemfile",
-                  "Gemfile.lock",
-                  gems: [dependency.name]
-                )
-
-                definition.dependencies.
-                  find { |dep| dep.name == dependency.name }.source
-              end
-            end
+          source = gemfile.nil? ? nil : source_from_gemfile
 
           case source
           when NilClass then latest_rubygems_version
           when ::Bundler::Source::Rubygems then latest_private_version(source)
+          end
+        end
+
+        def source_from_gemfile
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
+
+            SharedHelpers.in_a_forked_process do
+              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+
+              definition = ::Bundler::Definition.build(
+                "Gemfile",
+                "Gemfile.lock",
+                gems: [dependency.name]
+              )
+
+              definition.dependencies.
+                find { |dep| dep.name == dependency.name }.source
+            end
           end
         rescue SharedHelpers::ChildProcessFailed => error
           handle_bundler_errors(error)
@@ -169,9 +172,7 @@ module Dependabot
         end
 
         def gemfile
-          gemfile = dependency_files.find { |f| f.name == "Gemfile" }
-          raise "No Gemfile!" unless gemfile
-          gemfile
+          dependency_files.find { |f| f.name == "Gemfile" }
         end
 
         def lockfile

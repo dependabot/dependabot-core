@@ -1,16 +1,11 @@
 # frozen_string_literal: true
-require "gems"
-require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/ruby/bundler"
 
 module Dependabot
   module UpdateCheckers
     module Ruby
-      class Gemspec < Dependabot::UpdateCheckers::Base
+      class Gemspec < Dependabot::UpdateCheckers::Ruby::Bundler
         class UnfixableRequirement < StandardError; end
-
-        def latest_version
-          @latest_version ||= fetch_latest_version
-        end
 
         def latest_resolvable_version
           latest_version
@@ -37,22 +32,6 @@ module Dependabot
         end
 
         private
-
-        def fetch_latest_version
-          # Note: Rubygems excludes pre-releases from the `Gems.info` response.
-          # We might want to add them back in?
-          latest_info = Gems.info(dependency.name)
-
-          if latest_info["version"].nil?
-            raise "No version in Rubygems info:\n\n #{latest_info}"
-          end
-
-          Gem::Version.new(latest_info["version"])
-        rescue JSON::ParserError
-          # Replace with Gems::NotFound error if/when
-          # https://github.com/rubygems/gems/pull/38 is merged.
-          raise "Dependency not found on Rubygems: #{dependency.name}"
-        end
 
         def original_requirement
           Gem::Requirement.new(*dependency.requirement.split(","))

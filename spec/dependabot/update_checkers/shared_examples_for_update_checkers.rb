@@ -7,12 +7,7 @@ RSpec.shared_examples "an update checker" do
     subject { described_class }
     let(:base_class) { Dependabot::UpdateCheckers::Base }
 
-    its(:superclass) { is_expected.to eq(base_class) }
-
-    it "implements latest_version" do
-      expect(described_class.public_instance_methods(false)).
-        to include(:latest_version)
-    end
+    its(:superclass) { is_expected.to be <= base_class }
 
     it "doesn't define any additional public instance methods" do
       expect(described_class.public_instance_methods).
