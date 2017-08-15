@@ -312,13 +312,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             )
           end
 
-          let(:updater) do
-            described_class.new(
-              dependency_files: [gemfile, lockfile, gemspec],
-              dependency: dependency,
-              github_access_token: "token"
-            )
-          end
+          let(:dependency_files) { [gemfile, lockfile, gemspec] }
 
           before do
             stub_request(:get, "https://index.rubygems.org/info/i18n").
@@ -346,6 +340,66 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
             it "doesn't change the version of the path dependency" do
               expect(file.content).to include "example (0.9.3)"
+            end
+          end
+        end
+      end
+
+      context "with a Gemfile that imports a gemspec" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "imports_gemspec.lock")
+        end
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: gemspec_body,
+            name: "example.gemspec"
+          )
+        end
+
+        let(:dependency_files) { [gemfile, lockfile, gemspec] }
+
+        context "when the gem in the gemspec isn't being updated" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "statesman",
+              version: "2.0.0",
+              requirement: ">= 1.0, < 3.0",
+              package_manager: "bundler",
+              groups: []
+            )
+          end
+
+          it "returns an updated Gemfile and Gemfile.lock" do
+            expect(updated_files.map(&:name)).
+              to match_array(["Gemfile", "Gemfile.lock"])
+          end
+        end
+
+        context "when the gem in the gemspec is being updated" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.8.0",
+              requirement: requirement,
+              package_manager: "bundler",
+              groups: []
+            )
+          end
+          let(:requirement) { ">= 1.0, < 3.0" }
+
+          it "returns an updated gemspec, Gemfile and Gemfile.lock" do
+            expect(updated_files.map(&:name)).
+              to match_array(["Gemfile", "Gemfile.lock", "example.gemspec"])
+          end
+
+          context "but the gemspec constraint is already satisfied" do
+            let(:requirement) { "~> 1.0" }
+
+            it "returns an updated Gemfile and Gemfile.lock" do
+              expect(updated_files.map(&:name)).
+                to match_array(["Gemfile", "Gemfile.lock"])
             end
           end
         end
@@ -429,6 +483,60 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           its(:content) do
             is_expected.to include(%('gems', '>= 4.6', '< 6.0'\n))
           end
+        end
+      end
+    end
+
+    context "when provided with a Gemfile and a gemspec" do
+      let(:dependency_files) { [gemfile, gemspec] }
+
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: gemspec_body,
+          name: "example.gemspec"
+        )
+      end
+      let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "5.1.0",
+          requirement: ">= 4.6, < 6.0",
+          package_manager: "bundler",
+          groups: []
+        )
+      end
+      let(:dependency_name) { "octokit" }
+
+      it "returns an updated gemspec DependencyFile objects" do
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("example.gemspec")
+      end
+
+      context "when the gem appears in both" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+        let(:dependency_name) { "business" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the updated gemspec" do
+          subject(:updated_gemspec) do
+            updated_files.find { |f| f.name == "example.gemspec" }
+          end
+
+          its(:content) do
+            is_expected.to include(%('business', '>= 4.6', '< 6.0'\n))
+          end
+        end
+
+        describe "the updated gemfile" do
+          subject(:updated_gemspec) do
+            updated_files.find { |f| f.name == "Gemfile" }
+          end
+
+          its(:content) { is_expected.to include(%("business", "~> 5.1.0"\n)) }
         end
       end
     end
