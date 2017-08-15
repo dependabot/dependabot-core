@@ -1,3 +1,7 @@
+## v0.14.3, 15 August 2017
+
+- Parse JavaScript files which only have dev dependencies
+
 ## v0.14.2, 14 August 2017
 
 - Fix UpdateCheckers::Ruby::Gemspec (oops)
