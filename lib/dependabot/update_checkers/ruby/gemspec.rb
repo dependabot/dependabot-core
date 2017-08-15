@@ -68,7 +68,7 @@ module Dependabot
           end
 
           case op
-          when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
+          when "=", nil then [Gem::Requirement.new(">= #{version}")]
           when "<", "<=" then [updated_greatest_version(r)]
           when "~>" then updated_twidle_requirements(r)
           when "!=", ">", ">=" then raise UnfixableRequirement

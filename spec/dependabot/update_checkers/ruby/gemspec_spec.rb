@@ -72,12 +72,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
 
     context "when an = specifier was used" do
       let(:old_requirement) { "= 1.4.0" }
-      it { is_expected.to eq("= 1.5.0") }
+      it { is_expected.to eq(">= 1.4.0") }
     end
 
     context "when no specifier was used" do
       let(:old_requirement) { "1.4.0" }
-      it { is_expected.to eq("= 1.5.0") }
+      it { is_expected.to eq(">= 1.4.0") }
     end
 
     context "when a < specifier was used" do
