@@ -163,6 +163,24 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a gemspec and gemfile (no lockfile)" do
+      let(:files) { [gemspec, gemfile] }
+
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          name: "example.gemspec",
+          content: gemspec_content
+        )
+      end
+      let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "imports_gemspec") }
+
+      # TODO: It would be nice to include the dependencies that just appear in
+      # the Gemfile (which would take the below total to 13). Work required is
+      # the same as for supporting "Gemfile only".
+      its(:length) { is_expected.to eq(11) }
+    end
+
     context "with only a gemspec" do
       let(:files) { [gemspec] }
 
