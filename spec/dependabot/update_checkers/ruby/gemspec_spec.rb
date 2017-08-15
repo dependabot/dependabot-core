@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/gemspec"
 require_relative "../shared_examples_for_update_checkers"
 
@@ -10,7 +11,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      dependency_files: [],
+      dependency_files: [gemspec],
       github_access_token: "token"
     )
   end
@@ -23,6 +24,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Gemspec do
       groups: []
     )
   end
+  let(:gemspec) do
+    Dependabot::DependencyFile.new(
+      content: gemspec_body,
+      name: "example.gemspec"
+    )
+  end
+  let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
   let(:old_requirement) { ">= 1.0.0" }
 
   before do
