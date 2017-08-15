@@ -41,7 +41,7 @@ module Dependabot
           parsed_gemspec.dependencies.map do |dependency|
             Dependency.new(
               name: dependency.name,
-              version: dependency_version(dependency.name).to_s,
+              version: dependency_version(dependency.name)&.to_s,
               requirement: dependency.requirement.to_s,
               package_manager: "bundler",
               groups: dependency.runtime? ? ["runtime"] : ["development"]

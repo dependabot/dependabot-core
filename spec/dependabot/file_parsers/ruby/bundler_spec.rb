@@ -176,6 +176,16 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       its(:length) { is_expected.to eq(11) }
 
+      describe "the last dependency" do
+        subject { dependencies.last }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("rake") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirement) { is_expected.to eq(">= 0") }
+        its(:groups) { is_expected.to eq(["development"]) }
+      end
+
       context "that needs to be sanitized" do
         let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
         its(:length) { is_expected.to eq(11) }

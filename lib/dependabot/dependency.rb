@@ -14,8 +14,20 @@ module Dependabot
       @package_manager = package_manager
       @groups = groups
 
-      return if groups.instance_of?(Array)
-      raise ArgumentError, "groups must be and array"
+      check_values
+    end
+
+    def check_values
+      unless groups.instance_of?(Array)
+        raise ArgumentError, "groups must be and array"
+      end
+
+      if [version, previous_version].any? { |v| v == "" }
+        raise ArgumentError, "blank strings must not be provided as versions"
+      end
+
+      return unless [requirement, previous_requirement].any? { |r| r == "" }
+      raise ArgumentError, "blank strings must not be provided as requirements"
     end
 
     def to_h
