@@ -14,25 +14,10 @@ module Dependabot
 
       def needs_update?
         if dependency.version
-          # Check if we're up-to-date with the latest version.
-          # Saves doing resolution if so.
-          if latest_version &&
-             latest_version <= Gem::Version.new(dependency.version)
-            return false
-          end
-
-          return false if latest_resolvable_version.nil?
-
-          latest_resolvable_version > Gem::Version.new(dependency.version)
+          app_needs_update?
         else
           # If the dependency has no version it means we're updating a library.
-          # Check if the dependency's requirement permits the latest version.
-          original_requirement =
-            Gem::Requirement.new(*dependency.requirement.split(","))
-
-          return false if original_requirement.satisfied_by?(latest_version)
-
-          !updated_requirement.nil?
+          library_needs_update?
         end
       end
 
@@ -60,6 +45,31 @@ module Dependabot
 
       def updated_requirement
         raise NotImplementedError
+      end
+
+      private
+
+      def app_needs_update?
+        # Check if we're up-to-date with the latest version.
+        # Saves doing resolution if so.
+        if latest_version &&
+           latest_version <= Gem::Version.new(dependency.version)
+          return false
+        end
+
+        return false if latest_resolvable_version.nil?
+
+        latest_resolvable_version > Gem::Version.new(dependency.version)
+      end
+
+      def library_needs_update?
+        original_requirement =
+          Gem::Requirement.new(*dependency.requirement.split(","))
+
+        return false if latest_version.nil?
+        return false if original_requirement.satisfied_by?(latest_version)
+
+        !updated_requirement.nil?
       end
     end
   end

@@ -65,6 +65,33 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       let(:latest_version) { nil }
       it { is_expected.to be_falsey }
     end
+
+    context "when updating a library" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          requirement: requirement,
+          package_manager: "bundler",
+          groups: []
+        )
+      end
+
+      context "that already permits the latest version" do
+        let(:requirement) { ">= 0" }
+        it { is_expected.to be_falsey }
+      end
+
+      context "that doesn't yet permit the latest version" do
+        let(:requirement) { "< 1" }
+        it { is_expected.to be_truthy }
+      end
+
+      context "when the dependency couldn't be found" do
+        let(:requirement) { "< 1" }
+        let(:latest_version) { nil }
+        it { is_expected.to be_falsey }
+      end
+    end
   end
 
   describe "#updated_dependency" do
