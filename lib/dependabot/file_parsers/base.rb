@@ -7,9 +7,7 @@ module Dependabot
       def initialize(dependency_files:)
         @dependency_files = dependency_files
 
-        required_files.each do |filename|
-          raise "No #{filename}!" unless get_original_file(filename)
-        end
+        check_required_files
       end
 
       def parse
@@ -17,6 +15,12 @@ module Dependabot
       end
 
       private
+
+      def check_required_files
+        required_files.each do |filename|
+          raise "No #{filename}!" unless get_original_file(filename)
+        end
+      end
 
       def required_files
         raise NotImplementedError

@@ -162,5 +162,24 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         end
       end
     end
+
+    context "with only a gemspec" do
+      let(:files) { [gemspec] }
+
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          name: "example.gemspec",
+          content: gemspec_content
+        )
+      end
+      let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
+
+      its(:length) { is_expected.to eq(11) }
+
+      context "that needs to be sanitized" do
+        let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
+        its(:length) { is_expected.to eq(11) }
+      end
+    end
   end
 end

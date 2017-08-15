@@ -10,9 +10,9 @@ RSpec.shared_examples "a dependency file parser" do
 
     its(:superclass) { is_expected.to be <= base_class }
 
-    it "implements required_files" do
+    it "implements required_files or check_required_files" do
       expect(described_class.private_instance_methods(false)).
-        to include(:required_files)
+        to include(:required_files).or include(:check_required_files)
     end
 
     it "implements parse" do
