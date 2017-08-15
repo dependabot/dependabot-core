@@ -6,7 +6,6 @@ require "bundler_metadata_dependencies_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
-require "dependabot/file_fetchers/ruby/bundler"
 
 module Dependabot
   module FileUpdaters
@@ -41,8 +40,16 @@ module Dependabot
 
         private
 
-        def required_files
-          Dependabot::FileFetchers::Ruby::Bundler.required_files
+        def check_required_files
+          file_names = dependency_files.map(&:name)
+
+          return if file_names.any? do |name|
+            name.end_with?(".gemspec") && !name.include?("/")
+          end
+
+          return if (%w(Gemfile Gemfile.lock) - file_names).empty?
+
+          raise "A gemspec or a Gemfile and Gemfile.lock must be provided!"
         end
 
         def gemfile

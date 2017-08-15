@@ -9,9 +9,7 @@ module Dependabot
         @dependency_files = dependency_files
         @github_access_token = github_access_token
 
-        required_files.each do |filename|
-          raise "No #{filename}!" unless get_original_file(filename)
-        end
+        check_required_files
       end
 
       def updated_dependency_files
@@ -19,6 +17,12 @@ module Dependabot
       end
 
       private
+
+      def check_required_files
+        required_files.each do |filename|
+          raise "No #{filename}!" unless get_original_file(filename)
+        end
+      end
 
       def required_files
         raise NotImplementedError

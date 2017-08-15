@@ -35,11 +35,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [gemfile, lockfile],
+      dependency_files: dependency_files,
       dependency: dependency,
       github_access_token: "token"
     )
   end
+  let(:dependency_files) { [gemfile, lockfile] }
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
   end
@@ -339,6 +340,82 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             it "doesn't change the version of the path dependency" do
               expect(file.content).to include "example (0.9.3)"
             end
+          end
+        end
+      end
+    end
+
+    context "when provided with only a gemspec" do
+      let(:dependency_files) { [gemspec] }
+
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: gemspec_body,
+          name: "example.gemspec"
+        )
+      end
+      let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "5.1.0",
+          requirement: ">= 4.6, < 6.0",
+          package_manager: "bundler",
+          groups: []
+        )
+      end
+      let(:dependency_name) { "octokit" }
+
+      it "returns DependencyFile objects" do
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated gemspec" do
+        subject(:updated_gemspec) { updated_files.first }
+
+        its(:content) do
+          is_expected.to include(%("octokit", ">= 4.6", "< 6.0"\n))
+        end
+
+        context "with a runtime dependency" do
+          let(:dependency_name) { "bundler" }
+
+          its(:content) do
+            is_expected.to include(%("bundler", ">= 4.6", "< 6.0"\n))
+          end
+        end
+
+        context "with a development dependency" do
+          let(:dependency_name) { "webmock" }
+
+          its(:content) do
+            is_expected.to include(%("webmock", ">= 4.6", "< 6.0"\n))
+          end
+        end
+
+        context "with an array of requirements" do
+          let(:dependency_name) { "excon" }
+
+          its(:content) do
+            is_expected.to include(%("excon", ">= 4.6", "< 6.0"\n))
+          end
+        end
+
+        context "with brackets around the requirements" do
+          let(:dependency_name) { "gemnasium-parser" }
+
+          its(:content) do
+            is_expected.to include(%("gemnasium-parser", ">= 4.6", "< 6.0"\n))
+          end
+        end
+
+        context "with single quotes" do
+          let(:dependency_name) { "gems" }
+
+          its(:content) do
+            is_expected.to include(%('gems', '>= 4.6', '< 6.0'\n))
           end
         end
       end
