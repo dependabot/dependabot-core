@@ -8,7 +8,7 @@ module Dependabot
   module FileParsers
     def self.for_package_manager(package_manager)
       case package_manager
-      when "bundler", "gemspec" then FileParsers::Ruby::Bundler
+      when "bundler" then FileParsers::Ruby::Bundler
       when "yarn" then FileParsers::JavaScript::Yarn
       when "pip" then FileParsers::Python::Pip
       when "composer" then FileParsers::Php::Composer

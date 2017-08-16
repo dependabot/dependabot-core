@@ -8,7 +8,7 @@ module Dependabot
   module UpdateCheckers
     def self.for_package_manager(package_manager)
       case package_manager
-      when "bundler", "gemspec" then UpdateCheckers::Ruby::Bundler
+      when "bundler" then UpdateCheckers::Ruby::Bundler
       when "yarn" then UpdateCheckers::JavaScript::Yarn
       when "pip" then UpdateCheckers::Python::Pip
       when "composer" then UpdateCheckers::Php::Composer
