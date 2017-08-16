@@ -4,6 +4,7 @@ require "bundler_metadata_dependencies_patch"
 require "excon"
 require "gems"
 require "gemnasium/parser"
+require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -33,43 +34,18 @@ module Dependabot
         private
 
         def fetch_latest_version
-          source = bundler_source_for(dependency)
-
-          case source
+          case dependency_source
           when NilClass then latest_rubygems_version
-          when ::Bundler::Source::Rubygems then latest_private_version(source)
+          when ::Bundler::Source::Rubygems
+            latest_private_version(dependency_source)
           end
-        end
-
-        def bundler_source_for(dependency)
-          return nil unless gemfile
-
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
-
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-              definition = ::Bundler::Definition.build(
-                "Gemfile",
-                nil,
-                gems: [dependency.name]
-              )
-
-              definition.dependencies.
-                find { |dep| dep.name == dependency.name }&.source
-            end
-          end
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
         end
 
         def fetch_latest_resolvable_version
-          return latest_version if required_in_gemspec
-          if bundler_source_for(dependency).is_a?(::Bundler::Source::Path)
-            # We don't want to bump gems with a path/git source, so exit early
-            return
-          end
+          return latest_version unless gemfile
+
+          # We don't want to bump gems with a path/git source, so exit early
+          return nil if dependency_source.is_a?(::Bundler::Source::Path)
 
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
@@ -81,15 +57,32 @@ module Dependabot
 
               definition = ::Bundler::Definition.build(
                 "Gemfile",
-                lockfile ? "Gemfile.lock" : nil,
+                lockfile&.name,
                 gems: [dependency.name]
               )
 
               definition.resolve_remotely!
-              definition.resolve.
-                find { |dep| dep.name == dependency.name }.version
+              definition.resolve.find { |d| d.name == dependency.name }.version
             end
           end
+        rescue SharedHelpers::ChildProcessFailed => error
+          handle_bundler_errors(error)
+        end
+
+        def dependency_source
+          return nil unless gemfile
+
+          @dependency_source ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+
+              SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+
+                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+                  find { |dep| dep.name == dependency.name }&.source
+              end
+            end
         rescue SharedHelpers::ChildProcessFailed => error
           handle_bundler_errors(error)
         end
@@ -152,8 +145,6 @@ module Dependabot
           return nil if latest_info["version"].nil?
           Gem::Version.new(latest_info["version"])
         rescue JSON::ParserError
-          # Replace with Gems::NotFound error if/when
-          # https://github.com/rubygems/gems/pull/38 is merged.
           nil
         end
 
@@ -181,6 +172,19 @@ module Dependabot
           dependency_files.find { |f| f.name == "Gemfile.lock" }
         end
 
+        def gemspec
+          dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+        end
+
+        def ruby_version_file
+          dependency_files.find { |f| f.name == ".ruby-version" }
+        end
+
+        def path_gemspecs
+          all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
+          all - [gemspec]
+        end
+
         def path_based_dependencies
           ::Bundler::LockfileParser.new(lockfile.content).specs.select do |spec|
             spec.source.instance_of?(::Bundler::Source::Path)
@@ -191,29 +195,14 @@ module Dependabot
           File.write("Gemfile", gemfile_for_update_check) if gemfile
           File.write("Gemfile.lock", lockfile_for_update_check) if lockfile
 
-          if ruby_version_file
-            path = ruby_version_file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, ruby_version_file.content)
-          end
+          write_updated_gemspec if gemspec
+          write_ruby_version_file if ruby_version_file
 
-          gemspecs.compact.each do |file|
+          path_gemspecs.compact.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(file))
+            File.write(path, sanitized_gemspec_content(file.content))
           end
-        end
-
-        def gemspecs
-          dependency_files.select { |f| f.name.end_with?(".gemspec") }
-        end
-
-        def gemspec
-          gemspecs.find { |f| f.name.split("/").count == 1 }
-        end
-
-        def ruby_version_file
-          dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
         def gemfile_for_update_check
@@ -225,11 +214,52 @@ module Dependabot
           replace_ssh_links_with_https(lockfile.content)
         end
 
-        def sanitized_gemspec_content(gemspec)
-          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
+        def write_updated_gemspec
+          path = gemspec.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, sanitized_gemspec_content(updated_gemspec_content))
+        end
+
+        def write_ruby_version_file
+          path = ruby_version_file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, ruby_version_file.content)
+        end
+
+        def updated_gemspec_content
+          return gemspec.content unless original_gemspec_declaration_string
+          gemspec.content.gsub(
+            original_gemspec_declaration_string,
+            updated_gemspec_declaration_string
+          )
+        end
+
+        def original_gemspec_declaration_string
+          @original_gemspec_declaration_string ||=
+            begin
+              matches = []
+              regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
+              gemspec.content.scan(regex) { matches << Regexp.last_match }
+
+              matches.find { |match| match[:name] == dependency.name }&.to_s
+            end
+        end
+
+        def updated_gemspec_declaration_string
+          regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
+          original_requirement =
+            regex.match(original_gemspec_declaration_string)[:requirements]
+
+          original_gemspec_declaration_string.
+            sub(original_requirement, '">= 0"')
+        end
+
+        def sanitized_gemspec_content(gemspec_content)
           # No need to set the version correctly - this is just an update
           # check so we're not going to persist any changes to the lockfile.
-          gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
+          gemspec_content.
+            gsub(/^\s*require.*$/, "").
+            gsub(/=.*VERSION.*$/, "= '0.0.1'")
         end
 
         # Replace the original gem requirements with a ">=" requirement to
@@ -267,7 +297,7 @@ module Dependabot
           return false unless gemspec
 
           SharedHelpers.in_a_temporary_directory do
-            File.write(gemspec.name, sanitized_gemspec_content(gemspec))
+            File.write(gemspec.name, sanitized_gemspec_content(gemspec.content))
 
             SharedHelpers.in_a_forked_process do
               ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
@@ -360,8 +390,7 @@ module Dependabot
               latest_version.segments[index]
             elsif index == index_to_update
               latest_version.segments[index] + 1
-            else
-              0
+            else 0
             end
           end
 

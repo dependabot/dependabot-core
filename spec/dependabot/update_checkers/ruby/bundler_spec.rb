@@ -631,13 +631,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         )
       end
 
-      context "with a dependency that appears in the gemspec" do
-        it "falls back to latest_version" do
-          dummy_version = Gem::Version.new("0.5.0")
-          expect(checker).to receive(:latest_version).and_return(dummy_version)
-          expect(checker.latest_resolvable_version).to eq(dummy_version)
-        end
-      end
+      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
 
       context "with a version conflict at the latest version" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
