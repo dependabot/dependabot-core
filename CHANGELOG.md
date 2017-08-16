@@ -1,3 +1,11 @@
+## v0.15.0, 16 August 2017
+
+- Add `.updated_files_regex` to all FileUpdaters
+- Remove `.required_files` from all FileFetchers
+- Add `.required_files_in?` and `required_files_message` to all FileFetchers
+- Remove all `Ruby::Gemspec` classes entirely. Gem bumping behaviour now
+  handled in `Ruby::Bundler`
+
 ## v0.14.6, 15 August 2017
 
 - Ensure blank strings aren't provided as arguments to Dependency.new
