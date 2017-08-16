@@ -1,3 +1,9 @@
+## v0.15.3, 16 August 2017
+
+- Always use latest_version if updating a gemspec dependency
+- Handle Ruby file updates where a non-Gemfile dependency has been updated in
+  the lockfile
+
 ## v0.15.2, 16 August 2017
 
 - Clearer error message for FileFetchers::Ruby::Bundler
