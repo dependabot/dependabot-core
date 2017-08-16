@@ -44,8 +44,10 @@ module Dependabot
           package&.fetch("version")&.sub(/^v?/, "")
         end
 
-        def required_files
-          Dependabot::FileFetchers::Php::Composer.required_files
+        def check_required_files
+          %w(composer.json composer.lock).each do |filename|
+            raise "No #{filename}!" unless get_original_file(filename)
+          end
         end
 
         def parsed_lockfile

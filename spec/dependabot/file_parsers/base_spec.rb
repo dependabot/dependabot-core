@@ -7,8 +7,10 @@ require "dependabot/file_parsers/base"
 RSpec.describe Dependabot::FileParsers::Base do
   let(:child_class) do
     Class.new(described_class) do
-      def required_files
-        ["Gemfile"]
+      def check_required_files
+        %w(Gemfile).each do |filename|
+          raise "No #{filename}!" unless get_original_file(filename)
+        end
       end
     end
   end

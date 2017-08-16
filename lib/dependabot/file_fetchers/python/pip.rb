@@ -5,17 +5,26 @@ module Dependabot
   module FileFetchers
     module Python
       class Pip < Dependabot::FileFetchers::Base
-        def self.required_files
-          %w(requirements.txt)
+        def self.required_files_in?(filenames)
+          filenames.include?("requirements.txt")
+        end
+
+        def self.required_files_message
+          "Repo must contain a requirements.txt."
         end
 
         private
 
-        def extra_files
+        def fetch_files
           fetched_files = []
+          fetched_files << requirement_file
           fetched_files += child_requirement_files
           fetched_files += setup_files
           fetched_files
+        end
+
+        def requirement_file
+          @requirements_file ||= fetch_file_from_github("requirements.txt")
         end
 
         def child_requirement_files
@@ -65,11 +74,6 @@ module Dependabot
           ([requirement_file] + child_requirement_files).map do |req_file|
             req_file.content.scan(/^(?:-e\s)?(?<path>\..*)/).flatten
           end.flatten
-        end
-
-        def requirement_file
-          @requirements_file ||=
-            required_files.find { |f| f.name == "requirements.txt" }
         end
       end
     end

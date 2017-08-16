@@ -10,7 +10,20 @@ RSpec.shared_examples "a dependency file fetcher" do
 
     its(:superclass) { is_expected.to eq(base_class) }
 
-    its(:required_files) { is_expected.to be_an_instance_of(Array) }
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).
+        to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).
+        to include(:required_files_message)
+    end
+
+    it "implements fetch_files" do
+      expect(described_class.private_instance_methods(false)).
+        to include(:fetch_files)
+    end
 
     it "doesn't define any additional public instance methods" do
       expect(described_class.public_instance_methods).

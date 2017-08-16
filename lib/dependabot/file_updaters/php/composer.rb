@@ -31,8 +31,10 @@ module Dependabot
 
         private
 
-        def required_files
-          Dependabot::FileFetchers::Php::Composer.required_files
+        def check_required_files
+          %w(composer.json composer.lock).each do |filename|
+            raise "No #{filename}!" unless get_original_file(filename)
+          end
         end
 
         def composer_json

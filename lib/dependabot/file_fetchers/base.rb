@@ -8,7 +8,11 @@ module Dependabot
     class Base
       attr_reader :repo, :github_client, :directory
 
-      def self.required_files
+      def self.required_files_in?(_)
+        raise NotImplementedError
+      end
+
+      def self.required_files_message
         raise NotImplementedError
       end
 
@@ -19,7 +23,7 @@ module Dependabot
       end
 
       def files
-        @files ||= required_files + extra_files
+        @files ||= fetch_files
       end
 
       def commit
@@ -31,16 +35,6 @@ module Dependabot
       end
 
       private
-
-      def required_files
-        @required_files ||= self.class.required_files.map do |name|
-          fetch_file_from_github(name)
-        end
-      end
-
-      def extra_files
-        []
-      end
 
       def fetch_file_from_github(file_name)
         path = Pathname.new(File.join(directory, file_name)).cleanpath.to_path

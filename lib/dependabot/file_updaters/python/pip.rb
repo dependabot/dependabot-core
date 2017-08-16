@@ -22,8 +22,10 @@ module Dependabot
 
         private
 
-        def required_files
-          Dependabot::FileFetchers::Python::Pip.required_files
+        def check_required_files
+          %w(requirements.txt).each do |filename|
+            raise "No #{filename}!" unless get_original_file(filename)
+          end
         end
 
         def requirements

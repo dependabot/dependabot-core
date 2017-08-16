@@ -29,8 +29,10 @@ module Dependabot
 
         private
 
-        def required_files
-          Dependabot::FileFetchers::JavaScript::Yarn.required_files
+        def check_required_files
+          %w(package.json yarn.lock).each do |filename|
+            raise "No #{filename}!" unless get_original_file(filename)
+          end
         end
 
         def package_json

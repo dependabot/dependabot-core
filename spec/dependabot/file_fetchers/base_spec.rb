@@ -9,8 +9,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   let(:child_class) do
     Class.new(described_class) do
-      def self.required_files
-        ["Gemfile"]
+      def self.required_files_in?(filenames)
+        filenames.include?("requirements.txt")
+      end
+
+      def self.required_files_message
+        "Repo must contain a requirements.txt."
+      end
+
+      private
+
+      def fetch_files
+        [fetch_file_from_github("requirements.txt")]
       end
     end
   end
@@ -42,7 +52,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-      stub_request(:get, url + "Gemfile?ref=sha").
+      stub_request(:get, url + "requirements.txt?ref=sha").
         to_return(status: 200,
                   body: fixture("github", "gemfile_content.json"),
                   headers: { "content-type" => "application/json" })
@@ -51,14 +61,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
     its(:length) { is_expected.to eq(1) }
 
     describe "the file" do
-      subject { files.find { |file| file.name == "Gemfile" } }
+      subject { files.find { |file| file.name == "requirements.txt" } }
 
       it { is_expected.to be_a(Dependabot::DependencyFile) }
       its(:content) { is_expected.to include("octokit") }
 
       context "when there are non-ASCII characters" do
         before do
-          stub_request(:get, url + "Gemfile?ref=sha").
+          stub_request(:get, url + "requirements.txt?ref=sha").
             to_return(status: 200,
                       body: fixture("github", "gemfile_content_non_ascii.json"),
                       headers: { "content-type" => "application/json" })
@@ -83,7 +93,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it "hits the right GitHub URL" do
           files
-          expect(WebMock).to have_requested(:get, url + "Gemfile?ref=sha")
+          expect(WebMock).
+            to have_requested(:get, url + "requirements.txt?ref=sha")
         end
       end
 
@@ -93,7 +104,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it "hits the right GitHub URL" do
           files
-          expect(WebMock).to have_requested(:get, url + "Gemfile?ref=sha")
+          expect(WebMock).
+            to have_requested(:get, url + "requirements.txt?ref=sha")
         end
       end
 
@@ -103,7 +115,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it "hits the right GitHub URL" do
           files
-          expect(WebMock).to have_requested(:get, url + "Gemfile?ref=sha")
+          expect(WebMock).
+            to have_requested(:get, url + "requirements.txt?ref=sha")
         end
       end
     end
@@ -132,8 +145,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
         let(:child_class) do
           Class.new(described_class) do
-            def self.required_files
-              ["./some/file"]
+            def fetch_files
+              [fetch_file_from_github("./some/file")]
             end
           end
         end
@@ -152,8 +165,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
         let(:child_class) do
           Class.new(described_class) do
-            def self.required_files
-              ["../some/file"]
+            def fetch_files
+              [fetch_file_from_github("../some/file")]
             end
           end
         end
@@ -167,13 +180,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     context "when a dependency file can't be found" do
       before do
-        stub_request(:get, url + "Gemfile?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "requirements.txt?ref=sha").
+          to_return(status: 404)
       end
 
       it "raises a custom error" do
         expect { file_fetcher_instance.files }.
           to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("Gemfile")
+            expect(error.file_name).to eq("requirements.txt")
           end
       end
     end

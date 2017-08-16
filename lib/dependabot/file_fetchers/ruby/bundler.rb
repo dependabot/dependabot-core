@@ -6,24 +6,77 @@ module Dependabot
   module FileFetchers
     module Ruby
       class Bundler < Dependabot::FileFetchers::Base
-        def self.required_files
-          %w(Gemfile Gemfile.lock)
+        def self.required_files_in?(filenames)
+          if filenames.include?("Gemfile.lock") &&
+             !filenames.include?("Gemfile")
+            return false
+          end
+
+          if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
+            return true
+          end
+
+          (%w(Gemfile Gemfile.lock) - filenames).empty?
+        end
+
+        def self.required_files_message
+          "Repo must contain either a Gemfile and Gemfile.lock or a gemspec. " \
+          "If a Gemfile.lock is present, and Gemfile must be."
         end
 
         private
 
-        def extra_files
+        def fetch_files
           fetched_files = []
-          fetched_files += path_gemspecs
+          fetched_files << gemfile unless gemfile.nil?
+          fetched_files << lockfile unless lockfile.nil?
+          fetched_files << gemspec unless gemspec.nil?
           fetched_files << ruby_version_file unless ruby_version_file.nil?
-          fetched_files
+          fetched_files += path_gemspecs
+
+          unless self.class.required_files_in?(fetched_files.map(&:name))
+            raise "Invalid set of files: #{fetched_files.map(&:name)}"
+          end
+
+          fetched_files.uniq
+        end
+
+        def gemfile
+          @gemfile ||= fetch_file_from_github("Gemfile")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
+
+        def lockfile
+          @lockfile ||= fetch_file_from_github("Gemfile.lock")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
+
+        def gemspec
+          path = Pathname.new(directory).cleanpath.to_path
+          gemspec =
+            github_client.contents(repo, path: path, ref: commit).
+            find { |file| file.name.end_with?(".gemspec") }
+
+          return unless gemspec
+          fetch_file_from_github(gemspec.name)
+        end
+
+        def ruby_version_file
+          return unless gemfile
+          return unless gemfile.content.include?(".ruby-version")
+          fetch_file_from_github(".ruby-version")
+        rescue Dependabot::DependencyFileNotFound
+          nil
         end
 
         def path_gemspecs
           gemspec_files = []
           unfetchable_gems = []
 
-          ::Bundler::LockfileParser.new(gemfile_lock).specs.each do |spec|
+          return [] unless lockfile
+          ::Bundler::LockfileParser.new(lockfile.content).specs.each do |spec|
             next unless spec.source.instance_of?(::Bundler::Source::Path)
 
             file = File.join(spec.source.path, "#{spec.name}.gemspec")
@@ -40,23 +93,6 @@ module Dependabot
           end
 
           gemspec_files
-        end
-
-        def ruby_version_file
-          return unless gemfile.include?(".ruby-version")
-          fetch_file_from_github(".ruby-version")
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
-
-        def gemfile_lock
-          gemfile_lock = required_files.find { |f| f.name == "Gemfile.lock" }
-          gemfile_lock.content
-        end
-
-        def gemfile
-          gemfile = required_files.find { |f| f.name == "Gemfile" }
-          gemfile.content
         end
       end
     end
