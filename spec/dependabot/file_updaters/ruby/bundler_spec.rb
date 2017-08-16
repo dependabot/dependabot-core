@@ -402,6 +402,35 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 to match_array(["Gemfile", "Gemfile.lock"])
             end
           end
+
+          context "and only appears in the gemspec" do
+            let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+            let(:lockfile_body) do
+              fixture("ruby", "lockfiles", "imports_gemspec_large.lock")
+            end
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "octokit",
+                version: "5.1.0",
+                requirement: ">= 4.6, < 6.0",
+                package_manager: "bundler",
+                groups: []
+              )
+            end
+
+            before do
+              stub_request(:get, "https://index.rubygems.org/info/i18n").
+                to_return(
+                  status: 200,
+                  body: fixture("ruby", "rubygems-info-i18n")
+                )
+            end
+
+            it "returns an updated gemspec and Gemfile.lock" do
+              expect(updated_files.map(&:name)).
+                to match_array(["example.gemspec", "Gemfile.lock"])
+            end
+          end
         end
       end
     end

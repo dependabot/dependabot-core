@@ -84,10 +84,14 @@ module Dependabot
 
         def updated_gemfile_content
           @updated_gemfile_content ||=
-            gemfile.content.gsub(
-              original_gemfile_declaration_string,
-              updated_gemfile_declaration_string
-            )
+            if gemfile_changed?
+              gemfile.content.gsub(
+                original_gemfile_declaration_string,
+                updated_gemfile_declaration_string
+              )
+            else
+              gemfile.content
+            end
         end
 
         def original_gemfile_declaration_string
