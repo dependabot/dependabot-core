@@ -9,6 +9,8 @@ RSpec.shared_examples "a dependency file updater" do
 
     its(:superclass) { is_expected.to eq(base_class) }
 
+    its(:updated_files_regex) { is_expected.to be_an_instance_of(Array) }
+
     it "implements updated_dependency_files" do
       expect(described_class.public_instance_methods(false)).
         to include(:updated_dependency_files)

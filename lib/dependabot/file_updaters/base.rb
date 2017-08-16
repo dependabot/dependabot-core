@@ -4,6 +4,10 @@ module Dependabot
     class Base
       attr_reader :dependency, :dependency_files, :github_access_token
 
+      def self.updated_files_regex
+        raise NotImplementedError
+      end
+
       def initialize(dependency:, dependency_files:, github_access_token:)
         @dependency = dependency
         @dependency_files = dependency_files

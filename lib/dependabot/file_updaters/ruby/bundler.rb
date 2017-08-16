@@ -17,6 +17,14 @@ module Dependabot
             (\s*|\()['"](?<name>.*?)['"],
             \s*(?<requirements>.*)\)?/x
 
+        def self.updated_files_regex
+          [
+            /^Gemfile$/,
+            /^Gemfile\.lock$/,
+            %r{^[^/]*\.gemspec$}
+          ]
+        end
+
         def updated_dependency_files
           updated_files = []
 
@@ -48,10 +56,7 @@ module Dependabot
             raise "A Gemfile must be provided if a lockfile is!"
           end
 
-          return if file_names.any? do |name|
-            name.end_with?(".gemspec") && !name.include?("/")
-          end
-
+          return if file_names.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
           return if (%w(Gemfile Gemfile.lock) - file_names).empty?
 
           raise "A gemspec or a Gemfile and Gemfile.lock must be provided!"

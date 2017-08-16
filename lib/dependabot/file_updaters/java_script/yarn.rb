@@ -7,6 +7,13 @@ module Dependabot
   module FileUpdaters
     module JavaScript
       class Yarn < Dependabot::FileUpdaters::Base
+        def self.updated_files_regex
+          [
+            /^package\.json$/,
+            /^yarn\.lock$/
+          ]
+        end
+
         def updated_dependency_files
           [
             updated_file(

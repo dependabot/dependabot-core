@@ -7,6 +7,10 @@ module Dependabot
   module FileUpdaters
     module Python
       class Pip < Dependabot::FileUpdaters::Base
+        def self.updated_files_regex
+          [/^requirements\.txt$/]
+        end
+
         def updated_dependency_files
           [
             updated_file(

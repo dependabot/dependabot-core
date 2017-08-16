@@ -9,6 +9,13 @@ module Dependabot
       class Composer < Base
         VERSION = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
 
+        def self.updated_files_regex
+          [
+            /^composer\.json$/,
+            /^composer\.lock$/
+          ]
+        end
+
         def updated_dependency_files
           [
             updated_file(
