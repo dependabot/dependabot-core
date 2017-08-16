@@ -65,7 +65,7 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          return latest_version unless gemfile
+          return latest_version if required_in_gemspec
           if bundler_source_for(dependency).is_a?(::Bundler::Source::Path)
             # We don't want to bump gems with a path/git source, so exit early
             return
