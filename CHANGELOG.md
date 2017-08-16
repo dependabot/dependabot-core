@@ -1,3 +1,7 @@
+## v0.15.2, 16 August 2017
+
+- Clearer error message for FileFetchers::Ruby::Bundler
+
 ## v0.15.1, 16 August 2017
 
 - Handle Gemfile and gemspec case where a gem only appears in the later
