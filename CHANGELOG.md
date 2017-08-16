@@ -1,3 +1,8 @@
+## v0.15.4, 16 August 2017
+
+- Use updated gemspec content when calculating new lockfile version (Ruby)
+- Handle dev dependencies differently for gemspecs
+
 ## v0.15.3, 16 August 2017
 
 - Always use latest_version if updating a gemspec dependency
