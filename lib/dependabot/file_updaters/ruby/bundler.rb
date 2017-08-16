@@ -83,15 +83,19 @@ module Dependabot
         end
 
         def updated_gemfile_content
-          @updated_gemfile_content ||=
-            if gemfile_changed?
-              gemfile.content.gsub(
-                original_gemfile_declaration_string,
-                updated_gemfile_declaration_string
-              )
-            else
-              gemfile.content
-            end
+          return gemfile.content unless original_gemfile_declaration_string
+          @updated_gemfile_content ||= gemfile.content.gsub(
+            original_gemfile_declaration_string,
+            updated_gemfile_declaration_string
+          )
+        end
+
+        def updated_gemspec_content
+          return gemspec.content unless original_gemspec_declaration_string
+          @updated_gemspec_content ||= gemspec.content.gsub(
+            original_gemspec_declaration_string,
+            updated_gemspec_declaration_string
+          )
         end
 
         def original_gemfile_declaration_string
@@ -152,25 +156,40 @@ module Dependabot
             replace_ssh_links_with_https(lockfile.content)
           )
 
-          if ruby_version_file
-            path = ruby_version_file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, ruby_version_file.content)
+          if gemspec
+            File.write(
+              gemspec.name,
+              sanitized_gemspec_content(updated_gemspec)
+            )
           end
 
-          gemspecs.compact.each do |file|
+          write_ruby_version_file
+
+          path_gemspecs.compact.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, sanitized_gemspec_content(file))
           end
         end
 
-        def gemspecs
-          dependency_files.select { |f| f.name.end_with?(".gemspec") }
+        def write_ruby_version_file
+          return unless ruby_version_file
+          path = ruby_version_file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, ruby_version_file.content)
+        end
+
+        def path_gemspecs
+          all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
+          all - [gemspec]
         end
 
         def gemspec
-          gemspecs.find { |f| f.name.split("/").count == 1 }
+          dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+        end
+
+        def updated_gemspec
+          updated_file(file: gemspec, content: updated_gemspec_content)
         end
 
         def ruby_version_file
@@ -210,14 +229,6 @@ module Dependabot
             spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
             "='#{spec.version}'"
           end
-        end
-
-        def updated_gemspec_content
-          return unless original_gemspec_declaration_string
-          @updated_gemspec_content ||= gemspec.content.gsub(
-            original_gemspec_declaration_string,
-            updated_gemspec_declaration_string
-          )
         end
 
         def original_gemspec_declaration_string

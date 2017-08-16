@@ -419,10 +419,16 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             end
 
             before do
-              stub_request(:get, "https://index.rubygems.org/info/i18n").
+              rubygems_url = "https://index.rubygems.org/info"
+              stub_request(:get, rubygems_url + "/i18n").
                 to_return(
                   status: 200,
                   body: fixture("ruby", "rubygems-info-i18n")
+                )
+              stub_request(:get, rubygems_url + "/public_suffix").
+                to_return(
+                  status: 200,
+                  body: fixture("ruby", "rubygems-info-public_suffix")
                 )
             end
 
