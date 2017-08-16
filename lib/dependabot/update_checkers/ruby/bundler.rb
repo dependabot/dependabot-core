@@ -57,7 +57,7 @@ module Dependabot
               )
 
               definition.dependencies.
-                find { |dep| dep.name == dependency.name }.source
+                find { |dep| dep.name == dependency.name }&.source
             end
           end
         rescue SharedHelpers::ChildProcessFailed => error

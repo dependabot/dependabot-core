@@ -260,13 +260,36 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency_files) { [gemfile, gemspec] }
       let(:gemspec) do
         Dependabot::DependencyFile.new(
-          content: fixture("ruby", "gemspecs", "small_example"),
+          content: gemspec_body,
           name: "example.gemspec"
         )
       end
+      let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
       let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+      context "with a dependency that only appears in the gemspec" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "octokit",
+            requirement: "~> 4.6",
+            package_manager: "bundler",
+            groups: []
+          )
+        end
+
+        before do
+          stub_request(:get, "https://rubygems.org/api/v1/gems/octokit.json").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response.json")
+            )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
     end
 
     context "with only a gemspec" do
@@ -745,6 +768,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it "picks the gemspec to update the requirement in" do
         expect(checker.updated_requirement).to eq(">= 0.9, < 2.0")
+      end
+
+      context "with a dependency that only appears in the gemspec" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "octokit",
+            requirement: "~> 4.6",
+            package_manager: "bundler",
+            groups: []
+          )
+        end
+        let(:latest_version) { Gem::Version.new("5.0.0") }
+
+        it "successfully updates the requirement" do
+          expect(checker.updated_requirement).to eq(">= 4.6, < 6.0")
+        end
       end
     end
 
