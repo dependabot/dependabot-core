@@ -1,3 +1,7 @@
+## v0.15.1, 16 August 2017
+
+- Handle Gemfile and gemspec case where a gem only appears in the later
+
 ## v0.15.0, 16 August 2017
 
 - Add `.updated_files_regex` to all FileUpdaters
