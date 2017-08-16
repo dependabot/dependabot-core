@@ -877,6 +877,72 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:old_requirement) { "> 1.6.0" }
         it { is_expected.to be_nil }
       end
+
+      context "for a development dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            requirement: old_requirement,
+            package_manager: "bundler",
+            groups: ["development"]
+          )
+        end
+
+        context "when an = specifier was used" do
+          let(:old_requirement) { "= 1.4.0" }
+          it { is_expected.to eq("= 1.5.0") }
+        end
+
+        context "when no specifier was used" do
+          let(:old_requirement) { "1.4.0" }
+          it { is_expected.to eq("= 1.5.0") }
+        end
+
+        context "when a < specifier was used" do
+          let(:old_requirement) { "< 1.4.0" }
+          it { is_expected.to eq("< 1.6.0") }
+        end
+
+        context "when a <= specifier was used" do
+          let(:old_requirement) { "<= 1.4.0" }
+          it { is_expected.to eq("<= 1.6.0") }
+        end
+
+        context "when a ~> specifier was used" do
+          let(:old_requirement) { "~> 1.4.0" }
+          it { is_expected.to eq("~> 1.5.0") }
+
+          context "with minor precision" do
+            let(:old_requirement) { "~> 0.1" }
+            it { is_expected.to eq("~> 1.5") }
+          end
+        end
+
+        context "when there are multiple requirements" do
+          let(:old_requirement) { "> 1.0.0, <= 1.4.0" }
+          it { is_expected.to eq("> 1.0.0, <= 1.6.0") }
+        end
+
+        context "when a beta version was used in the old requirement" do
+          let(:old_requirement) { "< 1.4.0.beta" }
+          it { is_expected.to be_nil }
+        end
+
+        context "when a != specifier was used" do
+          let(:old_requirement) { "!= 1.5.0" }
+          it { is_expected.to be_nil }
+        end
+
+        context "when a >= specifier was used" do
+          let(:old_requirement) { ">= 1.6.0" }
+          it { is_expected.to be_nil }
+        end
+
+        context "when a > specifier was used" do
+          let(:old_requirement) { "> 1.6.0" }
+          it { is_expected.to be_nil }
+        end
+      end
     end
   end
 end
