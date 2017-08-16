@@ -404,31 +404,25 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           end
 
           context "and only appears in the gemspec" do
-            let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+            let(:gemspec_body) { fixture("ruby", "gemspecs", "no_overlap") }
             let(:lockfile_body) do
-              fixture("ruby", "lockfiles", "imports_gemspec_large.lock")
+              fixture("ruby", "lockfiles", "imports_gemspec_no_overlap.lock")
             end
             let(:dependency) do
               Dependabot::Dependency.new(
-                name: "octokit",
-                version: "5.1.0",
-                requirement: ">= 4.6, < 6.0",
+                name: "json",
+                version: "2.0.3",
+                requirement: ">= 1.0, < 3.0",
                 package_manager: "bundler",
                 groups: []
               )
             end
 
             before do
-              rubygems_url = "https://index.rubygems.org/info"
-              stub_request(:get, rubygems_url + "/i18n").
+              stub_request(:get, "https://index.rubygems.org/info/json").
                 to_return(
                   status: 200,
-                  body: fixture("ruby", "rubygems-info-i18n")
-                )
-              stub_request(:get, rubygems_url + "/public_suffix").
-                to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems-info-public_suffix")
+                  body: fixture("ruby", "rubygems-info-json")
                 )
             end
 
