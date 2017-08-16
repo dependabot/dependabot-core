@@ -21,7 +21,7 @@ module Dependabot
 
         def self.required_files_message
           "Repo must contain either a Gemfile and Gemfile.lock or a gemspec. " \
-          "If a Gemfile.lock is present, and Gemfile must be."
+          "A Gemfile.lock may only be present if a Gemfile is."
         end
 
         private
