@@ -44,23 +44,25 @@ module Dependabot
         def gemfile
           @gemfile ||= fetch_file_from_github("Gemfile")
         rescue Dependabot::DependencyFileNotFound
-          nil
+          raise unless gemspec
         end
 
         def lockfile
           @lockfile ||= fetch_file_from_github("Gemfile.lock")
         rescue Dependabot::DependencyFileNotFound
-          nil
+          raise if gemfile && !gemspec
         end
 
         def gemspec
+          return @gemspec if @gemspec_fetch_attempted
+          @gemspec_fetch_attempted = true
           path = Pathname.new(directory).cleanpath.to_path
           gemspec =
             github_client.contents(repo, path: path, ref: commit).
             find { |file| file.name.end_with?(".gemspec") }
 
           return unless gemspec
-          fetch_file_from_github(gemspec.name)
+          @gemspec = fetch_file_from_github(gemspec.name)
         end
 
         def ruby_version_file

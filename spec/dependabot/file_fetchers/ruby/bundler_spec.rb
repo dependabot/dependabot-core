@@ -262,4 +262,80 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         to include("business.gemspec")
     end
   end
+
+  context "with only a Gemfile" do
+    let(:github_client) { Octokit::Client.new(access_token: "token") }
+    let(:file_fetcher_instance) do
+      described_class.new(repo: "gocardless/bump", github_client: github_client)
+    end
+
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "business_files_no_gemspec.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile.lock?ref=sha").
+        to_return(status: 404)
+    end
+
+    it "raises a helpful error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotFound)
+          expect(error.file_path).to eq("/Gemfile.lock")
+        end
+    end
+  end
+
+  context "with only a Gemfile.lock" do
+    let(:github_client) { Octokit::Client.new(access_token: "token") }
+    let(:file_fetcher_instance) do
+      described_class.new(repo: "gocardless/bump", github_client: github_client)
+    end
+
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "business_files_no_gemspec.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha").
+        to_return(status: 404)
+
+      stub_request(:get, url + "Gemfile.lock?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises a helpful error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotFound)
+          expect(error.file_path).to eq("/Gemfile")
+        end
+    end
+  end
 end
