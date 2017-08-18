@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "bundler_definition_version_patch"
 require "bundler_metadata_dependencies_patch"
+require "bundler_git_source_patch"
 require "excon"
 require "gems"
 require "gemnasium/parser"
@@ -122,7 +123,7 @@ module Dependabot
             "x-access-token:#{github_access_token}"
 
           dependencies =
-            ::Bundler::LockfileParser.new(lockfile_for_update_check).
+            ::Bundler::LockfileParser.new(lockfile.content).
             specs.select do |spec|
               next false unless spec.source.is_a?(::Bundler::Source::Git)
 
@@ -193,7 +194,7 @@ module Dependabot
 
         def write_temporary_dependency_files
           File.write("Gemfile", gemfile_for_update_check) if gemfile
-          File.write("Gemfile.lock", lockfile_for_update_check) if lockfile
+          File.write("Gemfile.lock", lockfile.content) if lockfile
 
           write_updated_gemspec if gemspec
           write_ruby_version_file if ruby_version_file
@@ -207,11 +208,7 @@ module Dependabot
 
         def gemfile_for_update_check
           content = update_dependency_requirement(gemfile.content)
-          replace_ssh_links_with_https(content)
-        end
-
-        def lockfile_for_update_check
-          replace_ssh_links_with_https(lockfile.content)
+          content
         end
 
         def write_updated_gemspec
@@ -287,10 +284,6 @@ module Dependabot
             original_gem_declaration_string,
             updated_gem_declaration_string
           )
-        end
-
-        def replace_ssh_links_with_https(content)
-          content.gsub("git@github.com:", "https://github.com/")
         end
 
         def required_in_gemspec

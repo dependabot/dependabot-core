@@ -3,6 +3,7 @@ require "gemnasium/parser"
 require "bundler"
 require "bundler_definition_version_patch"
 require "bundler_metadata_dependencies_patch"
+require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
@@ -149,11 +150,11 @@ module Dependabot
         def write_temporary_dependency_files
           File.write(
             "Gemfile",
-            replace_ssh_links_with_https(updated_gemfile_content)
+            updated_gemfile_content
           )
           File.write(
             "Gemfile.lock",
-            replace_ssh_links_with_https(lockfile.content)
+            lockfile.content
           )
 
           if gemspec
@@ -196,23 +197,7 @@ module Dependabot
           dependency_files.find { |f| f.name == ".ruby-version" }
         end
 
-        def replace_ssh_links_with_https(content)
-          # NOTE: we use the full x-access-token format so that we can identify
-          # the links we changed when post-processing the lockfile
-          content.gsub(
-            "git@github.com:",
-            "https://x-access-token:#{github_access_token}@github.com/"
-          )
-        end
-
         def post_process_lockfile(lockfile_body)
-          # Remove any auth details we prepended to git remotes
-          lockfile_body =
-            lockfile_body.gsub(
-              "https://x-access-token:#{github_access_token}@github.com/",
-              "git@github.com:"
-            )
-
           # Re-add the old `BUNDLED WITH` version (and remove the RUBY VERSION
           # if it wasn't previously present in the lockfile)
           lockfile_body.gsub(

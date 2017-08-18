@@ -295,6 +295,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).to eq(original_revision_line)
+            expect(new_lock.index(new_remote_line)).
+              to eq(old_lock.index(original_remote_line))
           end
         end
       end
