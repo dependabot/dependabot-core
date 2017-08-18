@@ -577,7 +577,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                 expect(error.dependency_urls).
-                  to eq(["https://github.com/fundingcircle/prius"])
+                  to eq(["git@github.com:fundingcircle/prius"])
               end
           end
         end

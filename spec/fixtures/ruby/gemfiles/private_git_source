@@ -3,4 +3,4 @@ source "https://rubygems.org"
 
 gem "business", "~> 1.4.0"
 gem "statesman", "~> 1.2.0"
-gem "prius", git: "https://github.com/fundingcircle/prius"
+gem "prius", git: "git@github.com:fundingcircle/prius"

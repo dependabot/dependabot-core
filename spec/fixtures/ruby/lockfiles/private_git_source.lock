@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/fundingcircle/prius
+  remote: git@github.com:fundingcircle/prius
   revision: cff701b3bfb182afc99a85657d7c9f3d6c1ccce2
   specs:
     prius (1.0.0)
