@@ -1,3 +1,7 @@
+## v0.15.5, 18 August 2017
+
+- Patch Bundler to use HTTPS instead of SSH for git sources hosted on GitHub
+
 ## v0.15.4, 16 August 2017
 
 - Use updated gemspec content when calculating new lockfile version (Ruby)
