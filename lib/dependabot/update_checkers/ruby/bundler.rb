@@ -331,10 +331,26 @@ module Dependabot
               end
             end
 
-          updated_requirements.sort_by! { |r| r.requirements.first.last }.uniq
+          updated_requirements = binding_requirements(updated_requirements)
+          updated_requirements.sort_by! { |r| r.requirements.first.last }
           updated_requirements.map(&:to_s).join(", ")
         rescue UnfixableRequirement
           nil
+        end
+
+        def binding_requirements(requirements)
+          grouped_by_operator =
+            requirements.uniq.group_by { |r| r.requirements.first.first }
+
+          grouped_by_operator.flat_map do |operator, reqs|
+            case operator
+            when "<", "<="
+              reqs.sort_by { |r| r.requirements.first.last }.first
+            when ">", ">="
+              reqs.sort_by { |r| r.requirements.first.last }.last
+            else requirements
+            end
+          end
         end
 
         def fixed_requirements(r)

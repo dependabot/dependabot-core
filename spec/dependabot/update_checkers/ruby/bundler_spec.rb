@@ -856,6 +856,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "when there are multiple requirements" do
         let(:old_requirement) { "> 1.0.0, <= 1.4.0" }
         it { is_expected.to eq("> 1.0.0, <= 1.6.0") }
+
+        context "that could cause duplication" do
+          let(:old_requirement) { "~> 0.5, >= 0.5.2" }
+          it { is_expected.to eq(">= 0.5.2, < 2.0") }
+        end
       end
 
       context "when a beta version was used in the old requirement" do
