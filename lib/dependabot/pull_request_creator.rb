@@ -111,8 +111,7 @@ module Dependabot
     end
 
     def library_pr_name
-      "Update requirements to permit #{dependency.name} "\
-      "#{dependency.version}"
+      "Update #{dependency.name} requirement to #{dependency.requirement}"
     end
 
     def pr_message
@@ -132,13 +131,14 @@ module Dependabot
     end
 
     def library_pr_message
-      msg = "Updates requirements to permit "
+      msg = "Updates requirements on "
       msg += if source_url
-               "[#{dependency.name} #{dependency.version}](#{source_url})."
+               "[#{dependency.name}](#{source_url}) "
              else
-               "#{dependency.name} #{dependency.version}."
+               "#{dependency.name} "
              end
 
+      msg += "to permit the latest version."
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg

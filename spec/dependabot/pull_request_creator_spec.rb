@@ -223,7 +223,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /Update requirements to permit business 1/
+                 message: /Update business requirement to >= 1/
                })
       end
 
@@ -247,10 +247,10 @@ RSpec.describe Dependabot::PullRequestCreator do
             body: {
               base: "master",
               head: "dependabot/bundler/business-gte-1.0-and-lt-3.0",
-              title: "Update requirements to permit business 1.5.0",
-              body: "Updates requirements to permit "\
-                    "[business 1.5.0](https://github.com/gocardless/business)"\
-                    ".\n- [Release notes]"\
+              title: "Update business requirement to >= 1.0, < 3.0",
+              body: "Updates requirements on "\
+                    "[business](https://github.com/gocardless/business) "\
+                    "to permit the latest version.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases/tag"\
                     "/v1.5.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
