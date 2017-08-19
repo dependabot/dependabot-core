@@ -1,3 +1,8 @@
+## v0.15.6, 19 August 2017
+
+- Check all requirements are binding when creating updated requirements
+- Better pull request text when updating libraries
+
 ## v0.15.5, 18 August 2017
 
 - Patch Bundler to use HTTPS instead of SSH for git sources hosted on GitHub
