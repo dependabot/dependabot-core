@@ -452,10 +452,17 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
             it "gets the right URL" do
               expect(subject).
-                to eq(
-                  "https://github.com/gocardless/business/releases/tag/"\
-                  "v1.8.0"
-                )
+                to eq("https://github.com/gocardless/business/releases")
+            end
+
+            context "to a non-latest version" do
+              let(:dependency_version) { "1.7.0" }
+
+              it "gets the right URL" do
+                expect(subject).
+                  to eq("https://github.com/gocardless/business"\
+                        "/releases?after=v1.8.0")
+              end
             end
           end
         end

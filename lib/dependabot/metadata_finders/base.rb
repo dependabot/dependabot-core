@@ -80,7 +80,10 @@ module Dependabot
         end
         return unless release
 
-        return release.html_url unless dependency.previous_version
+        unless dependency.previous_version
+          return @release_url = build_releases_index_url(releases: releases,
+                                                         release: release)
+        end
 
         old_release_regex = version_regex(dependency.previous_version)
         previous_release = releases.find do |r|

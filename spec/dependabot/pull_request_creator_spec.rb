@@ -168,8 +168,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             title: "Bump business from 1.4.0 to 1.5.0",
             body: "Bumps [business](https://github.com/gocardless/business) "\
                   "from 1.4.0 to 1.5.0.\n- [Release notes]"\
-                  "(https://github.com/gocardless/business/releases/tag"\
-                  "/v1.5.0)\n- [Changelog]"\
+                  "(https://github.com/gocardless/business/releases?after="\
+                  "v1.6.0)\n- [Changelog]"\
                   "(https://github.com/gocardless/business/blob/master"\
                   "/CHANGELOG.md)\n- [Commits]"\
                   "(https://github.com/gocardless/business/"\
@@ -251,8 +251,8 @@ RSpec.describe Dependabot::PullRequestCreator do
               body: "Updates requirements on "\
                     "[business](https://github.com/gocardless/business) "\
                     "to permit the latest version.\n- [Release notes]"\
-                    "(https://github.com/gocardless/business/releases/tag"\
-                    "/v1.5.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
                     "/CHANGELOG.md)"
             }
@@ -403,8 +403,8 @@ RSpec.describe Dependabot::PullRequestCreator do
               title: "Bump business from 1.4.0 to 1.5.0 in /directory",
               body: "Bumps [business](https://github.com/gocardless/business) "\
                     "from 1.4.0 to 1.5.0.\n- [Release notes]"\
-                    "(https://github.com/gocardless/business/releases/tag"\
-                    "/v1.5.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
                     "/CHANGELOG.md)\n- [Commits]"\
                     "(https://github.com/gocardless/business/"\
