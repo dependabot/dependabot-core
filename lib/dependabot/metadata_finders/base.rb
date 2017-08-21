@@ -75,25 +75,28 @@ module Dependabot
         releases = fetch_dependency_releases
 
         release_regex = version_regex(dependency.version)
-        old_release_regex = version_regex(dependency.previous_version)
         release = releases.find do |r|
           [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
         end
         return unless release
 
+        return release.html_url unless dependency.previous_version
+
+        old_release_regex = version_regex(dependency.previous_version)
         previous_release = releases.find do |r|
           [r.name, r.tag_name].any? { |nm| old_release_regex.match?(nm.to_s) }
         end
-        return release.html_url unless previous_release
 
-        if (releases.index(previous_release) - releases.index(release)) == 1
-          # No intermediate releases - link to release notes for this version
-          @release_url = release.html_url
-        else
-          # There have been intermediate releases, so link to release notes
-          # index view
-          build_releases_index_url(releases: releases, release: release)
-        end
+        @release_url =
+          if previous_release &&
+             (releases.index(previous_release) - releases.index(release)) == 1
+            # No intermediate releases - link to release notes for this version
+            release.html_url
+          else
+            # There have been intermediate releases, so link to release notes
+            # index view
+            build_releases_index_url(releases: releases, release: release)
+          end
       rescue Octokit::NotFound
         @release_url = nil
       end

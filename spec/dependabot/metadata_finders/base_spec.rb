@@ -376,44 +376,79 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         context "when the release is present" do
           let(:dependency_version) { "1.8.0" }
 
-          it "gets the right URL" do
-            expect(subject).
-              to eq(
-                "https://github.com/gocardless/business/releases/tag/v1.8.0"
-              )
-          end
-
-          context "but prefixed" do
-            let(:github_response) do
-              fixture("github", "prefixed_releases.json")
-            end
+          context "and is updating from one version previous" do
+            let(:dependency_previous_version) { "1.7.0" }
 
             it "gets the right URL" do
               expect(subject).
                 to eq(
-                  "https://github.com/gocardless/business/releases/tag/"\
-                  "business-1.8.0"
+                  "https://github.com/gocardless/business/releases/tag/v1.8.0"
                 )
+            end
+
+            context "but prefixed" do
+              let(:github_response) do
+                fixture("github", "prefixed_releases.json")
+              end
+
+              it "gets the right URL" do
+                expect(subject).
+                  to eq(
+                    "https://github.com/gocardless/business/releases/tag/"\
+                    "business-1.8.0"
+                  )
+              end
+            end
+
+            context "but unprefixed" do
+              let(:github_response) do
+                fixture("github", "unprefixed_releases.json")
+              end
+
+              it "gets the right URL" do
+                expect(subject).
+                  to eq(
+                    "https://github.com/gocardless/business/releases/tag/1.8.0"
+                  )
+              end
+            end
+
+            context "but in the tag_name section" do
+              let(:github_response) do
+                fixture("github", "unnamed_releases.json")
+              end
+
+              it "gets the right URL" do
+                expect(subject).
+                  to eq(
+                    "https://github.com/gocardless/business/releases/tag/"\
+                    "v1.8.0"
+                  )
+              end
             end
           end
 
-          context "but unprefixed" do
-            let(:github_response) do
-              fixture("github", "unprefixed_releases.json")
-            end
+          context "and is updating from several versions previous" do
+            let(:dependency_previous_version) { "1.5.0" }
 
             it "gets the right URL" do
               expect(subject).
-                to eq(
-                  "https://github.com/gocardless/business/releases/tag/1.8.0"
-                )
+                to eq("https://github.com/gocardless/business/releases")
+            end
+
+            context "to a non-latest version" do
+              let(:dependency_version) { "1.7.0" }
+
+              it "gets the right URL" do
+                expect(subject).
+                  to eq("https://github.com/gocardless/business"\
+                        "/releases?after=v1.8.0")
+              end
             end
           end
 
-          context "but in the tag_name section" do
-            let(:github_response) do
-              fixture("github", "unnamed_releases.json")
-            end
+          context "without a previous_version" do
+            let(:dependency_previous_version) { nil }
 
             it "gets the right URL" do
               expect(subject).
@@ -475,10 +510,19 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       end
 
       context "with the current release" do
-        let(:dependency_version) { "1.3.0" }
+        let(:dependency_version) { "1.5.0" }
+        let(:dependency_previous_version) { "1.4.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/tags/v1.3.0")
+          is_expected.to eq("https://gitlab.com/org/business/tags/v1.5.0")
+        end
+
+        context "when updating from several versions previous" do
+          let(:dependency_previous_version) { "1.3.0" }
+
+          it "gets the right URL" do
+            expect(subject).to eq("https://gitlab.com/org/business/tags")
+          end
         end
       end
 
