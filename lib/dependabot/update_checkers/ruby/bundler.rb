@@ -119,23 +119,26 @@ module Dependabot
         end
 
         def inaccessible_git_dependencies
-          ::Bundler.settings["github.com"] =
-            "x-access-token:#{github_access_token}"
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
 
-          dependencies =
-            ::Bundler::LockfileParser.new(lockfile.content).
-            specs.select do |spec|
-              next false unless spec.source.is_a?(::Bundler::Source::Git)
+            SharedHelpers.in_a_forked_process do
+              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+              ::Bundler.settings["github.com"] =
+                "x-access-token:#{github_access_token}"
 
-              # Piggy-back off some private Bundler methods to configure the
-              # URI with auth details in the same way Bundler does.
-              git_proxy = spec.source.send(:git_proxy)
-              uri = git_proxy.send(:configured_uri_for, spec.source.uri)
-              Excon.get(uri).status == 404
+              ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+                select do |spec|
+                  next false unless spec.source.is_a?(::Bundler::Source::Git)
+
+                  # Piggy-back off some private Bundler methods to configure the
+                  # URI with auth details in the same way Bundler does.
+                  git_proxy = spec.source.send(:git_proxy)
+                  uri = git_proxy.send(:configured_uri_for, spec.source.uri)
+                  Excon.get(uri).status == 404
+                end
             end
-
-          ::Bundler.settings["github.com"] = nil
-          dependencies
+          end
         end
 
         def latest_rubygems_version
@@ -184,12 +187,6 @@ module Dependabot
         def path_gemspecs
           all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
           all - [gemspec]
-        end
-
-        def path_based_dependencies
-          ::Bundler::LockfileParser.new(lockfile.content).specs.select do |spec|
-            spec.source.instance_of?(::Bundler::Source::Path)
-          end
         end
 
         def write_temporary_dependency_files
