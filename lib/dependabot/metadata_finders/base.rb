@@ -76,10 +76,27 @@ module Dependabot
 
         release_regex = version_regex(dependency.version)
         release = releases.find do |r|
-          r.name.to_s =~ release_regex || r.tag_name.to_s =~ release_regex
+          [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
+        end
+        return unless release
+
+        return release.html_url unless dependency.previous_version
+
+        old_release_regex = version_regex(dependency.previous_version)
+        previous_release = releases.find do |r|
+          [r.name, r.tag_name].any? { |nm| old_release_regex.match?(nm.to_s) }
         end
 
-        @release_url = release&.html_url
+        @release_url =
+          if previous_release &&
+             (releases.index(previous_release) - releases.index(release)) == 1
+            # No intermediate releases - link to release notes for this version
+            release.html_url
+          else
+            # There have been intermediate releases, so link to release notes
+            # index view
+            build_releases_index_url(releases: releases, release: release)
+          end
       rescue Octokit::NotFound
         @release_url = nil
       end
@@ -148,11 +165,16 @@ module Dependabot
 
         case source.fetch("host")
         when "github"
-          github_client.releases(source["repo"])
+          github_client.releases(source["repo"]).sort_by(&:id).reverse
         when "bitbucket"
           [] # Bitbucket doesn't support releases
         when "gitlab"
-          gitlab_client.tags(source["repo"]).select(&:release).map do |tag|
+          releases = gitlab_client.tags(source["repo"]).
+                     select(&:release).
+                     sort_by { |r| r.commit.authored_date }.
+                     reverse
+
+          releases.map do |tag|
             OpenStruct.new(
               name: tag.name,
               tag_name: tag.release.tag_name,
@@ -163,6 +185,23 @@ module Dependabot
         end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         []
+      end
+
+      def build_releases_index_url(releases:, release:)
+        case source.fetch("host")
+        when "github"
+          if releases.first == release
+            "#{source_url}/releases"
+          else
+            subsequent_release = releases[releases.index(release) - 1]
+            "#{source_url}/releases?after=#{subsequent_release.tag_name}"
+          end
+        when "gitlab"
+          "#{source_url}/tags"
+        when "bitbucket"
+          raise "Bitbucket doesn't support releases"
+        else raise "Unexpected repo host '#{source.fetch('host')}'"
+        end
       end
 
       def build_compare_commits_url(current_tag, previous_tag)
