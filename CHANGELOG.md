@@ -1,3 +1,8 @@
+## v0.15.7, 21 August 2017
+
+- Link to release notes index when more appropriate than specific release
+- Handle gemspecs that bracket their dependencies
+
 ## v0.15.6, 19 August 2017
 
 - Check all requirements are binding when creating updated requirements
