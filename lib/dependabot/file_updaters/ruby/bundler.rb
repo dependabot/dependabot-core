@@ -16,7 +16,7 @@ module Dependabot
         DEPENDENCY_DECLARATION_REGEX =
           /^\s*\w*\.add(?:_development|_runtime)?_dependency
             (\s*|\()['"](?<name>.*?)['"],
-            \s*(?<requirements>.*)\)?/x
+            \s*(?<requirements>.*?)\)?\s*$/x
 
         def self.updated_files_regex
           [

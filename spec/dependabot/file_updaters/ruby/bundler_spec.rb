@@ -504,7 +504,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           let(:dependency_name) { "gemnasium-parser" }
 
           its(:content) do
-            is_expected.to include(%("gemnasium-parser", ">= 4.6", "< 6.0"\n))
+            is_expected.to include(%("gemnasium-parser", ">= 4.6", "< 6.0"\)\n))
           end
         end
 
