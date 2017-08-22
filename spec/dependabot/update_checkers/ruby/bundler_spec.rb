@@ -729,6 +729,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       allow(checker).
         to receive(:latest_resolvable_version).
         and_return(latest_resolvable_version)
+      allow(checker).
+        to receive(:gemfile_requirement).
+        and_return(Gem::Requirement.new(original_requirement.split(",")))
     end
 
     context "when there is no resolvable version" do
@@ -790,6 +793,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       before do
         allow(checker).to receive(:latest_version).and_return(latest_version)
+        allow(checker).
+          to receive(:gemspec_requirement).
+          and_return(Gem::Requirement.new(old_requirement.split(",")))
       end
 
       it "picks the gemspec to update the requirement in" do
@@ -801,12 +807,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "octokit",
-            requirement: "~> 4.6",
+            requirement: old_requirement,
             package_manager: "bundler",
             groups: []
           )
         end
         let(:latest_version) { Gem::Version.new("5.0.0") }
+        let(:old_requirement) { "~> 4.6" }
 
         it "successfully updates the requirement" do
           expect(checker.updated_requirement).to eq(">= 4.6, < 6.0")
@@ -860,11 +867,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           groups: []
         )
       end
-      let(:old_requirement) { ">= 1.0.0" }
+      let(:old_requirement) { "~> 0.9" }
       let(:latest_version) { Gem::Version.new("1.5.0") }
 
       before do
         allow(checker).to receive(:latest_version).and_return(latest_version)
+        allow(checker).
+          to receive(:gemspec_requirement).
+          and_return(Gem::Requirement.new(old_requirement.split(",")))
       end
 
       context "when an = specifier was used" do

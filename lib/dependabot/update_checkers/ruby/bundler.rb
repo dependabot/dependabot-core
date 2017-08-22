@@ -25,7 +25,8 @@ module Dependabot
         end
 
         def updated_requirement
-          if required_in_gemspec
+          if gemspec_requirement &&
+             !gemspec_requirement.satisfied_by?(latest_version)
             updated_gemspec_requirement
           else
             updated_gemfile_requirement
@@ -283,25 +284,49 @@ module Dependabot
           )
         end
 
-        def required_in_gemspec
-          return false unless gemspec
+        def gemspec_requirement
+          return unless gemspec
 
-          SharedHelpers.in_a_temporary_directory do
-            File.write(gemspec.name, sanitized_gemspec_content(gemspec.content))
+          @gemspec_requirement ||=
+            SharedHelpers.in_a_temporary_directory do
+              File.write(
+                gemspec.name,
+                sanitized_gemspec_content(gemspec.content)
+              )
 
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-              ::Bundler.load_gemspec_uncached(gemspec.name).
-                dependencies.
-                any? { |dep| dep.name == dependency.name }
+              SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+                ::Bundler.load_gemspec_uncached(gemspec.name).
+                  dependencies.
+                  find { |dep| dep.name == dependency.name }&.
+                  requirement
+              end
             end
-          end
+        end
+
+        def gemfile_requirement
+          return nil unless gemfile
+
+          @gemfile_requirement ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+
+              SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+
+                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+                  find { |dep| dep.name == dependency.name }&.requirement
+              end
+            end
+        rescue SharedHelpers::ChildProcessFailed => error
+          handle_bundler_errors(error)
         end
 
         def updated_gemfile_requirement
           return unless latest_resolvable_version
+          return unless gemfile_requirement
 
-          new_req = dependency.requirement.gsub(/<=?/, "~>")
+          new_req = gemfile_requirement.to_s.gsub(/<=?/, "~>")
           new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
             version_at_same_precision(latest_resolvable_version, old_version)
           end
@@ -314,7 +339,7 @@ module Dependabot
 
         def updated_gemspec_requirement
           requirements =
-            dependency.requirement.
+            gemspec_requirement.to_s.
             split(",").
             map { |r| Gem::Requirement.new(r) }
 
