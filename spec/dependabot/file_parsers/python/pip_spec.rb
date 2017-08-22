@@ -32,7 +32,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirement).to eq("==2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: []
+              }
+            ]
+          )
         end
       end
     end
@@ -50,7 +58,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirement).to eq("==2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: []
+              }
+            ]
+          )
         end
       end
     end
@@ -67,7 +83,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirement).to eq("==2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: []
+              }
+            ]
+          )
         end
       end
     end
@@ -128,7 +152,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("requests")
           expect(dependency.version).to eq("2.1.4")
-          expect(dependency.requirement).to eq("==2.1.4")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.1.4",
+                file: "requirements.txt",
+                groups: []
+              }
+            ]
+          )
         end
       end
     end

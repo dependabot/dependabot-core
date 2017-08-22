@@ -35,8 +35,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("fetch-factory") }
         its(:version) { is_expected.to eq("0.0.1") }
-        its(:requirement) { is_expected.to eq("^0.0.1") }
-        its(:groups) { ["dependencies"] }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^0.0.1",
+                file: "yarn.lock",
+                groups: ["dependencies"]
+              }
+            ]
+          )
+        end
       end
     end
 
@@ -54,8 +63,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("etag") }
         its(:version) { is_expected.to eq("1.8.0") }
-        its(:requirement) { is_expected.to eq("^1.0.0") }
-        its(:groups) { ["devDependencies"] }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^1.0.0",
+                file: "yarn.lock",
+                groups: ["devDependencies"]
+              }
+            ]
+          )
+        end
       end
     end
   end

@@ -40,7 +40,10 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.2") }
-        its(:requirement) { is_expected.to eq("1.0.*") }
+        its(:requirements) do
+          is_expected.
+            to eq([{ requirement: "1.0.*", file: "composer.json", groups: [] }])
+        end
       end
     end
 

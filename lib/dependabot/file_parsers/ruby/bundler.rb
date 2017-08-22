@@ -9,7 +9,25 @@ module Dependabot
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
         def parse
-          (gemfile_dependencies + gemspec_dependencies).uniq(&:name)
+          dependencies = gemfile_dependencies
+
+          gemspec_dependencies.each do |dep|
+            existing_dependency = dependencies.find { |d| d.name == dep.name }
+            if existing_dependency
+              dependencies[dependencies.index(existing_dependency)] =
+                Dependency.new(
+                  name: existing_dependency.name,
+                  version: existing_dependency.version || dep.version,
+                  requirements:
+                    existing_dependency.requirements + dep.requirements,
+                  package_manager: "bundler"
+                )
+            else
+              dependencies << dep
+            end
+          end
+
+          dependencies
         end
 
         private
@@ -24,9 +42,12 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
-              requirement: dependency.requirement.to_s,
-              package_manager: "bundler",
-              groups: dependency.groups
+              requirements: [{
+                requirement: dependency.requirement.to_s,
+                groups: dependency.groups,
+                file: "Gemfile"
+              }],
+              package_manager: "bundler"
             )
           end.compact
         end
@@ -37,9 +58,12 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
-              requirement: dependency.requirement.to_s,
-              package_manager: "bundler",
-              groups: dependency.runtime? ? ["runtime"] : ["development"]
+              requirements: [{
+                requirement: dependency.requirement.to_s,
+                groups: dependency.runtime? ? ["runtime"] : ["development"],
+                file: gemspec.name
+              }],
+              package_manager: "bundler"
             )
           end
         end

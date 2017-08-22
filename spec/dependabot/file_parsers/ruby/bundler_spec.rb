@@ -30,12 +30,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "Gemfile",
+            groups: [:default]
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:requirement) { is_expected.to eq("~> 1.4.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:groups) { is_expected.to eq(%i(default)) }
       end
     end
 
@@ -49,12 +55,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            groups: [:default]
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:requirement) { is_expected.to eq(">= 0") }
-        its(:groups) { is_expected.to eq(%i(default)) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -79,12 +91,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       describe "the last dependency" do
         subject { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "Gemfile",
+            groups: %i(development test)
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:requirement) { is_expected.to eq("~> 1.4.0") }
-        its(:groups) { is_expected.to eq(%i(development test)) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -142,12 +160,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         describe "the last dependency" do
           subject { dependencies.last }
+          let(:expected_requirements) do
+            [{
+              requirement: "~> 4.1",
+              file: "example.gemspec",
+              groups: ["runtime"]
+            }]
+          end
 
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("gitlab") }
           its(:version) { is_expected.to eq("4.2.0") }
-          its(:requirement) { is_expected.to eq("~> 4.1") }
-          its(:groups) { is_expected.to eq(["runtime"]) }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
         end
 
         context "that needs to be sanitized" do
@@ -179,6 +203,37 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:gemfile_content) { fixture("ruby", "gemfiles", "imports_gemspec") }
 
       its(:length) { is_expected.to eq(13) }
+
+      context "when a dependency appears in both" do
+        let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: "~> 1.0",
+                file: "example.gemspec",
+                groups: ["runtime"]
+              },
+              {
+                requirement: "~> 1.4.0",
+                file: "Gemfile",
+                groups: [:default]
+              }
+            ]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("business") }
+          its(:version) { is_expected.to be_nil }
+          its(:requirements) do
+            is_expected.to match_array(expected_requirements)
+          end
+        end
+      end
     end
 
     context "with only a gemspec" do
@@ -196,12 +251,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       describe "the last dependency" do
         subject { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "example.gemspec",
+            groups: ["development"]
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("rake") }
         its(:version) { is_expected.to be_nil }
-        its(:requirement) { is_expected.to eq(">= 0") }
-        its(:groups) { is_expected.to eq(["development"]) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
 
       context "that needs to be sanitized" do
@@ -218,12 +279,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "Gemfile",
+            groups: [:default]
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to be_nil }
-        its(:requirement) { is_expected.to eq("~> 1.4.0") }
-        its(:groups) { is_expected.to eq([:default]) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
   end
