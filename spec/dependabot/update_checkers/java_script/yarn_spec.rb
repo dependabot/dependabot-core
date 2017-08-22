@@ -25,9 +25,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     Dependabot::Dependency.new(
       name: "etag",
       version: "1.0.0",
-      requirement: "^1.0.0",
-      package_manager: "yarn",
-      groups: []
+      requirements: [{ file: "yarn.lock", requirement: "^1.0.0", groups: [] }],
+      package_manager: "yarn"
     )
   end
 
@@ -43,9 +42,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         Dependabot::Dependency.new(
           name: "etag",
           version: "1.7.0",
-          requirement: "^1.0.0",
-          package_manager: "yarn",
-          groups: []
+          requirements: [
+            { file: "yarn.lock", requirement: "^1.0.0", groups: [] }
+          ],
+          package_manager: "yarn"
         )
       end
 
@@ -64,9 +64,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         Dependabot::Dependency.new(
           name: "@blep/blep",
           version: "1.0.0",
-          requirement: "^1.0.0",
-          package_manager: "yarn",
-          groups: []
+          requirements: [
+            { file: "yarn.lock", requirement: "^1.0.0", groups: [] }
+          ],
+          package_manager: "yarn"
         )
       end
       it { is_expected.to be_truthy }
@@ -119,16 +120,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     end
   end
 
-  describe "#updated_requirement" do
-    subject { checker.updated_requirement }
+  describe "#updated_requirements" do
+    subject { checker.updated_requirements.first }
 
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "etag",
         version: "1.0.0",
-        requirement: original_requirement,
-        package_manager: "yarn",
-        groups: []
+        requirements: [
+          { file: "yarn.lock", requirement: original_requirement, groups: [] }
+        ],
+        package_manager: "yarn"
       )
     end
 
@@ -143,7 +145,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
-      it { is_expected.to be_nil }
+      its([:requirement]) { is_expected.to eq(original_requirement) }
     end
 
     context "when there is a resolvable version" do
@@ -151,37 +153,37 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
       context "and a full version was previously specified" do
         let(:original_requirement) { "1.2.3" }
-        it { is_expected.to eq("1.5.0") }
+        its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
       context "and a partial version was previously specified" do
         let(:original_requirement) { "0.1" }
-        it { is_expected.to eq("1.5") }
+        its([:requirement]) { is_expected.to eq("1.5") }
       end
 
       context "and the new version has fewer digits than the old one§" do
         let(:original_requirement) { "1.1.0.1" }
-        it { is_expected.to eq("1.5.0") }
+        its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
       context "and a caret was previously specified" do
         let(:original_requirement) { "^1.2.3" }
-        it { is_expected.to eq("^1.5.0") }
+        its([:requirement]) { is_expected.to eq("^1.5.0") }
       end
 
       context "and a pre-release was previously specified" do
         let(:original_requirement) { "^1.2.3-rc1" }
-        it { is_expected.to eq("^1.5.0") }
+        its([:requirement]) { is_expected.to eq("^1.5.0") }
       end
 
       context "and an x.x was previously specified" do
         let(:original_requirement) { "^0.x.x-rc1" }
-        it { is_expected.to eq("^1.x.x") }
+        its([:requirement]) { is_expected.to eq("^1.x.x") }
       end
 
       context "and an x.x was previously specified with four places" do
         let(:original_requirement) { "^0.x.x.rc1" }
-        it { is_expected.to eq("^1.x.x") }
+        its([:requirement]) { is_expected.to eq("^1.x.x") }
       end
     end
   end

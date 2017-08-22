@@ -13,9 +13,12 @@ module Dependabot
             Dependency.new(
               name: dep["name"],
               version: dep["version"],
-              requirement: dep["requirement"],
-              package_manager: "pip",
-              groups: []
+              requirements: [{
+                requirement: dep["requirement"],
+                file: "requirements.txt",
+                groups: []
+              }],
+              package_manager: "pip"
             )
           end
         end

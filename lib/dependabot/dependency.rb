@@ -1,45 +1,59 @@
 # frozen_string_literal: true
 module Dependabot
   class Dependency
-    attr_reader :name, :version, :requirement, :package_manager, :groups,
-                :previous_version, :previous_requirement
+    attr_reader :name, :version, :requirements, :package_manager,
+                :previous_version, :previous_requirements
 
-    def initialize(name:, requirement:, package_manager:, groups:, version: nil,
-                   previous_version: nil, previous_requirement: nil)
+    def initialize(name:, requirements:, package_manager:, version: nil,
+                   previous_version: nil, previous_requirements: nil)
       @name = name
       @version = version
-      @requirement = requirement
+      @requirements = requirements.map { |req| symbolize_keys(req) }
       @previous_version = previous_version
-      @previous_requirement = previous_requirement
+      @previous_requirements =
+        previous_requirements&.map { |req| symbolize_keys(req) }
       @package_manager = package_manager
-      @groups = groups
 
       check_values
-    end
-
-    def check_values
-      unless groups.instance_of?(Array)
-        raise ArgumentError, "groups must be and array"
-      end
-
-      if [version, previous_version].any? { |v| v == "" }
-        raise ArgumentError, "blank strings must not be provided as versions"
-      end
-
-      return unless [requirement, previous_requirement].any? { |r| r == "" }
-      raise ArgumentError, "blank strings must not be provided as requirements"
     end
 
     def to_h
       {
         "name" => name,
         "version" => version,
-        "requirement" => requirement,
+        "requirements" => requirements,
         "previous_version" => previous_version,
-        "previous_requirement" => previous_requirement,
-        "package_manager" => package_manager,
-        "groups" => groups
+        "previous_requirements" => previous_requirements,
+        "package_manager" => package_manager
       }
+    end
+
+    private
+
+    def check_values
+      if [version, previous_version].any? { |v| v == "" }
+        raise ArgumentError, "blank strings must not be provided as versions"
+      end
+
+      requirement_fields = [requirements, previous_requirements].compact
+      unless requirement_fields.all? { |r| r.is_a?(Array) } &&
+             requirement_fields.flatten.all? { |r| r.is_a?(Hash) }
+        raise ArgumentError, "requirements must be an array of hashes"
+      end
+
+      required_keys = %i(requirement file groups)
+      unless requirement_fields.flatten.
+             all? { |r| (r.keys - required_keys).empty? }
+        raise ArgumentError, "each requirement must have the following "\
+                             "required keys: #{required_keys.join(', ')}."
+      end
+
+      return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }
+      raise ArgumentError, "blank strings must not be provided as requirements"
+    end
+
+    def symbolize_keys(hash)
+      Hash[hash.map { |k, v| [k.to_sym, v] }]
     end
   end
 end

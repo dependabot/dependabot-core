@@ -53,9 +53,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      requirement: "~> 1.5.0",
-      package_manager: "bundler",
-      groups: []
+      requirements: [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [] }],
+      package_manager: "bundler"
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -117,9 +116,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "i18n",
             version: "0.5.0",
-            requirement: "~> 0.5.0",
-            package_manager: "bundler",
-            groups: []
+            requirements: [
+              { file: "Gemfile", requirement: "~> 0.5.0", groups: [] }
+            ],
+            package_manager: "bundler"
           )
         end
         before do
@@ -204,9 +204,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "public_suffix",
               version: "1.4.6",
-              requirement: "~> 1.4.0",
-              package_manager: "bundler",
-              groups: []
+              requirements: [
+                { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+              ],
+              package_manager: "bundler"
             )
           end
 
@@ -367,9 +368,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "statesman",
               version: "2.0.0",
-              requirement: ">= 1.0, < 3.0",
-              package_manager: "bundler",
-              groups: []
+              requirements: [
+                { file: "Gemfile", requirement: ">= 1.0, < 3.0", groups: [] }
+              ],
+              package_manager: "bundler"
             )
           end
 
@@ -384,9 +386,19 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "business",
               version: "1.8.0",
-              requirement: requirement,
-              package_manager: "bundler",
-              groups: []
+              requirements: [
+                {
+                  file: "example.gemspec",
+                  requirement: requirement,
+                  groups: []
+                },
+                {
+                  file: "Gemfile",
+                  requirement: requirement,
+                  groups: []
+                }
+              ],
+              package_manager: "bundler"
             )
           end
           let(:requirement) { ">= 1.0, < 3.0" }
@@ -414,9 +426,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               Dependabot::Dependency.new(
                 name: "json",
                 version: "2.0.3",
-                requirement: ">= 1.0, < 3.0",
-                package_manager: "bundler",
-                groups: []
+                requirements: [
+                  {
+                    file: "example.gemspec",
+                    requirement: ">= 1.0, < 3.0",
+                    groups: []
+                  }
+                ],
+                package_manager: "bundler"
               )
             end
 
@@ -451,9 +468,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "5.1.0",
-          requirement: ">= 4.6, < 6.0",
-          package_manager: "bundler",
-          groups: []
+          requirements: [
+            {
+              file: "example.gemspec",
+              requirement: ">= 4.6, < 6.0",
+              groups: []
+            }
+          ],
+          package_manager: "bundler"
         )
       end
       let(:dependency_name) { "octokit" }
@@ -533,9 +555,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "5.1.0",
-          requirement: ">= 4.6, < 6.0",
-          package_manager: "bundler",
-          groups: []
+          requirements: [
+            {
+              file: "example.gemspec",
+              requirement: ">= 4.6, < 6.0",
+              groups: []
+            }
+          ],
+          package_manager: "bundler"
         )
       end
       let(:dependency_name) { "octokit" }

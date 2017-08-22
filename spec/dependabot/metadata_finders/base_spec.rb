@@ -13,10 +13,9 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: dependency_version,
-      requirement: ">= 0",
+      requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [] }],
       previous_version: dependency_previous_version,
-      package_manager: "bundler",
-      groups: []
+      package_manager: "bundler"
     )
   end
   let(:dependency_name) { "business" }

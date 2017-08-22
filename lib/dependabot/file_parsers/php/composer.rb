@@ -30,9 +30,12 @@ module Dependabot
             Dependency.new(
               name: name,
               version: dependency_version(name),
-              requirement: requirement,
-              package_manager: "composer",
-              groups: []
+              requirements: [{
+                requirement: requirement,
+                file: "composer.json",
+                groups: []
+              }],
+              package_manager: "composer"
             )
           end.compact
         end

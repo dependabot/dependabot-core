@@ -15,12 +15,13 @@ RSpec.describe Dependabot::PullRequestCreator do
   end
 
   let(:dependency) do
-    Dependabot::Dependency.new(name: "business",
-                               version: "1.5.0",
-                               previous_version: "1.4.0",
-                               package_manager: "bundler",
-                               requirement: "~> 1.4.0",
-                               groups: [])
+    Dependabot::Dependency.new(
+      name: "business",
+      version: "1.5.0",
+      previous_version: "1.4.0",
+      package_manager: "bundler",
+      requirements: [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [] }]
+    )
   end
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
@@ -94,11 +95,14 @@ RSpec.describe Dependabot::PullRequestCreator do
   describe "#create" do
     context "without a previous version" do
       let(:dependency) do
-        Dependabot::Dependency.new(name: "business",
-                                   version: "1.5.0",
-                                   package_manager: "bundler",
-                                   requirement: "~> 1.4.0",
-                                   groups: [])
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.5.0",
+          package_manager: "bundler",
+          requirements: [
+            { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+          ]
+        )
       end
 
       it "errors out on initialization" do
@@ -192,22 +196,30 @@ RSpec.describe Dependabot::PullRequestCreator do
         )
       end
       let(:dependency) do
-        Dependabot::Dependency.new(name: "business",
-                                   version: "1.5.0",
-                                   requirement: ">= 1.0, < 3.0",
-                                   previous_requirement: "~> 1.4.0",
-                                   package_manager: "bundler",
-                                   groups: [])
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.5.0",
+          package_manager: "bundler",
+          requirements: [
+            { file: "some.gemspec", requirement: ">= 1.0, < 3.0", groups: [] }
+          ],
+          previous_requirements: [
+            { file: "some.gemspec", requirement: "~> 1.4.0", groups: [] }
+          ]
+        )
       end
       let(:branch_name) { "dependabot/bundler/business-gte-1.0-and-lt-3.0" }
 
       context "without a previous requirement" do
         let(:dependency) do
-          Dependabot::Dependency.new(name: "business",
-                                     version: "1.5.0",
-                                     requirement: ">= 1.0, < 3.0",
-                                     package_manager: "bundler",
-                                     groups: [])
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            package_manager: "bundler",
+            requirements: [
+              { file: "some.gemspec", requirement: ">= 1.0, < 3.0", groups: [] }
+            ]
+          )
         end
 
         it "errors out on initialization" do
@@ -263,22 +275,30 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "for a Gemfile only" do
       let(:files) { [gemfile] }
       let(:dependency) do
-        Dependabot::Dependency.new(name: "business",
-                                   version: "1.5.0",
-                                   requirement: "~> 1.5.0",
-                                   previous_requirement: "~> 1.4.0",
-                                   package_manager: "bundler",
-                                   groups: [])
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.5.0",
+          package_manager: "bundler",
+          requirements: [
+            { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+          ],
+          previous_requirements: [
+            { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+          ]
+        )
       end
       let(:branch_name) { "dependabot/bundler/business-tw-1.5.0" }
 
       context "without a previous requirement" do
         let(:dependency) do
-          Dependabot::Dependency.new(name: "business",
-                                     version: "1.5.0",
-                                     requirement: ">= 1.0, < 3.0",
-                                     package_manager: "bundler",
-                                     groups: [])
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            package_manager: "bundler",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+            ]
+          )
         end
 
         it "errors out on initialization" do

@@ -7,6 +7,7 @@ require "gems"
 require "gemnasium/parser"
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/ruby/bundler/requirements_updater"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -24,13 +25,13 @@ module Dependabot
           @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
-        def updated_requirement
-          if gemspec_requirement &&
-             !gemspec_requirement.satisfied_by?(latest_version)
-            updated_gemspec_requirement
-          else
-            updated_gemfile_requirement
-          end
+        def updated_requirements
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            existing_version: dependency.version,
+            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s
+          ).updated_requirements
         end
 
         private
@@ -282,179 +283,6 @@ module Dependabot
             original_gem_declaration_string,
             updated_gem_declaration_string
           )
-        end
-
-        def gemspec_requirement
-          return unless gemspec
-
-          @gemspec_requirement ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write(
-                gemspec.name,
-                sanitized_gemspec_content(gemspec.content)
-              )
-
-              SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-                ::Bundler.load_gemspec_uncached(gemspec.name).
-                  dependencies.
-                  find { |dep| dep.name == dependency.name }&.
-                  requirement
-              end
-            end
-        end
-
-        def gemfile_requirement
-          return nil unless gemfile
-
-          @gemfile_requirement ||=
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
-
-              SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                  find { |dep| dep.name == dependency.name }&.requirement
-              end
-            end
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
-        end
-
-        def updated_gemfile_requirement
-          return unless latest_resolvable_version
-          return unless gemfile_requirement
-
-          new_req = gemfile_requirement.to_s.gsub(/<=?/, "~>")
-          new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
-            version_at_same_precision(latest_resolvable_version, old_version)
-          end
-        end
-
-        def version_at_same_precision(new_version, old_version)
-          precision = old_version.to_s.split(".").count
-          new_version.to_s.split(".").first(precision).join(".")
-        end
-
-        def updated_gemspec_requirement
-          requirements =
-            gemspec_requirement.to_s.
-            split(",").
-            map { |r| Gem::Requirement.new(r) }
-
-          updated_requirements =
-            requirements.flat_map do |r|
-              next r if r.satisfied_by?(latest_version)
-              if dependency.groups == ["development"]
-                fixed_development_requirements(r)
-              else
-                fixed_requirements(r)
-              end
-            end
-
-          updated_requirements = binding_requirements(updated_requirements)
-          updated_requirements.sort_by! { |r| r.requirements.first.last }
-          updated_requirements.map(&:to_s).join(", ")
-        rescue UnfixableRequirement
-          nil
-        end
-
-        def binding_requirements(requirements)
-          grouped_by_operator =
-            requirements.uniq.group_by { |r| r.requirements.first.first }
-
-          grouped_by_operator.flat_map do |operator, reqs|
-            case operator
-            when "<", "<="
-              reqs.sort_by { |r| r.requirements.first.last }.first
-            when ">", ">="
-              reqs.sort_by { |r| r.requirements.first.last }.last
-            else requirements
-            end
-          end
-        end
-
-        def fixed_requirements(r)
-          op, version = r.requirements.first
-
-          if version.segments.any? { |s| !s.instance_of?(Integer) }
-            # Ignore constraints with non-integer values for now.
-            # TODO: Handle pre-release constraints properly.
-            raise UnfixableRequirement
-          end
-
-          case op
-          when "=", nil then [Gem::Requirement.new(">= #{version}")]
-          when "<", "<=" then [updated_greatest_version(r)]
-          when "~>" then updated_twidle_requirements(r)
-          when "!=", ">", ">=" then raise UnfixableRequirement
-          else raise "Unexpected operation for requirement: #{op}"
-          end
-        end
-
-        def fixed_development_requirements(r)
-          op, version = r.requirements.first
-
-          if version.segments.any? { |s| !s.instance_of?(Integer) }
-            # Ignore constraints with non-integer values for now.
-            # TODO: Handle pre-release constraints properly.
-            raise UnfixableRequirement
-          end
-
-          case op
-          when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
-          when "<", "<=" then [updated_greatest_version(r)]
-          when "~>" then
-            updated_version = version_at_same_precision(latest_version, version)
-            [Gem::Requirement.new("~> #{updated_version}")]
-          when "!=", ">", ">=" then raise UnfixableRequirement
-          else raise "Unexpected operation for requirement: #{op}"
-          end
-        end
-
-        def updated_twidle_requirements(requirement)
-          version = requirement.requirements.first.last
-
-          index_to_update = version.segments.count - 2
-
-          ub_segments = latest_version.segments
-          ub_segments << 0 while ub_segments.count <= index_to_update
-          ub_segments = ub_segments[0..index_to_update]
-          ub_segments[index_to_update] += 1
-
-          lb_segments = version.segments
-          lb_segments.pop while lb_segments.last.zero?
-
-          # Ensure versions have the same length as each other (cosmetic)
-          length = [lb_segments.count, ub_segments.count].max
-          lb_segments.fill(0, lb_segments.count...length)
-          ub_segments.fill(0, ub_segments.count...length)
-
-          [
-            Gem::Requirement.new(">= #{lb_segments.join('.')}"),
-            Gem::Requirement.new("< #{ub_segments.join('.')}")
-          ]
-        end
-
-        # Updates the version in a "<" or "<=" constraint to allow the latest
-        # version
-        def updated_greatest_version(requirement)
-          op, version = requirement.requirements.first
-
-          index_to_update =
-            version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
-
-          new_segments = version.segments.map.with_index do |_, index|
-            if index < index_to_update
-              latest_version.segments[index]
-            elsif index == index_to_update
-              latest_version.segments[index] + 1
-            else 0
-            end
-          end
-
-          Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
       end
     end

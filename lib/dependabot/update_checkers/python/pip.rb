@@ -19,9 +19,11 @@ module Dependabot
           latest_version
         end
 
-        def updated_requirement
-          return unless latest_resolvable_version
-          dependency.requirement.
+        def updated_requirements
+          return dependency.requirements unless latest_resolvable_version
+
+          updated_requirement =
+            dependency.requirements.first[:requirement].
             sub(PythonRequirementLineParser::VERSION) do |ver|
               precision = ver.split(".").count
               latest_resolvable_version.to_s.
@@ -29,6 +31,11 @@ module Dependabot
                 first(precision).
                 join(".")
             end
+
+          [
+            dependency.requirements.first.
+              merge(requirement: updated_requirement)
+          ]
         end
 
         private

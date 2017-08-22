@@ -26,9 +26,10 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     Dependabot::Dependency.new(
       name: "luigi",
       version: "2.0.0",
-      requirement: "==2.0.0",
-      package_manager: "pip",
-      groups: []
+      requirements: [
+        { file: "requirements.txt", requirement: "==2.0.0", groups: [] }
+      ],
+      package_manager: "pip"
     )
   end
 
@@ -44,9 +45,10 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         Dependabot::Dependency.new(
           name: "luigi",
           version: "2.6.0",
-          requirement: "==2.6.0",
-          package_manager: "pip",
-          groups: []
+          requirements: [
+            { file: "requirements.txt", requirement: "==2.6.0", groups: [] }
+          ],
+          package_manager: "pip"
         )
       end
       it { is_expected.to be_falsey }
@@ -82,8 +84,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
   end
 
-  describe "#updated_requirement" do
-    subject { checker.updated_requirement }
-    it { is_expected.to eq("==2.6.0") }
+  describe "#updated_requirements" do
+    subject { checker.updated_requirements.first }
+    its([:requirement]) { is_expected.to eq("==2.6.0") }
   end
 end

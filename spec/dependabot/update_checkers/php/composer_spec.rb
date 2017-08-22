@@ -20,9 +20,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
       version: "1.0.1",
-      requirement: "1.0.*",
-      package_manager: "composer",
-      groups: []
+      requirements: [
+        { file: "composer.json", requirement: "1.0.*", groups: [] }
+      ],
+      package_manager: "composer"
     )
   end
 
@@ -49,7 +50,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "returns a non-normalized version, following semver" do
       expect(subject.segments.count).to eq(3)
@@ -62,9 +63,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "doctrine/dbal",
           version: "2.1.5",
-          requirement: "1.0.*",
-          package_manager: "composer",
-          groups: []
+          requirements: [
+            { file: "composer.json", requirement: "1.0.*", groups: [] }
+          ],
+          package_manager: "composer"
         )
       end
 
@@ -75,8 +77,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         fixture("php", "lockfiles", "version_conflict")
       end
 
-      it { is_expected.to be < Gem::Version.new("3.0.0") }
-      it { is_expected.to be > Gem::Version.new("2.0.0") }
+      it "is between 2.0.0 and 3.0.0" do
+        expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
+        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
+      end
     end
 
     context "with a dependency with a git source" do
@@ -94,9 +98,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           Dependabot::Dependency.new(
             name: "symfony/polyfill-mbstring",
             version: "1.0.1",
-            requirement: "1.0.*",
-            package_manager: "composer",
-            groups: []
+            requirements: [
+              { file: "composer.json", requirement: "1.0.*", groups: [] }
+            ],
+            package_manager: "composer"
           )
         end
 
@@ -105,20 +110,21 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
   end
 
-  describe "#updated_requirement" do
-    subject { checker.updated_requirement }
+  describe "#updated_requirements" do
+    subject { checker.updated_requirements.first }
 
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "monolog/monolog",
         version: "1.0.1",
-        requirement: original_requirement,
-        package_manager: "composer",
-        groups: []
+        requirements: [
+          { file: "composer.json", requirement: old_requirement, groups: [] }
+        ],
+        package_manager: "composer"
       )
     end
 
-    let(:original_requirement) { "1.0.*" }
+    let(:old_requirement) { "1.0.*" }
     let(:latest_resolvable_version) { nil }
 
     before do
@@ -129,25 +135,25 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
-      it { is_expected.to be_nil }
+      its([:requirement]) { is_expected.to eq(old_requirement) }
     end
 
     context "when there is a resolvable version" do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
 
       context "and a full version was previously specified" do
-        let(:original_requirement) { "1.4.0" }
-        it { is_expected.to eq("1.5.0") }
+        let(:old_requirement) { "1.4.0" }
+        its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
       context "and a pre-release was previously specified" do
-        let(:original_requirement) { "1.5.0beta" }
-        it { is_expected.to eq("1.5.0") }
+        let(:old_requirement) { "1.5.0beta" }
+        its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
       context "and a minor version was previously specified" do
-        let(:original_requirement) { "1.4.*" }
-        it { is_expected.to eq("1.5.*") }
+        let(:old_requirement) { "1.4.*" }
+        its([:requirement]) { is_expected.to eq("1.5.*") }
       end
     end
   end

@@ -13,7 +13,7 @@ Style/DotPosition:
   EnforcedStyle: trailing
 
 Metrics/ClassLength:
-  Max: 350
+  Max: 250
 
 Metrics/LineLength:
   Max: 80

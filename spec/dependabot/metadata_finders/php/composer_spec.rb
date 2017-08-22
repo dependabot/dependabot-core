@@ -12,9 +12,8 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirement: "1.*",
-      package_manager: "composer",
-      groups: []
+      requirements: [{ file: "composer.json", requirement: "1.*", groups: [] }],
+      package_manager: "composer"
     )
   end
   subject(:finder) do
