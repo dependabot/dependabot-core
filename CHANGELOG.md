@@ -1,3 +1,9 @@
+## v0.16.0, 22 August 2017
+
+- BREAKING: use arrays of hashes for `Dependency#requirements` and
+  `Dependency#previous_requirements`, so we can store metadata about each
+  requirement (e.g., which file it came from).
+
 ## v0.15.8, 22 August 2017
 
 - Allow Ruby updates for repos which only contain a Gemfile (or where the
