@@ -709,74 +709,117 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "business",
-        version: "1.3",
-        requirements: requirements,
-        package_manager: "bundler"
+    let(:gemspec) do
+      Dependabot::DependencyFile.new(
+        content: gemspec_body,
+        name: "example.gemspec"
       )
     end
-
-    let(:requirements) do
-      [{ file: "Gemfile", requirement: original_requirement, groups: [] }]
-    end
-
-    let(:original_requirement) { ">= 0" }
-    let(:latest_resolvable_version) { nil }
-
+    let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
     before do
-      allow(checker).
-        to receive(:latest_resolvable_version).
-        and_return(latest_resolvable_version)
+      stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
+    end
+    before do
+      stub_request(:get, "https://index.rubygems.org/versions").
+        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+
+      stub_request(:get, "https://index.rubygems.org/info/business").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-business")
+        )
     end
 
-    context "when there is no resolvable version" do
-      let(:latest_resolvable_version) { nil }
-      it { is_expected.to eq(requirements) }
-    end
-
-    context "when there is a resolvable version" do
-      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
-      subject { updated_requirements.first[:requirement] }
-
-      context "and a full version was previously specified" do
-        let(:original_requirement) { "~> 1.4.0" }
-        it { is_expected.to eq("~> 1.5.0") }
-      end
-
-      context "and a pre-release was previously specified" do
-        let(:original_requirement) { "~> 1.5.0.beta" }
-        it { is_expected.to eq("~> 1.5.0") }
-      end
-
-      context "and a minor version was previously specified" do
-        let(:original_requirement) { "~> 1.4" }
-        it { is_expected.to eq("~> 1.5") }
-      end
-
-      context "and a greater than or equal to matcher was used" do
-        let(:original_requirement) { ">= 1.4.0" }
-        it { is_expected.to eq(">= 1.5.0") }
-      end
-
-      context "and a less than matcher was used" do
-        let(:original_requirement) { "< 1.4.0" }
-        it { is_expected.to eq("~> 1.5.0") }
-      end
-    end
-
-    context "with a gemspec and a gemfile" do
-      let(:dependency_files) { [gemspec, gemfile] }
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          content: gemspec_body,
-          name: "example.gemspec"
+    context "with a Gemfile and a Gemfile.lock" do
+      let(:dependency_files) { [gemfile, lockfile] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.4.0",
+          requirements: requirements,
+          package_manager: "bundler"
         )
       end
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-      let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
 
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [:default]
+          },
+          {
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [:default]
+          }
+        ]
+      end
+
+      it "delegates to Bundler::RequirementsUpdater with the right params" do
+        expect(Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater).
+          to receive(:new).with(
+            requirements: requirements,
+            existing_version: "1.4.0",
+            latest_version: "1.5.0",
+            latest_resolvable_version: "1.8.0"
+          ).and_call_original
+
+        expect(updated_requirements.count).to eq(2)
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
+      end
+    end
+
+    context "with a Gemfile, a Gemfile.lock and a gemspec" do
+      let(:dependency_files) { [gemfile, gemspec, lockfile] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "imports_gemspec.lock")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.4.0",
+          requirements: requirements,
+          package_manager: "bundler"
+        )
+      end
+
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [:default]
+          },
+          {
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [:default]
+          }
+        ]
+      end
+
+      it "delegates to Bundler::RequirementsUpdater with the right params" do
+        expect(Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater).
+          to receive(:new).with(
+            requirements: requirements,
+            existing_version: "1.4.0",
+            latest_version: "1.5.0",
+            latest_resolvable_version: "1.8.0"
+          ).and_call_original
+
+        expect(updated_requirements.count).to eq(2)
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
+      end
+    end
+
+    context "with a Gemfile and a gemspec" do
+      let(:dependency_files) { [gemfile, gemspec] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
@@ -787,70 +830,36 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       let(:requirements) do
         [
-          { file: "Gemfile", requirement: old_requirement, groups: [] },
-          { file: "example.gemspec", requirement: old_requirement, groups: [] }
+          {
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [:default]
+          },
+          {
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [:default]
+          }
         ]
       end
 
-      let(:old_requirement) { "~> 0.9" }
-      let(:latest_version) { Gem::Version.new("1.5.0") }
-
-      before do
-        allow(checker).to receive(:latest_version).and_return(latest_version)
-        allow(checker).
-          to receive(:latest_resolvable_version).and_return(latest_version)
-      end
-
-      it "updates both files" do
-        expect(checker.updated_requirements).to match_array(
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.5",
-              groups: []
-            },
-            {
-              file: "example.gemspec",
-              requirement: ">= 0.9, < 2.0",
-              groups: []
-            }
-          ]
-        )
-      end
-
-      context "with a dependency that only appears in the gemspec" do
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "octokit",
+      it "delegates to Bundler::RequirementsUpdater with the right params" do
+        expect(Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater).
+          to receive(:new).with(
             requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-        let(:latest_version) { Gem::Version.new("5.0.0") }
-        let(:old_requirement) { "~> 4.6" }
-        let(:requirements) do
-          [{ file: "example.gemspec", requirement: "~> 4.6", groups: [] }]
-        end
+            existing_version: nil,
+            latest_version: "1.5.0",
+            latest_resolvable_version: "1.8.0"
+          ).and_call_original
 
-        it "successfully updates the requirement" do
-          expect(checker.updated_requirements).to eq(
-            [
-              {
-                file: "example.gemspec",
-                requirement: ">= 4.6, < 6.0",
-                groups: []
-              }
-            ]
-          )
-        end
+        expect(updated_requirements.count).to eq(2)
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
       end
     end
 
-    context "with only a Gemfile" do
+    context "with a Gemfile only" do
       let(:dependency_files) { [gemfile] }
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
@@ -860,45 +869,31 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       let(:requirements) do
-        [{ file: "Gemfile", requirement: original_requirement, groups: [] }]
+        [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [:default]
+          }
+        ]
       end
 
-      context "when there is no resolvable version" do
-        let(:latest_resolvable_version) { nil }
-        it { is_expected.to eq(requirements) }
-      end
+      it "delegates to Bundler::RequirementsUpdater with the right params" do
+        expect(Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater).
+          to receive(:new).with(
+            requirements: requirements,
+            existing_version: nil,
+            latest_version: "1.5.0",
+            latest_resolvable_version: "1.8.0"
+          ).and_call_original
 
-      context "when there is a resolvable version" do
-        let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
-
-        context "and a full version was previously specified" do
-          let(:original_requirement) { "~> 1.4.0" }
-
-          it "successfully updates the requirement" do
-            expect(checker.updated_requirements).to eq(
-              [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.5.0",
-                  groups: []
-                }
-              ]
-            )
-          end
-        end
+        expect(updated_requirements.count).to eq(1)
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
       end
     end
 
-    context "with only a gemspec" do
+    context "with a gemspec only" do
       let(:dependency_files) { [gemspec] }
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          content: gemspec_body,
-          name: "example.gemspec"
-        )
-      end
-      let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
@@ -906,153 +901,28 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           package_manager: "bundler"
         )
       end
-      let(:old_requirement) { "~> 0.9" }
-      let(:latest_version) { Gem::Version.new("1.5.0") }
+
       let(:requirements) do
-        [{ file: "example.gemspec", requirement: old_requirement, groups: [] }]
+        [
+          {
+            file: "example.gemspec",
+            requirement: "~> 0.9",
+            groups: ["runtime"]
+          }
+        ]
       end
 
-      before do
-        allow(checker).to receive(:latest_version).and_return(latest_version)
-      end
+      it "delegates to Bundler::RequirementsUpdater with the right params" do
+        expect(Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater).
+          to receive(:new).with(
+            requirements: requirements,
+            existing_version: nil,
+            latest_version: "1.5.0",
+            latest_resolvable_version: "1.5.0"
+          ).and_call_original
 
-      subject { updated_requirements.first[:requirement] }
-
-      context "when an = specifier was used" do
-        let(:old_requirement) { "= 1.4.0" }
-        it { is_expected.to eq(">= 1.4.0") }
-      end
-
-      context "when no specifier was used" do
-        let(:old_requirement) { "1.4.0" }
-        it { is_expected.to eq(">= 1.4.0") }
-      end
-
-      context "when a < specifier was used" do
-        let(:old_requirement) { "< 1.4.0" }
-        it { is_expected.to eq("< 1.6.0") }
-      end
-
-      context "when a <= specifier was used" do
-        let(:old_requirement) { "<= 1.4.0" }
-        it { is_expected.to eq("<= 1.6.0") }
-      end
-
-      context "when a ~> specifier was used" do
-        let(:old_requirement) { "~> 1.4.0" }
-        it { is_expected.to eq(">= 1.4, < 1.6") }
-
-        context "with two zeros" do
-          let(:old_requirement) { "~> 1.0.0" }
-          it { is_expected.to eq(">= 1.0, < 1.6") }
-        end
-
-        context "with no zeros" do
-          let(:old_requirement) { "~> 1.0.1" }
-          it { is_expected.to eq(">= 1.0.1, < 1.6.0") }
-        end
-
-        context "with minor precision" do
-          let(:old_requirement) { "~> 0.1" }
-          it { is_expected.to eq(">= 0.1, < 2.0") }
-        end
-      end
-
-      context "when there are multiple requirements" do
-        let(:old_requirement) { "> 1.0.0, <= 1.4.0" }
-        it { is_expected.to eq("> 1.0.0, <= 1.6.0") }
-
-        context "that could cause duplication" do
-          let(:old_requirement) { "~> 0.5, >= 0.5.2" }
-          it { is_expected.to eq(">= 0.5.2, < 2.0") }
-        end
-      end
-
-      context "when a beta version was used in the old requirement" do
-        let(:old_requirement) { "< 1.4.0.beta" }
-        it { is_expected.to eq(:unfixable) }
-      end
-
-      context "when a != specifier was used" do
-        let(:old_requirement) { "!= 1.5.0" }
-        it { is_expected.to eq(:unfixable) }
-      end
-
-      context "when a >= specifier was used" do
-        let(:old_requirement) { ">= 1.6.0" }
-        it { is_expected.to eq(:unfixable) }
-      end
-
-      context "when a > specifier was used" do
-        let(:old_requirement) { "> 1.6.0" }
-        it { is_expected.to eq(:unfixable) }
-      end
-
-      context "for a development dependency" do
-        let(:requirements) do
-          [
-            {
-              file: "example.gemspec",
-              requirement: old_requirement,
-              groups: ["development"]
-            }
-          ]
-        end
-
-        context "when an = specifier was used" do
-          let(:old_requirement) { "= 1.4.0" }
-          it { is_expected.to eq("= 1.5.0") }
-        end
-
-        context "when no specifier was used" do
-          let(:old_requirement) { "1.4.0" }
-          it { is_expected.to eq("= 1.5.0") }
-        end
-
-        context "when a < specifier was used" do
-          let(:old_requirement) { "< 1.4.0" }
-          it { is_expected.to eq("< 1.6.0") }
-        end
-
-        context "when a <= specifier was used" do
-          let(:old_requirement) { "<= 1.4.0" }
-          it { is_expected.to eq("<= 1.6.0") }
-        end
-
-        context "when a ~> specifier was used" do
-          let(:old_requirement) { "~> 1.4.0" }
-          it { is_expected.to eq("~> 1.5.0") }
-
-          context "with minor precision" do
-            let(:old_requirement) { "~> 0.1" }
-            it { is_expected.to eq("~> 1.5") }
-          end
-        end
-
-        context "when there are multiple requirements" do
-          let(:old_requirement) { "> 1.0.0, <= 1.4.0" }
-          it { is_expected.to eq("> 1.0.0, <= 1.6.0") }
-        end
-
-        context "when a beta version was used in the old requirement" do
-          let(:old_requirement) { "< 1.4.0.beta" }
-          it { is_expected.to eq(:unfixable) }
-        end
-
-        context "when a != specifier was used" do
-          let(:old_requirement) { "!= 1.5.0" }
-          it { is_expected.to eq(:unfixable) }
-        end
-
-        context "when a >= specifier was used" do
-          let(:old_requirement) { ">= 1.6.0" }
-          it { is_expected.to eq(:unfixable) }
-        end
-
-        context "when a > specifier was used" do
-          let(:old_requirement) { "> 1.6.0" }
-          it { is_expected.to eq(:unfixable) }
-        end
+        expect(updated_requirements.count).to eq(1)
+        expect(updated_requirements.first[:requirement]).to eq(">= 0.9, < 2.0")
       end
     end
   end
