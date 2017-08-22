@@ -24,10 +24,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.3",
-      requirement: ">= 0",
-      package_manager: "bundler",
-      groups: []
+      requirements: requirements,
+      package_manager: "bundler"
     )
+  end
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [] }]
   end
 
   let(:gemfile) do
@@ -110,9 +112,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "sidekiq-pro",
             version: "1.3",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
         let(:registry_url) { "https://gems.contribsys.com/" }
@@ -161,9 +162,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "prius",
             version: "0.9",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
 
@@ -215,9 +215,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "example",
               version: "0.9.3",
-              requirement: ">= 0",
-              package_manager: "bundler",
-              groups: []
+              requirements: requirements,
+              package_manager: "bundler"
             )
           end
 
@@ -274,10 +273,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "octokit",
-            requirement: "~> 4.6",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
+        end
+
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: "~> 4.6", groups: [] }]
         end
 
         before do
@@ -345,9 +347,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "ibandit",
             version: "0.1.0",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
 
@@ -377,9 +378,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "public_suffix",
             version: "1.0.1",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
 
@@ -491,9 +491,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "example",
               version: "0.9.3",
-              requirement: ">= 0",
-              package_manager: "bundler",
-              groups: []
+              requirements: requirements,
+              package_manager: "bundler"
             )
           end
 
@@ -518,9 +517,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "statesman",
             version: "1.2",
-            requirement: ">= 0",
-            package_manager: "ruby",
-            groups: []
+            requirements: requirements,
+            package_manager: "ruby"
           )
         end
 
@@ -549,9 +547,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "prius",
             version: "0.9",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
 
@@ -709,17 +706,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     end
   end
 
-  describe "#updated_requirement" do
-    subject { checker.updated_requirement }
+  describe "#updated_requirements" do
+    subject(:updated_requirements) { checker.updated_requirements }
 
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
         version: "1.3",
-        requirement: original_requirement,
-        package_manager: "bundler",
-        groups: []
+        requirements: requirements,
+        package_manager: "bundler"
       )
+    end
+
+    let(:requirements) do
+      [{ file: "Gemfile", requirement: original_requirement, groups: [] }]
     end
 
     let(:original_requirement) { ">= 0" }
@@ -729,18 +729,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       allow(checker).
         to receive(:latest_resolvable_version).
         and_return(latest_resolvable_version)
-      allow(checker).
-        to receive(:gemfile_requirement).
-        and_return(Gem::Requirement.new(original_requirement.split(",")))
     end
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
-      it { is_expected.to be_nil }
+      it { is_expected.to eq(requirements) }
     end
 
     context "when there is a resolvable version" do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+      subject { updated_requirements.first[:requirement] }
 
       context "and a full version was previously specified" do
         let(:original_requirement) { "~> 1.4.0" }
@@ -782,10 +780,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          requirement: old_requirement,
-          package_manager: "bundler",
-          groups: []
+          requirements: requirements,
+          package_manager: "bundler"
         )
+      end
+
+      let(:requirements) do
+        [
+          { file: "Gemfile", requirement: old_requirement, groups: [] },
+          { file: "example.gemspec", requirement: old_requirement, groups: [] }
+        ]
       end
 
       let(:old_requirement) { "~> 0.9" }
@@ -794,12 +798,24 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       before do
         allow(checker).to receive(:latest_version).and_return(latest_version)
         allow(checker).
-          to receive(:gemspec_requirement).
-          and_return(Gem::Requirement.new(old_requirement.split(",")))
+          to receive(:latest_resolvable_version).and_return(latest_version)
       end
 
-      it "picks the gemspec to update the requirement in" do
-        expect(checker.updated_requirement).to eq(">= 0.9, < 2.0")
+      it "updates both files" do
+        expect(checker.updated_requirements).to match_array(
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5",
+              groups: []
+            },
+            {
+              file: "example.gemspec",
+              requirement: ">= 0.9, < 2.0",
+              groups: []
+            }
+          ]
+        )
       end
 
       context "with a dependency that only appears in the gemspec" do
@@ -807,16 +823,26 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "octokit",
-            requirement: old_requirement,
-            package_manager: "bundler",
-            groups: []
+            requirements: requirements,
+            package_manager: "bundler"
           )
         end
         let(:latest_version) { Gem::Version.new("5.0.0") }
         let(:old_requirement) { "~> 4.6" }
+        let(:requirements) do
+          [{ file: "example.gemspec", requirement: "~> 4.6", groups: [] }]
+        end
 
         it "successfully updates the requirement" do
-          expect(checker.updated_requirement).to eq(">= 4.6, < 6.0")
+          expect(checker.updated_requirements).to eq(
+            [
+              {
+                file: "example.gemspec",
+                requirement: ">= 4.6, < 6.0",
+                groups: []
+              }
+            ]
+          )
         end
       end
     end
@@ -828,15 +854,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          requirement: original_requirement,
-          package_manager: "bundler",
-          groups: []
+          requirements: requirements,
+          package_manager: "bundler"
         )
+      end
+
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: original_requirement, groups: [] }]
       end
 
       context "when there is no resolvable version" do
         let(:latest_resolvable_version) { nil }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(requirements) }
       end
 
       context "when there is a resolvable version" do
@@ -844,7 +873,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         context "and a full version was previously specified" do
           let(:original_requirement) { "~> 1.4.0" }
-          it { is_expected.to eq("~> 1.5.0") }
+
+          it "successfully updates the requirement" do
+            expect(checker.updated_requirements).to eq(
+              [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.5.0",
+                  groups: []
+                }
+              ]
+            )
+          end
         end
       end
     end
@@ -862,20 +902,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          requirement: old_requirement,
-          package_manager: "bundler",
-          groups: []
+          requirements: requirements,
+          package_manager: "bundler"
         )
       end
       let(:old_requirement) { "~> 0.9" }
       let(:latest_version) { Gem::Version.new("1.5.0") }
+      let(:requirements) do
+        [{ file: "example.gemspec", requirement: old_requirement, groups: [] }]
+      end
 
       before do
         allow(checker).to receive(:latest_version).and_return(latest_version)
-        allow(checker).
-          to receive(:gemspec_requirement).
-          and_return(Gem::Requirement.new(old_requirement.split(",")))
       end
+
+      subject { updated_requirements.first[:requirement] }
 
       context "when an = specifier was used" do
         let(:old_requirement) { "= 1.4.0" }
@@ -929,32 +970,33 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       context "when a beta version was used in the old requirement" do
         let(:old_requirement) { "< 1.4.0.beta" }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(:unfixable) }
       end
 
       context "when a != specifier was used" do
         let(:old_requirement) { "!= 1.5.0" }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(:unfixable) }
       end
 
       context "when a >= specifier was used" do
         let(:old_requirement) { ">= 1.6.0" }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(:unfixable) }
       end
 
       context "when a > specifier was used" do
         let(:old_requirement) { "> 1.6.0" }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(:unfixable) }
       end
 
       context "for a development dependency" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "business",
-            requirement: old_requirement,
-            package_manager: "bundler",
-            groups: ["development"]
-          )
+        let(:requirements) do
+          [
+            {
+              file: "example.gemspec",
+              requirement: old_requirement,
+              groups: ["development"]
+            }
+          ]
         end
 
         context "when an = specifier was used" do
@@ -994,22 +1036,22 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         context "when a beta version was used in the old requirement" do
           let(:old_requirement) { "< 1.4.0.beta" }
-          it { is_expected.to be_nil }
+          it { is_expected.to eq(:unfixable) }
         end
 
         context "when a != specifier was used" do
           let(:old_requirement) { "!= 1.5.0" }
-          it { is_expected.to be_nil }
+          it { is_expected.to eq(:unfixable) }
         end
 
         context "when a >= specifier was used" do
           let(:old_requirement) { ">= 1.6.0" }
-          it { is_expected.to be_nil }
+          it { is_expected.to eq(:unfixable) }
         end
 
         context "when a > specifier was used" do
           let(:old_requirement) { "> 1.6.0" }
-          it { is_expected.to be_nil }
+          it { is_expected.to eq(:unfixable) }
         end
       end
     end

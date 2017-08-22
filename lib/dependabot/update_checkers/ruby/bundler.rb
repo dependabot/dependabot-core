@@ -24,12 +24,13 @@ module Dependabot
           @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
-        def updated_requirement
-          if gemspec_requirement &&
-             !gemspec_requirement.satisfied_by?(latest_version)
-            updated_gemspec_requirement
-          else
-            updated_gemfile_requirement
+        def updated_requirements
+          dependency.requirements.map do |req|
+            case req[:file]
+            when "Gemfile" then updated_gemfile_requirement(req)
+            when /\.gemspec/ then updated_gemspec_requirement(req)
+            else raise "Unexpected file name: #{req[:file]}"
+            end
           end
         end
 
@@ -284,52 +285,23 @@ module Dependabot
           )
         end
 
-        def gemspec_requirement
-          return unless gemspec
+        def updated_gemfile_requirement(req)
+          return req unless latest_resolvable_version
 
-          @gemspec_requirement ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write(
-                gemspec.name,
-                sanitized_gemspec_content(gemspec.content)
-              )
+          original_req = Gem::Requirement.new(req[:requirement].split(","))
 
-              SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-                ::Bundler.load_gemspec_uncached(gemspec.name).
-                  dependencies.
-                  find { |dep| dep.name == dependency.name }&.
-                  requirement
-              end
-            end
-        end
+          if original_req.satisfied_by?(latest_resolvable_version) &&
+             dependency.version &&
+             latest_resolvable_version <= Gem::Version.new(dependency.version)
+            return req
+          end
 
-        def gemfile_requirement
-          return nil unless gemfile
-
-          @gemfile_requirement ||=
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
-
-              SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                  find { |dep| dep.name == dependency.name }&.requirement
-              end
-            end
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
-        end
-
-        def updated_gemfile_requirement
-          return unless latest_resolvable_version
-          return unless gemfile_requirement
-
-          new_req = gemfile_requirement.to_s.gsub(/<=?/, "~>")
-          new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
+          new_req = req[:requirement].gsub(/<=?/, "~>")
+          new_req.sub!(Gemnasium::Parser::Patterns::VERSION) do |old_version|
             version_at_same_precision(latest_resolvable_version, old_version)
           end
+
+          req.dup.merge(requirement: new_req)
         end
 
         def version_at_same_precision(new_version, old_version)
@@ -337,16 +309,20 @@ module Dependabot
           new_version.to_s.split(".").first(precision).join(".")
         end
 
-        def updated_gemspec_requirement
+        def updated_gemspec_requirement(req)
+          return req unless latest_version
+
           requirements =
-            gemspec_requirement.to_s.
-            split(",").
-            map { |r| Gem::Requirement.new(r) }
+            req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
+
+          if requirements.all? { |r| r.satisfied_by?(latest_version) }
+            return req
+          end
 
           updated_requirements =
             requirements.flat_map do |r|
               next r if r.satisfied_by?(latest_version)
-              if dependency.groups == ["development"]
+              if req[:groups] == ["development"]
                 fixed_development_requirements(r)
               else
                 fixed_requirements(r)
@@ -354,17 +330,16 @@ module Dependabot
             end
 
           updated_requirements = binding_requirements(updated_requirements)
-          updated_requirements.sort_by! { |r| r.requirements.first.last }
-          updated_requirements.map(&:to_s).join(", ")
+          req.merge(requirement: updated_requirements.map(&:to_s).join(", "))
         rescue UnfixableRequirement
-          nil
+          req.merge(requirement: :unfixable)
         end
 
         def binding_requirements(requirements)
           grouped_by_operator =
             requirements.uniq.group_by { |r| r.requirements.first.first }
 
-          grouped_by_operator.flat_map do |operator, reqs|
+          binding_reqs = grouped_by_operator.flat_map do |operator, reqs|
             case operator
             when "<", "<="
               reqs.sort_by { |r| r.requirements.first.last }.first
@@ -373,6 +348,8 @@ module Dependabot
             else requirements
             end
           end
+
+          binding_reqs.sort_by { |r| r.requirements.first.last }
         end
 
         def fixed_requirements(r)

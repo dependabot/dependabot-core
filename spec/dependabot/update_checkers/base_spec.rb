@@ -15,12 +15,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      requirement: ">= 0",
-      package_manager: "bundler",
-      groups: []
+      requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [] }],
+      package_manager: "bundler"
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }
+  let(:updated_requirements) do
+    [{ file: "Gemfile", requirement: updated_requirement, groups: [] }]
+  end
   let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
   before do
@@ -33,8 +35,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       and_return(latest_resolvable_version)
 
     allow(updater_instance).
-      to receive(:updated_requirement).
-      and_return(updated_requirement)
+      to receive(:updated_requirements).
+      and_return(updated_requirements)
   end
 
   describe "#needs_update?" do
@@ -66,35 +68,34 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       it { is_expected.to be_falsey }
     end
 
-    context "when updating a library" do
+    context "when updating a requirement file" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          requirement: requirement,
-          package_manager: "bundler",
-          groups: []
+          requirements: requirements,
+          package_manager: "bundler"
         )
+      end
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 1", groups: [] }]
       end
 
       context "that already permits the latest version" do
-        let(:requirement) { ">= 0" }
+        let(:updated_requirements) { requirements }
         it { is_expected.to be_falsey }
       end
 
       context "that doesn't yet permit the latest version" do
-        let(:requirement) { "< 1" }
+        let(:updated_requirements) do
+          [{ file: "Gemfile", requirement: ">= 1, < 3", groups: [] }]
+        end
         it { is_expected.to be_truthy }
       end
 
-      context "when the dependency couldn't be found" do
-        let(:requirement) { "< 1" }
-        let(:latest_version) { nil }
-        it { is_expected.to be_falsey }
-      end
-
       context "that we don't know how to fix" do
-        let(:requirement) { "> 15" }
-        let(:updated_requirement) { nil }
+        let(:updated_requirements) do
+          [{ file: "Gemfile", requirement: :unfixable, groups: [] }]
+        end
         it { is_expected.to be_falsey }
       end
     end

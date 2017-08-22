@@ -17,7 +17,7 @@ module Dependabot
           version_needs_update?
         else
           # If the dependency has no version it means we're updating a library.
-          requirement_needs_update?
+          requirements_need_update?
         end
       end
 
@@ -27,11 +27,10 @@ module Dependabot
         Dependency.new(
           name: dependency.name,
           version: latest_resolvable_version.to_s,
-          requirement: updated_requirement,
+          requirements: updated_requirements,
           previous_version: dependency.version,
-          previous_requirement: dependency.requirement,
-          package_manager: dependency.package_manager,
-          groups: dependency.groups
+          previous_requirements: dependency.requirements,
+          package_manager: dependency.package_manager
         )
       end
 
@@ -43,7 +42,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def updated_requirement
+      def updated_requirements
         raise NotImplementedError
       end
 
@@ -62,14 +61,9 @@ module Dependabot
         latest_resolvable_version > Gem::Version.new(dependency.version)
       end
 
-      def requirement_needs_update?
-        original_requirement =
-          Gem::Requirement.new(*dependency.requirement.split(","))
-
-        return false if latest_version.nil?
-        return false if original_requirement.satisfied_by?(latest_version)
-
-        !updated_requirement.nil?
+      def requirements_need_update?
+        (updated_requirements - dependency.requirements).any? &&
+          updated_requirements.none? { |r| r[:requirement] == :unfixable }
       end
     end
   end

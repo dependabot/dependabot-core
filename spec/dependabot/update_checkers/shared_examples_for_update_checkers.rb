@@ -9,9 +9,9 @@ RSpec.shared_examples "an update checker" do
 
     its(:superclass) { is_expected.to eq(base_class) }
 
-    it "implements updated_requirement" do
+    it "implements updated_requirements" do
       expect(described_class.public_instance_methods(false)).
-        to include(:updated_requirement)
+        to include(:updated_requirements)
     end
 
     it "implements latest_version" do
