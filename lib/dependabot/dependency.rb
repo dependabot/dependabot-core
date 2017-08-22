@@ -8,13 +8,27 @@ module Dependabot
                    previous_version: nil, previous_requirements: nil)
       @name = name
       @version = version
-      @requirements = requirements
+      @requirements = requirements.map { |req| symbolize_keys(req) }
       @previous_version = previous_version
-      @previous_requirements = previous_requirements
+      @previous_requirements =
+        previous_requirements&.map { |req| symbolize_keys(req) }
       @package_manager = package_manager
 
       check_values
     end
+
+    def to_h
+      {
+        "name" => name,
+        "version" => version,
+        "requirements" => requirements,
+        "previous_version" => previous_version,
+        "previous_requirements" => previous_requirements,
+        "package_manager" => package_manager
+      }
+    end
+
+    private
 
     def check_values
       if [version, previous_version].any? { |v| v == "" }
@@ -38,15 +52,8 @@ module Dependabot
       raise ArgumentError, "blank strings must not be provided as requirements"
     end
 
-    def to_h
-      {
-        "name" => name,
-        "version" => version,
-        "requirements" => requirements,
-        "previous_version" => previous_version,
-        "previous_requirements" => previous_requirements,
-        "package_manager" => package_manager
-      }
+    def symbolize_keys(hash)
+      Hash[hash.map { |k, v| [k.to_sym, v] }]
     end
   end
 end
