@@ -15,20 +15,15 @@ module Dependabot
         private
 
         def gemfile_dependencies
-          return [] unless gemfile && lockfile
+          return [] unless gemfile
           parsed_gemfile.map do |dependency|
             # Ignore dependencies with multiple requirements, since they would
             # cause trouble at the gem update step. TODO: fix!
             next if dependency.requirement.requirements.count > 1
 
-            # Ignore gems which appear in the Gemfile but not the Gemfile.lock.
-            # For instance, if a gem specifies `platform: [:windows]`, and the
-            # Gemfile.lock is generated on a Linux machine.
-            next if dependency_version(dependency.name).nil?
-
             Dependency.new(
               name: dependency.name,
-              version: dependency_version(dependency.name).to_s,
+              version: dependency_version(dependency.name)&.to_s,
               requirement: dependency.requirement.to_s,
               package_manager: "bundler",
               groups: dependency.groups
@@ -57,7 +52,7 @@ module Dependabot
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
 
-                ::Bundler::Definition.build("Gemfile", "Gemfile.lock", {}).
+                ::Bundler::Definition.build("Gemfile", nil, {}).
                   dependencies.
                   # We can't dump gemspec sources, and we wouldn't bump them
                   # anyway, so we filter them out.
@@ -86,7 +81,7 @@ module Dependabot
 
         def write_temporary_dependency_files
           File.write("Gemfile", gemfile.content)
-          File.write("Gemfile.lock", lockfile.content)
+          File.write("Gemfile.lock", lockfile.content) if lockfile
 
           if ruby_version_file
             path = ruby_version_file.name
@@ -108,9 +103,9 @@ module Dependabot
             name.end_with?(".gemspec") && !name.include?("/")
           end
 
-          return if (%w(Gemfile Gemfile.lock) - file_names).empty?
+          return if file_names.include?("Gemfile")
 
-          raise "A gemspec or a Gemfile and Gemfile.lock must be provided!"
+          raise "A gemspec or Gemfile must be provided!"
         end
 
         def gemspecs

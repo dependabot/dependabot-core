@@ -94,7 +94,10 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         fixture("ruby", "lockfiles", "platform_windows.lock")
       end
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
+      it "is included" do
+        expect(dependencies.map(&:name)).to include("statesman")
+      end
     end
 
     context "with a path-based dependency" do
@@ -175,10 +178,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
       let(:gemfile_content) { fixture("ruby", "gemfiles", "imports_gemspec") }
 
-      # TODO: It would be nice to include the dependencies that just appear in
-      # the Gemfile (which would take the below total to 13). Work required is
-      # the same as for supporting "Gemfile only".
-      its(:length) { is_expected.to eq(11) }
+      its(:length) { is_expected.to eq(13) }
     end
 
     context "with only a gemspec" do
@@ -207,6 +207,23 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       context "that needs to be sanitized" do
         let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
         its(:length) { is_expected.to eq(11) }
+      end
+    end
+
+    context "with only a gemfile" do
+      let(:files) { [gemfile] }
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "version_specified") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("business") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirement) { is_expected.to eq("~> 1.4.0") }
+        its(:groups) { is_expected.to eq([:default]) }
       end
     end
   end

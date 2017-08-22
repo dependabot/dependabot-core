@@ -16,11 +16,11 @@ module Dependabot
             return true
           end
 
-          (%w(Gemfile Gemfile.lock) - filenames).empty?
+          filenames.include?("Gemfile")
         end
 
         def self.required_files_message
-          "Repo must contain either a Gemfile and Gemfile.lock or a gemspec. " \
+          "Repo must contain either a Gemfile or a gemspec. " \
           "A Gemfile.lock may only be present if a Gemfile is."
         end
 
@@ -50,7 +50,7 @@ module Dependabot
         def lockfile
           @lockfile ||= fetch_file_from_github("Gemfile.lock")
         rescue Dependabot::DependencyFileNotFound
-          raise if gemfile && !gemspec
+          nil
         end
 
         def gemspec

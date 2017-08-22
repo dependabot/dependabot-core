@@ -563,7 +563,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
 
         describe "the updated gemfile" do
-          subject(:updated_gemspec) do
+          subject(:updated_gemfile) do
             updated_files.find { |f| f.name == "Gemfile" }
           end
 
@@ -575,10 +575,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     context "when provided with only a Gemfile" do
       let(:dependency_files) { [gemfile] }
 
-      # TODO: It would be nice to support this case. Work needed is in
-      # PullRequestCreator
-      it "raises on initialization" do
-        expect { updater }.to raise_error(/Gemfile and Gemfile\.lock/)
+      describe "the updated gemfile" do
+        subject(:updated_gemfile) do
+          updated_files.find { |f| f.name == "Gemfile" }
+        end
+
+        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
       end
     end
 

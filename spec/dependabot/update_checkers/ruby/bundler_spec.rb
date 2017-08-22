@@ -304,6 +304,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
+
+    context "with only a Gemfile" do
+      let(:dependency_files) { [gemfile] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -631,37 +638,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         )
       end
 
-      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(Gem::Version.new("0.5.0"))
+      end
 
-      context "with a version conflict at the latest version" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "ibandit",
-            version: "0.1.0",
-            requirement: ">= 0",
-            package_manager: "bundler",
-            groups: []
-          )
-        end
-
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-
-          stub_request(:get, "https://index.rubygems.org/info/ibandit").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-ibandit")
-            )
-        end
-
-        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
-        # version compatible with the version of i18n in the Gemfile.
-        it { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      it "doesn't just fall back to latest_version" do
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("1.8.0"))
       end
     end
 
@@ -679,6 +664,47 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         dummy_version = Gem::Version.new("0.5.0")
         expect(checker).to receive(:latest_version).and_return(dummy_version)
         expect(checker.latest_resolvable_version).to eq(dummy_version)
+      end
+    end
+
+    context "with only a Gemfile" do
+      let(:dependency_files) { [gemfile] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(Gem::Version.new("0.5.0"))
+      end
+
+      it "doesn't just fall back to latest_version" do
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("1.8.0"))
+      end
+
+      context "given a gem with a private git source" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "private_git_source")
+        end
+        let(:token) do
+          Base64.encode64("x-access-token:#{github_token}").strip
+        end
+        around { |example| capture_stderr { example.run } }
+
+        before do
+          stub_request(:get, "https://github.com/fundingcircle/prius").
+            with(headers: { "Authorization" => "Basic #{token}" }).
+            to_return(status: 404)
+        end
+
+        it "raises a helpful error" do
+          expect { checker.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+              expect(error.dependency_urls).
+                to eq(["git@github.com:fundingcircle/prius"])
+            end
+        end
       end
     end
   end
@@ -784,6 +810,34 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         it "successfully updates the requirement" do
           expect(checker.updated_requirement).to eq(">= 4.6, < 6.0")
+        end
+      end
+    end
+
+    context "with only a Gemfile" do
+      let(:dependency_files) { [gemfile] }
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          requirement: original_requirement,
+          package_manager: "bundler",
+          groups: []
+        )
+      end
+
+      context "when there is no resolvable version" do
+        let(:latest_resolvable_version) { nil }
+        it { is_expected.to be_nil }
+      end
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+
+        context "and a full version was previously specified" do
+          let(:original_requirement) { "~> 1.4.0" }
+          it { is_expected.to eq("~> 1.5.0") }
         end
       end
     end
