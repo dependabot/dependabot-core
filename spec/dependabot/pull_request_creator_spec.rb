@@ -260,7 +260,7 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-gte-1.0-and-lt-3.0",
               title: "Update business requirement to >= 1.0, < 3.0",
-              body: "Updates requirements on "\
+              body: "Updates the requirements on "\
                     "[business](https://github.com/gocardless/business) "\
                     "to permit the latest version.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases?after="\
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-tw-1.5.0",
               title: "Update business requirement to ~> 1.5.0",
-              body: "Updates requirements on "\
+              body: "Updates the requirements on "\
                     "[business](https://github.com/gocardless/business) "\
                     "to permit the latest version.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases?after="\

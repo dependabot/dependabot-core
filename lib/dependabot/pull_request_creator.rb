@@ -131,7 +131,7 @@ module Dependabot
     end
 
     def library_pr_message
-      msg = "Updates requirements on "
+      msg = "Updates the requirements on "
       msg += if source_url
                "[#{dependency.name}](#{source_url}) "
              else
