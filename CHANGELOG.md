@@ -1,3 +1,7 @@
+## v0.16.1, 22 August 2017
+
+- Better key symbolizing on Dependency (handle ActionController::Params)
+
 ## v0.16.0, 22 August 2017
 
 - BREAKING: use arrays of hashes for `Dependency#requirements` and
