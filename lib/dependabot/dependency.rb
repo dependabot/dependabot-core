@@ -21,18 +21,20 @@ module Dependabot
         raise ArgumentError, "blank strings must not be provided as versions"
       end
 
-      unless requirements.is_a?(Array) &&
-             requirements.all? { |r| r.is_a?(Hash) }
+      requirement_fields = [requirements, previous_requirements].compact
+      unless requirement_fields.all? { |r| r.is_a?(Array) } &&
+             requirement_fields.flatten.all? { |r| r.is_a?(Hash) }
         raise ArgumentError, "requirements must be an array of hashes"
       end
 
       required_keys = %i(requirement file groups)
-      unless requirements.all? { |r| (r.keys - required_keys).empty? }
+      unless requirement_fields.flatten.
+             all? { |r| (r.keys - required_keys).empty? }
         raise ArgumentError, "each requirement must have the following "\
                              "required keys: #{required_keys.join(', ')}."
       end
 
-      return unless [requirements, previous_requirements].any? { |r| r == "" }
+      return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }
       raise ArgumentError, "blank strings must not be provided as requirements"
     end
 
