@@ -1,3 +1,8 @@
+## v0.15.8, 22 August 2017
+
+- Allow Ruby updates for repos which only contain a Gemfile (or where the
+  dependency only appears in the Gemfile)
+
 ## v0.15.7, 21 August 2017
 
 - Link to release notes index when more appropriate than specific release
