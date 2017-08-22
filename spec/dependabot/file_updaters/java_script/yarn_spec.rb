@@ -35,8 +35,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       name: "fetch-factory",
       version: "0.0.2",
       package_manager: "yarn",
-      requirement: "^0.0.1",
-      groups: []
+      requirements: [
+        { file: "package.json", requirement: "^0.0.1", groups: [] }
+      ]
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -70,9 +71,10 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            requirement: "^0.0.1",
             package_manager: "yarn",
-            groups: []
+            requirements: [
+              { file: "package.json", requirement: "^0.0.1", groups: [] }
+            ]
           )
         end
         let(:package_json_body) do

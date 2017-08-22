@@ -40,7 +40,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
             [
               {
                 requirement: "^0.0.1",
-                file: "yarn.lock",
+                file: "package.json",
                 groups: ["dependencies"]
               }
             ]
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
             [
               {
                 requirement: "^1.0.0",
-                file: "yarn.lock",
+                file: "package.json",
                 groups: ["devDependencies"]
               }
             ]

@@ -18,7 +18,7 @@ module Dependabot
               package_manager: "yarn",
               requirements: [{
                 requirement: parsed_package_json.dig(dep_group, dep["name"]),
-                file: "yarn.lock",
+                file: "package.json",
                 groups: [dep_group]
               }]
             )

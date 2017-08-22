@@ -235,7 +235,8 @@ module Dependabot
           quote_character = original_requirement.include?("'") ? "'" : '"'
 
           formatted_new_requirement =
-            dependency.requirement.split(",").
+            dependency.requirements.find { |r| r[:file].end_with?(".gemspec") }.
+            fetch(:requirement).split(",").
             map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
             join(", ")
 

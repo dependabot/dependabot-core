@@ -34,8 +34,9 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       name: "business",
       version: "1.5.0",
       package_manager: "bundler",
-      requirement: "~> 1.4.0",
-      groups: []
+      requirements: [
+        { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+      ]
     )
   end
   let(:github_access_token) { "token" }
