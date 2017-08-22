@@ -109,11 +109,8 @@ module Dependabot
           def fixed_requirements(r)
             op, version = r.requirements.first
 
-            if version.segments.any? { |s| !s.instance_of?(Integer) }
-              # Ignore constraints with non-integer values for now.
-              # TODO: Handle pre-release constraints properly.
-              raise UnfixableRequirement
-            end
+            # TODO: Handle pre-release constraints properly.
+            raise UnfixableRequirement if version.prerelease?
 
             case op
             when "=", nil then [Gem::Requirement.new(">= #{version}")]
@@ -127,11 +124,8 @@ module Dependabot
           def fixed_development_requirements(r)
             op, version = r.requirements.first
 
-            if version.segments.any? { |s| !s.instance_of?(Integer) }
-              # Ignore constraints with non-integer values for now.
-              # TODO: Handle pre-release constraints properly.
-              raise UnfixableRequirement
-            end
+            # TODO: Handle pre-release constraints properly.
+            raise UnfixableRequirement if version.prerelease?
 
             case op
             when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
