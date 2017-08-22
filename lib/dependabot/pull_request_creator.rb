@@ -201,9 +201,11 @@ module Dependabot
     end
 
     def library?
-      files.map(&:name).any? do |name|
-        name.end_with?(".gemspec") && !name.include?("/")
+      if files.map(&:name).any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
+        return true
       end
+
+      dependency.previous_version.nil?
     end
   end
 end

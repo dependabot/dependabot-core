@@ -260,6 +260,77 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "for a Gemfile only" do
+      let(:files) { [gemfile] }
+      let(:dependency) do
+        Dependabot::Dependency.new(name: "business",
+                                   version: "1.5.0",
+                                   requirement: "~> 1.5.0",
+                                   previous_requirement: "~> 1.4.0",
+                                   package_manager: "bundler",
+                                   groups: [])
+      end
+      let(:branch_name) { "dependabot/bundler/business-tw-1.5.0" }
+
+      context "without a previous requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(name: "business",
+                                     version: "1.5.0",
+                                     requirement: ">= 1.0, < 3.0",
+                                     package_manager: "bundler",
+                                     groups: [])
+        end
+
+        it "errors out on initialization" do
+          expect { creator }.to raise_error(/must have a/)
+        end
+      end
+
+      it "has the right commit message" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          with(body: {
+                 parents: ["basecommitsha"],
+                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                 message: /Update business requirement to ~> 1/
+               })
+      end
+
+      it "creates a branch for that commit" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/refs").
+          with(body: {
+                 ref: "refs/heads/#{branch_name}",
+                 sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+               })
+      end
+
+      it "creates a PR with the right details" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-tw-1.5.0",
+              title: "Update business requirement to ~> 1.5.0",
+              body: "Updates requirements on "\
+                    "[business](https://github.com/gocardless/business) "\
+                    "to permit the latest version.\n- [Release notes]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md)"
+            }
+          )
+      end
+    end
+
     context "when a branch for this update already exists" do
       before do
         stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
