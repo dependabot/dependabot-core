@@ -12,9 +12,8 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirement: ">= 0",
-      package_manager: "bundler",
-      groups: []
+      requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [] }],
+      package_manager: "bundler"
     )
   end
   subject(:finder) do

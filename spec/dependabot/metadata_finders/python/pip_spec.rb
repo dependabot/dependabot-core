@@ -12,9 +12,10 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirement: "==1.0",
-      package_manager: "pip",
-      groups: []
+      requirements: [
+        { file: "requirements.txt", requirement: "=1.0", groups: [] }
+      ],
+      package_manager: "pip"
     )
   end
   subject(:finder) do

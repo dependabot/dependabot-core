@@ -21,7 +21,7 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      return if library? && dependency.previous_requirement
+      return if library? && dependency.previous_requirements
       return if dependency.previous_version
 
       raise "Dependency must have a previous version or a previous " \
@@ -111,7 +111,7 @@ module Dependabot
     end
 
     def library_pr_name
-      "Update #{dependency.name} requirement to #{dependency.requirement}"
+      "Update #{dependency.name} requirement to #{new_library_requirement}"
     end
 
     def pr_message
@@ -165,7 +165,7 @@ module Dependabot
     end
 
     def sanitized_requirement
-      dependency.requirement.
+      new_library_requirement.
         delete(" ").
         gsub("!=", "neq-").
         gsub(">=", "gte-").
@@ -198,6 +198,14 @@ module Dependabot
         MetadataFinders.
         for_package_manager(dependency.package_manager).
         new(dependency: dependency, github_client: github_client)
+    end
+
+    def new_library_requirement
+      updated_reqs = dependency.requirements - dependency.previous_requirements
+
+      gemspec = updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
+      return gemspec[:requirement] if gemspec
+      updated_reqs.first[:requirement]
     end
 
     def library?
