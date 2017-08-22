@@ -103,7 +103,7 @@ module Dependabot
             name.end_with?(".gemspec") && !name.include?("/")
           end
 
-          return if (%w(Gemfile) - file_names).empty?
+          return if file_names.include?("Gemfile")
 
           raise "A gemspec or Gemfile must be provided!"
         end

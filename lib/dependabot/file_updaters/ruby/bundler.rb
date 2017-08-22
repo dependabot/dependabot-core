@@ -58,7 +58,7 @@ module Dependabot
           end
 
           return if file_names.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
-          return if (%w(Gemfile) - file_names).empty?
+          return if file_names.include?("Gemfile")
 
           raise "A gemspec or Gemfile must be provided!"
         end

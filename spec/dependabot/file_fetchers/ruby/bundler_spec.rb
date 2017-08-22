@@ -256,7 +256,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         )
     end
 
-    it "fetches gemspec" do
+    it "fetches the gemspec" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to include("business.gemspec")
@@ -292,12 +292,10 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         to_return(status: 404)
     end
 
-    it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error do |error|
-          expect(error).to be_a(Dependabot::DependencyFileNotFound)
-          expect(error.file_path).to eq("/Gemfile.lock")
-        end
+    it "fetches the Gemfile" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("Gemfile")
     end
   end
 
