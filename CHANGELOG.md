@@ -1,3 +1,7 @@
+## v0.16.3, 23 August 2017
+
+- More robust check on whether Ruby Gemspec file needs updating
+
 ## v0.16.2, 23 August 2017
 
 - Handle Ruby case of Gemfile not importing its gemspec
