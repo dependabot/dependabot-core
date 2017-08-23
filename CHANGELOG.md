@@ -1,3 +1,7 @@
+## v0.16.4, 23 August 2017
+
+- Compare Ruby development requirements to the latest resolvable version
+
 ## v0.16.3, 23 August 2017
 
 - More robust check on whether Ruby Gemspec file needs updating
