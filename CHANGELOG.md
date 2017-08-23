@@ -1,3 +1,10 @@
+## v0.16.2, 23 August 2017
+
+- Handle Ruby case of Gemfile not importing its gemspec
+- Exclude platform-specific dependencies from Ruby FileParser
+- Handle pre-release version in requirement updates
+- Minor PR wording improvement
+
 ## v0.16.1, 22 August 2017
 
 - Better key symbolizing on Dependency (handle ActionController::Params)
