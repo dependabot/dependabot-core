@@ -39,6 +39,11 @@ module Dependabot
             # cause trouble at the gem update step. TODO: fix!
             next if dependency.requirement.requirements.count > 1
 
+            # Ignore dependencies that don't appear in the lockfile. These will
+            # be for a different platform, and would cause "corrupted lockfile"
+            # issues later.
+            next if lockfile && dependency_version(dependency.name).nil?
+
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,

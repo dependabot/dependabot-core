@@ -112,9 +112,9 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         fixture("ruby", "lockfiles", "platform_windows.lock")
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(1) }
       it "is included" do
-        expect(dependencies.map(&:name)).to include("statesman")
+        expect(dependencies.map(&:name)).to_not include("statesman")
       end
     end
 
