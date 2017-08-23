@@ -80,9 +80,10 @@ module Dependabot
         end
 
         def gemspec_changed?
-          original_gemspec_declaration_string &&
-            original_gemspec_declaration_string !=
-              updated_gemspec_declaration_string
+          changed_requirements =
+            dependency.requirements - dependency.previous_requirements
+
+          changed_requirements.any? { |f| f[:file].end_with?(".gemspec") }
         end
 
         def updated_gemfile_content

@@ -55,6 +55,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       version: "1.5.0",
       previous_version: "1.4.0",
       requirements: [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [] }],
+      previous_requirements: [
+        { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+      ],
       package_manager: "bundler"
     )
   end
@@ -119,6 +122,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             version: "0.5.0",
             requirements: [
               { file: "Gemfile", requirement: "~> 0.5.0", groups: [] }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 0.4.0", groups: [] }
             ],
             package_manager: "bundler"
           )
@@ -208,6 +214,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               previous_version: "1.4.0",
               requirements: [
                 { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+              ],
+              previous_requirements: [
+                { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
               ],
               package_manager: "bundler"
             )
@@ -372,7 +381,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               version: "2.0.0",
               previous_version: "1.4.0",
               requirements: [
-                { file: "Gemfile", requirement: ">= 1.0, < 3.0", groups: [] }
+                { file: "Gemfile", requirement: "~> 2.0", groups: [] }
+              ],
+              previous_requirements: [
+                { file: "Gemfile", requirement: "~> 1.2.0", groups: [] }
               ],
               package_manager: "bundler"
             )
@@ -399,6 +411,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 {
                   file: "Gemfile",
                   requirement: requirement,
+                  groups: []
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "example.gemspec",
+                  requirement: "~> 1.0",
+                  groups: []
+                },
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.4.0",
                   groups: []
                 }
               ],
@@ -437,6 +461,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                     requirement: ">= 1.0, < 3.0",
                     groups: []
                   }
+                ],
+                previous_requirements: [
+                  { file: "example.gemspec", requirement: "~> 1.0", groups: [] }
                 ],
                 package_manager: "bundler"
               )
@@ -480,6 +507,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               groups: []
             }
           ],
+          previous_requirements: [
+            { file: "example.gemspec", requirement: "~> 4.6", groups: [] }
+          ],
           package_manager: "bundler"
         )
       end
@@ -495,7 +525,19 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         subject(:updated_gemspec) { updated_files.first }
 
         context "when no change is required" do
-          let(:dependency_name) { "rake" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: "5.1.0",
+              requirements: [
+                { file: "example.gemspec", requirement: "~> 4.6", groups: [] }
+              ],
+              previous_requirements: [
+                { file: "example.gemspec", requirement: "~> 4.6", groups: [] }
+              ],
+              package_manager: "bundler"
+            )
+          end
           it { is_expected.to be_nil }
         end
 
@@ -566,6 +608,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               requirement: ">= 4.6, < 6.0",
               groups: []
             }
+          ],
+          previous_requirements: [
+            { file: "example.gemspec", requirement: "~> 4.6", groups: [] }
           ],
           package_manager: "bundler"
         )
