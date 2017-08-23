@@ -34,7 +34,7 @@ module Dependabot
               updated_file(file: gemfile, content: updated_gemfile_content)
           end
 
-          if lockfile
+          if lockfile && dependency.previous_version
             updated_files <<
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
@@ -212,7 +212,7 @@ module Dependabot
             parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
             gem_name = gemspec.name.split("/").last.split(".").first
             spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
-            "='#{spec.version}'"
+            "='#{spec&.version || '0.0.1'}'"
           end
         end
 

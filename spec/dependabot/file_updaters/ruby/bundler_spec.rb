@@ -53,6 +53,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
+      previous_version: "1.4.0",
       requirements: [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [] }],
       package_manager: "bundler"
     )
@@ -204,6 +205,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "public_suffix",
               version: "1.4.6",
+              previous_version: "1.4.0",
               requirements: [
                 { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
               ],
@@ -368,6 +370,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "statesman",
               version: "2.0.0",
+              previous_version: "1.4.0",
               requirements: [
                 { file: "Gemfile", requirement: ">= 1.0, < 3.0", groups: [] }
               ],
@@ -386,6 +389,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: "business",
               version: "1.8.0",
+              previous_version: "1.4.0",
               requirements: [
                 {
                   file: "example.gemspec",
@@ -426,6 +430,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               Dependabot::Dependency.new(
                 name: "json",
                 version: "2.0.3",
+                previous_version: "1.8.6",
                 requirements: [
                   {
                     file: "example.gemspec",
@@ -608,6 +613,66 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
 
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+      end
+    end
+
+    context "with a Gemfile, Gemfile.lock and gemspec (not imported)" do
+      let(:dependency_files) { [gemfile, lockfile, gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "gemspecs", "with_require"),
+          name: "some.gemspec"
+        )
+      end
+
+      context "with a dependency that appears in the Gemfile" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+            ],
+            package_manager: "bundler"
+          )
+        end
+
+        describe "the updated gemfile" do
+          subject(:updated_gemfile) do
+            updated_files.find { |f| f.name == "Gemfile" }
+          end
+
+          its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+        end
+      end
+
+      context "with a dependency that appears in the gemspec" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "octokit",
+            requirements: [
+              { file: "some.gemspec", requirement: ">= 4.6, < 6.0", groups: [] }
+            ],
+            previous_requirements: [
+              { file: "some.gemspec", requirement: "~> 4.6", groups: [] }
+            ],
+            package_manager: "bundler"
+          )
+        end
+
+        describe "the updated gemspec" do
+          subject(:updated_gemspec) do
+            updated_files.find { |f| f.name == "some.gemspec" }
+          end
+
+          its(:content) do
+            is_expected.to include "\"octokit\", \">= 4.6\", \"< 6.0\""
+          end
+        end
       end
     end
 
