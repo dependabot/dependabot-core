@@ -13,10 +13,9 @@ module Dependabot
       end
 
       def needs_update?
-        if dependency.version
+        if dependency.appears_in_lockfile?
           version_needs_update?
         else
-          # If the dependency has no version it means we're updating a library.
           requirements_need_update?
         end
       end

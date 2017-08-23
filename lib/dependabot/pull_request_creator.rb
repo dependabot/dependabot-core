@@ -213,7 +213,7 @@ module Dependabot
         return true
       end
 
-      dependency.previous_version.nil?
+      !dependency.appears_in_lockfile?
     end
   end
 end

@@ -28,6 +28,10 @@ module Dependabot
       }
     end
 
+    def appears_in_lockfile?
+      previous_version || (version && previous_requirements.nil?)
+    end
+
     private
 
     def check_values

@@ -35,7 +35,7 @@ module Dependabot
               updated_file(file: gemfile, content: updated_gemfile_content)
           end
 
-          if lockfile && dependency.previous_version
+          if lockfile && dependency.appears_in_lockfile?
             updated_files <<
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
