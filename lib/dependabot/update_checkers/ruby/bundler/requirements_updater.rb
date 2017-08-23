@@ -69,13 +69,14 @@ module Dependabot
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
 
-            if requirements.all? { |r| r.satisfied_by?(latest_version) }
-              return req
+            return req if requirements.all? do |r|
+              requirement_satisfied?(r, req[:groups])
             end
 
             updated_requirements =
               requirements.flat_map do |r|
-                next r if r.satisfied_by?(latest_version)
+                next r if requirement_satisfied?(r, req[:groups])
+
                 if req[:groups] == ["development"]
                   fixed_development_requirements(r)
                 else
@@ -87,6 +88,14 @@ module Dependabot
             req.merge(requirement: updated_requirements.map(&:to_s).join(", "))
           rescue UnfixableRequirement
             req.merge(requirement: :unfixable)
+          end
+
+          def requirement_satisfied?(r, groups)
+            if groups == ["development"]
+              r.satisfied_by?(latest_resolvable_version)
+            else
+              r.satisfied_by?(latest_version)
+            end
           end
 
           def binding_requirements(requirements)
@@ -122,13 +131,17 @@ module Dependabot
             op, version = r.requirements.first
 
             case op
-            when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
-            when "<", "<=" then [updated_greatest_version(r)]
-            when "~>" then
-              updated_version = at_same_precision(latest_version, version)
-              [Gem::Requirement.new("~> #{updated_version}")]
-            when "!=", ">", ">=" then raise UnfixableRequirement
-            else raise "Unexpected operation for requirement: #{op}"
+            when "=", nil
+              [Gem::Requirement.new("#{op} #{latest_resolvable_version}")]
+            when "<", "<="
+              [updated_greatest_version(r)]
+            when "~>"
+              updated_v = at_same_precision(latest_resolvable_version, version)
+              [Gem::Requirement.new("~> #{updated_v}")]
+            when "!=", ">", ">="
+              raise UnfixableRequirement
+            else
+              raise "Unexpected operation for requirement: #{op}"
             end
           end
 
