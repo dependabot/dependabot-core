@@ -156,7 +156,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
         context "when a beta version was used in the old requirement" do
           let(:gemspec_requirement_string) { "< 1.4.0.beta" }
-          its([:requirement]) { is_expected.to eq(:unfixable) }
+          its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
         context "when a != specifier was used" do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
           context "when a beta version was used in the old requirement" do
             let(:gemspec_requirement_string) { "< 1.4.0.beta" }
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its([:requirement]) { is_expected.to eq("< 1.6.0") }
           end
 
           context "when a != specifier was used" do

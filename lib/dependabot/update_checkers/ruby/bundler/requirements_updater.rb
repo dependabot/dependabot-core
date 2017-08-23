@@ -109,9 +109,6 @@ module Dependabot
           def fixed_requirements(r)
             op, version = r.requirements.first
 
-            # TODO: Handle pre-release constraints properly.
-            raise UnfixableRequirement if version.prerelease?
-
             case op
             when "=", nil then [Gem::Requirement.new(">= #{version}")]
             when "<", "<=" then [updated_greatest_version(r)]
@@ -124,9 +121,6 @@ module Dependabot
           def fixed_development_requirements(r)
             op, version = r.requirements.first
 
-            # TODO: Handle pre-release constraints properly.
-            raise UnfixableRequirement if version.prerelease?
-
             case op
             when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
             when "<", "<=" then [updated_greatest_version(r)]
@@ -138,8 +132,10 @@ module Dependabot
             end
           end
 
+          # rubocop:disable Metrics/AbcSize
           def updated_twidle_requirements(requirement)
             version = requirement.requirements.first.last
+            version = version.release if version.prerelease?
 
             index_to_update = version.segments.count - 2
 
@@ -161,11 +157,13 @@ module Dependabot
               Gem::Requirement.new("< #{ub_segments.join('.')}")
             ]
           end
+          # rubocop:enable Metrics/AbcSize
 
           # Updates the version in a "<" or "<=" constraint to allow the latest
           # version
           def updated_greatest_version(requirement)
             op, version = requirement.requirements.first
+            version = version.release if version.prerelease?
 
             index_to_update =
               version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
