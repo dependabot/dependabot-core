@@ -82,7 +82,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         subject { dependencies.first }
         let(:expected_requirements) do
           [{
-            requirement: "< 2.0.0, > 1.0.0",
+            requirement: "< 1.5.0, > 1.0.0",
             file: "Gemfile",
             groups: [:default]
           }]
