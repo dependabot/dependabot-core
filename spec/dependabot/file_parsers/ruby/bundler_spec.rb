@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
 
       its(:length) { is_expected.to eq(1) }
-      it "is included" do
+      it "is not included" do
         expect(dependencies.map(&:name)).to_not include("statesman")
       end
     end
@@ -291,6 +291,17 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to be_nil }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+
+      context "with a dependency for an alternative platform" do
+        let(:gemfile_content) do
+          fixture("ruby", "gemfiles", "platform_windows")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+        it "is not included" do
+          expect(dependencies.map(&:name)).to_not include("statesman")
+        end
       end
     end
   end

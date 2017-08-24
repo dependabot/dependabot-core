@@ -39,11 +39,6 @@ module Dependabot
             # cause trouble at the gem update step. TODO: fix!
             next if dependency.requirement.requirements.count > 1
 
-            # Ignore dependencies that don't appear in the lockfile. These will
-            # be for a different platform, and would cause "corrupted lockfile"
-            # issues later.
-            next if lockfile && dependency_version(dependency.name).nil?
-
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
@@ -83,6 +78,7 @@ module Dependabot
 
                 ::Bundler::Definition.build("Gemfile", nil, {}).
                   dependencies.
+                  select(&:current_platform?).
                   # We can't dump gemspec sources, and we wouldn't bump them
                   # anyway, so we filter them out.
                   reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
