@@ -92,7 +92,8 @@ module Dependabot
         default_branch,
         new_branch_name,
         pr_name,
-        pr_message_with_custom_footer
+        pr_message_with_custom_footer,
+        labels: ["dependencies"]
       )
     end
 

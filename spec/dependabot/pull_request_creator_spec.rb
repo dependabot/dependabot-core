@@ -177,7 +177,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                   "(https://github.com/gocardless/business/blob/master"\
                   "/CHANGELOG.md)\n- [Commits]"\
                   "(https://github.com/gocardless/business/"\
-                  "compare/v1.4.0...v1.5.0)"
+                  "compare/v1.4.0...v1.5.0)",
+            labels: ["dependencies"]
           }
         )
     end
@@ -266,7 +267,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)"
+                    "/CHANGELOG.md)",
+              labels: ["dependencies"]
             }
           )
       end
@@ -345,7 +347,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)"
+                    "/CHANGELOG.md)",
+              labels: ["dependencies"]
             }
           )
       end
@@ -412,7 +415,8 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-1.5.0",
               title: "Bump business from 1.4.0 to 1.5.0",
-              body: /\n\nExample text/
+              body: /\n\nExample text/,
+              labels: ["dependencies"]
             }
           )
       end
@@ -499,7 +503,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/blob/master"\
                     "/CHANGELOG.md)\n- [Commits]"\
                     "(https://github.com/gocardless/business/"\
-                    "compare/v1.4.0...v1.5.0)"
+                    "compare/v1.4.0...v1.5.0)",
+              labels: ["dependencies"]
             }
           )
       end
