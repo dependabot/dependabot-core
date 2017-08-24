@@ -67,6 +67,10 @@ RSpec.describe Dependabot::PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "create_ref.json"),
                 headers: json_header)
+    stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+      to_return(status: 200,
+                body: fixture("github", "labels_with_dependencies.json"),
+                headers: json_header)
     stub_request(:post, "#{watched_repo_url}/pulls").
       to_return(status: 200,
                 body: fixture("github", "create_pr.json"),
@@ -186,6 +190,27 @@ RSpec.describe Dependabot::PullRequestCreator do
     it "returns details of the created pull request" do
       expect(creator.create.title).to eq("new-feature")
       expect(creator.create.number).to eq(1347)
+    end
+
+    context "when the 'dependencies' label doesn't yet exist" do
+      before do
+        stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+          to_return(status: 200,
+                    body: fixture("github", "labels_without_dependencies.json"),
+                    headers: json_header)
+        stub_request(:post, "#{watched_repo_url}/labels").
+          to_return(status: 201,
+                    body: fixture("github", "create_label.json"),
+                    headers: json_header)
+      end
+
+      it "creates a 'dependencies' label" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/labels").
+          with(body: { name: "dependencies", color: "0025ff" })
+      end
     end
 
     context "for a library" do

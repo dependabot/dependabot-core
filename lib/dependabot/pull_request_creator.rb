@@ -34,6 +34,7 @@ module Dependabot
       commit = create_commit
       return unless create_branch(commit)
 
+      create_label unless dependencies_label_exists?
       create_pull_request
     end
 
@@ -84,6 +85,19 @@ module Dependabot
       # Return quietly in the case of a race
       return nil if error.message =~ /Reference already exists/
       raise
+    end
+
+    def dependencies_label_exists?
+      github_client.
+        labels(watched_repo, per_page: 100).
+        map(&:name).
+        include?("dependencies")
+    end
+
+    def create_label
+      github_client.add_label(watched_repo, "dependencies", "0025ff")
+    rescue Octokit::UnprocessableEntity => error
+      raise unless error.errors.first.fetch("code") == "already_exists"
     end
 
     def create_pull_request

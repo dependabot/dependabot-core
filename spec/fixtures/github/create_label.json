@@ -1,0 +1,7 @@
+{
+    "id": 675692816,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/dependencies",
+    "name": "dependencies",
+    "color": "0025ff",
+    "default": false
+}
