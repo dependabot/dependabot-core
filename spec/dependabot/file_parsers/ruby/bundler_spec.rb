@@ -76,7 +76,20 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
       let(:lockfile_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "< 2.0.0, > 1.0.0",
+            file: "Gemfile",
+            groups: [:default]
+          }]
+        end
+
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
     end
 
     context "with development dependencies" do
