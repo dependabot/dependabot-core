@@ -1,3 +1,7 @@
+## v0.16.5, 24 August 2017
+
+- Prune out Ruby specs from the wrong platform during parsing
+
 ## v0.16.4, 23 August 2017
 
 - Compare Ruby development requirements to the latest resolvable version
