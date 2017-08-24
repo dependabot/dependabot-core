@@ -1,3 +1,7 @@
+## v0.16.6, 24 August 2017
+
+- Add "dependencies" label to pull requests
+
 ## v0.16.5, 24 August 2017
 
 - Prune out Ruby specs from the wrong platform during parsing
