@@ -729,6 +729,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           status: 200,
           body: fixture("ruby", "rubygems-info-business")
         )
+
+      stub_request(:get, "https://index.rubygems.org/info/statesman").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-statesman")
+        )
     end
 
     context "with a Gemfile and a Gemfile.lock" do
