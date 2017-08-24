@@ -75,6 +75,10 @@ RSpec.describe Dependabot::PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "create_pr.json"),
                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/issues/1347/labels").
+      to_return(status: 200,
+                body: fixture("github", "create_label.json"),
+                headers: json_header)
 
     stub_request(:get, business_repo_url).
       to_return(status: 200,
@@ -181,10 +185,17 @@ RSpec.describe Dependabot::PullRequestCreator do
                   "(https://github.com/gocardless/business/blob/master"\
                   "/CHANGELOG.md)\n- [Commits]"\
                   "(https://github.com/gocardless/business/"\
-                  "compare/v1.4.0...v1.5.0)",
-            labels: ["dependencies"]
+                  "compare/v1.4.0...v1.5.0)"
           }
         )
+    end
+
+    it "labels the PR" do
+      creator.create
+
+      expect(WebMock).
+        to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+        with(body: '["dependencies"]')
     end
 
     it "returns details of the created pull request" do
@@ -305,8 +316,7 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)",
-              labels: ["dependencies"]
+                    "/CHANGELOG.md)"
             }
           )
       end
@@ -385,8 +395,7 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)",
-              labels: ["dependencies"]
+                    "/CHANGELOG.md)"
             }
           )
       end
@@ -453,8 +462,7 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-1.5.0",
               title: "Bump business from 1.4.0 to 1.5.0",
-              body: /\n\nExample text/,
-              labels: ["dependencies"]
+              body: /\n\nExample text/
             }
           )
       end
@@ -541,8 +549,7 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/blob/master"\
                     "/CHANGELOG.md)\n- [Commits]"\
                     "(https://github.com/gocardless/business/"\
-                    "compare/v1.4.0...v1.5.0)",
-              labels: ["dependencies"]
+                    "compare/v1.4.0...v1.5.0)"
             }
           )
       end

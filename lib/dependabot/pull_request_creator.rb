@@ -35,7 +35,12 @@ module Dependabot
       return unless create_branch(commit)
 
       create_label unless dependencies_label_exists?
-      create_pull_request
+
+      pull_request = create_pull_request
+
+      add_label_to_pull_request(pull_request)
+
+      pull_request
     end
 
     private
@@ -100,14 +105,21 @@ module Dependabot
       raise unless error.errors.first.fetch(:code) == "already_exists"
     end
 
+    def add_label_to_pull_request(pull_request)
+      github_client.add_labels_to_an_issue(
+        watched_repo,
+        pull_request.number,
+        ["dependencies"]
+      )
+    end
+
     def create_pull_request
       github_client.create_pull_request(
         watched_repo,
         default_branch,
         new_branch_name,
         pr_name,
-        pr_message_with_custom_footer,
-        labels: ["dependencies"]
+        pr_message_with_custom_footer
       )
     end
 
