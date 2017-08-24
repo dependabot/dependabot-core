@@ -211,6 +211,19 @@ RSpec.describe Dependabot::PullRequestCreator do
           to have_requested(:post, "#{watched_repo_url}/labels").
           with(body: { name: "dependencies", color: "0025ff" })
       end
+
+      context "when there's a race and we lose" do
+        before do
+          stub_request(:post, "#{watched_repo_url}/labels").
+            to_return(status: 422,
+                      body: fixture("github", "label_already_exists.json"),
+                      headers: json_header)
+        end
+
+        it "quietly ignores losing the race" do
+          expect(creator.create.title).to eq("new-feature")
+        end
+      end
     end
 
     context "for a library" do

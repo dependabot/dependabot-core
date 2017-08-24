@@ -97,7 +97,7 @@ module Dependabot
     def create_label
       github_client.add_label(watched_repo, "dependencies", "0025ff")
     rescue Octokit::UnprocessableEntity => error
-      raise unless error.errors.first.fetch("code") == "already_exists"
+      raise unless error.errors.first.fetch(:code) == "already_exists"
     end
 
     def create_pull_request

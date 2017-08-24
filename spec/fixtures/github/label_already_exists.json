@@ -1,0 +1,11 @@
+{
+    "message": "Validation Failed",
+    "errors": [
+        {
+            "resource": "Label",
+            "code": "already_exists",
+            "field": "name"
+        }
+    ],
+    "documentation_url": "https://developer.github.com/v3/issues/labels/#create-a-label"
+}
