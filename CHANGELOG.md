@@ -1,3 +1,7 @@
+## v0.16.7, 24 August 2017
+
+- Create "dependencies" label during PR creation, if it doesn't already exist
+
 ## v0.16.6, 24 August 2017
 
 - Add "dependencies" label to pull requests
