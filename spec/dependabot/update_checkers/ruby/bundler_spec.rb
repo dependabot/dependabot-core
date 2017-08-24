@@ -151,6 +151,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
     end
 
+    context "given a Gemfile with multiple requirements for a gem" do
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "version_between_bounds")
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
+
     context "given a git source" do
       let(:lockfile_body) do
         fixture("ruby", "lockfiles", "git_source.lock")
@@ -410,6 +418,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "with a greater than or equal to matcher" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "gte_matcher") }
         let(:lockfile_body) { fixture("ruby", "lockfiles", "gte_matcher.lock") }
+
+        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
+
+      context "with multiple requirements" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_between_bounds")
+        end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end

@@ -268,16 +268,10 @@ module Dependabot
           original_gem_declaration_string = Regexp.last_match.to_s
           updated_gem_declaration_string =
             original_gem_declaration_string.
-            sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
-              matcher_regexp = /(=|!=|>=|<=|~>|>|<)[ \t]*/
-              if old_req.match?(matcher_regexp)
-                old_req.sub(matcher_regexp, ">= ")
-              else
-                old_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_v|
-                  ">= #{old_v}"
-                end
-              end
-            end
+            sub(
+              Gemnasium::Parser::Patterns::REQUIREMENTS,
+              "'>= #{dependency.version || 0}'"
+            )
 
           gemfile_content.gsub(
             original_gem_declaration_string,
