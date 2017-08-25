@@ -548,7 +548,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "when the Gem can't be found" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
 
-      it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
+      it "raises a DependencyFileNotResolvable error" do
+        expect { checker.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when the gem doesn't appear in the lockfile" do
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "missing_business.lock")
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
         expect { checker.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end

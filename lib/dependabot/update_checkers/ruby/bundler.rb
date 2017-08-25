@@ -90,6 +90,7 @@ module Dependabot
           handle_bundler_errors(error)
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
         def handle_bundler_errors(error)
           case error.error_class
           when "Bundler::Dsl::DSLError"
@@ -116,9 +117,13 @@ module Dependabot
               Dependabot::GitDependenciesNotReachable,
               inaccessible_git_dependencies.map { |s| s.source.uri }
             )
+          when "RuntimeError"
+            raise unless error.error_message.include?("Unable to find a spec")
+            raise DependencyFileNotResolvable
           else raise
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def inaccessible_git_dependencies
           SharedHelpers.in_a_temporary_directory do
