@@ -1,3 +1,7 @@
+## v0.16.9, 25 August 2017
+
+- Simpler, better Gemfile sanitizing in UpdateCheckers::Ruby
+
 ## v0.16.8, 24 August 2017
 
 - Add dependencies label in separate API call
