@@ -1,3 +1,8 @@
+## v0.16.10, 25 August 2017
+
+- Raise a DependencyFileNotResolvable error if the lockfile is missing a gem
+- Handle inaccessible git dependencies that resolve to a redirect
+
 ## v0.16.9, 25 August 2017
 
 - Simpler, better Gemfile sanitizing in UpdateCheckers::Ruby
