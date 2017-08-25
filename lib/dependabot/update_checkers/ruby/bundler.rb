@@ -142,7 +142,8 @@ module Dependabot
                   # URI with auth details in the same way Bundler does.
                   git_proxy = spec.source.send(:git_proxy)
                   uri = git_proxy.send(:configured_uri_for, spec.source.uri)
-                  Excon.get(uri).status == 404
+                  Excon.get(uri, middlewares: SharedHelpers.excon_middleware).
+                    status == 404
                 end
             end
           end

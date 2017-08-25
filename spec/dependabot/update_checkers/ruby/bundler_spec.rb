@@ -554,17 +554,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
     end
 
-    context "when the gem doesn't appear in the lockfile" do
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "missing_business.lock")
-      end
-
-      it "raises a DependencyFileNotResolvable error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
     context "given a gem with a git source" do
       let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
       let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
