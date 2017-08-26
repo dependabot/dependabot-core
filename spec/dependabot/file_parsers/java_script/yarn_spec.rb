@@ -76,5 +76,32 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         end
       end
     end
+
+    context "with an optional dependency" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "optional_dependencies.json")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the last dependency" do
+        subject { dependencies.last }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("etag") }
+        its(:version) { is_expected.to eq("1.7.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^1.0.0",
+                file: "package.json",
+                groups: ["optionalDependencies"]
+              }
+            ]
+          )
+        end
+      end
+    end
   end
 end

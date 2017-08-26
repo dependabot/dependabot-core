@@ -8,6 +8,9 @@ module Dependabot
   module FileParsers
     module JavaScript
       class Yarn < Dependabot::FileParsers::Base
+        DEPENDENCY_TYPES =
+          %w(dependencies devDependencies optionalDependencies).freeze
+
         def parse
           dependency_versions.map do |dep|
             dep_group = group(dep["name"])
@@ -56,14 +59,13 @@ module Dependabot
         end
 
         def group(dep_name)
-          if parsed_package_json.dig("dependencies", dep_name)
-            "dependencies"
-          elsif parsed_package_json.dig("devDependencies", dep_name)
-            "devDependencies"
-          else
-            raise "Expected to find dependency #{dep_name} in `dependencies` "\
-                  "or `devDependencies`, but it wasn't found in either!"
+          DEPENDENCY_TYPES.each do |type|
+            return type if parsed_package_json.dig(type, dep_name)
           end
+
+          raise "Expected to find dependency #{dep_name} in one of "\
+                "#{DEPENDENCY_TYPES.join(', ')} but it wasn't "\
+                "found in any of them!"
         end
 
         def parsed_package_json
