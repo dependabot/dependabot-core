@@ -1,3 +1,7 @@
+## v0.16.11, 25 August 2017
+
+- Handle optional JS dependencies
+
 ## v0.16.10, 25 August 2017
 
 - Raise a DependencyFileNotResolvable error if the lockfile is missing a gem
