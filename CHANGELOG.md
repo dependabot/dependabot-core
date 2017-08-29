@@ -1,3 +1,7 @@
+## v0.16.12, 29 August 2017
+
+- Handle path-based JS dependencies
+
 ## v0.16.11, 25 August 2017
 
 - Handle optional JS dependencies
