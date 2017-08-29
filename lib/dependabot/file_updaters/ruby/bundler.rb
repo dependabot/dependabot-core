@@ -169,7 +169,7 @@ module Dependabot
 
           write_ruby_version_file
 
-          path_gemspecs.compact.each do |file|
+          path_gemspecs.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, sanitized_gemspec_content(file))

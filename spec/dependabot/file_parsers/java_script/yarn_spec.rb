@@ -105,11 +105,18 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
     end
 
     context "with a path-based dependency" do
+      let(:files) { [package_json, lockfile, path_dep] }
       let(:package_json_body) do
         fixture("javascript", "package_files", "path_dependency.json")
       end
       let(:lockfile_body) do
         fixture("javascript", "lockfiles", "path_dependency.lock")
+      end
+      let(:path_dep) do
+        Dependabot::DependencyFile.new(
+          name: "deps/etag/package.json",
+          content: fixture("javascript", "package_files", "etag.json")
+        )
       end
 
       it "doesn't include the path-based dependency" do
