@@ -41,17 +41,17 @@ concern will have a language-specific class.
 
 ## Why is this open source?
 
-As the name suggests, Dependabot Core is pretty core to Dependabot - the rest of
-our app is pretty much just a UI and database. If we were paranoid about someone
-stealing our business then we'd be keeping it under lock and key!
+As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
+app is pretty much just a UI and database). If we were paranoid about someone
+stealing our business then we'd be keeping it under lock and key.
 
 Dependabot Core is open source because we're more interested in it having an
 impact than we are in making a buck from it. We'd love you to use
 [Dependabot][dependabot], so that we can continue to develop it, but if you want
-to build and host your own version this library should make doing so a *lot*
-easier.
+to build and host your own version then this library should make doing so a
+*lot* easier.
 
-If you use Dependabot Core we'd love to hear about what you build!
+If you use Dependabot Core then we'd love to hear what you build!
 
 ## History
 
