@@ -9,14 +9,15 @@ module Dependabot
     module Php
       class Composer < Dependabot::FileParsers::Base
         def parse
+          runtime_dependencies + development_dependencies
+        end
+
+        private
+
+        def runtime_dependencies
           parsed_composer_json = JSON.parse(composer_json.content)
 
-          dependencies = parsed_composer_json.fetch("require", {})
-
-          # TODO: Add support for development dependencies. Will need to be
-          # added to file updaters, too.
-
-          dependencies.map do |name, requirement|
+          parsed_composer_json.fetch("require", {}).map do |name, req|
             # Ignore dependencies which appear in the composer.json but not the
             # composer.lock. For instance, if a specific PHP version or
             # extension is required, it won't appear in the packages section of
@@ -31,16 +32,41 @@ module Dependabot
               name: name,
               version: dependency_version(name),
               requirements: [{
-                requirement: requirement,
+                requirement: req,
                 file: "composer.json",
-                groups: []
+                groups: ["runtime"]
               }],
               package_manager: "composer"
             )
           end.compact
         end
 
-        private
+        def development_dependencies
+          parsed_composer_json = JSON.parse(composer_json.content)
+
+          parsed_composer_json.fetch("require-dev", {}).map do |name, req|
+            # Ignore dependencies which appear in the composer.json but not the
+            # composer.lock. For instance, if a specific PHP version or
+            # extension is required, it won't appear in the packages section of
+            # the lockfile.
+            next if dependency_version(name).nil?
+
+            # Ignore dependency versions which are non-numeric, since they can't
+            # be compared later in the process.
+            next unless dependency_version(name).match?(/^\d/)
+
+            Dependency.new(
+              name: name,
+              version: dependency_version(name),
+              requirements: [{
+                requirement: req,
+                file: "composer.json",
+                groups: ["development"]
+              }],
+              package_manager: "composer"
+            )
+          end.compact
+        end
 
         def dependency_version(name)
           package = parsed_lockfile["packages"].find { |d| d["name"] == name }
