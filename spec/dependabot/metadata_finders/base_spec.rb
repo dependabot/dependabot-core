@@ -56,11 +56,14 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       let(:dependency_previous_version) { "1.3.0" }
 
       before do
-        stub_request(:get,
-                     "https://api.github.com/repos/gocardless/business/tags").
-          to_return(status: 200,
-                    body: fixture("github", "business_tags.json"),
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: fixture("github", "business_tags.json"),
+          headers: { "Content-Type" => "application/json" }
+        )
       end
 
       it do
@@ -71,11 +74,14 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "with a github repo and only a new tag" do
       before do
-        stub_request(:get,
-                     "https://api.github.com/repos/gocardless/business/tags").
-          to_return(status: 200,
-                    body: fixture("github", "business_tags.json"),
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: fixture("github", "business_tags.json"),
+          headers: { "Content-Type" => "application/json" }
+        )
       end
 
       it do
@@ -86,11 +92,14 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "with a github repo and tags with surprising names" do
       before do
-        stub_request(:get,
-                     "https://api.github.com/repos/gocardless/business/tags").
-          to_return(status: 200,
-                    body: fixture("github", "prefixed_tags.json"),
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: fixture("github", "prefixed_tags.json"),
+          headers: { "Content-Type" => "application/json" }
+        )
       end
 
       it do
@@ -101,11 +110,14 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "with a github repo and tags with no prefix" do
       before do
-        stub_request(:get,
-                     "https://api.github.com/repos/gocardless/business/tags").
-          to_return(status: 200,
-                    body: fixture("github", "unprefixed_tags.json"),
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: fixture("github", "unprefixed_tags.json"),
+          headers: { "Content-Type" => "application/json" }
+        )
       end
 
       it do
@@ -116,11 +128,14 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
     context "with a github repo and no tags found" do
       before do
-        stub_request(:get,
-                     "https://api.github.com/repos/gocardless/business/tags").
-          to_return(status: 200,
-                    body: "[]",
-                    headers: { "Content-Type" => "application/json" })
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: "[]",
+          headers: { "Content-Type" => "application/json" }
+        )
       end
 
       it do

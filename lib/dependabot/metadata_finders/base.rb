@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "gitlab"
 require "octokit"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module MetadataFinders
@@ -152,7 +153,7 @@ module Dependabot
 
         case source.fetch("host")
         when "github"
-          github_client.tags(source["repo"]).map(&:name)
+          github_client.tags(source["repo"], per_page: 100).map(&:name)
         when "bitbucket"
           fetch_bitbucket_tags
         when "gitlab"

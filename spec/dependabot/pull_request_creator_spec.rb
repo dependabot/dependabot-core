@@ -88,7 +88,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "business_files.json"),
                 headers: json_header)
-    stub_request(:get, "#{business_repo_url}/tags").
+    stub_request(:get, "#{business_repo_url}/tags?per_page=100").
       to_return(status: 200,
                 body: fixture("github", "business_tags.json"),
                 headers: json_header)
