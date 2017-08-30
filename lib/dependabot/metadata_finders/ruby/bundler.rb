@@ -29,14 +29,22 @@ module Dependabot
           source_url.match(SOURCE_REGEX).named_captures
         end
 
+        def look_up_changelog_url
+          if rubygems_listing["changelog_uri"]
+            return rubygems_listing["changelog_uri"]
+          end
+
+          super
+        end
+
         def rubygems_listing
           return @rubygems_listing unless @rubygems_listing.nil?
 
-          Gems.info(dependency.name)
+          @rubygems_listing = Gems.info(dependency.name)
         rescue JSON::ParserError
           # Replace with Gems::NotFound error if/when
           # https://github.com/rubygems/gems/pull/38 is merged.
-          {}
+          @rubygems_listing = {}
         end
       end
     end

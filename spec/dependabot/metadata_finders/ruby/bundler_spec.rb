@@ -97,4 +97,47 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "#changelog_url" do
+    subject(:changelog_url) { finder.changelog_url }
+    let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+    let(:rubygems_response_code) { 200 }
+
+    before do
+      stub_request(:get, rubygems_url).
+        to_return(status: rubygems_response_code, body: rubygems_response)
+    end
+
+    context "when there is a changelog link in the rubygems response" do
+      let(:rubygems_response) do
+        fixture("ruby", "rubygems_response_changelog.json")
+      end
+
+      it "returns the specified changelog" do
+        expect(changelog_url).
+          to eq("https://github.com/rails/rails/tree/v5.1.3/activejob")
+      end
+    end
+
+    context "when there is only a github link in the rubygems response" do
+      let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/business/contents/"
+      end
+
+      before do
+        stub_request(:get, github_url).
+          to_return(status: 200,
+                    body: fixture("github", "business_files.json"),
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      it "finds the changelog as normal" do
+        expect(changelog_url).
+          to eq(
+            "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
+          )
+      end
+    end
+  end
 end
