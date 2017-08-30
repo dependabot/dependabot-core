@@ -1,3 +1,8 @@
+## v0.16.13, 30 August 2017
+
+- Use rubygems changelog URL when available
+- Fetch more tags when finding metadata
+
 ## v0.16.12, 29 August 2017
 
 - Handle path-based JS dependencies
