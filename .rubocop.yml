@@ -6,10 +6,10 @@ AllCops:
     - bin/**/*
     - tmp/**/*
 
-Style/EmptyLineAfterMagicComment:
+Layout/EmptyLineAfterMagicComment:
   Enabled: false
 
-Style/DotPosition:
+Layout/DotPosition:
   EnforcedStyle: trailing
 
 Metrics/ClassLength:
