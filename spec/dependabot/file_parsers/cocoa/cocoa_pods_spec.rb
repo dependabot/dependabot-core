@@ -27,10 +27,18 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 3.0.0",
+            file: "Podfile",
+            groups: []
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Alamofire") }
-        its(:version) { is_expected.to eq(Gem::Version.new("3.0.1")) }
+        its(:version) { is_expected.to eq("3.0.1") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -44,10 +52,18 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Podfile",
+            groups: []
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Alamofire") }
-        its(:version) { is_expected.to eq(Gem::Version.new("3.0.1")) }
+        its(:version) { is_expected.to eq("3.0.1") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -68,10 +84,18 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
 
       describe "the first dependency" do
         subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Podfile",
+            groups: []
+          }]
+        end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Alamofire") }
-        its(:version) { is_expected.to eq(Gem::Version.new("4.3.0")) }
+        its(:version) { is_expected.to eq("4.3.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 

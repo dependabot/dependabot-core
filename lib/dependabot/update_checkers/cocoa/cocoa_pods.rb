@@ -5,18 +5,33 @@ require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/cocoa/cocoa_pods"
+require "dependabot/update_checkers/cocoa/cocoa_pods/requirements_updater"
 
 module Dependabot
   module UpdateCheckers
     module Cocoa
       class CocoaPods < Dependabot::UpdateCheckers::Base
         def latest_version
-          @latest_version ||= fetch_latest_version
+          # TODO: Add shortcut to get latest version
+          latest_resolvable_version
+        end
+
+        def latest_resolvable_version
+          @latest_resolvable_version ||= fetch_latest_resolvable_version
+        end
+
+        def updated_requirements
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            existing_version: dependency.version,
+            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s
+          ).updated_requirements
         end
 
         private
 
-        def fetch_latest_version
+        def fetch_latest_resolvable_version
           parsed_file = Pod::Podfile.from_ruby(nil, podfile.content)
           pod = parsed_file.dependencies.find { |d| d.name == dependency.name }
 
