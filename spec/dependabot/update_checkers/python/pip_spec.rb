@@ -77,6 +77,30 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
       it { is_expected.to be_nil }
     end
+
+    context "when the latest version is a pre-release" do
+      let(:pypi_response) { fixture("python", "pypi_response_prerelease.json") }
+
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      context "and the current version is a pre-release" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "luigi",
+            version: "2.6.0.alpha",
+            requirements: [
+              {
+                file: "requirements.txt",
+                requirement: "==2.6.0.alpha",
+                groups: []
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+        it { is_expected.to eq(Gem::Version.new("2.6.0.beta1")) }
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do

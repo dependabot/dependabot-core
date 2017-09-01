@@ -48,7 +48,14 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
+          if Gem::Version.new(dependency.version).prerelease?
+            Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
+          else
+            versions = JSON.parse(pypi_response.body).fetch("releases").keys
+            versions = versions.map { |v| Gem::Version.new(v) }
+            versions.reject!(&:prerelease?)
+            versions.sort.last
+          end
         rescue JSON::ParserError
           nil
         end
