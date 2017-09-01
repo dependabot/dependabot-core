@@ -12,6 +12,17 @@ RSpec.describe Dependabot::MetadataFinders::Cocoa::CocoaPods do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
+      previous_version: "0.9",
+      requirements: [{
+        requirement: "~> 1.0.0",
+        file: "Podfile",
+        groups: []
+      }],
+      previous_requirements: [{
+        requirement: "~> 0.9.0",
+        file: "Podfile",
+        groups: []
+      }],
       package_manager: "cocoapods"
     )
   end

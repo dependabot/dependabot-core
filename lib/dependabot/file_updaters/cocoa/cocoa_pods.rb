@@ -2,7 +2,6 @@
 require "cocoapods"
 require "gemnasium/parser"
 require "dependabot/file_updaters/base"
-require "dependabot/file_fetchers/cocoa/cocoa_pods"
 
 module Dependabot
   module FileUpdaters
@@ -14,6 +13,13 @@ module Dependabot
 
         LOCKFILE_ENDING = /(?<ending>\s*PODFILE CHECKSUM.*)/m
 
+        def self.updated_files_regex
+          [
+            /^Podfile$/,
+            /^Podfile\.lock$/
+          ]
+        end
+
         def updated_dependency_files
           [
             updated_file(file: podfile, content: updated_podfile_content),
@@ -23,8 +29,9 @@ module Dependabot
 
         private
 
-        def required_files
-          Dependabot::FileFetchers::Cocoa::CocoaPods.required_files
+        def check_required_files
+          raise "No Podfile!" unless podfile
+          raise "No Podfile.lock!" unless lockfile
         end
 
         def podfile
@@ -51,7 +58,7 @@ module Dependabot
 
               precision = old_version.split(".").count
               new_version =
-                dependency.version.segments.first(precision).join(".")
+                dependency.version.split(".").first(precision).join(".")
 
               old_requirements.sub(old_version, new_version)
             end

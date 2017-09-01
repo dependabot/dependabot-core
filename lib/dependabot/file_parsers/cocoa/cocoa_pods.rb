@@ -2,7 +2,6 @@
 require "cocoapods-core"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
-require "dependabot/file_fetchers/cocoa/cocoa_pods"
 
 module Dependabot
   module FileParsers
@@ -17,6 +16,11 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name).to_s,
+              requirements: [{
+                requirement: dependency.requirement.to_s,
+                groups: [],
+                file: "Podfile"
+              }],
               package_manager: "cocoapods"
             )
           end.reject(&:nil?)
@@ -26,8 +30,9 @@ module Dependabot
 
         attr_reader :podfile, :lockfile
 
-        def required_files
-          Dependabot::FileFetchers::Cocoa::CocoaPods.required_files
+        def check_required_files
+          raise "No Podfile!" unless podfile
+          raise "No Podfile.lock!" unless lockfile
         end
 
         def podfile

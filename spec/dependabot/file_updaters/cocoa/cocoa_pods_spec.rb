@@ -32,6 +32,17 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
     Dependabot::Dependency.new(
       name: "Alamofire",
       version: "4.0.0",
+      previous_version: "3.0.0",
+      requirements: [{
+        requirement: "~> 4.0.0",
+        file: "Podfile",
+        groups: []
+      }],
+      previous_requirements: [{
+        requirement: "~> 3.0.0",
+        file: "Podfile",
+        groups: []
+      }],
       package_manager: "cocoapods"
     )
   end
@@ -101,6 +112,17 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
           Dependabot::Dependency.new(
             name: "Nimble",
             version: "6.0.0",
+            previous_version: "3.0.0",
+            requirements: [{
+              requirement: "~> 6.0.0",
+              file: "Podfile",
+              groups: []
+            }],
+            previous_requirements: [{
+              requirement: "~> 3.0.0",
+              file: "Podfile",
+              groups: []
+            }],
             package_manager: "cocoapods"
           )
         end
