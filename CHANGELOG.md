@@ -1,3 +1,7 @@
+## v0.16.14, 1 September 2017
+
+- Don't include pre-releases in Python latest_version (unless on one)
+
 ## v0.16.13, 30 August 2017
 
 - Use rubygems changelog URL when available
