@@ -118,18 +118,18 @@
                 "size": 225340
             }
         ],
-        "1.0.1": [
+        "1b": [
             {
                 "has_sig": false,
                 "upload_time": "2013-04-23T00:07:42",
                 "comment_text": "",
                 "python_version": "source",
-                "url": "https://pypi.python.org/packages/ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1.0.1.tar.gz",
+                "url": "https://pypi.python.org/packages/ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1b.tar.gz",
                 "md5_digest": "884b7bd6b966ef4b00ec8a99d1cb5f98",
                 "downloads": 2280,
-                "filename": "luigi-1.0.1.tar.gz",
+                "filename": "luigi-1b.tar.gz",
                 "packagetype": "sdist",
-                "path": "ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1.0.1.tar.gz",
+                "path": "ab/b3/47b0977818f72172e8385fa10775943e5e8546ff5b6a6867e9b048af1fbe/luigi-1b.tar.gz",
                 "size": 93270
             }
         ],

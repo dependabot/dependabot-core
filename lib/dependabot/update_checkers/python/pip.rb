@@ -52,7 +52,13 @@ module Dependabot
             Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
           else
             versions = JSON.parse(pypi_response.body).fetch("releases").keys
-            versions = versions.map { |v| Gem::Version.new(v) }
+            versions = versions.map do |v|
+              begin
+                Gem::Version.new(v)
+              rescue ArgumentError
+                nil
+              end
+            end.compact
             versions.reject!(&:prerelease?)
             versions.sort.last
           end
