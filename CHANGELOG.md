@@ -1,3 +1,7 @@
+## v0.16.15, 2 September 2017
+
+- Handle non-numberic Python versions better (ignore them instead of erroring)
+
 ## v0.16.14, 1 September 2017
 
 - Don't include pre-releases in Python latest_version (unless on one)
