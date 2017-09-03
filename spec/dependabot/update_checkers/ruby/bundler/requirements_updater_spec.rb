@@ -67,12 +67,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
         context "and a greater than or equal to matcher was used" do
           let(:gemfile_requirement_string) { ">= 1.4.0" }
-          its([:requirement]) { is_expected.to eq(">= 1.5.0") }
+          its([:requirement]) { is_expected.to eq(">= 1.4.0") }
         end
 
         context "and a less than matcher was used" do
           let(:gemfile_requirement_string) { "< 1.4.0" }
-          its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+          its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
         context "when there is no `existing_version`" do
@@ -88,6 +88,67 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
           context "and the new version does not satisfy the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4.0" }
             its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+          end
+
+          context "when there are multiple requirements" do
+            context "one of which is exact" do
+              let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
+              its([:requirement]) { is_expected.to eq("= 1.5.0") }
+            end
+
+            context "one of which is a ~>" do
+              context "that are already satisfied" do
+                let(:gemfile_requirement_string) { "~> 1.0, >= 1.0.1" }
+                its([:requirement]) { is_expected.to eq("~> 1.0, >= 1.0.1") }
+              end
+
+              context "that are not already satisfied" do
+                let(:gemfile_requirement_string) { "~> 0.9, >= 0.9.1" }
+                its([:requirement]) { is_expected.to eq("~> 1.5") }
+              end
+            end
+
+            context "forming a range" do
+              let(:gemfile_requirement_string) { ">= 1.0, < 1.4" }
+              its([:requirement]) { is_expected.to eq(">= 1.0, < 1.6") }
+
+              context "which shouldn't be resolvable..." do
+                let(:gemfile_requirement_string) { ">= 2.0, < 2.4" }
+
+                it "raises a useful error" do
+                  expect { updated_requirements }.
+                    to raise_error(/Unexpected operation/)
+                end
+              end
+            end
+
+            context "with a != matcher" do
+              context "that binds" do
+                let(:gemfile_requirement_string) { ">= 1.0, != 1.5.0" }
+                its([:requirement]) { is_expected.to eq(">= 1.0") }
+              end
+
+              context "that does not bind" do
+                let(:gemfile_requirement_string) { ">= 1.0, != 1.4.0, < 1.3" }
+                its([:requirement]) do
+                  is_expected.to eq(">= 1.0, != 1.4.0, < 1.6")
+                end
+              end
+            end
+          end
+        end
+
+        context "when there are multiple requirements" do
+          context "one of which is exact" do
+            let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
+            its([:requirement]) { is_expected.to eq("= 1.5.0") }
+          end
+
+          context "one of which is a ~>" do
+            context "that are already satisfied" do
+              let(:gemfile_requirement_string) { "~> 1.0, >= 1.0.1" }
+              its([:requirement]) { is_expected.to eq("~> 1.5") }
+            end
           end
         end
       end
