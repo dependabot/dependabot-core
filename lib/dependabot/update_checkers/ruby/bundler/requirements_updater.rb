@@ -42,7 +42,7 @@ module Dependabot
           def updated_gemfile_requirement(req)
             return req unless latest_resolvable_version
             return req if existing_version && no_change_in_version?
-            return req if no_lockfile? && new_version_satisfies?(req)
+            return req if !existing_version && new_version_satisfies?(req)
 
             new_req = req[:requirement].gsub(/<=?/, "~>")
             new_req.sub!(Gemnasium::Parser::Patterns::VERSION) do |old_version|
@@ -50,10 +50,6 @@ module Dependabot
             end
 
             req.merge(requirement: new_req)
-          end
-
-          def no_lockfile?
-            existing_version.nil?
           end
 
           def no_change_in_version?
