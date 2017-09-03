@@ -35,10 +35,6 @@ module Dependabot
         def gemfile_dependencies
           return [] unless gemfile
           parsed_gemfile.map do |dependency|
-            # Ignore dependencies with multiple requirements, since they would
-            # cause trouble at the gem update step. TODO: fix!
-            next if dependency.requirement.requirements.count > 1
-
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,

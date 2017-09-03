@@ -74,9 +74,10 @@ module Dependabot
         end
 
         def gemfile_changed?
-          original_gemfile_declaration_string &&
-            original_gemfile_declaration_string !=
-              updated_gemfile_declaration_string
+          changed_requirements =
+            dependency.requirements - dependency.previous_requirements
+
+          changed_requirements.any? { |f| f[:file] == "Gemfile" }
         end
 
         def gemspec_changed?
@@ -116,11 +117,12 @@ module Dependabot
         def updated_gemfile_declaration_string
           original_gemfile_declaration_string.
             sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
-              new_req = old_req.dup.gsub(/<=?/, "~>")
-              new_req.sub(Gemnasium::Parser::Patterns::VERSION) do |old_version|
-                precision = old_version.split(".").count
-                dependency.version.split(".").first(precision).join(".")
-              end
+              quote_character = old_req.include?("'") ? "'" : '"'
+
+              dependency.requirements.find { |r| r[:file] == "Gemfile" }.
+                fetch(:requirement).split(",").
+                map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
+                join(", ")
             end
         end
 
