@@ -1,3 +1,7 @@
+## v0.16.16, 3 September 2017
+
+- Handle Ruby Gemfile requirements with multiple components
+
 ## v0.16.15, 2 September 2017
 
 - Handle non-numberic Python versions better (ignore them instead of erroring)
