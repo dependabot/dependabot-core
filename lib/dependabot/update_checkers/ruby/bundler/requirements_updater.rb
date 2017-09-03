@@ -41,21 +41,28 @@ module Dependabot
 
           def updated_gemfile_requirement(req)
             return req unless latest_resolvable_version
-
-            original_req = Gem::Requirement.new(req[:requirement].split(","))
-
-            if original_req.satisfied_by?(latest_resolvable_version) &&
-               (existing_version.nil? ||
-               latest_resolvable_version <= existing_version)
-              return req
-            end
+            return req if existing_version && no_change_in_version?
+            return req if no_lockfile? && new_version_satisfies?(req)
 
             new_req = req[:requirement].gsub(/<=?/, "~>")
             new_req.sub!(Gemnasium::Parser::Patterns::VERSION) do |old_version|
               at_same_precision(latest_resolvable_version, old_version)
             end
 
-            req.dup.merge(requirement: new_req)
+            req.merge(requirement: new_req)
+          end
+
+          def no_lockfile?
+            existing_version.nil?
+          end
+
+          def no_change_in_version?
+            latest_resolvable_version <= existing_version
+          end
+
+          def new_version_satisfies?(req)
+            original_req = Gem::Requirement.new(req[:requirement].split(","))
+            original_req.satisfied_by?(latest_resolvable_version)
           end
 
           def at_same_precision(new_version, old_version)
