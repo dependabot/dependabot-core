@@ -15,8 +15,6 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
-        class UnfixableRequirement < StandardError; end
-
         def latest_version
           @latest_version ||= fetch_latest_version
         end

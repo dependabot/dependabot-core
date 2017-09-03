@@ -153,6 +153,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
             let(:gemspec_requirement_string) { "~> 0.5, >= 0.5.2" }
             its([:requirement]) { is_expected.to eq(">= 0.5.2, < 2.0") }
           end
+
+          context "and one is a != requirement" do
+            context "that is binding" do
+              let(:gemspec_requirement_string) { "~> 1.4, != 1.8.0" }
+              its([:requirement]) { is_expected.to eq("~> 1.4") }
+            end
+
+            context "that is not binding" do
+              let(:gemspec_requirement_string) { "~> 1.4.0, != 1.5.0" }
+              its([:requirement]) do
+                is_expected.to eq(">= 1.4, != 1.5.0, < 1.9")
+              end
+            end
+          end
         end
 
         context "when a beta version was used in the old requirement" do
@@ -162,7 +176,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
         context "when a != specifier was used" do
           let(:gemspec_requirement_string) { "!= 1.8.0" }
-          its([:requirement]) { is_expected.to eq(:unfixable) }
+          its([:requirement]) { is_expected.to eq(">= 0") }
         end
 
         context "when a >= specifier was used" do
@@ -228,7 +242,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
           context "when a != specifier was used" do
             let(:gemspec_requirement_string) { "!= 1.5.0" }
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its([:requirement]) { is_expected.to eq(">= 0") }
           end
 
           context "when a >= specifier was used" do

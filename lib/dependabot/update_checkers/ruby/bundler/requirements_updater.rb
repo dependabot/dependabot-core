@@ -107,7 +107,7 @@ module Dependabot
 
           def binding_requirements(requirements)
             grouped_by_operator =
-              requirements.uniq.group_by { |r| r.requirements.first.first }
+              requirements.group_by { |r| r.requirements.first.first }
 
             binding_reqs = grouped_by_operator.flat_map do |operator, reqs|
               case operator
@@ -117,8 +117,9 @@ module Dependabot
                 reqs.sort_by { |r| r.requirements.first.last }.last
               else requirements
               end
-            end
+            end.uniq
 
+            binding_reqs << Gem::Requirement.new if binding_reqs.empty?
             binding_reqs.sort_by { |r| r.requirements.first.last }
           end
 
@@ -129,7 +130,8 @@ module Dependabot
             when "=", nil then [Gem::Requirement.new(">= #{version}")]
             when "<", "<=" then [updated_greatest_version(r)]
             when "~>" then updated_twidle_requirements(r)
-            when "!=", ">", ">=" then raise UnfixableRequirement
+            when "!=" then []
+            when ">", ">=" then raise UnfixableRequirement
             else raise "Unexpected operation for requirement: #{op}"
             end
           end
@@ -145,7 +147,9 @@ module Dependabot
             when "~>"
               updated_v = at_same_precision(latest_resolvable_version, version)
               [Gem::Requirement.new("~> #{updated_v}")]
-            when "!=", ">", ">="
+            when "!="
+              []
+            when ">", ">="
               raise UnfixableRequirement
             else
               raise "Unexpected operation for requirement: #{op}"
