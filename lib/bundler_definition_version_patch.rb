@@ -1,9 +1,8 @@
 # frozen_string_literal: true
-
-require 'bundler/vendored_persistent'
+require "bundler/vendored_persistent"
 
 # rubocop:disable all
-# TODO: This path can be removed if/when https://github.com/bundler/bundler/pull/6003 is merged
+# TODO: Remove when 1.16.0.pre.2
 module Bundler
   class PersistentHTTP < Persistent::Net::HTTP::Persistent
     def warn_old_tls_version_rubygems_connection(uri, connection)
@@ -37,7 +36,8 @@ module BundlerDefinitionVersionPatch
     @index ||= super.tap do |index|
       if ruby_version
         requested_version = ruby_version.to_gem_version_with_patchlevel
-        index << Gem::Specification.new("ruby\0", requested_version)
+        sources.metadata_source.specs <<
+          Gem::Specification.new("ruby\0", requested_version)
       end
     end
   end

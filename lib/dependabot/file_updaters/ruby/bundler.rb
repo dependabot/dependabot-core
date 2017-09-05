@@ -2,7 +2,6 @@
 require "gemnasium/parser"
 require "bundler"
 require "bundler_definition_version_patch"
-require "bundler_metadata_dependencies_patch"
 require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -136,7 +135,10 @@ module Dependabot
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
-                ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+                # Remove installed gems from the default Rubygems index
+                ::Gem::Specification.all = []
+
+                # Set auth details for GitHub
                 ::Bundler.settings.set_command_option(
                   "github.com",
                   "x-access-token:#{github_access_token}"
