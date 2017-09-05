@@ -53,8 +53,10 @@ module Dependabot
 
             SharedHelpers.in_a_forked_process do
               ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-              ::Bundler.settings["github.com"] =
+              ::Bundler.settings.set_command_option(
+                "github.com",
                 "x-access-token:#{github_access_token}"
+              )
 
               definition = ::Bundler::Definition.build(
                 "Gemfile",
@@ -129,8 +131,10 @@ module Dependabot
 
             SharedHelpers.in_a_forked_process do
               ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-              ::Bundler.settings["github.com"] =
+              ::Bundler.settings.set_command_option(
+                "github.com",
                 "x-access-token:#{github_access_token}"
+              )
 
               ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
                 reject do |spec|
