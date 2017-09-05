@@ -1,3 +1,7 @@
+## v0.16.17, 5 September 2017
+
+- Fix HTTP request that checks whether a git dependency is accessible
+
 ## v0.16.16, 3 September 2017
 
 - Handle Ruby Gemfile requirements with multiple components
