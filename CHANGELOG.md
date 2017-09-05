@@ -1,3 +1,7 @@
+## v0.17.0, 5 September 2017
+
+- Use Bundler 1.16.0 (pre-release 1)
+
 ## v0.16.17, 5 September 2017
 
 - Fix HTTP request that checks whether a git dependency is accessible
