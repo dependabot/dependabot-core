@@ -587,9 +587,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           around { |example| capture_stderr { example.run } }
 
           before do
-            stub_request(:get, "https://github.com/fundingcircle/prius").
-              with(headers: { "Authorization" => "Basic #{token}" }).
-              to_return(status: 404)
+            stub_request(
+              :get,
+              "https://github.com/fundingcircle/prius.git/info/refs"\
+              "?service=git-receive-pack"
+            ).with(headers: { "Authorization" => "Basic #{token}" }).
+              to_return(status: 401)
           end
 
           it "raises a helpful error" do
@@ -705,9 +708,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         around { |example| capture_stderr { example.run } }
 
         before do
-          stub_request(:get, "https://github.com/fundingcircle/prius").
-            with(headers: { "Authorization" => "Basic #{token}" }).
-            to_return(status: 404)
+          stub_request(
+            :get,
+            "https://github.com/fundingcircle/prius.git/info/refs"\
+            "?service=git-receive-pack"
+          ).with(headers: { "Authorization" => "Basic #{token}" }).
+            to_return(status: 401)
         end
 
         it "raises a helpful error" do

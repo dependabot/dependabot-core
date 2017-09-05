@@ -133,15 +133,17 @@ module Dependabot
                 "x-access-token:#{github_access_token}"
 
               ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                select do |spec|
-                  next false unless spec.source.is_a?(::Bundler::Source::Git)
+                reject do |spec|
+                  next true unless spec.source.is_a?(::Bundler::Source::Git)
 
                   # Piggy-back off some private Bundler methods to configure the
                   # URI with auth details in the same way Bundler does.
                   git_proxy = spec.source.send(:git_proxy)
                   uri = git_proxy.send(:configured_uri_for, spec.source.uri)
+                  uri += ".git" unless uri.end_with?(".git")
+                  uri += "/info/refs?service=git-receive-pack"
                   Excon.get(uri, middlewares: SharedHelpers.excon_middleware).
-                    status == 404
+                    status == 200
                 end
             end
           end
