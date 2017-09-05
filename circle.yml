@@ -9,6 +9,8 @@ machine:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
 dependencies:
+  pre:
+    - gem install bundler -v 1.16.0.pre.1
   post:
     - cd helpers/javascript && yarn install
     - cd helpers/php && composer install
