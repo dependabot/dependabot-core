@@ -36,7 +36,7 @@ module Dependabot
 
           return dependencies unless gemfile
 
-          [gemfile].each do |file|
+          [gemfile, *evaled_gemfiles].each do |file|
             parsed_gemfile.each do |dep|
               next unless dependency_in_gemfile?(gemfile: file, dependency: dep)
 
@@ -194,6 +194,11 @@ module Dependabot
 
         def gemfile
           @gemfile ||= get_original_file("Gemfile")
+        end
+
+        def evaled_gemfiles
+          # TODO: This isn't robust. Store in the file type when fetching?
+          dependency_files.select { |f| f.name.end_with?("/Gemfile") }
         end
 
         def lockfile

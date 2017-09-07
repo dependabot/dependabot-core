@@ -23,7 +23,8 @@ module Dependabot
               )
             end
 
-            files += [gemfile, lockfile, ruby_version_file].compact
+            files +=
+              [gemfile, *evaled_gemfiles, lockfile, ruby_version_file].compact
           end
 
           private
@@ -32,6 +33,11 @@ module Dependabot
 
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" }
+          end
+
+          def evaled_gemfiles
+            # TODO: This isn't robust. Store in the file type when fetching?
+            dependency_files.select { |f| f.name.end_with?("/Gemfile") }
           end
 
           def lockfile
