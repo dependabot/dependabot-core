@@ -1,3 +1,8 @@
+## v0.17.2, 7 September 2017
+
+- Handle branch deletion during update flow (return nil, rather than erroring)
+- Manually set Bundler root during file update (thanks @gotjosh)
+
 ## v0.17.1, 7 September 2017
 
 - Use Bundler 1.16.0 (pre-release 2)
