@@ -149,5 +149,20 @@ RSpec.describe Dependabot::PullRequestUpdater do
       expect(updater.update.object.sha).
         to eq("1e2d2afe8320998baecdfe127a49dca9a6650e07")
     end
+
+    context "when the branch gets deleted mid-flow" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(status: 422,
+                    body: fixture("github", "update_ref_error.json"),
+                    headers: json_header)
+      end
+
+      it "returns nil" do
+        expect(updater.update).to be_nil
+      end
+    end
   end
 end

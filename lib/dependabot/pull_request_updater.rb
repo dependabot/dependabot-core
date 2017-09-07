@@ -76,6 +76,10 @@ module Dependabot
         commit.sha,
         true
       )
+    rescue Octokit::UnprocessableEntity => error
+      # Return quietly if the branch has been deleted
+      return nil if error.message =~ /Reference does not exist/
+      raise
     end
 
     def commit_message
