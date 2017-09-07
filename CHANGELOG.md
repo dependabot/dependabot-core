@@ -1,3 +1,7 @@
+## v0.17.3, 7 September 2017
+
+- Handle non-utf-8 characters in Gemfile resolution error messages
+
 ## v0.17.2, 7 September 2017
 
 - Handle branch deletion during update flow (return nil, rather than erroring)
