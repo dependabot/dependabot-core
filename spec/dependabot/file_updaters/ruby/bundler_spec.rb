@@ -378,6 +378,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             expect(file.content).to include "business (1.5.0)"
           end
 
+          it "does not change the original path" do
+            expect(file.content).to include "remote: plugins/example"
+            expect(file.content).
+              not_to include Dependabot::SharedHelpers::BUMP_TMP_FILE_PREFIX
+            expect(file.content).
+              not_to include Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
+          end
+
           context "that requires other files" do
             let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
 

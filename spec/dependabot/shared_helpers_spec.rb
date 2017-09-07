@@ -3,6 +3,22 @@ require "spec_helper"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::SharedHelpers do
+  describe ".in_a_temporary_directory" do
+    subject(:in_a_temporary_directory) do
+      Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
+    end
+
+    let(:output_dir) { -> { Dir.pwd } }
+    it "runs inside the temporary directory created" do
+      expect(in_a_temporary_directory).to match(%r{tmp\/dependabot_+.})
+    end
+
+    it "yields the path to the temporary directory created" do
+      expect { |b| described_class.in_a_temporary_directory(&b) }.
+        to yield_with_args(Pathname)
+    end
+  end
+
   describe ".in_a_forked_process" do
     subject(:run_sub_process) do
       Dependabot::SharedHelpers.in_a_forked_process { task.call }

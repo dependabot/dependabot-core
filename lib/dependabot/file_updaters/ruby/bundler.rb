@@ -131,10 +131,11 @@ module Dependabot
 
         def build_updated_lockfile
           lockfile_body =
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_directory do |tmp_dir|
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
+                ::Bundler.instance_variable_set(:@root, tmp_dir)
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []
 
