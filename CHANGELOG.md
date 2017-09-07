@@ -1,3 +1,7 @@
+## v0.17.1, 7 September 2017
+
+- Use Bundler 1.16.0 (pre-release 2)
+
 ## v0.17.0, 5 September 2017
 
 - Use Bundler 1.16.0 (pre-release 1)
