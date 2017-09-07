@@ -81,7 +81,8 @@ module Dependabot
               end
             end
         rescue SharedHelpers::ChildProcessFailed => error
-          msg = error.error_class + " with message: " + error.error_message
+          msg = error.error_class + " with message: " +
+                error.error_message.force_encoding("UTF-8").encode
           raise Dependabot::DependencyFileNotEvaluatable, msg
         end
 

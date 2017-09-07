@@ -147,6 +147,21 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       its(:length) { is_expected.to eq(4) }
     end
 
+    context "when the Gemfile can't be evaluated" do
+      let(:gemfile_content) do
+        fixture("ruby", "gemfiles", "unevaluatable_japanese")
+      end
+      let(:lockfile_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+
+      it "raises a helpful error" do
+        expect { parser.parse }.
+          to raise_error do |error|
+            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+            expect(error.message.encoding.to_s).to eq("UTF-8")
+          end
+      end
+    end
+
     context "with a Gemfile that imports a gemspec" do
       let(:files) { [gemfile, lockfile, gemspec] }
       let(:gemspec) do
