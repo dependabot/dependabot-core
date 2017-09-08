@@ -1,3 +1,7 @@
+## v0.18.1, 8 September 2017
+
+- Handle submodule URLs that resolve to a 404
+
 ## v0.18.0, 8 September 2017
 
 - Add support for git submodules
