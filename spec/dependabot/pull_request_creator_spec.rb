@@ -145,6 +145,39 @@ RSpec.describe Dependabot::PullRequestCreator do
         to have_requested(:post, "#{watched_repo_url}/git/commits")
     end
 
+    context "with a submodule" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "manifesto",
+            type: "submodule",
+            content: "sha1"
+          )
+        ]
+      end
+
+      it "pushes a commit to GitHub" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [
+                   {
+                     path: "manifesto",
+                     mode: "160000",
+                     type: "commit",
+                     sha: "sha1"
+                   }
+                 ]
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
     it "has the right commit message" do
       creator.create
 

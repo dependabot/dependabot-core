@@ -65,12 +65,23 @@ module Dependabot
 
     def create_tree
       file_trees = files.map do |file|
-        {
-          path: file.path.sub(%r{^/}, ""),
-          mode: "100644",
-          type: "blob",
-          content: file.content
-        }
+        if file.type == "file"
+          {
+            path: file.path.sub(%r{^/}, ""),
+            mode: "100644",
+            type: "blob",
+            content: file.content
+          }
+        elsif file.type == "submodule"
+          {
+            path: file.path.sub(%r{^/}, ""),
+            mode: "160000",
+            type: "commit",
+            sha: file.content
+          }
+        else
+          raise "Unknown file type #{file.type}"
+        end
       end
 
       github_client.create_tree(
