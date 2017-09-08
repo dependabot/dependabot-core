@@ -3,6 +3,7 @@ require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/update_checkers/java_script/yarn"
 require "dependabot/update_checkers/php/composer"
+require "dependabot/update_checkers/git/submodules"
 
 module Dependabot
   module UpdateCheckers
@@ -12,6 +13,7 @@ module Dependabot
       when "yarn" then UpdateCheckers::JavaScript::Yarn
       when "pip" then UpdateCheckers::Python::Pip
       when "composer" then UpdateCheckers::Php::Composer
+      when "submodules" then UpdateCheckers::Git::Submodules
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

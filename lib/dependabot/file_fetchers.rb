@@ -3,6 +3,7 @@ require "dependabot/file_fetchers/ruby/bundler"
 require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_fetchers/java_script/yarn"
 require "dependabot/file_fetchers/php/composer"
+require "dependabot/file_fetchers/git/submodules"
 
 module Dependabot
   module FileFetchers
@@ -12,6 +13,7 @@ module Dependabot
       when "yarn" then FileFetchers::JavaScript::Yarn
       when "pip" then FileFetchers::Python::Pip
       when "composer" then FileFetchers::Php::Composer
+      when "submodules" then FileFetchers::Git::Submodules
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
