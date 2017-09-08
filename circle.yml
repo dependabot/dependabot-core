@@ -15,6 +15,9 @@ dependencies:
     - cd helpers/javascript && yarn install
     - cd helpers/php && composer install
     - pip install pip==9.0.1
+    - bundle exec pod setup
+  cache_directories:
+    - ~/.cocoapods
 
 test:
   pre:

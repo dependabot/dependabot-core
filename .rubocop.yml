@@ -27,6 +27,7 @@ Metrics/MethodLength:
 Metrics/BlockLength:
   Exclude:
     - spec/**/*
+    - dependabot-core.gemspec
 
 Metrics/ParameterLists:
   Max: 10
