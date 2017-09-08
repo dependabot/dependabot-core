@@ -141,8 +141,8 @@ module Dependabot
     def pr_name
       return library_pr_name if library?
 
-      base = "Bump #{dependency.name} from #{dependency.previous_version} " \
-             "to #{dependency.version}"
+      base = "Bump #{dependency.name} from #{previous_version} " \
+             "to #{new_version}"
       return base if files.first.directory == "/"
 
       base + " in #{files.first.directory}"
@@ -161,7 +161,7 @@ module Dependabot
               "Bumps #{dependency.name} "
             end
 
-      msg += "from #{dependency.previous_version} to #{dependency.version}."
+      msg += "from #{previous_version} to #{new_version}."
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{commits_url})" if commits_url
@@ -198,7 +198,7 @@ module Dependabot
       if library?
         File.join(*path, "#{dependency.name}-#{sanitized_requirement}")
       else
-        File.join(*path, "#{dependency.name}-#{dependency.version}")
+        File.join(*path, "#{dependency.name}-#{new_version}")
       end
     end
 
@@ -236,6 +236,22 @@ module Dependabot
         MetadataFinders.
         for_package_manager(dependency.package_manager).
         new(dependency: dependency, github_client: github_client)
+    end
+
+    def previous_version
+      if dependency.package_manager == "submodules"
+        dependency.previous_version.first(6)
+      else
+        dependency.previous_version
+      end
+    end
+
+    def new_version
+      if dependency.package_manager == "submodules"
+        dependency.version.first(6)
+      else
+        dependency.version
+      end
     end
 
     def new_library_requirement
