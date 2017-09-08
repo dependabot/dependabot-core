@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require "dependabot/file_updaters/base"
-require "dependabot/file_fetchers/php/composer"
 require "dependabot/shared_helpers"
 
 module Dependabot

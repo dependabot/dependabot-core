@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require "python_requirement_line_parser"
 require "dependabot/file_updaters/base"
-require "dependabot/file_fetchers/python/pip"
 
 module Dependabot
   module FileUpdaters

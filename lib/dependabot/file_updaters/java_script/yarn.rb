@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require "dependabot/file_updaters/base"
-require "dependabot/file_fetchers/java_script/yarn"
 require "dependabot/shared_helpers"
 
 module Dependabot
