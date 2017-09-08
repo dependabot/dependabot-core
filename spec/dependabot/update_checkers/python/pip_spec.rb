@@ -104,7 +104,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_version }
+    subject { checker.latest_resolvable_version }
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
   end
 
