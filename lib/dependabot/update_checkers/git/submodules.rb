@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "dependabot/update_checkers/base"
 require "dependabot/metadata_finders/base"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -32,6 +33,8 @@ module Dependabot
           # Hit GitHub to get the latest commit sha for the submodule
           # TODO: Support Bitbucket and GitLab
           github_client.ref(github_repo, "heads/#{branch}").object.sha
+        rescue Octokit::NotFound
+          raise Dependabot::DependencyFileNotResolvable
         end
 
         def github_repo

@@ -62,6 +62,18 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
 
     it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
 
+    context "when the repo can't be found (e.g., because of a bad branch" do
+      before do
+        stub_request(:get, github_url + "/git/refs/heads/master").
+          to_return(status: 404)
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { checker.latest_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a non-GitHub URL" do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
 
