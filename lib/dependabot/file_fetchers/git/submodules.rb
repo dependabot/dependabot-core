@@ -50,7 +50,8 @@ module Dependabot
           DependencyFile.new(
             name: Pathname.new(submodule_path).cleanpath.to_path,
             content: sha,
-            directory: directory
+            directory: directory,
+            type: "submodule"
           )
         rescue Octokit::NotFound
           raise Dependabot::DependencyFileNotFound, path

@@ -42,10 +42,17 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
 
       it "fetches the submodules" do
         expect(file_fetcher_instance.files.count).to eq(3)
-        expect(file_fetcher_instance.files.last.name).to eq("manifesto")
+
+        expect(file_fetcher_instance.files.first.name).to eq(".gitmodules")
+        expect(file_fetcher_instance.files.first.type).to eq("file")
+
+        expect(file_fetcher_instance.files[1].name).to eq("about/documents")
+        expect(file_fetcher_instance.files[1].type).to eq("submodule")
         expect(file_fetcher_instance.files.last.content).
           to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
-        expect(file_fetcher_instance.files[1].name).to eq("about/documents")
+
+        expect(file_fetcher_instance.files.last.name).to eq("manifesto")
+        expect(file_fetcher_instance.files.last.type).to eq("submodule")
         expect(file_fetcher_instance.files.last.content).
           to eq("d70e943e00a09a3c98c0e4ac9daab112b749cf62")
       end

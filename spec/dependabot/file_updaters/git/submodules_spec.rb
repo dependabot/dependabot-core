@@ -24,7 +24,8 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
   let(:submodule) do
     Dependabot::DependencyFile.new(
       content: "sha1",
-      name: "manifesto"
+      name: "manifesto",
+      type: "submodule"
     )
   end
 
@@ -71,6 +72,7 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
 
       its(:name) { is_expected.to eq("manifesto") }
       its(:content) { is_expected.to eq("sha2") }
+      its(:type) { is_expected.to eq("submodule") }
     end
   end
 end

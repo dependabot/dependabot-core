@@ -1,16 +1,22 @@
 # frozen_string_literal: true
 module Dependabot
   class DependencyFile
-    attr_accessor :name, :content, :directory
+    attr_accessor :name, :content, :directory, :type
 
-    def initialize(name:, content:, directory: "/")
+    def initialize(name:, content:, directory: "/", type: "file")
       @name = name
       @content = content
       @directory = clean_directory(directory)
+      @type = type
     end
 
     def to_h
-      { "name" => name, "content" => content, "directory" => directory }
+      {
+        "name" => name,
+        "content" => content,
+        "directory" => directory,
+        "type" => type
+      }
     end
 
     def path
