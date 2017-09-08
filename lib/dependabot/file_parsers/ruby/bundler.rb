@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
-require "dependabot/file_fetchers/ruby/bundler"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileParsers
