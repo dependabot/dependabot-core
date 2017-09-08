@@ -64,7 +64,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
             {
               requirement: {
                 url: "https://github.com/example/manifesto.git",
-                branch: nil
+                branch: "master"
               },
               file: ".gitmodules",
               groups: []
