@@ -128,7 +128,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      pending { is_expected.to be >= Gem::Version.new("2.2.1") }
+      it { is_expected.to be >= Gem::Version.new("2.2.1") }
     end
 
     context "when an autoload is specified" do
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      pending { is_expected.to be >= Gem::Version.new("5.2.7") }
+      it { is_expected.to be >= Gem::Version.new("5.2.7") }
     end
   end
 
