@@ -1,3 +1,8 @@
+## v0.18.2, 9 September 2017
+
+- Better titles and branch names for git submodule PRs
+- Better commit links for git submodule PRs
+
 ## v0.18.1, 8 September 2017
 
 - Handle submodule URLs that resolve to a 404
