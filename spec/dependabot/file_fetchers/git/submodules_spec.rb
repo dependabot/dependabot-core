@@ -71,5 +71,19 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
           to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+    context "with a bad .gitmodules file" do
+      before do
+        stub_request(:get, url + ".gitmodules?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "gemfile_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      # We could raise a DependencyFileNotParseable error here instead?
+      specify { expect(file_fetcher_instance.files.count).to eq(1) }
+    end
   end
 end

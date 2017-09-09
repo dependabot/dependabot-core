@@ -15,8 +15,6 @@ module Dependabot
         private
 
         def runtime_dependencies
-          parsed_composer_json = JSON.parse(composer_json.content)
-
           parsed_composer_json.fetch("require", {}).map do |name, req|
             # Ignore dependencies which appear in the composer.json but not the
             # composer.lock. For instance, if a specific PHP version or
@@ -42,8 +40,6 @@ module Dependabot
         end
 
         def development_dependencies
-          parsed_composer_json = JSON.parse(composer_json.content)
-
           parsed_composer_json.fetch("require-dev", {}).map do |name, req|
             # Ignore dependencies which appear in the composer.json but not the
             # composer.lock. For instance, if a specific PHP version or
@@ -81,10 +77,14 @@ module Dependabot
 
         def parsed_lockfile
           @parsed_lockfile ||= JSON.parse(lockfile.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, lockfile.path
         end
 
         def parsed_composer_json
           @parsed_composer_json ||= JSON.parse(composer_json.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, composer_json.path
         end
 
         def composer_json

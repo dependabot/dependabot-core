@@ -107,5 +107,27 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         expect(dependencies.length).to eq(1)
       end
     end
+
+    context "with a bad lockfile" do
+      let(:lockfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { dependencies.length }.
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_name).to eq("composer.lock")
+          end
+      end
+    end
+
+    context "with a bad composer.json" do
+      let(:composer_json_body) { fixture("ruby", "gemfiles", "Gemfile") }
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { dependencies.length }.
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_name).to eq("composer.json")
+          end
+      end
+    end
   end
 end

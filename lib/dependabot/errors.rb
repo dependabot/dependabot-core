@@ -7,9 +7,6 @@ module Dependabot
   # File level errors #
   #####################
 
-  class DependencyFileNotEvaluatable < DependabotError; end
-  class DependencyFileNotResolvable < DependabotError; end
-
   class DependencyFileNotFound < DependabotError
     attr_reader :file_path
 
@@ -27,6 +24,27 @@ module Dependabot
       file_path.split("/")[0..-2].join("/").sub(%r{^/*}, "/")
     end
   end
+
+  class DependencyFileNotParseable < DependabotError
+    attr_reader :file_path
+
+    def initialize(file_path, msg = nil)
+      @file_path = file_path
+      super(msg)
+    end
+
+    def file_name
+      file_path.split("/").last
+    end
+
+    def directory
+      # Directory should always start with a `/`
+      file_path.split("/")[0..-2].join("/").sub(%r{^/*}, "/")
+    end
+  end
+
+  class DependencyFileNotEvaluatable < DependabotError; end
+  class DependencyFileNotResolvable < DependabotError; end
 
   ###########################
   # Dependency level errors #

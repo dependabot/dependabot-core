@@ -38,6 +38,24 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Yarn do
         )
     end
 
+    context "with a bad package.json" do
+      before do
+        stub_request(:get, url + "package.json?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "gemfile_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_name).to eq("package.json")
+          end
+      end
+    end
+
     context "that has a fetchable path" do
       before do
         stub_request(:get, url + "deps/etag/package.json?ref=sha").
