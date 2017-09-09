@@ -108,6 +108,54 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
       end
     end
+
+    context "when an alternative source is specified" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "alternative_source")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "alternative_source")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "wpackagist-plugin/acf-to-rest-api",
+          version: "2.2.1",
+          requirements: [
+            { file: "composer.json", requirement: "*", groups: ["runtime"] }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      it { is_expected.to be >= Gem::Version.new("2.2.1") }
+    end
+
+    context "when an autoload is specified" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "autoload")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "autoload")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "illuminate/support",
+          version: "v5.2.7",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"]
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      it { is_expected.to be >= Gem::Version.new("5.2.7") }
+    end
   end
 
   describe "#updated_requirements" do
