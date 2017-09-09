@@ -88,6 +88,14 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
         it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
       end
+
+      context "when the dependency is a development dependency" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "development_dependencies")
+        end
+
+        it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
+      end
     end
 
     describe "the updated lockfile" do
