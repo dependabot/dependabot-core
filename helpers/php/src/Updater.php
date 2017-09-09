@@ -14,9 +14,19 @@ class Updater
 
     $composerJson = json_decode(file_get_contents('composer.json'), true);
 
-    $existingDependencyVersion = $composerJson["require"][$dependencyName];
-    $newDependencyVersion = self::relaxVersionToUserPreference($existingDependencyVersion, $dependencyVersion);
-    $composerJson["require"][$dependencyName] = $newDependencyVersion;
+    $composerJson = self::updateComposerJsonSection(
+      $composerJson,
+      "require",
+      $dependencyName,
+      $dependencyVersion
+    );
+
+    $composerJson = self::updateComposerJsonSection(
+      $composerJson,
+      "require-dev",
+      $dependencyName,
+      $dependencyVersion
+    );
 
     // When encoding JSON in PHP, it'll escape forward slashes by default.
     // We're not expecting this transform from the original data, which means
@@ -87,5 +97,24 @@ class Updater
     $newDependencyVersion = str_replace($matches[0], implode(".", $suggestedVersionSegments), $existingDependencyVersion);
 
     return $newDependencyVersion;
+  }
+
+  // Given a nested array representing a composer.json file, look for the given
+  // dependency in the provided section (i.e., require, require-dev) and update
+  // the composer data with the new version, before returning a composer
+  // representation with the updated version.
+  //
+  // If the dependency doesn't exist in the section, will return the provided
+  // composer JSON unaltered
+  //
+  // Note: Arrays are passed by value/copy, so this will leave the original composerJson untouched
+  public static function updateComposerJsonSection($composerJson, $section, $dependencyName, $dependencyVersion) {
+    if(isset($composerJson[$section][$dependencyName])) {
+      $existingDependencyVersion = $composerJson[$section][$dependencyName];
+      $newDependencyVersion = self::relaxVersionToUserPreference($existingDependencyVersion, $dependencyVersion);
+      $composerJson[$section][$dependencyName] = $newDependencyVersion;
+    }
+
+    return $composerJson;
   }
 }

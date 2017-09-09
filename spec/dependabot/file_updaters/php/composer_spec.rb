@@ -94,7 +94,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           fixture("php", "composer_files", "development_dependencies")
         end
 
-        pending { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
+        it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
       end
     end
 
