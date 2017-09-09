@@ -1,3 +1,9 @@
+## v0.18.3, 9 September 2017
+
+- Handle development dependencies for PHP projects
+- Add Dependabot::DependencyFileNotParseable error
+- Increase memory limit for PHP
+
 ## v0.18.2, 9 September 2017
 
 - Better titles and branch names for git submodule PRs
