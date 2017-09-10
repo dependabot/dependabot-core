@@ -1,3 +1,7 @@
+## v0.18.4, 10 September 2017
+
+- Add shortcut for PHP update_checker version check
+
 ## v0.18.3, 9 September 2017
 
 - Handle development dependencies for PHP projects
