@@ -46,6 +46,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
+    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
+    let(:packagist_response) { fixture("php", "packagist_response.json") }
+
+    before do
+      stub_request(:get, packagist_url).
+        to_return(status: 200, body: packagist_response)
+    end
+
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
   end
 

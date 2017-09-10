@@ -10,8 +10,17 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         def latest_version
-          # TODO: Implement latest version checking.
-          latest_resolvable_version
+          versions =
+            packagist_listing["packages"][dependency.name].
+            keys.map do |version|
+              begin
+                Gem::Version.new(version)
+              rescue ArgumentError
+                nil
+              end
+            end.compact
+
+          versions.reject(&:prerelease?).sort.last
         end
 
         def latest_resolvable_version
@@ -76,6 +85,15 @@ module Dependabot
         def php_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/php/bin/run.php")
+        end
+
+        def packagist_listing
+          return @packagist_listing unless @packagist_listing.nil?
+
+          url = "https://packagist.org/p/#{dependency.name}.json"
+          response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+
+          @packagist_listing = JSON.parse(response.body)
         end
       end
     end
