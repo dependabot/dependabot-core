@@ -1,3 +1,7 @@
+## v0.18.9, 11 September 2017
+
+- Fall back to latest_resolvable_version if PHP latest_version shortcut fails
+
 ## v0.18.8, 11 September 2017
 
 - Better error messaging for unreachable submodules
