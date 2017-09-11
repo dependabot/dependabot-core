@@ -44,10 +44,12 @@ module Dependabot
             l.include?("refs/heads/#{branch}")
           end
 
-          # TODO: Improve error messaging here to make it clear this is a
-          # bad branch
-          raise Dependabot::DependencyFileNotResolvable unless line
-          line.split(" ").first.chars.last(40).join
+          return line.split(" ").first.chars.last(40).join if line
+
+          raise Dependabot::GitDependencyBranchNotFound.new(
+            dependency: dependency.name,
+            branch: branch
+          )
         end
 
         def branch
