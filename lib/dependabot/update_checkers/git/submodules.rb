@@ -32,7 +32,7 @@ module Dependabot
         def fetch_latest_version
           url = dependency.requirements.first.fetch(:requirement).fetch(:url)
           git_data = Excon.get(
-            url + "/info/refs?service=git-receive-pack",
+            url + "/info/refs?service=git-upload-pack",
             middlewares: SharedHelpers.excon_middleware
           ).body
 

@@ -54,7 +54,7 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
     let(:git_url) { "https://github.com/example/manifesto.git" }
 
     before do
-      stub_request(:get, git_url + "/info/refs?service=git-receive-pack").
+      stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
         to_return(
           status: 200,
           body: fixture("git", "git-upload-pack-manifesto"),
