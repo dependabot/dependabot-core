@@ -1,3 +1,8 @@
+## v0.18.5, 11 September 2017
+
+- Use correct git internals URL for authorization checking in Ruby UpdateChecker
+- Use git internal transfer protocol when fetching latest version of submodules
+
 ## v0.18.4, 10 September 2017
 
 - Add shortcut for PHP update_checker version check
