@@ -1,3 +1,7 @@
+## v0.18.6, 11 September 2017
+
+- Convert git URLs to https in submodule parser
+
 ## v0.18.5, 11 September 2017
 
 - Use correct git internals URL for authorization checking in Ruby UpdateChecker
