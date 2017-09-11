@@ -1,3 +1,7 @@
+## v0.18.8, 11 September 2017
+
+- Better error messaging for unreachable submodules
+
 ## v0.18.7, 11 September 2017
 
 - Fix typo in submodule checking URL
