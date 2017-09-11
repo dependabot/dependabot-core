@@ -10,6 +10,10 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         def latest_version
+          # Fall back to latest_resolvable_version if no listing on main
+          # registry
+          return latest_resolvable_version unless packagist_listing
+
           versions =
             packagist_listing["packages"][dependency.name].
             keys.map do |version|
@@ -92,6 +96,8 @@ module Dependabot
 
           url = "https://packagist.org/p/#{dependency.name}.json"
           response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+
+          return nil unless response.status == 200
 
           @packagist_listing = JSON.parse(response.body)
         end

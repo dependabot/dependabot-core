@@ -53,9 +53,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     before do
       stub_request(:get, packagist_url).
         to_return(status: 200, body: packagist_response)
+      allow(checker).to receive(:latest_resolvable_version).
+        and_return(Gem::Version.new("1.17.0"))
     end
 
-    it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+
+    context "when packagist 404s" do
+      before { stub_request(:get, packagist_url).to_return(status: 404) }
+
+      it { is_expected.to eq(Gem::Version.new("1.17.0")) }
+    end
   end
 
   describe "#latest_resolvable_version" do
