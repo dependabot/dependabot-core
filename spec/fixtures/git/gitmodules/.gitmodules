@@ -1,6 +1,6 @@
 [submodule "about/documents"]
   path = about/documents
-  url = https://github.com/example/documents.git
+  url = git@github.com:example/documents.git
   branch = gh-pages
 [submodule "manifesto"]
   path = manifesto
