@@ -11,7 +11,8 @@ module Dependabot
       class Composer < Dependabot::UpdateCheckers::Base
         def latest_version
           # Fall back to latest_resolvable_version if no listing on main
-          # registry
+          # registry.
+          # TODO: Check against all repositories, if alternatives are specified
           return latest_resolvable_version unless packagist_listing
 
           versions =
