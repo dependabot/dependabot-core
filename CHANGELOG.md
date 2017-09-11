@@ -1,3 +1,7 @@
+## v0.18.7, 11 September 2017
+
+- Fix typo in submodule checking URL
+
 ## v0.18.6, 11 September 2017
 
 - Convert git URLs to https in submodule parser
