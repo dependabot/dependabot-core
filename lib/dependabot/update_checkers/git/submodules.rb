@@ -30,35 +30,24 @@ module Dependabot
         private
 
         def fetch_latest_version
-          # Hit GitHub to get the latest commit sha for the submodule
-          # TODO: Support Bitbucket and GitLab
-          github_client.ref(github_repo, "heads/#{branch}").object.sha
-        rescue Octokit::NotFound
-          raise Dependabot::DependencyFileNotResolvable
-        end
-
-        def github_repo
           url = dependency.requirements.first.fetch(:requirement).fetch(:url)
-          regex_match = url.match(MetadataFinders::Base::SOURCE_REGEX)
+          git_data = Excon.get(
+            url + "/info/refs?service=git-receive-pack",
+            middlewares: SharedHelpers.excon_middleware
+          ).body
 
-          unless regex_match
-            raise "Submodule URL didn't match any known sources: #{url}"
+          line = git_data.lines.find do |l|
+            l.include?("refs/heads/#{branch}")
           end
 
-          unless regex_match.named_captures.fetch("host") == "github"
-            raise "Submodule has non-GitHub source: #{url}"
-          end
-
-          regex_match.named_captures.fetch("repo")
+          # TODO: Improve error messaging here: make it clear this is a
+          # bad branch (or that we couldn't get the URL)
+          raise Dependabot::DependencyFileNotResolvable unless line
+          line.split(" ").first.chars.last(40).join
         end
 
         def branch
           dependency.requirements.first.fetch(:requirement).fetch(:branch)
-        end
-
-        def github_client
-          @github_client ||=
-            Octokit::Client.new(access_token: github_access_token)
         end
       end
     end

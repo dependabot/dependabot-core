@@ -51,35 +51,27 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    let(:github_url) { "https://api.github.com/repos/example/manifesto" }
+    let(:git_url) { "https://github.com/example/manifesto.git" }
 
     before do
-      stub_request(:get, github_url + "/git/refs/heads/master").
-        to_return(status: 200,
-                  body: fixture("github", "ref.json"),
-                  headers: { "content-type" => "application/json" })
+      stub_request(:get, git_url + "/info/refs?service=git-receive-pack").
+        to_return(
+          status: 200,
+          body: fixture("git", "git-upload-pack-manifesto"),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
     end
 
-    it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+    it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
 
-    context "when the repo can't be found (e.g., because of a bad branch" do
-      before do
-        stub_request(:get, github_url + "/git/refs/heads/master").
-          to_return(status: 404)
-      end
+    context "when the repo can't be found (e.g., because of a bad branch)" do
+      let(:branch) { "bad-branch" }
 
       it "raises a DependencyFileNotResolvable error" do
         expect { checker.latest_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
-    context "with a non-GitHub URL" do
-      let(:url) { "https://bitbucket.org/example/manifesto.git" }
-
-      it "raises a useful error (so we add support for other providers" do
-        expect { checker.latest_version }.
-          to raise_error(/Submodule has non-GitHub/)
       end
     end
   end
