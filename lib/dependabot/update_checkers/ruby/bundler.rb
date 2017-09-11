@@ -144,7 +144,7 @@ module Dependabot
                   git_proxy = spec.source.send(:git_proxy)
                   uri = git_proxy.send(:configured_uri_for, spec.source.uri)
                   uri += ".git" unless uri.end_with?(".git")
-                  uri += "/info/refs?service=git-receive-pack"
+                  uri += "/info/refs?service=git-upload-pack"
                   Excon.get(uri, middlewares: SharedHelpers.excon_middleware).
                     status == 200
                 end

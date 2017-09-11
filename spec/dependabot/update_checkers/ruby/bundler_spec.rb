@@ -590,7 +590,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             stub_request(
               :get,
               "https://github.com/fundingcircle/prius.git/info/refs"\
-              "?service=git-receive-pack"
+              "?service=git-upload-pack"
             ).with(headers: { "Authorization" => "Basic #{token}" }).
               to_return(status: 401)
           end
@@ -711,7 +711,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           stub_request(
             :get,
             "https://github.com/fundingcircle/prius.git/info/refs"\
-            "?service=git-receive-pack"
+            "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
         end
