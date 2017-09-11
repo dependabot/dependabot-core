@@ -63,14 +63,14 @@ module Dependabot
     end
   end
 
-  class GitDependencyBranchNotFound < DependabotError
-    attr_reader :dependency, :branch
+  class GitDependencyReferenceNotFound < DependabotError
+    attr_reader :dependency
 
-    def initialize(dependency:, branch:)
+    def initialize(dependency)
       @dependency = dependency
-      @branch = branch
 
-      msg = "The branch '#{branch}' could not be retrieved for #{dependency}"
+      msg = "The branch or reference specified for #{dependency} could not "\
+            "be retrieved"
       super(msg)
     end
   end

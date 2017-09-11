@@ -84,12 +84,11 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
     context "when the reference can't be found" do
       let(:branch) { "bad-branch" }
 
-      it "raises a GitDependencyBranchNotFound error" do
+      it "raises a GitDependencyReferenceNotFound error" do
         expect { checker.latest_version }.
           to raise_error do |error|
-            expect(error).to be_a(Dependabot::GitDependencyBranchNotFound)
+            expect(error).to be_a(Dependabot::GitDependencyReferenceNotFound)
             expect(error.dependency).to eq("manifesto")
-            expect(error.branch).to eq("bad-branch")
           end
       end
     end

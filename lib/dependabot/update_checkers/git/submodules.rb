@@ -45,11 +45,7 @@ module Dependabot
           end
 
           return line.split(" ").first.chars.last(40).join if line
-
-          raise Dependabot::GitDependencyBranchNotFound.new(
-            dependency: dependency.name,
-            branch: branch
-          )
+          raise Dependabot::GitDependencyReferenceNotFound, dependency.name
         end
 
         def branch
