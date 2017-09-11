@@ -66,7 +66,22 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
 
     it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
 
-    context "when the repo can't be found (e.g., because of a bad branch)" do
+    context "when the repo can't be found" do
+      before do
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          to_return(status: 404)
+      end
+
+      it "raises a GitDependenciesNotReachable error" do
+        expect { checker.latest_version }.to raise_error do |error|
+          expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+          expect(error.dependency_urls).
+            to eq(["https://github.com/example/manifesto.git"])
+        end
+      end
+    end
+
+    context "when the reference can't be found" do
       let(:branch) { "bad-branch" }
 
       it "raises a DependencyFileNotResolvable error" do

@@ -34,14 +34,18 @@ module Dependabot
           git_data = Excon.get(
             url + "/info/refs?service=git-upload-pack",
             middlewares: SharedHelpers.excon_middleware
-          ).body
+          )
 
-          line = git_data.lines.find do |l|
+          unless git_data.status == 200
+            raise Dependabot::GitDependenciesNotReachable, [url]
+          end
+
+          line = git_data.body.lines.find do |l|
             l.include?("refs/heads/#{branch}")
           end
 
-          # TODO: Improve error messaging here: make it clear this is a
-          # bad branch (or that we couldn't get the URL)
+          # TODO: Improve error messaging here to make it clear this is a
+          # bad branch
           raise Dependabot::DependencyFileNotResolvable unless line
           line.split(" ").first.chars.last(40).join
         end
