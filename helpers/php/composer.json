@@ -1,5 +1,5 @@
 {
     "require": {
-        "composer/composer": "1.5.1"
+        "composer/composer": "1.5.2"
     }
 }
