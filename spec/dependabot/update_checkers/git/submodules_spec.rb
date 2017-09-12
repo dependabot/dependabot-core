@@ -66,6 +66,11 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
 
     it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
 
+    context "when the repo doesn't have a .git suffix" do
+      let(:url) { "https://github.com/example/manifesto" }
+      it { is_expected.to eq("fe1b155799ab728fae7d3edd5451c35942d711c4") }
+    end
+
     context "when the repo can't be found" do
       before do
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").

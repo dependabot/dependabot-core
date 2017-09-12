@@ -2,6 +2,6 @@
   path = about/documents
   url = git@github.com:example/documents.git
   branch = gh-pages
-[submodule "manifesto"]
+[submodule "custom-name"]
   path = manifesto
   url = https://github.com/example/manifesto.git

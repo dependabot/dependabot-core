@@ -8,19 +8,23 @@ module Dependabot
   module FileParsers
     module Git
       class Submodules < Dependabot::FileParsers::Base
+        GROUP_NAME_REGEX = /^submodule "(?<name>.*)"$/
         def parse
           SharedHelpers.in_a_temporary_directory do
             File.write(".gitmodules", gitmodules_file.content)
 
-            ParseConfig.new(".gitmodules").params.map do |_, params|
+            ParseConfig.new(".gitmodules").params.map do |group_name, params|
               # Branch defaults to master - https://git-scm.com/docs/gitmodules
               branch = params["branch"] || "master"
 
               # TODO: Handle non-GitHub git URLs
               url = params["url"].gsub("git@github.com:", "https://github.com/")
 
+              submodule_name =
+                group_name.match(GROUP_NAME_REGEX).named_captures.fetch("name")
+
               Dependency.new(
-                name: params["path"],
+                name: submodule_name,
                 version: submodule_sha(params["path"]),
                 package_manager: "submodules",
                 requirements: [{

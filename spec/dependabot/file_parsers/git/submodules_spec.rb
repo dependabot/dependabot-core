@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("manifesto")
+        expect(dependency.name).to eq("custom-name")
         expect(dependency.version).to eq("sha1")
         expect(dependency.requirements).to eq(
           [
