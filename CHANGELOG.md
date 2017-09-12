@@ -1,3 +1,7 @@
+## v0.18.10, 12 September 2017
+
+- Handle custom names for submodules, and URLs without a .git suffix
+
 ## v0.18.9, 11 September 2017
 
 - Fall back to latest_resolvable_version if PHP latest_version shortcut fails
