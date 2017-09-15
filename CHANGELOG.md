@@ -1,3 +1,9 @@
+## v0.18.11, 15 September 2017
+
+- Don't create Gemfile requirement for gemspec dependencies
+- Don't update Gemfile content during update check if dependency isn't found
+  there
+
 ## v0.18.10, 12 September 2017
 
 - Handle custom names for submodules, and URLs without a .git suffix
