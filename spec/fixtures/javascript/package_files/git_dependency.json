@@ -22,7 +22,6 @@
     "stopwords": "0.0.1"
   },
   "devDependencies": {
-    "etag": "file:./deps/etag",
     "is-number": "https://github.com/jonschlinkert/is-number.git"
   }
 }
