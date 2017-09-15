@@ -11,14 +11,12 @@ module Dependabot
           %w(dependencies devDependencies optionalDependencies).freeze
 
         def parse
-          dependencies = []
-
           DEPENDENCY_TYPES.flat_map do |type|
             deps = parsed_package_json[type] || {}
             deps.map do |name, requirement|
               dep = parsed_package_lock_json.dig("dependencies", name)
 
-              next unless dep && dep["resolved"]
+              next unless dep&.fetch("resolved", nil)
 
               Dependency.new(
                 name: name,

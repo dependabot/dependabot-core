@@ -23,6 +23,6 @@ module Dependabot
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
-    # rubocop:endable Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/CyclomaticComplexity
   end
 end
