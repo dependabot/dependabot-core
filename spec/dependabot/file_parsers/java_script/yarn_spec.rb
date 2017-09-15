@@ -21,7 +21,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
   end
-  let(:lockfile_body) { fixture("javascript", "lockfiles", "yarn.lock") }
+  let(:lockfile_body) { fixture("javascript", "yarn_lockfiles", "yarn.lock") }
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "package_files", "only_dev_dependencies.json")
       end
       let(:lockfile_body) do
-        fixture("javascript", "lockfiles", "only_dev_dependencies.lock")
+        fixture("javascript", "yarn_lockfiles", "only_dev_dependencies.lock")
       end
 
       describe "the first dependency" do
@@ -125,7 +125,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "package_files", "path_dependency.json")
       end
       let(:lockfile_body) do
-        fixture("javascript", "lockfiles", "path_dependency.lock")
+        fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
       end
       let(:path_dep) do
         Dependabot::DependencyFile.new(

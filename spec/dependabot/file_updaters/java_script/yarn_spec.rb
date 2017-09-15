@@ -35,7 +35,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
   let(:yarn_lock) do
     Dependabot::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("javascript", "lockfiles", "yarn.lock")
+      content: fixture("javascript", "yarn_lockfiles", "yarn.lock")
     )
   end
   let(:dependency) do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           fixture("javascript", "package_files", "path_dependency.json")
         end
         let(:lockfile_body) do
-          fixture("javascript", "lockfiles", "path_dependency.lock")
+          fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
         end
         let(:path_dep) do
           Dependabot::DependencyFile.new(
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           fixture("javascript", "package_files", "path_dependency.json")
         end
         let(:lockfile_body) do
-          fixture("javascript", "lockfiles", "path_dependency.lock")
+          fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
         end
         let(:path_dep) do
           Dependabot::DependencyFile.new(
