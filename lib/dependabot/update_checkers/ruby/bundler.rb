@@ -270,9 +270,11 @@ module Dependabot
         # Replace the original gem requirements with a ">=" requirement to
         # unlock the gem during version checking
         def update_dependency_requirement(gemfile_content)
-          gemfile_content.
-            to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
-            find { Regexp.last_match[:name] == dependency.name }
+          unless gemfile_content.
+                 to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
+                 find { Regexp.last_match[:name] == dependency.name }
+            return gemfile_content
+          end
 
           original_gem_declaration_string = Regexp.last_match.to_s
           updated_gem_declaration_string =
