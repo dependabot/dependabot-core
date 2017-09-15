@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require "dependabot/file_fetchers/base"
-require "dependabot/file_parsers/java_script/yarn"
+require "dependabot/file_parsers/java_script/npm"
 
 module Dependabot
   module FileFetchers
@@ -36,7 +36,7 @@ module Dependabot
           package_json_files = []
           unfetchable_deps = []
 
-          types = Dependabot::FileParsers::JavaScript::Yarn::DEPENDENCY_TYPES
+          types = Dependabot::FileParsers::JavaScript::Npm::DEPENDENCY_TYPES
           parsed_package_json.values_at(*types).compact.each do |deps|
             deps.map do |name, version|
               next unless version.start_with?("file:")
