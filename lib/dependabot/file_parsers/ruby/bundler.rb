@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require "gemnasium/parser"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -34,7 +35,7 @@ module Dependabot
 
         def gemfile_dependencies
           return [] unless gemfile
-          parsed_gemfile.map do |dependency|
+          all_dependencies = parsed_gemfile.map do |dependency|
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
@@ -46,6 +47,9 @@ module Dependabot
               package_manager: "bundler"
             )
           end.compact
+
+          # Filter out dependencies that only appear in the gemspec
+          all_dependencies.select { |dep| gemfile_includes_dependency?(dep) }
         end
 
         def gemspec_dependencies
@@ -173,6 +177,13 @@ module Dependabot
           @parsed_lockfile.specs.
             find { |spec| spec.name == dependency_name }&.
             version
+        end
+
+        def gemfile_includes_dependency?(dependency)
+          !gemfile.content.
+            to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
+            find { Regexp.last_match[:name] == dependency.name }.
+            nil?
         end
       end
     end

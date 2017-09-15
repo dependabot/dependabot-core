@@ -186,8 +186,8 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         its(:length) { is_expected.to eq(13) }
 
-        describe "the last dependency" do
-          subject { dependencies.last }
+        describe "a runtime gemspec dependency" do
+          subject { dependencies.find { |dep| dep.name == "gitlab" } }
           let(:expected_requirements) do
             [{
               requirement: "~> 4.1",
@@ -199,6 +199,22 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("gitlab") }
           its(:version) { is_expected.to eq("4.2.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+
+        describe "a development gemspec dependency" do
+          subject { dependencies.find { |dep| dep.name == "webmock" } }
+          let(:expected_requirements) do
+            [{
+              requirement: "~> 2.3.1",
+              file: "example.gemspec",
+              groups: ["development"]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("webmock") }
+          its(:version) { is_expected.to eq("2.3.2") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
         end
 
