@@ -94,37 +94,37 @@ module Dependabot
 
         # rubocop:disable Metrics/CyclomaticComplexity, Metrics/AbcSize
         def handle_bundler_errors(error)
+          msg = error.error_class + " with message: " + error.error_message
+
           case error.error_class
           when "Bundler::Dsl::DSLError"
             # We couldn't evaluate the Gemfile, let alone resolve it
-            msg = error.error_class + " with message: " + error.error_message
             raise Dependabot::DependencyFileNotEvaluatable, msg
-          when "Bundler::VersionConflict", "Bundler::GemNotFound",
-               "Gem::InvalidSpecificationException"
-            # We successfully evaluated the Gemfile, but couldn't resolve it
-            # (e.g., because a gem couldn't be found in any of the specified
-            # sources, or because it specified conflicting versions)
-            msg = error.error_class + " with message: " + error.error_message
-            raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Source::Git::GitCommandError"
-            # Check if the error happened during branch / commit selection
             if error.error_message.match?(GIT_REF_REGEX)
-              gem_name = error.error_message.match(GIT_REF_REGEX).
-                         named_captures["path"].
-                         split("/").last.split("-")[0..-2].join
+              # We couldn't find the specified branch / commit (or the two
+              # weren't compatible).
+              gem_name =
+                error.error_message.match(GIT_REF_REGEX).named_captures["path"].
+                split("/").last.split("-")[0..-2].join
               raise GitDependencyReferenceNotFound, gem_name
             end
 
-            # Check if there are any repos we don't have access to, and raise an
-            # error with details if so. Otherwise re-raise.
-            raise unless inaccessible_git_dependencies.any?
-            raise(
-              Dependabot::GitDependenciesNotReachable,
-              inaccessible_git_dependencies.map { |s| s.source.uri }
-            )
+            bad_uris = inaccessible_git_dependencies.map { |s| s.source.uri }
+            raise unless bad_uris.any?
+
+            # We don't have access to one of repos required
+            raise Dependabot::GitDependenciesNotReachable, bad_uris
+          when "Bundler::VersionConflict", "Bundler::GemNotFound",
+               "Gem::InvalidSpecificationException"
+            # Bundler threw an error during resolution. Any of:
+            # - the gem doesn't exist in any of the specified sources
+            # - the gem wasn't specified properly
+            # - the Gemfile specified incompatible version, causing a conflict
+            raise Dependabot::DependencyFileNotResolvable, msg
           when "RuntimeError"
             raise unless error.error_message.include?("Unable to find a spec")
-            raise DependencyFileNotResolvable
+            raise DependencyFileNotResolvable, msg
           else raise
           end
         end
