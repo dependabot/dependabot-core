@@ -1,3 +1,7 @@
+## v0.18.12, 19 September 2017
+
+- Raise GitDependencyReferenceNotFound errors during Ruby update checking
+
 ## v0.18.11, 15 September 2017
 
 - Don't create Gemfile requirement for gemspec dependencies
