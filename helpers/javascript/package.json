@@ -5,7 +5,7 @@
     "yarn": "^0.27.5"
   },
   "devDependencies": {
-    "eslint": "^4.7.0",
+    "eslint": "^4.7.1",
     "eslint-plugin-prettier": "^2.3.0",
     "fs-extra": "^3.0.1",
     "jest": "^21.1.0",
