@@ -14,6 +14,8 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
+        GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
+
         def latest_version
           @latest_version ||= fetch_latest_version
         end
@@ -90,7 +92,7 @@ module Dependabot
           handle_bundler_errors(error)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/AbcSize
         def handle_bundler_errors(error)
           case error.error_class
           when "Bundler::Dsl::DSLError"
@@ -106,8 +108,11 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Source::Git::GitCommandError"
             # Check if the error happened during branch / commit selection
-            if error.error_message.match?(/git reset --hard/)
-              raise DependencyFileNotResolvable
+            if error.error_message.match?(GIT_REF_REGEX)
+              gem_name = error.error_message.match(GIT_REF_REGEX).
+                         named_captures["path"].
+                         split("/").last.split("-")[0..-2].join
+              raise GitDependencyReferenceNotFound, gem_name
             end
 
             # Check if there are any repos we don't have access to, and raise an
@@ -123,7 +128,7 @@ module Dependabot
           else raise
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity, Metrics/AbcSize
 
         def inaccessible_git_dependencies
           SharedHelpers.in_a_temporary_directory do

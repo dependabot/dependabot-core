@@ -619,7 +619,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           it "raises a helpful error" do
             expect { checker.latest_resolvable_version }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+              to raise_error do |error|
+                expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
+                expect(error.dependency).to eq("prius")
+              end
           end
         end
       end
