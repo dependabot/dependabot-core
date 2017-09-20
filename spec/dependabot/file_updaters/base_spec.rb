@@ -35,7 +35,7 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       version: "1.5.0",
       package_manager: "bundler",
       requirements: [
-        { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+        { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
       ]
     )
   end

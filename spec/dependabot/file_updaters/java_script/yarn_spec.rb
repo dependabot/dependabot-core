@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       version: "0.0.2",
       package_manager: "yarn",
       requirements: [
-        { file: "package.json", requirement: "^0.0.1", groups: [] }
+        { file: "package.json", requirement: "^0.0.1", groups: [], source: nil }
       ]
     )
   end
@@ -74,7 +74,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
             version: "0.2.1",
             package_manager: "yarn",
             requirements: [
-              { file: "package.json", requirement: "^0.0.1", groups: [] }
+              {
+                file: "package.json",
+                requirement: "^0.0.1",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end
@@ -105,7 +110,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
             version: "1.3.1",
             package_manager: "yarn",
             requirements: [
-              { file: "package.json", requirement: "^1.2.1", groups: [] }
+              {
+                file: "package.json",
+                requirement: "^1.2.1",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end
@@ -147,7 +157,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
             version: "1.3.1",
             package_manager: "yarn",
             requirements: [
-              { file: "package.json", requirement: "^1.2.1", groups: [] }
+              {
+                file: "package.json",
+                requirement: "^1.2.1",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end

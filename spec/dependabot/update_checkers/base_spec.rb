@@ -15,13 +15,22 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      requirements: [{ file: "Gemfile", requirement: ">= 0", groups: [] }],
+      requirements: [
+        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
+      ],
       package_manager: "bundler"
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }
   let(:updated_requirements) do
-    [{ file: "Gemfile", requirement: updated_requirement, groups: [] }]
+    [
+      {
+        file: "Gemfile",
+        requirement: updated_requirement,
+        groups: [],
+        source: nil
+      }
+    ]
   end
   let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
@@ -77,7 +86,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         )
       end
       let(:requirements) do
-        [{ file: "Gemfile", requirement: "~> 1", groups: [] }]
+        [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
       context "that already permits the latest version" do
@@ -87,14 +96,28 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "that doesn't yet permit the latest version" do
         let(:updated_requirements) do
-          [{ file: "Gemfile", requirement: ">= 1, < 3", groups: [] }]
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 1, < 3",
+              groups: [],
+              source: nil
+            }
+          ]
         end
         it { is_expected.to be_truthy }
       end
 
       context "that we don't know how to fix" do
         let(:updated_requirements) do
-          [{ file: "Gemfile", requirement: :unfixable, groups: [] }]
+          [
+            {
+              file: "Gemfile",
+              requirement: :unfixable,
+              groups: [],
+              source: nil
+            }
+          ]
         end
         it { is_expected.to be_falsey }
       end

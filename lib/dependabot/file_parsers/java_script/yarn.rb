@@ -21,6 +21,7 @@ module Dependabot
               requirements: [{
                 requirement: parsed_package_json.dig(dep_group, dep["name"]),
                 file: "package.json",
+                source: nil,
                 groups: [dep_group]
               }]
             )

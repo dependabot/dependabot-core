@@ -32,6 +32,7 @@ module Dependabot
               requirements: [{
                 requirement: req,
                 file: "composer.json",
+                source: nil,
                 groups: ["runtime"]
               }],
               package_manager: "composer"
@@ -57,6 +58,7 @@ module Dependabot
               requirements: [{
                 requirement: req,
                 file: "composer.json",
+                source: nil,
                 groups: ["development"]
               }],
               package_manager: "composer"

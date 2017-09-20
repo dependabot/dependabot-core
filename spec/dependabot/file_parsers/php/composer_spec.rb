@@ -46,7 +46,8 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
               {
                 requirement: "1.0.*",
                 file: "composer.json",
-                groups: ["runtime"]
+                groups: ["runtime"],
+                source: nil
               }
             ]
           )
@@ -75,7 +76,8 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
               {
                 requirement: "1.0.1",
                 file: "composer.json",
-                groups: ["development"]
+                groups: ["development"],
+                source: nil
               }
             ]
           )

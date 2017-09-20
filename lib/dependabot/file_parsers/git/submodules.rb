@@ -30,6 +30,7 @@ module Dependabot
                 requirements: [{
                   requirement: { url: url, branch: branch },
                   file: ".gitmodules",
+                  source: "git",
                   groups: []
                 }]
               )

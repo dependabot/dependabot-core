@@ -24,7 +24,8 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
         {
           file: ".gitmodules",
           requirement: { url: url, branch: branch },
-          groups: []
+          groups: [],
+          source: nil
         }
       ],
       package_manager: "submodules"

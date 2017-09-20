@@ -37,7 +37,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.6.1",
                 file: "requirements.txt",
-                groups: []
+                groups: [],
+                source: nil
               }
             ]
           )
@@ -63,7 +64,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.6.1",
                 file: "requirements.txt",
-                groups: []
+                groups: [],
+                source: nil
               }
             ]
           )
@@ -88,7 +90,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.6.1",
                 file: "requirements.txt",
-                groups: []
+                groups: [],
+                source: nil
               }
             ]
           )
@@ -157,7 +160,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.1.4",
                 file: "requirements.txt",
-                groups: []
+                groups: [],
+                source: nil
               }
             ]
           )

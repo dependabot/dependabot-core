@@ -17,7 +17,8 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
         {
           file: ".gitmodules",
           requirement: { url: url, branch: "master" },
-          groups: []
+          groups: [],
+          source: nil
         }
       ],
       package_manager: "submodules"

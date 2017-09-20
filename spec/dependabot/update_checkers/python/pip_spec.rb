@@ -27,7 +27,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       name: "luigi",
       version: "2.0.0",
       requirements: [
-        { file: "requirements.txt", requirement: "==2.0.0", groups: [] }
+        {
+          file: "requirements.txt",
+          requirement: "==2.0.0",
+          groups: [],
+          source: nil
+        }
       ],
       package_manager: "pip"
     )
@@ -46,7 +51,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           name: "luigi",
           version: "2.6.0",
           requirements: [
-            { file: "requirements.txt", requirement: "==2.6.0", groups: [] }
+            {
+              file: "requirements.txt",
+              requirement: "==2.6.0",
+              groups: [],
+              source: nil
+            }
           ],
           package_manager: "pip"
         )
@@ -92,7 +102,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
               {
                 file: "requirements.txt",
                 requirement: "==2.6.0.alpha",
-                groups: []
+                groups: [],
+                source: nil
               }
             ],
             package_manager: "pip"
