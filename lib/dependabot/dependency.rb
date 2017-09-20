@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 module Dependabot
   class Dependency
-    attr_reader :name, :version, :source, :requirements, :package_manager,
+    attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements
 
     def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil,
-                   source: nil)
+                   previous_version: nil, previous_requirements: nil)
       @name = name
       @version = version
-      @source = source
       @requirements = requirements.map { |req| symbolize_keys(req) }
       @previous_version = previous_version
       @previous_requirements =
@@ -23,7 +21,6 @@ module Dependabot
       {
         "name" => name,
         "version" => version,
-        "source" => source,
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
@@ -50,7 +47,7 @@ module Dependabot
 
       required_keys = %i(requirement file groups)
       unless requirement_fields.flatten.
-             all? { |r| (r.keys - required_keys).empty? }
+             all? { |r| (required_keys - r.keys).empty? }
         raise ArgumentError, "each requirement must have the following "\
                              "required keys: #{required_keys.join(', ')}."
       end

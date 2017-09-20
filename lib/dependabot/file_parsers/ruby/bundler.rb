@@ -28,7 +28,6 @@ module Dependabot
                 Dependency.new(
                   name: existing_dependency.name,
                   version: existing_dependency.version || dep.version,
-                  source: existing_dependency.source,
                   requirements:
                     existing_dependency.requirements + dep.requirements,
                   package_manager: "bundler"
@@ -49,10 +48,10 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
-              source: source_for(dependency),
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.groups,
+                source: source_for(dependency),
                 file: "Gemfile"
               }],
               package_manager: "bundler"
@@ -69,7 +68,6 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
-              source: source_for(dependency),
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.runtime? ? ["runtime"] : ["development"],

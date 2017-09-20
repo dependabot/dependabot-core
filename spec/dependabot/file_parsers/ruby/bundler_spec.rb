@@ -34,6 +34,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: { type: "default" },
             groups: [:default]
           }]
         end
@@ -42,7 +43,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("business") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:source) { is_expected.to eq(type: "default") }
       end
     end
 
@@ -60,6 +60,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
+            source: { type: "default" },
             groups: [:default]
           }]
         end
@@ -68,7 +69,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:source) { is_expected.to eq(type: "default") }
       end
     end
 
@@ -86,6 +86,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "< 1.5.0, > 1.0.0",
             file: "Gemfile",
+            source: { type: "default" },
             groups: [:default]
           }]
         end
@@ -110,6 +111,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: { type: "default" },
             groups: %i(development test)
           }]
         end
@@ -118,7 +120,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:source) { is_expected.to eq(type: "default") }
       end
     end
 
@@ -161,9 +162,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       describe "the private dependency" do
         subject { dependencies.last }
 
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: { type: "rubygems" },
+            groups: [:default]
+          }]
+        end
+
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:source) { is_expected.to eq(type: "rubygems") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -220,7 +230,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           its(:name) { is_expected.to eq("gitlab") }
           its(:version) { is_expected.to eq("4.2.0") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
-          its(:source) { is_expected.to eq(type: "default") }
         end
 
         describe "a development gemspec dependency" do
@@ -237,7 +246,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           its(:name) { is_expected.to eq("webmock") }
           its(:version) { is_expected.to eq("2.3.2") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
-          its(:source) { is_expected.to eq(type: "default") }
         end
 
         context "that needs to be sanitized" do
@@ -290,6 +298,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
               {
                 requirement: "~> 1.4.0",
                 file: "Gemfile",
+                source: { type: "git" },
                 groups: [:default]
               }
             ]
@@ -301,7 +310,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           its(:requirements) do
             is_expected.to match_array(expected_requirements)
           end
-          its(:source) { is_expected.to eq(type: "git") }
         end
       end
     end
@@ -333,7 +341,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("rake") }
         its(:version) { is_expected.to be_nil }
         its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:source) { is_expected.to eq(type: "default") }
       end
 
       context "that needs to be sanitized" do
@@ -354,6 +361,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: { type: "default" },
             groups: [:default]
           }]
         end
@@ -362,7 +370,6 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to be_nil }
         its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:source) { is_expected.to eq(type: "default") }
       end
 
       context "with a dependency for an alternative platform" do
