@@ -37,7 +37,12 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
       name: "monolog/monolog",
       version: "1.22.1",
       requirements: [
-        { file: "composer.json", requirement: "1.22.*", groups: [] }
+        {
+          file: "composer.json",
+          requirement: "1.22.*",
+          groups: [],
+          source: nil
+        }
       ],
       package_manager: "composer"
     )

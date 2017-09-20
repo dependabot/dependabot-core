@@ -9,6 +9,15 @@ module Dependabot
   module FileParsers
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
+        EXPECTED_SOURCES = [
+          NilClass,
+          ::Bundler::Source::Rubygems,
+          ::Bundler::Source::Git,
+          ::Bundler::Source::Path,
+          ::Bundler::Source::Gemspec,
+          ::Bundler::Source::Metadata
+        ].freeze
+
         def parse
           dependencies = gemfile_dependencies
 
@@ -42,6 +51,7 @@ module Dependabot
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.groups,
+                source: source_for(dependency),
                 file: "Gemfile"
               }],
               package_manager: "bundler"
@@ -61,6 +71,7 @@ module Dependabot
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.runtime? ? ["runtime"] : ["development"],
+                source: nil,
                 file: gemspec.name
               }],
               package_manager: "bundler"
@@ -160,6 +171,17 @@ module Dependabot
           # No need to set the version correctly - this is just an update
           # check so we're not going to persist any changes to the lockfile.
           gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
+        end
+
+        def source_for(dependency)
+          source = dependency.source
+
+          unless EXPECTED_SOURCES.any? { |s| source.instance_of?(s) }
+            raise "Unexpected Ruby source: #{source}"
+          end
+
+          return nil if dependency.source.nil?
+          source.class.name.split("::").last.downcase
         end
 
         def dependency_version(dependency_name)

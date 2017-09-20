@@ -10,7 +10,12 @@ RSpec.describe Dependabot::Dependency do
       {
         name: "dep",
         requirements: [
-          { "file" => "a.rb", "requirement" => ">= 0", "groups" => [] }
+          {
+            "file" => "a.rb",
+            "requirement" => ">= 0",
+            "groups" => [],
+            source: nil
+          }
         ],
         package_manager: "bundler"
       }
@@ -18,7 +23,7 @@ RSpec.describe Dependabot::Dependency do
 
     it "converts string keys to symbols" do
       expect(dependency.requirements).
-        to eq([{ file: "a.rb", requirement: ">= 0", groups: [] }])
+        to eq([{ file: "a.rb", requirement: ">= 0", groups: [], source: nil }])
     end
   end
 end

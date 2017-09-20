@@ -29,7 +29,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     )
   end
   let(:requirements) do
-    [{ file: "Gemfile", requirement: ">= 0", groups: [] }]
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
   end
 
   let(:gemfile) do
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         let(:requirements) do
-          [{ file: "Gemfile", requirement: "~> 4.6", groups: [] }]
+          [{ file: "Gemfile", requirement: "~> 4.6", groups: [], source: nil }]
         end
 
         before do
@@ -778,12 +778,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           {
             file: "Gemfile",
             requirement: "~> 1.4.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           },
           {
             file: "example.gemspec",
             requirement: "~> 1.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           }
         ]
       end
@@ -823,12 +825,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           {
             file: "Gemfile",
             requirement: "~> 1.4.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           },
           {
             file: "example.gemspec",
             requirement: "~> 1.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           }
         ]
       end
@@ -864,12 +868,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           {
             file: "Gemfile",
             requirement: "~> 1.4.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           },
           {
             file: "example.gemspec",
             requirement: "~> 1.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           }
         ]
       end
@@ -904,7 +910,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           {
             file: "Gemfile",
             requirement: "~> 1.4.0",
-            groups: [:default]
+            groups: [:default],
+            source: nil
           }
         ]
       end
@@ -938,7 +945,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           {
             file: "example.gemspec",
             requirement: "~> 0.9",
-            groups: ["runtime"]
+            groups: ["runtime"],
+            source: nil
           }
         ]
       end

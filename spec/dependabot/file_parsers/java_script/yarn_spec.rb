@@ -41,7 +41,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
               {
                 requirement: "^0.0.1",
                 file: "package.json",
-                groups: ["dependencies"]
+                groups: ["dependencies"],
+                source: nil
               }
             ]
           )
@@ -69,7 +70,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
               {
                 requirement: "^1.0.0",
                 file: "package.json",
-                groups: ["devDependencies"]
+                groups: ["devDependencies"],
+                source: nil
               }
             ]
           )
@@ -96,7 +98,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
               {
                 requirement: "^1.0.0",
                 file: "package.json",
-                groups: ["optionalDependencies"]
+                groups: ["optionalDependencies"],
+                source: nil
               }
             ]
           )

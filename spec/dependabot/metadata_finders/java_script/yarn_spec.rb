@@ -12,7 +12,9 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirements: [{ file: "package.json", requirement: "^1.0", groups: [] }],
+      requirements: [
+        { file: "package.json", requirement: "^1.0", groups: [], source: nil }
+      ],
       package_manager: "yarn"
     )
   end

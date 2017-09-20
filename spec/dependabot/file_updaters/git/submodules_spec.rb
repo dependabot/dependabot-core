@@ -41,6 +41,7 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
             url: "https://github.com/example/manifesto.git",
             branch: "master"
           },
+          source: nil,
           groups: []
         }
       ],
@@ -51,6 +52,7 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
             url: "https://github.com/example/manifesto.git",
             branch: "master"
           },
+          source: nil,
           groups: []
         }
       ],

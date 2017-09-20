@@ -21,7 +21,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       name: "monolog/monolog",
       version: "1.0.1",
       requirements: [
-        { file: "composer.json", requirement: "1.0.*", groups: [] }
+        { file: "composer.json", requirement: "1.0.*", groups: [], source: nil }
       ],
       package_manager: "composer"
     )
@@ -81,7 +81,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           name: "doctrine/dbal",
           version: "2.1.5",
           requirements: [
-            { file: "composer.json", requirement: "1.0.*", groups: [] }
+            {
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }
           ],
           package_manager: "composer"
         )
@@ -116,7 +121,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
             name: "symfony/polyfill-mbstring",
             version: "1.0.1",
             requirements: [
-              { file: "composer.json", requirement: "1.0.*", groups: [] }
+              {
+                file: "composer.json",
+                requirement: "1.0.*",
+                groups: [],
+                source: nil
+              }
             ],
             package_manager: "composer"
           )
@@ -139,7 +149,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           name: "wpackagist-plugin/acf-to-rest-api",
           version: "2.2.1",
           requirements: [
-            { file: "composer.json", requirement: "*", groups: ["runtime"] }
+            {
+              file: "composer.json",
+              requirement: "*",
+              groups: ["runtime"],
+              source: nil
+            }
           ],
           package_manager: "composer"
         )
@@ -164,7 +179,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
             {
               file: "composer.json",
               requirement: "^5.2.0",
-              groups: ["runtime"]
+              groups: ["runtime"],
+              source: nil
             }
           ],
           package_manager: "composer"
@@ -183,7 +199,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         name: "monolog/monolog",
         version: "1.0.1",
         requirements: [
-          { file: "composer.json", requirement: old_requirement, groups: [] }
+          {
+            file: "composer.json",
+            requirement: old_requirement,
+            groups: [],
+            source: nil
+          }
         ],
         package_manager: "composer"
       )

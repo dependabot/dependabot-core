@@ -16,6 +16,7 @@ module Dependabot
               requirements: [{
                 requirement: dep["requirement"],
                 file: "requirements.txt",
+                source: nil,
                 groups: []
               }],
               package_manager: "pip"

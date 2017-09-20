@@ -45,9 +45,9 @@ module Dependabot
         raise ArgumentError, "requirements must be an array of hashes"
       end
 
-      required_keys = %i(requirement file groups)
+      required_keys = %i(requirement file groups source)
       unless requirement_fields.flatten.
-             all? { |r| (r.keys - required_keys).empty? }
+             all? { |r| required_keys.sort == r.keys.sort }
         raise ArgumentError, "each requirement must have the following "\
                              "required keys: #{required_keys.join(', ')}."
       end

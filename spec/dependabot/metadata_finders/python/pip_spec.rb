@@ -13,7 +13,12 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
       name: dependency_name,
       version: "1.0",
       requirements: [
-        { file: "requirements.txt", requirement: "=1.0", groups: [] }
+        {
+          file: "requirements.txt",
+          requirement: "=1.0",
+          groups: [],
+          source: nil
+        }
       ],
       package_manager: "pip"
     )

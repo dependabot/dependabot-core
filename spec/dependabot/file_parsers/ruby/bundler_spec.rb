@@ -34,6 +34,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: nil,
             groups: [:default]
           }]
         end
@@ -59,6 +60,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
+            source: nil,
             groups: [:default]
           }]
         end
@@ -84,6 +86,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "< 1.5.0, > 1.0.0",
             file: "Gemfile",
+            source: nil,
             groups: [:default]
           }]
         end
@@ -108,6 +111,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: nil,
             groups: %i(development test)
           }]
         end
@@ -145,6 +149,32 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
 
       its(:length) { is_expected.to eq(4) }
+    end
+
+    context "with a gem from a private gem source" do
+      let(:lockfile_content) do
+        fixture("ruby", "lockfiles", "specified_source.lock")
+      end
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "specified_source") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the private dependency" do
+        subject { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: "rubygems",
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("business") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
     end
 
     context "when the Gemfile can't be evaluated" do
@@ -192,6 +222,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             [{
               requirement: "~> 4.1",
               file: "example.gemspec",
+              source: nil,
               groups: ["runtime"]
             }]
           end
@@ -208,6 +239,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             [{
               requirement: "~> 2.3.1",
               file: "example.gemspec",
+              source: nil,
               groups: ["development"]
             }]
           end
@@ -234,7 +266,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
-    context "with a gemspec and gemfile (no lockfile)" do
+    context "with a gemspec and Gemfile (no lockfile)" do
       let(:files) { [gemspec, gemfile] }
 
       let(:gemspec) do
@@ -249,9 +281,12 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       its(:length) { is_expected.to eq(13) }
 
       context "when a dependency appears in both" do
+        let(:gemfile_content) do
+          fixture("ruby", "gemfiles", "imports_gemspec_git_override")
+        end
         let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
 
-        its(:length) { is_expected.to eq(2) }
+        its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject { dependencies.first }
@@ -260,11 +295,13 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
               {
                 requirement: "~> 1.0",
                 file: "example.gemspec",
+                source: nil,
                 groups: ["runtime"]
               },
               {
                 requirement: "~> 1.4.0",
                 file: "Gemfile",
+                source: "git",
                 groups: [:default]
               }
             ]
@@ -299,6 +336,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "example.gemspec",
+            source: nil,
             groups: ["development"]
           }]
         end
@@ -327,6 +365,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
+            source: nil,
             groups: [:default]
           }]
         end

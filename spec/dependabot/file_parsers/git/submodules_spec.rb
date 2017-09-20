@@ -45,6 +45,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
                 branch: "gh-pages"
               },
               file: ".gitmodules",
+              source: nil,
               groups: []
             }
           ]
@@ -67,6 +68,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
                 branch: "master"
               },
               file: ".gitmodules",
+              source: nil,
               groups: []
             }
           ]

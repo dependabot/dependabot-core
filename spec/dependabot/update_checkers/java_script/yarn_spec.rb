@@ -25,7 +25,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     Dependabot::Dependency.new(
       name: "etag",
       version: "1.0.0",
-      requirements: [{ file: "yarn.lock", requirement: "^1.0.0", groups: [] }],
+      requirements: [
+        { file: "yarn.lock", requirement: "^1.0.0", groups: [], source: nil }
+      ],
       package_manager: "yarn"
     )
   end
@@ -43,7 +45,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           name: "etag",
           version: "1.7.0",
           requirements: [
-            { file: "yarn.lock", requirement: "^1.0.0", groups: [] }
+            {
+              file: "yarn.lock",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }
           ],
           package_manager: "yarn"
         )
@@ -65,7 +72,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           name: "@blep/blep",
           version: "1.0.0",
           requirements: [
-            { file: "yarn.lock", requirement: "^1.0.0", groups: [] }
+            {
+              file: "yarn.lock",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }
           ],
           package_manager: "yarn"
         )
@@ -128,7 +140,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         name: "etag",
         version: "1.0.0",
         requirements: [
-          { file: "yarn.lock", requirement: original_requirement, groups: [] }
+          {
+            file: "yarn.lock",
+            requirement: original_requirement,
+            groups: [],
+            source: nil
+          }
         ],
         package_manager: "yarn"
       )
