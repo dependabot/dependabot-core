@@ -40,6 +40,14 @@ module Dependabot
         def rubygems_listing
           return @rubygems_listing unless @rubygems_listing.nil?
 
+          # Unless we're using the default source (i.e., no source was
+          # specified), return early. In future we should check for metadata
+          # at the custom source's URL, but we'll need to store that at parse
+          # time to do so.
+          unless dependency.requirements.all? { |r| r.fetch(:source).nil? }
+            return @rubygems_listing = {}
+          end
+
           @rubygems_listing = Gems.info(dependency.name)
         rescue JSON::ParserError
           # Replace with Gems::NotFound error if/when

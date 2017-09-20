@@ -20,7 +20,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       version: "1.5.0",
       previous_version: "1.4.0",
       package_manager: "bundler",
-      requirements: [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [] }]
+      requirements: [
+        { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
+      ]
     )
   end
   let(:repo) { "gocardless/bump" }
@@ -108,7 +110,12 @@ RSpec.describe Dependabot::PullRequestCreator do
           version: "1.5.0",
           package_manager: "bundler",
           requirements: [
-            { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
           ]
         )
       end
@@ -284,10 +291,20 @@ RSpec.describe Dependabot::PullRequestCreator do
           version: "1.5.0",
           package_manager: "bundler",
           requirements: [
-            { file: "some.gemspec", requirement: ">= 1.0, < 3.0", groups: [] }
+            {
+              file: "some.gemspec",
+              requirement: ">= 1.0, < 3.0",
+              groups: [],
+              source: nil
+            }
           ],
           previous_requirements: [
-            { file: "some.gemspec", requirement: "~> 1.4.0", groups: [] }
+            {
+              file: "some.gemspec",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
           ]
         )
       end
@@ -300,7 +317,12 @@ RSpec.describe Dependabot::PullRequestCreator do
             version: "1.5.0",
             package_manager: "bundler",
             requirements: [
-              { file: "some.gemspec", requirement: ">= 1.0, < 3.0", groups: [] }
+              {
+                file: "some.gemspec",
+                requirement: ">= 1.0, < 3.0",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end
@@ -363,10 +385,20 @@ RSpec.describe Dependabot::PullRequestCreator do
           version: "1.5.0",
           package_manager: "bundler",
           requirements: [
-            { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }
           ],
           previous_requirements: [
-            { file: "Gemfile", requirement: "~> 1.4.0", groups: [] }
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
           ]
         )
       end
@@ -379,7 +411,12 @@ RSpec.describe Dependabot::PullRequestCreator do
             version: "1.5.0",
             package_manager: "bundler",
             requirements: [
-              { file: "Gemfile", requirement: "~> 1.5.0", groups: [] }
+              {
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end
