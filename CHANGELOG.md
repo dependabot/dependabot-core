@@ -1,3 +1,10 @@
+## v0.19.0, 20 September 2017
+
+- BREAKING: Add source key to dependency requirement attribute, as a
+  required key
+- Use requirement source key to ensure default metadata is only fetched
+  when appropriate
+
 ## v0.18.12, 19 September 2017
 
 - Raise GitDependencyReferenceNotFound errors during Ruby update checking
