@@ -34,7 +34,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
-            source: { type: "default" },
+            source: nil,
             groups: [:default]
           }]
         end
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
-            source: { type: "default" },
+            source: nil,
             groups: [:default]
           }]
         end
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "< 1.5.0, > 1.0.0",
             file: "Gemfile",
-            source: { type: "default" },
+            source: nil,
             groups: [:default]
           }]
         end
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
-            source: { type: "default" },
+            source: nil,
             groups: %i(development test)
           }]
         end
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
-            source: { type: "rubygems" },
+            source: "rubygems",
             groups: [:default]
           }]
         end
@@ -222,6 +222,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             [{
               requirement: "~> 4.1",
               file: "example.gemspec",
+              source: nil,
               groups: ["runtime"]
             }]
           end
@@ -238,6 +239,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             [{
               requirement: "~> 2.3.1",
               file: "example.gemspec",
+              source: nil,
               groups: ["development"]
             }]
           end
@@ -293,12 +295,13 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
               {
                 requirement: "~> 1.0",
                 file: "example.gemspec",
+                source: nil,
                 groups: ["runtime"]
               },
               {
                 requirement: "~> 1.4.0",
                 file: "Gemfile",
-                source: { type: "git" },
+                source: "git",
                 groups: [:default]
               }
             ]
@@ -333,6 +336,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "example.gemspec",
+            source: nil,
             groups: ["development"]
           }]
         end
@@ -361,7 +365,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: "~> 1.4.0",
             file: "Gemfile",
-            source: { type: "default" },
+            source: nil,
             groups: [:default]
           }]
         end

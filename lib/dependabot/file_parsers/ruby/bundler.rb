@@ -71,6 +71,7 @@ module Dependabot
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.runtime? ? ["runtime"] : ["development"],
+                source: nil,
                 file: gemspec.name
               }],
               package_manager: "bundler"
@@ -179,9 +180,8 @@ module Dependabot
             raise "Unexpected Ruby source: #{source}"
           end
 
-          return { type: "default" } if dependency.source.nil?
-
-          { type: source.class.name.split("::").last.downcase }
+          return nil if dependency.source.nil?
+          source.class.name.split("::").last.downcase
         end
 
         def dependency_version(dependency_name)
