@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 module Dependabot
   class Dependency
-    attr_reader :name, :version, :requirements, :package_manager,
+    attr_reader :name, :version, :source, :requirements, :package_manager,
                 :previous_version, :previous_requirements
 
     def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil)
+                   previous_version: nil, previous_requirements: nil,
+                   source: nil)
       @name = name
       @version = version
+      @source = source
       @requirements = requirements.map { |req| symbolize_keys(req) }
       @previous_version = previous_version
       @previous_requirements =
@@ -21,6 +23,7 @@ module Dependabot
       {
         "name" => name,
         "version" => version,
+        "source" => source,
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,

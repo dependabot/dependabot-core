@@ -9,6 +9,15 @@ module Dependabot
   module FileParsers
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
+        EXPECTED_SOURCES = [
+          NilClass,
+          ::Bundler::Source::Rubygems,
+          ::Bundler::Source::Git,
+          ::Bundler::Source::Path,
+          ::Bundler::Source::Gemspec,
+          ::Bundler::Source::Metadata
+        ].freeze
+
         def parse
           dependencies = gemfile_dependencies
 
@@ -19,6 +28,7 @@ module Dependabot
                 Dependency.new(
                   name: existing_dependency.name,
                   version: existing_dependency.version || dep.version,
+                  source: existing_dependency.source,
                   requirements:
                     existing_dependency.requirements + dep.requirements,
                   package_manager: "bundler"
@@ -39,6 +49,7 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
+              source: source_for(dependency),
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.groups,
@@ -58,6 +69,7 @@ module Dependabot
             Dependency.new(
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
+              source: source_for(dependency),
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: dependency.runtime? ? ["runtime"] : ["development"],
@@ -160,6 +172,18 @@ module Dependabot
           # No need to set the version correctly - this is just an update
           # check so we're not going to persist any changes to the lockfile.
           gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
+        end
+
+        def source_for(dependency)
+          source = dependency.source
+
+          unless EXPECTED_SOURCES.any? { |s| source.instance_of?(s) }
+            raise "Unexpected Ruby source: #{source}"
+          end
+
+          return { type: "default" } if dependency.source.nil?
+
+          { type: source.class.name.split("::").last.downcase }
         end
 
         def dependency_version(dependency_name)
