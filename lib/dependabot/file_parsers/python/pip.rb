@@ -31,7 +31,7 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(
-              command: "python3 #{python_helper_path}",
+              command: "python3.6 #{python_helper_path}",
               function: "parse",
               args: [Dir.pwd]
             )
