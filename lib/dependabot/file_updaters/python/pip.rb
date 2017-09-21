@@ -14,12 +14,15 @@ module Dependabot
         end
 
         def updated_dependency_files
-          [
+          changed_requirements =
+            dependency.requirements - dependency.previous_requirements
+
+          changed_requirements.map do |req|
             updated_file(
-              file: original_file,
-              content: updated_requirements_content
+              file: original_file(req.fetch(:file)),
+              content: updated_file_content(req)
             )
-          ]
+          end
         end
 
         private
@@ -30,41 +33,32 @@ module Dependabot
           end
         end
 
-        def original_file
-          filename = dependency.requirements.first.fetch(:file)
-
-          @original_file ||=
-            begin
-              file = get_original_file(filename)
-              unless file
-                raise "No #{filename} in #{dependency_files.map(&:name)}!"
-              end
-              file
-            end
+        def original_file(filename)
+          file = get_original_file(filename)
+          raise "No #{filename} in #{dependency_files.map(&:name)}!" unless file
+          file
         end
 
-        def updated_requirements_content
-          @updated_requirements_content ||= original_file.content.gsub(
-            original_dependency_declaration_string,
-            updated_dependency_declaration_string
+        def updated_file_content(requirement)
+          original_file(requirement.fetch(:file)).content.gsub(
+            original_dependency_declaration_string(requirement),
+            updated_dependency_declaration_string(requirement)
           )
         end
 
-        def original_dependency_declaration_string
-          @original_dependency_declaration_string ||=
-            begin
-              regex = PythonRequirementLineParser::REQUIREMENT_LINE
-              matches = []
+        def original_dependency_declaration_string(requirements)
+          regex = PythonRequirementLineParser::REQUIREMENT_LINE
+          matches = []
 
-              original_file.content.scan(regex) { matches << Regexp.last_match }
-              dec = matches.find { |match| match[:name] == dependency.name }
-              raise "Declaration not found!" unless dec
-              dec.to_s
-            end
+          original_file(requirements.fetch(:file)).
+            content.scan(regex) { matches << Regexp.last_match }
+          dec = matches.find { |match| match[:name] == dependency.name }
+          raise "Declaration not found!" unless dec
+          dec.to_s
         end
 
-        def updated_dependency_declaration_string
-          original_dependency_declaration_string.
+        def updated_dependency_declaration_string(requirement)
+          original_dependency_declaration_string(requirement).
             sub(PythonRequirementLineParser::REQUIREMENT) do |req|
               req.sub(PythonRequirementLineParser::VERSION) do |ver|
                 precision = ver.split(".").count

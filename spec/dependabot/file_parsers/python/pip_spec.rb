@@ -184,6 +184,40 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             )
           end
         end
+
+        context "when the requirements file is specific, too" do
+          let(:requirements_body) do
+            fixture("python", "requirements", "specific_with_constraints.txt")
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("requests")
+              expect(dependency.version).to eq("2.0.0")
+              expect(dependency.requirements).to match_array(
+                [
+                  {
+                    requirement: "==2.0.0",
+                    file: "constraints.txt",
+                    groups: [],
+                    source: nil
+                  },
+                  {
+                    requirement: "==2.4.1",
+                    file: "requirements.txt",
+                    groups: [],
+                    source: nil
+                  }
+                ]
+              )
+            end
+          end
+        end
       end
     end
 

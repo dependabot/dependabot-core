@@ -9,19 +9,23 @@ module Dependabot
     module Python
       class Pip < Dependabot::FileParsers::Base
         def parse
-          dependency_versions.map do |dep|
-            Dependency.new(
-              name: dep["name"],
-              version: dep["version"],
-              requirements: [{
-                requirement: dep["requirement"],
-                file: Pathname.new(dep["file"]).cleanpath.to_path,
-                source: nil,
-                groups: []
-              }],
-              package_manager: "pip"
-            )
-          end
+          dependency_versions.
+            group_by { |dep| dep["name"] }.
+            map do |_, deps|
+              Dependency.new(
+                name: deps.first["name"],
+                version: deps.first["version"],
+                requirements: deps.map do |dep|
+                  {
+                    requirement: dep["requirement"],
+                    file: Pathname.new(dep["file"]).cleanpath.to_path,
+                    source: nil,
+                    groups: []
+                  }
+                end,
+                package_manager: "pip"
+              )
+            end
         end
 
         private

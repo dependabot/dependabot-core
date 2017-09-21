@@ -37,6 +37,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           source: nil
         }
       ],
+      previous_requirements: [
+        {
+          file: "requirements.txt",
+          requirement: "==2.7.1",
+          groups: [],
+          source: nil
+        }
+      ],
       package_manager: "pip"
     )
   end
@@ -89,10 +97,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
 
       context "when the dependency is in a child requirement file" do
-        subject(:updated_requirements_file) do
-          updated_files.find { |f| f.name == "more_requirements.txt" }
-        end
-
         let(:updater) do
           described_class.new(
             dependency_files: [requirements, more_requirements],
@@ -109,6 +113,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               {
                 file: "more_requirements.txt",
                 requirement: "==2.8.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "more_requirements.txt",
+                requirement: "==2.7.1",
                 groups: [],
                 source: nil
               }
@@ -132,6 +144,70 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           expect(updated_files.count).to eq(1)
           expect(updated_files.first.content).to include("psycopg2==2.8.1\n")
         end
+      end
+    end
+
+    context "when the dependency is in constraints.txt and requirement.txt" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [requirements, constraints],
+          dependency: dependency,
+          github_access_token: "token"
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.8.1",
+          requirements: [
+            {
+              file: "requirements.txt",
+              requirement: "==2.8.1",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "constraints.txt",
+              requirement: "==2.8.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "requirements.txt",
+              requirement: "==2.4.1",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "constraints.txt",
+              requirement: "==2.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
+      end
+
+      let(:requirements_body) do
+        fixture("python", "requirements", "specific_with_constraints.txt")
+      end
+
+      let(:constraints) do
+        Dependabot::DependencyFile.new(
+          content: fixture("python", "constraints", "specific.txt"),
+          name: "constraints.txt"
+        )
+      end
+
+      it "updates both files" do
+        expect(updated_files.map(&:name)).
+          to match_array(%w(requirements.txt constraints.txt))
+        expect(updated_files.first.content).to include("requests==2.8.1\n")
+        expect(updated_files.last.content).to include("requests==2.8.1\n")
       end
     end
   end

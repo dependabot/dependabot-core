@@ -142,5 +142,48 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
       its([:file]) { is_expected.to eq("constraints.txt") }
     end
+
+    context "when there were multiple requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "luigi",
+          version: "2.0.0",
+          requirements: [
+            {
+              file: "constraints.txt",
+              requirement: "==2.0.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "requirements.txt",
+              requirement: "==2.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
+      end
+
+      it "updates both requirements" do
+        expect(checker.updated_requirements).to match_array(
+          [
+            {
+              file: "constraints.txt",
+              requirement: "==2.6.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "requirements.txt",
+              requirement: "==2.6.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+    end
   end
 end
