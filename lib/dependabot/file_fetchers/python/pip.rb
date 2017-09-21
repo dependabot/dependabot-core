@@ -20,6 +20,7 @@ module Dependabot
           fetched_files << requirement_file
           fetched_files << setup_file unless setup_file.nil?
           fetched_files += child_requirement_files
+          fetched_files += constraints_files
           fetched_files += path_setup_files
           fetched_files
         end
@@ -55,6 +56,16 @@ module Dependabot
           end
 
           files
+        end
+
+        def constraints_files
+          all_requirement_files = [requirement_file] + child_requirement_files
+
+          constraints_paths = all_requirement_files.map do |req_file|
+            req_file.content.scan(/^-c\s?(?<path>\..*)/).flatten
+          end.flatten.uniq
+
+          constraints_paths.map { |path| fetch_file_from_github(path) }
         end
 
         def path_setup_files
