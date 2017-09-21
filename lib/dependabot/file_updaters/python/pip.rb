@@ -7,13 +7,16 @@ module Dependabot
     module Python
       class Pip < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
-          [/^requirements\.txt$/]
+          [
+            /^requirements\.txt$/,
+            /^constraints\.txt$/
+          ]
         end
 
         def updated_dependency_files
           [
             updated_file(
-              file: requirements,
+              file: original_file,
               content: updated_requirements_content
             )
           ]
@@ -27,15 +30,21 @@ module Dependabot
           end
         end
 
-        def requirements
-          @requirements ||= dependency_files.find do |file|
-            next if file.name.end_with?("setup.py")
-            file.content.match?(/^#{Regexp.escape(dependency.name)}==/)
-          end
+        def original_file
+          filename = dependency.requirements.first.fetch(:file)
+
+          @original_file ||=
+            begin
+              file = get_original_file(filename)
+              unless file
+                raise "No #{filename} in #{dependency_files.map(&:name)}!"
+              end
+              file
+            end
         end
 
         def updated_requirements_content
-          @updated_requirements_content ||= requirements.content.gsub(
+          @updated_requirements_content ||= original_file.content.gsub(
             original_dependency_declaration_string,
             updated_dependency_declaration_string
           )
@@ -47,8 +56,10 @@ module Dependabot
               regex = PythonRequirementLineParser::REQUIREMENT_LINE
               matches = []
 
-              requirements.content.scan(regex) { matches << Regexp.last_match }
-              matches.find { |match| match[:name] == dependency.name }.to_s
+              original_file.content.scan(regex) { matches << Regexp.last_match }
+              dec = matches.find { |match| match[:name] == dependency.name }
+              raise "Declaration not found!" unless dec
+              dec.to_s
             end
         end
 

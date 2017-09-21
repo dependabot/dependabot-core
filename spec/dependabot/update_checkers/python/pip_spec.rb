@@ -122,5 +122,25 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
     its([:requirement]) { is_expected.to eq("==2.6.0") }
+
+    context "when the requirement was in a constraint file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "luigi",
+          version: "2.0.0",
+          requirements: [
+            {
+              file: "constraints.txt",
+              requirement: "==2.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
+      end
+
+      its([:file]) { is_expected.to eq("constraints.txt") }
+    end
   end
 end

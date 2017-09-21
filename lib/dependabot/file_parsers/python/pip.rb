@@ -15,7 +15,7 @@ module Dependabot
               version: dep["version"],
               requirements: [{
                 requirement: dep["requirement"],
-                file: "requirements.txt",
+                file: Pathname.new(dep["file"]).cleanpath.to_path,
                 source: nil,
                 groups: []
               }],

@@ -164,6 +164,26 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
 
         its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to eq("2.0.0")
+            expect(dependency.requirements).to eq(
+              [
+                {
+                  requirement: "==2.0.0",
+                  file: "constraints.txt",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
       end
     end
 
@@ -219,6 +239,46 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       its(:length) { is_expected.to eq(3) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("requests")
+          expect(dependency.version).to eq("2.4.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.4.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("luigi")
+          expect(dependency.version).to eq("2.2.0")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.2.0",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
     end
   end
 end
