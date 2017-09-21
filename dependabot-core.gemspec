@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.4.0"
   spec.required_rubygems_version = ">= 2.6.11"
 
-  spec.add_dependency "bundler", ">= 1.12.0"
+  spec.add_dependency "bundler", ">= 1.16.0.pre"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gemnasium-parser", "~> 0.1"
   spec.add_dependency "parseconfig", "~> 1.0.8"
