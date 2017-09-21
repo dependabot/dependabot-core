@@ -101,6 +101,22 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           )
         end
 
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "psycopg2",
+            version: "2.8.1",
+            requirements: [
+              {
+                file: "more_requirements.txt",
+                requirement: "==2.8.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+
         let(:requirements_body) do
           fixture("python", "requirements", "cascading.txt")
         end
