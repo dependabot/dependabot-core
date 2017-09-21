@@ -143,14 +143,28 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements_body) do
         fixture("python", "requirements", "with_constraints.txt")
       end
-      let(:constraints) do
-        Dependabot::DependencyFile.new(
-          name: "constraints.txt",
-          content: fixture("python", "constraints", "constraints.txt")
-        )
+
+      context "that aren't specific" do
+        let(:constraints) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: fixture("python", "constraints", "less_than.txt")
+          )
+        end
+
+        its(:length) { is_expected.to eq(0) }
       end
 
-      its(:length) { is_expected.to eq(1) }
+      context "that are specific" do
+        let(:constraints) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: fixture("python", "constraints", "specific.txt")
+          )
+        end
+
+        its(:length) { is_expected.to eq(1) }
+      end
     end
 
     context "with reference to its setup.py" do
