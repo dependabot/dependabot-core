@@ -1,3 +1,8 @@
+## v0.19.1, 21 September 2017
+
+- Better support for Python constraints files, and a general refactor of
+  Python support
+
 ## v0.19.0, 20 September 2017
 
 - BREAKING: Add source key to dependency requirement attribute, as a
