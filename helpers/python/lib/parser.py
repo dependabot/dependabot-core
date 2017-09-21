@@ -17,12 +17,12 @@ def parse(directory):
         for install_req in requirements:
             if (not install_req.original_link and install_req.is_pinned):
                 specifier = next(iter(install_req.specifier))
-                file = re.sub(reg, '', install_req.comes_from).split(' ')[0]
+                rel_path = re.sub(reg, '', install_req.comes_from.split(' ')[1])
 
                 packages.append({
                     "name": install_req.name,
                     "version": specifier.version,
-                    "file": file,
+                    "file": rel_path,
                     "requirement": str(specifier)
                 })
     except Exception as e:
