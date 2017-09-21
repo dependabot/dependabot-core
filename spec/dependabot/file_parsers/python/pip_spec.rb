@@ -138,6 +138,21 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(1) }
     end
 
+    context "with a constraints file" do
+      let(:files) { [requirements, constraints] }
+      let(:requirements_body) do
+        fixture("python", "requirements", "with_constraints.txt")
+      end
+      let(:constraints) do
+        Dependabot::DependencyFile.new(
+          name: "constraints.txt",
+          content: fixture("python", "constraints", "constraints.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with reference to its setup.py" do
       let(:files) { [requirements, setup_file] }
       let(:requirements) do
@@ -179,11 +194,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
     context "with child requirement files" do
       let(:files) { [requirements, child_requirements] }
-      let(:requirements) do
-        Dependabot::DependencyFile.new(
-          name: "requirements.txt",
-          content: fixture("python", "requirements", "cascading.txt")
-        )
+      let(:requirements_body) do
+        fixture("python", "requirements", "cascading.txt")
       end
       let(:child_requirements) do
         Dependabot::DependencyFile.new(
