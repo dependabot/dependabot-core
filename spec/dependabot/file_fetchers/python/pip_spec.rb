@@ -5,6 +5,85 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Python::Pip do
   it_behaves_like "a dependency file fetcher"
 
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:file_fetcher_instance) do
+    described_class.new(repo: "gocardless/bump", github_client: github_client)
+  end
+
+  context "with only a requirements.txt" do
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "requirements.txt?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "requirements_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "setup.py?ref=sha").to_return(status: 404)
+    end
+
+    it "fetches the requirements.txt file" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(["requirements.txt"])
+    end
+  end
+
+  # TODO: To support Python libraries we'd want to fetch these.
+  context "with only a setup.py file" do
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "requirements.txt?ref=sha").
+        to_return(status: 404)
+      stub_request(:get, url + "setup.py?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "setup_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises a Dependabot::DependencyFileNotFound error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect(error.file_name).to eq("requirements.txt")
+        end
+    end
+  end
+
+  context "with a requirements.txt and a setup.py" do
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "requirements.txt?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "requirements_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "setup.py?ref=sha").
+        to_return(
+          status: 200,
+          body: fixture("github", "setup_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the requirements.txt and the setup.py file" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("setup.py")
+    end
+  end
+
   context "with a cascading requirement" do
     let(:github_client) { Octokit::Client.new(access_token: "token") }
     let(:file_fetcher_instance) do
@@ -22,6 +101,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           body: fixture("github", "requirements_with_cascade.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "setup.py?ref=sha").to_return(status: 404)
     end
 
     context "that is fetchable" do
