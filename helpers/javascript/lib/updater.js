@@ -13,10 +13,10 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { Add } = require("yarn/lib/cli/commands/add");
-const Config = require("yarn/lib/config").default;
-const { EventReporter } = require("yarn/lib/reporters");
-const Lockfile = require("yarn/lib/lockfile/wrapper").default;
+const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
+const Config = require("@dependabot/yarn-lib/lib/config").default;
+const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
+const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
