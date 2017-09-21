@@ -130,6 +130,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(1) }
     end
 
+    context "with a git dependency" do
+      let(:requirements_body) do
+        fixture("python", "requirements", "with_git_dependency.txt")
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with reference to its setup.py" do
       let(:files) { [requirements, setup_file] }
       let(:requirements) do

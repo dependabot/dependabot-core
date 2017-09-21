@@ -1,0 +1,2 @@
+psycopg2==2.6.1
+git+https://github.com/requests/requests#egg=requests
