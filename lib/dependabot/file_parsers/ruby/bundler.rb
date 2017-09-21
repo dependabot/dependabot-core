@@ -192,13 +192,20 @@ module Dependabot
             return Gem::Version.new(::Bundler::VERSION)
           end
 
-          # The safe navigation operator is necessary because not all files in
-          # the Gemfile will appear in the Gemfile.lock. For instance, if a gem
-          # specifies `platform: [:windows]`, and the Gemfile.lock is generated
-          # on a Linux machine, the gem will be not appear in the lockfile.
-          @parsed_lockfile.specs.
-            find { |spec| spec.name == dependency_name }&.
-            version
+          spec = @parsed_lockfile.specs.find { |s| s.name == dependency_name }
+
+          # Not all files in the Gemfile will appear in the Gemfile.lock. For
+          # instance, if a gem specifies `platform: [:windows]`, and the
+          # Gemfile.lock is generated on a Linux machine, the gem will be not
+          # appear in the lockfile.
+          return unless spec
+
+          # If the source is Git we're better off knowing the sha than the
+          # version.
+          if spec.source.instance_of?(::Bundler::Source::Git)
+            return spec.source.revision
+          end
+          spec.version
         end
 
         def gemfile_includes_dependency?(dependency)
