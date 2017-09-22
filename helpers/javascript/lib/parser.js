@@ -9,16 +9,21 @@
  * Extract a list of the packages specified in the package.json, with their
  * currently installed versions (which are in the yarn.lock)
  */
-const { Install } = require("yarn/lib/cli/commands/install");
-const Config = require("yarn/lib/config").default;
-const { NoopReporter } = require("yarn/lib/reporters");
-const Lockfile = require("yarn/lib/lockfile/wrapper").default;
-const PackageRequest = require("yarn/lib/package-request").default;
+const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
+const Config = require("@dependabot/yarn-lib/lib/config").default;
+const { NoopReporter } = require("@dependabot/yarn-lib/lib/reporters");
+const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
+const PackageRequest = require("@dependabot/yarn-lib/lib/package-request")
+  .default;
+const {
+  normalizePattern
+} = require("@dependabot/yarn-lib/lib/util/normalize-pattern");
+const { getExoticResolver } = require("@dependabot/yarn-lib/lib/resolvers");
 const semver = require("semver");
 
 function isNotExotic(request) {
-  const { range } = PackageRequest.normalizePattern(request.pattern);
-  return !PackageRequest.getExoticResolver(range);
+  const { range } = normalizePattern(request.pattern);
+  return !getExoticResolver(range);
 }
 
 async function parse(directory) {
