@@ -200,7 +200,7 @@ module Dependabot
           # appear in the lockfile.
           return unless spec
 
-          # If the source is Git we're better off knowing the sha than the
+          # If the source is Git we're better off knowing the SHA-1 than the
           # version.
           if spec.source.instance_of?(::Bundler::Source::Git)
             return spec.source.revision
