@@ -20,6 +20,36 @@ module Dependabot
         private
 
         def look_up_source
+          case source_type
+          when "default" then find_source_from_rubygems_listing
+          when "git" then find_source_from_git_url
+          when "rubygems" then nil # Private rubygems server
+          else raise "Unexpected source type: #{source_type}"
+          end
+        end
+
+        def look_up_changelog_url
+          if source_type == "default" && rubygems_listing["changelog_uri"]
+            return rubygems_listing["changelog_uri"]
+          end
+
+          if source_type == "git"
+            return nil # Changelog won't be relevant for git commit bumps
+          end
+
+          super
+        end
+
+        def source_type
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          return "default" if sources.empty?
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          sources.first[:type] || sources.first.fetch("type")
+        end
+
+        def find_source_from_rubygems_listing
           source_url = rubygems_listing.
                        values_at(*SOURCE_KEYS).
                        compact.
@@ -29,24 +59,17 @@ module Dependabot
           source_url.match(SOURCE_REGEX).named_captures
         end
 
-        def look_up_changelog_url
-          if rubygems_listing["changelog_uri"]
-            return rubygems_listing["changelog_uri"]
-          end
+        def find_source_from_git_url
+          source_details = dependency.requirements.
+                           map { |r| r.fetch(:source) }.
+                           compact.first
 
-          super
+          source_url = source_details[:url] || source_details.fetch("url")
+          source_url.match(SOURCE_REGEX).named_captures
         end
 
         def rubygems_listing
           return @rubygems_listing unless @rubygems_listing.nil?
-
-          # Unless we're using the default source (i.e., no source was
-          # specified), return early. In future we should check for metadata
-          # at the custom source's URL, but we'll need to store that at parse
-          # time to do so.
-          unless dependency.requirements.all? { |r| r.fetch(:source).nil? }
-            return @rubygems_listing = {}
-          end
 
           @rubygems_listing = Gems.info(dependency.name)
         rescue JSON::ParserError
