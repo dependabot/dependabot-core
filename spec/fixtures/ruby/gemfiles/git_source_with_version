@@ -1,0 +1,4 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+gem "prius", "~> 1.0.0", git: "https://github.com/gocardless/prius"

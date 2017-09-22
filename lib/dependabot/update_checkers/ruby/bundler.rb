@@ -288,12 +288,19 @@ module Dependabot
             return gemfile_content
           end
 
+          replacement_version =
+            if dependency.version&.match?(/^[0-9a-f]{40}$/)
+              0
+            else
+              dependency.version || 0
+            end
+
           original_gem_declaration_string = Regexp.last_match.to_s
           updated_gem_declaration_string =
             original_gem_declaration_string.
             sub(
               Gemnasium::Parser::Patterns::REQUIREMENTS,
-              "'>= #{dependency.version || 0}'"
+              "'>= #{replacement_version}'"
             )
 
           gemfile_content.gsub(
