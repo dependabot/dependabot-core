@@ -123,6 +123,31 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a git dependency" do
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "git_source") }
+      let(:lockfile_content) { fixture("ruby", "lockfiles", "git_source.lock") }
+
+      its(:length) { is_expected.to eq(5) }
+      describe "the last dependency" do
+        subject { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: "git",
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("uk_phone_numbers") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
+        end
+      end
+    end
+
     context "with a dependency that doesn't appear in the lockfile" do
       let(:gemfile_content) { fixture("ruby", "gemfiles", "platform_windows") }
       let(:lockfile_content) do

@@ -22,11 +22,6 @@ module Dependabot
           dependency.requirements
         end
 
-        def needs_update?
-          # We're comparing commit SHAs, so just look for difference
-          latest_version != dependency.version
-        end
-
         private
 
         def fetch_latest_version

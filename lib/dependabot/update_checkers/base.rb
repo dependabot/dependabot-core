@@ -48,6 +48,22 @@ module Dependabot
       private
 
       def version_needs_update?
+        return sha1_version_needs_update? if existing_version_is_sha1?
+        numeric_version_needs_update?
+      end
+
+      def existing_version_is_sha1?
+        # 40 characters in the set [0123456789abcdef]
+        dependency.version.match?(/^[0-9a-f]{40}$/)
+      end
+
+      def sha1_version_needs_update?
+        # All we can do with SHA-1 hashes is check for presence and equality
+        return false if latest_resolvable_version.nil?
+        latest_resolvable_version != dependency.version
+      end
+
+      def numeric_version_needs_update?
         # Check if we're up-to-date with the latest version.
         # Saves doing resolution if so.
         if latest_version &&

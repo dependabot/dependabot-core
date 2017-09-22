@@ -243,6 +243,47 @@ RSpec.describe Dependabot::PullRequestCreator do
       expect(creator.create.number).to eq(1347)
     end
 
+    context "with SHA-1 versions" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
+          previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+          package_manager: "bundler",
+          requirements: [
+            { file: "Gemfile", requirement: ">= 0", groups: [], source: "git" }
+          ]
+        )
+      end
+      let(:branch_name) { "dependabot/bundler/business-cff701" }
+
+      it "creates a branch for that commit" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/refs").
+          with(body: {
+                 ref: "refs/heads/dependabot/bundler/business-cff701",
+                 sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+               })
+      end
+
+      it "creates a PR with the right details" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-cff701",
+              title: "Bump business from 2468a0 to cff701",
+              body: "Bumps business from 2468a0 to cff701."
+            }
+          )
+      end
+    end
+
     context "when the 'dependencies' label doesn't yet exist" do
       before do
         stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
