@@ -169,7 +169,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "prius",
-            version: "0.9",
+            version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
             requirements: requirements,
             package_manager: "bundler"
           )
@@ -562,7 +562,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "prius",
-            version: "0.9",
+            version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
             requirements: requirements,
             package_manager: "bundler"
           )

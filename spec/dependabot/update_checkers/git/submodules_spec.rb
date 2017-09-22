@@ -19,7 +19,7 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
-      version: "sha1",
+      version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
       requirements: [
         {
           file: ".gitmodules",
@@ -44,7 +44,11 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
     end
 
     context "given an up-to-date dependency" do
-      before { allow(checker).to receive(:latest_version).and_return("sha1") }
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return("2468a02a6230e59ed1232d95d1ad3ef157195b03")
+      end
       it { is_expected.to be_falsey }
     end
   end
