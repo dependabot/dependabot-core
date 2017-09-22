@@ -134,7 +134,10 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
-            source: "git",
+            source: {
+              type: "git",
+              url: "http://github.com/gocardless/uk_phone_numbers"
+            },
             groups: [:default]
           }]
         end
@@ -191,7 +194,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
-            source: "rubygems",
+            source: { type: "rubygems" },
             groups: [:default]
           }]
         end
@@ -326,7 +329,10 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
               {
                 requirement: "~> 1.4.0",
                 file: "Gemfile",
-                source: "git",
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business"
+                },
                 groups: [:default]
               }
             ]

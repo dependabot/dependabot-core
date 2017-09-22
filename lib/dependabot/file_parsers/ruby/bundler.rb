@@ -181,7 +181,9 @@ module Dependabot
           end
 
           return nil if dependency.source.nil?
-          source.class.name.split("::").last.downcase
+          details = { type: source.class.name.split("::").last.downcase }
+          details[:url] = source.uri if source.is_a?(::Bundler::Source::Git)
+          details
         end
 
         def dependency_version(dependency_name)

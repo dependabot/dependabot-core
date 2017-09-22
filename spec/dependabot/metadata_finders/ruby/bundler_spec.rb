@@ -37,7 +37,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               file: "Gemfile",
               requirement: ">= 0",
               groups: [],
-              source: "rubygems"
+              source: { type: "rubygems" }
             }
           ],
           package_manager: "bundler"
