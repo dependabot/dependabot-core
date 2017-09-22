@@ -286,7 +286,9 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-cff701",
               title: "Bump business from 2468a0 to cff701",
-              body: "Bumps business from 2468a0 to cff701."
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "from 2468a0 to cff701.\n- [Commits]"\
+                    "(https://github.com/gocardless/business/commits)"
             }
           )
       end
