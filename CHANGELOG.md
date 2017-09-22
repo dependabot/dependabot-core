@@ -1,3 +1,9 @@
+## v0.19.2, 22 September 2017
+
+- Specify required Bundler version is >= 1.16.0.pre
+- Set git reference as version for Ruby git dependencies (groundwork for
+  updating Ruby dependencies that specify a git source)
+
 ## v0.19.1, 21 September 2017
 
 - Better support for Python constraints files, and a general refactor of
