@@ -239,16 +239,16 @@ module Dependabot
     end
 
     def previous_version
-      if dependency.package_manager == "submodules"
-        dependency.previous_version.first(6)
+      if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
+        dependency.previous_version[0..5]
       else
         dependency.previous_version
       end
     end
 
     def new_version
-      if dependency.package_manager == "submodules"
-        dependency.version.first(6)
+      if dependency.version.match?(/^[0-9a-f]{40}$/)
+        dependency.version[0..5]
       else
         dependency.version
       end
