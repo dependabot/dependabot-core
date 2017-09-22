@@ -40,14 +40,16 @@ module Dependabot
           when NilClass then latest_rubygems_version
           when ::Bundler::Source::Rubygems
             latest_private_version(dependency_source)
+          when ::Bundler::Source::Git
+            # TODO: it would be nice to take a similar strategy to the
+            # submodules updater here and hit a single git URL, but doing so
+            # would require extracting the branch etc., from the Gemfile.
+            fetch_latest_resolvable_version
           end
         end
 
         def fetch_latest_resolvable_version
           return latest_version unless gemfile
-
-          # We don't want to bump gems with a path/git source, so exit early
-          return nil if dependency_source.is_a?(::Bundler::Source::Path)
 
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
@@ -69,7 +71,12 @@ module Dependabot
               )
 
               definition.resolve_remotely!
-              definition.resolve.find { |d| d.name == dependency.name }.version
+              dep = definition.resolve.find { |d| d.name == dependency.name }
+              if dep.source.instance_of?(::Bundler::Source::Git)
+                dep.source.revision
+              else
+                dep.version
+              end
             end
           end
         rescue SharedHelpers::ChildProcessFailed => error
