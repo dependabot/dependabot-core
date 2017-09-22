@@ -175,7 +175,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        it { is_expected.to be_nil }
+        it "delegates to fetch_latest_version" do
+          expect(checker).to receive(:fetch_latest_version).and_return("sha-1")
+          expect(checker.latest_version).to eq("sha-1")
+        end
       end
 
       context "that is not the gem we're checking" do
@@ -512,7 +515,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             )
           end
 
-          it { is_expected.to be_nil }
+          it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
       end
     end
@@ -568,7 +571,27 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        it { is_expected.to be_nil }
+        it "fetches the latest SHA-1 hash" do
+          version = checker.latest_resolvable_version
+          expect(version).to match(/^[0-9a-f]{40}$/)
+          expect(version).to_not eq("cff701b3bfb182afc99a85657d7c9f3d6c1ccce2")
+        end
+
+        context "when the gem's tag is pinned" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "que",
+              version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          it "respects the pin" do
+            expect(checker.latest_resolvable_version).
+              to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
+          end
+        end
       end
 
       context "that is not the gem we're checking" do
