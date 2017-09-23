@@ -17,37 +17,57 @@ module Dependabot
         GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
         def latest_version
-          @latest_version ||= fetch_latest_version
+          if dependency_source.instance_of?(::Bundler::Source::Git)
+            latest_version_details&.fetch(:commit_sha)
+          else
+            latest_version_details&.fetch(:version)
+          end
         end
 
         def latest_resolvable_version
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+          if dependency_source.instance_of?(::Bundler::Source::Git)
+            latest_resolvable_version_details&.fetch(:commit_sha)
+          else
+            latest_resolvable_version_details&.fetch(:version)
+          end
         end
 
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             existing_version: dependency.version,
-            latest_version: latest_version&.to_s,
-            latest_resolvable_version: latest_resolvable_version&.to_s
+            latest_version: latest_version_details&.fetch(:version)&.to_s,
+            latest_resolvable_version:
+              latest_resolvable_version_details&.fetch(:version)&.to_s
           ).updated_requirements
         end
 
         private
 
-        def fetch_latest_version
+        def latest_version_details
+          @latest_version_details ||= fetch_latest_version_details
+        end
+
+        def latest_resolvable_version_details
+          @latest_resolvable_version_details ||=
+            fetch_latest_resolvable_version_details
+        end
+
+        def fetch_latest_version_details
           case dependency_source
           when NilClass then latest_rubygems_version
           when ::Bundler::Source::Rubygems
             latest_private_version(dependency_source)
+          when ::Bundler::Source::Git
+            # TODO: it would be nice to take a similar strategy to the
+            # submodules updater here and hit a single git URL, but doing so
+            # would require extracting the branch etc., from the Gemfile.
+            fetch_latest_resolvable_version_details
           end
         end
 
-        def fetch_latest_resolvable_version
-          return latest_version unless gemfile
-
-          # We don't want to bump gems with a path/git source, so exit early
-          return nil if dependency_source.is_a?(::Bundler::Source::Path)
+        def fetch_latest_resolvable_version_details
+          return latest_version_details unless gemfile
 
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
@@ -69,7 +89,12 @@ module Dependabot
               )
 
               definition.resolve_remotely!
-              definition.resolve.find { |d| d.name == dependency.name }.version
+              dep = definition.resolve.find { |d| d.name == dependency.name }
+              details = { version: dep.version }
+              if dep.source.instance_of?(::Bundler::Source::Git)
+                details[:commit_sha] = dep.source.revision
+              end
+              details
             end
           end
         rescue SharedHelpers::ChildProcessFailed => error
@@ -163,21 +188,25 @@ module Dependabot
           latest_info = Gems.info(dependency.name)
 
           return nil if latest_info["version"].nil?
-          Gem::Version.new(latest_info["version"])
+          {
+            version: Gem::Version.new(latest_info["version"]),
+            sha: latest_info["sha"]
+          }
         rescue JSON::ParserError
           nil
         end
 
         def latest_private_version(dependency_source)
-          dependency_source.
+          spec =
+            dependency_source.
             fetchers.flat_map do |fetcher|
               fetcher.
                 specs_with_retry([dependency.name], dependency_source).
                 search_all(dependency.name).
-                map(&:version).
-                reject(&:prerelease?)
+                reject { |s| s.version.prerelease? }
             end.
-            sort.last
+            sort_by(&:version).last
+          { version: spec.version }
         rescue ::Bundler::Fetcher::AuthenticationRequiredError => error
           regex = /bundle config (?<repo>.*) username:password/
           source = error.message.match(regex)[:repo]
@@ -281,12 +310,19 @@ module Dependabot
             return gemfile_content
           end
 
+          replacement_version =
+            if dependency.version&.match?(/^[0-9a-f]{40}$/)
+              0
+            else
+              dependency.version || 0
+            end
+
           original_gem_declaration_string = Regexp.last_match.to_s
           updated_gem_declaration_string =
             original_gem_declaration_string.
             sub(
               Gemnasium::Parser::Patterns::REQUIREMENTS,
-              "'>= #{dependency.version || 0}'"
+              "'>= #{replacement_version}'"
             )
 
           gemfile_content.gsub(

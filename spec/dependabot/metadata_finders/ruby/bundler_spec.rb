@@ -27,7 +27,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    context "for a non-default source" do
+    context "for a non-default rubygems source" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               file: "Gemfile",
               requirement: ">= 0",
               groups: [],
-              source: "rubygems"
+              source: { type: "rubygems" }
             }
           ],
           package_manager: "bundler"
@@ -45,6 +45,58 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       end
 
       it { is_expected.to eq(nil) }
+    end
+
+    context "for a git source" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/my_fork/business"
+              }
+            }
+          ],
+          package_manager: "bundler"
+        )
+      end
+
+      it { is_expected.to eq("https://github.com/my_fork/business") }
+
+      context "that is overriding a gemspec source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/my_fork/business"
+                }
+              },
+              {
+                file: "example.gemspec",
+                requirement: ">= 0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "bundler"
+          )
+        end
+
+        it { is_expected.to eq("https://github.com/my_fork/business") }
+      end
     end
 
     context "for a default source" do

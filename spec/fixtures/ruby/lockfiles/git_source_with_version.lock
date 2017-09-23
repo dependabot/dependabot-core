@@ -1,0 +1,18 @@
+GIT
+  remote: https://github.com/gocardless/prius
+  revision: 99093f4e72c049fcb750ae2ef2421688fda0afac
+  specs:
+    prius (1.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  prius (~> 1.0.0)!
+
+BUNDLED WITH
+   1.16.0.pre.2

@@ -251,7 +251,15 @@ RSpec.describe Dependabot::PullRequestCreator do
           previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
           package_manager: "bundler",
           requirements: [
-            { file: "Gemfile", requirement: ">= 0", groups: [], source: "git" }
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
+              }
+            }
           ]
         )
       end
@@ -278,7 +286,9 @@ RSpec.describe Dependabot::PullRequestCreator do
               base: "master",
               head: "dependabot/bundler/business-cff701",
               title: "Bump business from 2468a0 to cff701",
-              body: "Bumps business from 2468a0 to cff701."
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "from 2468a0 to cff701.\n- [Commits]"\
+                    "(https://github.com/gocardless/business/commits)"
             }
           )
       end
