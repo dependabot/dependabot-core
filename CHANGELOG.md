@@ -1,3 +1,8 @@
+## v0.19.3, 23 September 2017
+
+- Use Yarn 1.0.2
+- Add support for upgrading Ruby dependencies that specify a git source
+
 ## v0.19.2, 22 September 2017
 
 - Specify required Bundler version is >= 1.16.0.pre
