@@ -1,3 +1,7 @@
+## v0.19.4, 23 September 2017
+
+- Add support for upgrading Ruby dependencies that specify a git source
+
 ## v0.19.3, 22 September 2017
 
 - Yarn 1.0 support
