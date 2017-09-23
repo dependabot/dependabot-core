@@ -15,7 +15,8 @@ module Dependabot
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
 
-            if existing_version
+            if !existing_version.nil? &&
+               !existing_version.match?(/^[0-9a-f]{40}$/)
               @existing_version = Gem::Version.new(existing_version)
             end
 

@@ -47,6 +47,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         it { is_expected.to eq(gemfile_requirement) }
       end
 
+      context "with a SHA-1 version" do
+        let(:existing_version) { "1530024bd6a68d36ac18e04836ce110e0d433c36" }
+        let(:latest_version) { nil }
+        let(:latest_resolvable_version) { nil }
+        it { is_expected.to eq(gemfile_requirement) }
+      end
+
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
 
