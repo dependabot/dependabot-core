@@ -96,7 +96,11 @@ async function updateDependencyFile(
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
 
-  const flags = { ignoreScripts: true, ignoreWorkspaceRootCheck: true };
+  const flags = {
+    ignoreScripts: true,
+    ignoreWorkspaceRootCheck: true,
+    ignoreEngines: true
+  };
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({
