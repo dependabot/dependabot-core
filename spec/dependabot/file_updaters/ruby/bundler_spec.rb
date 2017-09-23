@@ -212,6 +212,52 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
 
+      context "with a gem that has a git source" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "git_source_with_version")
+        end
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "git_source_with_version.lock")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "prius",
+            version: "06824855470b25ffd541720059700fd2e574d958",
+            previous_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+            requirements: requirements,
+            previous_requirements: previous_requirements,
+            package_manager: "bundler"
+          )
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.0.0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "http://github.com/gocardless/prius"
+              }
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.0.0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "http://github.com/gocardless/prius"
+              }
+            }
+          ]
+        end
+        its(:content) { is_expected.to include "\"prius\", \"~> 2.0.0\", git" }
+      end
+
       context "when the new (and old) requirement is a range" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "version_between_bounds")
@@ -446,6 +492,54 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           expect(new_revision_line).to_not eq(original_revision_line)
           expect(new_lock.index(new_remote_line)).
             to eq(old_lock.index(original_remote_line))
+        end
+
+        context "that specifies a version that needs updating" do
+          context "with a gem that has a git source" do
+            let(:gemfile_body) do
+              fixture("ruby", "gemfiles", "git_source_with_version")
+            end
+            let(:lockfile_body) do
+              fixture("ruby", "lockfiles", "git_source_with_version.lock")
+            end
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "prius",
+                version: "06824855470b25ffd541720059700fd2e574d958",
+                previous_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+                requirements: requirements,
+                previous_requirements: previous_requirements,
+                package_manager: "bundler"
+              )
+            end
+            let(:requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 2.0.0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "http://github.com/gocardless/prius"
+                  }
+                }
+              ]
+            end
+            let(:previous_requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.0.0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "http://github.com/gocardless/prius"
+                  }
+                }
+              ]
+            end
+            its(:content) { is_expected.to include "prius (~> 2.0.0)!" }
+          end
         end
       end
 
