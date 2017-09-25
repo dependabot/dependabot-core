@@ -1,3 +1,9 @@
+## v0.19.7, 25 September 2017
+
+- Supress Ruby VersionConflict exceptions caused by an update to a git
+  dependency (since the version conflict is only caused by the attempted
+  update, not by anything wrong with the underlying Gemfile/Gemfile.lock)
+
 ## v0.19.6, 25 September 2017
 
 - Better commit URLs links for Ruby dependencies that specify a git source
