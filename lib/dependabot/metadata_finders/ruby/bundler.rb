@@ -69,10 +69,10 @@ module Dependabot
         end
 
         def find_source_from_git_url
-          source_info = dependency.requirements.find { |r| r[:source] == "git" }
+          info = dependency.requirements.map { |r| r[:source] }.compact.first
 
-          source_url = source_info[:url] || source_info.fetch("url")
-          source_url.match(SOURCE_REGEX).named_captures
+          url = info[:url] || info.fetch("url")
+          url.match(SOURCE_REGEX).named_captures
         end
 
         def rubygems_listing
