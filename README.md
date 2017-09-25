@@ -37,7 +37,7 @@ concern will have a language-specific class.
 | `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project. See the [file parsers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_parsers) for more details. |
 | `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date. See the [update checkers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/update_checkers) for more details. |
 | `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency. See the [file updaters](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_updaters) for more details. |
-| `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL.                                 |
+| `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL. See the [metadata finders](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/metadata_finders) for more details. |
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
