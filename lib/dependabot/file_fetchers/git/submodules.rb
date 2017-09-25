@@ -35,10 +35,7 @@ module Dependabot
         def submodule_paths
           SharedHelpers.in_a_temporary_directory do
             File.write(".gitmodules", gitmodules_file.content)
-
-            ParseConfig.new(".gitmodules").params.map do |_, params|
-              params["path"]
-            end
+            ParseConfig.new(".gitmodules").params.values.map { |p| p["path"] }
           end
         end
 
