@@ -39,7 +39,7 @@ and implement the following methods:
 
 | Method                 | Description             |
 |------------------------|-------------------------|
-| `#look_up_source`      | Private method that returns a hash with the keys `"host"` and `"repo"` (e.g,. `{ "host" => "github", "repo": "dependabot/dependabot-core" }`). Generally these are extracted from a source code URL provided by the language's dependency registry. |
+| `#look_up_source`      | Private method that returns a hash with the keys `"host"` and `"repo"` (e.g,. `{ "host" => "github", "repo" => "dependabot/dependabot-core" }`). Generally these are extracted from a source code URL provided by the language's dependency registry. |
 
 To ensure the above are implemented, you should include
 `it_behaves_like "a dependency metadata finder"` in your specs for the new
