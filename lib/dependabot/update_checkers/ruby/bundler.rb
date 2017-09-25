@@ -125,6 +125,8 @@ module Dependabot
           when "Bundler::Dsl::DSLError"
             # We couldn't evaluate the Gemfile, let alone resolve it
             raise Dependabot::DependencyFileNotEvaluatable, msg
+          when "Bundler::Source::Git::MissingGitRevisionError"
+            raise GitDependencyReferenceNotFound, dependency.name
           when "Bundler::Source::Git::GitCommandError"
             if error.error_message.match?(GIT_REF_REGEX)
               # We couldn't find the specified branch / commit (or the two

@@ -630,6 +630,31 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             expect(version).to_not eq "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
           end
         end
+
+        context "when the gem has a bad branch" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "bad_branch.lock")
+          end
+          around { |example| capture_stderr { example.run } }
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "prius",
+              version: "2.0.0",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          it "raises a helpful error" do
+            expect { checker.latest_resolvable_version }.
+              to raise_error do |error|
+                expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
+                expect(error.dependency).to eq("prius")
+              end
+          end
+        end
       end
 
       context "that is not the gem we're checking" do
@@ -666,10 +691,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
         end
 
-        context "that has a bad branch" do
-          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+        context "that has a bad reference" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_ref") }
           let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "bad_branch.lock")
+            fixture("ruby", "lockfiles", "bad_ref.lock")
           end
           around { |example| capture_stderr { example.run } }
 
@@ -685,6 +710,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 expect(error.dependency).to eq("prius")
               end
           end
+        end
+
+        context "that has a bad branch" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "bad_branch.lock")
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
       end
     end

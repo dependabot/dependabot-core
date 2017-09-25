@@ -182,7 +182,10 @@ module Dependabot
 
           return nil if dependency.source.nil?
           details = { type: source.class.name.split("::").last.downcase }
-          details[:url] = source.uri if source.is_a?(::Bundler::Source::Git)
+          if source.is_a?(::Bundler::Source::Git)
+            details[:url] = source.uri
+            details[:branch] = source.branch || "master"
+          end
           details
         end
 
