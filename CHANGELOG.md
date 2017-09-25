@@ -1,3 +1,7 @@
+## v0.19.6, 25 September 2017
+
+- Better commit URLs links for Ruby dependencies that specify a git source
+
 ## v0.19.5, 25 September 2017
 
 - Handle non-existant git branches for Ruby dependencies
