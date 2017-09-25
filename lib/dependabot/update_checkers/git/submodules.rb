@@ -25,27 +25,21 @@ module Dependabot
         private
 
         def fetch_latest_version
-          url = dependency.requirements.first.fetch(:requirement).fetch(:url)
+          requirement = dependency.requirements.first.fetch(:requirement)
+          url = requirement.fetch(:url)
           url += ".git" unless url.end_with?(".git")
-          git_data = Excon.get(
-            url + "/info/refs?service=git-upload-pack",
-            middlewares: SharedHelpers.excon_middleware
-          )
 
-          unless git_data.status == 200
-            raise Dependabot::GitDependenciesNotReachable, [url]
-          end
+          response = Excon.get(url + "/info/refs?service=git-upload-pack",
+                               middlewares: SharedHelpers.excon_middleware)
 
-          line = git_data.body.lines.find do |l|
-            l.include?("refs/heads/#{branch}")
-          end
+          success = response.status == 200
+          raise Dependabot::GitDependenciesNotReachable, [url] unless success
+
+          branch_ref = "refs/heads/#{requirement.fetch(:branch)}"
+          line = response.body.lines.find { |l| l.include?(branch_ref) }
 
           return line.split(" ").first.chars.last(40).join if line
           raise Dependabot::GitDependencyReferenceNotFound, dependency.name
-        end
-
-        def branch
-          dependency.requirements.first.fetch(:requirement).fetch(:branch)
         end
       end
     end
