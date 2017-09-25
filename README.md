@@ -33,8 +33,8 @@ concern will have a language-specific class.
 
 | Service                          | Description                                                                                   |
 |----------------------------------|-----------------------------------------------------------------------------------------------|
-| `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). |
-| `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project.                   |
+| `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See [file fetchers README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_fetchers) for more details. |
+| `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project. See [file parsers README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_parsers) for more details. |
 | `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date.                                              |
 | `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency.                    |
 | `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL.                                 |
