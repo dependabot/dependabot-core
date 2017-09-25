@@ -36,7 +36,7 @@ concern will have a language-specific class.
 | `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [file fetchers README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_fetchers) for more details. |
 | `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project. See the [file parsers README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_parsers) for more details. |
 | `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date. See the [update checkers README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/update_checkers) for more details. |
-| `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency.                    |
+| `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency. See the [file updaters README](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_updaters) for more details. |
 | `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL.                                 |
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
