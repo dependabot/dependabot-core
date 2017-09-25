@@ -1,4 +1,4 @@
-# File updatesr
+# File updaters
 
 File updaters update a dependency file to use the latest version of a given
 dependency. They rely on information provided to them by update checkers.
