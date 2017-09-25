@@ -1,3 +1,7 @@
+## v0.19.5, 25 September 2017
+
+- Handle non-existant git branches for Ruby dependencies
+
 ## v0.19.4, 23 September 2017
 
 - Add support for upgrading Ruby dependencies that specify a git source
