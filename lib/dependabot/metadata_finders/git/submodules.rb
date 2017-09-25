@@ -15,10 +15,9 @@ module Dependabot
         end
 
         def look_up_commits_url
-          @commits_url_lookup_attempted = true
-          return @commits_url = nil if source_url.nil?
+          return unless source_url
 
-          @commits_url = build_compare_commits_url(
+          build_compare_commits_url(
             dependency.version,
             dependency.previous_version
           )

@@ -34,7 +34,7 @@ module Dependabot
       def commits_url
         return @commits_url if @commits_url_lookup_attempted
 
-        look_up_commits_url
+        @commits_url ||= look_up_commits_url
       end
 
       def changelog_url
@@ -64,7 +64,7 @@ module Dependabot
       def look_up_changelog_url
         @changelog_url_lookup_attempted = true
 
-        files = fetch_dependency_file_tree
+        files = fetch_dependency_file_list
         file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
 
         @changelog_url = file&.html_url
@@ -106,17 +106,19 @@ module Dependabot
       end
 
       def look_up_commits_url
-        @commits_url_lookup_attempted = true
-        return @commits_url = nil if source_url.nil?
+        return unless source_url
 
-        tags = fetch_dependency_tags
+        @commits_url ||=
+          begin
+            tags = fetch_dependency_tags
 
-        current_version = dependency.version
-        previous_version = dependency.previous_version
-        current_tag = tags.find { |t| t =~ version_regex(current_version) }
-        previous_tag = tags.find { |t| t =~ version_regex(previous_version) }
+            current_version = dependency.version
+            previous_version = dependency.previous_version
+            current_tag = tags.find { |t| t =~ version_regex(current_version) }
+            old_tag = tags.find { |t| t =~ version_regex(previous_version) }
 
-        @commits_url = build_compare_commits_url(current_tag, previous_tag)
+            build_compare_commits_url(current_tag, old_tag)
+          end
       end
 
       def look_up_source
@@ -127,14 +129,14 @@ module Dependabot
         /(?:[^0-9\.]|\A)#{Regexp.escape(version || "unknown")}\z/
       end
 
-      def fetch_dependency_file_tree
+      def fetch_dependency_file_list
         return [] unless source
 
         case source.fetch("host")
         when "github"
           github_client.contents(source["repo"])
         when "bitbucket"
-          fetch_bitbucket_file_tree
+          fetch_bitbucket_file_list
         when "gitlab"
           gitlab_client.repo_tree(source["repo"]).map do |file|
             OpenStruct.new(
@@ -250,7 +252,7 @@ module Dependabot
         end
       end
 
-      def fetch_bitbucket_file_tree
+      def fetch_bitbucket_file_list
         url = "https://api.bitbucket.org/2.0/repositories/"\
               "#{source.fetch('repo')}/src?pagelen=100"
         response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)

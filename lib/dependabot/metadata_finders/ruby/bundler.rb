@@ -44,9 +44,10 @@ module Dependabot
           return super unless source_type == "git"
           return super unless dependency.previous_version
 
-          current_commit = dependency.version
-          previous_commit = dependency.previous_version
-          build_compare_commits_url(current_commit, previous_commit)
+          build_compare_commits_url(
+            dependency.version,
+            dependency.previous_version
+          )
         end
 
         def source_type
