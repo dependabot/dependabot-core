@@ -46,14 +46,6 @@ module Dependabot
           submodule.content
         end
 
-        def write_temporary_dependency_files
-          dependency_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
-          end
-        end
-
         def gitmodules_file
           @gitmodules_file ||= get_original_file(".gitmodules")
         end
