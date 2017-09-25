@@ -52,4 +52,5 @@ checker.
 
 Writing update checkers generally gets tricky when resolvability has to
 be taken into account. It is almost always easiest to do so in the language your
-update checker relates to, so you may wish to use a language helper to do so.
+update checker relates to, so you may wish to shell out to that language. See
+`UpdateCheckers::Php::Composer` for an example of how to do so.
