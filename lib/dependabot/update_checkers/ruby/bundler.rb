@@ -117,7 +117,9 @@ module Dependabot
           handle_bundler_errors(error)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
         def handle_bundler_errors(error)
           msg = error.error_class + " with message: " + error.error_message
 
@@ -142,12 +144,18 @@ module Dependabot
 
             # We don't have access to one of repos required
             raise Dependabot::GitDependenciesNotReachable, bad_uris
-          when "Bundler::VersionConflict", "Bundler::GemNotFound",
-               "Gem::InvalidSpecificationException"
+          when "Bundler::VersionConflict"
+            # The Gemfile specified incompatible versions, causing a conflict.
+            # If the dependency being updated had a git source we suppress the
+            # error, as it is our attempted update that has caused the inability
+            # to resolve (Bundler can only fetch the latest commit).
+            unless dependency_source.instance_of?(::Bundler::Source::Git)
+              raise Dependabot::DependencyFileNotResolvable, msg
+            end
+          when "Bundler::GemNotFound", "Gem::InvalidSpecificationException"
             # Bundler threw an error during resolution. Any of:
             # - the gem doesn't exist in any of the specified sources
             # - the gem wasn't specified properly
-            # - the Gemfile specified incompatible version, causing a conflict
             raise Dependabot::DependencyFileNotResolvable, msg
           when "RuntimeError"
             raise unless error.error_message.include?("Unable to find a spec")
@@ -155,7 +163,9 @@ module Dependabot
           else raise
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity, Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
 
         def inaccessible_git_dependencies
           SharedHelpers.in_a_temporary_directory do

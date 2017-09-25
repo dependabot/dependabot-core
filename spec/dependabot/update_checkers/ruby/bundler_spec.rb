@@ -655,6 +655,35 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
           end
         end
+
+        context "when updating the gem results in a conflict" do
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "git_source_with_conflict")
+          end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "git_source_with_conflict.lock")
+          end
+          around { |example| capture_stderr { example.run } }
+
+          before do
+            stub_request(:get, "https://index.rubygems.org/info/i18n").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-info-i18n")
+              )
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "onfido",
+              version: "1.8.0",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          it { is_expected.to be_nil }
+        end
       end
 
       context "that is not the gem we're checking" do
