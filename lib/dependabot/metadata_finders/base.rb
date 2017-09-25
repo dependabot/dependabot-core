@@ -34,19 +34,22 @@ module Dependabot
       def commits_url
         return @commits_url if @commits_url_lookup_attempted
 
+        @commits_url_lookup_attempted = true
         @commits_url ||= look_up_commits_url
       end
 
       def changelog_url
         return @changelog_url if @changelog_url_lookup_attempted
 
-        look_up_changelog_url
+        @changelog_url_lookup_attempted = true
+        @changelog_url ||= look_up_changelog_url
       end
 
       def release_url
         return @release_url if @release_url_lookup_attempted
 
-        look_up_release_url
+        @release_url_lookup_attempted = true
+        @release_url ||= look_up_release_url
       end
 
       def latest_version
@@ -62,17 +65,13 @@ module Dependabot
       end
 
       def look_up_changelog_url
-        @changelog_url_lookup_attempted = true
-
         files = fetch_dependency_file_list
         file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
 
-        @changelog_url = file&.html_url
+        file&.html_url
       end
 
       def look_up_release_url
-        @release_url_lookup_attempted = true
-
         releases = fetch_dependency_releases
 
         release_regex = version_regex(dependency.version)
@@ -82,8 +81,7 @@ module Dependabot
         return unless release
 
         unless dependency.previous_version
-          return @release_url = build_releases_index_url(releases: releases,
-                                                         release: release)
+          return build_releases_index_url(releases: releases, release: release)
         end
 
         old_release_regex = version_regex(dependency.previous_version)
@@ -91,34 +89,30 @@ module Dependabot
           [r.name, r.tag_name].any? { |nm| old_release_regex.match?(nm.to_s) }
         end
 
-        @release_url =
-          if previous_release &&
-             (releases.index(previous_release) - releases.index(release)) == 1
-            # No intermediate releases - link to release notes for this version
-            release.html_url
-          else
-            # There have been intermediate releases, so link to release notes
-            # index view
-            build_releases_index_url(releases: releases, release: release)
-          end
+        if previous_release &&
+           (releases.index(previous_release) - releases.index(release)) == 1
+          # No intermediate releases - link to release notes for this version
+          release.html_url
+        else
+          # There have been intermediate releases, so link to release notes
+          # index view
+          build_releases_index_url(releases: releases, release: release)
+        end
       rescue Octokit::NotFound
-        @release_url = nil
+        nil
       end
 
       def look_up_commits_url
         return unless source_url
 
-        @commits_url ||=
-          begin
-            tags = fetch_dependency_tags
+        tags = fetch_dependency_tags
 
-            current_version = dependency.version
-            previous_version = dependency.previous_version
-            current_tag = tags.find { |t| t =~ version_regex(current_version) }
-            old_tag = tags.find { |t| t =~ version_regex(previous_version) }
+        current_version = dependency.version
+        previous_version = dependency.previous_version
+        current_tag = tags.find { |t| t =~ version_regex(current_version) }
+        previous_tag = tags.find { |t| t =~ version_regex(previous_version) }
 
-            build_compare_commits_url(current_tag, old_tag)
-          end
+        build_compare_commits_url(current_tag, previous_tag)
       end
 
       def look_up_source

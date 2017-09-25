@@ -33,9 +33,8 @@ module Dependabot
             return rubygems_listing["changelog_uri"]
           end
 
-          if source_type == "git"
-            return nil # Changelog won't be relevant for git commit bumps
-          end
+          # Changelog won't be relevant for a git commit bump
+          return if source_type == "git"
 
           super
         end
@@ -79,9 +78,7 @@ module Dependabot
         end
 
         def rubygems_listing
-          return @rubygems_listing unless @rubygems_listing.nil?
-
-          @rubygems_listing = Gems.info(dependency.name)
+          @rubygems_listing ||= Gems.info(dependency.name)
         rescue JSON::ParserError
           # Replace with Gems::NotFound error if/when
           # https://github.com/rubygems/gems/pull/38 is merged.
