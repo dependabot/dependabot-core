@@ -40,6 +40,15 @@ module Dependabot
           super
         end
 
+        def look_up_commits_url
+          return super unless source_type == "git"
+          return super unless dependency.previous_version
+
+          current_commit = dependency.version
+          previous_commit = dependency.previous_version
+          build_compare_commits_url(current_commit, previous_commit)
+        end
+
         def source_type
           sources =
             dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact

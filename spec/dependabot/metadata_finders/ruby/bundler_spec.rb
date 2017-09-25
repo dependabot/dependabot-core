@@ -216,4 +216,85 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       end
     end
   end
+
+  describe "#commits_url" do
+    subject(:commits_url) { finder.commits_url }
+
+    context "with a git source" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "sha1def",
+          previous_version: previous_version,
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
+              }
+            }
+          ],
+          package_manager: "bundler"
+        )
+      end
+      let(:previous_version) { "sha1abc" }
+
+      it "uses the SHA-1 hashes to build the compare URL" do
+        expect(commits_url).
+          to eq(
+            "https://github.com/gocardless/business/compare/sha1abc...sha1def"
+          )
+      end
+
+      context "without a previous version" do
+        let(:previous_version) { nil }
+        let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+        let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+
+        before do
+          stub_request(:get, rubygems_url).
+            to_return(status: 200, body: rubygems_response)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        end
+
+        it "finds the commits as normal" do
+          expect(commits_url).
+            to eq("https://github.com/gocardless/business/commits")
+        end
+      end
+    end
+
+    context "with the default Rubygems source" do
+      let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+      let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+
+      before do
+        stub_request(:get, rubygems_url).
+          to_return(status: 200, body: rubygems_response)
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).to_return(
+          status: 200,
+          body: fixture("github", "business_tags.json"),
+          headers: { "Content-Type" => "application/json" }
+        )
+      end
+
+      it "finds the commits as normal" do
+        expect(commits_url).
+          to eq("https://github.com/gocardless/business/commits")
+      end
+    end
+  end
 end

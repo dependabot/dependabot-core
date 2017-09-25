@@ -237,6 +237,15 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           is_expected.to eq("https://bitbucket.org/org/business/commits")
         end
       end
+
+      context "no previous version" do
+        let(:dependency_previous_version) { nil }
+        let(:dependency_version) { "0.5.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://bitbucket.org/org/business/commits")
+        end
+      end
     end
 
     context "without a recognised source" do
