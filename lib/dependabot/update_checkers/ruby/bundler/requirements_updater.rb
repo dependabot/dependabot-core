@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/ruby/bundler"
 
 module Dependabot
   module UpdateCheckers
     module Ruby
-      class Bundler < Dependabot::UpdateCheckers::Base
+      class Bundler
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 

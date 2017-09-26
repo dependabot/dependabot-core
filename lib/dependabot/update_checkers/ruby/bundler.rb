@@ -7,7 +7,6 @@ require "gems"
 require "gemnasium/parser"
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/update_checkers/base"
-require "dependabot/update_checkers/ruby/bundler/requirements_updater"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -15,6 +14,8 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
+        require "dependabot/update_checkers/ruby/bundler/requirements_updater"
+
         GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
         def latest_version
