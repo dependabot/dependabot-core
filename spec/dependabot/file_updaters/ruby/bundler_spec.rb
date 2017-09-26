@@ -432,16 +432,46 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       context "when another gem in the Gemfile has a git source" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
         let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            version: "2.0.1",
+            previous_version: "1.2.5",
+            requirements: requirements,
+            previous_requirements: previous_requirements,
+            package_manager: "bundler"
+          )
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.0.1",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.2.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
 
         it "updates the gem just fine" do
-          expect(file.content).to include "business (1.5.0)"
+          expect(file.content).to include "statesman (2.0.1)"
         end
 
         it "doesn't update the git dependencies" do
           old_lock = lockfile_body.split(/^/)
           new_lock = file.content.split(/^/)
 
-          %w(prius que uk_phone_numbers).each do |dep|
+          %w(business prius que uk_phone_numbers).each do |dep|
             original_remote_line =
               old_lock.find { |l| l.include?("gocardless/#{dep}") }
             original_revision_line =
@@ -474,10 +504,34 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         let(:requirements) do
-          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
+              }
+            }
+          ]
         end
         let(:previous_requirements) do
-          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
+              }
+            }
+          ]
         end
 
         it "updates the dependency's revision" do

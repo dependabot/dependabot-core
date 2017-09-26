@@ -15,11 +15,13 @@ module Dependabot
         #   (in the Gemfile)
         # - Sanitizes any provided gemspecs to remove file imports etc. (since
         #   Dependabot doesn't pull down the entire repo). This process is
-        #   imperfect - an alternative would be to cloen the repo
+        #   imperfect - an alternative would be to clone the repo
         class FilePreparer
-          def initialize(dependency_files:, dependency:)
+          def initialize(dependency_files:, dependency:,
+                         remove_git_source: false)
             @dependency_files = dependency_files
             @dependency = dependency
+            @remove_git_source = remove_git_source
           end
 
           def prepared_dependency_files
@@ -57,6 +59,10 @@ module Dependabot
 
           attr_reader :dependency_files, :dependency
 
+          def remove_git_source?
+            @remove_git_source
+          end
+
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" }
           end
@@ -79,7 +85,9 @@ module Dependabot
           end
 
           def gemfile_content_for_update_check
-            replace_gemfile_version_requirement(gemfile.content)
+            content = replace_gemfile_version_requirement(gemfile.content)
+            content = remove_git_source(content) if remove_git_source?
+            content
           end
 
           def gemspec_content_for_update_check
@@ -120,6 +128,14 @@ module Dependabot
             gemspec_content.
               gsub(/^\s*require.*$/, "").
               gsub(/=.*VERSION.*$/, "= '0.0.1'")
+          end
+
+          def remove_git_source(content)
+            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
+            buffer.source = content
+            ast = Parser::CurrentRuby.new.parse(buffer)
+
+            RemoveGitSource.new(dependency.name).rewrite(buffer, ast)
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter
@@ -181,6 +197,78 @@ module Dependabot
             def declares_targeted_gem?(node)
               return false unless DECLARATION_METHODS.include?(node.children[1])
               node.children[2].children.first == dependency_name
+            end
+          end
+
+          class RemoveGitSource < Parser::Rewriter
+            GOOD_KEYS =
+              (::Bundler::Dsl::VALID_KEYS - %w(git branch ref tag)).
+              map(&:to_sym).
+              freeze
+
+            attr_reader :gem_name
+
+            def initialize(gem_name)
+              @gem_name = gem_name
+            end
+
+            def on_send(node)
+              return unless declares_targeted_gem?(node)
+              return unless node.children.last.type == :hash
+
+              kwargs_node = node.children.last
+              keys = kwargs_node.children.map do |hash_pair|
+                key_from_hash_pair(hash_pair)
+              end
+
+              if keys.none? { |key| GOOD_KEYS.include?(key) }
+                remove_all_kwargs(node)
+              else
+                remove_git_related_kwargs(kwargs_node)
+              end
+            end
+
+            private
+
+            def declares_targeted_gem?(node)
+              return false unless node.children[1] == :gem
+              node.children[2].children.first == gem_name
+            end
+
+            def key_from_hash_pair(node)
+              node.children.first.children.first.to_sym
+            end
+
+            def remove_all_kwargs(node)
+              kwargs_node = node.children.last
+
+              range_to_remove =
+                kwargs_node.loc.expression.join(node.children[-2].loc.end.end)
+
+              remove(range_to_remove)
+            end
+
+            def remove_git_related_kwargs(kwargs_node)
+              good_key_index = nil
+              hash_pairs = kwargs_node.children
+
+              hash_pairs.each_with_index do |hash_pair, index|
+                if GOOD_KEYS.include?(key_from_hash_pair(hash_pair))
+                  good_key_index = index
+                  next
+                end
+
+                range_to_remove =
+                  if good_key_index.nil?
+                    next_arg_start = hash_pairs[index + 1].loc.expression.begin
+                    hash_pair.loc.expression.join(next_arg_start)
+                  else
+                    last_arg_end = hash_pairs[good_key_index].loc.expression.end
+                    hash_pair.loc.expression.join(last_arg_end)
+                  end
+
+                remove(range_to_remove)
+              end
             end
           end
         end

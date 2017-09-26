@@ -13,15 +13,19 @@ module Dependabot
                       :latest_version, :latest_resolvable_version
 
           def initialize(requirements:, existing_version:,
-                         latest_version:, latest_resolvable_version:)
+                         latest_version:, latest_resolvable_version:,
+                         remove_git_source: false)
             @requirements = requirements
 
-            if !existing_version.nil? &&
-               !existing_version.match?(/^[0-9a-f]{40}$/)
-              @existing_version = Gem::Version.new(existing_version)
-            end
+            @existing_version =
+              if existing_version&.match?(/^[0-9a-f]{40}$/)
+                existing_version
+              elsif !existing_version.nil?
+                Gem::Version.new(existing_version)
+              end
 
             @latest_version = Gem::Version.new(latest_version) if latest_version
+            @remove_git_source = remove_git_source
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
@@ -40,17 +44,21 @@ module Dependabot
 
           private
 
+          def remove_git_source?
+            @remove_git_source
+          end
+
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           def updated_gemfile_requirement(req)
             return req unless latest_resolvable_version
-            return req if existing_version && no_change_in_version?
-            return req if !existing_version && new_version_satisfies?(req)
+            return req if numeric_existing_version? && no_change_in_version?
+            return req if existing_version.nil? && new_version_satisfies?(req)
 
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
 
-            new_req =
+            new_requirement =
               if requirements.any?(&:exact?) then latest_resolvable_version.to_s
               elsif requirements.any? { |r| r.to_s.start_with?("~>") }
                 tw_req = requirements.find { |r| r.to_s.start_with?("~>") }
@@ -59,10 +67,16 @@ module Dependabot
                 update_gemfile_range(requirements).map(&:to_s).join(", ")
               end
 
-            req.merge(requirement: new_req)
+            new_source = remove_git_source? ? nil : req[:source]
+
+            req.merge(requirement: new_requirement, source: new_source)
           end
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
+
+          def numeric_existing_version?
+            existing_version.is_a?(Gem::Version)
+          end
 
           def no_change_in_version?
             latest_resolvable_version <= existing_version

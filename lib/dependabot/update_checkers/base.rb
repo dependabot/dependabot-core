@@ -60,6 +60,7 @@ module Dependabot
 
       def sha1_version_needs_update?
         # All we can do with SHA-1 hashes is check for presence and equality
+        return false if latest_version && latest_version == dependency.version
         return false if latest_resolvable_version.nil?
         latest_resolvable_version != dependency.version
       end

@@ -8,7 +8,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
   let(:preparer) do
     described_class.new(
       dependency_files: dependency_files,
-      dependency: dependency
+      dependency: dependency,
+      remove_git_source: remove_git_source
     )
   end
 
@@ -25,6 +26,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:dependency_name) { "business" }
+  let(:remove_git_source) { false }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
@@ -90,6 +92,65 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
           end
 
           its(:content) { is_expected.to include(%("prius", '>= 0', git:)) }
+        end
+
+        context "that should be removed" do
+          let(:remove_git_source) { true }
+          its(:content) { is_expected.to include(%("prius"\n)) }
+          its(:content) { is_expected.to include(%("que", git:)) }
+
+          context "with a tag (i.e., multiple git-related arguments)" do
+            let(:dependency_name) { "que" }
+            its(:content) { is_expected.to include(%("que"\n)) }
+          end
+
+          context "with non-git tags at the start" do
+            let(:gemfile_body) do
+              %(gem "prius", "1.0.0", require: false, git: "git_url")
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "prius", '>= 0', require: false))
+            end
+          end
+
+          context "with non-git tags at the end" do
+            let(:gemfile_body) do
+              %(gem "prius", "1.0.0", git: "git_url", require: false)
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "prius", '>= 0', require: false))
+            end
+          end
+
+          context "with non-git tags on a subsequent line" do
+            let(:gemfile_body) do
+              %(gem "prius", "1.0.0", git: "git_url",\nrequire: false)
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "prius", '>= 0', require: false))
+            end
+          end
+
+          context "with git tags on a subsequent line" do
+            let(:gemfile_body) do
+              %(gem "prius", "1.0.0", require: false,\ngit: "git_url")
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "prius", '>= 0', require: false))
+            end
+          end
+
+          context "with a custom tag" do
+            let(:gemfile_body) { %(gem "prius", "1.0.0", github: "git_url") }
+            its(:content) { is_expected.to eq(%(gem "prius", '>= 0')) }
+          end
+
+          context "with a comment" do
+            let(:gemfile_body) do
+              %(gem "prius", "1.0.0", git: "git_url" # My gem)
+            end
+            its(:content) { is_expected.to eq(%(gem "prius", '>= 0' # My gem)) }
+          end
         end
       end
 

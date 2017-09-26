@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
       requirements: requirements,
       existing_version: existing_version,
       latest_version: latest_version,
-      latest_resolvable_version: latest_resolvable_version
+      latest_resolvable_version: latest_resolvable_version,
+      remove_git_source: remove_git_source
     )
   end
 
@@ -18,7 +19,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
     {
       file: "Gemfile",
       requirement: gemfile_requirement_string,
-      groups: gemfile_groups
+      groups: gemfile_groups,
+      source: nil
     }
   end
   let(:gemspec_requirement) do
@@ -32,6 +34,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:gemfile_groups) { [] }
   let(:gemspec_requirement_string) { "~> 1.4.0" }
   let(:gemspec_groups) { [] }
+  let(:remove_git_source) { false }
 
   let(:existing_version) { "1.4.0" }
   let(:latest_version) { "1.8.0" }
@@ -50,7 +53,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
       context "with a SHA-1 version" do
         let(:existing_version) { "1530024bd6a68d36ac18e04836ce110e0d433c36" }
+        before { gemfile_requirement.merge!(source: { type: "git" }) }
+
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+        its([:source]) { is_expected.to eq(type: "git") }
+
+        context "when asked to remove a git source" do
+          let(:remove_git_source) { true }
+          its([:source]) { is_expected.to be_nil }
+
+          context "when no update to the requirements is required" do
+            let(:gemfile_requirement_string) { ">= 0" }
+            it { is_expected.to eq(gemfile_requirement.merge(source: nil)) }
+          end
+        end
       end
 
       context "when there is a resolvable version" do
@@ -334,7 +350,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
       it "updates both files" do
         expect(updated_requirements).to match_array(
           [
-            { file: "Gemfile", requirement: "~> 1.5.0", groups: [] },
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            },
             { file: "some.gemspec", requirement: ">= 1.0, < 1.9", groups: [] }
           ]
         )

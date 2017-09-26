@@ -78,6 +78,34 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       it { is_expected.to be_falsey }
     end
 
+    context "when the dependency has a SHA-1 hash version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
+          requirements: [
+            { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
+          ],
+          package_manager: "bundler"
+        )
+      end
+
+      context "that matches the latest version" do
+        let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+        it { is_expected.to be_falsey }
+      end
+
+      context "that does not match the latest version" do
+        let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+        it { is_expected.to eq(true) }
+
+        context "but the latest latest_resolvable_version does" do
+          let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+          it { is_expected.to eq(false) }
+        end
+      end
+    end
+
     context "when updating a requirement file" do
       let(:dependency) do
         Dependabot::Dependency.new(

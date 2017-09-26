@@ -19,7 +19,8 @@ module Dependabot
         GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
         def latest_version
-          if dependency_source.instance_of?(::Bundler::Source::Git)
+          if dependency_source.instance_of?(::Bundler::Source::Git) &&
+             !should_switch_source_from_git_to_rubygems?
             latest_version_details&.fetch(:commit_sha)
           else
             latest_version_details&.fetch(:version)
@@ -27,7 +28,8 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          if dependency_source.instance_of?(::Bundler::Source::Git)
+          if dependency_source.instance_of?(::Bundler::Source::Git) &&
+             !should_switch_source_from_git_to_rubygems?
             latest_resolvable_version_details&.fetch(:commit_sha)
           else
             latest_resolvable_version_details&.fetch(:version)
@@ -38,6 +40,7 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             existing_version: dependency.version,
+            remove_git_source: should_switch_source_from_git_to_rubygems?,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
               latest_resolvable_version_details&.fetch(:version)&.to_s
@@ -45,6 +48,13 @@ module Dependabot
         end
 
         private
+
+        def should_switch_source_from_git_to_rubygems?
+          GitCommitChecker.new(
+            dependency: dependency,
+            github_access_token: github_access_token
+          ).commit_now_in_release?
+        end
 
         def latest_version_details
           @latest_version_details ||= fetch_latest_version_details
@@ -144,8 +154,8 @@ module Dependabot
 
             # Tell Bundler we're fine with fetching the source remotely
             source.instance_variable_set(:@allow_remote, true)
-            spec = source.specs.first
 
+            spec = source.specs.first
             { version: spec.version, commit_sha: spec.source.revision }
           end
         end
@@ -254,7 +264,8 @@ module Dependabot
           @prepared_dependency_files ||=
             FilePreparer.new(
               dependency: dependency,
-              dependency_files: dependency_files
+              dependency_files: dependency_files,
+              remove_git_source: should_switch_source_from_git_to_rubygems?
             ).prepared_dependency_files
         end
 
