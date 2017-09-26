@@ -176,11 +176,51 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        it "delegates to fetch_latest_version" do
-          expect(checker).
-            to receive(:fetch_latest_version_details).
-            and_return(commit_sha: "sha-1")
-          expect(checker.latest_version).to eq("sha-1")
+        it "fetches the latest SHA-1 hash" do
+          version = checker.latest_version
+          expect(version).to match(/^[0-9a-f]{40}$/)
+          expect(version).to_not eq("cff701b3bfb182afc99a85657d7c9f3d6c1ccce2")
+        end
+
+        context "when the gem's tag is pinned" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "que",
+              version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          it "respects the pin" do
+            expect(checker.latest_version).
+              to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
+          end
+        end
+
+        context "when the gem has a bad branch" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "bad_branch.lock")
+          end
+          around { |example| capture_stderr { example.run } }
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "prius",
+              version: "2.0.0",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          it "raises a helpful error" do
+            expect { checker.latest_version }.
+              to raise_error do |error|
+                expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
+                expect(error.dependency).to eq("prius")
+              end
+          end
         end
       end
 

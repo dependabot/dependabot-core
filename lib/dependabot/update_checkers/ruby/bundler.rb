@@ -60,10 +60,7 @@ module Dependabot
           when ::Bundler::Source::Rubygems
             latest_private_version(dependency_source)
           when ::Bundler::Source::Git
-            # TODO: it would be nice to take a similar strategy to the
-            # submodules updater here and hit a single git URL, but doing so
-            # would require extracting the branch etc., from the Gemfile.
-            fetch_latest_resolvable_version_details
+            latest_git_version_details
           end
         end
 
@@ -224,6 +221,26 @@ module Dependabot
           regex = /bundle config (?<repo>.*) username:password/
           source = error.message.match(regex)[:repo]
           raise Dependabot::PrivateSourceNotReachable, source
+        end
+
+        def latest_git_version_details
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
+
+            SharedHelpers.in_a_forked_process do
+              source =
+                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+                find { |dep| dep.name == dependency.name }.source
+
+              # Tell Bundler we're fine with fetching the source remotely
+              source.instance_variable_set(:@allow_remote, true)
+              spec = source.specs.first
+
+              { version: spec.version, commit_sha: spec.source.revision }
+            end
+          end
+        rescue SharedHelpers::ChildProcessFailed => error
+          handle_bundler_errors(error)
         end
 
         def gemfile
