@@ -58,7 +58,7 @@ module Dependabot
           case dependency_source
           when NilClass then latest_rubygems_version
           when ::Bundler::Source::Rubygems
-            latest_private_version(dependency_source)
+            latest_private_version_details
           when ::Bundler::Source::Git
             latest_git_version_details
           end
@@ -206,7 +206,7 @@ module Dependabot
           nil
         end
 
-        def latest_private_version(dependency_source)
+        def latest_private_version_details
           spec =
             dependency_source.
             fetchers.flat_map do |fetcher|
