@@ -100,7 +100,7 @@ module Dependabot
       )
     rescue Octokit::UnprocessableEntity => error
       # Return quietly in the case of a race
-      return nil if error.message =~ /Reference already exists/
+      return nil if error.message.match?(/Reference already exists/)
       raise
     end
 
