@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "parseconfig"
 require "dependabot/file_fetchers/base"
 require "dependabot/shared_helpers"

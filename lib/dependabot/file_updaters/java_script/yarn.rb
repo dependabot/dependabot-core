@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
 

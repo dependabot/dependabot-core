@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "excon"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/update_checkers/base"
 require "dependabot/metadata_finders/base"
 require "dependabot/errors"

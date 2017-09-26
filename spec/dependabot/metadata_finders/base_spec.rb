@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "octokit"
 require "gitlab"
 require "spec_helper"

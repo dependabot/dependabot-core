@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 require "dependabot/update_checkers/ruby/bundler/requirements_updater"
 

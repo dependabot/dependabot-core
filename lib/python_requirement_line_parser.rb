@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class PythonRequirementLineParser
   NAME = /[a-zA-Z0-9\-_\.]+/
   EXTRA = /[a-zA-Z0-9\-_\.]+/

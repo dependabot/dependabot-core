@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module BundlerDefinitionVersionPatch
   def index
     @index ||= super.tap do

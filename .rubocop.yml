@@ -6,9 +6,6 @@ AllCops:
     - bin/**/*
     - tmp/**/*
 
-Layout/EmptyLineAfterMagicComment:
-  Enabled: false
-
 Layout/DotPosition:
   EnforcedStyle: trailing
 

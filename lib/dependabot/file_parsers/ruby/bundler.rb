@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "gemnasium/parser"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"

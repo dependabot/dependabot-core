@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type

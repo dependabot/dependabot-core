@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/file_fetchers/base"
 require "dependabot/file_parsers/java_script/yarn"
 

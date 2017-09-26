@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "excon"
 require "python_requirement_line_parser"
 require "dependabot/update_checkers/base"

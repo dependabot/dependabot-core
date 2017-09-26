@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "gemnasium/parser"
 require "bundler"
 require "bundler_definition_version_patch"

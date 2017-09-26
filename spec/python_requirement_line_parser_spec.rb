@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 describe PythonRequirementLineParser do
   describe ".parse" do
     subject { described_class.parse(line) }

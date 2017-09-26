@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler_definition_version_patch"
 require "bundler_git_source_patch"
 require "excon"

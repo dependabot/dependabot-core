@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/dependency_file"
 require "dependabot/errors"
 require "octokit"

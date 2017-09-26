@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "octokit"
 require "spec_helper"
 require "dependabot/file_fetchers/ruby/bundler"

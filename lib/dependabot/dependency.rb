@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Dependabot
   class Dependency
     attr_reader :name, :version, :requirements, :package_manager,

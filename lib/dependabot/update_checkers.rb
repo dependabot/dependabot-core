@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/update_checkers/java_script/yarn"
