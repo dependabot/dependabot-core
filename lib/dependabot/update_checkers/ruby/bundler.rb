@@ -14,6 +14,7 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
+        require "dependabot/update_checkers/ruby/bundler/file_preparer"
         require "dependabot/update_checkers/ruby/bundler/requirements_updater"
 
         GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
@@ -241,121 +242,27 @@ module Dependabot
         end
 
         def gemfile
-          dependency_files.find { |f| f.name == "Gemfile" }
+          prepared_dependency_files.find { |f| f.name == "Gemfile" }
         end
 
         def lockfile
-          dependency_files.find { |f| f.name == "Gemfile.lock" }
+          prepared_dependency_files.find { |f| f.name == "Gemfile.lock" }
         end
 
-        def gemspec
-          dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
-        end
-
-        def ruby_version_file
-          dependency_files.find { |f| f.name == ".ruby-version" }
-        end
-
-        def path_gemspecs
-          all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
-          all - [gemspec]
+        def prepared_dependency_files
+          @prepared_dependency_files ||=
+            FilePreparer.new(
+              dependency: dependency,
+              dependency_files: dependency_files
+            ).prepared_dependency_files
         end
 
         def write_temporary_dependency_files
-          File.write("Gemfile", gemfile_for_update_check) if gemfile
-          File.write("Gemfile.lock", lockfile.content) if lockfile
-
-          write_updated_gemspec if gemspec
-          write_ruby_version_file if ruby_version_file
-
-          path_gemspecs.compact.each do |file|
+          prepared_dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(file.content))
+            File.write(path, file.content)
           end
-        end
-
-        def gemfile_for_update_check
-          content = update_dependency_requirement(gemfile.content)
-          content
-        end
-
-        def write_updated_gemspec
-          path = gemspec.name
-          FileUtils.mkdir_p(Pathname.new(path).dirname)
-          File.write(path, sanitized_gemspec_content(updated_gemspec_content))
-        end
-
-        def write_ruby_version_file
-          path = ruby_version_file.name
-          FileUtils.mkdir_p(Pathname.new(path).dirname)
-          File.write(path, ruby_version_file.content)
-        end
-
-        def updated_gemspec_content
-          return gemspec.content unless original_gemspec_declaration_string
-          gemspec.content.gsub(
-            original_gemspec_declaration_string,
-            updated_gemspec_declaration_string
-          )
-        end
-
-        def original_gemspec_declaration_string
-          @original_gemspec_declaration_string ||=
-            begin
-              matches = []
-              regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
-              gemspec.content.scan(regex) { matches << Regexp.last_match }
-
-              matches.find { |match| match[:name] == dependency.name }&.to_s
-            end
-        end
-
-        def updated_gemspec_declaration_string
-          regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
-          original_requirement =
-            regex.match(original_gemspec_declaration_string)[:requirements]
-
-          original_gemspec_declaration_string.
-            sub(original_requirement, '">= 0"')
-        end
-
-        def sanitized_gemspec_content(gemspec_content)
-          # No need to set the version correctly - this is just an update
-          # check so we're not going to persist any changes to the lockfile.
-          gemspec_content.
-            gsub(/^\s*require.*$/, "").
-            gsub(/=.*VERSION.*$/, "= '0.0.1'")
-        end
-
-        # Replace the original gem requirements with a ">=" requirement to
-        # unlock the gem during version checking
-        def update_dependency_requirement(gemfile_content)
-          unless gemfile_content.
-                 to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
-                 find { Regexp.last_match[:name] == dependency.name }
-            return gemfile_content
-          end
-
-          replacement_version =
-            if dependency.version&.match?(/^[0-9a-f]{40}$/)
-              0
-            else
-              dependency.version || 0
-            end
-
-          original_gem_declaration_string = Regexp.last_match.to_s
-          updated_gem_declaration_string =
-            original_gem_declaration_string.
-            sub(
-              Gemnasium::Parser::Patterns::REQUIREMENTS,
-              "'>= #{replacement_version}'"
-            )
-
-          gemfile_content.gsub(
-            original_gem_declaration_string,
-            updated_gem_declaration_string
-          )
         end
       end
     end
