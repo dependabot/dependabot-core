@@ -147,6 +147,14 @@ module Dependabot
           end
         end
 
+        #########################
+        # Bundler context setup #
+        #########################
+
+        # All methods below this line are used solely to set the Bundler
+        # context. In future, they are a strong candidate to be refactored out
+        # into a helper class.
+
         def in_a_temporary_bundler_context(error_handling: true)
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
