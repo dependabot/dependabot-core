@@ -1,3 +1,8 @@
+## v0.19.8, 26 September 2017
+
+- Add short-circuit fetch_latest_version code for Ruby git dependencies
+- Refactor UpdateCheckers::Ruby::Bundler (should have no impact on logic)
+
 ## v0.19.7, 25 September 2017
 
 - Supress Ruby VersionConflict exceptions caused by an update to a git
