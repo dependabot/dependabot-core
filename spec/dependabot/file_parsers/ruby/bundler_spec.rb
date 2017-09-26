@@ -129,8 +129,9 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:lockfile_content) { fixture("ruby", "lockfiles", "git_source.lock") }
 
       its(:length) { is_expected.to eq(5) }
-      describe "the last dependency" do
-        subject { dependencies.last }
+
+      describe "an untagged dependency" do
+        subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
         let(:expected_requirements) do
           [{
             requirement: ">= 0",
@@ -138,17 +139,40 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             source: {
               type: "git",
               url: "http://github.com/gocardless/uk_phone_numbers",
-              branch: "master"
+              branch: "master",
+              ref: "master"
             },
             groups: [:default]
           }]
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("uk_phone_numbers") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) do
           is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
+        end
+      end
+
+      describe "a tagged dependency" do
+        subject { dependencies.find { |d| d.name == "que" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "git@github.com:gocardless/que",
+              branch: "master",
+              ref: "v0.11.7"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
         end
       end
     end
@@ -334,7 +358,8 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
                 source: {
                   type: "git",
                   url: "https://github.com/gocardless/business",
-                  branch: "master"
+                  branch: "master",
+                  ref: "master"
                 },
                 groups: [:default]
               }

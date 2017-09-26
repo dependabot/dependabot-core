@@ -186,6 +186,7 @@ module Dependabot
           if source.is_a?(::Bundler::Source::Git)
             details[:url] = source.uri
             details[:branch] = source.branch || "master"
+            details[:ref] = source.ref
           end
           details
         end
