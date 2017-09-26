@@ -175,6 +175,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             package_manager: "bundler"
           )
         end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
+              }
+            }
+          ]
+        end
 
         it "fetches the latest SHA-1 hash" do
           version = checker.latest_version
@@ -190,6 +205,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               requirements: requirements,
               package_manager: "bundler"
             )
+          end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/que",
+                  branch: "master",
+                  ref: "v0.11.7"
+                }
+              }
+            ]
           end
 
           it "respects the pin" do
