@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@dependabot/yarn-lib@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.0.2.tgz#77abe5e8e16a9a86460947f465ae8dc61af94c5b"
+"@dependabot/yarn-lib@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.1.0.tgz#2e0d6adecd71d863026a903a9d94dbb40fbec5d6"
   dependencies:
     babel-eslint "^7.2.3"
     babel-runtime "^6.0.0"
@@ -41,6 +41,7 @@
     request-capture-har "^1.2.2"
     rimraf "^2.5.0"
     semver "^5.1.0"
+    strip-ansi "^4.0.0"
     strip-bom "^3.0.0"
     tar-fs "^1.15.1"
     tar-stream "^1.5.2"
