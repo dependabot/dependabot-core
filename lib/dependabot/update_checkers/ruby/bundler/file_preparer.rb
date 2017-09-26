@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/file_updaters/ruby/bundler"
+require "dependabot/dependency_file"
+require "gemnasium/parser"
 
 module Dependabot
   module UpdateCheckers
@@ -8,9 +11,9 @@ module Dependabot
       class Bundler
         # This class takes a set of dependency files and sanitizes them for use
         # in UpdateCheckers::Ruby::Bundler. In particular, it:
-        # - removes any version requirement on the dependency being updated
+        # - Removes any version requirement on the dependency being updated
         #   (in the Gemfile)
-        # - sanitizes any provided gemspecs to remove file imports etc. (since
+        # - Sanitizes any provided gemspecs to remove file imports etc. (since
         #   Dependabot doesn't pull down the entire repo). This process is
         #   imperfect - an alternative would be to cloen the repo
         class FilePreparer
