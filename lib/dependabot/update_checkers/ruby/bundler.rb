@@ -80,7 +80,9 @@ module Dependabot
                 dep = definition.resolve.find { |d| d.name == dependency.name }
                 { version: dep.version, commit_sha: dep.source.revision }
               rescue ::Bundler::VersionConflict
-                #
+                # Version conflict is likely due to the dependency update,
+                # rather than an underlying issue with the Gemfile/Gemfile.lock.
+                # Suppress the error and skip the update.
                 { version: nil, commit_sha: nil }
               end
             else
