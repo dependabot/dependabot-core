@@ -56,7 +56,7 @@ module Dependabot
 
         def fetch_latest_version_details
           case dependency_source
-          when NilClass then latest_rubygems_version
+          when NilClass then latest_rubygems_version_details
           when ::Bundler::Source::Rubygems
             latest_private_version_details
           when ::Bundler::Source::Git
@@ -67,137 +67,47 @@ module Dependabot
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
 
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
+          in_a_temporary_bundler_context do
+            definition = ::Bundler::Definition.build(
+              "Gemfile",
+              lockfile&.name,
+              gems: [dependency.name]
+            )
 
-            SharedHelpers.in_a_forked_process do
-              # Remove installed gems from the default Rubygems index
-              ::Gem::Specification.all = []
-
-              # Set auth details for GitHub
-              ::Bundler.settings.set_command_option(
-                "github.com",
-                "x-access-token:#{github_access_token}"
-              )
-
-              definition = ::Bundler::Definition.build(
-                "Gemfile",
-                lockfile&.name,
-                gems: [dependency.name]
-              )
-
+            if dependency_source.instance_of?(::Bundler::Source::Git)
+              begin
+                definition.resolve_remotely!
+                dep = definition.resolve.find { |d| d.name == dependency.name }
+                { version: dep.version, commit_sha: dep.source.revision }
+              rescue ::Bundler::VersionConflict
+                #
+                { version: nil, commit_sha: nil }
+              end
+            else
               definition.resolve_remotely!
               dep = definition.resolve.find { |d| d.name == dependency.name }
-              details = { version: dep.version }
-              if dep.source.instance_of?(::Bundler::Source::Git)
-                details[:commit_sha] = dep.source.revision
-              end
-              details
+              { version: dep.version }
             end
           end
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
         end
 
         def dependency_source
           return nil unless gemfile
 
           @dependency_source ||=
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
-
-              SharedHelpers.in_a_forked_process do
-                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                  find { |dep| dep.name == dependency.name }&.source
-              end
-            end
-        rescue SharedHelpers::ChildProcessFailed => error
-          handle_bundler_errors(error)
-        end
-
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
-        def handle_bundler_errors(error)
-          msg = error.error_class + " with message: " + error.error_message
-
-          case error.error_class
-          when "Bundler::Dsl::DSLError"
-            # We couldn't evaluate the Gemfile, let alone resolve it
-            raise Dependabot::DependencyFileNotEvaluatable, msg
-          when "Bundler::Source::Git::MissingGitRevisionError"
-            raise GitDependencyReferenceNotFound, dependency.name
-          when "Bundler::Source::Git::GitCommandError"
-            if error.error_message.match?(GIT_REF_REGEX)
-              # We couldn't find the specified branch / commit (or the two
-              # weren't compatible).
-              gem_name =
-                error.error_message.match(GIT_REF_REGEX).named_captures["path"].
-                split("/").last.split("-")[0..-2].join
-              raise GitDependencyReferenceNotFound, gem_name
-            end
-
-            bad_uris = inaccessible_git_dependencies.map { |s| s.source.uri }
-            raise unless bad_uris.any?
-
-            # We don't have access to one of repos required
-            raise Dependabot::GitDependenciesNotReachable, bad_uris
-          when "Bundler::VersionConflict"
-            # The Gemfile specified incompatible versions, causing a conflict.
-            # If the dependency being updated had a git source we suppress the
-            # error, as it is our attempted update that has caused the inability
-            # to resolve (Bundler can only fetch the latest commit).
-            unless dependency_source.instance_of?(::Bundler::Source::Git)
-              raise Dependabot::DependencyFileNotResolvable, msg
-            end
-          when "Bundler::GemNotFound", "Gem::InvalidSpecificationException"
-            # Bundler threw an error during resolution. Any of:
-            # - the gem doesn't exist in any of the specified sources
-            # - the gem wasn't specified properly
-            raise Dependabot::DependencyFileNotResolvable, msg
-          when "RuntimeError"
-            raise unless error.error_message.include?("Unable to find a spec")
-            raise DependencyFileNotResolvable, msg
-          else raise
-          end
-        end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/MethodLength
-
-        def inaccessible_git_dependencies
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
-
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.settings.set_command_option(
-                "github.com",
-                "x-access-token:#{github_access_token}"
-              )
-
+            in_a_temporary_bundler_context do
               ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                reject do |spec|
-                  next true unless spec.source.is_a?(::Bundler::Source::Git)
-
-                  # Piggy-back off some private Bundler methods to configure the
-                  # URI with auth details in the same way Bundler does.
-                  git_proxy = spec.source.send(:git_proxy)
-                  uri = git_proxy.send(:configured_uri_for, spec.source.uri)
-                  uri += ".git" unless uri.end_with?(".git")
-                  uri += "/info/refs?service=git-upload-pack"
-                  Excon.get(uri, middlewares: SharedHelpers.excon_middleware).
-                    status == 200
-                end
+                find { |dep| dep.name == dependency.name }&.source
             end
-          end
         end
 
-        def latest_rubygems_version
-          # Note: Rubygems excludes pre-releases from the `Gems.info` response,
-          # so no need to filter them out.
+        def latest_rubygems_version_details
           latest_info = Gems.info(dependency.name)
 
           return nil if latest_info["version"].nil?
+
+          # Rubygems excludes pre-releases from the `Gems.info` response,
+          # so no need to filter them out.
           {
             version: Gem::Version.new(latest_info["version"]),
             sha: latest_info["sha"]
@@ -224,23 +134,101 @@ module Dependabot
         end
 
         def latest_git_version_details
+          in_a_temporary_bundler_context do
+            source =
+              ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+              find { |dep| dep.name == dependency.name }.source
+
+            # Tell Bundler we're fine with fetching the source remotely
+            source.instance_variable_set(:@allow_remote, true)
+            spec = source.specs.first
+
+            { version: spec.version, commit_sha: spec.source.revision }
+          end
+        end
+
+        def in_a_temporary_bundler_context(error_handling: true)
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
             SharedHelpers.in_a_forked_process do
-              source =
-                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-                find { |dep| dep.name == dependency.name }.source
+              # Remove installed gems from the default Rubygems index
+              ::Gem::Specification.all = []
 
-              # Tell Bundler we're fine with fetching the source remotely
-              source.instance_variable_set(:@allow_remote, true)
-              spec = source.specs.first
+              # Set auth details for GitHub
+              ::Bundler.settings.set_command_option(
+                "github.com",
+                "x-access-token:#{github_access_token}"
+              )
 
-              { version: spec.version, commit_sha: spec.source.revision }
+              yield
             end
           end
         rescue SharedHelpers::ChildProcessFailed => error
+          raise unless error_handling
+
+          # Raise more descriptive errors
           handle_bundler_errors(error)
+        end
+
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
+        def handle_bundler_errors(error)
+          msg = error.error_class + " with message: " + error.error_message
+
+          case error.error_class
+          when "Bundler::Dsl::DSLError"
+            # We couldn't evaluate the Gemfile, let alone resolve it
+            raise Dependabot::DependencyFileNotEvaluatable, msg
+          when "Bundler::Source::Git::MissingGitRevisionError"
+            raise GitDependencyReferenceNotFound, dependency.name
+          when "Bundler::Source::Git::GitCommandError"
+            if error.error_message.match?(GIT_REF_REGEX)
+              # We couldn't find the specified branch / commit (or the two
+              # weren't compatible).
+              gem_name =
+                error.error_message.match(GIT_REF_REGEX).named_captures["path"].
+                split("/").last.split("-")[0..-2].join
+              raise GitDependencyReferenceNotFound, gem_name
+            end
+
+            bad_uris = inaccessible_git_dependencies.map { |s| s.source.uri }
+            raise unless bad_uris.any?
+
+            # We don't have access to one of repos required
+            raise Dependabot::GitDependenciesNotReachable, bad_uris
+          when "Bundler::GemNotFound", "Gem::InvalidSpecificationException",
+               "Bundler::VersionConflict"
+            # Bundler threw an error during resolution. Any of:
+            # - the gem doesn't exist in any of the specified sources
+            # - the gem wasn't specified properly
+            # - the gem was specified at an incompatible version
+            raise Dependabot::DependencyFileNotResolvable, msg
+          when "RuntimeError"
+            raise unless error.error_message.include?("Unable to find a spec")
+            raise DependencyFileNotResolvable, msg
+          else raise
+          end
+        end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/AbcSize
+
+        def inaccessible_git_dependencies
+          in_a_temporary_bundler_context(error_handling: false) do
+            ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+              reject do |spec|
+                next true unless spec.source.is_a?(::Bundler::Source::Git)
+
+                # Piggy-back off some private Bundler methods to configure the
+                # URI with auth details in the same way Bundler does.
+                git_proxy = spec.source.send(:git_proxy)
+                uri = git_proxy.send(:configured_uri_for, spec.source.uri)
+                uri += ".git" unless uri.end_with?(".git")
+                uri += "/info/refs?service=git-upload-pack"
+                Excon.get(uri, middlewares: SharedHelpers.excon_middleware).
+                  status == 200
+              end
+          end
         end
 
         def gemfile
