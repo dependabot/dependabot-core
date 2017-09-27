@@ -133,7 +133,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         end
       end
 
-      context "with parenthesis" do
+      context "with parentheses" do
         let(:version) { "1.4.3" }
         let(:gemspec_body) { %(spec.add_dependency("business", ">= 1", "< 3")) }
         its(:content) { is_expected.to eq(%(spec.add_dependency("business"))) }
