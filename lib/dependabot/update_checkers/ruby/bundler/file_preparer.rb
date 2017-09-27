@@ -3,7 +3,7 @@
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/dependency_file"
-require "gemnasium/parser"
+require "parser/current"
 
 module Dependabot
   module UpdateCheckers
@@ -79,7 +79,7 @@ module Dependabot
           end
 
           def gemfile_content_for_update_check
-            content = update_gemfile_requirement(gemfile.content)
+            content = replace_gemfile_version_requirement(gemfile.content)
             content
           end
 
@@ -125,32 +125,53 @@ module Dependabot
               gsub(/=.*VERSION.*$/, "= '0.0.1'")
           end
 
-          # Replace the original gem requirements with a ">=" requirement to
-          # unlock the gem during version checking
-          def update_gemfile_requirement(gemfile_content)
-            unless gemfile_content.
-                   to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
-                   find { Regexp.last_match[:name] == dependency.name }
-              return gemfile_content
-            end
+          def replace_gemfile_version_requirement(content)
+            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
+            buffer.source = content
+            ast = Parser::CurrentRuby.new.parse(buffer)
 
-            replacement_version =
+            updated_version =
               if dependency.version&.match?(/^[0-9a-f]{40}$/) then 0
-              else dependency.version || 0
+              elsif dependency.version then dependency.version
+              else 0
               end
 
-            original_gem_declaration_string = Regexp.last_match.to_s
-            updated_gem_declaration_string =
-              original_gem_declaration_string.
-              sub(
-                Gemnasium::Parser::Patterns::REQUIREMENTS,
-                "'>= #{replacement_version}'"
-              )
+            ReplaceGemfileVersion.new(
+              dependency_name: dependency.name,
+              updated_version: updated_version
+            ).rewrite(buffer, ast)
+          end
 
-            gemfile_content.gsub(
-              original_gem_declaration_string,
-              updated_gem_declaration_string
-            )
+          class ReplaceGemfileVersion < Parser::Rewriter
+            def initialize(dependency_name:, updated_version:)
+              @dependency_name = dependency_name
+              @updated_version = updated_version
+            end
+
+            def on_send(node)
+              return unless declares_targeted_gem?(node)
+
+              version_requirement_nodes =
+                node.children[3..-1].reject { |child| child.type == :hash }
+
+              return if version_requirement_nodes.none?
+
+              version_requirement_nodes.each do |requirement_node|
+                replace(
+                  requirement_node.loc.expression,
+                  "'>= #{updated_version}'"
+                )
+              end
+            end
+
+            private
+
+            attr_reader :dependency_name, :updated_version
+
+            def declares_targeted_gem?(node)
+              return false unless node.children[1] == :gem
+              node.children[2].children.first == dependency_name
+            end
           end
         end
       end
