@@ -79,16 +79,22 @@ module Dependabot
           end
 
           def gemfile_content_for_update_check
-            content = update_dependency_requirement(gemfile.content)
+            content = update_gemfile_requirement(gemfile.content)
             content
           end
 
           def gemspec_content_for_update_check
-            return gemspec.content unless original_gemspec_declaration_string
-            gemspec.content.gsub(
-              original_gemspec_declaration_string,
-              updated_gemspec_declaration_string
-            )
+            content =
+              if original_gemspec_declaration_string
+                gemspec.content.gsub(
+                  original_gemspec_declaration_string,
+                  updated_gemspec_declaration_string
+                )
+              else
+                gemspec.content
+              end
+
+            sanitized_gemspec_content(content)
           end
 
           def original_gemspec_declaration_string
@@ -98,7 +104,6 @@ module Dependabot
             @original_gemspec_declaration_string ||=
               begin
                 gemspec.content.scan(regex) { matches << Regexp.last_match }
-
                 matches.find { |match| match[:name] == dependency.name }&.to_s
               end
           end
@@ -122,7 +127,7 @@ module Dependabot
 
           # Replace the original gem requirements with a ">=" requirement to
           # unlock the gem during version checking
-          def update_dependency_requirement(gemfile_content)
+          def update_gemfile_requirement(gemfile_content)
             unless gemfile_content.
                    to_enum(:scan, Gemnasium::Parser::Patterns::GEM_CALL).
                    find { Regexp.last_match[:name] == dependency.name }
@@ -130,10 +135,8 @@ module Dependabot
             end
 
             replacement_version =
-              if dependency.version&.match?(/^[0-9a-f]{40}$/)
-                0
-              else
-                dependency.version || 0
+              if dependency.version&.match?(/^[0-9a-f]{40}$/) then 0
+              else dependency.version || 0
               end
 
             original_gem_declaration_string = Regexp.last_match.to_s
