@@ -62,13 +62,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
       context "with multiple requirements" do
         let(:version) { "1.4.3" }
-        let(:gemfile_body) do
-          %(gem "business", ">= 1", "< 3", require: true)
-        end
+        let(:gemfile_body) { %(gem "business", ">= 1", "< 3", require: true) }
         its(:content) do
-          # TODO: This is sloppy, but fine for the update checker
-          is_expected.
-            to eq(%(gem "business", '>= 1.4.3', '>= 1.4.3', require: true))
+          is_expected.to eq(%(gem "business", '>= 1.4.3', require: true))
         end
 
         context "given as an array" do
@@ -113,13 +109,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         prepared_dependency_files.find { |f| f.name == "example.gemspec" }
       end
 
-      its(:content) { is_expected.to include("'business', '>= 0'") }
+      its(:content) { is_expected.to include("'business'\n") }
 
       context "when the file requires sanitizing" do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
         let(:dependency_name) { "gitlab" }
 
-        its(:content) { is_expected.to include(%("gitlab", '>= 0')) }
+        its(:content) { is_expected.to include(%("gitlab"\n)) }
         its(:content) { is_expected.to_not include("require ") }
         its(:content) { is_expected.to include(%(version      = '0.0.1')) }
       end
@@ -127,30 +123,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
       context "with multiple requirements" do
         let(:version) { "1.4.3" }
         let(:gemspec_body) { %(spec.add_dependency "business", ">= 1", "< 3") }
-        its(:content) do
-          # TODO: This is sloppy, but fine for the update checker
-          is_expected.
-            to eq(%(spec.add_dependency "business", '>= 0', '>= 0'))
-        end
+        its(:content) { is_expected.to eq(%(spec.add_dependency "business")) }
 
         context "given as an array" do
           let(:gemspec_body) do
             %(spec.add_dependency "business", [">= 1", "<3"])
           end
-          its(:content) do
-            is_expected.to eq(%(spec.add_dependency "business", '>= 0'))
-          end
+          its(:content) { is_expected.to eq(%(spec.add_dependency "business")) }
         end
       end
 
       context "with parenthesis" do
         let(:version) { "1.4.3" }
         let(:gemspec_body) { %(spec.add_dependency("business", ">= 1", "< 3")) }
-        its(:content) do
-          # TODO: This is sloppy, but fine for the update checker
-          is_expected.
-            to eq(%(spec.add_dependency("business", '>= 0', '>= 0')))
-        end
+        its(:content) { is_expected.to eq(%(spec.add_dependency("business"))) }
       end
     end
   end

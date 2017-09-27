@@ -98,7 +98,7 @@ module Dependabot
               else 0
               end
 
-            ReplaceGemfileVersion.new(
+            ReplaceGemfileRequirement.new(
               dependency_name: dependency.name,
               updated_version: updated_version
             ).rewrite(buffer, ast)
@@ -109,7 +109,7 @@ module Dependabot
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
-            ReplaceGemspecVersion.new(
+            RemoveGemspecRequirement.new(
               dependency_name: dependency.name
             ).rewrite(buffer, ast)
           end
@@ -122,7 +122,7 @@ module Dependabot
               gsub(/=.*VERSION.*$/, "= '0.0.1'")
           end
 
-          class ReplaceGemfileVersion < Parser::Rewriter
+          class ReplaceGemfileRequirement < Parser::Rewriter
             def initialize(dependency_name:, updated_version:)
               @dependency_name = dependency_name
               @updated_version = updated_version
@@ -136,12 +136,11 @@ module Dependabot
 
               return if version_requirement_nodes.none?
 
-              version_requirement_nodes.each do |requirement_node|
-                replace(
-                  requirement_node.loc.expression,
-                  "'>= #{updated_version}'"
+              range_to_replace =
+                version_requirement_nodes.first.loc.begin.begin.join(
+                  version_requirement_nodes.last.loc.expression
                 )
-              end
+              replace(range_to_replace, "'>= #{updated_version}'")
             end
 
             private
@@ -154,7 +153,7 @@ module Dependabot
             end
           end
 
-          class ReplaceGemspecVersion < Parser::Rewriter
+          class RemoveGemspecRequirement < Parser::Rewriter
             DECLARATION_METHODS = %i(add_dependency add_runtime_dependency
                                      add_development_dependency).freeze
 
@@ -168,9 +167,11 @@ module Dependabot
               version_requirement_nodes = node.children[3..-1]
               return if version_requirement_nodes.none?
 
-              version_requirement_nodes.each do |requirement_node|
-                replace(requirement_node.loc.expression, "'>= 0'")
-              end
+              range_to_remove =
+                node.children[2].loc.end.end.join(
+                  version_requirement_nodes.last.loc.expression
+                )
+              remove(range_to_remove)
             end
 
             private
