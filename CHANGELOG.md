@@ -1,3 +1,8 @@
+## v0.19.10, 27 September 2017
+
+- Refactor: Switch to AST parser for updating Ruby requirements in FileUpdater
+- Refactor: Remove Gemnasium dependency (we now use Parser for all Ruby parsing)
+
 ## v0.19.9, 27 September 2017
 
 - Refactor: Extract Ruby UpdateChecker file preparation into separate class
