@@ -7,6 +7,7 @@ require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
+require "parser/current"
 
 module Dependabot
   module FileUpdaters
@@ -96,11 +97,17 @@ module Dependabot
         end
 
         def updated_gemspec_content
-          return gemspec.content unless original_gemspec_declaration_string
-          @updated_gemspec_content ||= gemspec.content.gsub(
-            original_gemspec_declaration_string,
-            updated_gemspec_declaration_string
-          )
+          replace_gemspec_version_requirement(gemspec.content)
+        end
+
+        def replace_gemspec_version_requirement(content)
+          buffer = Parser::Source::Buffer.new("(gemspec_content)")
+          buffer.source = content
+          ast = Parser::CurrentRuby.new.parse(buffer)
+
+          ReplaceGemspecRequirement.
+            new(dependency: dependency).
+            rewrite(buffer, ast)
         end
 
         def original_gemfile_declaration_string
@@ -227,32 +234,56 @@ module Dependabot
           end
         end
 
-        def original_gemspec_declaration_string
-          @original_gemspec_declaration_string ||=
-            begin
-              matches = []
-              gemspec.content.scan(DEPENDENCY_DECLARATION_REGEX) do
-                matches << Regexp.last_match
-              end
-              matches.find { |match| match[:name] == dependency.name }&.to_s
+        class ReplaceGemspecRequirement < Parser::Rewriter
+          DECLARATION_METHODS = %i(add_dependency add_runtime_dependency
+                                   add_development_dependency).freeze
+
+          def initialize(dependency:)
+            @dependency = dependency
+          end
+
+          def on_send(node)
+            return unless declares_targeted_gem?(node)
+
+            requirement_nodes = node.children[3..-1]
+            return if requirement_nodes.none?
+
+            quote_character = extract_quote_character_from(requirement_nodes)
+
+            replace(
+              range_for(requirement_nodes),
+              new_requirement_string(quote_character)
+            )
+          end
+
+          private
+
+          attr_reader :dependency
+
+          def declares_targeted_gem?(node)
+            return false unless DECLARATION_METHODS.include?(node.children[1])
+            node.children[2].children.first == dependency.name
+          end
+
+          def extract_quote_character_from(requirement_nodes)
+            if requirement_nodes.first.type == :str
+              requirement_nodes.first.loc.begin.source
+            else
+              requirement_nodes.first.children.first.loc.begin.source
             end
-        end
+          end
 
-        def updated_gemspec_declaration_string
-          original_requirement = DEPENDENCY_DECLARATION_REGEX.match(
-            original_gemspec_declaration_string
-          )[:requirements]
+          def new_requirement_string(quote_character)
+            dependency.requirements.
+              find { |r| r[:file].end_with?(".gemspec") }.
+              fetch(:requirement).split(",").
+              map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
+              join(", ")
+          end
 
-          quote_character = original_requirement.include?("'") ? "'" : '"'
-
-          formatted_new_requirement =
-            dependency.requirements.find { |r| r[:file].end_with?(".gemspec") }.
-            fetch(:requirement).split(",").
-            map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
-            join(", ")
-
-          original_gemspec_declaration_string.
-            sub(original_requirement, formatted_new_requirement)
+          def range_for(nodes)
+            nodes.first.loc.begin.begin.join(nodes.last.loc.expression)
+          end
         end
       end
     end
