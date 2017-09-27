@@ -44,7 +44,7 @@ module Dependabot
             path_gemspecs.compact.each do |file|
               files << DependencyFile.new(
                 name: file.name,
-                content: sanitized_gemspec_content(file.content),
+                content: sanitize_gemspec_content(file.content),
                 directory: file.directory
               )
             end
@@ -79,54 +79,16 @@ module Dependabot
           end
 
           def gemfile_content_for_update_check
-            content = replace_gemfile_version_requirement(gemfile.content)
-            content
+            replace_gemfile_version_requirement(gemfile.content)
           end
 
           def gemspec_content_for_update_check
-            content =
-              if original_gemspec_declaration_string
-                gemspec.content.gsub(
-                  original_gemspec_declaration_string,
-                  updated_gemspec_declaration_string
-                )
-              else
-                gemspec.content
-              end
-
-            sanitized_gemspec_content(content)
-          end
-
-          def original_gemspec_declaration_string
-            matches = []
-            regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
-
-            @original_gemspec_declaration_string ||=
-              begin
-                gemspec.content.scan(regex) { matches << Regexp.last_match }
-                matches.find { |match| match[:name] == dependency.name }&.to_s
-              end
-          end
-
-          def updated_gemspec_declaration_string
-            regex = FileUpdaters::Ruby::Bundler::DEPENDENCY_DECLARATION_REGEX
-            original_requirement =
-              regex.match(original_gemspec_declaration_string)[:requirements]
-
-            original_gemspec_declaration_string.
-              sub(original_requirement, '">= 0"')
-          end
-
-          def sanitized_gemspec_content(gemspec_content)
-            # No need to set the version correctly - this is just an update
-            # check so we're not going to persist any changes to the lockfile.
-            gemspec_content.
-              gsub(/^\s*require.*$/, "").
-              gsub(/=.*VERSION.*$/, "= '0.0.1'")
+            content = replace_gemspec_version_requirement(gemspec.content)
+            sanitize_gemspec_content(content)
           end
 
           def replace_gemfile_version_requirement(content)
-            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
+            buffer = Parser::Source::Buffer.new("(gemfile_content)")
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
@@ -140,6 +102,24 @@ module Dependabot
               dependency_name: dependency.name,
               updated_version: updated_version
             ).rewrite(buffer, ast)
+          end
+
+          def replace_gemspec_version_requirement(content)
+            buffer = Parser::Source::Buffer.new("(gemspec_content)")
+            buffer.source = content
+            ast = Parser::CurrentRuby.new.parse(buffer)
+
+            ReplaceGemspecVersion.new(
+              dependency_name: dependency.name
+            ).rewrite(buffer, ast)
+          end
+
+          def sanitize_gemspec_content(gemspec_content)
+            # No need to set the version correctly - this is just an update
+            # check so we're not going to persist any changes to the lockfile.
+            gemspec_content.
+              gsub(/^\s*require.*$/, "").
+              gsub(/=.*VERSION.*$/, "= '0.0.1'")
           end
 
           class ReplaceGemfileVersion < Parser::Rewriter
@@ -170,6 +150,35 @@ module Dependabot
 
             def declares_targeted_gem?(node)
               return false unless node.children[1] == :gem
+              node.children[2].children.first == dependency_name
+            end
+          end
+
+          class ReplaceGemspecVersion < Parser::Rewriter
+            DECLARATION_METHODS = %i(add_dependency add_runtime_dependency
+                                     add_development_dependency).freeze
+
+            def initialize(dependency_name:)
+              @dependency_name = dependency_name
+            end
+
+            def on_send(node)
+              return unless declares_targeted_gem?(node)
+
+              version_requirement_nodes = node.children[3..-1]
+              return if version_requirement_nodes.none?
+
+              version_requirement_nodes.each do |requirement_node|
+                replace(requirement_node.loc.expression, "'>= 0'")
+              end
+            end
+
+            private
+
+            attr_reader :dependency_name
+
+            def declares_targeted_gem?(node)
+              return false unless DECLARATION_METHODS.include?(node.children[1])
               node.children[2].children.first == dependency_name
             end
           end

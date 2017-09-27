@@ -113,13 +113,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         prepared_dependency_files.find { |f| f.name == "example.gemspec" }
       end
 
-      its(:content) { is_expected.to include(%('business', ">= 0")) }
+      its(:content) { is_expected.to include("'business', '>= 0'") }
 
       context "when the file requires sanitizing" do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
         let(:dependency_name) { "gitlab" }
 
-        its(:content) { is_expected.to include(%("gitlab", ">= 0")) }
+        its(:content) { is_expected.to include(%("gitlab", '>= 0')) }
         its(:content) { is_expected.to_not include("require ") }
         its(:content) { is_expected.to include(%(version      = '0.0.1')) }
       end
