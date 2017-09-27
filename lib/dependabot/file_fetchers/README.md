@@ -2,7 +2,7 @@
 
 File fetchers are used to fetch the relevant dependency files for a project
 (e.g., the `Gemfile` and `Gemfile.lock`). They are also responsible for checking
-where a repo has an admissable set of requirement files.
+whether a repo has an admissable set of requirement files.
 
 There is a `Dependabot::FileFetchers` class for each language Dependabot
 supports.
