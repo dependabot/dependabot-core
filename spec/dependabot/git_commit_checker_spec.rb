@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/ruby/bundler/git_commit_checker"
+require "dependabot/git_commit_checker"
 
-RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::GitCommitChecker do
+RSpec.describe Dependabot::GitCommitChecker do
   let(:checker) do
     described_class.new(
       dependency: dependency,

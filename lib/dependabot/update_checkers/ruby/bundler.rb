@@ -5,6 +5,7 @@ require "bundler_git_source_patch"
 require "excon"
 require "gems"
 require "dependabot/update_checkers/base"
+require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
