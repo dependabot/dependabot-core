@@ -123,6 +123,35 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         its(:content) { is_expected.to_not include("require ") }
         its(:content) { is_expected.to include(%(version      = '0.0.1')) }
       end
+
+      context "with multiple requirements" do
+        let(:version) { "1.4.3" }
+        let(:gemspec_body) { %(spec.add_dependency "business", ">= 1", "< 3") }
+        its(:content) do
+          # TODO: This is sloppy, but fine for the update checker
+          is_expected.
+            to eq(%(spec.add_dependency "business", '>= 0', '>= 0'))
+        end
+
+        context "given as an array" do
+          let(:gemspec_body) do
+            %(spec.add_dependency "business", [">= 1", "<3"])
+          end
+          its(:content) do
+            is_expected.to eq(%(spec.add_dependency "business", '>= 0'))
+          end
+        end
+      end
+
+      context "with parenthesis" do
+        let(:version) { "1.4.3" }
+        let(:gemspec_body) { %(spec.add_dependency("business", ">= 1", "< 3")) }
+        its(:content) do
+          # TODO: This is sloppy, but fine for the update checker
+          is_expected.
+            to eq(%(spec.add_dependency("business", '>= 0', '>= 0')))
+        end
+      end
     end
   end
 end
