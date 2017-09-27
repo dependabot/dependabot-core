@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-require "gemnasium/parser"
 require "bundler"
+require "parser/current"
+
 require "bundler_definition_version_patch"
 require "bundler_git_source_patch"
+
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
-require "parser/current"
 
 module Dependabot
   module FileUpdaters
@@ -89,15 +90,21 @@ module Dependabot
         end
 
         def updated_gemfile_content
-          return gemfile.content unless original_gemfile_declaration_string
-          @updated_gemfile_content ||= gemfile.content.gsub(
-            original_gemfile_declaration_string,
-            updated_gemfile_declaration_string
-          )
+          replace_gemfile_version_requirement(gemfile.content)
         end
 
         def updated_gemspec_content
           replace_gemspec_version_requirement(gemspec.content)
+        end
+
+        def replace_gemfile_version_requirement(content)
+          buffer = Parser::Source::Buffer.new("(gemfile_content)")
+          buffer.source = content
+          ast = Parser::CurrentRuby.new.parse(buffer)
+
+          ReplaceGemfileRequirement.
+            new(dependency: dependency).
+            rewrite(buffer, ast)
         end
 
         def replace_gemspec_version_requirement(content)
@@ -108,29 +115,6 @@ module Dependabot
           ReplaceGemspecRequirement.
             new(dependency: dependency).
             rewrite(buffer, ast)
-        end
-
-        def original_gemfile_declaration_string
-          @original_gemfile_declaration_string ||=
-            begin
-              regex = Gemnasium::Parser::Patterns::GEM_CALL
-              matches = []
-
-              gemfile.content.scan(regex) { matches << Regexp.last_match }
-              matches.find { |match| match[:name] == dependency.name }&.to_s
-            end
-        end
-
-        def updated_gemfile_declaration_string
-          original_gemfile_declaration_string.
-            sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_req|
-              quote_character = old_req.include?("'") ? "'" : '"'
-
-              dependency.requirements.find { |r| r[:file] == "Gemfile" }.
-                fetch(:requirement).split(",").
-                map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
-                join(", ")
-            end
         end
 
         def updated_lockfile_content
@@ -231,6 +215,56 @@ module Dependabot
             gem_name = gemspec.name.split("/").last.split(".").first
             spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
             "='#{spec&.version || '0.0.1'}'"
+          end
+        end
+
+        class ReplaceGemfileRequirement < Parser::Rewriter
+          def initialize(dependency:)
+            @dependency = dependency
+          end
+
+          def on_send(node)
+            return unless declares_targeted_gem?(node)
+
+            requirement_nodes =
+              node.children[3..-1].reject { |child| child.type == :hash }
+            return if requirement_nodes.none?
+
+            quote_character = extract_quote_character_from(requirement_nodes)
+
+            replace(
+              range_for(requirement_nodes),
+              new_requirement_string(quote_character)
+            )
+          end
+
+          private
+
+          attr_reader :dependency
+
+          def declares_targeted_gem?(node)
+            return false unless node.children[1] == :gem
+            node.children[2].children.first == dependency.name
+          end
+
+          def extract_quote_character_from(requirement_nodes)
+            if requirement_nodes.first.type == :str
+              requirement_nodes.first.loc.begin.source
+            else
+              requirement_nodes.first.children.first.loc.begin.source
+            end
+          end
+
+          def new_requirement_string(quote_character)
+            dependency.requirements.
+              find { |r| r[:file] == "Gemfile" }.
+              fetch(:requirement).split(",").
+              map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
+              join(", ")
+          end
+
+          def range_for(nodes)
+            nodes.first.loc.begin.begin.join(nodes.last.loc.expression)
           end
         end
 
