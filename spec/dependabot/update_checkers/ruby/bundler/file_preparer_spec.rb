@@ -46,6 +46,39 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:version) { "1.4.3" }
 
         its(:content) { is_expected.to include(%("business", '>= 1.4.3')) }
+        its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }
+      end
+
+      context "within a source block" do
+        let(:gemfile_body) do
+          "source 'https://example.com' do\n"\
+          "  gem \"business\", \"~> 1.0\", require: true\n"\
+          "end"
+        end
+        let(:version) { "1.4.3" }
+
+        its(:content) { is_expected.to include(%("business", '>= 1.4.3')) }
+      end
+
+      context "with multiple requirements" do
+        let(:version) { "1.4.3" }
+        let(:gemfile_body) do
+          %(gem "business", ">= 1", "< 3", require: true)
+        end
+        its(:content) do
+          # TODO: This is sloppy, but fine for the update checker
+          is_expected.
+            to eq(%(gem "business", '>= 1.4.3', '>= 1.4.3', require: true))
+        end
+
+        context "given as an array" do
+          let(:gemfile_body) do
+            %(gem "business", [">= 1", "<3"], require: true)
+          end
+          its(:content) do
+            is_expected.to eq(%(gem "business", '>= 1.4.3', require: true))
+          end
+        end
       end
 
       context "with a git source" do
