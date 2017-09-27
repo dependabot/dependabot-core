@@ -1,3 +1,8 @@
+## v0.19.9, 27 September 2017
+
+- Refactor: Extract Ruby UpdateChecker file preparation into separate class
+- Refactor: Switch to AST parser for updating Ruby requirements in UpdateChecker
+
 ## v0.19.8, 26 September 2017
 
 - Add short-circuit fetch_latest_version code for Ruby git dependencies
