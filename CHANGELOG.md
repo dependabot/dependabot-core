@@ -1,3 +1,9 @@
+## v0.19.11, 28 September 2017
+
+- Fix: Fix metadata handler for non-GitHub Ruby git sources
+- Fix: Handle function calls as gem versions in the Ruby FilePreparer
+- Fix: Handle string interpolation in Ruby FileUpdater
+
 ## v0.19.10, 27 September 2017
 
 - Refactor: Switch to AST parser for updating Ruby requirements in FileUpdater
