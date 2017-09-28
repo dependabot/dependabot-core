@@ -92,6 +92,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
           its(:content) { is_expected.to include(%("prius", '>= 0', git:)) }
         end
       end
+
+      context "with a function call" do
+        let(:gemfile_body) { "gem \"business\", version" }
+        let(:version) { "1.4.3" }
+
+        its(:content) { is_expected.to include(%("business", '>= 1.4.3')) }
+      end
     end
 
     describe "the updated gemspec" do

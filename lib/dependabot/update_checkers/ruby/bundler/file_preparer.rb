@@ -137,7 +137,7 @@ module Dependabot
               return if version_requirement_nodes.none?
 
               range_to_replace =
-                version_requirement_nodes.first.loc.begin.begin.join(
+                version_requirement_nodes.first.loc.expression.join(
                   version_requirement_nodes.last.loc.expression
                 )
               replace(range_to_replace, "'>= #{updated_version}'")
