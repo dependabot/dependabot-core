@@ -70,6 +70,29 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
       it { is_expected.to eq("https://github.com/my_fork/business") }
 
+      context "that doesn't match a supported source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://example.com/my_fork/business"
+                }
+              }
+            ],
+            package_manager: "bundler"
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "that is overriding a gemspec source" do
         let(:dependency) do
           Dependabot::Dependency.new(

@@ -73,6 +73,7 @@ module Dependabot
           info = dependency.requirements.map { |r| r[:source] }.compact.first
 
           url = info[:url] || info.fetch("url")
+          return nil unless url.match?(SOURCE_REGEX)
           url.match(SOURCE_REGEX).named_captures
         end
 
