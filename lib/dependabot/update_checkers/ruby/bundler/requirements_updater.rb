@@ -51,7 +51,7 @@ module Dependabot
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
 
             new_req =
-              if requirements.any?(&:exact?) then latest_resolvable_version
+              if requirements.any?(&:exact?) then latest_resolvable_version.to_s
               elsif requirements.any? { |r| r.to_s.start_with?("~>") }
                 tw_req = requirements.find { |r| r.to_s.start_with?("~>") }
                 update_twiddle_version(tw_req, latest_resolvable_version).to_s
