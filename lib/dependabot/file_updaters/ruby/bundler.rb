@@ -257,7 +257,8 @@ module Dependabot
           end
 
           def extract_quote_character_from(requirement_nodes)
-            if requirement_nodes.first.type == :str
+            case requirement_nodes.first.type
+            when :str, :dstr
               requirement_nodes.first.loc.begin.source
             else
               requirement_nodes.first.children.first.loc.begin.source

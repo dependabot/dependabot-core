@@ -213,6 +213,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
 
+      context "when the previous version used a function call" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "function") }
+        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+      end
+
       context "with a gem that has a git source" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "git_source_with_version")

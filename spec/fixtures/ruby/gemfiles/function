@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+version = ENV['BUSINESS_VERSION'] || '5.0'
+
+gem "business", "~> #{version}"
