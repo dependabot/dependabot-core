@@ -90,8 +90,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
           let(:gemfile_body) do
             fixture("ruby", "gemfiles", "git_source_with_version")
           end
+          let(:dependency_name) { "business" }
 
-          its(:content) { is_expected.to include(%("prius", '>= 0', git:)) }
+          its(:content) { is_expected.to include(%("business", '>= 0', git:)) }
         end
 
         context "that should be removed" do

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/ruby/bundler"
-require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/dependency_file"
 require "parser/current"
 
@@ -135,7 +134,7 @@ module Dependabot
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
-            RemoveGitSource.new(dependency.name).rewrite(buffer, ast)
+            RemoveGitSource.new(dependency: dependency).rewrite(buffer, ast)
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter
@@ -206,10 +205,10 @@ module Dependabot
               map(&:to_sym).
               freeze
 
-            attr_reader :gem_name
+            attr_reader :dependency
 
-            def initialize(gem_name)
-              @gem_name = gem_name
+            def initialize(dependency:)
+              @dependency = dependency
             end
 
             def on_send(node)
@@ -232,7 +231,7 @@ module Dependabot
 
             def declares_targeted_gem?(node)
               return false unless node.children[1] == :gem
-              node.children[2].children.first == gem_name
+              node.children[2].children.first == dependency.name
             end
 
             def key_from_hash_pair(node)

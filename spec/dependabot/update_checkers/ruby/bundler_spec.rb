@@ -791,7 +791,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/prius",
+                  url: "https://github.com/gocardless/business",
                   branch: "master",
                   ref: "master"
                 }
@@ -800,8 +800,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "prius",
-              version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+              name: "business",
+              version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
               requirements: requirements,
               package_manager: "bundler"
             )
@@ -810,7 +810,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
+            expect(version).to_not eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
           end
         end
 
@@ -1133,8 +1133,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "prius",
-            version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+            name: "business",
+            version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
             requirements: requirements,
             package_manager: "bundler"
           )
@@ -1148,7 +1148,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               groups: [:default],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/prius",
+                url: "https://github.com/gocardless/business",
                 branch: "master",
                 ref: "master"
               }
@@ -1160,14 +1160,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           expect(requirements_updater).
             to receive(:new).with(
               requirements: requirements,
-              existing_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
-              latest_version: "2.0.0",
-              latest_resolvable_version: "2.0.0",
+              existing_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+              latest_version: "1.10.0",
+              latest_resolvable_version: "1.10.0",
               remove_git_source: false
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 2.0.0")
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.10.0")
         end
 
         context "that is pinned" do

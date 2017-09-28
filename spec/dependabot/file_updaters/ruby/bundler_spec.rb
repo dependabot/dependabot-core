@@ -227,9 +227,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "prius",
-            version: "06824855470b25ffd541720059700fd2e574d958",
-            previous_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+            name: "business",
+            version: "d31e445215b5af70c1604715d97dd953e868380e",
+            previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
             requirements: requirements,
             previous_requirements: previous_requirements,
             package_manager: "bundler"
@@ -239,11 +239,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           [
             {
               file: "Gemfile",
-              requirement: "~> 2.0.0",
+              requirement: "~> 1.10.0",
               groups: [],
               source: {
                 type: "git",
-                url: "http://github.com/gocardless/prius"
+                url: "http://github.com/gocardless/business"
               }
             }
           ]
@@ -256,12 +256,96 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               groups: [],
               source: {
                 type: "git",
-                url: "http://github.com/gocardless/prius"
+                url: "http://github.com/gocardless/business"
               }
             }
           ]
         end
-        its(:content) { is_expected.to include "\"prius\", \"~> 2.0.0\", git" }
+        its(:content) do
+          is_expected.to include "\"business\", \"~> 1.10.0\", git"
+        end
+
+        context "that should be removed" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.8.0",
+              previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            )
+          end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.8.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+
+          its(:content) do
+            is_expected.to include "\"business\", \"~> 1.8.0\"\n"
+          end
+
+          context "with a tag (i.e., multiple git-related arguments)" do
+            let(:gemfile_body) do
+              %(gem "business", git: "git_url", tag: "old_tag")
+            end
+            its(:content) { is_expected.to eq(%(gem "business")) }
+          end
+
+          context "with non-git args at the start" do
+            let(:gemfile_body) do
+              %(gem "business", "1.0.0", require: false, git: "git_url")
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "business", "~> 1.8.0", require: false))
+            end
+          end
+
+          context "with non-git args at the end" do
+            let(:gemfile_body) do
+              %(gem "business", "1.0.0", git: "git_url", require: false)
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "business", "~> 1.8.0", require: false))
+            end
+          end
+
+          context "with non-git args on a subsequent line" do
+            let(:gemfile_body) do
+              %(gem("business", "1.0.0", git: "git_url",\nrequire: false))
+            end
+            its(:content) do
+              is_expected.to eq(%(gem("business", "~> 1.8.0", require: false)))
+            end
+          end
+
+          context "with git args on a subsequent line" do
+            let(:gemfile_body) do
+              %(gem "business", '1.0.0', require: false,\ngit: "git_url")
+            end
+            its(:content) do
+              is_expected.to eq(%(gem "business", '~> 1.8.0', require: false))
+            end
+          end
+
+          context "with a custom arg" do
+            let(:gemfile_body) { %(gem "business", "1.0.0", github: "git_url") }
+            its(:content) { is_expected.to eq(%(gem "business", "~> 1.8.0")) }
+          end
+
+          context "with a comment" do
+            let(:gemfile_body) do
+              %(gem "business", git: "git_url" # My gem)
+            end
+            its(:content) { is_expected.to eq(%(gem "business" # My gem)) }
+          end
+        end
       end
 
       context "when the new (and old) requirement is a range" do
@@ -564,9 +648,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             end
             let(:dependency) do
               Dependabot::Dependency.new(
-                name: "prius",
-                version: "06824855470b25ffd541720059700fd2e574d958",
-                previous_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+                name: "business",
+                version: "d31e445215b5af70c1604715d97dd953e868380e",
+                previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
                 requirements: requirements,
                 previous_requirements: previous_requirements,
                 package_manager: "bundler"
@@ -576,11 +660,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               [
                 {
                   file: "Gemfile",
-                  requirement: "~> 2.0.0",
+                  requirement: "~> 1.10.0",
                   groups: [],
                   source: {
                     type: "git",
-                    url: "http://github.com/gocardless/prius"
+                    url: "http://github.com/gocardless/business"
                   }
                 }
               ]
@@ -593,12 +677,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                   groups: [],
                   source: {
                     type: "git",
-                    url: "http://github.com/gocardless/prius"
+                    url: "http://github.com/gocardless/business"
                   }
                 }
               ]
             end
-            its(:content) { is_expected.to include "prius (~> 2.0.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.10.0)!" }
           end
         end
       end
