@@ -319,6 +319,72 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "switching from a SHA-1 version to a release" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "1.5.0",
+          previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+          package_manager: "bundler",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
+              }
+            }
+          ]
+        )
+      end
+      let(:branch_name) { "dependabot/bundler/business-1.5.0" }
+
+      it "creates a branch for that commit" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/refs").
+          with(body: {
+                 ref: "refs/heads/dependabot/bundler/business-1.5.0",
+                 sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+               })
+      end
+
+      it "creates a PR with the right details" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-1.5.0",
+              title: "Bump business from 2468a0 to 1.5.0",
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "from 2468a0 to 1.5.0. This release includes the commit "\
+                    "that was previously pinned to.\n- [Release notes]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md)\n- [Commits]"\
+                    "(https://github.com/gocardless/business/compare/"\
+                    "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
+                    "v1.5.0)"
+            }
+          )
+      end
+    end
+
     context "when the 'dependencies' label doesn't yet exist" do
       before do
         stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
