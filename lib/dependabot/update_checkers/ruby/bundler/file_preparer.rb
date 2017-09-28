@@ -202,7 +202,7 @@ module Dependabot
 
           class RemoveGitSource < Parser::Rewriter
             GOOD_KEYS =
-              (::Bundler::Dsl::VALID_KEYS - %w(git branch ref tag)).
+              (::Bundler::Dsl::VALID_KEYS - %w(git branch ref tag submodules)).
               map(&:to_sym).
               freeze
 
