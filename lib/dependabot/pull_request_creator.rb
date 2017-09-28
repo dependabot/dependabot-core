@@ -22,10 +22,10 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      return if library? && dependency.previous_requirements
+      return if library? && requirements_changed?
       return if dependency.previous_version
 
-      raise "Dependency must have a previous version or a previous " \
+      raise "Dependency must have a previous version or changed " \
             "requirement to have a pull request created for it!"
     end
 
@@ -269,6 +269,10 @@ module Dependabot
       end
 
       !dependency.appears_in_lockfile?
+    end
+
+    def requirements_changed?
+      (dependency.requirements - dependency.previous_requirements).any?
     end
   end
 end

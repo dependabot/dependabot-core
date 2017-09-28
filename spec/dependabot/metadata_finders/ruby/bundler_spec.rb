@@ -16,6 +16,9 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       requirements: [
         { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
       ],
+      previous_requirements: [
+        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
+      ],
       package_manager: "bundler"
     )
   end
@@ -261,6 +264,17 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               }
             }
           ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
+              }
+            }
+          ],
           package_manager: "bundler"
         )
       end
@@ -318,6 +332,66 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       it "finds the commits as normal" do
         expect(commits_url).
           to eq("https://github.com/gocardless/business/commits")
+      end
+
+      context "when the dependency previously had a git source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: previous_version,
+            requirements: [
+              { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "sha1abc"
+                }
+              }
+            ],
+            package_manager: "bundler"
+          )
+        end
+        let(:previous_version) { "sha1abcd" }
+        let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+        let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+
+        before do
+          stub_request(:get, rubygems_url).
+            to_return(status: 200, body: rubygems_response)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        end
+
+        it "uses the SHA-1 hash previous version to build the compare URL" do
+          expect(commits_url).
+            to eq(
+              "https://github.com/gocardless/business/compare/sha1abcd...v1.5.0"
+            )
+        end
+
+        context "without a previous version" do
+          let(:previous_version) { nil }
+
+          it "uses the reference specified" do
+            expect(commits_url).
+              to eq("https://github.com/gocardless/business/compare/"\
+                    "sha1abc...v1.5.0")
+          end
+        end
       end
     end
   end

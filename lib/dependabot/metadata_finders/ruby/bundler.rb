@@ -21,27 +21,27 @@ module Dependabot
         private
 
         def look_up_source
-          case source_type
+          case new_source_type
           when "default" then find_source_from_rubygems_listing
           when "git" then find_source_from_git_url
           when "rubygems" then nil # Private rubygems server
-          else raise "Unexpected source type: #{source_type}"
+          else raise "Unexpected source type: #{new_source_type}"
           end
         end
 
         def look_up_changelog_url
-          if source_type == "default" && rubygems_listing["changelog_uri"]
+          if new_source_type == "default" && rubygems_listing["changelog_uri"]
             return rubygems_listing["changelog_uri"]
           end
 
           # Changelog won't be relevant for a git commit bump
-          return if source_type == "git"
+          return if new_source_type == "git"
 
           super
         end
 
         def look_up_commits_url
-          return super unless source_type == "git"
+          return super unless new_source_type == "git"
           return super unless dependency.previous_version
 
           build_compare_commits_url(
@@ -50,9 +50,40 @@ module Dependabot
           )
         end
 
-        def source_type
+        def build_compare_commits_url(current_tag, previous_tag)
+          unless switching_source_from_git_to_default?
+            return super(current_tag, previous_tag)
+          end
+
+          old_ref =
+            if dependency.previous_version
+              dependency.previous_version
+            else
+              old_source =
+                dependency.previous_requirements.
+                map { |r| r.fetch(:source) }.uniq.compact.first
+              old_source[:ref] || old_source.fetch("ref")
+            end
+
+          super(current_tag, old_ref)
+        end
+
+        def switching_source_from_git_to_default?
+          new_source_type == "default" && old_source_type == "git"
+        end
+
+        def new_source_type
           sources =
             dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          return "default" if sources.empty?
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          sources.first[:type] || sources.first.fetch("type")
+        end
+
+        def old_source_type
+          sources = dependency.previous_requirements.
+                    map { |r| r.fetch(:source) }.uniq.compact
 
           return "default" if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1

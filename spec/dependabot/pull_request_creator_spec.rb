@@ -23,6 +23,9 @@ RSpec.describe Dependabot::PullRequestCreator do
       package_manager: "bundler",
       requirements: [
         { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
+      ],
+      previous_requirements: [
+        { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
       ]
     )
   end
@@ -111,6 +114,14 @@ RSpec.describe Dependabot::PullRequestCreator do
           version: "1.5.0",
           package_manager: "bundler",
           requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
             {
               file: "Gemfile",
               requirement: "~> 1.4.0",
@@ -261,6 +272,17 @@ RSpec.describe Dependabot::PullRequestCreator do
                 url: "https://github.com/gocardless/business"
               }
             }
+          ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
+              }
+            }
           ]
         )
       end
@@ -377,6 +399,14 @@ RSpec.describe Dependabot::PullRequestCreator do
                 groups: [],
                 source: nil
               }
+            ],
+            previous_requirements: [
+              {
+                file: "some.gemspec",
+                requirement: ">= 1.0, < 3.0",
+                groups: [],
+                source: nil
+              }
             ]
           )
         end
@@ -465,6 +495,14 @@ RSpec.describe Dependabot::PullRequestCreator do
             version: "1.5.0",
             package_manager: "bundler",
             requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
               {
                 file: "Gemfile",
                 requirement: "~> 1.5.0",
