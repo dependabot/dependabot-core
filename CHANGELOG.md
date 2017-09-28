@@ -1,3 +1,7 @@
+## v0.19.12, 28 September 2017
+
+- Change: Use naked version when specifying a Ruby version exactly in Gemfile
+
 ## v0.19.11, 28 September 2017
 
 - Fix: Fix metadata handler for non-GitHub Ruby git sources
