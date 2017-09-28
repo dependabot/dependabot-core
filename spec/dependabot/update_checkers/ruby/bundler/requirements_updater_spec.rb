@@ -99,7 +99,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
           context "when there are multiple requirements" do
             context "one of which is exact" do
               let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
-              its([:requirement]) { is_expected.to eq("= 1.5.0") }
+              its([:requirement]) { is_expected.to eq("1.5.0") }
             end
 
             context "one of which is a ~>" do
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         context "when there are multiple requirements" do
           context "one of which is exact" do
             let(:gemfile_requirement_string) { "= 1.0.0, <= 1.4.0" }
-            its([:requirement]) { is_expected.to eq("= 1.5.0") }
+            its([:requirement]) { is_expected.to eq("1.5.0") }
           end
 
           context "one of which is a ~>" do

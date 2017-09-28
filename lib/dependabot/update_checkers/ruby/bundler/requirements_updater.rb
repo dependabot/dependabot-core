@@ -52,7 +52,7 @@ module Dependabot
 
             new_req =
               if requirements.any?(&:exact?)
-                "= #{latest_resolvable_version}"
+                "#{latest_resolvable_version}"
               elsif requirements.any? { |r| r.to_s.start_with?("~>") }
                 tw_req = requirements.find { |r| r.to_s.start_with?("~>") }
                 update_twiddle_version(tw_req, latest_resolvable_version).to_s
