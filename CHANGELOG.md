@@ -1,3 +1,7 @@
+## v0.20.2, 29 September 2017
+
+- Fix: Add temporary workaround for ::Bundler::Dsl::VALID_KEYS not being defined
+
 ## v0.20.1, 29 September 2017
 
 - Fix: Remove unnecessary require from PullRequestCreator
