@@ -1,3 +1,7 @@
+## v0.20.3, 29 September 2017
+
+- Change: Clearer PR wording for git references switching to releases
+
 ## v0.20.2, 29 September 2017
 
 - Fix: Add temporary workaround for ::Bundler::Dsl::VALID_KEYS not being defined
