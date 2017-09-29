@@ -246,6 +246,16 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a Gemfile that includes a require" do
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "includes_requires") }
+      let(:lockfile_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+
+      it "blows up with a useful error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "with a Gemfile that imports a gemspec" do
       let(:files) { [gemfile, lockfile, gemspec] }
       let(:gemspec) do

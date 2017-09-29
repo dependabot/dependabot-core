@@ -22,70 +22,52 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   let(:requirements) do
-    [
-      {
-        file: "Gemfile",
-        requirement: ">= 0",
-        groups: [],
-        source: {
-          type: "git",
-          url: "https://github.com/gocardless/business",
-          branch: "master",
-          ref: "master"
-        }
-      }
-    ]
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: source }]
+  end
+
+  let(:source) do
+    {
+      type: "git",
+      url: "https://github.com/gocardless/business",
+      branch: "master",
+      ref: "master"
+    }
   end
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:github_access_token) { "token" }
 
-  describe "#commit_now_in_release?" do
-    subject { checker.commit_now_in_release? }
-
+  describe ".new" do
     context "with a non-git dependency" do
-      let(:requirements) do
-        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
-      end
-
-      it { is_expected.to eq(false) }
+      let(:source) { nil }
+      specify { expect { checker }.to raise_error(/Not a git dependency!/) }
     end
+  end
+
+  describe "#commit_in_released_version?" do
+    subject { checker.commit_in_released_version?(Gem::Version.new("1.5.0")) }
 
     context "with a git dependency that is not pinned" do
-      let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/gocardless/business",
-              branch: "master",
-              ref: "master"
-            }
-          }
-        ]
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: nil
+        }
       end
 
       it { is_expected.to eq(false) }
     end
 
     context "with a git dependency that is pinned" do
-      let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/gocardless/business",
-              branch: "master",
-              ref: "df9f605"
-            }
-          }
-        ]
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "df9f605"
+        }
       end
 
       let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
@@ -151,6 +133,86 @@ RSpec.describe Dependabot::GitCommitChecker do
             end
             it { is_expected.to eq(true) }
           end
+        end
+      end
+    end
+  end
+
+  describe "#pinned?" do
+    subject { checker.pinned? }
+
+    let(:source) do
+      {
+        type: "git",
+        url: "https://github.com/gocardless/business",
+        branch: branch,
+        ref: ref
+      }
+    end
+
+    context "with no branch or reference specified" do
+      let(:ref) { nil }
+      let(:branch) { nil }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with no reference specified" do
+      let(:ref) { nil }
+      let(:branch) { "master" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a reference that matches the branch" do
+      let(:ref) { "master" }
+      let(:branch) { "master" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a reference that does not match the branch" do
+      let(:ref) { "v1.0.0" }
+      let(:branch) { "master" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with no branch specified" do
+      let(:branch) { nil }
+
+      context "and a reference that matches the version" do
+        let(:ref) { "df9f605" }
+        it { is_expected.to eq(true) }
+      end
+
+      context "and a reference that does not match the version" do
+        before do
+          git_url = "https://github.com/gocardless/business.git"
+          stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+            to_return(
+              status: 200,
+              body: fixture("git", "git-upload-pack-manifesto"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        context "and does not match any branch names" do
+          let(:ref) { "my_ref" }
+          it { is_expected.to eq(true) }
+        end
+
+        context "and does match a branch names" do
+          let(:ref) { "master" }
+          it { is_expected.to eq(false) }
+        end
+
+        context "when the source is unreachable" do
+          before do
+            git_url = "https://github.com/gocardless/business.git"
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(status: 404)
+          end
+          let(:ref) { "my_ref" }
+          it { is_expected.to eq(false) }
         end
       end
     end
