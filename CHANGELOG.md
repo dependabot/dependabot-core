@@ -1,3 +1,7 @@
+## v0.20.1, 29 September 2017
+
+- Fix: Remove unnecessary require from PullRequestCreator
+
 ## v0.20.0, 29 September 2017
 
 - Feature: Support transitioning Ruby git sources to Rubygems releases
