@@ -200,11 +200,7 @@ module Dependabot
           end
 
           class RemoveGitSource < Parser::Rewriter
-            # TODO: Hack until Bundler 2.0 gets released...
-            # GOOD_KEYS =
-            #   (::Bundler::Dsl::VALID_KEYS - %w(git branch ref tag submodules)).
-            #   map(&:to_sym).
-            #   freeze
+            # TODO: Hack until Bundler 1.16.0 is available on Heroku
             GOOD_KEYS = %i(
               group groups path glob name require platform platforms type
               source install_if
