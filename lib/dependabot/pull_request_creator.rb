@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
-require "dependabot/update_checkers"
 require "octokit"
 
 module Dependabot
