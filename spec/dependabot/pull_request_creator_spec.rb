@@ -371,8 +371,8 @@ RSpec.describe Dependabot::PullRequestCreator do
               head: "dependabot/bundler/business-1.5.0",
               title: "Bump business from 2468a0 to 1.5.0",
               body: "Bumps [business](https://github.com/gocardless/business) "\
-                    "from 2468a0 to 1.5.0. This release includes the commit "\
-                    "that was previously pinned to.\n- [Release notes]"\
+                    "from 2468a0 to 1.5.0. This release includes the "\
+                    "previously tagged commit.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\

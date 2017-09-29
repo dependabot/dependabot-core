@@ -167,9 +167,9 @@ module Dependabot
       msg += "from #{previous_version} to #{new_version}."
 
       if switching_from_ref_to_release?
-        msg += " This release includes the commit that was previously pinned "\
-               "to."
+        msg += " This release includes the previously tagged commit."
       end
+
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{commits_url})" if commits_url
