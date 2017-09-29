@@ -9,6 +9,7 @@ require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
+require "dependabot/update_checkers/ruby/bundler/file_preparer"
 
 module Dependabot
   module FileUpdaters
@@ -89,8 +90,21 @@ module Dependabot
           changed_requirements.any? { |f| f[:file].end_with?(".gemspec") }
         end
 
+        def remove_git_source?
+          old_gemfile_req =
+            dependency.previous_requirements.find { |f| f[:file] == "Gemfile" }
+          return false unless old_gemfile_req&.dig(:source, :type) == "git"
+
+          new_gemfile_req =
+            dependency.requirements.find { |f| f[:file] == "Gemfile" }
+
+          new_gemfile_req[:source].nil?
+        end
+
         def updated_gemfile_content
-          replace_gemfile_version_requirement(gemfile.content)
+          content = replace_gemfile_version_requirement(gemfile.content)
+          content = remove_gemfile_git_source(content) if remove_git_source?
+          content
         end
 
         def updated_gemspec_content
@@ -104,6 +118,16 @@ module Dependabot
 
           ReplaceRequirement.
             new(dependency: dependency, filename: gemfile.name).
+            rewrite(buffer, ast)
+        end
+
+        def remove_gemfile_git_source(content)
+          buffer = Parser::Source::Buffer.new("(gemfile_content)")
+          buffer.source = content
+          ast = Parser::CurrentRuby.new.parse(buffer)
+
+          UpdateCheckers::Ruby::Bundler::FilePreparer::RemoveGitSource.
+            new(dependency: dependency).
             rewrite(buffer, ast)
         end
 

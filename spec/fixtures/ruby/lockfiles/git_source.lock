@@ -1,4 +1,11 @@
 GIT
+  remote: git@github.com:gocardless/business
+  revision: a1b78a929dac93a52f08db4f2847d76d6cfe39bd
+  ref: a1b78a9
+  specs:
+    business (1.6.0)
+
+GIT
   remote: git@github.com:gocardless/que
   revision: 5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3
   tag: v0.11.7
@@ -20,18 +27,17 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
-    business (1.4.0)
     statesman (1.2.5)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  business (~> 1.4.0)
+  business (~> 1.6.0)!
   prius!
   que!
   statesman (~> 1.2.0)
   uk_phone_numbers!
 
 BUNDLED WITH
-   1.15.1
+   1.16.0.pre.2

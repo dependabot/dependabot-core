@@ -5,6 +5,7 @@ require "bundler_git_source_patch"
 require "excon"
 require "gems"
 require "dependabot/update_checkers/base"
+require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -18,25 +19,50 @@ module Dependabot
         GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
         def latest_version
-          if dependency_source.instance_of?(::Bundler::Source::Git)
-            latest_version_details&.fetch(:commit_sha)
-          else
-            latest_version_details&.fetch(:version)
+          return latest_version_details&.fetch(:version) unless git_dependency?
+
+          unless git_commit_checker.pinned?
+            return latest_version_details.fetch(:commit_sha)
           end
+
+          pinned_ref_in_latest_release =
+            git_commit_checker.commit_in_released_version?(
+              latest_version_details.fetch(:version)
+            )
+
+          if pinned_ref_in_latest_release
+            return latest_version_details.fetch(:version)
+          end
+
+          dependency.version
         end
 
         def latest_resolvable_version
-          if dependency_source.instance_of?(::Bundler::Source::Git)
-            latest_resolvable_version_details&.fetch(:commit_sha)
-          else
-            latest_resolvable_version_details&.fetch(:version)
+          unless git_dependency?
+            return latest_resolvable_version_details&.fetch(:version)
           end
+
+          unless git_commit_checker.pinned?
+            return latest_resolvable_version_details.fetch(:commit_sha)
+          end
+
+          pinned_ref_in_latest_release =
+            git_commit_checker.commit_in_released_version?(
+              latest_resolvable_version_details.fetch(:version)
+            )
+
+          if pinned_ref_in_latest_release
+            return latest_resolvable_version_details.fetch(:version)
+          end
+
+          dependency.version
         end
 
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             existing_version: dependency.version,
+            remove_git_source: should_switch_source_from_git_to_rubygems?,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
               latest_resolvable_version_details&.fetch(:version)&.to_s
@@ -44,6 +70,22 @@ module Dependabot
         end
 
         private
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
+        end
+
+        def should_switch_source_from_git_to_rubygems?
+          return false unless git_dependency?
+          return false unless git_commit_checker.pinned?
+          git_commit_checker.commit_in_released_version?(
+            latest_resolvable_version_details.fetch(:version)
+          )
+        end
 
         def latest_version_details
           @latest_version_details ||= fetch_latest_version_details
@@ -55,12 +97,14 @@ module Dependabot
         end
 
         def fetch_latest_version_details
-          case dependency_source
-          when NilClass then latest_rubygems_version_details
-          when ::Bundler::Source::Rubygems
-            latest_private_version_details
-          when ::Bundler::Source::Git
-            latest_git_version_details
+          dependency_source_type =
+            dependency.requirements.map { |r| r.fetch(:source) }.
+            uniq.compact.first&.fetch(:type)
+
+          case dependency_source_type
+          when nil then latest_rubygems_version_details
+          when "rubygems" then latest_private_version_details
+          when "git" then latest_git_version_details
           end
         end
 
@@ -136,17 +180,41 @@ module Dependabot
         end
 
         def latest_git_version_details
-          in_a_temporary_bundler_context do
-            source =
-              ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
-              find { |dep| dep.name == dependency.name }.source
+          dependency_source_details =
+            dependency.requirements.map { |r| r.fetch(:source) }.
+            uniq.compact.first
+
+          SharedHelpers.in_a_forked_process do
+            # Set auth details for GitHub
+            ::Bundler.settings.set_command_option(
+              "github.com",
+              "x-access-token:#{github_access_token}"
+            )
+
+            # Note: we don't set the `ref`, as we want to unpin the dependency
+            source = ::Bundler::Source::Git.new(
+              "uri" => dependency_source_details[:url],
+              "branch" => dependency_source_details[:branch],
+              "name" => dependency.name
+            )
 
             # Tell Bundler we're fine with fetching the source remotely
             source.instance_variable_set(:@allow_remote, true)
-            spec = source.specs.first
 
+            spec = source.specs.first
             { version: spec.version, commit_sha: spec.source.revision }
           end
+        rescue SharedHelpers::ChildProcessFailed => error
+          handle_bundler_errors(error)
+        end
+
+        def git_dependency?
+          dependency_source_details =
+            dependency.requirements.map { |r| r.fetch(:source) }.
+            uniq.compact.first
+
+          return false unless dependency_source_details
+          dependency_source_details.fetch(:type) == "git"
         end
 
         #########################
@@ -253,7 +321,8 @@ module Dependabot
           @prepared_dependency_files ||=
             FilePreparer.new(
               dependency: dependency,
-              dependency_files: dependency_files
+              dependency_files: dependency_files,
+              remove_git_source: git_dependency? && git_commit_checker.pinned?
             ).prepared_dependency_files
         end
 

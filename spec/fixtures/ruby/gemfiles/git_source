@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 source "https://rubygems.org"
 
-gem "business", "~> 1.4.0"
+gem "business", "~> 1.6.0",
+    git: "git@github.com:gocardless/business",
+    ref: "a1b78a9"
 gem "statesman", "~> 1.2.0"
 gem "prius", git: "https://github.com/gocardless/prius"
 gem "que", git: "git@github.com:gocardless/que", tag: "v0.11.7"

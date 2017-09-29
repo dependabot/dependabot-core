@@ -22,10 +22,10 @@ module Dependabot
     end
 
     def check_dependency_has_previous_version
-      return if library? && dependency.previous_requirements
+      return if library? && requirements_changed?
       return if dependency.previous_version
 
-      raise "Dependency must have a previous version or a previous " \
+      raise "Dependency must have a previous version or changed " \
             "requirement to have a pull request created for it!"
     end
 
@@ -154,8 +154,11 @@ module Dependabot
     end
 
     def pr_message
-      return library_pr_message if library?
+      return requirement_pr_message if library?
+      version_pr_message
+    end
 
+    def version_pr_message
       msg = if source_url
               "Bumps [#{dependency.name}](#{source_url}) "
             else
@@ -163,13 +166,18 @@ module Dependabot
             end
 
       msg += "from #{previous_version} to #{new_version}."
+
+      if switching_from_ref_to_release?
+        msg += " This release includes the commit that was previously pinned "\
+               "to."
+      end
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{commits_url})" if commits_url
       msg
     end
 
-    def library_pr_message
+    def requirement_pr_message
       msg = "Updates the requirements on "
       msg += if source_url
                "[#{dependency.name}](#{source_url}) "
@@ -269,6 +277,19 @@ module Dependabot
       end
 
       !dependency.appears_in_lockfile?
+    end
+
+    def requirements_changed?
+      (dependency.requirements - dependency.previous_requirements).any?
+    end
+
+    def switching_from_ref_to_release?
+      return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
+
+      Gem::Version.new(dependency.version)
+      true
+    rescue ArgumentError
+      false
     end
   end
 end

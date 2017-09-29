@@ -73,6 +73,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         fixture("ruby", "lockfiles", "specified_source.lock")
       end
       let(:gemfile_body) { fixture("ruby", "gemfiles", "specified_source") }
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: { type: "rubygems" }
+          }
+        ]
+      end
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
@@ -138,20 +148,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
     end
 
-    context "given an unreadable Gemfile" do
-      let(:gemfile) do
-        Dependabot::DependencyFile.new(
-          content: fixture("ruby", "gemfiles", "includes_requires"),
-          name: "Gemfile"
-        )
-      end
-
-      it "blows up with a useful error" do
-        expect { checker.latest_version }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
-      end
-    end
-
     context "given a Gemfile with multiple requirements for a gem" do
       let(:gemfile_body) do
         fixture("ruby", "gemfiles", "version_between_bounds")
@@ -191,6 +187,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           ]
         end
 
+        before do
+          git_url = "https://github.com/gocardless/prius.git"
+          stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+            to_return(
+              status: 200,
+              body: fixture("git", "git-upload-pack-manifesto"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
         it "fetches the latest SHA-1 hash" do
           version = checker.latest_version
           expect(version).to match(/^[0-9a-f]{40}$/)
@@ -200,11 +208,61 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when the gem's tag is pinned" do
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "que",
-              version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
+              name: "business",
+              version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
               requirements: requirements,
               package_manager: "bundler"
             )
+          end
+
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "a1b78a9"
+                }
+              }
+            ]
+          end
+
+          context "and the reference isn't included in the new version" do
+            before do
+              allow_any_instance_of(Dependabot::GitCommitChecker).
+                to receive(:commit_in_released_version?).
+                and_return(false)
+            end
+
+            it "respects the pin" do
+              expect(checker.latest_version).
+                to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
+              expect(checker.needs_update?).to eq(false)
+            end
+          end
+
+          context "and the reference is included in the new version" do
+            before do
+              allow_any_instance_of(Dependabot::GitCommitChecker).
+                to receive(:commit_in_released_version?).
+                and_return(true)
+            end
+
+            it "returns a Gem::Version" do
+              expect(checker.latest_version).to be_a(Gem::Version)
+              expect(checker.latest_version).to be >= Gem::Version.new("1.5.0")
+            end
+          end
+        end
+
+        context "when the gem has a bad branch" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "bad_branch.lock")
           end
           let(:requirements) do
             [
@@ -214,24 +272,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/que",
-                  branch: "master",
-                  ref: "v0.11.7"
+                  url: "https://github.com/gocardless/prius",
+                  branch: "bad_branch",
+                  ref: "bad_branch"
                 }
               }
             ]
-          end
-
-          it "respects the pin" do
-            expect(checker.latest_version).
-              to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
-          end
-        end
-
-        context "when the gem has a bad branch" do
-          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
-          let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "bad_branch.lock")
           end
           around { |example| capture_stderr { example.run } }
 
@@ -255,6 +301,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "that is not the gem we're checking" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            version: "1.2",
+            requirements: requirements,
+            package_manager: "bundler"
+          )
+        end
+
+        before do
+          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response.json")
+            )
+        end
+
         it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "that is private" do
@@ -302,6 +365,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               requirements: requirements,
               package_manager: "bundler"
             )
+          end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: { type: "path" }
+              }
+            ]
           end
 
           it { is_expected.to be_nil }
@@ -643,6 +716,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             package_manager: "bundler"
           )
         end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
+              }
+            }
+          ]
+        end
 
         it "fetches the latest SHA-1 hash" do
           version = checker.latest_resolvable_version
@@ -653,16 +741,51 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when the gem's tag is pinned" do
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "que",
-              version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
+              name: "business",
+              version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
               requirements: requirements,
               package_manager: "bundler"
             )
           end
 
-          it "respects the pin" do
-            expect(checker.latest_resolvable_version).
-              to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "a1b78a9"
+                }
+              }
+            ]
+          end
+
+          context "and the reference isn't included in the new version" do
+            before do
+              allow_any_instance_of(Dependabot::GitCommitChecker).
+                to receive(:commit_in_released_version?).
+                and_return(false)
+            end
+
+            it "respects the pin" do
+              expect(checker.latest_version).
+                to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
+              expect(checker.needs_update?).to eq(false)
+            end
+          end
+
+          context "and the reference is included in the new version" do
+            before do
+              allow_any_instance_of(Dependabot::GitCommitChecker).
+                to receive(:commit_in_released_version?).
+                and_return(true)
+            end
+
+            it { is_expected.to eq(Gem::Version.new("1.8.0")) }
           end
         end
 
@@ -681,15 +804,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/prius"
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "master"
                 }
               }
             ]
           end
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "prius",
-              version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+              name: "business",
+              version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
               requirements: requirements,
               package_manager: "bundler"
             )
@@ -698,7 +823,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
+            expect(version).to_not eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
           end
         end
 
@@ -763,7 +888,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "that is not the gem we're checking" do
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            version: "1.2",
+            requirements: requirements,
+            package_manager: "bundler"
+          )
+        end
+        it { is_expected.to eq(Gem::Version.new("2.0.1")) }
 
         context "that is private" do
           let(:gemfile_body) do
@@ -823,7 +956,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             fixture("ruby", "lockfiles", "bad_branch.lock")
           end
 
-          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          it { is_expected.to eq(Gem::Version.new("2.0.1")) }
         end
       end
     end
@@ -995,7 +1128,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             existing_version: "1.4.0",
             latest_version: "1.5.0",
-            latest_resolvable_version: "1.8.0"
+            latest_resolvable_version: "1.8.0",
+            remove_git_source: false
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
@@ -1012,8 +1146,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "prius",
-            version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
+            name: "business",
+            version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
             requirements: requirements,
             package_manager: "bundler"
           )
@@ -1027,7 +1161,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               groups: [:default],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/prius"
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "master"
               }
             }
           ]
@@ -1037,13 +1173,115 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           expect(requirements_updater).
             to receive(:new).with(
               requirements: requirements,
-              existing_version: "99093f4e72c049fcb750ae2ef2421688fda0afac",
-              latest_version: "2.0.0",
-              latest_resolvable_version: "2.0.0"
+              existing_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+              latest_version: "1.10.0",
+              latest_resolvable_version: "1.10.0",
+              remove_git_source: false
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 2.0.0")
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.10.0")
+        end
+
+        context "that is pinned" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "git_source.lock")
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "a1b78a9"
+                }
+              }
+            ]
+          end
+
+          context "and the reference isn't included in the new version" do
+            before do
+              stub_request(
+                :get,
+                "https://rubygems.org/api/v1/gems/business.json"
+              ).to_return(status: 404, body: "This rubygem could not be found.")
+            end
+
+            it "delegates to Bundler::RequirementsUpdater" do
+              expect(requirements_updater).
+                to receive(:new).with(
+                  requirements: requirements,
+                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  latest_version: "1.10.0",
+                  latest_resolvable_version: "1.8.0",
+                  remove_git_source: false
+                ).and_call_original
+
+              expect(updated_requirements.count).to eq(1)
+              expect(updated_requirements.first[:requirement]).to eq(">= 0")
+              expect(updated_requirements.first[:source]).to_not be_nil
+            end
+          end
+
+          context "and the reference is included in the new version" do
+            before do
+              allow(checker).
+                to receive(:latest_resolvable_version_details).
+                and_return(version: Gem::Version.new("1.5.0"))
+
+              stub_request(
+                :get,
+                "https://rubygems.org/api/v1/gems/business.json"
+              ).to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems_response.json")
+              )
+
+              repo_url = "https://api.github.com/repos/gocardless/business"
+              stub_request(:get, repo_url + "/tags?per_page=100").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "business_tags.json"),
+                  headers: { "Content-Type" => "application/json" }
+                )
+              stub_request(:get, repo_url + "/compare/v1.5.0...a1b78a9").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "commit_compare_behind.json"),
+                  headers: { "Content-Type" => "application/json" }
+                )
+            end
+
+            it "delegates to Bundler::RequirementsUpdater" do
+              expect(requirements_updater).
+                to receive(:new).with(
+                  requirements: requirements,
+                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  latest_version: "1.10.0",
+                  latest_resolvable_version: "1.5.0",
+                  remove_git_source: true
+                ).and_call_original
+
+              expect(updated_requirements.count).to eq(1)
+              expect(updated_requirements.first[:requirement]).to eq(">= 0")
+              expect(updated_requirements.first[:source]).to be_nil
+            end
+          end
         end
       end
     end
@@ -1086,7 +1324,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             existing_version: "1.4.0",
             latest_version: "1.5.0",
-            latest_resolvable_version: "1.8.0"
+            latest_resolvable_version: "1.8.0",
+            remove_git_source: false
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
@@ -1129,7 +1368,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             existing_version: nil,
             latest_version: "1.5.0",
-            latest_resolvable_version: "1.8.0"
+            latest_resolvable_version: "1.8.0",
+            remove_git_source: false
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
@@ -1165,7 +1405,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             existing_version: nil,
             latest_version: "1.5.0",
-            latest_resolvable_version: "1.8.0"
+            latest_resolvable_version: "1.8.0",
+            remove_git_source: false
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
@@ -1200,7 +1441,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             existing_version: nil,
             latest_version: "1.5.0",
-            latest_resolvable_version: "1.5.0"
+            latest_resolvable_version: "1.5.0",
+            remove_git_source: false
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
