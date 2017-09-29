@@ -287,6 +287,41 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           )
       end
 
+      context "with a non-github source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "sha1def",
+            previous_version: previous_version,
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://example.com/gocardless/business"
+                }
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://example.com/gocardless/business"
+                }
+              }
+            ],
+            package_manager: "bundler"
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "without a previous version" do
         let(:previous_version) { nil }
         let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
