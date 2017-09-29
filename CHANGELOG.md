@@ -1,3 +1,7 @@
+## v0.20.0, 29 September 2017
+
+- Feature: Support transitioning Ruby git sources to Rubygems releases
+
 ## v0.19.12, 28 September 2017
 
 - Change: Use naked version when specifying a Ruby version exactly in Gemfile
