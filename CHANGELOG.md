@@ -1,3 +1,8 @@
+## v0.20.4, 29 September 2017
+
+- Fix: Don't error when calculating MetadataFinder commits_url for Ruby git
+  dependencies with an unknown source
+
 ## v0.20.3, 29 September 2017
 
 - Change: Clearer PR wording for git references switching to releases
