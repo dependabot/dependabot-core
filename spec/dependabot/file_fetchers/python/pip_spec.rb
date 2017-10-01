@@ -132,18 +132,40 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
 
       context "and is circular" do
         before do
-          stub_request(:get, url + "more_requirements.txt?ref=sha").
+          stub_request(:get, url + "requirements.txt?ref=sha").
             to_return(
               status: 200,
-              body: fixture("github", "requirements_with_cascade.json"),
+              body: fixture("github", "requirements_with_circular.json"),
               headers: { "content-type" => "application/json" }
             )
         end
 
         it "only fetches the additional requirements once" do
-          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.count).to eq(1)
+        end
+      end
+
+      context "and cascades more than once" do
+        before do
+          stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha").
+            to_return(
+              status: 200,
+              body: fixture("github", "requirements_with_simple_cascade.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "no_dot/cascaded_requirements.txt?ref=sha").
+            to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the additional requirements" do
+          expect(file_fetcher_instance.files.count).to eq(5)
           expect(file_fetcher_instance.files.map(&:name)).
-            to include("more_requirements.txt")
+            to include("no_dot/more_requirements.txt").
+            and include("no_dot/cascaded_requirements.txt")
         end
       end
     end
