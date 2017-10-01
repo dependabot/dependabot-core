@@ -25,12 +25,8 @@ module Dependabot
             return latest_version_details.fetch(:commit_sha)
           end
 
-          pinned_ref_in_latest_release =
-            git_commit_checker.commit_in_released_version?(
-              latest_version_details.fetch(:version)
-            )
-
-          if pinned_ref_in_latest_release
+          latest_version = latest_version_details.fetch(:version)
+          if git_commit_checker.commit_in_released_version?(latest_version)
             return latest_version_details.fetch(:version)
           end
 
@@ -46,12 +42,8 @@ module Dependabot
             return latest_resolvable_version_details.fetch(:commit_sha)
           end
 
-          pinned_ref_in_latest_release =
-            git_commit_checker.commit_in_released_version?(
-              latest_resolvable_version_details.fetch(:version)
-            )
-
-          if pinned_ref_in_latest_release
+          latest_version = latest_resolvable_version_details.fetch(:version)
+          if git_commit_checker.commit_in_released_version?(latest_version)
             return latest_resolvable_version_details.fetch(:version)
           end
 
