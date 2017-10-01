@@ -38,30 +38,30 @@ module Dependabot
 
         def child_requirement_files
           @child_requirement_files ||=
-            recursively_fetch_child_requirement_files(
-              requirement_file,
-              [requirement_file]
+            fetch_child_requirement_files(
+              file: requirement_file,
+              previously_fetched_files: []
             )
         end
 
-        def recursively_fetch_child_requirement_files(file, fetched_files = [])
+        def fetch_child_requirement_files(file:, previously_fetched_files:)
           paths = file.content.scan(/^-r\s?(?<path>.*\.txt)/).flatten
           current_dir = file.name.split("/")[0..-2].last
-          files = []
 
-          paths.each do |path|
+          paths.flat_map do |path|
             path = File.join(current_dir, path) unless current_dir.nil?
             path = Pathname.new(path).cleanpath.to_path
-            next if (files | fetched_files).map(&:name).include?(path)
-            fetched_file = fetch_file_from_github(path)
-            files << fetched_file
-            files += recursively_fetch_child_requirement_files(
-              fetched_file,
-              files
-            )
-          end
 
-          files
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
+
+            fetched_file = fetch_file_from_github(path)
+            grandchild_requirement_files = fetch_child_requirement_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files + [file]
+            )
+            [fetched_file, *grandchild_requirement_files]
+          end.compact
         end
 
         def constraints_files
