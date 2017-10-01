@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "parser/current"
-
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -11,6 +9,10 @@ module Dependabot
   module FileParsers
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/ruby/bundler/dependency_set"
+        require "dependabot/file_parsers/ruby/bundler/file_preparer"
+        require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
+
         EXPECTED_SOURCES = [
           NilClass,
           ::Bundler::Source::Rubygems,
@@ -21,64 +23,62 @@ module Dependabot
         ].freeze
 
         def parse
-          dependencies = gemfile_dependencies
+          dependency_set = DependencySet.new
+          dependency_set += gemfile_dependencies
+          dependency_set += gemspec_dependencies
+          dependency_set.dependencies
+        end
 
-          gemspec_dependencies.each do |dep|
-            existing_dependency = dependencies.find { |d| d.name == dep.name }
-            if existing_dependency
-              dependencies[dependencies.index(existing_dependency)] =
+        private
+
+        def gemfile_dependencies
+          dependencies = DependencySet.new
+
+          return dependencies unless gemfile
+
+          [gemfile].each do |file|
+            parsed_gemfile.each do |dep|
+              next unless dependency_in_gemfile?(gemfile: file, dependency: dep)
+
+              dependencies <<
                 Dependency.new(
-                  name: existing_dependency.name,
-                  version: existing_dependency.version || dep.version,
-                  requirements:
-                    existing_dependency.requirements + dep.requirements,
+                  name: dep.name,
+                  version: dependency_version(dep.name)&.to_s,
+                  requirements: [{
+                    requirement: dep.requirement.to_s,
+                    groups: dep.groups,
+                    source: source_for(dep),
+                    file: file.name
+                  }],
                   package_manager: "bundler"
                 )
-            else
-              dependencies << dep
             end
           end
 
           dependencies
         end
 
-        private
-
-        def gemfile_dependencies
-          return [] unless gemfile
-          all_dependencies = parsed_gemfile.map do |dependency|
-            Dependency.new(
-              name: dependency.name,
-              version: dependency_version(dependency.name)&.to_s,
-              requirements: [{
-                requirement: dependency.requirement.to_s,
-                groups: dependency.groups,
-                source: source_for(dependency),
-                file: "Gemfile"
-              }],
-              package_manager: "bundler"
-            )
-          end.compact
-
-          # Filter out dependencies that only appear in the gemspec
-          all_dependencies.select { |dep| gemfile_includes_dependency?(dep) }
-        end
-
         def gemspec_dependencies
-          return [] unless gemspec
-          parsed_gemspec.dependencies.map do |dependency|
-            Dependency.new(
-              name: dependency.name,
-              version: dependency_version(dependency.name)&.to_s,
-              requirements: [{
-                requirement: dependency.requirement.to_s,
-                groups: dependency.runtime? ? ["runtime"] : ["development"],
-                source: nil,
-                file: gemspec.name
-              }],
-              package_manager: "bundler"
-            )
+          dependencies = DependencySet.new
+
+          return dependencies unless gemspec
+
+          parsed_gemspec.dependencies.each do |dependency|
+            dependencies <<
+              Dependency.new(
+                name: dependency.name,
+                version: dependency_version(dependency.name)&.to_s,
+                requirements: [{
+                  requirement: dependency.requirement.to_s,
+                  groups: dependency.runtime? ? ["runtime"] : ["development"],
+                  source: nil,
+                  file: gemspec.name
+                }],
+                package_manager: "bundler"
+              )
           end
+
+          dependencies
         end
 
         def parsed_gemfile
@@ -106,7 +106,7 @@ module Dependabot
         def parsed_gemspec
           @parsed_gemspec ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write(gemspec.name, sanitized_gemspec_content(gemspec))
+              File.write(gemspec.name, gemspec.content)
 
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
@@ -118,20 +118,17 @@ module Dependabot
           raise Dependabot::DependencyFileNotEvaluatable, msg
         end
 
+        def prepared_dependency_files
+          @prepared_dependency_files ||=
+            FilePreparer.new(dependency_files: dependency_files).
+            prepared_dependency_files
+        end
+
         def write_temporary_dependency_files
-          File.write("Gemfile", gemfile.content)
-          File.write("Gemfile.lock", lockfile.content) if lockfile
-
-          if ruby_version_file
-            path = ruby_version_file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, ruby_version_file.content)
-          end
-
-          gemspecs.compact.each do |file|
+          prepared_dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(file))
+            File.write(path, file.content)
           end
         end
 
@@ -145,34 +142,6 @@ module Dependabot
           return if file_names.include?("Gemfile")
 
           raise "A gemspec or Gemfile must be provided!"
-        end
-
-        def gemspecs
-          dependency_files.select { |f| f.name.end_with?(".gemspec") }
-        end
-
-        def ruby_version_file
-          dependency_files.find { |f| f.name == ".ruby-version" }
-        end
-
-        def gemfile
-          @gemfile ||= get_original_file("Gemfile")
-        end
-
-        def lockfile
-          @lockfile ||= get_original_file("Gemfile.lock")
-        end
-
-        def gemspec
-          # The gemspec for this project will be at the top level
-          @gemspec ||= gemspecs.find { |f| f.name.split("/").count == 1 }
-        end
-
-        def sanitized_gemspec_content(gemspec)
-          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
-          # No need to set the version correctly - this is just an update
-          # check so we're not going to persist any changes to the lockfile.
-          gemspec_content.gsub(/=.*VERSION.*$/, "= '0.0.1'")
         end
 
         def source_for(dependency)
@@ -216,41 +185,25 @@ module Dependabot
           spec.version
         end
 
-        def gemfile_includes_dependency?(dependency)
-          GemfileDependencyChecker.new(
+        def dependency_in_gemfile?(gemfile:, dependency:)
+          GemfileChecker.new(
             dependency: dependency,
             gemfile: gemfile
           ).includes_dependency?
         end
 
-        class GemfileDependencyChecker
-          def initialize(dependency:, gemfile:)
-            @dependency = dependency
-            @gemfile = gemfile
-          end
+        def gemfile
+          @gemfile ||= get_original_file("Gemfile")
+        end
 
-          def includes_dependency?
-            Parser::CurrentRuby.parse(gemfile.content).children.any? do |node|
-              deep_check_for_gem(node)
-            end
-          end
+        def lockfile
+          @lockfile ||= get_original_file("Gemfile.lock")
+        end
 
-          private
-
-          attr_reader :dependency, :gemfile
-
-          def deep_check_for_gem(node)
-            return true if declares_targeted_gem?(node)
-            return false unless node.is_a?(Parser::AST::Node)
-            node.children.any? do |child_node|
-              deep_check_for_gem(child_node)
-            end
-          end
-
-          def declares_targeted_gem?(node)
-            return false unless node.is_a?(Parser::AST::Node)
-            return false unless node.children[1] == :gem
-            node.children[2].children.first == dependency.name
+        def gemspec
+          # The gemspec for this project will be at the top level
+          @gemspec ||= prepared_dependency_files.find do |file|
+            file.name.match?(%r{^[^/]*\.gemspec$})
           end
         end
       end
