@@ -1,3 +1,8 @@
+## v0.20.5, 01 October 2017
+
+- Fetch cascading Python requirement files that aren't specified with a
+  leading `./`
+
 ## v0.20.4, 29 September 2017
 
 - Fix: Don't error when calculating MetadataFinder commits_url for Ruby git
