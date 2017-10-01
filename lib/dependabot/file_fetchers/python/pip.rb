@@ -42,12 +42,12 @@ module Dependabot
         end
 
         def recursively_fetch_child_requirement_files(file, fetched_files = [])
-          paths = file.content.scan(/^-r\s?(?<path>\..*)/).flatten
+          paths = file.content.scan(/^-r\s?(?<path>.*\.txt)/).flatten
           files = []
 
           paths.each do |path|
             path = Pathname.new(path).cleanpath.to_path
-            next if fetched_files.map(&:name).include?(path)
+            next if (files | fetched_files).map(&:name).include?(path)
             fetched_file = fetch_file_from_github(path)
             files << fetched_file
             files += recursively_fetch_child_requirement_files(

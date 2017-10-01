@@ -8,7 +8,7 @@
   "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8d9a77a86256c11409622fd16d799d9718f1ff62",
   "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/requirements.txt?token=ABMwe8vXxd4DBCEsxz3jMusk5sr_fFsoks5WJWE-wA%3D%3D",
   "type": "file",
-  "content": "cmVxdWVzdHM9PTIuNC4xCi1yIC4vbW9yZV9yZXF1aXJlbWVudHMudHh0Cg==\n",
+  "content": "cmVxdWVzdHM9PTIuNC4xCi1yIC4vbW9yZV9yZXF1aXJlbWVudHMudHh0Ci1y\nIG5vX2RvdC9tb3JlX3JlcXVpcmVtZW50cy50eHQKLXIgY29tbWVudF9tb3Jl\nX3JlcXVpcmVtZW50cy50eHQgIyBUaGlzIGlzIGEgY29tbWVudAo=\n",
   "encoding": "base64",
   "_links": {
     "self": "https://api.github.com/repos/gocardless/bump/contents/requirements.txt?ref=master",

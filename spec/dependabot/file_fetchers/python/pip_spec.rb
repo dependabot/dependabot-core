@@ -108,12 +108,26 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
             body: fixture("github", "requirements_content.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "comment_more_requirements.txt?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
       end
 
       it "fetches the additional requirements" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.count).to eq(4)
         expect(file_fetcher_instance.files.map(&:name)).
-          to include("more_requirements.txt")
+          to include("more_requirements.txt").
+          and include("no_dot/more_requirements.txt").
+          and include("comment_more_requirements.txt")
       end
 
       context "and is circular" do
@@ -127,7 +141,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
         end
 
         it "only fetches the additional requirements once" do
-          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("more_requirements.txt")
         end
@@ -236,10 +250,22 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
               body: fixture("github", "requirements_with_self_reference.json"),
               headers: { "content-type" => "application/json" }
             )
+          stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha").
+            to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "comment_more_requirements.txt?ref=sha").
+            to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches the setup.py" do
-          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.count).to eq(5)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("setup.py")
         end
