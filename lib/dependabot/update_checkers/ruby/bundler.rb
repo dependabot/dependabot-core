@@ -79,6 +79,10 @@ module Dependabot
             )
         end
 
+        def git_dependency?
+          git_commit_checker.git_dependency?
+        end
+
         def should_switch_source_from_git_to_rubygems?
           return false unless git_dependency?
           return false unless git_commit_checker.pinned?
@@ -206,15 +210,6 @@ module Dependabot
           end
         rescue SharedHelpers::ChildProcessFailed => error
           handle_bundler_errors(error)
-        end
-
-        def git_dependency?
-          dependency_source_details =
-            dependency.requirements.map { |r| r.fetch(:source) }.
-            uniq.compact.first
-
-          return false unless dependency_source_details
-          dependency_source_details.fetch(:type) == "git"
         end
 
         #########################

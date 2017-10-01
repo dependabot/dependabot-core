@@ -11,21 +11,18 @@ module Dependabot
     def initialize(dependency:, github_access_token:)
       @dependency = dependency
       @github_access_token = github_access_token
-
-      raise "Not a git dependency!" unless git_dependency?
     end
 
-    def commit_in_released_version?(version)
-      return false unless pinned?
-      return false if listing_source_url.nil?
-      return false unless rubygems_source_hosted_on_github?
+    def git_dependency?
+      return false if dependency_source_details.nil?
 
-      tag = tag_for_release(version.to_s)
-      return false unless tag
-      commit_included_in_tag?(tag)
+      dependency_source_details.fetch(:type) == "git"
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
     def pinned?
+      raise "Not a git dependency!" unless git_dependency?
+
       source_ref = dependency_source_details.fetch(:ref)
 
       # If there's no reference specified, we can't be pinned
@@ -52,16 +49,23 @@ module Dependabot
 
       !@upload_pack_response.body.match?("refs/heads/#{source_ref}")
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def commit_in_released_version?(version)
+      raise "Not a git dependency!" unless git_dependency?
+
+      return false unless pinned?
+      return false if listing_source_url.nil?
+      return false unless rubygems_source_hosted_on_github?
+
+      tag = tag_for_release(version.to_s)
+      return false unless tag
+      commit_included_in_tag?(tag)
+    end
 
     private
 
     attr_reader :dependency, :github_access_token
-
-    def git_dependency?
-      return false if dependency_source_details.nil?
-
-      dependency_source_details.fetch(:type) == "git"
-    end
 
     def fetch_upload_pack_for(uri)
       uri = uri.gsub(

@@ -37,15 +37,35 @@ RSpec.describe Dependabot::GitCommitChecker do
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:github_access_token) { "token" }
 
-  describe ".new" do
+  describe "#git_dependency?" do
+    subject { checker.git_dependency? }
+
     context "with a non-git dependency" do
       let(:source) { nil }
-      specify { expect { checker }.to raise_error(/Not a git dependency!/) }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a git dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: nil
+        }
+      end
+
+      it { is_expected.to eq(true) }
     end
   end
 
   describe "#commit_in_released_version?" do
     subject { checker.commit_in_released_version?(Gem::Version.new("1.5.0")) }
+
+    context "with a non-git dependency" do
+      let(:source) { nil }
+      specify { expect { subject }.to raise_error(/Not a git dependency!/) }
+    end
 
     context "with a git dependency that is not pinned" do
       let(:source) do
@@ -148,6 +168,11 @@ RSpec.describe Dependabot::GitCommitChecker do
         branch: branch,
         ref: ref
       }
+    end
+
+    context "with a non-git dependency" do
+      let(:source) { nil }
+      specify { expect { subject }.to raise_error(/Not a git dependency!/) }
     end
 
     context "with no branch or reference specified" do
