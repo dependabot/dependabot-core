@@ -197,8 +197,11 @@ module Dependabot
         end
 
         def evaled_gemfiles
-          # TODO: This isn't robust. Store in the file type when fetching?
-          dependency_files.select { |f| f.name.end_with?("/Gemfile") }
+          dependency_files.
+            reject { |f| f.name.end_with?(".gemspec") }.
+            reject { |f| f.name.end_with?(".lock") }.
+            reject { |f| f.name.end_with?(".ruby-version") }.
+            reject { |f| f.name == "Gemfile" }
         end
 
         def lockfile
