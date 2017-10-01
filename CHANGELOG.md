@@ -1,3 +1,7 @@
+## v0.20.6, 01 October 2017
+
+- Handle relative requirements in cascaded Python requirement files properly
+
 ## v0.20.5, 01 October 2017
 
 - Fetch cascading Python requirement files that aren't specified with a
