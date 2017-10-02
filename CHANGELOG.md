@@ -1,3 +1,7 @@
+## v0.20.7, 02 October 2017
+
+- Refactor: Split up Ruby FileParser. Should have no effect on public APIs
+
 ## v0.20.6, 01 October 2017
 
 - Handle relative requirements in cascaded Python requirement files properly
