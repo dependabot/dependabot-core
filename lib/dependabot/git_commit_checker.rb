@@ -89,7 +89,7 @@ module Dependabot
     end
 
     def pinned_ref
-      return false unless pinned?
+      raise "Dependency isn't pinned!" unless pinned?
       dependency_source_details.fetch(:ref)
     end
 
