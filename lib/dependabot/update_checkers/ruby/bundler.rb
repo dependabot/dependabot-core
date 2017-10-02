@@ -25,9 +25,9 @@ module Dependabot
             return latest_version_details.fetch(:commit_sha)
           end
 
-          latest_version = latest_version_details.fetch(:version)
-          if git_commit_checker.commit_in_released_version?(latest_version)
-            return latest_version_details.fetch(:version)
+          latest_release = latest_rubygems_version_details.fetch(:version)
+          if git_commit_checker.commit_in_released_version?(latest_release)
+            return latest_release
           end
 
           dependency.version
@@ -42,9 +42,9 @@ module Dependabot
             return latest_resolvable_version_details.fetch(:commit_sha)
           end
 
-          latest_version = latest_resolvable_version_details.fetch(:version)
-          if git_commit_checker.commit_in_released_version?(latest_version)
-            return latest_resolvable_version_details.fetch(:version)
+          latest_release = latest_resolvable_version_details.fetch(:version)
+          if git_commit_checker.commit_in_released_version?(latest_release)
+            return latest_release
           end
 
           dependency.version

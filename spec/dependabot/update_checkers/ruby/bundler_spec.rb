@@ -769,10 +769,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               allow_any_instance_of(Dependabot::GitCommitChecker).
                 to receive(:commit_in_released_version?).
                 and_return(false)
+              stub_request(
+                :get,
+                "https://rubygems.org/api/v1/gems/business.json"
+              ).to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems_response.json")
+              )
             end
 
             it "respects the pin" do
-              expect(checker.latest_version).
+              expect(checker.latest_resolvable_version).
                 to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
               expect(checker.needs_update?).to eq(false)
             end
