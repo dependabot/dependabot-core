@@ -51,18 +51,6 @@ module Dependabot
     end
     # rubocop:enable Metrics/CyclomaticComplexity
 
-    def current_commit_in_release?(version)
-      raise "Not a git dependency!" unless git_dependency?
-
-      return false unless pinned?
-      return false if listing_source_url.nil?
-      return false unless rubygems_source_hosted_on_github?
-
-      tag = tag_for_release(version.to_s)
-      return false unless tag
-      commit_included_in_tag?(commit: pinned_ref, tag: tag)
-    end
-
     def head_commit_or_ref_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 
@@ -73,7 +61,7 @@ module Dependabot
       return false unless tag
 
       commit_included_in_tag?(
-        commit: dependency_source_details.fetch(:ref),
+        commit: ref_or_branch,
         tag: tag
       )
     end
@@ -115,6 +103,11 @@ module Dependabot
       raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
       sources.first
+    end
+
+    def ref_or_branch
+      dependency_source_details.fetch(:ref) ||
+        dependency_source_details.fetch(:branch)
     end
 
     def listing_source_url

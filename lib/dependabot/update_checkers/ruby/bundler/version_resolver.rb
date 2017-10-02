@@ -3,7 +3,12 @@
 require "bundler_definition_version_patch"
 require "bundler_git_source_patch"
 
+require "excon"
+require "gems"
+
 require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers

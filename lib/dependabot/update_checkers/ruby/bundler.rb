@@ -1,13 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler_definition_version_patch"
-require "bundler_git_source_patch"
-require "excon"
-require "gems"
 require "dependabot/update_checkers/base"
 require "dependabot/git_commit_checker"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -16,8 +10,6 @@ module Dependabot
         require_relative "bundler/file_preparer"
         require_relative "bundler/requirements_updater"
         require_relative "bundler/version_resolver"
-
-        GIT_REF_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
         def latest_version
           return latest_version_details&.fetch(:version) unless git_dependency?
@@ -40,19 +32,19 @@ module Dependabot
             return latest_resolvable_version_details&.fetch(:version)
           end
 
-          unless git_commit_checker.pinned?
-            return latest_resolvable_version_details.fetch(:commit_sha)
-          end
-
           latest_release =
             latest_resolvable_version_details(remove_git_source: true)&.
             fetch(:version)
 
-          if git_commit_checker.current_commit_in_release?(latest_release)
+          if latest_release &&
+             git_commit_checker.head_commit_or_ref_in_release?(latest_release)
             return latest_release
           end
 
-          dependency.version
+          return dependency.version if git_commit_checker.pinned?
+
+          latest_resolvable_version_details(remove_git_source: false).
+            fetch(:commit_sha)
         end
 
         def updated_requirements
@@ -82,10 +74,12 @@ module Dependabot
 
         def should_switch_source_from_git_to_rubygems?
           return false unless git_dependency?
-          return false unless git_commit_checker.pinned?
-          git_commit_checker.current_commit_in_release?(
-            latest_resolvable_version_details.fetch(:version)
-          )
+          return false unless latest_resolvable_version
+
+          Gem::Version.new(latest_resolvable_version)
+          true
+        rescue ArgumentError
+          false
         end
 
         def latest_version_details(remove_git_source: false)

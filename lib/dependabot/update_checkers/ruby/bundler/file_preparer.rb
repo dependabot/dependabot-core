@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
+require "parser/current"
+
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/dependency_file"
-require "parser/current"
 
 module Dependabot
   module UpdateCheckers

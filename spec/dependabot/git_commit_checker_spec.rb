@@ -59,28 +59,17 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#current_commit_in_release?" do
-    subject { checker.current_commit_in_release?(Gem::Version.new("1.5.0")) }
+  describe "#head_commit_or_ref_in_release?" do
+    subject do
+      checker.head_commit_or_ref_in_release?(Gem::Version.new("1.5.0"))
+    end
 
     context "with a non-git dependency" do
       let(:source) { nil }
       specify { expect { subject }.to raise_error(/Not a git dependency!/) }
     end
 
-    context "with a git dependency that is not pinned" do
-      let(:source) do
-        {
-          type: "git",
-          url: "https://github.com/gocardless/business",
-          branch: "master",
-          ref: nil
-        }
-      end
-
-      it { is_expected.to eq(false) }
-    end
-
-    context "with a git dependency that is pinned" do
+    context "with a git dependency" do
       let(:source) do
         {
           type: "git",
@@ -151,6 +140,23 @@ RSpec.describe Dependabot::GitCommitChecker do
             let(:comparison_response) do
               fixture("github", "commit_compare_behind.json")
             end
+            it { is_expected.to eq(true) }
+          end
+
+          context "with an unpinned dependency" do
+            let(:source) do
+              {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: nil
+              }
+            end
+            let(:comparison_url) { repo_url + "/compare/v1.5.0...master" }
+            let(:comparison_response) do
+              fixture("github", "commit_compare_behind.json")
+            end
+
             it { is_expected.to eq(true) }
           end
         end

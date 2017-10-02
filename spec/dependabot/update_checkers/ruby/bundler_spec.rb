@@ -744,18 +744,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     end
 
     context "given a gem with a git source" do
-      let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "git_source_no_ref.lock")
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source_no_ref") }
 
       context "that is the gem we're checking" do
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "prius",
-            version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
+            name: "business",
+            version: current_version,
             requirements: requirements,
             package_manager: "bundler"
           )
         end
+        let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
         let(:requirements) do
           [
             {
@@ -764,7 +767,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/prius",
+                url: "https://github.com/gocardless/business",
                 branch: "master",
                 ref: "master"
               }
@@ -772,21 +775,50 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           ]
         end
 
-        it "fetches the latest SHA-1 hash" do
-          version = checker.latest_resolvable_version
-          expect(version).to match(/^[0-9a-f]{40}$/)
-          expect(version).to_not eq("cff701b3bfb182afc99a85657d7c9f3d6c1ccce2")
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response.json")
+          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        context "when the head of the branch isn't released" do
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:head_commit_or_ref_in_release?).
+              and_return(false)
+          end
+
+          it "fetches the latest SHA-1 hash" do
+            version = checker.latest_resolvable_version
+            expect(version).to match(/^[0-9a-f]{40}$/)
+            expect(version).to_not eq(current_version)
+          end
+        end
+
+        context "when the head of the branch is released" do
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:head_commit_or_ref_in_release?).
+              and_return(true)
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
 
         context "when the gem's tag is pinned" do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "business",
-              version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+              version: current_version,
               requirements: requirements,
               package_manager: "bundler"
             )
           end
+          let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "git_source.lock")
+          end
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
 
           let(:requirements) do
             [
@@ -808,9 +840,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
                 to receive(:head_commit_or_ref_in_release?).
-                and_return(true)
-              allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:current_commit_in_release?).
                 and_return(false)
               stub_request(
                 :get,
@@ -831,7 +860,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference is included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:current_commit_in_release?).
+                to receive(:head_commit_or_ref_in_release?).
                 and_return(true)
             end
 
@@ -870,6 +899,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             )
           end
 
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:head_commit_or_ref_in_release?).
+              and_return(false)
+          end
+
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
@@ -891,6 +926,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               requirements: requirements,
               package_manager: "bundler"
             )
+          end
+
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:head_commit_or_ref_in_release?).
+              and_return(false)
+            allow(checker).
+              to receive(:latest_resolvable_version_details).
+              and_call_original
+            allow(checker).
+              to receive(:latest_resolvable_version_details).
+              with(remove_git_source: true).
+              and_return(version: Gem::Version.new("2.0.0"))
           end
 
           it "raises a helpful error" do
@@ -924,6 +972,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               )
           end
 
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:head_commit_or_ref_in_release?).
+              and_return(false)
+            allow(checker).
+              to receive(:latest_resolvable_version_details).
+              and_call_original
+            allow(checker).
+              to receive(:latest_resolvable_version_details).
+              with(remove_git_source: true).
+              and_return(version: Gem::Version.new("2.0.0"))
+          end
+
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "onfido",
@@ -938,6 +999,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "that is not the gem we're checking" do
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
@@ -1224,6 +1287,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           ]
         end
 
+        before do
+          allow_any_instance_of(Dependabot::GitCommitChecker).
+            to receive(:head_commit_or_ref_in_release?).
+            and_return(false)
+        end
+
         it "delegates to Bundler::RequirementsUpdater with the right params" do
           expect(requirements_updater).
             to receive(:new).with(
@@ -1295,9 +1364,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the reference is included in the new version" do
             before do
-              allow(checker).
-                to receive(:latest_resolvable_version_details).
-                and_return(version: Gem::Version.new("1.5.0"))
+              allow_any_instance_of(Dependabot::GitCommitChecker).
+                to receive(:head_commit_or_ref_in_release?).
+                and_return(true)
 
               stub_request(
                 :get,
@@ -1328,7 +1397,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   requirements: requirements,
                   existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
                   latest_version: "1.10.0",
-                  latest_resolvable_version: "1.5.0",
+                  latest_resolvable_version: "1.6.0",
                   remove_git_source: true
                 ).and_call_original
 
