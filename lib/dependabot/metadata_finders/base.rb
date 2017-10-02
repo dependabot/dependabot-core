@@ -12,6 +12,8 @@ module Dependabot
         (?:\.com|\.org)/
         (?<repo>[^/]+/(?:(?!\.git)[^/])+)[\./]?
       }x
+
+      # Earlier entries are preferred
       CHANGELOG_NAMES = %w(changelog history news changes).freeze
 
       attr_reader :dependency, :github_client
@@ -63,9 +65,13 @@ module Dependabot
 
       def look_up_changelog_url
         files = fetch_dependency_file_list
-        file = files.find { |f| CHANGELOG_NAMES.any? { |w| f.name =~ /#{w}/i } }
 
-        file&.html_url
+        CHANGELOG_NAMES.each do |name|
+          file = files.find { |f| f.name =~ /#{name}/i }
+          return file.html_url if file
+        end
+
+        nil
       end
 
       def look_up_release_url
