@@ -374,9 +374,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         context "when the gem has a bad branch" do
-          let(:gemfile_body) { fixture("ruby", "gemfiles", "bad_branch") }
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "bad_branch_business")
+          end
           let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "bad_branch.lock")
+            fixture("ruby", "lockfiles", "bad_branch_business.lock")
           end
           let(:requirements) do
             [
@@ -386,7 +388,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/prius",
+                  url: "https://github.com/gocardless/business",
                   branch: "bad_branch",
                   ref: "bad_branch"
                 }
@@ -1061,8 +1063,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
 
       it "falls back to latest_version" do
+        dummy_version_resolver =
+          checker.send(:version_resolver, remove_git_source: false)
         dummy_version = Gem::Version.new("0.5.0")
-        expect(checker).
+        allow(checker).
+          to receive(:version_resolver).
+          and_return(dummy_version_resolver)
+        expect(dummy_version_resolver).
           to receive(:latest_version_details).
           and_return(version: dummy_version)
         expect(checker.latest_resolvable_version).to eq(dummy_version)
@@ -1276,7 +1283,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   requirements: requirements,
                   existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
                   latest_version: "1.10.0",
-                  latest_resolvable_version: "1.8.0",
+                  latest_resolvable_version: "1.6.0",
                   remove_git_source: false
                 ).and_call_original
 
