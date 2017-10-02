@@ -1,3 +1,8 @@
+## v0.20.8, 02 October 2017
+
+- Change: Consider possible changelog names in order
+- Fix: Only consider files when looking for a changelog
+
 ## v0.20.7, 02 October 2017
 
 - Refactor: Split up Ruby FileParser. Should have no effect on public APIs
