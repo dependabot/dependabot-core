@@ -1,3 +1,8 @@
+## v0.20.9, 03 October 2017
+
+- Change: Transition Ruby git sources to Rubygems releases when a branch is
+  specified and its head is behind the release
+
 ## v0.20.8, 02 October 2017
 
 - Change: Consider possible changelog names in order
