@@ -1,5 +1,21 @@
 [
     {
+        "name": ".changes",
+        "path": ".changes",
+        "sha": "d87d4be66f458acd52878902bbf1391732ad21e1",
+        "size": 0,
+        "url": "https://api.github.com/repos/gocardless/business/contents/.changes?ref=master",
+        "html_url": "https://github.com/gocardless/business/blob/master/.changes",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/d87d4be66f458acd52878902bbf1391732ad21e1",
+        "download_url": "https://raw.githubusercontent.com/gocardless/business/master/.changes",
+        "type": "dir",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/.changes?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/blobs/d87d4be66f458acd52878902bbf1391732ad21e1",
+            "html": "https://github.com/gocardless/business/blob/master/.changes"
+        }
+    },
+    {
         "name": ".gitignore",
         "path": ".gitignore",
         "sha": "d87d4be66f458acd52878902bbf1391732ad21e1",

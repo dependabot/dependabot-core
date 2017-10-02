@@ -64,7 +64,7 @@ module Dependabot
       end
 
       def look_up_changelog_url
-        files = fetch_dependency_file_list
+        files = fetch_dependency_file_list.select { |f| f.type == "file" }
 
         CHANGELOG_NAMES.each do |name|
           file = files.find { |f| f.name =~ /#{name}/i }
@@ -130,17 +130,9 @@ module Dependabot
         return [] unless source
 
         case source.fetch("host")
-        when "github"
-          github_client.contents(source["repo"])
-        when "bitbucket"
-          fetch_bitbucket_file_list
-        when "gitlab"
-          gitlab_client.repo_tree(source["repo"]).map do |file|
-            OpenStruct.new(
-              name: file.name,
-              html_url: "#{source_url}/blob/master/#{file.path}"
-            )
-          end
+        when "github" then github_client.contents(source["repo"])
+        when "bitbucket" then fetch_bitbucket_file_list
+        when "gitlab" then fetch_gitlab_file_list
         else raise "Unexpected repo host '#{source.fetch('host')}'"
         end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
@@ -257,8 +249,19 @@ module Dependabot
 
         JSON.parse(response.body).fetch("values", []).map do |file|
           OpenStruct.new(
-            name: file["path"].split("/").last,
+            name: file.fetch("path").split("/").last,
+            type: file.fetch("type") == "commit_file" ? "file" : file["type"],
             html_url: "#{source_url}/src/master/#{file['path']}"
+          )
+        end
+      end
+
+      def fetch_gitlab_file_list
+        gitlab_client.repo_tree(source["repo"]).map do |file|
+          OpenStruct.new(
+            name: file.name,
+            type: file.type == "blob" ? "file" : file.type,
+            html_url: "#{source_url}/blob/master/#{file.path}"
           )
         end
       end
