@@ -18,7 +18,7 @@ module Dependabot
             latest_version_details(remove_git_source: true)&.fetch(:version)
 
           if latest_release &&
-             git_commit_checker.head_commit_or_ref_in_release?(latest_release)
+             git_commit_checker.branch_or_ref_in_release?(latest_release)
             return latest_release
           end
 
@@ -37,7 +37,7 @@ module Dependabot
             fetch(:version)
 
           if latest_release &&
-             git_commit_checker.head_commit_or_ref_in_release?(latest_release)
+             git_commit_checker.branch_or_ref_in_release?(latest_release)
             return latest_release
           end
 

@@ -51,7 +51,32 @@ module Dependabot
     end
     # rubocop:enable Metrics/CyclomaticComplexity
 
-    def head_commit_or_ref_in_release?(version)
+    def branch_or_ref_in_release?(version)
+      pinned_ref_in_release?(version) || branch_behind_release?(version)
+    end
+
+    private
+
+    attr_reader :dependency, :github_access_token
+
+    def pinned_ref_in_release?(version)
+      raise "Not a git dependency!" unless git_dependency?
+
+      return false unless pinned?
+      return false if listing_source_url.nil?
+      return false unless rubygems_source_hosted_on_github?
+
+      tag = tag_for_release(version.to_s)
+      return false unless tag
+
+      commit_included_in_tag?(
+        commit: dependency_source_details.fetch(:ref),
+        tag: tag,
+        allow_identical: true
+      )
+    end
+
+    def branch_behind_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 
       return false if listing_source_url.nil?
@@ -60,15 +85,14 @@ module Dependabot
       tag = tag_for_release(version.to_s)
       return false unless tag
 
+      # Check if behind, excluding the case where it's identical, because
+      # we normally wouldn't switch you from tracking master to a release.
       commit_included_in_tag?(
         commit: ref_or_branch,
-        tag: tag
+        tag: tag,
+        allow_identical: false
       )
     end
-
-    private
-
-    attr_reader :dependency, :github_access_token
 
     def fetch_upload_pack_for(uri)
       uri = uri.gsub(
@@ -81,19 +105,17 @@ module Dependabot
       Excon.get(uri, middlewares: SharedHelpers.excon_middleware)
     end
 
-    def commit_included_in_tag?(tag:, commit:)
-      github_client.compare(
-        rubygems_source_repo,
-        tag,
-        commit
-      ).status == "behind"
+    def commit_included_in_tag?(tag:, commit:, allow_identical: false)
+      status =
+        github_client.compare(
+          rubygems_source_repo,
+          tag,
+          commit
+        ).status
+      return true if status == "behind"
+      allow_identical && status == "identical"
     rescue Octokit::NotFound
       false
-    end
-
-    def pinned_ref
-      raise "Dependency isn't pinned!" unless pinned?
-      dependency_source_details.fetch(:ref)
     end
 
     def dependency_source_details

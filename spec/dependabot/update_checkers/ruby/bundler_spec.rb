@@ -296,7 +296,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when head of the gem's branch is included in a release" do
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(true)
           end
 
@@ -306,7 +306,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when head of the gem's branch is not included in a release" do
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
           end
 
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference isn't included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:head_commit_or_ref_in_release?).
+                to receive(:branch_or_ref_in_release?).
                 and_return(false)
             end
 
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference is included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:head_commit_or_ref_in_release?).
+                to receive(:branch_or_ref_in_release?).
                 and_return(true)
             end
 
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
           end
           around { |example| capture_stderr { example.run } }
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when the head of the branch isn't released" do
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
           end
 
@@ -798,7 +798,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when the head of the branch is released" do
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(true)
           end
 
@@ -839,7 +839,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference isn't included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:head_commit_or_ref_in_release?).
+                to receive(:branch_or_ref_in_release?).
                 and_return(false)
               stub_request(
                 :get,
@@ -860,7 +860,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference is included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:head_commit_or_ref_in_release?).
+                to receive(:branch_or_ref_in_release?).
                 and_return(true)
             end
 
@@ -901,7 +901,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
           end
 
@@ -930,7 +930,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
             allow(checker).
               to receive(:latest_resolvable_version_details).
@@ -974,7 +974,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:head_commit_or_ref_in_release?).
+              to receive(:branch_or_ref_in_release?).
               and_return(false)
             allow(checker).
               to receive(:latest_resolvable_version_details).
@@ -1289,7 +1289,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         before do
           allow_any_instance_of(Dependabot::GitCommitChecker).
-            to receive(:head_commit_or_ref_in_release?).
+            to receive(:branch_or_ref_in_release?).
             and_return(false)
         end
 
@@ -1365,7 +1365,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           context "and the reference is included in the new version" do
             before do
               allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:head_commit_or_ref_in_release?).
+                to receive(:branch_or_ref_in_release?).
                 and_return(true)
 
               stub_request(

@@ -59,9 +59,9 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#head_commit_or_ref_in_release?" do
+  describe "#branch_or_ref_in_release?" do
     subject do
-      checker.head_commit_or_ref_in_release?(Gem::Version.new("1.5.0"))
+      checker.branch_or_ref_in_release?(Gem::Version.new("1.5.0"))
     end
 
     context "with a non-git dependency" do
