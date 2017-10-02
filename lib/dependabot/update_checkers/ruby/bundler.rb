@@ -21,16 +21,16 @@ module Dependabot
         def latest_version
           return latest_version_details&.fetch(:version) unless git_dependency?
 
-          unless git_commit_checker.pinned?
-            return latest_version_details.fetch(:commit_sha)
-          end
+          latest_release = latest_rubygems_version_details&.fetch(:version)
 
-          latest_release = latest_rubygems_version_details.fetch(:version)
-          if git_commit_checker.commit_in_released_version?(latest_release)
+          if latest_release &&
+             git_commit_checker.head_commit_or_ref_in_release?(latest_release)
             return latest_release
           end
 
-          dependency.version
+          return dependency.version if git_commit_checker.pinned?
+
+          latest_version_details.fetch(:commit_sha)
         end
 
         def latest_resolvable_version
@@ -43,7 +43,7 @@ module Dependabot
           end
 
           latest_release = latest_resolvable_version_details.fetch(:version)
-          if git_commit_checker.commit_in_released_version?(latest_release)
+          if git_commit_checker.current_commit_in_release?(latest_release)
             return latest_release
           end
 
@@ -78,7 +78,7 @@ module Dependabot
         def should_switch_source_from_git_to_rubygems?
           return false unless git_dependency?
           return false unless git_commit_checker.pinned?
-          git_commit_checker.commit_in_released_version?(
+          git_commit_checker.current_commit_in_release?(
             latest_resolvable_version_details.fetch(:version)
           )
         end

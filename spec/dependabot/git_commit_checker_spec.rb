@@ -59,8 +59,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#commit_in_released_version?" do
-    subject { checker.commit_in_released_version?(Gem::Version.new("1.5.0")) }
+  describe "#current_commit_in_release?" do
+    subject { checker.current_commit_in_release?(Gem::Version.new("1.5.0")) }
 
     context "with a non-git dependency" do
       let(:source) { nil }

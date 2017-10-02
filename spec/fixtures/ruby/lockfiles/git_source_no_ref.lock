@@ -1,0 +1,18 @@
+GIT
+  remote: git@github.com:gocardless/business
+  revision: a1b78a929dac93a52f08db4f2847d76d6cfe39bd
+  specs:
+    business (1.6.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.6.0)!
+
+BUNDLED WITH
+   1.16.0.pre.2

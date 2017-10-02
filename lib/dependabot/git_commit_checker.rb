@@ -51,7 +51,7 @@ module Dependabot
     end
     # rubocop:enable Metrics/CyclomaticComplexity
 
-    def commit_in_released_version?(version)
+    def current_commit_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 
       return false unless pinned?
@@ -60,7 +60,22 @@ module Dependabot
 
       tag = tag_for_release(version.to_s)
       return false unless tag
-      commit_included_in_tag?(tag)
+      commit_included_in_tag?(commit: pinned_ref, tag: tag)
+    end
+
+    def head_commit_or_ref_in_release?(version)
+      raise "Not a git dependency!" unless git_dependency?
+
+      return false if listing_source_url.nil?
+      return false unless rubygems_source_hosted_on_github?
+
+      tag = tag_for_release(version.to_s)
+      return false unless tag
+
+      commit_included_in_tag?(
+        commit: dependency_source_details.fetch(:ref),
+        tag: tag
+      )
     end
 
     private
@@ -78,11 +93,11 @@ module Dependabot
       Excon.get(uri, middlewares: SharedHelpers.excon_middleware)
     end
 
-    def commit_included_in_tag?(tag)
+    def commit_included_in_tag?(tag:, commit:)
       github_client.compare(
         rubygems_source_repo,
         tag,
-        pinned_ref
+        commit
       ).status == "behind"
     rescue Octokit::NotFound
       false
