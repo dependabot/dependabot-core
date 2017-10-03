@@ -1,3 +1,8 @@
+## v0.20.11, 04 October 2017
+
+- More robust handling of Ruby dependencies with a git source (handle errors
+  that occur from attempting to remove the git source)
+
 ## v0.20.10, 04 October 2017
 
 - Don't update Ruby gemfiles which specify their version using a function
