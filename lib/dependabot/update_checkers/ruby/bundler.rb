@@ -32,10 +32,7 @@ module Dependabot
             return latest_resolvable_version_details&.fetch(:version)
           end
 
-          latest_release =
-            latest_resolvable_version_details(remove_git_source: true)&.
-            fetch(:version)
-
+          latest_release = latest_resolvable_version_without_git_source
           if latest_release &&
              git_commit_checker.branch_or_ref_in_release?(latest_release)
             return latest_release
@@ -59,6 +56,14 @@ module Dependabot
         end
 
         private
+
+        def latest_resolvable_version_without_git_source
+          return nil unless latest_version.is_a?(Gem::Version)
+          latest_resolvable_version_details(remove_git_source: true)&.
+          fetch(:version)
+        rescue Dependabot::DependencyFileNotResolvable
+          nil
+        end
 
         def git_commit_checker
           @git_commit_checker ||=

@@ -805,6 +805,55 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
 
+        context "when the dependency has never been released" do
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "git_source.lock")
+          end
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "prius",
+              version: current_version,
+              requirements: requirements,
+              package_manager: "bundler"
+            )
+          end
+          let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/prius",
+                  branch: "master",
+                  ref: "master"
+                }
+              }
+            ]
+          end
+
+          before do
+            rubygems_response = fixture("ruby", "rubygems_response.json")
+            stub_request(:get, "https://rubygems.org/api/v1/gems/prius.json").
+              to_return(status: 200, body: rubygems_response)
+          end
+
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker).
+              to receive(:branch_or_ref_in_release?).
+              and_return(false)
+          end
+
+          it "fetches the latest SHA-1 hash" do
+            version = checker.latest_resolvable_version
+            expect(version).to match(/^[0-9a-f]{40}$/)
+            expect(version).to_not eq(current_version)
+          end
+        end
+
         context "when the gem's tag is pinned" do
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -929,6 +978,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
+            rubygems_response = fixture("ruby", "rubygems_response.json")
+            stub_request(:get, "https://rubygems.org/api/v1/gems/prius.json").
+              to_return(status: 200, body: rubygems_response)
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
@@ -973,6 +1025,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
+            rubygems_response = fixture("ruby", "rubygems_response.json")
+            stub_request(:get, "https://rubygems.org/api/v1/gems/onfido.json").
+              to_return(status: 200, body: rubygems_response)
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
