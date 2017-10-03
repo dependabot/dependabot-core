@@ -139,7 +139,7 @@ module Dependabot
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter
-            SKIPPED_TYPES = %i(send lvar dstr)
+            SKIPPED_TYPES = %i(send lvar dstr).freeze
 
             def initialize(dependency_name:, updated_version:)
               @dependency_name = dependency_name
@@ -173,7 +173,7 @@ module Dependabot
           end
 
           class RemoveGemspecRequirement < Parser::Rewriter
-            SKIPPED_TYPES = %i(send lvar dstr)
+            SKIPPED_TYPES = %i(send lvar dstr).freeze
             DECLARATION_METHODS = %i(add_dependency add_runtime_dependency
                                      add_development_dependency).freeze
 

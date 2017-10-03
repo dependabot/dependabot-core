@@ -243,7 +243,7 @@ module Dependabot
         end
 
         class ReplaceRequirement < Parser::Rewriter
-          SKIPPED_TYPES = %i(send lvar dstr)
+          SKIPPED_TYPES = %i(send lvar dstr).freeze
 
           def initialize(dependency:, filename:)
             @dependency = dependency
