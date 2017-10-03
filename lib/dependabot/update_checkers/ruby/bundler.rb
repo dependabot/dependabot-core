@@ -33,8 +33,10 @@ module Dependabot
           end
 
           latest_release =
-            latest_resolvable_version_details(remove_git_source: true)&.
-            fetch(:version)
+            if latest_version.is_a?(Gem::Version)
+              latest_resolvable_version_details(remove_git_source: true)&.
+              fetch(:version)
+            end
 
           if latest_release &&
              git_commit_checker.branch_or_ref_in_release?(latest_release)
