@@ -243,6 +243,8 @@ module Dependabot
         end
 
         class ReplaceRequirement < Parser::Rewriter
+          SKIPPED_TYPES = %i(send lvar dstr)
+
           def initialize(dependency:, filename:)
             @dependency = dependency
             @filename = filename
@@ -254,14 +256,16 @@ module Dependabot
           def on_send(node)
             return unless declares_targeted_gem?(node)
 
-            requirement_nodes =
-              node.children[3..-1].reject { |child| child.type == :hash }
-            return if requirement_nodes.none?
+            req_nodes = node.children[3..-1]
+            req_nodes = req_nodes.reject { |child| child.type == :hash }
 
-            quote_character = extract_quote_character_from(requirement_nodes)
+            return if req_nodes.none?
+            return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
+
+            quote_character = extract_quote_character_from(req_nodes)
 
             replace(
-              range_for(requirement_nodes),
+              range_for(req_nodes),
               new_requirement_string(quote_character)
             )
           end

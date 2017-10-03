@@ -139,6 +139,8 @@ module Dependabot
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter
+            SKIPPED_TYPES = %i(send lvar dstr)
+
             def initialize(dependency_name:, updated_version:)
               @dependency_name = dependency_name
               @updated_version = updated_version
@@ -147,14 +149,15 @@ module Dependabot
             def on_send(node)
               return unless declares_targeted_gem?(node)
 
-              version_requirement_nodes =
-                node.children[3..-1].reject { |child| child.type == :hash }
+              req_nodes = node.children[3..-1]
+              req_nodes = req_nodes.reject { |child| child.type == :hash }
 
-              return if version_requirement_nodes.none?
+              return if req_nodes.none?
+              return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
 
               range_to_replace =
-                version_requirement_nodes.first.loc.expression.join(
-                  version_requirement_nodes.last.loc.expression
+                req_nodes.first.loc.expression.join(
+                  req_nodes.last.loc.expression
                 )
               replace(range_to_replace, "'>= #{updated_version}'")
             end
@@ -170,6 +173,7 @@ module Dependabot
           end
 
           class RemoveGemspecRequirement < Parser::Rewriter
+            SKIPPED_TYPES = %i(send lvar dstr)
             DECLARATION_METHODS = %i(add_dependency add_runtime_dependency
                                      add_development_dependency).freeze
 
@@ -180,12 +184,13 @@ module Dependabot
             def on_send(node)
               return unless declares_targeted_gem?(node)
 
-              version_requirement_nodes = node.children[3..-1]
-              return if version_requirement_nodes.none?
+              req_nodes = node.children[3..-1]
+              return if req_nodes.none?
+              return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
 
               range_to_remove =
                 node.children[2].loc.end.end.join(
-                  version_requirement_nodes.last.loc.expression
+                  req_nodes.last.loc.expression
                 )
               remove(range_to_remove)
             end

@@ -159,7 +159,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:gemfile_body) { "gem \"business\", version" }
         let(:version) { "1.4.3" }
 
-        its(:content) { is_expected.to include(%("business", '>= 1.4.3')) }
+        its(:content) { is_expected.to include(%("business", version)) }
       end
     end
 
