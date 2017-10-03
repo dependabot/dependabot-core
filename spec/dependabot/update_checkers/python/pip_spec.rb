@@ -83,6 +83,16 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
 
+    context "when the pypi link fails at first" do
+      before do
+        stub_request(:get, pypi_url).
+          to_raise(Excon::Error::Timeout).then.
+          to_return(status: 200, body: pypi_response)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "when the pypi link resolves to a 'Not Found' page" do
       let(:pypi_response) { "Not Found (no releases)" }
 
