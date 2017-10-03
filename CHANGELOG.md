@@ -1,3 +1,8 @@
+## v0.20.12, 04 October 2017
+
+- Use Excon automatic retries when making get requests. Should considerably
+  reduce timeout errors from NPM, PyPI, etc.
+
 ## v0.20.11, 04 October 2017
 
 - More robust handling of Ruby dependencies with a git source (handle errors
