@@ -244,7 +244,11 @@ module Dependabot
       def fetch_bitbucket_file_list
         url = "https://api.bitbucket.org/2.0/repositories/"\
               "#{source.fetch('repo')}/src?pagelen=100"
-        response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+        response = Excon.get(
+          url,
+          idempotent: true,
+          middlewares: SharedHelpers.excon_middleware
+        )
         return [] if response.status >= 300
 
         JSON.parse(response.body).fetch("values", []).map do |file|
@@ -269,7 +273,11 @@ module Dependabot
       def fetch_bitbucket_tags
         url = "https://api.bitbucket.org/2.0/repositories/"\
               "#{source.fetch('repo')}/refs/tags?pagelen=100"
-        response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+        response = Excon.get(
+          url,
+          idempotent: true,
+          middlewares: SharedHelpers.excon_middleware
+        )
         return [] if response.status >= 300
 
         JSON.parse(response.body).fetch("values", []).map { |tag| tag["name"] }

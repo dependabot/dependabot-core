@@ -96,8 +96,11 @@ module Dependabot
         def packagist_listing
           return @packagist_listing unless @packagist_listing.nil?
 
-          url = "https://packagist.org/p/#{dependency.name}.json"
-          response = Excon.get(url, middlewares: SharedHelpers.excon_middleware)
+          response = Excon.get(
+            "https://packagist.org/p/#{dependency.name}.json",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
 
           return nil unless response.status == 200
 

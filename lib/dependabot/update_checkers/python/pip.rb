@@ -44,6 +44,7 @@ module Dependabot
           # https://gemfury.com/help/pypi-server#requirements-txt
           pypi_response = Excon.get(
             dependency_url,
+            idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

@@ -45,6 +45,7 @@ module Dependabot
         def fetch_latest_version
           npm_response = Excon.get(
             dependency_url,
+            idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

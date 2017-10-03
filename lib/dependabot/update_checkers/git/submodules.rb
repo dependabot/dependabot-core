@@ -30,8 +30,11 @@ module Dependabot
           url = requirement.fetch(:url)
           url += ".git" unless url.end_with?(".git")
 
-          response = Excon.get(url + "/info/refs?service=git-upload-pack",
-                               middlewares: SharedHelpers.excon_middleware)
+          response = Excon.get(
+            url + "/info/refs?service=git-upload-pack",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
 
           success = response.status == 200
           raise Dependabot::GitDependenciesNotReachable, [url] unless success

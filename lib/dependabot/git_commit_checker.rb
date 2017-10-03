@@ -102,7 +102,12 @@ module Dependabot
       uri = uri.gsub(%r{/$}, "")
       uri += ".git" unless uri.end_with?(".git")
       uri += "/info/refs?service=git-upload-pack"
-      Excon.get(uri, middlewares: SharedHelpers.excon_middleware)
+
+      Excon.get(
+        uri,
+        idempotent: true,
+        middlewares: SharedHelpers.excon_middleware
+      )
     end
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)

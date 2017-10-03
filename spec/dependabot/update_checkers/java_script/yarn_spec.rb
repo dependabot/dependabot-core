@@ -90,6 +90,21 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+  end
+
+  describe "#latest_version" do
+    subject { checker.latest_version }
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+    context "when the latest version is a prerelease" do
+      before do
+        body = fixture("javascript", "npm_response_prerelease.json")
+        stub_request(:get, "https://registry.npmjs.org/etag").
+          to_return(status: 200, body: body)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+    end
 
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "https://registry.npmjs.org/eTag" }
@@ -106,16 +121,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
-  end
 
-  describe "#latest_version" do
-    subject { checker.latest_version }
-    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
-
-    context "when the latest version is a prerelease" do
+    context "when the npm link fails at first" do
       before do
         body = fixture("javascript", "npm_response_prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/etag").
+          to_raise(Excon::Error::Timeout).then.
           to_return(status: 200, body: body)
       end
 

@@ -25,13 +25,15 @@ module Dependabot
         end
 
         def pypi_listing
-          @pypi_listing ||=
-            begin
-              url = "https://pypi.python.org/pypi/#{dependency.name}/json"
-              middleware = SharedHelpers.excon_middleware
+          return @pypi_listing unless @pypi_listing.nil?
 
-              JSON.parse(Excon.get(url, middlewares: middleware).body)
-            end
+          response = Excon.get(
+            "https://pypi.python.org/pypi/#{dependency.name}/json",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+
+          @pypi_listing = JSON.parse(response.body)
         end
       end
     end
