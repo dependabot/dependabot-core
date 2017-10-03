@@ -1,3 +1,7 @@
+## v0.20.10, 04 October 2017
+
+- Don't update Ruby gemfiles which specify their version using a function
+
 ## v0.20.9, 03 October 2017
 
 - Change: Transition Ruby git sources to Rubygems releases when a branch is
