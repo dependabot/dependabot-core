@@ -233,5 +233,25 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         its(:content) { is_expected.to include(%(version      = '0.0.1')) }
       end
     end
+
+    describe "the updated child gemfile" do
+      let(:dependency_files) { [gemfile, lockfile, child_gemfile] }
+      let(:child_gemfile) do
+        Dependabot::DependencyFile.new(
+          content: child_gemfile_body,
+          name: "backend/Gemfile"
+        )
+      end
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
+      let(:child_gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      let(:version) { "1.4.3" }
+
+      subject do
+        prepared_dependency_files.find { |f| f.name == "backend/Gemfile" }
+      end
+
+      its(:content) { is_expected.to include(%("business", '>= 1.4.3')) }
+      its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }
+    end
   end
 end
