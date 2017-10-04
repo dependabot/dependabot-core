@@ -62,16 +62,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
-      it "only hits Rubygems once" do
-        checker.latest_version
-
-        expect(WebMock).
-          to have_requested(
-            :get,
-            "https://rubygems.org/api/v1/gems/business.json"
-          ).once
-      end
-
       context "when the gem isn't on Rubygems" do
         before do
           stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
@@ -79,106 +69,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         it { is_expected.to be_nil }
-      end
-
-      context "with multiple requirements for a gem" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "version_between_bounds")
-        end
-        let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "> 1.0.0, < 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        end
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      context "with a Ruby version specified" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      context "given a Gemfile that loads a .ruby-version file" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "ruby_version_file") }
-        let(:ruby_version_file) do
-          Dependabot::DependencyFile.new(
-            content: "2.2.0",
-            name: ".ruby-version"
-          )
-        end
-        let(:dependency_files) { [gemfile, lockfile, ruby_version_file] }
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      context "with a gemspec and a Gemfile" do
-        let(:dependency_files) { [gemfile, gemspec] }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: gemspec_body,
-            name: "example.gemspec"
-          )
-        end
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-
-        context "with a dependency that only appears in the gemspec" do
-          let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "octokit",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
-
-          let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: "~> 4.6",
-                groups: [],
-                source: nil
-              }
-            ]
-          end
-
-          before do
-            rubygems_response = fixture("ruby", "rubygems_response.json")
-            stub_request(:get, "https://rubygems.org/api/v1/gems/octokit.json").
-              to_return(status: 200, body: rubygems_response)
-          end
-
-          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-        end
-      end
-
-      context "with only a gemspec" do
-        let(:dependency_files) { [gemspec] }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: gemspec_body,
-            name: "example.gemspec"
-          )
-        end
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      context "with only a Gemfile" do
-        let(:dependency_files) { [gemfile] }
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
     end
 
@@ -211,55 +101,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
-
-      context "that we don't have authentication details for" do
-        before do
-          stub_request(:get, registry_url + "versions").to_return(status: 401)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            to_return(status: 401)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            to_return(status: 401)
-        end
-
-        it "blows up with a useful error" do
-          expect { checker.latest_version }.
-            to raise_error do |error|
-              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
-              expect(error.source).to eq("repo.fury.io")
-            end
-        end
-      end
-
-      context "that only implements the old Bundler index format..." do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "sidekiq_pro") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "sidekiq_pro.lock") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "sidekiq-pro",
-            version: "1.3",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-        let(:registry_url) { "https://gems.contribsys.com/" }
-        before do
-          stub_request(:get, registry_url + "versions").to_return(status: 404)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            to_return(status: 404)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_response")
-            )
-          stub_request(:get, registry_url + "prerelease_specs.4.8.gz").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_prerelease_response")
-            )
-        end
-
-        it { is_expected.to eq(Gem::Version.new("3.5.2")) }
-      end
     end
 
     context "given a git source" do
@@ -372,87 +213,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             it { is_expected.to eq(Gem::Version.new("1.5.0")) }
           end
         end
-
-        context "when the gem has a bad branch" do
-          let(:gemfile_body) do
-            fixture("ruby", "gemfiles", "bad_branch_business")
-          end
-          let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "bad_branch_business.lock")
-          end
-          let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "bad_branch",
-                  ref: "bad_branch"
-                }
-              }
-            ]
-          end
-          before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
-          end
-          around { |example| capture_stderr { example.run } }
-
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "business",
-              version: "1.6.0",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
-
-          it "raises a helpful error" do
-            expect { checker.latest_version }.
-              to raise_error do |error|
-                expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
-                expect(error.dependency).to eq("business")
-              end
-          end
-        end
-      end
-
-      context "that is not the gem we're checking" do
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "statesman",
-            version: "1.2",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-
-        before do
-          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems_response.json")
-            )
-        end
-
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-
-        context "that is private" do
-          let(:gemfile_body) do
-            fixture("ruby", "gemfiles", "private_git_source")
-          end
-          let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "private_git_source.lock")
-          end
-
-          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
-        end
       end
     end
 
@@ -480,10 +240,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             dependency_files: [gemfile, lockfile, gemspec],
             github_access_token: github_token
           )
-        end
-
-        context "that is not the gem we're checking" do
-          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
         end
 
         context "that is the gem we're checking" do
