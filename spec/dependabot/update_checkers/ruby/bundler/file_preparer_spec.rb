@@ -208,5 +208,30 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         its(:content) { is_expected.to eq(%(spec.add_dependency("business"))) }
       end
     end
+
+    describe "the updated path gemspec" do
+      let(:dependency_files) { [gemfile, lockfile, gemspec] }
+      let(:gemspec) do
+        Dependabot::DependencyFile.new(
+          content: gemspec_body,
+          name: "some/example.gemspec"
+        )
+      end
+      let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+      let(:version) { "1.4.3" }
+
+      subject do
+        prepared_dependency_files.find { |f| f.name == "some/example.gemspec" }
+      end
+
+      its(:content) { is_expected.to include("'business', '~> 1.0'\n") }
+
+      context "when the file requires sanitizing" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
+
+        its(:content) { is_expected.to_not include("require ") }
+        its(:content) { is_expected.to include(%(version      = '0.0.1')) }
+      end
+    end
   end
 end
