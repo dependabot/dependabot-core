@@ -7,6 +7,7 @@ module Dependabot
   module FileParsers
     module Ruby
       class Bundler
+        # Checks whether a dependency is declared in a Gemfile
         class GemfileChecker
           def initialize(dependency:, gemfile:)
             @dependency = dependency

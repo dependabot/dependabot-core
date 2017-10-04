@@ -7,6 +7,8 @@ module Dependabot
   module FileFetchers
     module Ruby
       class Bundler < Dependabot::FileFetchers::Base
+        require "dependabot/file_fetchers/ruby/bundler/child_gemfile_finder"
+
         def self.required_files_in?(filenames)
           if filenames.include?("Gemfile.lock") &&
              !filenames.include?("Gemfile")
@@ -34,6 +36,7 @@ module Dependabot
           fetched_files << gemspec unless gemspec.nil?
           fetched_files << ruby_version_file unless ruby_version_file.nil?
           fetched_files += path_gemspecs
+          fetched_files += child_gemfiles
 
           unless self.class.required_files_in?(fetched_files.map(&:name))
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
@@ -96,6 +99,28 @@ module Dependabot
           end
 
           gemspec_files
+        end
+
+        def child_gemfiles
+          return [] unless gemfile
+          @child_gemfiles ||=
+            fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
+        end
+
+        def fetch_child_gemfiles(file:, previously_fetched_files:)
+          paths = ChildGemfileFinder.new(gemfile: file).child_gemfile_paths
+
+          paths.flat_map do |path|
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
+
+            fetched_file = fetch_file_from_github(path)
+            grandchild_gemfiles = fetch_child_gemfiles(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files + [file]
+            )
+            [fetched_file, *grandchild_gemfiles]
+          end.compact
         end
       end
     end

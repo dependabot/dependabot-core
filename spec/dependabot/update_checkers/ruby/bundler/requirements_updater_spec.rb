@@ -174,6 +174,26 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
           end
         end
       end
+
+      context "with multiple Gemfile declarations" do
+        before { requirements << child_gemfile_requirement }
+        let(:child_gemfile_requirement) do
+          gemfile_requirement.merge(file: "backend/Gemfile")
+        end
+
+        describe "the first Gemfile" do
+          subject { updated_requirements.find { |r| r[:file] == "Gemfile" } }
+          its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+        end
+
+        describe "the child Gemfile" do
+          subject do
+            updated_requirements.find { |r| r[:file] == "backend/Gemfile" }
+          end
+
+          its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+        end
+      end
     end
 
     context "for a gemspec dependency" do

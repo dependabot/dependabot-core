@@ -23,7 +23,8 @@ module Dependabot
               )
             end
 
-            files += [gemfile, lockfile, ruby_version_file].compact
+            files +=
+              [gemfile, *evaled_gemfiles, lockfile, ruby_version_file].compact
           end
 
           private
@@ -32,6 +33,14 @@ module Dependabot
 
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" }
+          end
+
+          def evaled_gemfiles
+            dependency_files.
+              reject { |f| f.name.end_with?(".gemspec") }.
+              reject { |f| f.name.end_with?(".lock") }.
+              reject { |f| f.name.end_with?(".ruby-version") }.
+              reject { |f| f.name == "Gemfile" }
           end
 
           def lockfile

@@ -246,6 +246,22 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a Gemfile that uses eval_gemfile" do
+      let(:files) { [gemfile, lockfile, evaled_gemfile] }
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "eval_gemfile") }
+      let(:evaled_gemfile) do
+        Dependabot::DependencyFile.new(
+          name: "backend/Gemfile",
+          content: fixture("ruby", "gemfiles", "only_statesman")
+        )
+      end
+      let(:lockfile_content) do
+        fixture("ruby", "lockfiles", "Gemfile.lock")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with a Gemfile that includes a require" do
       let(:gemfile_content) { fixture("ruby", "gemfiles", "includes_requires") }
       let(:lockfile_content) { fixture("ruby", "lockfiles", "Gemfile.lock") }

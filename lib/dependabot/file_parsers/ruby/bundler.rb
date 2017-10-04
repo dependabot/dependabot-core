@@ -36,7 +36,7 @@ module Dependabot
 
           return dependencies unless gemfile
 
-          [gemfile].each do |file|
+          [gemfile, *evaled_gemfiles].each do |file|
             parsed_gemfile.each do |dep|
               next unless dependency_in_gemfile?(gemfile: file, dependency: dep)
 
@@ -194,6 +194,14 @@ module Dependabot
 
         def gemfile
           @gemfile ||= get_original_file("Gemfile")
+        end
+
+        def evaled_gemfiles
+          dependency_files.
+            reject { |f| f.name.end_with?(".gemspec") }.
+            reject { |f| f.name.end_with?(".lock") }.
+            reject { |f| f.name.end_with?(".ruby-version") }.
+            reject { |f| f.name == "Gemfile" }
         end
 
         def lockfile

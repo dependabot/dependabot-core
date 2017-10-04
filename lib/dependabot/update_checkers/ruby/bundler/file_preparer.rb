@@ -24,13 +24,15 @@ module Dependabot
             @remove_git_source = remove_git_source
           end
 
+          # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def prepared_dependency_files
             files = []
 
             if gemfile
               files << DependencyFile.new(
                 name: gemfile.name,
-                content: gemfile_content_for_update_check,
+                content: gemfile_content_for_update_check(gemfile),
                 directory: gemfile.directory
               )
             end
@@ -43,7 +45,7 @@ module Dependabot
               )
             end
 
-            path_gemspecs.compact.each do |file|
+            path_gemspecs.each do |file|
               files << DependencyFile.new(
                 name: file.name,
                 content: sanitize_gemspec_content(file.content),
@@ -51,9 +53,19 @@ module Dependabot
               )
             end
 
+            evaled_gemfiles.each do |file|
+              files << DependencyFile.new(
+                name: file.name,
+                content: gemfile_content_for_update_check(file),
+                directory: file.directory
+              )
+            end
+
             # No editing required for lockfile or Ruby version file
             files += [lockfile, ruby_version_file].compact
           end
+          # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           private
 
@@ -65,6 +77,14 @@ module Dependabot
 
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" }
+          end
+
+          def evaled_gemfiles
+            dependency_files.
+              reject { |f| f.name.end_with?(".gemspec") }.
+              reject { |f| f.name.end_with?(".lock") }.
+              reject { |f| f.name.end_with?(".ruby-version") }.
+              reject { |f| f.name == "Gemfile" }
           end
 
           def lockfile
@@ -84,8 +104,8 @@ module Dependabot
             all - [gemspec]
           end
 
-          def gemfile_content_for_update_check
-            content = replace_gemfile_version_requirement(gemfile.content)
+          def gemfile_content_for_update_check(file)
+            content = replace_gemfile_version_requirement(file.content)
             content = remove_git_source(content) if remove_git_source?
             content
           end
