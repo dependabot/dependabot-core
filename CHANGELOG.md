@@ -1,3 +1,7 @@
+## v0.20.13, 04 October 2017
+
+- Add support for eval_gemfile to Ruby
+
 ## v0.20.12, 04 October 2017
 
 - Use Excon automatic retries when making get requests. Should considerably
