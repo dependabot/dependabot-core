@@ -108,6 +108,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
       end
     end
 
+    context "with a private-source dependency" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "private_source.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "lockfiles", "private_source.lock")
+      end
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with a path-based dependency" do
       let(:files) { [package_json, lockfile, path_dep] }
       let(:package_json_body) do
