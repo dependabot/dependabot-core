@@ -385,6 +385,99 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
     end
 
+    describe "a child gemfile" do
+      let(:dependency_files) { [gemfile, lockfile, child_gemfile] }
+      let(:child_gemfile) do
+        Dependabot::DependencyFile.new(
+          content: child_gemfile_body,
+          name: "backend/Gemfile"
+        )
+      end
+      let(:child_gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      subject(:updated_gemfile) do
+        updated_files.find { |f| f.name == "backend/Gemfile" }
+      end
+
+      context "when no change is required" do
+        let(:child_gemfile_body) do
+          fixture("ruby", "gemfiles", "version_not_specified")
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        it { is_expected.to be_nil }
+      end
+
+      context "when no change is required" do
+        let(:child_gemfile_body) do
+          fixture("ruby", "gemfiles", "version_specified")
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
+        its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
+      end
+    end
+
     describe "the updated lockfile" do
       subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
 
@@ -745,6 +838,23 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               expect(file.content).to include "example (0.9.3)"
             end
           end
+        end
+      end
+
+      context "when the Gemfile evals a child gemfile" do
+        let(:dependency_files) { [gemfile, lockfile, child_gemfile] }
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
+        let(:child_gemfile) do
+          Dependabot::DependencyFile.new(
+            content: child_gemfile_body,
+            name: "backend/Gemfile"
+          )
+        end
+        let(:child_gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+        let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
+
+        it "updates the gem just fine" do
+          expect(file.content).to include "business (1.5.0)"
         end
       end
 

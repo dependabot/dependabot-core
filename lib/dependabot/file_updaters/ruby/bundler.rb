@@ -30,12 +30,16 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_dependency_files
           updated_files = []
 
-          if gemfile && gemfile_changed?
+          if gemfile && file_changed?(gemfile)
             updated_files <<
-              updated_file(file: gemfile, content: updated_gemfile_content)
+              updated_file(
+                file: gemfile,
+                content: updated_gemfile_content(gemfile)
+              )
           end
 
           if lockfile && dependency.appears_in_lockfile?
@@ -43,14 +47,24 @@ module Dependabot
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
 
-          if gemspec && gemspec_changed?
+          if gemspec && file_changed?(gemspec)
             updated_files <<
               updated_file(file: gemspec, content: updated_gemspec_content)
+          end
+
+          evaled_gemfiles.each do |file|
+            next unless file_changed?(file)
+            updated_files <<
+              updated_file(
+                file: file,
+                content: updated_gemfile_content(file)
+              )
           end
 
           updated_files
         end
         # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -76,18 +90,20 @@ module Dependabot
           @lockfile ||= get_original_file("Gemfile.lock")
         end
 
-        def gemfile_changed?
-          changed_requirements =
-            dependency.requirements - dependency.previous_requirements
-
-          changed_requirements.any? { |f| f[:file] == "Gemfile" }
+        def evaled_gemfiles
+          @evaled_gemfiles ||=
+            dependency_files.
+            reject { |f| f.name.end_with?(".gemspec") }.
+            reject { |f| f.name.end_with?(".lock") }.
+            reject { |f| f.name.end_with?(".ruby-version") }.
+            reject { |f| f.name == "Gemfile" }
         end
 
-        def gemspec_changed?
+        def file_changed?(file)
           changed_requirements =
             dependency.requirements - dependency.previous_requirements
 
-          changed_requirements.any? { |f| f[:file].end_with?(".gemspec") }
+          changed_requirements.any? { |f| f[:file] == file.name }
         end
 
         def remove_git_source?
@@ -101,8 +117,8 @@ module Dependabot
           new_gemfile_req[:source].nil?
         end
 
-        def updated_gemfile_content
-          content = replace_gemfile_version_requirement(gemfile.content)
+        def updated_gemfile_content(file)
+          content = replace_gemfile_version_requirement(file.content)
           content = remove_gemfile_git_source(content) if remove_git_source?
           content
         end
@@ -176,7 +192,7 @@ module Dependabot
         def write_temporary_dependency_files
           File.write(
             "Gemfile",
-            updated_gemfile_content
+            updated_gemfile_content(gemfile)
           )
           File.write(
             "Gemfile.lock",
@@ -196,6 +212,12 @@ module Dependabot
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, sanitized_gemspec_content(file))
+          end
+
+          evaled_gemfiles.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, updated_gemfile_content(file))
           end
         end
 
