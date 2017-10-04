@@ -34,10 +34,12 @@ module Dependabot
 
           def updated_requirements
             requirements.map do |req|
-              case req[:file]
-              when "Gemfile" then updated_gemfile_requirement(req)
-              when /\.gemspec/ then updated_gemspec_requirement(req)
-              else raise "Unexpected file name: #{req[:file]}"
+              if req[:file].match?(/\.gemspec/)
+                updated_gemspec_requirement(req)
+              else
+                # If a requirement doesn't come from a gemspec, it must be from
+                # a Gemfile.
+                updated_gemfile_requirement(req)
               end
             end
           end
