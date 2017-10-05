@@ -12,7 +12,7 @@ machine:
 
 dependencies:
   pre:
-    - gem install bundler -v 1.16.0.pre.2
+    - gem install bundler -v 1.16.0.pre.3
   post:
     - cd helpers/javascript && yarn install
     - cd helpers/php && composer install
