@@ -396,6 +396,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           :get,
           gemfury_url + "api/v1/dependencies?gems=business,statesman"
         ).to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        stub_request(:get, gemfury_url + "api/v1/dependencies?gems=business").
+          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        stub_request(:get, gemfury_url + "api/v1/dependencies?gems=statesman").
+          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
