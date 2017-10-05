@@ -365,9 +365,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
 
       context "with a version conflict at the latest version" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_conflict_partial")
+        end
         let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "version_conflict.lock")
+          fixture("ruby", "lockfiles", "version_conflict_partial.lock")
         end
         let(:dependency) do
           Dependabot::Dependency.new(

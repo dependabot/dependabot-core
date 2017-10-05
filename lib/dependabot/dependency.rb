@@ -33,6 +33,10 @@ module Dependabot
       previous_version || (version && previous_requirements.nil?)
     end
 
+    def ==(other)
+      other.instance_of?(self.class) && to_h == other.to_h
+    end
+
     private
 
     def check_values
