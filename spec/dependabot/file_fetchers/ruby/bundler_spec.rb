@@ -164,6 +164,24 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         to_return(status: 404)
     end
 
+    context "that uses a variable name" do
+      before do
+        stub_request(:get, url + "Gemfile?ref=sha").
+          to_return(
+            status: 200,
+            body: fixture("github", "gemfile_with_eval_variable_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      # TODO: ideally we'd be able to handle cases like this
+      it "doesn't fetch the child Gemfile, but doesn't error" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["Gemfile"])
+      end
+    end
+
     context "that has a fetchable path" do
       before do
         stub_request(:get, url + "backend/Gemfile?ref=sha").

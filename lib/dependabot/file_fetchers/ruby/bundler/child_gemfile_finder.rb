@@ -31,7 +31,12 @@ module Dependabot
             if declares_eval_gemfile?(node)
               # We use eval here, but we know what we're doing. The FileFetchers
               # helper method should only ever be run in an isolated environment
-              path = eval(node.children[2].loc.expression.source)
+              source = node.children[2].loc.expression.source
+              begin
+                path = eval(source)
+              rescue StandardError
+                return []
+              end
               path = File.join(current_dir, path) unless current_dir.nil?
               return [Pathname.new(path).cleanpath.to_path]
             end

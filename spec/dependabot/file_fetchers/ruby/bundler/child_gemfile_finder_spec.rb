@@ -30,6 +30,13 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::ChildGemfileFinder do
         it { is_expected.to eq(["backend/Gemfile"]) }
       end
 
+      context "that can't be eval-ed" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "eval_gemfile_variable")
+        end
+        it { is_expected.to eq([]) }
+      end
+
       context "within a group block" do
         let(:gemfile_body) do
           "group :development do\neval_gemfile('some_gemfile')\nend"

@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+local_gemfile = File.dirname(__FILE__), 'backend/Gemfile'
+eval_gemfile File.join(local_gemfile)
+
+gem "business", "~> 1.4.0"
