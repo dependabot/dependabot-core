@@ -1,3 +1,7 @@
+## v0.20.14, 05 October 2017
+
+- Add error handling for ChildGemfileFinder path evaluation
+
 ## v0.20.13, 04 October 2017
 
 - Add support for eval_gemfile to Ruby
