@@ -6,7 +6,7 @@ require "dependabot/metadata_finders"
 
 module Dependabot
   class GitCommitChecker
-    VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
+    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9]+)*)$/
 
     def initialize(dependency:, github_access_token:)
       @dependency = dependency
@@ -55,6 +55,16 @@ module Dependabot
       pinned_ref_in_release?(version) || branch_behind_release?(version)
     end
 
+    def pinned_ref_looks_like_version?
+      return false unless pinned?
+      dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
+    end
+
+    def local_tag_for_version(version)
+      local_tags.
+        find { |t| t =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version.to_s)}\z/ }
+    end
+
     private
 
     attr_reader :dependency, :github_access_token
@@ -64,9 +74,9 @@ module Dependabot
 
       return false unless pinned?
       return false if listing_source_url.nil?
-      return false unless rubygems_source_hosted_on_github?
+      return false unless listing_source_hosted_on_github?
 
-      tag = tag_for_release(version.to_s)
+      tag = listing_tag_for_version(version.to_s)
       return false unless tag
 
       commit_included_in_tag?(
@@ -80,9 +90,9 @@ module Dependabot
       raise "Not a git dependency!" unless git_dependency?
 
       return false if listing_source_url.nil?
-      return false unless rubygems_source_hosted_on_github?
+      return false unless listing_source_hosted_on_github?
 
-      tag = tag_for_release(version.to_s)
+      tag = listing_tag_for_version(version.to_s)
       return false unless tag
 
       # Check if behind, excluding the case where it's identical, because
@@ -113,7 +123,7 @@ module Dependabot
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)
       status =
         github_client.compare(
-          rubygems_source_repo,
+          listing_source_repo,
           tag,
           commit
         ).status
@@ -159,22 +169,45 @@ module Dependabot
         end
     end
 
-    def rubygems_source_hosted_on_github?
+    def listing_source_hosted_on_github?
       listing_source_url.start_with?(github_client.web_endpoint)
     end
 
-    def rubygems_source_repo
+    def listing_source_repo
       listing_source_url.gsub(github_client.web_endpoint, "")
     end
 
-    def tag_for_release(version)
-      tags.find { |t| t =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
+    def listing_tag_for_version(version)
+      listing_tags.
+        find { |t| t =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
     end
 
-    def tags
-      @tags ||= github_client.
-                tags(rubygems_source_repo, per_page: 100).
-                map(&:name)
+    def listing_tags
+      @listing_tags ||= github_client.
+                        tags(listing_source_repo, per_page: 100).
+                        map(&:name)
+    end
+
+    def local_source_url
+      @local_source_url ||=
+        MetadataFinders.
+        for_package_manager(dependency.package_manager).
+        new(dependency: dependency, github_client: github_client).
+        source_url
+    end
+
+    def local_source_hosted_on_github?
+      local_source_url.start_with?(github_client.web_endpoint)
+    end
+
+    def local_source_repo
+      local_source_url.gsub(github_client.web_endpoint, "")
+    end
+
+    def local_tags
+      @local_tags ||= github_client.
+                      tags(local_source_repo, per_page: 100).
+                      map(&:name)
     end
 
     def github_client

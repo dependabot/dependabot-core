@@ -248,4 +248,82 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
     end
   end
+
+  describe "#pinned_ref_looks_like_version?" do
+    subject { checker.pinned_ref_looks_like_version? }
+
+    context "with a non-pinned dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a non-version pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "1a21311"
+        }
+      end
+      it { is_expected.to eq(false) }
+    end
+
+    context "with no ref" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: nil
+        }
+      end
+      it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#local_tag_for_version" do
+    subject { checker.local_tag_for_version(version) }
+    let(:version) { Gem::Version.new("1.4.0") }
+    let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
+    let(:tags_url) { repo_url + "/tags?per_page=100" }
+    before do
+      stub_request(:get, tags_url).to_return(
+        status: 200,
+        body: tags_response,
+        headers: { "Content-Type" => "application/json" }
+      )
+    end
+
+    context "but no tags on GitHub" do
+      let(:tags_response) { [].to_json }
+      it { is_expected.to eq(nil) }
+    end
+
+    context "with tags on GitHub" do
+      context "but no version tags" do
+        let(:tags_response) do
+          fixture("github", "business_tags_no_versions.json")
+        end
+        it { is_expected.to eq(nil) }
+      end
+
+      context "with version tags" do
+        let(:tags_response) { fixture("github", "business_tags.json") }
+        it { is_expected.to eq("v1.4.0") }
+      end
+
+      context "with prefixed tags" do
+        let(:tags_response) { fixture("github", "prefixed_tags.json") }
+        it { is_expected.to eq("business-1.4.0") }
+      end
+    end
+  end
 end
