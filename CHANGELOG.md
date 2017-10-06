@@ -1,3 +1,8 @@
+## v0.20.15, 06 October 2017
+
+- Don't sanitize python requirement names during parsing. Was causing errors
+  at the FileUpdater stage (since the name no-longer matched the declaration).
+
 ## v0.20.14, 05 October 2017
 
 - Add error handling for ChildGemfileFinder path evaluation
