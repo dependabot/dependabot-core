@@ -317,12 +317,18 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "with version tags" do
         let(:tags_response) { fixture("github", "business_tags.json") }
-        it { is_expected.to eq("v1.4.0") }
+        its([:tag]) { is_expected.to eq("v1.4.0") }
+        its([:commit_sha]) do
+          is_expected.to eq("26f4887ec647493f044836363537e329d9d213aa")
+        end
       end
 
       context "with prefixed tags" do
         let(:tags_response) { fixture("github", "prefixed_tags.json") }
-        it { is_expected.to eq("business-1.4.0") }
+        its([:tag]) { is_expected.to eq("business-1.4.0") }
+        its([:commit_sha]) do
+          is_expected.to eq("26f4887ec647493f044836363537e329d9d213aa")
+        end
       end
     end
   end

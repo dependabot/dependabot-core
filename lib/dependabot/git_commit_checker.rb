@@ -61,8 +61,12 @@ module Dependabot
     end
 
     def local_tag_for_version(version)
-      local_tags.
-        find { |t| t =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version.to_s)}\z/ }
+      tag =
+        local_tags.
+        find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version.to_s)}\z/ }
+
+      return unless tag
+      { tag: tag.name, commit_sha: tag.commit.sha }
     end
 
     private
@@ -179,13 +183,12 @@ module Dependabot
 
     def listing_tag_for_version(version)
       listing_tags.
-        find { |t| t =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }
+        find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/ }&.
+        name
     end
 
     def listing_tags
-      @listing_tags ||= github_client.
-                        tags(listing_source_repo, per_page: 100).
-                        map(&:name)
+      @listing_tags ||= github_client.tags(listing_source_repo, per_page: 100)
     end
 
     def local_source_url
@@ -205,9 +208,7 @@ module Dependabot
     end
 
     def local_tags
-      @local_tags ||= github_client.
-                      tags(local_source_repo, per_page: 100).
-                      map(&:name)
+      @local_tags ||= github_client.tags(local_source_repo, per_page: 100)
     end
 
     def github_client
