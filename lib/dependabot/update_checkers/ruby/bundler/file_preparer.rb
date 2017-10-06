@@ -170,14 +170,10 @@ module Dependabot
           end
 
           def replace_git_pin(content)
-            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
-            buffer.source = content
-            ast = Parser::CurrentRuby.new.parse(buffer)
-
             FileUpdaters::Ruby::Bundler::GitPinReplacer.new(
               dependency: dependency,
               new_pin: replacement_git_pin
-            ).rewrite(buffer, ast)
+            ).rewrite(content)
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter

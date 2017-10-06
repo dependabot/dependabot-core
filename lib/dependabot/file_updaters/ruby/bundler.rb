@@ -160,10 +160,6 @@ module Dependabot
         end
 
         def update_gemfile_git_pin(content)
-          buffer = Parser::Source::Buffer.new("(gemfile_content)")
-          buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
-
           new_pin =
             dependency.requirements.
             find { |f| f[:file] == "Gemfile" }.
@@ -171,7 +167,7 @@ module Dependabot
 
           GitPinReplacer.
             new(dependency: dependency, new_pin: new_pin).
-            rewrite(buffer, ast)
+            rewrite(content)
         end
 
         def replace_gemspec_version_requirement(content)
