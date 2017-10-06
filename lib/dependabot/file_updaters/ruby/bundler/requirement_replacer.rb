@@ -46,11 +46,11 @@ module Dependabot
               return if req_nodes.none?
               return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
 
-              quote_character = extract_quote_character_from(req_nodes)
+              quote_characters = extract_quote_characters_from(req_nodes)
 
               replace(
                 range_for(req_nodes),
-                new_requirement_string(quote_character)
+                new_requirement_string(quote_characters)
               )
             end
 
@@ -69,20 +69,27 @@ module Dependabot
               node.children[2].children.first == dependency.name
             end
 
-            def extract_quote_character_from(requirement_nodes)
+            def extract_quote_characters_from(requirement_nodes)
               case requirement_nodes.first.type
               when :str, :dstr
-                requirement_nodes.first.loc.begin.source
+                [
+                  requirement_nodes.first.loc.begin.source,
+                  requirement_nodes.first.loc.end.source
+                ]
               else
-                requirement_nodes.first.children.first.loc.begin.source
+                [
+                  requirement_nodes.first.children.first.loc.begin.source,
+                  requirement_nodes.first.children.first.loc.end.source
+                ]
               end
             end
 
-            def new_requirement_string(quote_character)
+            def new_requirement_string(quote_characters)
+              open_quote, close_quote = quote_characters
               dependency.requirements.
                 find { |r| r[:file] == filename }.
                 fetch(:requirement).split(",").
-                map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
+                map { |r| %(#{open_quote}#{r.strip}#{close_quote}) }.
                 join(", ")
             end
 
