@@ -4,7 +4,6 @@ require "bundler_definition_version_patch"
 require "bundler_git_source_patch"
 
 require "excon"
-require "gems"
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/shared_helpers"
@@ -47,7 +46,14 @@ module Dependabot
           end
 
           def latest_rubygems_version_details
-            latest_info = Gems.info(dependency.name)
+            response =
+              Excon.get(
+                "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+
+            latest_info = JSON.parse(response.body)
 
             return nil if latest_info["version"].nil?
 
