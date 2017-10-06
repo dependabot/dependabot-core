@@ -18,10 +18,12 @@ module Dependabot
         #   imperfect - an alternative would be to clone the repo
         class FilePreparer
           def initialize(dependency_files:, dependency:,
-                         remove_git_source: false)
+                         remove_git_source: false,
+                         replacement_git_pin: nil)
             @dependency_files = dependency_files
             @dependency = dependency
             @remove_git_source = remove_git_source
+            @replacement_git_pin = replacement_git_pin
           end
 
           # rubocop:disable Metrics/AbcSize
@@ -69,10 +71,14 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files, :dependency
+          attr_reader :dependency_files, :dependency, :replacement_git_pin
 
           def remove_git_source?
             @remove_git_source
+          end
+
+          def replace_git_pin?
+            !replacement_git_pin.nil?
           end
 
           def gemfile
@@ -107,6 +113,7 @@ module Dependabot
           def gemfile_content_for_update_check(file)
             content = replace_gemfile_version_requirement(file.content)
             content = remove_git_source(content) if remove_git_source?
+            content = replace_git_pin(content) if replace_git_pin?
             content
           end
 
@@ -156,6 +163,17 @@ module Dependabot
             ast = Parser::CurrentRuby.new.parse(buffer)
 
             RemoveGitSource.new(dependency: dependency).rewrite(buffer, ast)
+          end
+
+          def replace_git_pin(content)
+            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
+            buffer.source = content
+            ast = Parser::CurrentRuby.new.parse(buffer)
+
+            ReplaceGitPin.new(
+              dependency: dependency,
+              new_pin: replacement_git_pin
+            ).rewrite(buffer, ast)
           end
 
           class ReplaceGemfileRequirement < Parser::Rewriter
@@ -295,6 +313,41 @@ module Dependabot
 
                 remove(range_to_remove)
               end
+            end
+          end
+
+          class ReplaceGitPin < Parser::Rewriter
+            PIN_KEYS = %i(ref tag).freeze
+            attr_reader :dependency, :new_pin
+
+            def initialize(dependency:, new_pin:)
+              @dependency = dependency
+              @new_pin = new_pin
+            end
+
+            def on_send(node)
+              return unless declares_targeted_gem?(node)
+              return unless node.children.last.type == :hash
+
+              kwargs_node = node.children.last
+              kwargs_node.children.each do |hash_pair|
+                next unless PIN_KEYS.include?(key_from_hash_pair(hash_pair))
+                replace(
+                  hash_pair.children.last.loc.expression,
+                  %("#{new_pin}")
+                )
+              end
+            end
+
+            private
+
+            def declares_targeted_gem?(node)
+              return false unless node.children[1] == :gem
+              node.children[2].children.first == dependency.name
+            end
+
+            def key_from_hash_pair(node)
+              node.children.first.children.first.to_sym
             end
           end
         end

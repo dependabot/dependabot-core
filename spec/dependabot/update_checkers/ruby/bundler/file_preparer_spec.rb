@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
     described_class.new(
       dependency_files: dependency_files,
       dependency: dependency,
-      remove_git_source: remove_git_source
+      remove_git_source: remove_git_source,
+      replacement_git_pin: replacement_git_pin
     )
   end
 
@@ -27,6 +28,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:dependency_name) { "business" }
   let(:remove_git_source) { false }
+  let(:replacement_git_pin) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
@@ -152,6 +154,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
             end
             its(:content) { is_expected.to eq(%(gem "prius", '>= 0' # My gem)) }
           end
+        end
+
+        context "that should have its tag replaced" do
+          let(:dependency_name) { "business" }
+          let(:replacement_git_pin) { "v5.1.0" }
+          its(:content) { is_expected.to include(%(ref: "v5.1.0"\n)) }
         end
       end
 
