@@ -69,7 +69,7 @@ module Dependabot
       { tag: tag.name, commit_sha: tag.commit.sha }
     end
 
-    def latest_version_tag
+    def local_tag_for_latest_version
       tag =
         local_tags.
         select { |t| t.name.match?(VERSION_REGEX) }.
@@ -221,6 +221,8 @@ module Dependabot
     end
 
     def local_tags
+      return [] unless local_source_url
+      return [] unless local_source_hosted_on_github?
       @local_tags ||= github_client.tags(local_source_repo, per_page: 100)
     end
 

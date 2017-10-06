@@ -302,7 +302,13 @@ RSpec.describe Dependabot::GitCommitChecker do
       )
     end
 
-    context "but no tags on GitHub" do
+    context "with no tags on GitHub" do
+      let(:tags_response) { [].to_json }
+      it { is_expected.to eq(nil) }
+    end
+
+    context "with a non-GitHub URL" do
+      before { source.merge(url: "https://example.com") }
       let(:tags_response) { [].to_json }
       it { is_expected.to eq(nil) }
     end
@@ -333,8 +339,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#latest_version_tag" do
-    subject { checker.latest_version_tag }
+  describe "#local_tag_for_latest_version" do
+    subject { checker.local_tag_for_latest_version }
     let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
     let(:tags_url) { repo_url + "/tags?per_page=100" }
     before do
@@ -345,7 +351,13 @@ RSpec.describe Dependabot::GitCommitChecker do
       )
     end
 
-    context "but no tags on GitHub" do
+    context "with no tags on GitHub" do
+      let(:tags_response) { [].to_json }
+      it { is_expected.to eq(nil) }
+    end
+
+    context "with a non-GitHub URL" do
+      before { source.merge(url: "https://example.com") }
       let(:tags_response) { [].to_json }
       it { is_expected.to eq(nil) }
     end

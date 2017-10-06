@@ -58,7 +58,7 @@ module Dependabot
           # we want to update that tag. The latest version will then be the SHA
           # of the latest tag that looks like a version.
           if git_commit_checker.pinned_ref_looks_like_version?
-            latest_tag = git_commit_checker.latest_version_tag
+            latest_tag = git_commit_checker.local_tag_for_latest_version
             return latest_tag&.fetch(:commit_sha) || dependency.version
           end
 
@@ -98,7 +98,8 @@ module Dependabot
           # of the latest tag that looks like a version.
           if git_commit_checker.pinned_ref_looks_like_version? &&
              latest_git_tag_is_resolvable?
-            return git_commit_checker.latest_version_tag.fetch(:commit_sha)
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return new_tag.fetch(:commit_sha)
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
@@ -115,11 +116,12 @@ module Dependabot
         end
 
         def latest_git_tag_is_resolvable?
-          return false if git_commit_checker.latest_version_tag.nil?
+          return false if git_commit_checker.local_tag_for_latest_version.nil?
+          replacement_tag = git_commit_checker.local_tag_for_latest_version
           prepared_files = FilePreparer.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            replacement_git_pin: git_commit_checker.latest_version_tag[:tag]
+            replacement_git_pin: replacement_tag.fetch(:tag)
           ).prepared_dependency_files
 
           version_resolver = VersionResolver.new(
@@ -160,8 +162,8 @@ module Dependabot
           # Update the git tag if updating a pinned version
           if git_commit_checker.pinned_ref_looks_like_version? &&
              latest_git_tag_is_resolvable?
-            new_tag = git_commit_checker.latest_version_tag.fetch(:tag)
-            return dependency_source_details.merge(ref: new_tag)
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return dependency_source_details.merge(ref: new_tag.fetch(:tag))
           end
 
           # Otherwise return the original source
