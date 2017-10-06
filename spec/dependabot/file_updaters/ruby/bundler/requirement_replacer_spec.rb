@@ -6,7 +6,11 @@ require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
 
 RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
   let(:replacer) do
-    described_class.new(dependency: dependency, filename: filename)
+    described_class.new(
+      dependency: dependency,
+      file_type: file_type,
+      updated_requirement: updated_requirement
+    )
   end
 
   let(:dependency) do
@@ -14,16 +18,24 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       name: dependency_name,
       version: "1.5.0",
       previous_version: "1.2.0",
-      requirements: requirements,
+      requirements: requirement,
       package_manager: "bundler"
     )
   end
-  let(:requirements) do
-    [{ source: nil, file: "Gemfile", requirement: "~> 1.5.0", groups: [] }]
+  let(:requirement) do
+    [
+      {
+        source: nil,
+        file: "Gemfile",
+        requirement: updated_requirement,
+        groups: []
+      }
+    ]
   end
+  let(:updated_requirement) { "~> 1.5.0" }
 
   let(:dependency_name) { "business" }
-  let(:filename) { "Gemfile" }
+  let(:file_type) { :gemfile }
 
   describe "#rewrite" do
     subject(:rewrite) { replacer.rewrite(content) }
@@ -31,7 +43,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
     let(:content) { fixture("ruby", "gemfiles", "git_source") }
 
     context "with a Gemfile" do
-      let(:filename) { "Gemfile" }
+      let(:file_type) { :gemfile }
 
       context "when the declaration spans multiple lines" do
         let(:content) { fixture("ruby", "gemfiles", "git_source") }
@@ -58,17 +70,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
         end
 
         context "for the new requirement" do
-          let(:requirements) do
-            [
-              {
-                source: nil,
-                file: "Gemfile",
-                requirement: ">= 1.0, < 3.0",
-                groups: []
-              }
-            ]
-          end
-
+          let(:updated_requirement) { ">= 1.0, < 3.0" }
           it { is_expected.to eq(%(gem "business", ">= 1.0", "< 3.0")) }
         end
       end
@@ -81,6 +83,32 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       context "with a dependency that uses quote brackets" do
         let(:content) { %(gem "business", %(1.0)) }
         it { is_expected.to eq(%(gem "business", %(~> 1.5.0))) }
+      end
+    end
+
+    context "with a gemspec" do
+      let(:file_type) { :gemspec }
+
+      let(:content) { fixture("ruby", "gemspecs", "example") }
+
+      context "when declared with `add_runtime_dependency`" do
+        let(:dependency_name) { "bundler" }
+        it { is_expected.to include(%(time_dependency "bundler", "~> 1.5.0")) }
+      end
+
+      context "when declared with `add_dependency`" do
+        let(:dependency_name) { "excon" }
+        it { is_expected.to include(%(add_dependency "excon", "~> 1.5.0")) }
+      end
+
+      context "when declared without a version" do
+        let(:dependency_name) { "rake" }
+        it { is_expected.to include(%(ent_dependency "rake"\n)) }
+      end
+
+      context "when declared with `add_development_dependency`" do
+        let(:dependency_name) { "rspec" }
+        it { is_expected.to include(%(ent_dependency "rspec", "~> 1.5.0"\n)) }
       end
     end
   end

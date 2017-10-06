@@ -141,9 +141,18 @@ module Dependabot
         end
 
         def replace_gemfile_version_requirement(content)
-          RequirementReplacer.
-            new(dependency: dependency, filename: gemfile.name).
-            rewrite(content)
+          return content unless file_changed?(gemfile)
+
+          updated_requirement =
+            dependency.requirements.
+            find { |r| r[:file] == gemfile.name }.
+            fetch(:requirement)
+
+          RequirementReplacer.new(
+            dependency: dependency,
+            file_type: :gemfile,
+            updated_requirement: updated_requirement
+          ).rewrite(content)
         end
 
         def remove_gemfile_git_source(content)
@@ -162,9 +171,18 @@ module Dependabot
         end
 
         def replace_gemspec_version_requirement(content)
-          RequirementReplacer.
-            new(dependency: dependency, filename: gemspec.name).
-            rewrite(content)
+          return content unless file_changed?(gemspec)
+
+          updated_requirement =
+            dependency.requirements.
+            find { |r| r[:file] == gemspec.name }.
+            fetch(:requirement)
+
+          RequirementReplacer.new(
+            dependency: dependency,
+            file_type: :gemspec,
+            updated_requirement: updated_requirement
+          ).rewrite(content)
         end
 
         def updated_lockfile_content

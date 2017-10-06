@@ -8,11 +8,12 @@ module Dependabot
     module Ruby
       class Bundler
         class RequirementReplacer
-          attr_reader :dependency, :filename
+          attr_reader :dependency, :file_type, :updated_requirement
 
-          def initialize(dependency:, filename:)
+          def initialize(dependency:, file_type:, updated_requirement:)
             @dependency = dependency
-            @filename = filename
+            @file_type = file_type
+            @updated_requirement = updated_requirement
           end
 
           def rewrite(content)
@@ -22,19 +23,21 @@ module Dependabot
 
             Rewriter.new(
               dependency: dependency,
-              filename: filename
+              file_type: file_type,
+              updated_requirement: updated_requirement
             ).rewrite(buffer, ast)
           end
 
           class Rewriter < Parser::Rewriter
             SKIPPED_TYPES = %i(send lvar dstr).freeze
 
-            def initialize(dependency:, filename:)
+            def initialize(dependency:, file_type:, updated_requirement:)
               @dependency = dependency
-              @filename = filename
+              @file_type = file_type
+              @updated_requirement = updated_requirement
 
-              return if filename == "Gemfile" || filename.end_with?(".gemspec")
-              raise "File must be a Gemfile or gemspec"
+              return if %i(gemfile gemspec).include?(file_type)
+              raise "File type must be :gemfile or :gemspec. Got #{file_type}."
             end
 
             def on_send(node)
@@ -56,10 +59,10 @@ module Dependabot
 
             private
 
-            attr_reader :dependency, :filename
+            attr_reader :dependency, :file_type, :updated_requirement
 
             def declaration_methods
-              return %i(gem) if filename == "Gemfile"
+              return %i(gem) if file_type == :gemfile
               %i(add_dependency add_runtime_dependency
                  add_development_dependency)
             end
@@ -86,9 +89,7 @@ module Dependabot
 
             def new_requirement_string(quote_characters)
               open_quote, close_quote = quote_characters
-              dependency.requirements.
-                find { |r| r[:file] == filename }.
-                fetch(:requirement).split(",").
+              updated_requirement.split(",").
                 map { |r| %(#{open_quote}#{r.strip}#{close_quote}) }.
                 join(", ")
             end
