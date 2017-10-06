@@ -117,9 +117,20 @@ module Dependabot
           new_gemfile_req[:source].nil?
         end
 
+        def update_git_pin?
+          new_gemfile_req =
+            dependency.requirements.find { |f| f[:file] == "Gemfile" }
+          return false unless new_gemfile_req&.dig(:source, :type) == "git"
+
+          # If the new requirement is a git dependency with a ref then there's
+          # no harm in doing an update
+          new_gemfile_req.dig(:source, :ref)
+        end
+
         def updated_gemfile_content(file)
           content = replace_gemfile_version_requirement(file.content)
           content = remove_gemfile_git_source(content) if remove_git_source?
+          content = update_gemfile_git_pin(content) if update_git_pin?
           content
         end
 
@@ -144,6 +155,21 @@ module Dependabot
 
           UpdateCheckers::Ruby::Bundler::FilePreparer::RemoveGitSource.
             new(dependency: dependency).
+            rewrite(buffer, ast)
+        end
+
+        def update_gemfile_git_pin(content)
+          buffer = Parser::Source::Buffer.new("(gemfile_content)")
+          buffer.source = content
+          ast = Parser::CurrentRuby.new.parse(buffer)
+
+          new_pin =
+            dependency.requirements.
+            find { |f| f[:file] == "Gemfile" }.
+            fetch(:source).fetch(:ref)
+
+          UpdateCheckers::Ruby::Bundler::FilePreparer::ReplaceGitPin.
+            new(dependency: dependency, new_pin: new_pin).
             rewrite(buffer, ast)
         end
 

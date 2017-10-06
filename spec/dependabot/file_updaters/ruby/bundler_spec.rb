@@ -272,6 +272,36 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           is_expected.to include "\"business\", \"~> 1.10.0\", git"
         end
 
+        context "that should have its tag updated" do
+          let(:gemfile_body) do
+            %(gem "business", "~> 1.0.0", ) +
+              %(git: "https://github.com/gocardless/business", tag: "v1.0.0")
+          end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.8.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "http://github.com/gocardless/business",
+                  ref: "v1.8.0"
+                }
+              }
+            ]
+          end
+
+          let(:expected_string) do
+            %(gem "business", "~> 1.8.0", ) +
+              %(git: "https://github.com/gocardless/business", tag: "v1.8.0")
+          end
+
+          its(:content) do
+            is_expected.to eq(expected_string)
+          end
+        end
+
         context "that should be removed" do
           let(:dependency) do
             Dependabot::Dependency.new(
