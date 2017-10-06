@@ -69,6 +69,19 @@ module Dependabot
       { tag: tag.name, commit_sha: tag.commit.sha }
     end
 
+    def latest_version_tag
+      tag =
+        local_tags.
+        select { |t| t.name.match?(VERSION_REGEX) }.
+        max_by do |t|
+          version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
+          Gem::Version.new(version)
+        end
+
+      return unless tag
+      { tag: tag.name, commit_sha: tag.commit.sha }
+    end
+
     private
 
     attr_reader :dependency, :github_access_token

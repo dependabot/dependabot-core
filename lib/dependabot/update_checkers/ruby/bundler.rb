@@ -43,9 +43,28 @@ module Dependabot
             latest_version_details(remove_git_source: true)&.
             fetch(:version)
 
+          # If there's been a release that includes the current pinned ref or
+          # that the current branch is behind, we switch to that release.
           return latest_release if git_branch_or_ref_in_release?(latest_release)
-          return dependency.version if git_commit_checker.pinned?
-          latest_version_details(remove_git_source: false).fetch(:commit_sha)
+
+          # Otherwise, if the gem isn't pinned, the latest version is just the
+          # latest commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return latest_version_details(remove_git_source: false).
+                   fetch(:commit_sha)
+          end
+
+          # If the dependency is pinned to a tag that looks like a version then
+          # we want to update that tag. The latest version will then be the SHA
+          # of the latest tag that looks like a version.
+          if git_commit_checker.pinned_ref_looks_like_version?
+            latest_tag = git_commit_checker.latest_version_tag
+            return latest_tag&.fetch(:commit_sha) || dependency.version
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
         end
 
         def latest_version_details(remove_git_source: false)

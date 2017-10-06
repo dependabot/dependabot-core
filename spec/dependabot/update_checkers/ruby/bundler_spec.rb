@@ -212,6 +212,58 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
             it { is_expected.to eq(Gem::Version.new("1.5.0")) }
           end
+
+          context "and the pin looks like a version" do
+            let(:requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    branch: "master",
+                    ref: "v1.0.0"
+                  }
+                }
+              ]
+            end
+
+            before do
+              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
+              stub_request(:get, rubygems_url).
+                to_return(status: 404, body: "This rubygem could not be found.")
+              repo_url = "https://api.github.com/repos/gocardless/business"
+              stub_request(:get, repo_url + "/tags?per_page=100").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "business_tags.json"),
+                  headers: { "Content-Type" => "application/json" }
+                )
+            end
+
+            it "fetches the latest SHA-1 hash of the latest version tag" do
+              expect(checker.latest_version).
+                to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+            end
+
+            context "but there are no tags" do
+              before do
+                repo_url = "https://api.github.com/repos/gocardless/business"
+                stub_request(:get, repo_url + "/tags?per_page=100").
+                  to_return(
+                    status: 200,
+                    body: [].to_json,
+                    headers: { "Content-Type" => "application/json" }
+                  )
+              end
+
+              it "returns the current version" do
+                expect(checker.latest_version).to eq(current_version)
+              end
+            end
+          end
         end
       end
     end

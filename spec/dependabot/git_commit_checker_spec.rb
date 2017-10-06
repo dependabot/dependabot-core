@@ -332,4 +332,47 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
     end
   end
+
+  describe "#latest_version_tag" do
+    subject { checker.latest_version_tag }
+    let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
+    let(:tags_url) { repo_url + "/tags?per_page=100" }
+    before do
+      stub_request(:get, tags_url).to_return(
+        status: 200,
+        body: tags_response,
+        headers: { "Content-Type" => "application/json" }
+      )
+    end
+
+    context "but no tags on GitHub" do
+      let(:tags_response) { [].to_json }
+      it { is_expected.to eq(nil) }
+    end
+
+    context "with tags on GitHub" do
+      context "but no version tags" do
+        let(:tags_response) do
+          fixture("github", "business_tags_no_versions.json")
+        end
+        it { is_expected.to eq(nil) }
+      end
+
+      context "with version tags" do
+        let(:tags_response) { fixture("github", "business_tags.json") }
+        its([:tag]) { is_expected.to eq("v1.5.0") }
+        its([:commit_sha]) do
+          is_expected.to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+        end
+      end
+
+      context "with prefixed tags" do
+        let(:tags_response) { fixture("github", "prefixed_tags.json") }
+        its([:tag]) { is_expected.to eq("business-21.4.0") }
+        its([:commit_sha]) do
+          is_expected.to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+        end
+      end
+    end
+  end
 end
