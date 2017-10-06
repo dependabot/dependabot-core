@@ -22,7 +22,7 @@ def parse(directory):
                 rel_path = os.path.relpath(abs_path, directory)
 
                 packages.append({
-                    "name": install_req.name,
+                    "name": install_req.req.name,
                     "version": specifier.version,
                     "file": rel_path,
                     "requirement": str(specifier)

@@ -54,7 +54,7 @@ module Dependabot
           original_file(requirements.fetch(:file)).
             content.scan(regex) { matches << Regexp.last_match }
           dec = matches.find { |match| match[:name] == dependency.name }
-          raise "Declaration not found!" unless dec
+          raise "Declaration not found for #{dependency.name}!" unless dec
           dec.to_s
         end
 

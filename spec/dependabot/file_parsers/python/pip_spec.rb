@@ -100,6 +100,21 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
     end
 
+    context "with an 'unsafe' name" do
+      let(:requirements_body) do
+        "mypy_extensions==0.2.0"
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right name" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("mypy_extensions")
+        end
+      end
+    end
+
     context "with invalid lines" do
       let(:requirements_body) do
         fixture("python", "requirements", "invalid_lines.txt")
