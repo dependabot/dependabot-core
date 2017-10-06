@@ -25,7 +25,7 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             existing_version: dependency.version,
-            remove_git_source: should_switch_source_from_git_to_rubygems?,
+            updated_source: updated_source,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
               latest_resolvable_version_details&.fetch(:version)&.to_s
@@ -82,10 +82,28 @@ module Dependabot
         def latest_resolvable_version_for_git_dependency
           latest_release = latest_resolvable_version_without_git_source
 
+          # If there's a resolvable release that includes the current pinned
+          # ref or that the current branch is behind, we switch to that release.
           return latest_release if git_branch_or_ref_in_release?(latest_release)
-          return dependency.version if git_commit_checker.pinned?
-          latest_resolvable_version_details(remove_git_source: false).
-            fetch(:commit_sha)
+
+          # Otherwise, if the gem isn't pinned, the latest version is just the
+          # latest commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return latest_resolvable_version_details(remove_git_source: false).
+                   fetch(:commit_sha)
+          end
+
+          # If the dependency is pinned to a tag that looks like a version then
+          # we want to update that tag. The latest version will then be the SHA
+          # of the latest tag that looks like a version.
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             latest_git_tag_is_resolvable?
+            return git_commit_checker.latest_version_tag.fetch(:commit_sha)
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
         end
 
         def latest_resolvable_version_without_git_source
@@ -94,6 +112,25 @@ module Dependabot
           fetch(:version)
         rescue Dependabot::DependencyFileNotResolvable
           nil
+        end
+
+        def latest_git_tag_is_resolvable?
+          return false if git_commit_checker.latest_version_tag.nil?
+          prepared_files = FilePreparer.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            replacement_git_pin: git_commit_checker.latest_version_tag[:tag]
+          ).prepared_dependency_files
+
+          version_resolver = VersionResolver.new(
+            dependency: dependency,
+            dependency_files: prepared_files,
+            github_access_token: github_access_token
+          )
+          version_resolver.latest_resolvable_version_details
+          true
+        rescue Dependabot::DependencyFileNotResolvable
+          false
         end
 
         def latest_resolvable_version_details(remove_git_source: false)
@@ -111,6 +148,33 @@ module Dependabot
         def git_branch_or_ref_in_release?(release)
           return false unless release
           git_commit_checker.branch_or_ref_in_release?(release)
+        end
+
+        def updated_source
+          # Never need to update source, unless a git_dependency
+          return dependency_source_details unless git_dependency?
+
+          # Source becomes `nil` if switching to default rubygems
+          return nil if should_switch_source_from_git_to_rubygems?
+
+          # Update the git tag if updating a pinned version
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             latest_git_tag_is_resolvable?
+            new_tag = git_commit_checker.latest_version_tag.fetch(:tag)
+            return dependency_source_details.merge(ref: new_tag)
+          end
+
+          # Otherwise return the original source
+          dependency_source_details
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def should_switch_source_from_git_to_rubygems?

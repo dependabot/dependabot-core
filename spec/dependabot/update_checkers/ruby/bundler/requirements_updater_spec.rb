@@ -10,7 +10,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
       existing_version: existing_version,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version,
-      remove_git_source: remove_git_source
+      updated_source: updated_source
     )
   end
 
@@ -34,7 +34,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:gemfile_groups) { [] }
   let(:gemspec_requirement_string) { "~> 1.4.0" }
   let(:gemspec_groups) { [] }
-  let(:remove_git_source) { false }
+  let(:updated_source) { nil }
 
   let(:existing_version) { "1.4.0" }
   let(:latest_version) { "1.8.0" }
@@ -54,18 +54,27 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
       context "with a SHA-1 version" do
         let(:existing_version) { "1530024bd6a68d36ac18e04836ce110e0d433c36" }
         before { gemfile_requirement.merge!(source: { type: "git" }) }
+        let(:updated_source) { { type: "git" } }
 
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
         its([:source]) { is_expected.to eq(type: "git") }
 
         context "when asked to remove a git source" do
-          let(:remove_git_source) { true }
+          let(:updated_source) { nil }
           its([:source]) { is_expected.to be_nil }
 
           context "when no update to the requirements is required" do
             let(:gemfile_requirement_string) { ">= 0" }
             it { is_expected.to eq(gemfile_requirement.merge(source: nil)) }
           end
+        end
+
+        context "when asked to update a git reference" do
+          let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+          before do
+            gemfile_requirement.merge!(source: { type: "git", ref: "v1.2.0" })
+          end
+          its([:source]) { is_expected.to eq(updated_source) }
         end
       end
 

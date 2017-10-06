@@ -727,6 +727,58 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
             it { is_expected.to eq(Gem::Version.new("1.8.0")) }
           end
+
+          context "and the release looks like a version" do
+            let(:requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    branch: "master",
+                    ref: "v1.0.0"
+                  }
+                }
+              ]
+            end
+
+            before do
+              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
+              stub_request(:get, rubygems_url).
+                to_return(status: 404, body: "This rubygem could not be found.")
+              repo_url = "https://api.github.com/repos/gocardless/business"
+              stub_request(:get, repo_url + "/tags?per_page=100").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "business_tags.json"),
+                  headers: { "Content-Type" => "application/json" }
+                )
+            end
+
+            it "fetches the latest SHA-1 hash of the latest version tag" do
+              expect(checker.latest_resolvable_version).
+                to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+            end
+
+            context "but there are no tags" do
+              before do
+                repo_url = "https://api.github.com/repos/gocardless/business"
+                stub_request(:get, repo_url + "/tags?per_page=100").
+                  to_return(
+                    status: 200,
+                    body: [].to_json,
+                    headers: { "Content-Type" => "application/json" }
+                  )
+              end
+
+              it "returns the current version" do
+                expect(checker.latest_resolvable_version).to eq(current_version)
+              end
+            end
+          end
         end
 
         context "when the gem has a version specified, too" do
@@ -1114,7 +1166,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             existing_version: "1.4.0",
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
-            remove_git_source: false
+            updated_source: nil
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
@@ -1167,7 +1219,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               existing_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
               latest_version: "1.10.0",
               latest_resolvable_version: "1.10.0",
-              remove_git_source: false
+              updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
@@ -1220,7 +1272,58 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
                   latest_version: "1.10.0",
                   latest_resolvable_version: "1.6.0",
-                  remove_git_source: false
+                  updated_source: requirements.first[:source]
+                ).and_call_original
+
+              expect(updated_requirements.count).to eq(1)
+              expect(updated_requirements.first[:requirement]).to eq(">= 0")
+              expect(updated_requirements.first[:source]).to_not be_nil
+            end
+          end
+
+          context "and the release looks like a version" do
+            let(:requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    branch: "master",
+                    ref: "v1.0.0"
+                  }
+                }
+              ]
+            end
+
+            before do
+              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
+              stub_request(:get, rubygems_url).
+                to_return(status: 404, body: "This rubygem could not be found.")
+              repo_url = "https://api.github.com/repos/gocardless/business"
+              stub_request(:get, repo_url + "/tags?per_page=100").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "business_tags.json"),
+                  headers: { "Content-Type" => "application/json" }
+                )
+            end
+
+            it "delegates to Bundler::RequirementsUpdater" do
+              expect(requirements_updater).
+                to receive(:new).with(
+                  requirements: requirements,
+                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  latest_version: "1.10.0",
+                  latest_resolvable_version: "1.6.0",
+                  updated_source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    branch: "master",
+                    ref: "v1.5.0"
+                  }
                 ).and_call_original
 
               expect(updated_requirements.count).to eq(1)
@@ -1265,7 +1368,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
                   latest_version: "1.10.0",
                   latest_resolvable_version: "1.6.0",
-                  remove_git_source: true
+                  updated_source: nil
                 ).and_call_original
 
               expect(updated_requirements.count).to eq(1)
@@ -1316,7 +1419,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             existing_version: "1.4.0",
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
-            remove_git_source: false
+            updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
@@ -1360,7 +1463,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             existing_version: nil,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
-            remove_git_source: false
+            updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
@@ -1397,7 +1500,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             existing_version: nil,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
-            remove_git_source: false
+            updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
@@ -1433,7 +1536,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             existing_version: nil,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.5.0",
-            remove_git_source: false
+            updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
