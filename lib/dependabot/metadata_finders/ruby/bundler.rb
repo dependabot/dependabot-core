@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "gems"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
@@ -111,10 +110,17 @@ module Dependabot
         end
 
         def rubygems_listing
-          @rubygems_listing ||= Gems.info(dependency.name)
+          return @rubygems_listing unless @rubygems_listing.nil?
+
+          response =
+            Excon.get(
+              "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+
+          @rubygems_listing = JSON.parse(response.body)
         rescue JSON::ParserError
-          # Replace with Gems::NotFound error if/when
-          # https://github.com/rubygems/gems/pull/38 is merged.
           @rubygems_listing = {}
         end
       end
