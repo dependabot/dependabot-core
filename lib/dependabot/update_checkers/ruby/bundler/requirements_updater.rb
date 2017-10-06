@@ -10,11 +10,12 @@ module Dependabot
           class UnfixableRequirement < StandardError; end
 
           attr_reader :requirements, :existing_version,
-                      :latest_version, :latest_resolvable_version
+                      :latest_version, :latest_resolvable_version,
+                      :updated_source
 
           def initialize(requirements:, existing_version:,
                          latest_version:, latest_resolvable_version:,
-                         remove_git_source: false)
+                         updated_source:)
             @requirements = requirements
 
             @existing_version =
@@ -25,7 +26,7 @@ module Dependabot
               end
 
             @latest_version = Gem::Version.new(latest_version) if latest_version
-            @remove_git_source = remove_git_source
+            @updated_source = updated_source
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
@@ -46,10 +47,6 @@ module Dependabot
 
           private
 
-          def remove_git_source?
-            @remove_git_source
-          end
-
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           def updated_gemfile_requirement(req)
@@ -69,9 +66,7 @@ module Dependabot
                 update_gemfile_range(requirements).map(&:to_s).join(", ")
               end
 
-            new_source = remove_git_source? ? nil : req[:source]
-
-            req.merge(requirement: new_requirement, source: new_source)
+            req.merge(requirement: new_requirement, source: updated_source)
           end
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
