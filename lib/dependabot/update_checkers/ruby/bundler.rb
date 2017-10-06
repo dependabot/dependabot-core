@@ -12,36 +12,13 @@ module Dependabot
         require_relative "bundler/version_resolver"
 
         def latest_version
-          return latest_version_details&.fetch(:version) unless git_dependency?
-
-          latest_release =
-            latest_version_details(remove_git_source: true)&.fetch(:version)
-
-          if latest_release &&
-             git_commit_checker.branch_or_ref_in_release?(latest_release)
-            return latest_release
-          end
-
-          return dependency.version if git_commit_checker.pinned?
-
-          latest_version_details(remove_git_source: false).fetch(:commit_sha)
+          return latest_version_for_git_dependency if git_dependency?
+          latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
-          unless git_dependency?
-            return latest_resolvable_version_details&.fetch(:version)
-          end
-
-          latest_release = latest_resolvable_version_without_git_source
-          if latest_release &&
-             git_commit_checker.branch_or_ref_in_release?(latest_release)
-            return latest_release
-          end
-
-          return dependency.version if git_commit_checker.pinned?
-
-          latest_resolvable_version_details(remove_git_source: false).
-            fetch(:commit_sha)
+          return latest_resolvable_version_for_git_dependency if git_dependency?
+          latest_resolvable_version_details&.fetch(:version)
         end
 
         def updated_requirements
@@ -57,34 +34,18 @@ module Dependabot
 
         private
 
-        def latest_resolvable_version_without_git_source
-          return nil unless latest_version.is_a?(Gem::Version)
-          latest_resolvable_version_details(remove_git_source: true)&.
-          fetch(:version)
-        rescue Dependabot::DependencyFileNotResolvable
-          nil
-        end
-
-        def git_commit_checker
-          @git_commit_checker ||=
-            GitCommitChecker.new(
-              dependency: dependency,
-              github_access_token: github_access_token
-            )
-        end
-
         def git_dependency?
           git_commit_checker.git_dependency?
         end
 
-        def should_switch_source_from_git_to_rubygems?
-          return false unless git_dependency?
-          return false unless latest_resolvable_version
+        def latest_version_for_git_dependency
+          latest_release =
+            latest_version_details(remove_git_source: true)&.
+            fetch(:version)
 
-          Gem::Version.new(latest_resolvable_version)
-          true
-        rescue ArgumentError
-          false
+          return latest_release if git_branch_or_ref_in_release?(latest_release)
+          return dependency.version if git_commit_checker.pinned?
+          latest_version_details(remove_git_source: false).fetch(:commit_sha)
         end
 
         def latest_version_details(remove_git_source: false)
@@ -99,6 +60,23 @@ module Dependabot
           end
         end
 
+        def latest_resolvable_version_for_git_dependency
+          latest_release = latest_resolvable_version_without_git_source
+
+          return latest_release if git_branch_or_ref_in_release?(latest_release)
+          return dependency.version if git_commit_checker.pinned?
+          latest_resolvable_version_details(remove_git_source: false).
+            fetch(:commit_sha)
+        end
+
+        def latest_resolvable_version_without_git_source
+          return nil unless latest_version.is_a?(Gem::Version)
+          latest_resolvable_version_details(remove_git_source: true)&.
+          fetch(:version)
+        rescue Dependabot::DependencyFileNotResolvable
+          nil
+        end
+
         def latest_resolvable_version_details(remove_git_source: false)
           if remove_git_source
             @latest_resolvable_version_details_without_git_source ||=
@@ -109,6 +87,29 @@ module Dependabot
               version_resolver(remove_git_source: false).
               latest_resolvable_version_details
           end
+        end
+
+        def git_branch_or_ref_in_release?(release)
+          return false unless release
+          git_commit_checker.branch_or_ref_in_release?(release)
+        end
+
+        def should_switch_source_from_git_to_rubygems?
+          return false unless git_dependency?
+          return false if latest_resolvable_version_for_git_dependency.nil?
+
+          Gem::Version.new(latest_resolvable_version_for_git_dependency)
+          true
+        rescue ArgumentError
+          false
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
         end
 
         def version_resolver(remove_git_source:)
