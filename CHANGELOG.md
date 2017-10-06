@@ -1,3 +1,7 @@
+## v0.21.0, 06 October 2017
+
+- Support bumping Ruby git dependencies that are tagged to a version-like tag
+
 ## v0.20.15, 06 October 2017
 
 - Don't sanitize python requirement names during parsing. Was causing errors
