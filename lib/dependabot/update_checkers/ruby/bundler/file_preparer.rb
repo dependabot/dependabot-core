@@ -4,6 +4,8 @@ require "parser/current"
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/dependency_file"
+require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
+require "dependabot/file_updaters/ruby/bundler/git_source_remover"
 
 module Dependabot
   module UpdateCheckers
@@ -162,7 +164,9 @@ module Dependabot
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
-            RemoveGitSource.new(dependency: dependency).rewrite(buffer, ast)
+            FileUpdaters::Ruby::Bundler::GitSourceRemover.new(
+              dependency: dependency
+            ).rewrite(buffer, ast)
           end
 
           def replace_git_pin(content)
@@ -170,7 +174,7 @@ module Dependabot
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
-            ReplaceGitPin.new(
+            FileUpdaters::Ruby::Bundler::GitPinReplacer.new(
               dependency: dependency,
               new_pin: replacement_git_pin
             ).rewrite(buffer, ast)
@@ -240,114 +244,6 @@ module Dependabot
             def declares_targeted_gem?(node)
               return false unless DECLARATION_METHODS.include?(node.children[1])
               node.children[2].children.first == dependency_name
-            end
-          end
-
-          class RemoveGitSource < Parser::Rewriter
-            # TODO: Hack until Bundler 1.16.0 is available on Heroku
-            GOOD_KEYS = %i(
-              group groups path glob name require platform platforms type
-              source install_if
-            ).freeze
-
-            attr_reader :dependency
-
-            def initialize(dependency:)
-              @dependency = dependency
-            end
-
-            def on_send(node)
-              return unless declares_targeted_gem?(node)
-              return unless node.children.last.type == :hash
-
-              kwargs_node = node.children.last
-              keys = kwargs_node.children.map do |hash_pair|
-                key_from_hash_pair(hash_pair)
-              end
-
-              if keys.none? { |key| GOOD_KEYS.include?(key) }
-                remove_all_kwargs(node)
-              else
-                remove_git_related_kwargs(kwargs_node)
-              end
-            end
-
-            private
-
-            def declares_targeted_gem?(node)
-              return false unless node.children[1] == :gem
-              node.children[2].children.first == dependency.name
-            end
-
-            def key_from_hash_pair(node)
-              node.children.first.children.first.to_sym
-            end
-
-            def remove_all_kwargs(node)
-              kwargs_node = node.children.last
-
-              range_to_remove =
-                kwargs_node.loc.expression.join(node.children[-2].loc.end.end)
-
-              remove(range_to_remove)
-            end
-
-            def remove_git_related_kwargs(kwargs_node)
-              good_key_index = nil
-              hash_pairs = kwargs_node.children
-
-              hash_pairs.each_with_index do |hash_pair, index|
-                if GOOD_KEYS.include?(key_from_hash_pair(hash_pair))
-                  good_key_index = index
-                  next
-                end
-
-                range_to_remove =
-                  if good_key_index.nil?
-                    next_arg_start = hash_pairs[index + 1].loc.expression.begin
-                    hash_pair.loc.expression.join(next_arg_start)
-                  else
-                    last_arg_end = hash_pairs[good_key_index].loc.expression.end
-                    hash_pair.loc.expression.join(last_arg_end)
-                  end
-
-                remove(range_to_remove)
-              end
-            end
-          end
-
-          class ReplaceGitPin < Parser::Rewriter
-            PIN_KEYS = %i(ref tag).freeze
-            attr_reader :dependency, :new_pin
-
-            def initialize(dependency:, new_pin:)
-              @dependency = dependency
-              @new_pin = new_pin
-            end
-
-            def on_send(node)
-              return unless declares_targeted_gem?(node)
-              return unless node.children.last.type == :hash
-
-              kwargs_node = node.children.last
-              kwargs_node.children.each do |hash_pair|
-                next unless PIN_KEYS.include?(key_from_hash_pair(hash_pair))
-                replace(
-                  hash_pair.children.last.loc.expression,
-                  %("#{new_pin}")
-                )
-              end
-            end
-
-            private
-
-            def declares_targeted_gem?(node)
-              return false unless node.children[1] == :gem
-              node.children[2].children.first == dependency.name
-            end
-
-            def key_from_hash_pair(node)
-              node.children.first.children.first.to_sym
             end
           end
         end

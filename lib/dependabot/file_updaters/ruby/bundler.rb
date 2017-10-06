@@ -9,12 +9,15 @@ require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
-require "dependabot/update_checkers/ruby/bundler/file_preparer"
 
 module Dependabot
   module FileUpdaters
     module Ruby
       class Bundler < Dependabot::FileUpdaters::Base
+        require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
+        require "dependabot/file_updaters/ruby/bundler/git_source_remover"
+        require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
+
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         DEPENDENCY_DECLARATION_REGEX =
           /^\s*\w*\.add(?:_development|_runtime)?_dependency
@@ -143,7 +146,7 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          ReplaceRequirement.
+          RequirementReplacer.
             new(dependency: dependency, filename: gemfile.name).
             rewrite(buffer, ast)
         end
@@ -153,9 +156,7 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          UpdateCheckers::Ruby::Bundler::FilePreparer::RemoveGitSource.
-            new(dependency: dependency).
-            rewrite(buffer, ast)
+          GitSourceRemover.new(dependency: dependency).rewrite(buffer, ast)
         end
 
         def update_gemfile_git_pin(content)
@@ -168,7 +169,7 @@ module Dependabot
             find { |f| f[:file] == "Gemfile" }.
             fetch(:source).fetch(:ref)
 
-          UpdateCheckers::Ruby::Bundler::FilePreparer::ReplaceGitPin.
+          GitPinReplacer.
             new(dependency: dependency, new_pin: new_pin).
             rewrite(buffer, ast)
         end
@@ -178,7 +179,7 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          ReplaceRequirement.
+          RequirementReplacer.
             new(dependency: dependency, filename: gemspec.name).
             rewrite(buffer, ast)
         end
@@ -287,70 +288,6 @@ module Dependabot
             gem_name = gemspec.name.split("/").last.split(".").first
             spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
             "='#{spec&.version || '0.0.1'}'"
-          end
-        end
-
-        class ReplaceRequirement < Parser::Rewriter
-          SKIPPED_TYPES = %i(send lvar dstr).freeze
-
-          def initialize(dependency:, filename:)
-            @dependency = dependency
-            @filename = filename
-
-            return if filename == "Gemfile" || filename.end_with?(".gemspec")
-            raise "File must be a Gemfile or gemspec"
-          end
-
-          def on_send(node)
-            return unless declares_targeted_gem?(node)
-
-            req_nodes = node.children[3..-1]
-            req_nodes = req_nodes.reject { |child| child.type == :hash }
-
-            return if req_nodes.none?
-            return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
-
-            quote_character = extract_quote_character_from(req_nodes)
-
-            replace(
-              range_for(req_nodes),
-              new_requirement_string(quote_character)
-            )
-          end
-
-          private
-
-          attr_reader :dependency, :filename
-
-          def declaration_methods
-            return %i(gem) if filename == "Gemfile"
-            %i(add_dependency add_runtime_dependency add_development_dependency)
-          end
-
-          def declares_targeted_gem?(node)
-            return false unless declaration_methods.include?(node.children[1])
-            node.children[2].children.first == dependency.name
-          end
-
-          def extract_quote_character_from(requirement_nodes)
-            case requirement_nodes.first.type
-            when :str, :dstr
-              requirement_nodes.first.loc.begin.source
-            else
-              requirement_nodes.first.children.first.loc.begin.source
-            end
-          end
-
-          def new_requirement_string(quote_character)
-            dependency.requirements.
-              find { |r| r[:file] == filename }.
-              fetch(:requirement).split(",").
-              map { |r| %(#{quote_character}#{r.strip}#{quote_character}) }.
-              join(", ")
-          end
-
-          def range_for(nodes)
-            nodes.first.loc.begin.begin.join(nodes.last.loc.expression)
           end
         end
       end
