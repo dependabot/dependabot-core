@@ -160,13 +160,9 @@ module Dependabot
           end
 
           def remove_git_source(content)
-            buffer = ::Parser::Source::Buffer.new("(gemfile_content)")
-            buffer.source = content
-            ast = Parser::CurrentRuby.new.parse(buffer)
-
             FileUpdaters::Ruby::Bundler::GitSourceRemover.new(
               dependency: dependency
-            ).rewrite(buffer, ast)
+            ).rewrite(content)
           end
 
           def replace_git_pin(content)

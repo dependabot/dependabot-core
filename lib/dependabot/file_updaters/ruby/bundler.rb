@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "bundler"
-require "parser/current"
 
 require "bundler_definition_version_patch"
 require "bundler_git_source_patch"
@@ -142,21 +141,13 @@ module Dependabot
         end
 
         def replace_gemfile_version_requirement(content)
-          buffer = Parser::Source::Buffer.new("(gemfile_content)")
-          buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
-
           RequirementReplacer.
             new(dependency: dependency, filename: gemfile.name).
-            rewrite(buffer, ast)
+            rewrite(content)
         end
 
         def remove_gemfile_git_source(content)
-          buffer = Parser::Source::Buffer.new("(gemfile_content)")
-          buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
-
-          GitSourceRemover.new(dependency: dependency).rewrite(buffer, ast)
+          GitSourceRemover.new(dependency: dependency).rewrite(content)
         end
 
         def update_gemfile_git_pin(content)
@@ -171,13 +162,9 @@ module Dependabot
         end
 
         def replace_gemspec_version_requirement(content)
-          buffer = Parser::Source::Buffer.new("(gemspec_content)")
-          buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
-
           RequirementReplacer.
             new(dependency: dependency, filename: gemspec.name).
-            rewrite(buffer, ast)
+            rewrite(content)
         end
 
         def updated_lockfile_content
