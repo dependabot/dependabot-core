@@ -20,50 +20,26 @@ module Dependabot
       dependency_source_details.fetch(:type) == "git"
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      source_ref = dependency_source_details.fetch(:ref)
+      ref = dependency_source_details.fetch(:ref)
+      branch = dependency_source_details.fetch(:branch)
 
-      # If there's no reference specified, we can't be pinned
-      return false if source_ref.nil?
+      return false if ref.nil?
+      return false if branch == ref
+      return true if branch
+      return true if dependency.version&.start_with?(ref)
 
-      # If the branch specified matches the ref, the ref must be a branch
-      return false if dependency_source_details.fetch(:branch) == source_ref
-
-      # If there's a branch specified, and it doesn't match the ref specified,
-      # then the ref can't be a branch so must be a commit.
-      # Example: `version: a1b312c, branch: master, ref: v1.0.0
-      return true if dependency_source_details.fetch(:branch)
-
-      # If the ref specified matches the current version, it must be a commit
-      return true if dependency.version&.start_with?(source_ref)
-
-      # At this point we know we've got a reference specified and no branch.
-      # It's unlikely, but that reference could be a branch (e.g., if specified
-      # as `ref:  "master"` in the Gemfile). Check by hitting the URL.
-      @upload_pack ||=
-        fetch_upload_pack_for(dependency_source_details.fetch(:url))
-
-      return false unless @upload_pack.status == 200
-
-      !@upload_pack.body.match?("refs/heads/#{source_ref}")
+      # Check the specified `ref` isn't actually a branch
+      !local_upload_pack.match?("refs/heads/#{ref}")
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
 
     def latest_commit_for_current_ref
       return dependency.version if pinned?
 
-      url = dependency_source_details.fetch(:url)
-      @upload_pack ||=
-        fetch_upload_pack_for(dependency_source_details.fetch(:url))
-
-      success = @upload_pack.status == 200
-      raise Dependabot::GitDependenciesNotReachable, [url] unless success
-
       branch_ref = "refs/heads/#{ref_or_branch}"
-      line = @upload_pack.body.lines.find { |l| l.include?(branch_ref) }
+      line = local_upload_pack.lines.find { |l| l.include?(branch_ref) }
 
       return line.split(" ").first.chars.last(40).join if line
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
@@ -139,6 +115,11 @@ module Dependabot
       )
     end
 
+    def local_upload_pack
+      @local_upload_pack ||=
+        fetch_upload_pack_for(dependency_source_details.fetch(:url))
+    end
+
     def fetch_upload_pack_for(uri)
       authed_host = "https://x-access-token:#{github_access_token}@github.com/"
       uri = uri.gsub("git@github.com:", authed_host)
@@ -148,11 +129,14 @@ module Dependabot
       uri += ".git" unless uri.end_with?(".git")
       uri += "/info/refs?service=git-upload-pack"
 
-      Excon.get(
+      response = Excon.get(
         uri,
         idempotent: true,
         middlewares: SharedHelpers.excon_middleware
       )
+
+      return response.body if response.status == 200
+      raise Dependabot::GitDependenciesNotReachable, [uri]
     end
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)

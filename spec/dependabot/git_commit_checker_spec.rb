@@ -243,7 +243,11 @@ RSpec.describe Dependabot::GitCommitChecker do
               to_return(status: 404)
           end
           let(:ref) { "my_ref" }
-          it { is_expected.to eq(false) }
+
+          it "raises a helpful error" do
+            expect { checker.latest_commit_for_current_ref }.
+              to raise_error(Dependabot::GitDependenciesNotReachable)
+          end
         end
       end
     end
