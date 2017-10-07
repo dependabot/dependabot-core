@@ -245,7 +245,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:ref) { "my_ref" }
 
           it "raises a helpful error" do
-            expect { checker.latest_commit_for_current_ref }.
+            expect { checker.head_commit_for_current_branch }.
               to raise_error(Dependabot::GitDependenciesNotReachable)
           end
         end
@@ -253,8 +253,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#latest_commit_for_current_ref" do
-    subject { checker.latest_commit_for_current_ref }
+  describe "#head_commit_for_current_branch" do
+    subject { checker.head_commit_for_current_branch }
 
     context "with a pinned dependency" do
       let(:source) do
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           before { source.merge!(branch: "rando", ref: "rando") }
 
           it "raises a helpful error" do
-            expect { checker.latest_commit_for_current_ref }.
+            expect { checker.head_commit_for_current_branch }.
               to raise_error(Dependabot::GitDependencyReferenceNotFound)
           end
         end
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "raises a helpful error" do
-          expect { checker.latest_commit_for_current_ref }.
+          expect { checker.head_commit_for_current_branch }.
             to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
@@ -368,56 +368,6 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
       it { is_expected.to eq(false) }
-    end
-  end
-
-  describe "#local_tag_for_version" do
-    subject { checker.local_tag_for_version(version) }
-    let(:version) { Gem::Version.new("1.4.0") }
-    let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
-    let(:tags_url) { repo_url + "/tags?per_page=100" }
-    before do
-      stub_request(:get, tags_url).to_return(
-        status: 200,
-        body: tags_response,
-        headers: { "Content-Type" => "application/json" }
-      )
-    end
-
-    context "with no tags on GitHub" do
-      let(:tags_response) { [].to_json }
-      it { is_expected.to eq(nil) }
-    end
-
-    context "with a non-GitHub URL" do
-      before { source.merge(url: "https://example.com") }
-      let(:tags_response) { [].to_json }
-      it { is_expected.to eq(nil) }
-    end
-
-    context "with tags on GitHub" do
-      context "but no version tags" do
-        let(:tags_response) do
-          fixture("github", "business_tags_no_versions.json")
-        end
-        it { is_expected.to eq(nil) }
-      end
-
-      context "with version tags" do
-        let(:tags_response) { fixture("github", "business_tags.json") }
-        its([:tag]) { is_expected.to eq("v1.4.0") }
-        its([:commit_sha]) do
-          is_expected.to eq("26f4887ec647493f044836363537e329d9d213aa")
-        end
-      end
-
-      context "with prefixed tags" do
-        let(:tags_response) { fixture("github", "prefixed_tags.json") }
-        its([:tag]) { is_expected.to eq("business-1.4.0") }
-        its([:commit_sha]) do
-          is_expected.to eq("26f4887ec647493f044836363537e329d9d213aa")
-        end
-      end
     end
   end
 

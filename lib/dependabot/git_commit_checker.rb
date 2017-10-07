@@ -16,7 +16,6 @@ module Dependabot
 
     def git_dependency?
       return false if dependency_source_details.nil?
-
       dependency_source_details.fetch(:type) == "git"
     end
 
@@ -35,7 +34,16 @@ module Dependabot
       !local_upload_pack.match?("refs/heads/#{ref}")
     end
 
-    def latest_commit_for_current_ref
+    def pinned_ref_looks_like_version?
+      return false unless pinned?
+      dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
+    end
+
+    def branch_or_ref_in_release?(version)
+      pinned_ref_in_release?(version) || branch_behind_release?(version)
+    end
+
+    def head_commit_for_current_branch
       return dependency.version if pinned?
 
       branch_ref = "refs/heads/#{ref_or_branch}"
@@ -43,24 +51,6 @@ module Dependabot
 
       return line.split(" ").first.chars.last(40).join if line
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
-    end
-
-    def branch_or_ref_in_release?(version)
-      pinned_ref_in_release?(version) || branch_behind_release?(version)
-    end
-
-    def pinned_ref_looks_like_version?
-      return false unless pinned?
-      dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
-    end
-
-    def local_tag_for_version(version)
-      tag =
-        local_tags.
-        find { |t| t.name =~ /(?:[^0-9\.]|\A)#{Regexp.escape(version.to_s)}\z/ }
-
-      return unless tag
-      { tag: tag.name, commit_sha: tag.commit.sha }
     end
 
     def local_tag_for_latest_version

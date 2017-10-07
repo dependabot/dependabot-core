@@ -50,7 +50,7 @@ module Dependabot
           # Otherwise, if the gem isn't pinned, the latest version is just the
           # latest commit for the specified branch.
           unless git_commit_checker.pinned?
-            return git_commit_checker.latest_commit_for_current_ref
+            return git_commit_checker.head_commit_for_current_branch
           end
 
           # If the dependency is pinned to a tag that looks like a version then
