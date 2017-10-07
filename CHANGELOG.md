@@ -1,3 +1,9 @@
+## v0.21.1, 07 October 2017
+
+- Handle non-GitHub URLs in GitCommitChecker#local_tag_for_version
+- Robust handling of quote characters for Ruby::Bundler::GitPinReplacer
+- Use GitCommitChecker for fetching the latest commit on a branch (speedup)
+
 ## v0.21.0, 06 October 2017
 
 - Support bumping Ruby git dependencies that are tagged to a version-like tag
