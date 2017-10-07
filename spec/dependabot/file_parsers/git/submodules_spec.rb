@@ -41,12 +41,14 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
         expect(dependency.requirements).to eq(
           [
             {
-              requirement: {
-                url: "https://github.com/example/documents.git",
-                branch: "gh-pages"
-              },
+              requirement: nil,
               file: ".gitmodules",
-              source: nil,
+              source: {
+                type: "git",
+                url: "git@github.com:example/documents.git",
+                branch: "gh-pages",
+                ref: "gh-pages"
+              },
               groups: []
             }
           ]
@@ -64,12 +66,14 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
         expect(dependency.requirements).to eq(
           [
             {
-              requirement: {
-                url: "https://github.com/example/manifesto.git",
-                branch: "master"
-              },
+              requirement: nil,
               file: ".gitmodules",
-              source: nil,
+              source: {
+                type: "git",
+                url: "https://github.com/example/manifesto.git",
+                branch: "master",
+                ref: "master"
+              },
               groups: []
             }
           ]

@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
-require "dependabot/metadata_finders/base"
-require "dependabot/errors"
+require "dependabot/git_commit_checker"
 
 module Dependabot
   module UpdateCheckers
@@ -13,7 +12,7 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # Resolvability isn't an issue for sub-modules!
+          # Resolvability isn't an issue for submodules.
           latest_version
         end
 
@@ -26,24 +25,12 @@ module Dependabot
         private
 
         def fetch_latest_version
-          requirement = dependency.requirements.first.fetch(:requirement)
-          url = requirement.fetch(:url)
-          url += ".git" unless url.end_with?(".git")
-
-          response = Excon.get(
-            url + "/info/refs?service=git-upload-pack",
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
+          git_commit_checker = GitCommitChecker.new(
+            dependency: dependency,
+            github_access_token: github_access_token
           )
 
-          success = response.status == 200
-          raise Dependabot::GitDependenciesNotReachable, [url] unless success
-
-          branch_ref = "refs/heads/#{requirement.fetch(:branch)}"
-          line = response.body.lines.find { |l| l.include?(branch_ref) }
-
-          return line.split(" ").first.chars.last(40).join if line
-          raise Dependabot::GitDependencyReferenceNotFound, dependency.name
+          git_commit_checker.head_commit_for_current_branch
         end
       end
     end

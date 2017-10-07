@@ -112,6 +112,7 @@ module Dependabot
 
     def fetch_upload_pack_for(uri)
       authed_host = "https://x-access-token:#{github_access_token}@github.com/"
+      original_uri = uri
       uri = uri.gsub("git@github.com:", authed_host)
       uri = uri.gsub("https://github.com/", authed_host)
       uri = uri.gsub("http://github.com/", authed_host)
@@ -126,7 +127,7 @@ module Dependabot
       )
 
       return response.body if response.status == 200
-      raise Dependabot::GitDependenciesNotReachable, [uri]
+      raise Dependabot::GitDependenciesNotReachable, [original_uri]
     end
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)

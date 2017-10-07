@@ -38,22 +38,26 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
       requirements: [
         {
           file: ".gitmodules",
-          requirement: {
+          requirement: nil,
+          source: {
+            type: "git",
             url: "https://github.com/example/manifesto.git",
-            branch: "master"
+            branch: "master",
+            ref: "master"
           },
-          source: nil,
           groups: []
         }
       ],
       previous_requirements: [
         {
           file: ".gitmodules",
-          requirement: {
+          requirement: nil,
+          source: {
+            type: "git",
             url: "https://github.com/example/manifesto.git",
-            branch: "master"
+            branch: "master",
+            ref: "master"
           },
-          source: nil,
           groups: []
         }
       ],

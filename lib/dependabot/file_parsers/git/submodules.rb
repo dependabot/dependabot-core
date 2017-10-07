@@ -18,9 +18,6 @@ module Dependabot
               # Branch defaults to master - https://git-scm.com/docs/gitmodules
               branch = params["branch"] || "master"
 
-              # TODO: Handle non-GitHub git URLs
-              url = params["url"].gsub("git@github.com:", "https://github.com/")
-
               submodule_name =
                 group_name.match(GROUP_NAME_REGEX).named_captures.fetch("name")
 
@@ -29,9 +26,14 @@ module Dependabot
                 version: submodule_sha(params["path"]),
                 package_manager: "submodules",
                 requirements: [{
-                  requirement: { url: url, branch: branch },
+                  requirement: nil,
                   file: ".gitmodules",
-                  source: nil,
+                  source: {
+                    type: "git",
+                    url: params["url"],
+                    branch: branch,
+                    ref: branch
+                  },
                   groups: []
                 }]
               )
