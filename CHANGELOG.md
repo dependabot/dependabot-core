@@ -1,3 +1,7 @@
+## v0.21.2, 07 October 2017
+
+- Better pull request versions when upgrading a tag
+
 ## v0.21.1, 07 October 2017
 
 - Handle non-GitHub URLs in GitCommitChecker#local_tag_for_version
