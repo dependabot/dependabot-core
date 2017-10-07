@@ -149,12 +149,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/gocardless/business.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "business"),
+                headers: git_header
+              )
           end
 
           it "fetches the latest SHA-1 hash" do
-            version = checker.latest_version
-            expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq(current_version)
+            expect(checker.latest_version).
+              to eq("d31e445215b5af70c1604715d97dd953e868380e")
           end
         end
 
@@ -598,6 +607,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/gocardless/business.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "business"),
+                headers: git_header
+              )
           end
 
           it "fetches the latest SHA-1 hash" do
@@ -657,6 +676,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/gocardless/prius.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "prius"),
+                headers: git_header
+              )
           end
 
           it "fetches the latest SHA-1 hash" do
@@ -816,6 +845,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/gocardless/business.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "business"),
+                headers: git_header
+              )
           end
 
           it "fetches the latest SHA-1 hash" do
@@ -840,6 +879,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               package_manager: "bundler"
             )
           end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.0.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/prius",
+                  branch: "master",
+                  ref: "master"
+                }
+              }
+            ]
+          end
 
           before do
             rubygems_response = fixture("ruby", "rubygems_response.json")
@@ -848,6 +902,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/gocardless/prius.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "prius"),
+                headers: git_header
+              )
             allow(checker).
               to receive(:latest_resolvable_version_details).
               and_call_original
@@ -895,6 +959,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
+            git_url = "https://github.com/hvssle/onfido.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "onfido"),
+                headers: git_header
+              )
             allow(checker).
               to receive(:latest_resolvable_version_details).
               and_call_original
@@ -911,6 +985,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               requirements: requirements,
               package_manager: "bundler"
             )
+          end
+          let(:requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/hvssle/onfido",
+                  branch: "master",
+                  ref: "master"
+                }
+              }
+            ]
           end
 
           it { is_expected.to be_nil }
@@ -1210,6 +1299,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           allow_any_instance_of(Dependabot::GitCommitChecker).
             to receive(:branch_or_ref_in_release?).
             and_return(false)
+          git_url = "https://github.com/gocardless/business.git"
+          git_header = {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+          stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "business"),
+              headers: git_header
+            )
         end
 
         it "delegates to Bundler::RequirementsUpdater with the right params" do

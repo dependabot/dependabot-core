@@ -219,7 +219,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
             to_return(
               status: 200,
-              body: fixture("git", "git-upload-pack-manifesto"),
+              body: fixture("git", "upload_packs", "manifesto"),
               headers: {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
@@ -244,6 +244,84 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
           let(:ref) { "my_ref" }
           it { is_expected.to eq(false) }
+        end
+      end
+    end
+  end
+
+  describe "#latest_commit_for_current_ref" do
+    subject { checker.latest_commit_for_current_ref }
+
+    context "with a pinned dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v1.0.0"
+        }
+      end
+      it { is_expected.to eq(dependency.version) }
+    end
+
+    context "with a non-pinned dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+      let(:git_header) do
+        { "content-type" => "application/x-git-upload-pack-advertisement" }
+      end
+      let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
+
+      let(:git_url) do
+        "https://github.com/gocardless/business.git" \
+        "/info/refs?service=git-upload-pack"
+      end
+
+      context "that can be reached just fine" do
+        before do
+          stub_request(:get, git_url).
+            with(headers: { "Authorization" => auth_header }).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "business"),
+              headers: git_header
+            )
+        end
+
+        it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+
+        context "specified with an SSH URL" do
+          before { source.merge!(url: "git@github.com:gocardless/business") }
+
+          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+        end
+
+        context "but doesn't have details of the current branch" do
+          before { source.merge!(branch: "rando", ref: "rando") }
+
+          it "raises a helpful error" do
+            expect { checker.latest_commit_for_current_ref }.
+              to raise_error(Dependabot::GitDependencyReferenceNotFound)
+          end
+        end
+      end
+
+      context "that results in a 403" do
+        before do
+          stub_request(:get, git_url).
+            with(headers: { "Authorization" => auth_header }).
+            to_return(status: 403)
+        end
+
+        it "raises a helpful error" do
+          expect { checker.latest_commit_for_current_ref }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
     end

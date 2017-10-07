@@ -63,7 +63,7 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
       stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
         to_return(
           status: 200,
-          body: fixture("git", "git-upload-pack-manifesto"),
+          body: fixture("git", "upload_packs", "manifesto"),
           headers: {
             "content-type" => "application/x-git-upload-pack-advertisement"
           }

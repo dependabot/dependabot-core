@@ -3,6 +3,7 @@
 require "octokit"
 require "excon"
 require "dependabot/metadata_finders"
+require "dependabot/errors"
 
 module Dependabot
   class GitCommitChecker
@@ -42,14 +43,31 @@ module Dependabot
       # At this point we know we've got a reference specified and no branch.
       # It's unlikely, but that reference could be a branch (e.g., if specified
       # as `ref:  "master"` in the Gemfile). Check by hitting the URL.
-      @upload_pack_response ||=
+      @upload_pack ||=
         fetch_upload_pack_for(dependency_source_details.fetch(:url))
 
-      return false unless @upload_pack_response.status == 200
+      return false unless @upload_pack.status == 200
 
-      !@upload_pack_response.body.match?("refs/heads/#{source_ref}")
+      !@upload_pack.body.match?("refs/heads/#{source_ref}")
     end
     # rubocop:enable Metrics/CyclomaticComplexity
+
+    def latest_commit_for_current_ref
+      return dependency.version if pinned?
+
+      url = dependency_source_details.fetch(:url)
+      @upload_pack ||=
+        fetch_upload_pack_for(dependency_source_details.fetch(:url))
+
+      success = @upload_pack.status == 200
+      raise Dependabot::GitDependenciesNotReachable, [url] unless success
+
+      branch_ref = "refs/heads/#{ref_or_branch}"
+      line = @upload_pack.body.lines.find { |l| l.include?(branch_ref) }
+
+      return line.split(" ").first.chars.last(40).join if line
+      raise Dependabot::GitDependencyReferenceNotFound, dependency.name
+    end
 
     def branch_or_ref_in_release?(version)
       pinned_ref_in_release?(version) || branch_behind_release?(version)
@@ -122,10 +140,10 @@ module Dependabot
     end
 
     def fetch_upload_pack_for(uri)
-      uri = uri.gsub(
-        "git@github.com:",
-        "https://x-access-token:#{github_access_token}/"
-      )
+      authed_host = "https://x-access-token:#{github_access_token}@github.com/"
+      uri = uri.gsub("git@github.com:", authed_host)
+      uri = uri.gsub("https://github.com/", authed_host)
+      uri = uri.gsub("http://github.com/", authed_host)
       uri = uri.gsub(%r{/$}, "")
       uri += ".git" unless uri.end_with?(".git")
       uri += "/info/refs?service=git-upload-pack"
