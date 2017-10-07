@@ -248,6 +248,7 @@ module Dependabot
 
     def previous_version
       if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
+        return previous_ref if ref_changed?
         dependency.previous_version[0..5]
       else
         dependency.previous_version
@@ -256,10 +257,27 @@ module Dependabot
 
     def new_version
       if dependency.version.match?(/^[0-9a-f]{40}$/)
+        return new_ref if ref_changed?
         dependency.version[0..5]
       else
         dependency.version
       end
+    end
+
+    def previous_ref
+      dependency.previous_requirements.map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.compact.first
+    end
+
+    def new_ref
+      dependency.requirements.map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.compact.first
+    end
+
+    def ref_changed?
+      previous_ref && new_ref && previous_ref != new_ref
     end
 
     def new_library_requirement

@@ -317,6 +317,72 @@ RSpec.describe Dependabot::PullRequestCreator do
             }
           )
       end
+
+      context "due to a ref change" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
+            previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+            package_manager: "bundler",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: "v1.1.0"
+                }
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: "v1.0.0"
+                }
+              }
+            ]
+          )
+        end
+        let(:branch_name) { "dependabot/bundler/business-v1.1.0" }
+
+        it "creates a branch for that commit" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/refs").
+            with(body: {
+                   ref: "refs/heads/dependabot/bundler/business-v1.1.0",
+                   sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+                 })
+        end
+
+        it "creates a PR with the right details" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/pulls").
+            with(
+              body: {
+                base: "master",
+                head: "dependabot/bundler/business-v1.1.0",
+                title: "Bump business from v1.0.0 to v1.1.0",
+                body: "Bumps [business](https://github.com/gocardless/"\
+                      "business) from v1.0.0 to v1.1.0.\n- [Commits]"\
+                      "(https://github.com/gocardless/business/compare/"\
+                      "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
+                      "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2)"
+              }
+            )
+        end
+      end
     end
 
     context "switching from a SHA-1 version to a release" do
