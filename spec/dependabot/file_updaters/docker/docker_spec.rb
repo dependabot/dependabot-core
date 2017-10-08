@@ -52,5 +52,30 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       its(:content) { is_expected.to include "FROM ubuntu:17.10\n" }
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
+
+    context "when the dependency has a namespace" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "my_fork/ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [],
+          previous_requirements: [],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM my_fork/ubuntu:17.10\n" }
+        its(:content) { is_expected.to include "RUN apt-get update" }
+      end
+    end
   end
 end

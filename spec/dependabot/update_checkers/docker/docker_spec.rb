@@ -18,12 +18,13 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "ubuntu",
+      name: dependency_name,
       version: version,
       requirements: [],
       package_manager: "docker"
     )
   end
+  let(:dependency_name) { "ubuntu" }
   let(:version) { "17.04" }
   let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
 
@@ -62,6 +63,25 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     context "when the dependency has a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_nil }
+    end
+
+    context "when the dependency has a namespace" do
+      let(:dependency_name) { "moj/ruby" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }
+      before do
+        ping_url = "https://registry.hub.docker.com/v2/"
+        stub_request(:get, ping_url).and_return(status: 200)
+
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.4.2")) }
     end
   end
 

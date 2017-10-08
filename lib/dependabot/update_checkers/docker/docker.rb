@@ -30,8 +30,12 @@ module Dependabot
           # TODO: How can we get details to connect to private registries?
           registry = DockerRegistry2.connect
 
-          # TODO: The "library" bit probably doesn't belong here
-          tags = registry.tags("library/#{dependency.name}")
+          tags =
+            if dependency.name.split("/").count < 2
+              registry.tags("library/#{dependency.name}")
+            else
+              registry.tags(dependency.name)
+            end
 
           tags.fetch("tags").
             select { |tag| tag.match?(VERSION_REGEX) }.
