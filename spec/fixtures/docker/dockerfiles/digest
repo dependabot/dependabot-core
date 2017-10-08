@@ -1,4 +1,4 @@
-FROM ubuntu@6ab3eaa4b3df
+FROM ubuntu@sha256:6ab3eaa4b3df
 
 ### SYSTEM DEPENDENCIES
 

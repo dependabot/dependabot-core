@@ -18,7 +18,7 @@ module Dependabot
 
         FROM = /[Ff][Rr][Oo][Mm]/
         TAG = /:(?<tag>[\w][\w.-]{0,127})/
-        DIGEST = /@(?<digest>[0-9a-f]+)/
+        DIGEST = /@(?<digest>[^\s]+)/
         NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/
         FROM_LINE = /^#{FROM}\s+#{REGISTRY}?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?/
 
