@@ -11,8 +11,8 @@ module Dependabot
         IMAGE = %r{(?<image>#{PATH}(?:/#{PATH})*)}
         TAG = /:(?<tag>[a-zA-Z0-9_]+[A-z0-9._-]*)/
         DIGEST = /@(?<digest>[0-9a-f]+)/
-        NAME = / AS (?<name>[a-zA-Z0-9_-]+)/
-        FROM_LINE = /^[Ff][Rr][Oo][Mm] #{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?/
+        NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/
+        FROM_LINE = /^[Ff][Rr][Oo][Mm]\s+#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?/
 
         def parse
           dependencies = []
