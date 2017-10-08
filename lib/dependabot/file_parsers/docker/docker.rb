@@ -20,7 +20,10 @@ module Dependabot
           dockerfile.content.each_line do |line|
             next unless FROM_LINE.match?(line)
             captures = FROM_LINE.match(line).named_captures
-            version = captures.fetch("tag") || captures.fetch("digest")
+
+            # TODO: Support digests (need to extract the tag they relate to
+            # from them, so we can compare it with other versions)
+            version = captures.fetch("tag")
 
             next if version.nil?
 

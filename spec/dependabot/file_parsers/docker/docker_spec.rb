@@ -37,16 +37,13 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     context "with a digest" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      # TODO: support digests
+      its(:length) { is_expected.to eq(0) }
+    end
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("ubuntu")
-          expect(dependency.version).to eq("6ab3eaa4b3df")
-          expect(dependency.requirements).to eq([])
-        end
-      end
+    context "with no tag or digest" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "bare") }
+      its(:length) { is_expected.to eq(0) }
     end
 
     context "with a name" do
