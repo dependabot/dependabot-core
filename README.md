@@ -1,8 +1,8 @@
 # Dependabot Core
 
 Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python and PHP. It can also update git submodules.
-Highlights include:
+updating in Ruby, JavaScript, Python and PHP. It can also update git submodules
+and Docker files. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
   a project's other dependencies*. That means tapping into the package manager's

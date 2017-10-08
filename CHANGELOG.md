@@ -1,3 +1,7 @@
+## v0.22.0, 08 October 2017
+
+- Add support of Dockerfiles
+
 ## v0.21.3, 07 October 2017
 
 - Refactor GitCommitChecker and use it for update-checking submodules
