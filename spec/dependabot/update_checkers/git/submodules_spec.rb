@@ -2,7 +2,6 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/dependency_file"
 require "dependabot/update_checkers/git/submodules"
 require_relative "../shared_examples_for_update_checkers"
 
