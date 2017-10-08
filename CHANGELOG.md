@@ -1,3 +1,7 @@
+## v0.22.2, 09 October 2017
+
+- Raise a PrivateSourceNotReachable error for private Docker registries
+
 ## v0.22.1, 08 October 2017
 
 - Fix bad require line for FileFetchers
