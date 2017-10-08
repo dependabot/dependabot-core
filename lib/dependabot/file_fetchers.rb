@@ -5,7 +5,7 @@ require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_fetchers/java_script/yarn"
 require "dependabot/file_fetchers/php/composer"
 require "dependabot/file_fetchers/git/submodules"
-require "dependabot/file_fetchers/git/docker"
+require "dependabot/file_fetchers/docker/docker"
 
 module Dependabot
   module FileFetchers
