@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/file_parsers/base"
 
 module Dependabot
@@ -34,8 +35,9 @@ module Dependabot
             version = captures.fetch("tag")
             next if version.nil?
 
-            # TODO: Support private registries (how can we get credentials?)
-            next unless captures.fetch("registry").nil?
+            if captures.fetch("registry")
+              raise PrivateSourceNotReachable, captures.fetch("registry")
+            end
 
             dependencies << Dependency.new(
               name: captures.fetch("image"),

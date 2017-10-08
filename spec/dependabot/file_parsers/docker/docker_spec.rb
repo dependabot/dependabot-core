@@ -95,7 +95,10 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "private_tag") }
 
       # TODO: support private registries
-      its(:length) { is_expected.to eq(0) }
+      it "raises a helpful error message" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::PrivateSourceNotReachable)
+      end
     end
   end
 end
