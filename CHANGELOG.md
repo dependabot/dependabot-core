@@ -1,3 +1,7 @@
+## v0.22.1, 08 October 2017
+
+- Fix bad require line for FileFetchers
+
 ## v0.22.0, 08 October 2017
 
 - Add support of Dockerfiles
