@@ -807,6 +807,83 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 expect(checker.latest_resolvable_version).to eq(current_version)
               end
             end
+
+            context "when updating the gem results in a conflict" do
+              let(:gemfile_body) do
+                fixture("ruby", "gemfiles", "git_source_with_tag_conflict")
+              end
+              let(:lockfile_body) do
+                fixture "ruby", "lockfiles", "git_source_with_tag_conflict.lock"
+              end
+
+              before do
+                stub_request(:get, "https://index.rubygems.org/info/i18n").
+                  to_return(
+                    status: 200,
+                    body: fixture("ruby", "rubygems-info-i18n")
+                  )
+                rubygems_url = "https://index.rubygems.org/info/rest-client"
+                stub_request(:get, rubygems_url).
+                  to_return(
+                    status: 200,
+                    body: fixture("ruby", "rubygems-info-rest-client")
+                  )
+              end
+
+              before do
+                rubygems_response = fixture("ruby", "rubygems_response.json")
+                onfido_url = "https://rubygems.org/api/v1/gems/onfido.json"
+                stub_request(:get, onfido_url).
+                  to_return(status: 200, body: rubygems_response)
+                allow_any_instance_of(Dependabot::GitCommitChecker).
+                  to receive(:branch_or_ref_in_release?).
+                  and_return(false)
+                refs_url = "https://github.com/hvssle/onfido.git/info/refs"
+                git_header = {
+                  "content-type" =>
+                    "application/x-git-upload-pack-advertisement"
+                }
+                stub_request(:get, refs_url + "?service=git-upload-pack").
+                  to_return(
+                    status: 200,
+                    body: fixture("git", "upload_packs", "onfido"),
+                    headers: git_header
+                  )
+                github_url = "https://api.github.com/repos/hvssle/onfido"
+                stub_request(:get, github_url + "/tags?per_page=100").
+                  to_return(
+                    status: 200,
+                    body: fixture("github", "onfido_tags.json"),
+                    headers: { "Content-Type" => "application/json" }
+                  )
+              end
+
+              let(:dependency) do
+                Dependabot::Dependency.new(
+                  name: "onfido",
+                  version: "7b36eac82a7e42049052a58af0a7943fe0363714",
+                  requirements: requirements,
+                  package_manager: "bundler"
+                )
+              end
+              let(:requirements) do
+                [
+                  {
+                    file: "Gemfile",
+                    requirement: ">= 0",
+                    groups: [],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/hvssle/onfido",
+                      branch: "master",
+                      ref: "v0.4.0"
+                    }
+                  }
+                ]
+              end
+
+              it { is_expected.to eq(dependency.version) }
+            end
           end
         end
 

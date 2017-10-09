@@ -1,0 +1,128 @@
+[
+  {
+    "name": "v0.8.2",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.8.2",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.8.2",
+    "commit": {
+      "sha": "593b499973f2c90c5b935312e5fe20f74f098ef7",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/593b499973f2c90c5b935312e5fe20f74f098ef7"
+    }
+  },
+  {
+    "name": "v0.8.1",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.8.1",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.8.1",
+    "commit": {
+      "sha": "1f7f4619cddb203105041822c6cb1950ffe4e986",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/1f7f4619cddb203105041822c6cb1950ffe4e986"
+    }
+  },
+  {
+    "name": "v0.7.1",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.7.1",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.7.1",
+    "commit": {
+      "sha": "734889903807e14adb5b15c9aa6cb13ac3337a13",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/734889903807e14adb5b15c9aa6cb13ac3337a13"
+    }
+  },
+  {
+    "name": "v0.7.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.7.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.7.0",
+    "commit": {
+      "sha": "3b9d7b7c5b8ca5becf53e370e19a89ce1118c854",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/3b9d7b7c5b8ca5becf53e370e19a89ce1118c854"
+    }
+  },
+  {
+    "name": "v0.6.1",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.6.1",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.6.1",
+    "commit": {
+      "sha": "8f912d7a44801c923412777db9c8539ae08491b3",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/8f912d7a44801c923412777db9c8539ae08491b3"
+    }
+  },
+  {
+    "name": "v0.5.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.5.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.5.0",
+    "commit": {
+      "sha": "3fe3cf9b18334391cdf87584d1eee114b632a5a9",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/3fe3cf9b18334391cdf87584d1eee114b632a5a9"
+    }
+  },
+  {
+    "name": "v0.4.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.4.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.4.0",
+    "commit": {
+      "sha": "7b36eac82a7e42049052a58af0a7943fe0363714",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/7b36eac82a7e42049052a58af0a7943fe0363714"
+    }
+  },
+  {
+    "name": "v0.3.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.3.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.3.0",
+    "commit": {
+      "sha": "3a46062fb0d651413bb9716be7c5bc300751aa3f",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/3a46062fb0d651413bb9716be7c5bc300751aa3f"
+    }
+  },
+  {
+    "name": "v0.2.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.2.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.2.0",
+    "commit": {
+      "sha": "1a171e8764d27f47e03a161e9310493f7f69ea0a",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/1a171e8764d27f47e03a161e9310493f7f69ea0a"
+    }
+  },
+  {
+    "name": "v0.1.0",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.1.0",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.1.0",
+    "commit": {
+      "sha": "c0776ab28cc2704fb474848fa18a60f21da25e5f",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/c0776ab28cc2704fb474848fa18a60f21da25e5f"
+    }
+  },
+  {
+    "name": "v0.0.4",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.0.4",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.0.4",
+    "commit": {
+      "sha": "8eb42571eb52636ca0dcd52943959aa6ced243bf",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/8eb42571eb52636ca0dcd52943959aa6ced243bf"
+    }
+  },
+  {
+    "name": "v0.0.3",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.0.3",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.0.3",
+    "commit": {
+      "sha": "13819085ea1622ff6e49f4c8d567dbddb37752b8",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/13819085ea1622ff6e49f4c8d567dbddb37752b8"
+    }
+  },
+  {
+    "name": "v0.0.2",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.0.2",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.0.2",
+    "commit": {
+      "sha": "731c8c429844271ea50aa91a7a3c6acbdc922707",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/731c8c429844271ea50aa91a7a3c6acbdc922707"
+    }
+  },
+  {
+    "name": "v0.0.1",
+    "zipball_url": "https://api.github.com/repos/hvssle/onfido/zipball/v0.0.1",
+    "tarball_url": "https://api.github.com/repos/hvssle/onfido/tarball/v0.0.1",
+    "commit": {
+      "sha": "955449e32ec2fe96f4641cc6beca8b7395262f4f",
+      "url": "https://api.github.com/repos/hvssle/onfido/commits/955449e32ec2fe96f4641cc6beca8b7395262f4f"
+    }
+  }
+]

@@ -88,8 +88,7 @@ module Dependabot
           # Otherwise, if the gem isn't pinned, the latest version is just the
           # latest commit for the specified branch.
           unless git_commit_checker.pinned?
-            return latest_resolvable_version_details(remove_git_source: false).
-                   fetch(:commit_sha)
+            return latest_resolvable_commit_with_unchanged_git_source
           end
 
           # If the dependency is pinned to a tag that looks like a version then
@@ -114,6 +113,13 @@ module Dependabot
           nil
         end
 
+        def latest_resolvable_commit_with_unchanged_git_source
+          latest_resolvable_version_details(remove_git_source: false).
+            fetch(:commit_sha)
+        rescue Dependabot::DependencyFileNotResolvable
+          nil
+        end
+
         def latest_git_tag_is_resolvable?
           return false if git_commit_checker.local_tag_for_latest_version.nil?
           replacement_tag = git_commit_checker.local_tag_for_latest_version
@@ -123,12 +129,11 @@ module Dependabot
             replacement_git_pin: replacement_tag.fetch(:tag)
           ).prepared_dependency_files
 
-          version_resolver = VersionResolver.new(
+          VersionResolver.new(
             dependency: dependency,
             dependency_files: prepared_files,
             github_access_token: github_access_token
-          )
-          version_resolver.latest_resolvable_version_details
+          ).latest_resolvable_version_details
           true
         rescue Dependabot::DependencyFileNotResolvable
           false
