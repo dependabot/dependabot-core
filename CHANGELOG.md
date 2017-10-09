@@ -1,3 +1,7 @@
+## v0.22.4, 09 October 2017
+
+- Check new git version is resolvable when updating Ruby git tags
+
 ## v0.22.3, 09 October 2017
 
 - Handle git:// URLs in GitCommitChecker
