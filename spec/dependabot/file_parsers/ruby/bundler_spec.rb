@@ -175,6 +175,36 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           is_expected.to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
         end
       end
+
+      describe "a github dependency" do
+        let(:gemfile_content) do
+          fixture("ruby", "gemfiles", "github_source")
+        end
+        let(:lockfile_content) do
+          fixture("ruby", "lockfiles", "github_source.lock")
+        end
+
+        subject { dependencies.find { |d| d.name == "business" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "git://github.com/gocardless/business.git",
+              branch: "master",
+              ref: "master"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
+        end
+      end
     end
 
     context "with a dependency that doesn't appear in the lockfile" do

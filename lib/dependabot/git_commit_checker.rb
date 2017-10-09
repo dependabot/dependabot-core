@@ -114,6 +114,7 @@ module Dependabot
       authed_host = "https://x-access-token:#{github_access_token}@github.com/"
       original_uri = uri
       uri = uri.gsub("git@github.com:", authed_host)
+      uri = uri.gsub("git://github.com/", authed_host)
       uri = uri.gsub("https://github.com/", authed_host)
       uri = uri.gsub("http://github.com/", authed_host)
       uri = uri.gsub(%r{/$}, "")

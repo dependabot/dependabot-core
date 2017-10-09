@@ -306,6 +306,14 @@ RSpec.describe Dependabot::GitCommitChecker do
           it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
         end
 
+        context "specified with a git URL" do
+          before do
+            source.merge!(url: "git://github.com/gocardless/business.git")
+          end
+
+          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+        end
+
         context "but doesn't have details of the current branch" do
           before { source.merge!(branch: "rando", ref: "rando") }
 
