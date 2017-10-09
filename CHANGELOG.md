@@ -1,3 +1,7 @@
+## v0.22.3, 09 October 2017
+
+- Handle git:// URLs in GitCommitChecker
+
 ## v0.22.2, 09 October 2017
 
 - Raise a PrivateSourceNotReachable error for private Docker registries
