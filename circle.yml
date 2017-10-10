@@ -12,6 +12,7 @@ machine:
 
 dependencies:
   pre:
+    - gem update --system
     - gem install bundler -v 1.16.0.pre.3
   post:
     - cd helpers/javascript && yarn install
