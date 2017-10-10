@@ -9,6 +9,8 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
 
+require "rubygems_yaml_load_patch"
+
 module Dependabot
   module FileUpdaters
     module Ruby
