@@ -1,3 +1,8 @@
+## v0.22.7, 10 October 2017
+
+- Use monkeypatch for CVE-2017-0903 rather than requiring specific Rubygems
+  version (since Heroku doesn't get support 2.6.14)
+
 ## v0.22.6, 10 October 2017
 
 - Filter out private JS dependencies during parsing
