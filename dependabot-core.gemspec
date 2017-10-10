@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
                           "lib/**/*", "helpers/**/*"]
 
   spec.required_ruby_version = ">= 2.4.0"
-  spec.required_rubygems_version = ">= 2.6.11"
+  spec.required_rubygems_version = ">= 2.6.14"
 
   spec.add_dependency "bundler", ">= 1.16.0.pre"
   spec.add_dependency "excon", "~> 0.55"
