@@ -26,6 +26,11 @@ function isNotExotic(request) {
   return !getExoticResolver(range);
 }
 
+function isNotPrivate(dep) {
+  const re = /registry\.yarnpkg\.com/;
+  return re.test(dep.resolved);
+}
+
 async function parse(directory) {
   const flags = { ignoreScripts: true };
   const reporter = new NoopReporter();
@@ -39,10 +44,12 @@ async function parse(directory) {
   const deps = requests
     .filter(isNotExotic)
     .map(request => lockfile.getLocked(request.pattern))
-    .filter(dep => dep);
+    .filter(dep => dep)
+    .filter(isNotPrivate);
 
   return deps.map(dep => ({
     name: dep.name,
+    resolved: dep.resolved,
     version: semver.clean(dep.version)
   }));
 }

@@ -15,6 +15,10 @@ is-buffer@^1.1.5:
 "is-promise@file:/tmp/is-promise":
   version "2.1.0"
 
+is-private@^1.0.1:
+  version "1.8.0"
+  resolved "https://npm.fury.io/dependabot/~/d/is-private/is-private-1.8.0.tgz#6f631aef336d6c46362b51764044ce216be3c051"
+
 jq-accordion@^v1.0.1:
   version v1.0.1
   resolved "https://registry.yarnpkg.com/jq-accordion/-/jq-accordion-1.0.1.tgz#7425c2f52bfeba82913f5f18df3f0e13a539de58"
