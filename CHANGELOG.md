@@ -1,3 +1,7 @@
+## v0.22.6, 10 October 2017
+
+- Filter out private JS dependencies during parsing
+
 ## v0.22.5, 10 October 2017
 
 - Require Rubygems version 2.6.14 to ensure safety from CVE-2017-0903
