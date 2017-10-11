@@ -25,12 +25,22 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+      let(:expected_requirements) do
+        [
+          {
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }
+        ]
+      end
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("17.04")
-        expect(dependency.requirements).to eq([])
+        expect(dependency.requirements).to eq(expected_requirements)
       end
     end
 
@@ -44,12 +54,22 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq([])
+          expect(dependency.requirements).to eq(expected_requirements)
         end
       end
     end
@@ -59,12 +79,22 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my_fork/ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq([])
+          expect(dependency.requirements).to eq(expected_requirements)
         end
       end
     end
@@ -74,21 +104,96 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq([])
+          expect(dependency.requirements).to eq(expected_requirements)
         end
       end
     end
 
     context "with a digest" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+      let(:digest_headers) do
+        JSON.parse(
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+        )
+      end
 
-      # TODO: support digests
-      its(:length) { is_expected.to eq(0) }
+      before do
+        registry_url = "https://registry.hub.docker.com/v2/"
+        stub_request(:get, registry_url).and_return(status: 200)
+
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = registry_url + "library/ubuntu/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      context "that doesn't match any tags" do
+        let(:registry_tags) do
+          fixture("docker", "registry_tags", "small_ubuntu.json")
+        end
+        before { digest_headers["docker_content_digest"] = "nomatch" }
+
+        before do
+          ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
+          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
+            and_return(status: 200, body: "", headers: digest_headers)
+        end
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "that matches a tag" do
+        before do
+          ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
+          stub_request(:head, ubuntu_url + "manifests/10.04").
+            and_return(status: 404)
+
+          stub_request(:head, ubuntu_url + "manifests/12.04.5").
+            and_return(status: 200, body: "", headers: digest_headers)
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { type: "digest" }
+              }
+            ]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("ubuntu")
+            expect(dependency.version).to eq("12.04.5")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+      end
     end
 
     context "with a private registry and a tag" do
