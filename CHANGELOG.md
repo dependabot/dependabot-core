@@ -1,3 +1,9 @@
+## v0.22.8, 12 October 2017
+
+- Add support for Dockerfiles that specify a digest
+- Spec that docker support works when multiple FROM lines are specified
+- Bump yarn-lib from 1.1.0 to 1.2.0
+
 ## v0.22.7, 10 October 2017
 
 - Use monkeypatch for CVE-2017-0903 rather than requiring specific Rubygems
