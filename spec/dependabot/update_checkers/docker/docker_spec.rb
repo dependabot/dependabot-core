@@ -20,7 +20,14 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: version,
-      requirements: [],
+      requirements: [
+        {
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile",
+          source: { type: "tag" }
+        }
+      ],
       package_manager: "docker"
     )
   end

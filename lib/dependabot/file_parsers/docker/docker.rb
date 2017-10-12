@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "docker_registry2"
+
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/file_parsers/base"
@@ -28,22 +30,25 @@ module Dependabot
 
           dockerfile.content.each_line do |line|
             next unless FROM_LINE.match?(line)
-            captures = FROM_LINE.match(line).named_captures
+            parsed_from_line = FROM_LINE.match(line).named_captures
 
-            # TODO: Support digests (need to extract the tag they relate to
-            # from them, so we can compare it with other versions)
-            version = captures.fetch("tag")
-            next if version.nil?
+            check_registry(parsed_from_line)
 
-            if captures.fetch("registry")
-              raise PrivateSourceNotReachable, captures.fetch("registry")
-            end
+            version = version_from(parsed_from_line)
+            next unless version
 
             dependencies << Dependency.new(
-              name: captures.fetch("image"),
+              name: parsed_from_line.fetch("image"),
               version: version,
               package_manager: "docker",
-              requirements: []
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: dockerfile.name,
+                source: {
+                  type: parsed_from_line.fetch("digest") ? "digest" : "tag"
+                }
+              ]
             )
           end
 
@@ -54,6 +59,37 @@ module Dependabot
 
         def dockerfile
           @dockerfile ||= get_original_file("Dockerfile")
+        end
+
+        def check_registry(parsed_from_line)
+          return unless parsed_from_line.fetch("registry")
+          raise PrivateSourceNotReachable, parsed_from_line.fetch("registry")
+        end
+
+        def version_from(parsed_from_line)
+          return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
+          version_from_digest(
+            image: parsed_from_line.fetch("image"),
+            digest: parsed_from_line.fetch("digest")
+          )
+        end
+
+        def version_from_digest(image:, digest:)
+          return unless digest
+
+          repo = image.split("/").count < 2 ? "library/#{image}" : image
+          registry = DockerRegistry2.connect
+
+          registry.tags(repo).fetch("tags").find do |tag|
+            begin
+              head = registry.dohead "/v2/#{repo}/manifests/#{tag}"
+              head.headers[:docker_content_digest] == digest
+            rescue RestClient::NotFound
+              # Shouldn't happen, but it does. Example of existing tag with
+              # no manifest is "library/python", "2-windowsservercore".
+              false
+            end
+          end
         end
 
         def check_required_files
