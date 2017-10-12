@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@dependabot/yarn-lib@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.1.0.tgz#2e0d6adecd71d863026a903a9d94dbb40fbec5d6"
+"@dependabot/yarn-lib@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.2.0.tgz#4c7cb52b4d8c762162550e1fa059441c41942283"
   dependencies:
     babel-eslint "^7.2.3"
     babel-runtime "^6.0.0"
@@ -36,6 +36,7 @@
     normalize-url "^1.9.1"
     object-path "^0.11.2"
     proper-lockfile "^2.0.0"
+    puka "^1.0.0"
     read "^1.0.7"
     request "^2.81.0"
     request-capture-har "^1.2.2"
@@ -2603,6 +2604,10 @@ prr@~0.0.0:
 pseudomap@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/pseudomap/-/pseudomap-1.0.2.tgz#f052a28da70e618917ef0a8ac34c1ae5a68286b3"
+
+puka@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/puka/-/puka-1.0.0.tgz#1dd92f9f81f6c53390a17529b7aebaa96604ad97"
 
 pump@^1.0.0:
   version "1.0.2"
