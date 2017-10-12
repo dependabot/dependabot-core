@@ -23,7 +23,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       name: "Dockerfile"
     )
   end
-  let(:dockerfile_body) { fixture("docker", "dockerfiles", "tag") }
+  let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "ubuntu",
@@ -64,6 +64,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       end
 
       its(:content) { is_expected.to include "FROM ubuntu:17.10\n" }
+      its(:content) { is_expected.to include "FROM python:3.6.3\n" }
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
 

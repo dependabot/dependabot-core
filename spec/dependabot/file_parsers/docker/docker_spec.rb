@@ -196,6 +196,54 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       end
     end
 
+    context "with multiple FROM lines" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("python")
+          expect(dependency.version).to eq("3.6.3")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a private registry and a tag" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "private_tag") }
 
