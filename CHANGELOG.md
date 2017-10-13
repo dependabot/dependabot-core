@@ -1,3 +1,8 @@
+## v0.23.0, 13 October 2017
+
+- BREAKING: Require an array of `credentials` to be passed for FileUpdaters and
+  UpdateCheckers, rather than a `github_access_token`.
+
 ## v0.22.8, 12 October 2017
 
 - Add support for Dockerfiles that specify a digest
