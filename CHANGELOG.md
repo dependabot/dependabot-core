@@ -1,3 +1,8 @@
+## v0.23.1, 13 October 2017
+
+- Docker registry regex now excludes trailing slash
+- Require private Docker registries to specify a port
+
 ## v0.23.0, 13 October 2017
 
 - BREAKING: Require an array of `credentials` to be passed for FileUpdaters and
