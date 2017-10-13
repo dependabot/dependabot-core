@@ -1,3 +1,7 @@
+## v0.23.2, 13 October 2017
+
+- Support updating docker images hosted on a private registry
+
 ## v0.23.1, 13 October 2017
 
 - Docker registry regex now excludes trailing slash
