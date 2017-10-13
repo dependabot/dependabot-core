@@ -33,8 +33,6 @@ module Dependabot
             next unless FROM_LINE.match?(line)
             parsed_from_line = FROM_LINE.match(line).named_captures
 
-            check_registry(parsed_from_line)
-
             version = version_from(parsed_from_line)
             next unless version
 
@@ -46,9 +44,7 @@ module Dependabot
                 requirement: nil,
                 groups: [],
                 file: dockerfile.name,
-                source: {
-                  type: parsed_from_line.fetch("digest") ? "digest" : "tag"
-                }
+                source: source_from(parsed_from_line)
               ]
             )
           end
@@ -62,17 +58,22 @@ module Dependabot
           @dockerfile ||= get_original_file("Dockerfile")
         end
 
-        def check_registry(parsed_from_line)
-          return unless parsed_from_line.fetch("registry")
-          raise PrivateSourceNotReachable, parsed_from_line.fetch("registry")
-        end
-
         def version_from(parsed_from_line)
           return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
           version_from_digest(
             image: parsed_from_line.fetch("image"),
             digest: parsed_from_line.fetch("digest")
           )
+        end
+
+        def source_from(parsed_from_line)
+          source = { type: parsed_from_line.fetch("digest") ? "digest" : "tag" }
+
+          if parsed_from_line.fetch("registry")
+            source[:registry] = parsed_from_line.fetch("registry")
+          end
+
+          source
         end
 
         def version_from_digest(image:, digest:)
