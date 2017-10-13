@@ -14,7 +14,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
     described_class.new(
       dependency_files: [requirements],
       dependency: dependency,
-      github_access_token: "token"
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
   let(:requirements) do
@@ -102,7 +108,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           described_class.new(
             dependency_files: [requirements, more_requirements],
             dependency: dependency,
-            github_access_token: "token"
+            credentials: [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ]
           )
         end
 
@@ -153,7 +165,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         described_class.new(
           dependency_files: [requirements, constraints],
           dependency: dependency,
-          github_access_token: "token"
+          credentials: [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
         )
       end
 

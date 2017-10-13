@@ -13,7 +13,13 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
     described_class.new(
       dependency_files: files,
       dependency: dependency,
-      github_access_token: "token"
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
   let(:files) { [package_json, yarn_lock] }

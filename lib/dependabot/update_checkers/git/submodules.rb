@@ -32,6 +32,12 @@ module Dependabot
 
           git_commit_checker.head_commit_for_current_branch
         end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
+        end
       end
     end
   end

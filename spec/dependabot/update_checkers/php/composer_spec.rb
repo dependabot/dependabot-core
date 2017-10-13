@@ -13,7 +13,13 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     described_class.new(
       dependency: dependency,
       dependency_files: [composer_file, lockfile],
-      github_access_token: "token"
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
 

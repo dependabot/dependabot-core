@@ -11,7 +11,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      github_access_token: github_token
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -368,11 +374,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
             name: "plugins/example/example.gemspec"
           )
         end
-        let(:checker) do
+        let(:resolver) do
           described_class.new(
             dependency: dependency,
             dependency_files: [gemfile, lockfile, gemspec],
-            github_access_token: github_token
+            credentials: [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ]
           )
         end
 

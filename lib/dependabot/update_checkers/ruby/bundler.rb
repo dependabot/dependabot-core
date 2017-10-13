@@ -134,7 +134,7 @@ module Dependabot
           VersionResolver.new(
             dependency: dependency,
             dependency_files: prepared_files,
-            github_access_token: github_access_token
+            credentials: credentials
           ).latest_resolvable_version_details
           true
         rescue Dependabot::DependencyFileNotResolvable
@@ -210,7 +210,7 @@ module Dependabot
           VersionResolver.new(
             dependency: dependency,
             dependency_files: prepared_dependency_files,
-            github_access_token: github_access_token
+            credentials: credentials
           )
         end
 
@@ -220,6 +220,12 @@ module Dependabot
             dependency_files: dependency_files,
             remove_git_source: remove_git_source
           ).prepared_dependency_files
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end
