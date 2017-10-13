@@ -17,10 +17,10 @@ module Dependabot
           GIT_REF_REGEX =
             /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
-          def initialize(dependency:, dependency_files:, github_access_token:)
+          def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
-            @github_access_token = github_access_token
+            @credentials = credentials
           end
 
           def latest_version_details
@@ -35,7 +35,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :github_access_token
+          attr_reader :dependency, :dependency_files, :credentials
 
           def fetch_latest_version_details
             case dependency_source
@@ -90,11 +90,13 @@ module Dependabot
               uniq.compact.first
 
             SharedHelpers.in_a_forked_process do
-              # Set auth details for GitHub
-              ::Bundler.settings.set_command_option(
-                "github.com",
-                "x-access-token:#{github_access_token}"
-              )
+              # Set auth details
+              credentials.each do |cred|
+                ::Bundler.settings.set_command_option(
+                  cred["host"],
+                  cred["token"] || "#{cred['username']}:#{cred['password']}"
+                )
+              end
 
               # Note: we don't set the `ref`, as we want to unpin the dependency
               source = ::Bundler::Source::Git.new(
@@ -155,11 +157,13 @@ module Dependabot
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []
 
-                # Set auth details for GitHub
-                ::Bundler.settings.set_command_option(
-                  "github.com",
-                  "x-access-token:#{github_access_token}"
-                )
+                # Set auth details
+                credentials.each do |cred|
+                  ::Bundler.settings.set_command_option(
+                    cred["host"],
+                    cred["token"] || "#{cred['username']}:#{cred['password']}"
+                  )
+                end
 
                 yield
               end

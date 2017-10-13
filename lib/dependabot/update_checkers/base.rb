@@ -5,12 +5,12 @@ require "json"
 module Dependabot
   module UpdateCheckers
     class Base
-      attr_reader :dependency, :dependency_files, :github_access_token
+      attr_reader :dependency, :dependency_files, :credentials
 
-      def initialize(dependency:, dependency_files:, github_access_token:)
+      def initialize(dependency:, dependency_files:, credentials:)
         @dependency = dependency
         @dependency_files = dependency_files
-        @github_access_token = github_access_token
+        @credentials = credentials
       end
 
       def needs_update?
