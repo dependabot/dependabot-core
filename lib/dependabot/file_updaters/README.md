@@ -27,7 +27,7 @@ file_updater_class = Dependabot::FileUpdaters::Ruby::Bundler
 file_updater = file_updater_class.new(
   dependency: dependency,
   dependency_files: files,
-  github_access_token: "token"
+  credentials: [{ "host" => "github.com", "token" => "token" }]
 )
 
 file_updater.updated_dependency_files.each do |file|

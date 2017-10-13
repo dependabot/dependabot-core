@@ -29,7 +29,7 @@ update_checker_class = Dependabot::UpdateCheckers::Ruby::Bundler
 update_checker = update_checker_class.new(
   dependency: dependency,
   dependency_files: files,
-  github_access_token: "token"
+  credentials: [{ "host" => "github.com", "token" => "token" }]
 )
 
 puts "Update needed for #{dependency.name}? #{update_checker.needs_update?}"
