@@ -35,8 +35,15 @@ module Dependabot
         end
 
         def update_digest(content)
-          old_declaration = Regexp.escape("#{dependency.name}@#{old_digest}")
-          old_declaration_regex = /^#{FROM_REGEX}\s+#{old_declaration}/
+          old_declaration =
+            if private_registry_url
+              "#{private_registry_url}/"
+            else
+              ""
+            end
+          old_declaration += "#{dependency.name}@#{old_digest}"
+          escaped_declaration = Regexp.escape(old_declaration)
+          old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
 
           content.gsub(old_declaration_regex) do |old_dec|
             old_dec.gsub("@#{old_digest}", "@#{new_digest}")
@@ -44,7 +51,13 @@ module Dependabot
         end
 
         def update_tag(content)
-          old_declaration = "#{dependency.name}:#{dependency.previous_version}"
+          old_declaration =
+            if private_registry_url
+              "#{private_registry_url}/"
+            else
+              ""
+            end
+          old_declaration += "#{dependency.name}:#{dependency.previous_version}"
           escaped_declaration = Regexp.escape(old_declaration)
 
           old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
@@ -85,6 +98,10 @@ module Dependabot
 
           response = registry.dohead "/v2/#{repo}/manifests/#{tag}"
           response.headers.fetch(:docker_content_digest)
+        end
+
+        def private_registry_url
+          dependency.requirements.first[:source][:registry]
         end
       end
     end

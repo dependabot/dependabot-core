@@ -113,6 +113,48 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       end
     end
 
+    context "when the dependency is from a private registry" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "private_tag") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "myreg/ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag", registry: "registry-host.io:5000" }
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag", registry: "registry-host.io:5000" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) do
+          is_expected.
+            to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
+        end
+        its(:content) { is_expected.to include "RUN apt-get update" }
+      end
+    end
+
     context "when the dependency has a digest" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
       let(:dependency) do
