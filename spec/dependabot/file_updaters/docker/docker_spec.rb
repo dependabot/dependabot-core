@@ -14,7 +14,13 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
     described_class.new(
       dependency_files: [dockerfile],
       dependency: dependency,
-      github_access_token: "token"
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
   let(:dockerfile) do

@@ -19,7 +19,13 @@ RSpec.describe Dependabot::FileUpdaters::Base do
     child_class.new(
       dependency_files: files,
       dependency: dependency,
-      github_access_token: github_access_token
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
 
@@ -40,7 +46,6 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       ]
     )
   end
-  let(:github_access_token) { "token" }
   let(:files) { [gemfile] }
 
   describe ".new" do

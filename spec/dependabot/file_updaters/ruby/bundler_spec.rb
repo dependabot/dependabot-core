@@ -38,7 +38,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     described_class.new(
       dependency_files: dependency_files,
       dependency: dependency,
-      github_access_token: "token"
+      credentials: [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }
+      ]
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -610,7 +616,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           described_class.new(
             dependency_files: [gemfile, lockfile, ruby_version_file],
             dependency: dependency,
-            github_access_token: "token"
+            credentials: [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ]
           )
         end
 

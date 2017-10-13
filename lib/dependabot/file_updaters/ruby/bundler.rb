@@ -201,11 +201,13 @@ module Dependabot
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []
 
-                # Set auth details for GitHub
-                ::Bundler.settings.set_command_option(
-                  "github.com",
-                  "x-access-token:#{github_access_token}"
-                )
+                # Set auth details
+                credentials.each do |cred|
+                  ::Bundler.settings.set_command_option(
+                    cred["host"],
+                    cred["token"] || "#{cred['username']}:#{cred['password']}"
+                  )
+                end
 
                 definition = ::Bundler::Definition.build(
                   "Gemfile",
