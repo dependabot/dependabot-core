@@ -14,7 +14,7 @@ module Dependabot
         # https://github.com/docker/distribution/blob/master/reference/regexp.go
         DOMAIN_COMPONENT = /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/
         DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/
-        REGISTRY = %r{(?<registry>#{DOMAIN}(?::[0-9]+))/}
+        REGISTRY = %r{(?<registry>#{DOMAIN}(?::[0-9]+))}
 
         NAME_COMPONENT = /(?:[a-z0-9]+(?:(?:[._]|__|[-]*)[a-z0-9]+)*)/
         IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}
@@ -23,7 +23,8 @@ module Dependabot
         TAG = /:(?<tag>[\w][\w.-]{0,127})/
         DIGEST = /@(?<digest>[^\s]+)/
         NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/
-        FROM_LINE = /^#{FROM}\s+#{REGISTRY}?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?/
+        FROM_LINE =
+          %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
 
         def parse
           dependencies = []
