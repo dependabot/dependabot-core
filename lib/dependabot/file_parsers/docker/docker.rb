@@ -3,7 +3,6 @@
 require "docker_registry2"
 
 require "dependabot/dependency"
-require "dependabot/errors"
 require "dependabot/file_parsers/base"
 
 module Dependabot

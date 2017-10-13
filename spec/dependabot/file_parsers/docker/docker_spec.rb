@@ -264,7 +264,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.name).to eq("myreg/ubuntu")
           expect(dependency.version).to eq("17.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
