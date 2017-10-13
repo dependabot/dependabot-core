@@ -1,4 +1,4 @@
-FROM registry-host.io:5000/ubuntu:17.04
+FROM registry-host.io:5000/myreg/ubuntu:17.04
 
 ### SYSTEM DEPENDENCIES
 

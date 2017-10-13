@@ -247,10 +247,27 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     context "with a private registry and a tag" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "private_tag") }
 
-      # TODO: support private registries
-      it "raises a helpful error message" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::PrivateSourceNotReachable)
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag", registry: "registry-host.io:5000" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("myreg/ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
       end
     end
   end

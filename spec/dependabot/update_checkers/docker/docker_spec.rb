@@ -12,14 +12,17 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
+  end
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
   end
 
   let(:dependency) do
@@ -95,6 +98,63 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.4.2")) }
+    end
+
+    context "when the dependency has a private registry" do
+      let(:dependency_name) { "myreg/ubuntu" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag", registry: "registry-host.io:5000" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+
+      context "without authentication credentials" do
+        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+          expect { checker.latest_version }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("registry-host.io:5000")
+            end
+        end
+      end
+
+      context "with authentication credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "registry-host.io:5000",
+              "username" => "grey",
+              "password" => "pa55word"
+            }
+          ]
+        end
+
+        before do
+          ping_url = "https://registry-host.io:5000/v2/"
+          stub_request(:get, ping_url).and_return(status: 200)
+
+          tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(status: 200, body: registry_tags)
+        end
+
+        it { is_expected.to eq(Gem::Version.new("17.10")) }
+      end
     end
   end
 

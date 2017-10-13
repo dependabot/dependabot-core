@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/base"
 require "docker_registry2"
+
+require "dependabot/update_checkers/base"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -27,20 +29,42 @@ module Dependabot
         def fetch_latest_version
           return nil unless dependency.version.match?(VERSION_REGEX)
 
-          # TODO: How can we get details to connect to private registries?
-          registry = DockerRegistry2.connect
-
           tags =
             if dependency.name.split("/").count < 2
-              registry.tags("library/#{dependency.name}")
+              docker_registry_client.tags("library/#{dependency.name}")
             else
-              registry.tags(dependency.name)
+              docker_registry_client.tags(dependency.name)
             end
 
           tags.fetch("tags").
             select { |tag| tag.match?(VERSION_REGEX) }.
             map { |tag| Gem::Version.new(tag) }.
             max
+        end
+
+        def private_registry_url
+          dependency.requirements.first[:source][:registry]
+        end
+
+        def private_registry_credentials
+          credentials.find { |cred| cred["registry"] == private_registry_url }
+        end
+
+        def docker_registry_client
+          if private_registry_url && !private_registry_credentials
+            raise PrivateSourceNotReachable, private_registry_url
+          end
+
+          @docker_registry_client ||=
+            if private_registry_url
+              DockerRegistry2.connect(
+                "https://#{private_registry_url}",
+                user: private_registry_credentials["username"],
+                password: private_registry_credentials["password"]
+              )
+            else
+              DockerRegistry2.connect
+            end
         end
       end
     end
