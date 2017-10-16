@@ -242,6 +242,68 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           )
       end
     end
+
+    context "for a git dependency" do
+      let(:rubygems_response) { nil }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: new_ref
+              }
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: old_ref
+              }
+            }
+          ],
+          package_manager: "bundler"
+        )
+      end
+      let(:new_ref) { "master" }
+      let(:old_ref) { "master" }
+
+      it { is_expected.to be_nil }
+
+      context "when the ref has changed" do
+        let(:new_ref) { "v1.1.0" }
+        let(:old_ref) { "v1.0.0" }
+
+        let(:github_url) do
+          "https://api.github.com/repos/gocardless/business/contents/"
+        end
+
+        before do
+          stub_request(:get, github_url).
+            to_return(status: 200,
+                      body: fixture("github", "business_files.json"),
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "finds the changelog as normal" do
+          expect(changelog_url).
+            to eq(
+              "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
+            )
+        end
+      end
+    end
   end
 
   describe "#commits_url" do
