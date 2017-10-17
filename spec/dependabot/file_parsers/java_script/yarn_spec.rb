@@ -108,6 +108,37 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
       end
     end
 
+    context "with a resolution" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "resolutions.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "lockfiles", "resolutions.lock")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("etag") }
+        its(:version) { is_expected.to eq("1.0.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "1.0.0",
+                file: "package.json",
+                groups: ["resolutions"],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with a private-source dependency" do
       let(:package_json_body) do
         fixture("javascript", "package_files", "private_source.json")

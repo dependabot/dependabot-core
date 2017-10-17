@@ -13,8 +13,9 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # Javascript doesn't have the concept of version conflicts, so the
-          # latest version is always resolvable.
+          # TODO: look into how `yarn install --flat` works. We may need to
+          # consider resolvability here.
+          # https://yarnpkg.com/lang/en/docs/cli/install/#toc-yarn-install-flat
           latest_version
         end
 
