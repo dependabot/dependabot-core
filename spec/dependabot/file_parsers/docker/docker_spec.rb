@@ -198,26 +198,56 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           end
           let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
-          its(:length) { is_expected.to eq(1) }
+          context "without authentication credentials" do
+            it "raises a to Dependabot::PrivateSourceNotReachable error" do
+              expect { parser.parse }.
+                to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                  expect(error.source).to eq("registry-host.io:5000")
+                end
+            end
+          end
 
-          describe "the first dependency" do
-            subject(:dependency) { dependencies.first }
-            let(:expected_requirements) do
+          context "with authentication credentials" do
+            let(:parser) do
+              described_class.new(
+                dependency_files: files,
+                credentials: credentials
+              )
+            end
+            let(:credentials) do
               [
                 {
-                  requirement: nil,
-                  groups: [],
-                  file: "Dockerfile",
-                  source: { type: "digest", registry: "registry-host.io:5000" }
+                  "registry" => "registry-host.io:5000",
+                  "username" => "grey",
+                  "password" => "pa55word"
                 }
               ]
             end
 
-            it "has the right details" do
-              expect(dependency).to be_a(Dependabot::Dependency)
-              expect(dependency.name).to eq("myreg/ubuntu")
-              expect(dependency.version).to eq("12.04.5")
-              expect(dependency.requirements).to eq(expected_requirements)
+            its(:length) { is_expected.to eq(1) }
+
+            describe "the first dependency" do
+              subject(:dependency) { dependencies.first }
+              let(:expected_requirements) do
+                [
+                  {
+                    requirement: nil,
+                    groups: [],
+                    file: "Dockerfile",
+                    source: {
+                      type: "digest",
+                      registry: "registry-host.io:5000"
+                    }
+                  }
+                ]
+              end
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("myreg/ubuntu")
+                expect(dependency.version).to eq("12.04.5")
+                expect(dependency.requirements).to eq(expected_requirements)
+              end
             end
           end
         end

@@ -4,6 +4,7 @@ require "docker_registry2"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/errors"
 
 module Dependabot
   module FileParsers
@@ -80,11 +81,19 @@ module Dependabot
           return unless digest
 
           repo = image.split("/").count < 2 ? "library/#{image}" : image
+
           registry =
             if private_registry
-              # TODO: This will fail without credentials, which should be an
-              # optional argument to FileParsers
-              DockerRegistry2::Registry.new("https://#{private_registry}")
+              credentials = private_registry_credentials(private_registry)
+              unless credentials
+                raise PrivateSourceNotReachable, private_registry
+              end
+
+              DockerRegistry2::Registry.new(
+                "https://#{private_registry}",
+                user: credentials["username"],
+                password: credentials["password"]
+              )
             else
               DockerRegistry2::Registry.new("https://registry.hub.docker.com")
             end
@@ -99,6 +108,10 @@ module Dependabot
               false
             end
           end
+        end
+
+        def private_registry_credentials(registry_url)
+          credentials.find { |cred| cred["registry"] == registry_url }
         end
 
         def check_required_files
