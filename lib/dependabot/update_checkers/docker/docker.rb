@@ -57,13 +57,13 @@ module Dependabot
 
           @docker_registry_client ||=
             if private_registry_url
-              DockerRegistry2.connect(
+              DockerRegistry2::Registry.new(
                 "https://#{private_registry_url}",
                 user: private_registry_credentials["username"],
                 password: private_registry_credentials["password"]
               )
             else
-              DockerRegistry2.connect
+              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
             end
         end
       end

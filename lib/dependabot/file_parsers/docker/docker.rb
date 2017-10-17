@@ -60,6 +60,7 @@ module Dependabot
         def version_from(parsed_from_line)
           return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
           version_from_digest(
+            private_registry: parsed_from_line.fetch("registry"),
             image: parsed_from_line.fetch("image"),
             digest: parsed_from_line.fetch("digest")
           )
@@ -75,11 +76,18 @@ module Dependabot
           source
         end
 
-        def version_from_digest(image:, digest:)
+        def version_from_digest(private_registry:, image:, digest:)
           return unless digest
 
           repo = image.split("/").count < 2 ? "library/#{image}" : image
-          registry = DockerRegistry2.connect
+          registry =
+            if private_registry
+              # TODO: This will fail without credentials, which should be an
+              # optional argument to FileParsers
+              DockerRegistry2::Registry.new("https://#{private_registry}")
+            else
+              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
+            end
 
           registry.tags(repo).fetch("tags").find do |tag|
             begin

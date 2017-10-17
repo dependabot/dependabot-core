@@ -133,10 +133,9 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         )
       end
 
-      before do
-        registry_url = "https://registry.hub.docker.com/v2/"
-        stub_request(:get, registry_url).and_return(status: 200)
+      let(:registry_url) { "https://registry.hub.docker.com/v2/" }
 
+      before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url).
           and_return(status: 200, body: { token: "token" }.to_json)
@@ -163,7 +162,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
       context "that matches a tag" do
         before do
-          ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
+          ubuntu_url = registry_url + "library/ubuntu/"
           stub_request(:head, ubuntu_url + "manifests/10.04").
             and_return(status: 404)
 
@@ -191,6 +190,36 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             expect(dependency.name).to eq("ubuntu")
             expect(dependency.version).to eq("12.04.5")
             expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        context "for a private registry" do
+          let(:dockerfile_body) do
+            fixture("docker", "dockerfiles", "private_digest")
+          end
+          let(:registry_url) { "https://registry-host.io:5000/v2/" }
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+            let(:expected_requirements) do
+              [
+                {
+                  requirement: nil,
+                  groups: [],
+                  file: "Dockerfile",
+                  source: { type: "digest", registry: "registry-host.io:5000" }
+                }
+              ]
+            end
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("library/ubuntu")
+              expect(dependency.version).to eq("12.04.5")
+              expect(dependency.requirements).to eq(expected_requirements)
+            end
           end
         end
       end

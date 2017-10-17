@@ -79,29 +79,46 @@ module Dependabot
         end
 
         def new_digest
-          registry = DockerRegistry2.connect
-
           image = dependency.name
           repo = image.split("/").count < 2 ? "library/#{image}" : image
           tag = dependency.version
 
-          response = registry.dohead "/v2/#{repo}/manifests/#{tag}"
+          response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
           response.headers.fetch(:docker_content_digest)
         end
 
         def old_digest
-          registry = DockerRegistry2.connect
-
           image = dependency.name
           repo = image.split("/").count < 2 ? "library/#{image}" : image
           tag = dependency.previous_version
 
-          response = registry.dohead "/v2/#{repo}/manifests/#{tag}"
+          response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
           response.headers.fetch(:docker_content_digest)
         end
 
         def private_registry_url
           dependency.requirements.first[:source][:registry]
+        end
+
+        def private_registry_credentials
+          credentials.find { |cred| cred["registry"] == private_registry_url }
+        end
+
+        def registry_client
+          if private_registry_url && !private_registry_credentials
+            raise PrivateSourceNotReachable, private_registry_url
+          end
+
+          @registry_client ||=
+            if private_registry_url
+              DockerRegistry2::Registry.new(
+                "https://#{private_registry_url}",
+                user: private_registry_credentials["username"],
+                password: private_registry_credentials["password"]
+              )
+            else
+              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
+            end
         end
       end
     end
