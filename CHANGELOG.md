@@ -1,3 +1,9 @@
+## v0.24.1, 17 October 2017
+
+- Add temporary ignore for private npm organisation hosted dependencies in
+  UpdateChecker. Once we support passing credentials we'll be able to bump
+  these, but for now we just supress them
+
 ## v0.24.0, 17 October 2017
 
 - Support private docker registries that use digests
