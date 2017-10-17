@@ -133,14 +133,14 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         )
       end
 
-      let(:registry_url) { "https://registry.hub.docker.com/v2/" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url).
           and_return(status: 200, body: { token: "token" }.to_json)
 
-        tags_url = registry_url + "library/ubuntu/tags/list"
+        tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
       end
@@ -162,11 +162,10 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
       context "that matches a tag" do
         before do
-          ubuntu_url = registry_url + "library/ubuntu/"
-          stub_request(:head, ubuntu_url + "manifests/10.04").
+          stub_request(:head, repo_url + "manifests/10.04").
             and_return(status: 404)
 
-          stub_request(:head, ubuntu_url + "manifests/12.04.5").
+          stub_request(:head, repo_url + "manifests/12.04.5").
             and_return(status: 200, body: "", headers: digest_headers)
         end
 
@@ -197,7 +196,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           let(:dockerfile_body) do
             fixture("docker", "dockerfiles", "private_digest")
           end
-          let(:registry_url) { "https://registry-host.io:5000/v2/" }
+          let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -216,7 +215,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
-              expect(dependency.name).to eq("library/ubuntu")
+              expect(dependency.name).to eq("myreg/ubuntu")
               expect(dependency.version).to eq("12.04.5")
               expect(dependency.requirements).to eq(expected_requirements)
             end

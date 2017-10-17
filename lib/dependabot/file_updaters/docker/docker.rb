@@ -3,6 +3,7 @@
 require "docker_registry2"
 
 require "dependabot/file_updaters/base"
+require "dependabot/errors"
 
 module Dependabot
   module FileUpdaters

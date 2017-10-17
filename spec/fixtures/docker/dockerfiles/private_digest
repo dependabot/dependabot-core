@@ -1,4 +1,4 @@
-FROM registry-host.io:5000/library/ubuntu@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005
+FROM registry-host.io:5000/myreg/ubuntu@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005
 
 ### SYSTEM DEPENDENCIES
 
