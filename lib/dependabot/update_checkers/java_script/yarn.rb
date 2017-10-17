@@ -9,7 +9,7 @@ module Dependabot
     module JavaScript
       class Yarn < Dependabot::UpdateCheckers::Base
         def latest_version
-          @latest_version ||= Gem::Version.new(fetch_latest_version)
+          @latest_version ||= fetch_latest_version
         end
 
         def latest_resolvable_version
@@ -49,16 +49,22 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
+          # TODO: Hack until credentials are supported. A 404 for a namespaced
+          # dependency almost certainly signifies a private registry
+          if dependency.name.start_with?("@") && npm_response.status == 404
+            return nil
+          end
+
           latest_dist_tag = JSON.parse(npm_response.body)["dist-tags"]["latest"]
           latest_version = Gem::Version.new(latest_dist_tag)
           return latest_version unless latest_version.prerelease?
 
-          JSON.parse(npm_response.body)["versions"].
-            keys.
-            map { |v| Gem::Version.new(v) }.
-            reject(&:prerelease?).
-            sort.
-            last
+          latest_full_release =
+            JSON.parse(npm_response.body)["versions"].
+            keys.map { |v| Gem::Version.new(v) }.
+            reject(&:prerelease?).sort.last
+
+          Gem::Version.new(latest_full_release)
         end
 
         def dependency_url

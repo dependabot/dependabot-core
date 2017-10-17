@@ -139,6 +139,42 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
+    context "when the npm link resolves to a 404" do
+      before do
+        stub_request(:get, "https://registry.npmjs.org/etag").
+          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+      end
+
+      it "raises an error" do
+        # TODO: This should raise a better error
+        expect { checker.latest_version }.to raise_error(NoMethodError)
+      end
+
+      context "for a namespaced dependency" do
+        before do
+          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@blep/blep",
+            version: "1.0.0",
+            requirements: [
+              {
+                file: "yarn.lock",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
+
     context "when the latest version is older than another, non-prerelease" do
       before do
         body = fixture("javascript", "npm_response_old_latest.json")
