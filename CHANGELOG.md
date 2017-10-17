@@ -1,3 +1,7 @@
+## v0.24.0, 17 October 2017
+
+- Support private docker registries that use digests
+
 ## v0.23.3, 16 October 2017
 
 - Link to changelog for Ruby git dependencies where the ref is bumped
