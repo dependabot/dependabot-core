@@ -45,9 +45,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
   let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
 
   before do
-    ping_url = "https://registry.hub.docker.com/v2/"
-    stub_request(:get, ping_url).and_return(status: 200)
-
     auth_url = "https://auth.docker.io/token?service=registry.docker.io"
     stub_request(:get, auth_url).
       and_return(status: 200, body: { token: "token" }.to_json)
@@ -85,9 +82,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:dependency_name) { "moj/ruby" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }
       before do
-        ping_url = "https://registry.hub.docker.com/v2/"
-        stub_request(:get, ping_url).and_return(status: 200)
-
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url).
           and_return(status: 200, body: { token: "token" }.to_json)
@@ -145,9 +139,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         end
 
         before do
-          ping_url = "https://registry-host.io:5000/v2/"
-          stub_request(:get, ping_url).and_return(status: 200)
-
           tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
           stub_request(:get, tags_url).
             and_return(status: 200, body: registry_tags)

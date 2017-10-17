@@ -183,9 +183,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       end
 
       before do
-        registry_url = "https://registry.hub.docker.com/v2/"
-        stub_request(:get, registry_url).and_return(status: 200)
-
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url).
           and_return(status: 200, body: { token: "token" }.to_json)

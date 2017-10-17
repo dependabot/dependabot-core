@@ -1,0 +1,19 @@
+FROM registry-host.io:5000/library/ubuntu@sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005
+
+### SYSTEM DEPENDENCIES
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+      build-essential \
+      dirmngr \
+      git \
+
+
+### RUBY
+
+# Install Ruby 2.4
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
+    && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu zesty main" > /etc/apt/sources.list.d/brightbox.list \
+    && apt-get update
+RUN apt-get install -y ruby2.4 ruby2.4-dev
