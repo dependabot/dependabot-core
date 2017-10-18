@@ -1,3 +1,7 @@
+## v0.24.2, 18 October 2017
+
+- Handle absolute paths in Ruby Gemfiles
+
 ## v0.24.1, 17 October 2017
 
 - Add temporary ignore for private npm organisation hosted dependencies in
