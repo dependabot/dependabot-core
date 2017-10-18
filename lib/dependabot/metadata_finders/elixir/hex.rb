@@ -9,11 +9,10 @@ module Dependabot
     module Elixir
       class Hex < Dependabot::MetadataFinders::Base
         SOURCE_KEYS = %w(
-          GitHub
-          Github
-          github
-          Source
-          source
+          GitHub Github github
+          GitLab Gitlab gitlab
+          BitBucket Bitbucket bitbucket
+          Source source
         ).freeze
 
         private
