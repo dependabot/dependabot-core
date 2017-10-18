@@ -1,0 +1,324 @@
+{
+    "url": "https://hex.pm/api/packages/phoenix",
+    "updated_at": "2017-10-02T15:18:28.366294Z",
+    "repository": "hexpm",
+    "releases": [
+        {
+            "version": "1.3.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.3.0"
+        },
+        {
+            "version": "1.3.0-rc.3",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.3.0-rc.3"
+        },
+        {
+            "version": "1.3.0-rc.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.3.0-rc.2"
+        },
+        {
+            "version": "1.3.0-rc.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.3.0-rc.1"
+        },
+        {
+            "version": "1.3.0-rc.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.3.0-rc.0"
+        },
+        {
+            "version": "1.2.5",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.5"
+        },
+        {
+            "version": "1.2.4",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.4"
+        },
+        {
+            "version": "1.2.3",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.3"
+        },
+        {
+            "version": "1.2.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.2"
+        },
+        {
+            "version": "1.2.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.1"
+        },
+        {
+            "version": "1.2.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.0"
+        },
+        {
+            "version": "1.2.0-rc.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.0-rc.1"
+        },
+        {
+            "version": "1.2.0-rc.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.2.0-rc.0"
+        },
+        {
+            "version": "1.1.9",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.9"
+        },
+        {
+            "version": "1.1.8",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.8"
+        },
+        {
+            "version": "1.1.7",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.7"
+        },
+        {
+            "version": "1.1.6",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.6"
+        },
+        {
+            "version": "1.1.5",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.5"
+        },
+        {
+            "version": "1.1.4",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.4"
+        },
+        {
+            "version": "1.1.3",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.3"
+        },
+        {
+            "version": "1.1.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.2"
+        },
+        {
+            "version": "1.1.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.1"
+        },
+        {
+            "version": "1.1.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.1.0"
+        },
+        {
+            "version": "1.0.6",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.6"
+        },
+        {
+            "version": "1.0.5",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.5"
+        },
+        {
+            "version": "1.0.4",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.4"
+        },
+        {
+            "version": "1.0.3",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.3"
+        },
+        {
+            "version": "1.0.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.2"
+        },
+        {
+            "version": "1.0.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.1"
+        },
+        {
+            "version": "1.0.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/1.0.0"
+        },
+        {
+            "version": "0.17.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.17.1"
+        },
+        {
+            "version": "0.17.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.17.0"
+        },
+        {
+            "version": "0.16.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.16.1"
+        },
+        {
+            "version": "0.16.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.16.0"
+        },
+        {
+            "version": "0.15.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.15.0"
+        },
+        {
+            "version": "0.14.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.14.0"
+        },
+        {
+            "version": "0.13.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.13.1"
+        },
+        {
+            "version": "0.13.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.13.0"
+        },
+        {
+            "version": "0.12.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.12.0"
+        },
+        {
+            "version": "0.11.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.11.0"
+        },
+        {
+            "version": "0.10.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.10.0"
+        },
+        {
+            "version": "0.9.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.9.0"
+        },
+        {
+            "version": "0.8.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.8.0"
+        },
+        {
+            "version": "0.7.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.7.2"
+        },
+        {
+            "version": "0.7.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.7.1"
+        },
+        {
+            "version": "0.7.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.7.0"
+        },
+        {
+            "version": "0.6.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.6.2"
+        },
+        {
+            "version": "0.6.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.6.1"
+        },
+        {
+            "version": "0.6.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.6.0"
+        },
+        {
+            "version": "0.5.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.5.0"
+        },
+        {
+            "version": "0.4.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.4.1"
+        },
+        {
+            "version": "0.4.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.4.0"
+        },
+        {
+            "version": "0.3.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.3.1"
+        },
+        {
+            "version": "0.3.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.3.0"
+        },
+        {
+            "version": "0.2.11",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.11"
+        },
+        {
+            "version": "0.2.10",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.10"
+        },
+        {
+            "version": "0.2.9",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.9"
+        },
+        {
+            "version": "0.2.8",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.8"
+        },
+        {
+            "version": "0.2.7",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.7"
+        },
+        {
+            "version": "0.2.6",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.6"
+        },
+        {
+            "version": "0.2.5",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.5"
+        },
+        {
+            "version": "0.2.4",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.4"
+        },
+        {
+            "version": "0.2.3",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.3"
+        },
+        {
+            "version": "0.2.2",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.2"
+        },
+        {
+            "version": "0.2.1",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.1"
+        },
+        {
+            "version": "0.2.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.2.0"
+        },
+        {
+            "version": "0.1.0",
+            "url": "https://hex.pm/api/packages/phoenix/releases/0.1.0"
+        }
+    ],
+    "owners": [
+        {
+            "username": "chrismccord",
+            "url": "https://hex.pm/api/users/chrismccord",
+            "email": "chris@chrismccord.com"
+        },
+        {
+            "username": "josevalim",
+            "url": "https://hex.pm/api/users/josevalim",
+            "email": "jose.valim@gmail.com"
+        },
+        {
+            "username": "gazler",
+            "url": "https://hex.pm/api/users/gazler",
+            "email": "gazler@gmail.com"
+        },
+        {
+            "username": "jeregrine",
+            "url": "https://hex.pm/api/users/jeregrine",
+            "email": "jason@rokkincat.com"
+        }
+    ],
+    "name": "phoenix",
+    "meta": {
+        "maintainers": [
+            "Chris McCord",
+            "José Valim",
+            "Lance Halvorsen",
+            "Gary Rennie",
+            "Jason Stiebs",
+            "Eric Meadows-Jönsson",
+            "Sonny Scroggin"
+        ],
+        "links": {
+            "homepage": "https://example.com"
+        },
+        "licenses": [
+            "MIT"
+        ],
+        "description": "Productive. Reliable. Fast. A productive web framework that\ndoes not compromise speed and maintainability."
+    },
+    "inserted_at": "2014-04-21T22:38:32.000000Z",
+    "html_url": "https://hex.pm/packages/phoenix",
+    "downloads": {
+        "week": 40863,
+        "recent": 498491,
+        "day": 8101,
+        "all": 2807334
+    }
+}
