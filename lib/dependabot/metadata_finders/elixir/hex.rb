@@ -8,13 +8,21 @@ module Dependabot
   module MetadataFinders
     module Elixir
       class Hex < Dependabot::MetadataFinders::Base
+        SOURCE_KEYS = %w(
+          GitHub
+          Github
+          github
+          Source
+          source
+        ).freeze
+
         private
 
         def look_up_source
-          potential_source_urls = [
-            hex_listing.dig("meta", "links", "GitHub"),
-            hex_listing.dig("meta", "links", "github")
-          ].compact
+          potential_source_urls =
+            SOURCE_KEYS.
+            map { |key| hex_listing.dig("meta", "links", key) }.
+            compact
 
           source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
 

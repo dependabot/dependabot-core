@@ -305,9 +305,7 @@
             "Eric Meadows-Jönsson",
             "Sonny Scroggin"
         ],
-        "links": {
-            "homepage": "https://example.com"
-        },
+        "links": null,
         "licenses": [
             "MIT"
         ],
