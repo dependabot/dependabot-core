@@ -37,6 +37,10 @@ module Dependabot
               rescue StandardError
                 return []
               end
+              if Pathname.new(path).absolute?
+                base_path = Pathname.new(File.expand_path(Dir.pwd))
+                path = Pathname.new(path).relative_path_from(base_path).to_s
+              end
               path = File.join(current_dir, path) unless current_dir.nil?
               return [Pathname.new(path).cleanpath.to_path]
             end
