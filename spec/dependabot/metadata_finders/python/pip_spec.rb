@@ -32,7 +32,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
-    let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
+    let(:pypi_url) { "https://pypi.python.org/pypi/#{dependency_name}/json" }
 
     before do
       stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -57,6 +57,32 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
       it "caches the call to pypi" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
+      end
+    end
+
+    context "when there is a source link in the pypi description" do
+      let(:pypi_response) do
+        fixture("python", "pypi_response_description_source.json")
+      end
+
+      context "for a different dependency" do
+        it { is_expected.to be_nil }
+
+        it "caches the call to pypi" do
+          2.times { source_url }
+          expect(WebMock).to have_requested(:get, pypi_url).once
+        end
+      end
+
+      context "for a different dependency" do
+        let(:dependency_name) { "six" }
+
+        it { is_expected.to eq("https://github.com/benjaminp/six") }
+
+        it "caches the call to pypi" do
+          2.times { source_url }
+          expect(WebMock).to have_requested(:get, pypi_url).once
+        end
       end
     end
 

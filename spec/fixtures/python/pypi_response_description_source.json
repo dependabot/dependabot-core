@@ -1,0 +1,584 @@
+{
+    "info": {
+        "maintainer": "",
+        "docs_url": "http://pythonhosted.org/six/",
+        "requires_python": "",
+        "maintainer_email": "",
+        "cheesecake_code_kwalitee_id": null,
+        "keywords": "",
+        "package_url": "http://pypi.python.org/pypi/six",
+        "author": "Benjamin Peterson",
+        "author_email": "benjamin@python.org",
+        "download_url": "",
+        "platform": "",
+        "version": "1.11.0",
+        "cheesecake_documentation_id": null,
+        "_pypi_hidden": false,
+        "description": ".. image:: http://img.shields.io/pypi/v/six.svg\n   :target: https://pypi.python.org/pypi/six\n\n.. image:: https://travis-ci.org/benjaminp/six.svg?branch=master\n    :target: https://travis-ci.org/benjaminp/six\n\n.. image:: http://img.shields.io/badge/license-MIT-green.svg\n   :target: https://github.com/benjaminp/six/blob/master/LICENSE\n\nSix is a Python 2 and 3 compatibility library.  It provides utility functions\nfor smoothing over the differences between the Python versions with the goal of\nwriting Python code that is compatible on both Python versions.  See the\ndocumentation for more information on what is provided.\n\nSix supports every Python version since 2.6.  It is contained in only one Python\nfile, so it can be easily copied into your project. (The copyright and license\nnotice must be retained.)\n\nOnline documentation is at http://six.rtfd.org.\n\nBugs can be reported to https://github.com/benjaminp/six.  The code can also\nbe found there.\n\nFor questions about six or porting in general, email the python-porting mailing\nlist: https://mail.python.org/mailman/listinfo/python-porting\n\n\n",
+        "release_url": "http://pypi.python.org/pypi/six/1.11.0",
+        "downloads": {
+            "last_month": 0,
+            "last_week": 0,
+            "last_day": 0
+        },
+        "_pypi_ordering": 22,
+        "classifiers": [
+            "Intended Audience :: Developers",
+            "License :: OSI Approved :: MIT License",
+            "Programming Language :: Python :: 2",
+            "Programming Language :: Python :: 3",
+            "Topic :: Software Development :: Libraries",
+            "Topic :: Utilities"
+        ],
+        "name": "six",
+        "bugtrack_url": null,
+        "license": "MIT",
+        "summary": "Python 2 and 3 compatibility utilities",
+        "home_page": "http://pypi.python.org/pypi/six/",
+        "cheesecake_installability_id": null
+    },
+    "releases": {
+        "1.1.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2011-11-23T06:43:24",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/54/d4/8f7d631f1c3defa2ff4bd7c3daddcc5ed6eb9df7631f3cf24cc376aa3231/six-1.1.0.tar.gz",
+                "md5_digest": "9e8099b57cd27493a6988e9c9b313e23",
+                "downloads": 255135,
+                "filename": "six-1.1.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "54/d4/8f7d631f1c3defa2ff4bd7c3daddcc5ed6eb9df7631f3cf24cc376aa3231/six-1.1.0.tar.gz",
+                "size": 12573
+            }
+        ],
+        "1.0.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2011-03-15T16:55:50",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/a6/af/4506a069312018665b8936e5d51b3aa013971ef65eab5231ef151a482dcd/six-1.0.0.tar.gz",
+                "md5_digest": "37c7ff036fdff2b1bb8d55e49ccb3b44",
+                "downloads": 21113,
+                "filename": "six-1.0.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "a6/af/4506a069312018665b8936e5d51b3aa013971ef65eab5231ef151a482dcd/six-1.0.0.tar.gz",
+                "size": 11694
+            }
+        ],
+        "0.9.1": [
+            {
+                "has_sig": false,
+                "upload_time": "2010-06-30T22:32:11",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/4e/02/f08545a99829a04e841b6443267f216629c723c23fb9cfd17c99c068e33a/six-0.9.1.tar.gz",
+                "md5_digest": "1b249e0011355722f569406135a8ac93",
+                "downloads": 2950,
+                "filename": "six-0.9.1.tar.gz",
+                "packagetype": "sdist",
+                "path": "4e/02/f08545a99829a04e841b6443267f216629c723c23fb9cfd17c99c068e33a/six-0.9.1.tar.gz",
+                "size": 13653
+            }
+        ],
+        "0.9.0": [
+            {
+                "has_sig": true,
+                "upload_time": "2010-06-29T19:56:36",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/0e/f9/66471f9b7e9291cca697b2e61a10645a537f389a9d5c0679d50dd86b20f7/six-0.9.0.tar.gz",
+                "md5_digest": "5ce2947347101b9f54674c19ef88233d",
+                "downloads": 3259,
+                "filename": "six-0.9.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "0e/f9/66471f9b7e9291cca697b2e61a10645a537f389a9d5c0679d50dd86b20f7/six-0.9.0.tar.gz",
+                "size": 13292
+            }
+        ],
+        "1.6.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-03-14T03:11:13",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/54/45/8b5eef1ba0b79acbdab01435359f37ae13dc6c4aafaa444b805e3867386d/six-1.6.0-py2.py3-none-any.whl",
+                "md5_digest": "e2755cf8a1d8e4eda44a8e3436c458ca",
+                "downloads": 6271,
+                "filename": "six-1.6.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "54/45/8b5eef1ba0b79acbdab01435359f37ae13dc6c4aafaa444b805e3867386d/six-1.6.0-py2.py3-none-any.whl",
+                "size": 8513
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-03-14T03:11:10",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/02/c3/8e2a38edaac777ee2bbe479b3a65b020ade549efd6a224c2f4e95c818799/six-1.6.0.tar.gz",
+                "md5_digest": "eb22a24e8be9497dd71930bf2321b6ec",
+                "downloads": 4359,
+                "filename": "six-1.6.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "02/c3/8e2a38edaac777ee2bbe479b3a65b020ade549efd6a224c2f4e95c818799/six-1.6.0.tar.gz",
+                "size": 24716
+            }
+        ],
+        "1.6.1": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-03-14T03:39:37",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/ba/19/aa48edcff9d0c396a4d009d362d0a0a1ac3db6f9d7d5736e0175b94d7ef8/six-1.6.1-py2.py3-none-any.whl",
+                "md5_digest": "ca195cc2271b03ae1c8750a88081c7f1",
+                "downloads": 1620090,
+                "filename": "six-1.6.1-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "ba/19/aa48edcff9d0c396a4d009d362d0a0a1ac3db6f9d7d5736e0175b94d7ef8/six-1.6.1-py2.py3-none-any.whl",
+                "size": 8557
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-03-14T03:39:35",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/e8/70/b9c441d8c02b70eb3bf923c49944b8fc656f78a43c084d2a98534d7404e2/six-1.6.1.tar.gz",
+                "md5_digest": "07d606ac08595d795bf926cc9985674f",
+                "downloads": 2909685,
+                "filename": "six-1.6.1.tar.gz",
+                "packagetype": "sdist",
+                "path": "e8/70/b9c441d8c02b70eb3bf923c49944b8fc656f78a43c084d2a98534d7404e2/six-1.6.1.tar.gz",
+                "size": 24792
+            }
+        ],
+        "1.9.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2015-01-02T16:38:13",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/10/e3/a7f8eea80a9fa8358c1cd89ef489bc03675e69e54ed2982cd6f2a28d8295/six-1.9.0-py2.py3-none-any.whl",
+                "md5_digest": "9ac7e129a80f72d6fc1f0216f6e9627b",
+                "downloads": 19614806,
+                "filename": "six-1.9.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "10/e3/a7f8eea80a9fa8358c1cd89ef489bc03675e69e54ed2982cd6f2a28d8295/six-1.9.0-py2.py3-none-any.whl",
+                "size": 10222
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2015-01-02T16:38:06",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/16/64/1dc5e5976b17466fd7d712e59cbe9fb1e18bec153109e5ba3ed6c9102f1a/six-1.9.0.tar.gz",
+                "md5_digest": "476881ef4012262dfc8adc645ee786c4",
+                "downloads": 12925525,
+                "filename": "six-1.9.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "16/64/1dc5e5976b17466fd7d712e59cbe9fb1e18bec153109e5ba3ed6c9102f1a/six-1.9.0.tar.gz",
+                "size": 29127
+            }
+        ],
+        "1.7.3": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-29T19:30:30",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/2e/a4/6dcb84af409b7bc0c258a0d6bd7e14231724d9a46b750c048f09d74d870c/six-1.7.3-py2.py3-none-any.whl",
+                "md5_digest": "5f34fe522765d398b21decdce62ebd1d",
+                "downloads": 2597388,
+                "filename": "six-1.7.3-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "2e/a4/6dcb84af409b7bc0c258a0d6bd7e14231724d9a46b750c048f09d74d870c/six-1.7.3-py2.py3-none-any.whl",
+                "size": 9503
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-29T19:30:27",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/2b/4a/233721f6c6afeed5a2034f617f120fa646da935039f08e67ab8dc008a3e6/six-1.7.3.tar.gz",
+                "md5_digest": "784c6e5541c3c4952de9c0a966a0a80b",
+                "downloads": 2700212,
+                "filename": "six-1.7.3.tar.gz",
+                "packagetype": "sdist",
+                "path": "2b/4a/233721f6c6afeed5a2034f617f120fa646da935039f08e67ab8dc008a3e6/six-1.7.3.tar.gz",
+                "size": 26339
+            }
+        ],
+        "1.7.2": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-09T04:15:38",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/6b/30/839b8059d1225dbd3a0dd97c3c370bbb978cde505e160b30515fb7be17d8/six-1.7.2-py2.py3-none-any.whl",
+                "md5_digest": "0e10f8d8e65257408e4428632859dad9",
+                "downloads": 520900,
+                "filename": "six-1.7.2-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "6b/30/839b8059d1225dbd3a0dd97c3c370bbb978cde505e160b30515fb7be17d8/six-1.7.2-py2.py3-none-any.whl",
+                "size": 9614
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-09T04:15:44",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/a4/ed/a1410f4a3ae1492d87cbc7acdeea819db3caf6e526ef7032dd6fe50d2083/six-1.7.2.tar.gz",
+                "md5_digest": "4c26276583b01dfc73474cb32327af91",
+                "downloads": 672500,
+                "filename": "six-1.7.2.tar.gz",
+                "packagetype": "sdist",
+                "path": "a4/ed/a1410f4a3ae1492d87cbc7acdeea819db3caf6e526ef7032dd6fe50d2083/six-1.7.2.tar.gz",
+                "size": 26399
+            }
+        ],
+        "1.7.1": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-09T03:57:48",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/aa/ec/e6954e19e617c1b9860325f0995d456d8416c84a6cb9bce1c10998280b59/six-1.7.1-py2.py3-none-any.whl",
+                "md5_digest": "c3c1e251733acc9db947e75c9a02cf06",
+                "downloads": 2001,
+                "filename": "six-1.7.1-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "aa/ec/e6954e19e617c1b9860325f0995d456d8416c84a6cb9bce1c10998280b59/six-1.7.1-py2.py3-none-any.whl",
+                "size": 9610
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-09T03:57:54",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/1b/2a/ad686ae156581a70a7be28e7762f7d956bec30d62dafe9295b78dc019692/six-1.7.1.tar.gz",
+                "md5_digest": "f9fbad970c6e855cabde7ec1144b9058",
+                "downloads": 3525,
+                "filename": "six-1.7.1.tar.gz",
+                "packagetype": "sdist",
+                "path": "1b/2a/ad686ae156581a70a7be28e7762f7d956bec30d62dafe9295b78dc019692/six-1.7.1.tar.gz",
+                "size": 26375
+            }
+        ],
+        "1.7.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-08T02:35:46",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/20/0a/617bf23511160454995bf1cbe6789f22beeb8b49c1f3b1bbf4b5cd6a55ca/six-1.7.0-py2.py3-none-any.whl",
+                "md5_digest": "e5ca7e89cc79d755ea128fc7e2cb136e",
+                "downloads": 32104,
+                "filename": "six-1.7.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "20/0a/617bf23511160454995bf1cbe6789f22beeb8b49c1f3b1bbf4b5cd6a55ca/six-1.7.0-py2.py3-none-any.whl",
+                "size": 9340
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-06-08T02:35:49",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/7e/16/792311d76b8e23da84e1b177fb973679de1c963391d0dcd7e963634bed4b/six-1.7.0.tar.gz",
+                "md5_digest": "92f7210da3db1e988979fa394aa41d7a",
+                "downloads": 36330,
+                "filename": "six-1.7.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "7e/16/792311d76b8e23da84e1b177fb973679de1c963391d0dcd7e963634bed4b/six-1.7.0.tar.gz",
+                "size": 26124
+            }
+        ],
+        "1.4.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2013-09-01T21:14:06",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/99/25/2df8760d6902620cfca85e36f07de491d14f2c325ecc01c1a5590d8af22d/six-1.4.0.tar.gz",
+                "md5_digest": "5fcab6a067b5ebf68ede2f4d02fe7547",
+                "downloads": 39316,
+                "filename": "six-1.4.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "99/25/2df8760d6902620cfca85e36f07de491d14f2c325ecc01c1a5590d8af22d/six-1.4.0.tar.gz",
+                "size": 21367
+            }
+        ],
+        "1.4.1": [
+            {
+                "has_sig": false,
+                "upload_time": "2013-09-02T13:12:05",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/4e/aa/73683ca0c4237891e33562e3f55bcaab972869959b97b397637519d92035/six-1.4.1.tar.gz",
+                "md5_digest": "bdbb9e12d3336c198695aa4cf3a61d62",
+                "downloads": 3294260,
+                "filename": "six-1.4.1.tar.gz",
+                "packagetype": "sdist",
+                "path": "4e/aa/73683ca0c4237891e33562e3f55bcaab972869959b97b397637519d92035/six-1.4.1.tar.gz",
+                "size": 21409
+            }
+        ],
+        "0.9.2": [
+            {
+                "has_sig": false,
+                "upload_time": "2010-07-05T00:42:38",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/af/33/fa2097ac4bc7a9672517fdcb982bc7454fdd113f49f7ab353025b906a119/six-0.9.2.tar.gz",
+                "md5_digest": "92ea7c870396dd9222029a188c6bbd7f",
+                "downloads": 3266,
+                "filename": "six-0.9.2.tar.gz",
+                "packagetype": "sdist",
+                "path": "af/33/fa2097ac4bc7a9672517fdcb982bc7454fdd113f49f7ab353025b906a119/six-0.9.2.tar.gz",
+                "size": 13658
+            }
+        ],
+        "1.5.1": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-05T05:15:22",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/60/84/72c628d5a4efffb23e2fb46cdbf8ee669046d8208ba5dab08f989b7bfe9c/six-1.5.1-py2.py3-none-any.whl",
+                "md5_digest": "2064b715201fa76a55dea75675ee19f2",
+                "downloads": 46598,
+                "filename": "six-1.5.1-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "60/84/72c628d5a4efffb23e2fb46cdbf8ee669046d8208ba5dab08f989b7bfe9c/six-1.5.1-py2.py3-none-any.whl",
+                "size": 8396
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-05T05:15:14",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/0b/5e/4b3f417a85d9cd30b172a1512a2d3cdd0ffb05a5deacb8adf2ef30db100d/six-1.5.1.tar.gz",
+                "md5_digest": "bb00c982fc0ec0dd6a760500b0941fa9",
+                "downloads": 45202,
+                "filename": "six-1.5.1.tar.gz",
+                "packagetype": "sdist",
+                "path": "0b/5e/4b3f417a85d9cd30b172a1512a2d3cdd0ffb05a5deacb8adf2ef30db100d/six-1.5.1.tar.gz",
+                "size": 24000
+            }
+        ],
+        "1.5.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-05T00:56:10",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/ca/15/e62a66024dded9640f8d39112330e6b108e7ab21a1b8618c2d1e2eea7e1d/six-1.5.0-py2.py3-none-any.whl",
+                "md5_digest": "3307efe2bc4ca8556befc9afe297c530",
+                "downloads": 5446,
+                "filename": "six-1.5.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "ca/15/e62a66024dded9640f8d39112330e6b108e7ab21a1b8618c2d1e2eea7e1d/six-1.5.0-py2.py3-none-any.whl",
+                "size": 8186
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-05T00:56:07",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/0f/dd/379fa572b72da0b482545116139529af8da92e686ea136271beecddd4e81/six-1.5.0.tar.gz",
+                "md5_digest": "72b33ff89f3b2f21dd2cb28fb94f7031",
+                "downloads": 8447,
+                "filename": "six-1.5.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "0f/dd/379fa572b72da0b482545116139529af8da92e686ea136271beecddd4e81/six-1.5.0.tar.gz",
+                "size": 23775
+            }
+        ],
+        "1.5.2": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-06T15:57:56",
+                "comment_text": "",
+                "python_version": "3.3",
+                "url": "https://pypi.python.org/packages/c7/a4/35520d20a8e4b3c28c9db705fffd4c7053e0236928951da32167e5078faa/six-1.5.2-py2.py3-none-any.whl",
+                "md5_digest": "ba32222ad0c5c7057a7c42e66e81289d",
+                "downloads": 773183,
+                "filename": "six-1.5.2-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "c7/a4/35520d20a8e4b3c28c9db705fffd4c7053e0236928951da32167e5078faa/six-1.5.2-py2.py3-none-any.whl",
+                "size": 8429
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-01-06T15:57:54",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/1d/8e/220ce5a36dac3aabccee871a34561ceba82ce14b53760143cf5e01bb4d2c/six-1.5.2.tar.gz",
+                "md5_digest": "322b86d0c50a7d165c05600154cecc0a",
+                "downloads": 2208524,
+                "filename": "six-1.5.2.tar.gz",
+                "packagetype": "sdist",
+                "path": "1d/8e/220ce5a36dac3aabccee871a34561ceba82ce14b53760143cf5e01bb4d2c/six-1.5.2.tar.gz",
+                "size": 24081
+            }
+        ],
+        "1.0b1": [
+            {
+                "has_sig": false,
+                "upload_time": "2010-11-20T22:57:30",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/8b/08/8f569ab2c81c1443ce43e29df2e7eec1ab7f005455f6c193793728b00f04/six-1.0b1.tar.gz",
+                "md5_digest": "cbfcc64af1f27162a6a6b5510e262c9d",
+                "downloads": 3187,
+                "filename": "six-1.0b1.tar.gz",
+                "packagetype": "sdist",
+                "path": "8b/08/8f569ab2c81c1443ce43e29df2e7eec1ab7f005455f6c193793728b00f04/six-1.0b1.tar.gz",
+                "size": 11251
+            }
+        ],
+        "1.3.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2013-03-18T20:40:13",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/02/f8/d16f06e49b0d2ef40548bf42826f926c8964ad3b1d00f8098dcc6ef15aea/six-1.3.0.tar.gz",
+                "md5_digest": "ec47fe6070a8a64c802363d2c2b1e2ee",
+                "downloads": 1620124,
+                "filename": "six-1.3.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "02/f8/d16f06e49b0d2ef40548bf42826f926c8964ad3b1d00f8098dcc6ef15aea/six-1.3.0.tar.gz",
+                "size": 17701
+            }
+        ],
+        "1.2.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2012-08-28T19:55:23",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/e9/b4/0ccbc17cd49a812ab8363058bb12f0134cf2d3ba752391f309ddf567ae97/six-1.2.0.tar.gz",
+                "md5_digest": "2a5d1afc79912832ac78fd38e3d75d7e",
+                "downloads": 814231,
+                "filename": "six-1.2.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "e9/b4/0ccbc17cd49a812ab8363058bb12f0134cf2d3ba752391f309ddf567ae97/six-1.2.0.tar.gz",
+                "size": 15316
+            }
+        ],
+        "1.11.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2017-09-17T18:46:53",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/67/4b/141a581104b1f6397bfa78ac9d43d8ad29a7ca43ea90a2d863fe3056e86a/six-1.11.0-py2.py3-none-any.whl",
+                "md5_digest": "866ab722be6bdfed6830f3179af65468",
+                "downloads": 0,
+                "filename": "six-1.11.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "67/4b/141a581104b1f6397bfa78ac9d43d8ad29a7ca43ea90a2d863fe3056e86a/six-1.11.0-py2.py3-none-any.whl",
+                "size": 10702
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2017-09-17T18:46:54",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz",
+                "md5_digest": "d12789f9baf7e9fb2524c0c64f1773f8",
+                "downloads": 0,
+                "filename": "six-1.11.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz",
+                "size": 29860
+            }
+        ],
+        "1.8.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2014-09-11T21:48:44",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/a2/4b/2b4532b4eba116a02fc0b5e0b3540a073a61c003b7b6293b7b884afa8ff1/six-1.8.0-py2.py3-none-any.whl",
+                "md5_digest": "2f5f96148c68f3c1611f489678a8b445",
+                "downloads": 4885942,
+                "filename": "six-1.8.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "a2/4b/2b4532b4eba116a02fc0b5e0b3540a073a61c003b7b6293b7b884afa8ff1/six-1.8.0-py2.py3-none-any.whl",
+                "size": 9697
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2014-09-11T21:48:46",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/11/3f/2b3c217c5427cdd12619024b1ee1b04d49e27fde5c29df2a0b92c26677c2/six-1.8.0.tar.gz",
+                "md5_digest": "1626eb24cc889110c38f7e786ec69885",
+                "downloads": 4826642,
+                "filename": "six-1.8.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "11/3f/2b3c217c5427cdd12619024b1ee1b04d49e27fde5c29df2a0b92c26677c2/six-1.8.0.tar.gz",
+                "size": 26925
+            }
+        ],
+        "1.10.0": [
+            {
+                "has_sig": false,
+                "upload_time": "2015-10-07T03:17:20",
+                "comment_text": "",
+                "python_version": "py2.py3",
+                "url": "https://pypi.python.org/packages/c8/0a/b6723e1bc4c516cb687841499455a8505b44607ab535be01091c0f24f079/six-1.10.0-py2.py3-none-any.whl",
+                "md5_digest": "3ab558cf5d4f7a72611d59a81a315dc8",
+                "downloads": 37746177,
+                "filename": "six-1.10.0-py2.py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "path": "c8/0a/b6723e1bc4c516cb687841499455a8505b44607ab535be01091c0f24f079/six-1.10.0-py2.py3-none-any.whl",
+                "size": 10341
+            },
+            {
+                "has_sig": false,
+                "upload_time": "2015-10-07T03:17:49",
+                "comment_text": "",
+                "python_version": "source",
+                "url": "https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz",
+                "md5_digest": "34eed507548117b2ab523ab14b2f8b55",
+                "downloads": 10705137,
+                "filename": "six-1.10.0.tar.gz",
+                "packagetype": "sdist",
+                "path": "b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz",
+                "size": 29630
+            }
+        ]
+    },
+    "urls": [
+        {
+            "has_sig": false,
+            "upload_time": "2017-09-17T18:46:53",
+            "comment_text": "",
+            "python_version": "py2.py3",
+            "url": "https://pypi.python.org/packages/67/4b/141a581104b1f6397bfa78ac9d43d8ad29a7ca43ea90a2d863fe3056e86a/six-1.11.0-py2.py3-none-any.whl",
+            "md5_digest": "866ab722be6bdfed6830f3179af65468",
+            "downloads": 0,
+            "filename": "six-1.11.0-py2.py3-none-any.whl",
+            "packagetype": "bdist_wheel",
+            "path": "67/4b/141a581104b1f6397bfa78ac9d43d8ad29a7ca43ea90a2d863fe3056e86a/six-1.11.0-py2.py3-none-any.whl",
+            "size": 10702
+        },
+        {
+            "has_sig": false,
+            "upload_time": "2017-09-17T18:46:54",
+            "comment_text": "",
+            "python_version": "source",
+            "url": "https://pypi.python.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz",
+            "md5_digest": "d12789f9baf7e9fb2524c0c64f1773f8",
+            "downloads": 0,
+            "filename": "six-1.11.0.tar.gz",
+            "packagetype": "sdist",
+            "path": "16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz",
+            "size": 29860
+        }
+    ]
+}
