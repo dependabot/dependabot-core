@@ -19,17 +19,17 @@ module Dependabot
           ].compact
 
           source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
-          source_url ||= get_source_from_description
+          source_url ||= source_from_description
 
           return nil unless source_url
           source_url.match(SOURCE_REGEX).named_captures
         end
 
-        def get_source_from_description
+        def source_from_description
           github_urls = []
           pypi_listing.
             dig("info", "description").
-            scan(SOURCE_REGEX) { |match| github_urls << Regexp.last_match.to_s }
+            scan(SOURCE_REGEX) { github_urls << Regexp.last_match.to_s }
 
           github_urls.find do |url|
             repo = url.match(SOURCE_REGEX).named_captures["repo"]
