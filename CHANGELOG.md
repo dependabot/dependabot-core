@@ -1,3 +1,7 @@
+## v0.24.3, 20 October 2017
+
+- Look up Python URLs from PyPI description if necessary
+
 ## v0.24.2, 18 October 2017
 
 - Handle absolute paths in Ruby Gemfiles
