@@ -66,16 +66,38 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:version) { "17.10" }
       it { is_expected.to be_falsey }
     end
+
+    context "given a non-numeric version" do
+      let(:version) { "artful" }
+      it { is_expected.to be_falsey }
+    end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    it { is_expected.to eq(Gem::Version.new("17.10")) }
+    it { is_expected.to eq("17.10") }
 
     context "when the dependency has a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_nil }
+    end
+
+    context "when the dependency's version has a suffix" do
+      let(:dependency_name) { "ruby" }
+      let(:version) { "2.4.0-slim" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("2.4.2-slim") }
     end
 
     context "when the dependency has a namespace" do
@@ -91,7 +113,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
           and_return(status: 200, body: registry_tags)
       end
 
-      it { is_expected.to eq(Gem::Version.new("2.4.2")) }
+      it { is_expected.to eq("2.4.2") }
     end
 
     context "when the dependency has a private registry" do
@@ -144,7 +166,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
             and_return(status: 200, body: registry_tags)
         end
 
-        it { is_expected.to eq(Gem::Version.new("17.10")) }
+        it { is_expected.to eq("17.10") }
       end
     end
   end

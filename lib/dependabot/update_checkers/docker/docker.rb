@@ -9,7 +9,8 @@ module Dependabot
   module UpdateCheckers
     module Docker
       class Docker < Dependabot::UpdateCheckers::Base
-        VERSION_REGEX = /^(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9]+)*)$/
+        VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9]+)*)/
+        NAME_WITH_VERSION = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9\-]+)?$/
 
         def latest_version
           @latest_version ||= fetch_latest_version
@@ -26,8 +27,20 @@ module Dependabot
 
         private
 
+        def version_needs_update?
+          return false unless dependency.version.match?(NAME_WITH_VERSION)
+          return false unless latest_version
+
+          original_version_number = numeric_version_from(dependency.version)
+          latest_version_number = numeric_version_from(latest_version)
+
+          Gem::Version.new(latest_version_number) >
+            Gem::Version.new(original_version_number)
+        end
+
         def fetch_latest_version
-          return nil unless dependency.version.match?(VERSION_REGEX)
+          return nil unless dependency.version.match?(NAME_WITH_VERSION)
+          original_suffix = suffix_of(dependency.version)
 
           tags =
             if dependency.name.split("/").count < 2
@@ -37,9 +50,17 @@ module Dependabot
             end
 
           tags.fetch("tags").
-            select { |tag| tag.match?(VERSION_REGEX) }.
-            map { |tag| Gem::Version.new(tag) }.
-            max
+            select { |tag| tag.match?(NAME_WITH_VERSION) }.
+            select { |tag| suffix_of(tag) == original_suffix }.
+            max_by { |tag| Gem::Version.new(numeric_version_from(tag)) }
+        end
+
+        def suffix_of(tag)
+          tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
+        end
+
+        def numeric_version_from(tag)
+          tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
         end
 
         def private_registry_url

@@ -124,6 +124,31 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       end
     end
 
+    context "with a non-numeric version" do
+      let(:dockerfile_body) { "FROM ubuntu:artful" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }
+          ]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("artful")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a digest" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
