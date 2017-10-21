@@ -1,4 +1,4 @@
-## v0.24.4, 20 October 2017
+## v0.24.4, 21 October 2017
 
 - Add support for Dockerfiles versions with a suffix (e.g., 2.4.2-slim)
 
