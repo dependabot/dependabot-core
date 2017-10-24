@@ -1,3 +1,7 @@
+## v0.24.8, 24 October 2017
+
+- Handle date-like versions in Dockerfile
+
 ## v0.24.7, 24 October 2017
 
 - Only update Dockerfile version to pre-release if currently using one
