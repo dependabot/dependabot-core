@@ -181,11 +181,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       end
 
       before do
-        stub_request(:get, registry_url + "versions").to_return(status: 404)
+        stub_request(:get, registry_url + "versions").
+          with(basic_auth: ["SECRET_CODES", ""]).
+          to_return(status: 404)
         stub_request(:get, registry_url + "api/v1/dependencies").
+          with(basic_auth: ["SECRET_CODES", ""]).
           to_return(status: 200)
         # Note: returns details of three versions: 1.5.0, 1.9.0, and 1.10.0.beta
         stub_request(:get, gemfury_business_url).
+          with(basic_auth: ["SECRET_CODES", ""]).
           to_return(status: 200, body: fixture("ruby", "gemfury_response"))
       end
 
@@ -193,10 +197,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
       context "that we don't have authentication details for" do
         before do
-          stub_request(:get, registry_url + "versions").to_return(status: 401)
+          stub_request(:get, registry_url + "versions").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 401)
           stub_request(:get, registry_url + "api/v1/dependencies").
+            with(basic_auth: ["SECRET_CODES", ""]).
             to_return(status: 401)
           stub_request(:get, registry_url + "specs.4.8.gz").
+            with(basic_auth: ["SECRET_CODES", ""]).
             to_return(status: 401)
         end
 
@@ -222,15 +230,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         end
         let(:registry_url) { "https://gems.contribsys.com/" }
         before do
-          stub_request(:get, registry_url + "versions").to_return(status: 404)
+          stub_request(:get, registry_url + "versions").
+            with(basic_auth: %w(username password)).
+            to_return(status: 404)
           stub_request(:get, registry_url + "api/v1/dependencies").
+            with(basic_auth: %w(username password)).
             to_return(status: 404)
           stub_request(:get, registry_url + "specs.4.8.gz").
+            with(basic_auth: %w(username password)).
             to_return(
               status: 200,
               body: fixture("ruby", "contribsys_old_index_response")
             )
           stub_request(:get, registry_url + "prerelease_specs.4.8.gz").
+            with(basic_auth: %w(username password)).
             to_return(
               status: 200,
               body: fixture("ruby", "contribsys_old_index_prerelease_response")
