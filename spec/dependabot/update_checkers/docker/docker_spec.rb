@@ -116,6 +116,28 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it { is_expected.to eq("2.4.2") }
     end
 
+    context "when the latest version is a pre-release" do
+      let(:dependency_name) { "python" }
+      let(:version) { "3.5" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "python.json") }
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("3.6.3") }
+
+      context "and the current version is a pre-release" do
+        let(:version) { "3.7.0a1" }
+        it { is_expected.to eq("3.7.0a2") }
+      end
+    end
+
     context "when the dependency has a private registry" do
       let(:dependency_name) { "myreg/ubuntu" }
       let(:dependency) do

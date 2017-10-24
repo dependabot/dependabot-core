@@ -41,22 +41,34 @@ module Dependabot
         def fetch_latest_version
           return nil unless dependency.version.match?(NAME_WITH_VERSION)
           original_suffix = suffix_of(dependency.version)
+          wants_prerelease = prerelease?(dependency.version)
 
-          tags =
-            if dependency.name.split("/").count < 2
-              docker_registry_client.tags("library/#{dependency.name}")
-            else
-              docker_registry_client.tags(dependency.name)
-            end
-
-          tags.fetch("tags").
+          tags_from_registry.
             select { |tag| tag.match?(NAME_WITH_VERSION) }.
             select { |tag| suffix_of(tag) == original_suffix }.
+            reject { |tag| prerelease?(tag) && !wants_prerelease }.
             max_by { |tag| Gem::Version.new(numeric_version_from(tag)) }
+        end
+
+        def tags_from_registry
+          @tags_from_registry ||=
+            if dependency.name.split("/").count < 2
+              docker_registry_client.
+                tags("library/#{dependency.name}").
+                fetch("tags")
+            else
+              docker_registry_client.
+                tags(dependency.name).
+                fetch("tags")
+            end
         end
 
         def suffix_of(tag)
           tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
+        end
+
+        def prerelease?(tag)
+          numeric_version_from(tag).match?(/[a-zA-Z]/)
         end
 
         def numeric_version_from(tag)
