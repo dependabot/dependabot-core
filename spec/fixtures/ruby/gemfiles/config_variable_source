@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+source "https://gem.fury.io/greysteil/" do
+  gem "dependabot-core", "~> 0.20.0"
+end

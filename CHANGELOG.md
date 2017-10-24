@@ -1,3 +1,7 @@
+## v0.24.5, 24 October 2017
+
+- Set private repo config properly in Ruby::Bundler::UpdateCheckers
+
 ## v0.24.4, 21 October 2017
 
 - Add support for Dockerfiles versions with a suffix (e.g., 2.4.2-slim)

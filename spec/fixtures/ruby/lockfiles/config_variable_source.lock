@@ -1,0 +1,49 @@
+GEM
+  remote: https://rubygems.org/
+  remote: https://gem.fury.io/greysteil/
+  specs:
+    addressable (2.5.2)
+      public_suffix (>= 2.0.2, < 4.0)
+    ast (2.3.0)
+    dependabot-core (0.20.15)
+      bundler (>= 1.16.0.pre)
+      excon (~> 0.55)
+      gems (~> 1.0)
+      gitlab (~> 4.1)
+      octokit (~> 4.6)
+      parseconfig (~> 1.0.8)
+      parser (~> 2.4.0)
+    excon (0.59.0)
+    faraday (0.13.1)
+      multipart-post (>= 1.2, < 3)
+    gems (1.0.0)
+      json
+    gitlab (4.2.0)
+      httparty
+      terminal-table
+    httparty (0.15.6)
+      multi_xml (>= 0.5.2)
+    json (2.1.0)
+    multi_xml (0.6.0)
+    multipart-post (2.0.0)
+    octokit (4.7.0)
+      sawyer (~> 0.8.0, >= 0.5.3)
+    parseconfig (1.0.8)
+    parser (2.4.0.0)
+      ast (~> 2.2)
+    public_suffix (3.0.0)
+    sawyer (0.8.1)
+      addressable (>= 2.3.5, < 2.6)
+      faraday (~> 0.8, < 1.0)
+    terminal-table (1.8.0)
+      unicode-display_width (~> 1.1, >= 1.1.1)
+    unicode-display_width (1.3.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  dependabot-core (~> 0.20.0)!
+
+BUNDLED WITH
+   1.16.0.pre.2
