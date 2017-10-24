@@ -68,20 +68,18 @@ module Dependabot
           end
 
           def latest_private_version_details
-            spec =
-              dependency_source.
-              fetchers.flat_map do |fetcher|
-                fetcher.
-                  specs_with_retry([dependency.name], dependency_source).
-                  search_all(dependency.name).
-                  reject { |s| s.version.prerelease? }
-              end.
-              sort_by(&:version).last
-            { version: spec.version }
-          rescue ::Bundler::Fetcher::AuthenticationRequiredError => error
-            regex = /bundle config (?<repo>.*) username:password/
-            source = error.message.match(regex)[:repo]
-            raise Dependabot::PrivateSourceNotReachable, source
+            in_a_temporary_bundler_context do
+              spec =
+                dependency_source.
+                fetchers.flat_map do |fetcher|
+                  fetcher.
+                    specs_with_retry([dependency.name], dependency_source).
+                    search_all(dependency.name).
+                    reject { |s| s.version.prerelease? }
+                end.
+                sort_by(&:version).last
+              { version: spec.version }
+            end
           end
 
           def latest_git_version_details
@@ -177,6 +175,7 @@ module Dependabot
 
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def handle_bundler_errors(error)
             msg = error.error_class + " with message: " + error.error_message
 
@@ -212,11 +211,16 @@ module Dependabot
             when "RuntimeError"
               raise unless error.error_message.include?("Unable to find a spec")
               raise DependencyFileNotResolvable, msg
+            when "Bundler::Fetcher::AuthenticationRequiredError"
+              regex = /bundle config (?<repo>.*) username:password/
+              source = error.error_message.match(regex)[:repo]
+              raise Dependabot::PrivateSourceNotReachable, source
             else raise
             end
           end
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           def inaccessible_git_dependencies
             in_a_temporary_bundler_context(error_handling: false) do
