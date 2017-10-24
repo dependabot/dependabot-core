@@ -83,6 +83,11 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it { is_expected.to be_nil }
     end
 
+    context "when the dependency has a non-numeric version" do
+      let(:version) { "artful-20170619" }
+      it { is_expected.to eq("artful-20170916") }
+    end
+
     context "when the dependency's version has a suffix" do
       let(:dependency_name) { "ruby" }
       let(:version) { "2.4.0-slim" }
