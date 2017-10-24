@@ -81,6 +81,11 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     context "when the dependency has a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_nil }
+
+      context "that starts with a number" do
+        let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
+        it { is_expected.to be_nil }
+      end
     end
 
     context "when the dependency has a non-numeric version" do
