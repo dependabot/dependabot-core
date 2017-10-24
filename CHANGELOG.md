@@ -1,3 +1,7 @@
+## v0.24.7, 24 October 2017
+
+- Only update Dockerfile version to pre-release if currently using one
+
 ## v0.24.6, 24 October 2017
 
 - Better handling of Python dependencies that specify a minor version
