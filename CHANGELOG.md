@@ -1,3 +1,7 @@
+## v0.24.6, 24 October 2017
+
+- Better handling of Python dependencies that specify a minor version
+
 ## v0.24.5, 24 October 2017
 
 - Set private repo config properly in Ruby::Bundler::UpdateCheckers
