@@ -136,6 +136,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       its(:length) { is_expected.to eq(1) }
     end
 
+    context "with prefix matching specified" do
+      let(:requirements_body) do
+        fixture("python", "requirements", "prefix_match.txt")
+      end
+
+      # TODO: we should support bumping prefix matches
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with a version specified as between two constraints" do
       let(:requirements_body) do
         fixture("python", "requirements", "version_between_bounds.txt")

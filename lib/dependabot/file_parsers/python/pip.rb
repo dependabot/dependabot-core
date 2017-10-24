@@ -13,6 +13,7 @@ module Dependabot
           dependency_versions.
             group_by { |dep| dep["name"] }.
             map do |_, deps|
+              next if deps.first["version"].include?("*")
               Dependency.new(
                 name: deps.first["name"],
                 version: deps.first["version"],
@@ -26,7 +27,7 @@ module Dependabot
                 end,
                 package_manager: "pip"
               )
-            end
+            end.compact
         end
 
         private

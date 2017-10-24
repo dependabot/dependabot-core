@@ -61,10 +61,10 @@ module Dependabot
         def updated_dependency_declaration_string(requirement)
           original_dependency_declaration_string(requirement).
             sub(PythonRequirementLineParser::REQUIREMENT) do |req|
-              req.sub(PythonRequirementLineParser::VERSION) do |ver|
-                precision = ver.split(".").count
-                dependency.version.split(".").first(precision).join(".")
-              end
+              req.sub(
+                PythonRequirementLineParser::VERSION,
+                dependency.version
+              )
             end
         end
       end

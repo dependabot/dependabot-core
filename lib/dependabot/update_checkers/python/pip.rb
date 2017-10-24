@@ -24,14 +24,10 @@ module Dependabot
           return dependency.requirements unless latest_resolvable_version
 
           dependency.requirements.map do |req|
-            updated_requirement_string =
-              req[:requirement].sub(PythonRequirementLineParser::VERSION) do |v|
-                precision = v.split(".").count
-                latest_resolvable_version.to_s.
-                  split(".").
-                  first(precision).
-                  join(".")
-              end
+            updated_requirement_string = req[:requirement].sub(
+              PythonRequirementLineParser::VERSION,
+              latest_resolvable_version.to_s
+            )
 
             req.merge(requirement: updated_requirement_string)
           end
