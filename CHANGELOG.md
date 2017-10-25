@@ -1,3 +1,9 @@
+## v0.24.9, 25 October 2017
+
+- Treat Ruby dependencies which explicitly specify the default source the same
+  as ones that do so implicitly during file parsing
+- Pick up files called `release` when looking for changelogs
+
 ## v0.24.8, 24 October 2017
 
 - Handle date-like versions in Dockerfile
