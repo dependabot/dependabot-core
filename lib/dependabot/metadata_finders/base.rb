@@ -14,7 +14,7 @@ module Dependabot
       }x
 
       # Earlier entries are preferred
-      CHANGELOG_NAMES = %w(changelog history news changes).freeze
+      CHANGELOG_NAMES = %w(changelog history news changes release).freeze
 
       attr_reader :dependency, :github_client
 
