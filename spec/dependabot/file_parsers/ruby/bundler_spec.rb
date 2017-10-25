@@ -261,6 +261,34 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a gem from the default source, specified as a block" do
+      let(:lockfile_content) do
+        fixture("ruby", "lockfiles", "block_source_rubygems.lock")
+      end
+      let(:gemfile_content) do
+        fixture("ruby", "gemfiles", "block_source_rubygems")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: nil,
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("statesman") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
     context "when the Gemfile can't be evaluated" do
       let(:gemfile_content) do
         fixture("ruby", "gemfiles", "unevaluatable_japanese")
