@@ -20,10 +20,6 @@ module Dependabot
         require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
 
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
-        DEPENDENCY_DECLARATION_REGEX =
-          /^\s*\w*\.add(?:_development|_runtime)?_dependency
-            (\s*|\()['"](?<name>.*?)['"],
-            \s*(?<requirements>.*?)\)?\s*$/x
 
         def self.updated_files_regex
           [
