@@ -90,8 +90,11 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
         to receive(:new).
-        with(github_client: github_client, source: expected_source).once.
-        and_return(dummy_changelog_finder)
+        with(
+          github_client: github_client,
+          source: expected_source,
+          dependency: dependency
+        ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
         to receive(:changelog_url).twice.
         and_return("https://example.com/CHANGELOG.md")

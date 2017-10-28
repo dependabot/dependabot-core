@@ -15,15 +15,19 @@ module Dependabot
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(changelog history news changes release).freeze
 
-        attr_reader :github_client, :source
+        attr_reader :source, :dependency, :github_client
 
-        def initialize(source:, github_client:)
-          @github_client = github_client
+        def initialize(source:, dependency:, github_client:)
           @source = source
+          @dependency = dependency
+          @github_client = github_client
         end
 
         def changelog_url
           return unless source
+
+          # Changelog won't be relevant for a git commit bump
+          return if git_source?(dependency.requirements) && !ref_changed?
 
           files = dependency_file_list.select { |f| f.type == "file" }
 
@@ -89,6 +93,30 @@ module Dependabot
               html_url: "#{source_url}/blob/master/#{file.path}"
             )
           end
+        end
+
+        def previous_ref
+          dependency.previous_requirements.map do |r|
+            r.dig(:source, "ref") || r.dig(:source, :ref)
+          end.compact.first
+        end
+
+        def new_ref
+          dependency.requirements.map do |r|
+            r.dig(:source, "ref") || r.dig(:source, :ref)
+          end.compact.first
+        end
+
+        def ref_changed?
+          previous_ref && new_ref && previous_ref != new_ref
+        end
+
+        def git_source?(requirements)
+          sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
+          return false if sources.empty?
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          source_type = sources.first[:type] || sources.first.fetch("type")
+          source_type == "git"
         end
 
         def gitlab_client

@@ -37,6 +37,7 @@ module Dependabot
 
       def changelog_url
         @changelog_finder ||= ChangelogFinder.new(
+          dependency: dependency,
           source: source,
           github_client: github_client
         )

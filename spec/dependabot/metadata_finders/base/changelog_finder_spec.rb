@@ -7,10 +7,33 @@ require "dependabot/metadata_finders/base/changelog_finder"
 
 RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   subject(:finder) do
-    described_class.new(source: source, github_client: github_client)
+    described_class.new(
+      source: source,
+      github_client: github_client,
+      dependency: dependency
+    )
   end
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:source) { { "host" => "github", "repo" => "gocardless/business" } }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      previous_requirements: dependency_previous_requirements,
+      previous_version: dependency_previous_version,
+      package_manager: "bundler"
+    )
+  end
+  let(:dependency_name) { "business" }
+  let(:dependency_version) { "1.4.0" }
+  let(:dependency_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
+  let(:dependency_previous_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
+  let(:dependency_previous_version) { "1.0.0" }
 
   describe "#changelog_url" do
     subject { finder.changelog_url }
@@ -59,6 +82,53 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:github_status) { 404 }
 
         it { is_expected.to be_nil }
+      end
+
+      context "for a git dependency" do
+        let(:github_response) { fixture("github", "business_files.json") }
+        let(:dependency_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: new_ref
+              }
+            }
+          ]
+        end
+        let(:dependency_previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: old_ref
+              }
+            }
+          ]
+        end
+        let(:new_ref) { "master" }
+        let(:old_ref) { "master" }
+
+        it { is_expected.to be_nil }
+
+        context "when the ref has changed" do
+          let(:new_ref) { "v1.1.0" }
+          let(:old_ref) { "v1.0.0" }
+
+          it "finds the changelog as normal" do
+            expect(subject).
+              to eq("https://github.com/gocardless/business/blob/master/"\
+                    "CHANGELOG.md")
+          end
+        end
       end
     end
 

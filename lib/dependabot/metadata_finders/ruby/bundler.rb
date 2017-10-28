@@ -22,9 +22,6 @@ module Dependabot
             return rubygems_listing["changelog_uri"]
           end
 
-          # Changelog won't be relevant for a git commit bump
-          return if new_source_type == "git" && !ref_changed?
-
           super
         end
 
@@ -37,22 +34,6 @@ module Dependabot
           when "rubygems" then nil # Private rubygems server
           else raise "Unexpected source type: #{new_source_type}"
           end
-        end
-
-        def previous_ref
-          dependency.previous_requirements.map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
-        end
-
-        def new_ref
-          dependency.requirements.map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
-        end
-
-        def ref_changed?
-          previous_ref && new_ref && previous_ref != new_ref
         end
 
         def new_source_type
