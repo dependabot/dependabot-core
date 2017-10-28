@@ -8,7 +8,6 @@ module Dependabot
     module JavaScript
       class Base < Dependabot::FileUpdaters::Base
         def updated_dependency_files
-          lockfile_name = self.class::LOCKFILE_NAME
           [
             updated_file(
               file: package_json,
@@ -16,7 +15,7 @@ module Dependabot
             ),
             updated_file(
               file: lockfile,
-              content: updated_dependency_files_content[lockfile_name]
+              content: updated_dependency_files_content[lockfile.name]
             )
           ]
         end
