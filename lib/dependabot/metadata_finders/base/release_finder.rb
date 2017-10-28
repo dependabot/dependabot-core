@@ -20,6 +20,7 @@ module Dependabot
         def release_url
           return nil unless updated_release
           return releases_index_url unless dependency.previous_version
+          return releases_index_url unless previous_release
 
           intermediate_release_count =
             all_releases.index(previous_release) -
