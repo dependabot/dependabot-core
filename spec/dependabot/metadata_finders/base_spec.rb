@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "octokit"
-require "gitlab"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/metadata_finders/base"
