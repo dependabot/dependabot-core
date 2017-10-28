@@ -1,7 +1,6 @@
-## v0.24.10, 28 October 2017
+## v0.25.0, 28 October 2017
 
-- Refactor MetadataFinders for readability (shouldn't have any impact on use,
-  but it's a big refactor so should be released early)
+- Alpha support for npm
 
 ## v0.24.9, 25 October 2017
 
