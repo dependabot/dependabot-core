@@ -25,7 +25,8 @@ module Dependabot
                 requirements: [{
                   requirement: requirement,
                   file: "package.json",
-                  groups: [type]
+                  groups: [type],
+                  source: nil
                 }]
               )
             end

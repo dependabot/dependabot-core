@@ -70,7 +70,7 @@ module Dependabot
 
         def js_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/javascript/bin/run.js")
+          File.join(project_root, "helpers/yarn/bin/run.js")
         end
       end
     end
