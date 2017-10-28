@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/update_checkers/java_script/yarn"
 
 module Dependabot

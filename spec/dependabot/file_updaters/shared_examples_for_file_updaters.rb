@@ -16,14 +16,14 @@ RSpec.shared_examples "a dependency file updater" do
     end
 
     def own_public_methods(include_ancestor_methods)
-      methods = (recent_ancestors + [described_class]).
+      (recent_ancestors + [described_class]).
         map { |cls| cls.public_instance_methods(include_ancestor_methods) }.
         flatten.
         uniq
     end
 
     def own_private_methods(include_ancestor_methods)
-      methods = (recent_ancestors + [described_class]).
+      (recent_ancestors + [described_class]).
         map { |cls| cls.private_instance_methods(include_ancestor_methods) }.
         flatten
     end

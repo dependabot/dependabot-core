@@ -8,6 +8,7 @@ module Dependabot
     module JavaScript
       class Base < Dependabot::FileUpdaters::Base
         def updated_dependency_files
+          lockfile_name = self.class::LOCKFILE_NAME
           [
             updated_file(
               file: package_json,
@@ -15,7 +16,7 @@ module Dependabot
             ),
             updated_file(
               file: lockfile,
-              content: updated_dependency_files_content[self.class::LOCKFILE_NAME]
+              content: updated_dependency_files_content[lockfile_name]
             )
           ]
         end
@@ -23,7 +24,7 @@ module Dependabot
         private
 
         def check_required_files
-          ['package.json', self.class::LOCKFILE_NAME].each do |filename|
+          ["package.json", self.class::LOCKFILE_NAME].each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)
           end
         end

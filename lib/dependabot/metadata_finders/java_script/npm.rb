@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/metadata_finders/java_script/yarn"
 
 module Dependabot
