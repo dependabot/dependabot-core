@@ -3,6 +3,7 @@
 /tmp
 /dependabot-*.gem
 Gemfile.lock
-/helpers/javascript/node_modules
+/helpers/yarn/node_modules
+/helpers/npm/node_modules
 vendor
 *.pyc
