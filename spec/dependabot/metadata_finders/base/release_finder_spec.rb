@@ -66,6 +66,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 )
             end
 
+            it "caches the call to GitHub" do
+              finder.release_url
+              finder.release_url
+              expect(WebMock).to have_requested(:get, github_url).once
+            end
+
             context "but prefixed" do
               let(:github_response) do
                 fixture("github", "prefixed_releases.json")

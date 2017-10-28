@@ -261,7 +261,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
-    it "delegates to ChangelogFinder and caches the response" do
+    it "delegates to ChangelogFinder (and caches the instance)" do
       expected_source =
         { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         with(github_client: github_client, source: expected_source).once.
         and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
-        to receive(:changelog_url).once.
+        to receive(:changelog_url).twice.
         and_return("https://example.com//CHANGELOG.md")
       expect(finder.changelog_url).to eq("https://example.com//CHANGELOG.md")
       expect(finder.changelog_url).to eq("https://example.com//CHANGELOG.md")
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
 
-    it "delegates to ReleaseFinder and caches the response" do
+    it "delegates to ReleaseFinder (and caches the instance)" do
       expected_source =
         { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
@@ -293,10 +293,10 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           dependency: dependency
         ).once.and_return(dummy_release_finder)
       expect(dummy_release_finder).
-        to receive(:release_url).once.
-        and_return("https://example.com//CHANGELOG.md")
-      expect(finder.release_url).to eq("https://example.com//CHANGELOG.md")
-      expect(finder.release_url).to eq("https://example.com//CHANGELOG.md")
+        to receive(:release_url).twice.
+        and_return("https://example.com//RELEASES.md")
+      expect(finder.release_url).to eq("https://example.com//RELEASES.md")
+      expect(finder.release_url).to eq("https://example.com//RELEASES.md")
     end
   end
 end

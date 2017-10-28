@@ -38,6 +38,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
             )
         end
+
+        it "caches the call to GitHub" do
+          finder.changelog_url
+          finder.changelog_url
+          expect(WebMock).to have_requested(:get, github_url).once
+        end
       end
 
       context "without a changelog" do

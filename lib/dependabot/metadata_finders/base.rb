@@ -34,25 +34,28 @@ module Dependabot
         end
       end
 
+      def changelog_url
+        @changelog_finder ||= ChangelogFinder.new(
+          source: source,
+          github_client: github_client
+        )
+        @changelog_finder.changelog_url
+      end
+
+      def release_url
+        @release_finder ||= ReleaseFinder.new(
+          dependency: dependency,
+          source: source,
+          github_client: github_client
+        )
+        @release_finder.release_url
+      end
+
       def commits_url
         return @commits_url if @commits_url_lookup_attempted
 
         @commits_url_lookup_attempted = true
         @commits_url ||= look_up_commits_url
-      end
-
-      def changelog_url
-        return @changelog_url if @changelog_url_lookup_attempted
-
-        @changelog_url_lookup_attempted = true
-        @changelog_url ||= look_up_changelog_url
-      end
-
-      def release_url
-        return @release_url if @release_url_lookup_attempted
-
-        @release_url_lookup_attempted = true
-        @release_url ||= look_up_release_url
       end
 
       private
@@ -63,18 +66,8 @@ module Dependabot
         @source = look_up_source
       end
 
-      def look_up_changelog_url
-        ChangelogFinder.
-          new(source: source, github_client: github_client).
-          changelog_url
-      end
-
-      def look_up_release_url
-        ReleaseFinder.new(
-          dependency: dependency,
-          source: source,
-          github_client: github_client
-        ).release_url
+      def look_up_source
+        raise NotImplementedError
       end
 
       def look_up_commits_url
@@ -88,10 +81,6 @@ module Dependabot
         previous_tag = tags.find { |t| t =~ version_regex(previous_version) }
 
         build_compare_commits_url(current_tag, previous_tag)
-      end
-
-      def look_up_source
-        raise NotImplementedError
       end
 
       def version_regex(version)

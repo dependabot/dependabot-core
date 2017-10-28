@@ -24,7 +24,7 @@ module Dependabot
         def changelog_url
           return unless source
 
-          files = fetch_dependency_file_list.select { |f| f.type == "file" }
+          files = dependency_file_list.select { |f| f.type == "file" }
 
           CHANGELOG_NAMES.each do |name|
             file = files.find { |f| f.name =~ /#{name}/i }
@@ -44,6 +44,10 @@ module Dependabot
           when "gitlab" then "https://gitlab.com/" + source.fetch("repo")
           else raise "Unexpected repo host '#{source.fetch('host')}'"
           end
+        end
+
+        def dependency_file_list
+          @dependency_file_list ||= fetch_dependency_file_list
         end
 
         def fetch_dependency_file_list

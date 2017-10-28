@@ -17,6 +17,17 @@ module Dependabot
           download_uri
         ).freeze
 
+        def changelog_url
+          if new_source_type == "default" && rubygems_listing["changelog_uri"]
+            return rubygems_listing["changelog_uri"]
+          end
+
+          # Changelog won't be relevant for a git commit bump
+          return if new_source_type == "git" && !ref_changed?
+
+          super
+        end
+
         private
 
         def look_up_source
@@ -26,17 +37,6 @@ module Dependabot
           when "rubygems" then nil # Private rubygems server
           else raise "Unexpected source type: #{new_source_type}"
           end
-        end
-
-        def look_up_changelog_url
-          if new_source_type == "default" && rubygems_listing["changelog_uri"]
-            return rubygems_listing["changelog_uri"]
-          end
-
-          # Changelog won't be relevant for a git commit bump
-          return if new_source_type == "git" && !ref_changed?
-
-          super
         end
 
         def look_up_commits_url
