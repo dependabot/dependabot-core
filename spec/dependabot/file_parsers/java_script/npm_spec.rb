@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/java_script/yarn"
+require "dependabot/file_parsers/java_script/npm"
 require_relative "../shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
+RSpec.describe Dependabot::FileParsers::JavaScript::Npm do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [package_json, lockfile] }
@@ -16,12 +16,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
     )
   end
   let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "yarn.lock", content: lockfile_body)
+    Dependabot::DependencyFile.new(
+      name: "package-lock.json",
+      content: lockfile_body
+    )
   end
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
   end
-  let(:lockfile_body) { fixture("javascript", "yarn_lockfiles", "yarn.lock") }
+  let(:lockfile_body) do
+    fixture("javascript", "npm_lockfiles", "package-lock.json")
+  end
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do
@@ -56,7 +61,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "package_files", "only_dev_dependencies.json")
       end
       let(:lockfile_body) do
-        fixture("javascript", "yarn_lockfiles", "only_dev_dependencies.lock")
+        fixture("javascript", "npm_lockfiles", "only_dev_dependencies.json")
       end
 
       describe "the first dependency" do
@@ -64,7 +69,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("etag") }
-        its(:version) { is_expected.to eq("1.8.0") }
+        its(:version) { is_expected.to eq("1.8.1") }
         its(:requirements) do
           is_expected.to eq(
             [
@@ -84,6 +89,9 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
       let(:package_json_body) do
         fixture("javascript", "package_files", "optional_dependencies.json")
       end
+      let(:lockfile_body) do
+        fixture("javascript", "npm_lockfiles", "optional_dependencies.json")
+      end
 
       its(:length) { is_expected.to eq(2) }
 
@@ -92,7 +100,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("etag") }
-        its(:version) { is_expected.to eq("1.7.0") }
+        its(:version) { is_expected.to eq("1.8.1") }
         its(:requirements) do
           is_expected.to eq(
             [
@@ -108,24 +116,34 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
       end
     end
 
-    context "with a private-source dependency" do
-      let(:package_json_body) do
-        fixture("javascript", "package_files", "private_source.json")
-      end
-      let(:lockfile_body) do
-        fixture("javascript", "lockfiles", "private_source.lock")
-      end
-
-      its(:length) { is_expected.to eq(0) }
-    end
-
     context "with a path-based dependency" do
       let(:files) { [package_json, lockfile, path_dep] }
       let(:package_json_body) do
         fixture("javascript", "package_files", "path_dependency.json")
       end
       let(:lockfile_body) do
-        fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
+        fixture("javascript", "npm_lockfiles", "path_dependency.json")
+      end
+      let(:path_dep) do
+        Dependabot::DependencyFile.new(
+          name: "deps/etag/package.json",
+          content: fixture("javascript", "package_files", "etag.json")
+        )
+      end
+
+      it "doesn't include the path-based dependency" do
+        expect(dependencies.length).to eq(3)
+        expect(dependencies.map(&:name)).to_not include("etag")
+      end
+    end
+
+    context "with a git-based dependency" do
+      let(:files) { [package_json, lockfile, path_dep] }
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "git_dependency.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "npm_lockfiles", "git_dependency.json")
       end
       let(:path_dep) do
         Dependabot::DependencyFile.new(
