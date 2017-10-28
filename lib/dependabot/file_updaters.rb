@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/file_updaters/python/pip"
+require "dependabot/file_updaters/java_script/npm"
 require "dependabot/file_updaters/java_script/yarn"
 require "dependabot/file_updaters/php/composer"
 require "dependabot/file_updaters/git/submodules"
