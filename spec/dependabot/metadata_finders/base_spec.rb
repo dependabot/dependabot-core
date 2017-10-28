@@ -257,317 +257,46 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#changelog_url" do
     subject { finder.changelog_url }
-
-    context "with a github repo" do
-      let(:github_url) do
-        "https://api.github.com/repos/gocardless/business/contents/"
-      end
-
-      let(:github_status) { 200 }
-
-      before do
-        stub_request(:get, github_url).
-          to_return(status: github_status,
-                    body: github_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
-      context "with a changelog" do
-        let(:github_response) { fixture("github", "business_files.json") }
-
-        it "gets the right URL" do
-          expect(subject).
-            to eq(
-              "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
-            )
-        end
-
-        it "caches the call to github" do
-          2.times { finder.changelog_url }
-          expect(WebMock).to have_requested(:get, github_url).once
-        end
-      end
-
-      context "without a changelog" do
-        let(:github_response) do
-          fixture("github", "business_files_no_changelog.json")
-        end
-
-        it { is_expected.to be_nil }
-
-        it "caches the call to github" do
-          2.times { finder.changelog_url }
-          expect(WebMock).to have_requested(:get, github_url).once
-        end
-      end
-
-      context "when the github_repo doesn't exists" do
-        let(:github_response) { fixture("github", "not_found.json") }
-        let(:github_status) { 404 }
-
-        it { is_expected.to be_nil }
-      end
+    let(:dummy_changelog_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
 
-    context "with a gitlab source" do
-      let(:gitlab_url) do
-        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
-      end
-
-      let(:gitlab_status) { 200 }
-      let(:gitlab_response) { fixture("gitlab", "business_files.json") }
-
-      before do
-        allow(finder).
-          to receive(:source).
-          and_return("host" => "gitlab", "repo" => "org/#{dependency_name}")
-
-        stub_request(:get, gitlab_url).
-          to_return(status: gitlab_status,
-                    body: gitlab_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
-      it "gets the right URL" do
-        is_expected.to eq(
-          "https://gitlab.com/org/business/blob/master/CHANGELOG.md"
-        )
-      end
-
-      context "that can't be found exists" do
-        let(:gitlab_status) { 404 }
-        let(:gitlab_response) { fixture("gitlab", "not_found.json") }
-        it { is_expected.to be_nil }
-      end
-    end
-
-    context "with a bitbucket source" do
-      let(:bitbucket_url) do
-        "https://api.bitbucket.org/2.0/repositories/org/business/src"\
-        "?pagelen=100"
-      end
-
-      let(:bitbucket_status) { 200 }
-      let(:bitbucket_response) { fixture("bitbucket", "business_files.json") }
-
-      before do
-        allow(finder).
-          to receive(:source).
-          and_return("host" => "bitbucket", "repo" => "org/#{dependency_name}")
-
-        stub_request(:get, bitbucket_url).
-          to_return(status: bitbucket_status,
-                    body: bitbucket_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
-      it "gets the right URL" do
-        is_expected.to eq(
-          "https://bitbucket.org/org/business/src/master/CHANGELOG.md"
-        )
-      end
-
-      context "that can't be found exists" do
-        let(:bitbucket_status) { 404 }
-        it { is_expected.to be_nil }
-      end
-    end
-
-    context "without a recognised source" do
-      before { allow(finder).to receive(:source).and_return(nil) }
-      it { is_expected.to be_nil }
+    it "delegates to ChangelogFinder and caches the response" do
+      expected_source =
+        { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
+        to receive(:new).
+        with(github_client: github_client, source: expected_source).once.
+        and_return(dummy_changelog_finder)
+      expect(dummy_changelog_finder).
+        to receive(:changelog_url).once.
+        and_return("https://example.com//CHANGELOG.md")
+      expect(finder.changelog_url).to eq("https://example.com//CHANGELOG.md")
+      expect(finder.changelog_url).to eq("https://example.com//CHANGELOG.md")
     end
   end
 
   describe "#release_url" do
     subject { finder.release_url }
-
-    context "with a github repo" do
-      let(:github_url) do
-        "https://api.github.com/repos/gocardless/business/releases"
-      end
-
-      let(:github_status) { 200 }
-
-      before do
-        stub_request(:get, github_url).
-          to_return(status: github_status,
-                    body: github_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
-      context "with releases" do
-        let(:github_response) { fixture("github", "business_releases.json") }
-
-        context "when the release is present" do
-          let(:dependency_version) { "1.8.0" }
-
-          context "and is updating from one version previous" do
-            let(:dependency_previous_version) { "1.7.0" }
-
-            it "gets the right URL" do
-              expect(subject).
-                to eq(
-                  "https://github.com/gocardless/business/releases/tag/v1.8.0"
-                )
-            end
-
-            context "but prefixed" do
-              let(:github_response) do
-                fixture("github", "prefixed_releases.json")
-              end
-
-              it "gets the right URL" do
-                expect(subject).
-                  to eq(
-                    "https://github.com/gocardless/business/releases/tag/"\
-                    "business-1.8.0"
-                  )
-              end
-            end
-
-            context "but unprefixed" do
-              let(:github_response) do
-                fixture("github", "unprefixed_releases.json")
-              end
-
-              it "gets the right URL" do
-                expect(subject).
-                  to eq(
-                    "https://github.com/gocardless/business/releases/tag/1.8.0"
-                  )
-              end
-            end
-
-            context "but in the tag_name section" do
-              let(:github_response) do
-                fixture("github", "unnamed_releases.json")
-              end
-
-              it "gets the right URL" do
-                expect(subject).
-                  to eq(
-                    "https://github.com/gocardless/business/releases/tag/"\
-                    "v1.8.0"
-                  )
-              end
-            end
-          end
-
-          context "and is updating from several versions previous" do
-            let(:dependency_previous_version) { "1.5.0" }
-
-            it "gets the right URL" do
-              expect(subject).
-                to eq("https://github.com/gocardless/business/releases")
-            end
-
-            context "to a non-latest version" do
-              let(:dependency_version) { "1.7.0" }
-
-              it "gets the right URL" do
-                expect(subject).
-                  to eq("https://github.com/gocardless/business"\
-                        "/releases?after=v1.8.0")
-              end
-            end
-          end
-
-          context "without a previous_version" do
-            let(:dependency_previous_version) { nil }
-
-            it "gets the right URL" do
-              expect(subject).
-                to eq("https://github.com/gocardless/business/releases")
-            end
-
-            context "to a non-latest version" do
-              let(:dependency_version) { "1.7.0" }
-
-              it "gets the right URL" do
-                expect(subject).
-                  to eq("https://github.com/gocardless/business"\
-                        "/releases?after=v1.8.0")
-              end
-            end
-          end
-        end
-
-        context "when the release is not present" do
-          let(:dependency_version) { "1.4.0" }
-          it { is_expected.to be_nil }
-        end
-
-        it "caches the call to github" do
-          2.times { finder.release_url }
-          expect(WebMock).to have_requested(:get, github_url).once
-        end
-      end
-
-      context "without any releases" do
-        let(:github_response) { [].to_json }
-
-        it { is_expected.to be_nil }
-
-        it "caches the call to github" do
-          2.times { finder.release_url }
-          expect(WebMock).to have_requested(:get, github_url).once
-        end
-      end
-
-      context "when the github_repo doesn't exists" do
-        let(:github_response) { fixture("github", "not_found.json") }
-        let(:github_status) { 404 }
-
-        it { is_expected.to be_nil }
-      end
+    let(:dummy_release_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
 
-    context "with a gitlab source" do
-      let(:gitlab_url) do
-        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
-      end
-
-      let(:gitlab_status) { 200 }
-      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
-
-      before do
-        allow(finder).
-          to receive(:source).
-          and_return("host" => "gitlab", "repo" => "org/#{dependency_name}")
-
-        stub_request(:get, gitlab_url).
-          to_return(status: gitlab_status,
-                    body: gitlab_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
-      context "with the current release" do
-        let(:dependency_version) { "1.5.0" }
-        let(:dependency_previous_version) { "1.4.0" }
-
-        it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/tags/v1.5.0")
-        end
-
-        context "when updating from several versions previous" do
-          let(:dependency_previous_version) { "1.3.0" }
-
-          it "gets the right URL" do
-            expect(subject).to eq("https://gitlab.com/org/business/tags")
-          end
-        end
-      end
-
-      context "without the current release" do
-        let(:dependency_version) { "1.6.0" }
-        it { is_expected.to be_nil }
-      end
-    end
-
-    context "without a recognised source" do
-      before { allow(finder).to receive(:source).and_return(nil) }
-      it { is_expected.to be_nil }
+    it "delegates to ReleaseFinder and caches the response" do
+      expected_source =
+        { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
+      expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
+        to receive(:new).
+        with(
+          github_client: github_client,
+          source: expected_source,
+          dependency: dependency
+        ).once.and_return(dummy_release_finder)
+      expect(dummy_release_finder).
+        to receive(:release_url).once.
+        and_return("https://example.com//CHANGELOG.md")
+      expect(finder.release_url).to eq("https://example.com//CHANGELOG.md")
+      expect(finder.release_url).to eq("https://example.com//CHANGELOG.md")
     end
   end
 end

@@ -7,14 +7,14 @@ require "dependabot/shared_helpers"
 module Dependabot
   module MetadataFinders
     class Base
+      require "dependabot/metadata_finders/base/changelog_finder"
+      require "dependabot/metadata_finders/base/release_finder"
+
       SOURCE_REGEX = %r{
         (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
         (?:\.com|\.org)/
         (?<repo>[^/\s]+/(?:(?!\.git)[^/\s])+)[\./]?
       }x
-
-      # Earlier entries are preferred
-      CHANGELOG_NAMES = %w(changelog history news changes release).freeze
 
       attr_reader :dependency, :github_client
 
@@ -64,45 +64,17 @@ module Dependabot
       end
 
       def look_up_changelog_url
-        files = fetch_dependency_file_list.select { |f| f.type == "file" }
-
-        CHANGELOG_NAMES.each do |name|
-          file = files.find { |f| f.name =~ /#{name}/i }
-          return file.html_url if file
-        end
-
-        nil
+        ChangelogFinder.
+          new(source: source, github_client: github_client).
+          changelog_url
       end
 
       def look_up_release_url
-        releases = fetch_dependency_releases
-
-        release_regex = version_regex(dependency.version)
-        release = releases.find do |r|
-          [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
-        end
-        return unless release
-
-        unless dependency.previous_version
-          return build_releases_index_url(releases: releases, release: release)
-        end
-
-        old_release_regex = version_regex(dependency.previous_version)
-        previous_release = releases.find do |r|
-          [r.name, r.tag_name].any? { |nm| old_release_regex.match?(nm.to_s) }
-        end
-
-        if previous_release &&
-           (releases.index(previous_release) - releases.index(release)) == 1
-          # No intermediate releases - link to release notes for this version
-          release.html_url
-        else
-          # There have been intermediate releases, so link to release notes
-          # index view
-          build_releases_index_url(releases: releases, release: release)
-        end
-      rescue Octokit::NotFound
-        nil
+        ReleaseFinder.new(
+          dependency: dependency,
+          source: source,
+          github_client: github_client
+        ).release_url
       end
 
       def look_up_commits_url
@@ -126,19 +98,6 @@ module Dependabot
         /(?:[^0-9\.]|\A)#{Regexp.escape(version || "unknown")}\z/
       end
 
-      def fetch_dependency_file_list
-        return [] unless source
-
-        case source.fetch("host")
-        when "github" then github_client.contents(source["repo"])
-        when "bitbucket" then fetch_bitbucket_file_list
-        when "gitlab" then fetch_gitlab_file_list
-        else raise "Unexpected repo host '#{source.fetch('host')}'"
-        end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound
-        []
-      end
-
       def fetch_dependency_tags
         return [] unless source
 
@@ -153,50 +112,6 @@ module Dependabot
         end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         []
-      end
-
-      def fetch_dependency_releases
-        return [] unless source
-
-        case source.fetch("host")
-        when "github"
-          github_client.releases(source["repo"]).sort_by(&:id).reverse
-        when "bitbucket"
-          [] # Bitbucket doesn't support releases
-        when "gitlab"
-          releases = gitlab_client.tags(source["repo"]).
-                     select(&:release).
-                     sort_by { |r| r.commit.authored_date }.
-                     reverse
-
-          releases.map do |tag|
-            OpenStruct.new(
-              name: tag.name,
-              tag_name: tag.release.tag_name,
-              html_url: "#{source_url}/tags/#{tag.name}"
-            )
-          end
-        else raise "Unexpected repo host '#{source.fetch('host')}'"
-        end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound
-        []
-      end
-
-      def build_releases_index_url(releases:, release:)
-        case source.fetch("host")
-        when "github"
-          if releases.first == release
-            "#{source_url}/releases"
-          else
-            subsequent_release = releases[releases.index(release) - 1]
-            "#{source_url}/releases?after=#{subsequent_release.tag_name}"
-          end
-        when "gitlab"
-          "#{source_url}/tags"
-        when "bitbucket"
-          raise "Bitbucket doesn't support releases"
-        else raise "Unexpected repo host '#{source.fetch('host')}'"
-        end
       end
 
       def build_compare_commits_url(current_tag, previous_tag)
@@ -238,35 +153,6 @@ module Dependabot
           "#{source_url}/commits/#{current_tag}"
         else
           "#{source_url}/commits/master"
-        end
-      end
-
-      def fetch_bitbucket_file_list
-        url = "https://api.bitbucket.org/2.0/repositories/"\
-              "#{source.fetch('repo')}/src?pagelen=100"
-        response = Excon.get(
-          url,
-          idempotent: true,
-          middlewares: SharedHelpers.excon_middleware
-        )
-        return [] if response.status >= 300
-
-        JSON.parse(response.body).fetch("values", []).map do |file|
-          OpenStruct.new(
-            name: file.fetch("path").split("/").last,
-            type: file.fetch("type") == "commit_file" ? "file" : file["type"],
-            html_url: "#{source_url}/src/master/#{file['path']}"
-          )
-        end
-      end
-
-      def fetch_gitlab_file_list
-        gitlab_client.repo_tree(source["repo"]).map do |file|
-          OpenStruct.new(
-            name: file.name,
-            type: file.type == "blob" ? "file" : file.type,
-            html_url: "#{source_url}/blob/master/#{file.path}"
-          )
         end
       end
 
