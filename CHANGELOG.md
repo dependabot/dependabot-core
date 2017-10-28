@@ -1,3 +1,7 @@
+## v0.25.1, 28 October 2017
+
+- Add npm require line to FileUpdaters
+
 ## v0.25.0, 28 October 2017
 
 - Alpha support for npm
