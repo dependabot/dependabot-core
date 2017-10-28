@@ -22,7 +22,8 @@ Before running Dependabot Core, install dependencies for the core library and
 the helpers:
 
 1. `bundle install`
-2. `cd helpers/javascript && yarn install && cd -`
+2. `cd helpers/yarn && yarn install && cd -`
+2. `cd helpers/npm && yarn install && cd -`
 3. `cd helpers/php && composer install && cd -`
 4. `pip install pip==9.0.1`
 
@@ -67,7 +68,6 @@ recurring payments from Europe, check them out.
 
 We'd love to see the following improvements to Dependabot Core:
 
-- Support for [npm5](https://www.npmjs.com/package/npm5) in JavaScript
 - Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile)
 - Support for additional languages (Elixir, anyone?)
 
