@@ -13,6 +13,24 @@ module Dependabot
         (?<repo>[^/\s]+/(?:(?!\.git)[^/\s])+)[\./]?
       }x
 
+      class Source
+        attr_reader :host, :repo
+
+        def initialize(host:, repo:)
+          @host = host
+          @repo = repo
+        end
+
+        def url
+          case host
+          when "github" then "https://github.com/" + repo
+          when "bitbucket" then "https://bitbucket.org/" + repo
+          when "gitlab" then "https://gitlab.com/" + repo
+          else raise "Unexpected repo host '#{host}'"
+          end
+        end
+      end
+
       attr_reader :dependency, :github_client
 
       def initialize(dependency:, github_client:)
@@ -21,14 +39,7 @@ module Dependabot
       end
 
       def source_url
-        return unless source
-
-        case source.fetch("host")
-        when "github" then github_client.web_endpoint + source.fetch("repo")
-        when "bitbucket" then "https://bitbucket.org/" + source.fetch("repo")
-        when "gitlab" then "https://gitlab.com/" + source.fetch("repo")
-        else raise "Unexpected repo host '#{source.fetch('host')}'"
-        end
+        source&.url
       end
 
       def changelog_url

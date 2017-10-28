@@ -27,10 +27,12 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
-  before do
-    allow(finder).
-      to receive(:source).
-      and_return("host" => "github", "repo" => "gocardless/#{dependency_name}")
+  before { allow(finder).to receive(:source).and_return(source) }
+  let(:source) do
+    Dependabot::MetadataFinders::Base::Source.new(
+      host: "github",
+      repo: "gocardless/#{dependency_name}"
+    )
   end
 
   describe "#source_url" do
@@ -39,17 +41,18 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     it { is_expected.to eq("https://github.com/gocardless/business") }
 
     context "with a bitbucket source" do
-      before do
-        allow(finder).
-          to receive(:source).
-          and_return("host" => "bitbucket", "repo" => "org/#{dependency_name}")
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "bitbucket",
+          repo: "org/#{dependency_name}"
+        )
       end
 
       it { is_expected.to eq("https://bitbucket.org/org/business") }
     end
 
     context "without a source" do
-      before { allow(finder).to receive(:source).and_return(nil) }
+      let(:source) { nil }
       it { is_expected.to be_nil }
     end
   end
@@ -61,13 +64,11 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     it "delegates to CommitsUrlFinder (and caches the instance)" do
-      expected_source =
-        { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::CommitsUrlFinder).
         to receive(:new).
         with(
           github_client: github_client,
-          source: expected_source,
+          source: source,
           dependency: dependency
         ).once.and_return(dummy_commits_url_finder)
       expect(dummy_commits_url_finder).
@@ -85,13 +86,11 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     it "delegates to ChangelogFinder (and caches the instance)" do
-      expected_source =
-        { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
         to receive(:new).
         with(
           github_client: github_client,
-          source: expected_source,
+          source: source,
           dependency: dependency
         ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
@@ -109,13 +108,11 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
 
     it "delegates to ReleaseFinder (and caches the instance)" do
-      expected_source =
-        { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
       expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
         to receive(:new).
         with(
           github_client: github_client,
-          source: expected_source,
+          source: source,
           dependency: dependency
         ).once.and_return(dummy_release_finder)
       expect(dummy_release_finder).

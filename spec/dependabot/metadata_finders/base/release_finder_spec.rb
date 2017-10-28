@@ -30,7 +30,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   let(:dependency_previous_version) { "1.0.0" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:source) do
-    { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
+    Dependabot::MetadataFinders::Base::Source.new(
+      host: "github",
+      repo: "gocardless/#{dependency_name}"
+    )
   end
 
   describe "#release_url" do
@@ -207,7 +210,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
       end
       let(:source) do
-        { "host" => "gitlab", "repo" => "org/#{dependency_name}" }
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "gitlab",
+          repo: "org/#{dependency_name}"
+        )
       end
 
       let(:gitlab_status) { 200 }

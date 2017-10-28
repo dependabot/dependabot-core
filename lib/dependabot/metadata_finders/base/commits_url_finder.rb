@@ -45,16 +45,6 @@ module Dependabot
 
         private
 
-        # TODO: refactor so this isn't duplicated with base class
-        def source_url
-          case source.fetch("host")
-          when "github" then github_client.web_endpoint + source.fetch("repo")
-          when "bitbucket" then "https://bitbucket.org/" + source.fetch("repo")
-          when "gitlab" then "https://gitlab.com/" + source.fetch("repo")
-          else raise "Unexpected repo host '#{source.fetch('host')}'"
-          end
-        end
-
         def git_source?(requirements)
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
@@ -81,64 +71,64 @@ module Dependabot
         def fetch_dependency_tags
           return [] unless source
 
-          case source.fetch("host")
+          case source.host
           when "github"
-            github_client.tags(source["repo"], per_page: 100).map(&:name)
+            github_client.tags(source.repo, per_page: 100).map(&:name)
           when "bitbucket"
             fetch_bitbucket_tags
           when "gitlab"
-            gitlab_client.tags(source["repo"]).map(&:name)
-          else raise "Unexpected repo host '#{source.fetch('host')}'"
+            gitlab_client.tags(source.repo).map(&:name)
+          else raise "Unexpected repo host '#{source.host}'"
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound
           []
         end
 
         def build_compare_commits_url(current_tag, previous_tag)
-          case source.fetch("host")
+          case source.host
           when "github"
             build_github_compare_url(current_tag, previous_tag)
           when "bitbucket"
             build_bitbucket_compare_url(current_tag, previous_tag)
           when "gitlab"
             build_gitlab_compare_url(current_tag, previous_tag)
-          else raise "Unexpected repo host '#{source.fetch('host')}'"
+          else raise "Unexpected repo host '#{source.host}'"
           end
         end
 
         def build_github_compare_url(current_tag, previous_tag)
           if current_tag && previous_tag
-            "#{source_url}/compare/#{previous_tag}...#{current_tag}"
+            "#{source.url}/compare/#{previous_tag}...#{current_tag}"
           elsif current_tag
-            "#{source_url}/commits/#{current_tag}"
+            "#{source.url}/commits/#{current_tag}"
           else
-            "#{source_url}/commits"
+            "#{source.url}/commits"
           end
         end
 
         def build_bitbucket_compare_url(current_tag, previous_tag)
           if current_tag && previous_tag
-            "#{source_url}/branches/compare/#{current_tag}..#{previous_tag}"
+            "#{source.url}/branches/compare/#{current_tag}..#{previous_tag}"
           elsif current_tag
-            "#{source_url}/commits/tag/#{current_tag}"
+            "#{source.url}/commits/tag/#{current_tag}"
           else
-            "#{source_url}/commits"
+            "#{source.url}/commits"
           end
         end
 
         def build_gitlab_compare_url(current_tag, previous_tag)
           if current_tag && previous_tag
-            "#{source_url}/compare/#{previous_tag}...#{current_tag}"
+            "#{source.url}/compare/#{previous_tag}...#{current_tag}"
           elsif current_tag
-            "#{source_url}/commits/#{current_tag}"
+            "#{source.url}/commits/#{current_tag}"
           else
-            "#{source_url}/commits/master"
+            "#{source.url}/commits/master"
           end
         end
 
         def fetch_bitbucket_tags
           url = "https://api.bitbucket.org/2.0/repositories/"\
-                "#{source.fetch('repo')}/refs/tags?pagelen=100"
+                "#{source.repo}/refs/tags?pagelen=100"
           response = Excon.get(
             url,
             idempotent: true,

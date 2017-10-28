@@ -30,7 +30,8 @@ module Dependabot
           source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
 
           return nil unless source_url
-          source_url.match(SOURCE_REGEX).named_captures
+          captures = source_url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
         def packagist_listing

@@ -14,7 +14,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     )
   end
   let(:github_client) { Octokit::Client.new(access_token: "token") }
-  let(:source) { { "host" => "github", "repo" => "gocardless/business" } }
+  let(:source) do
+    Dependabot::MetadataFinders::Base::Source.new(
+      host: "github",
+      repo: "gocardless/#{dependency_name}"
+    )
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -139,7 +144,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       let(:gitlab_status) { 200 }
       let(:gitlab_response) { fixture("gitlab", "business_files.json") }
-      let(:source) { { "host" => "gitlab", "repo" => "org/business" } }
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "gitlab",
+          repo: "org/#{dependency_name}"
+        )
+      end
 
       before do
         stub_request(:get, gitlab_url).
@@ -169,7 +179,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       let(:bitbucket_status) { 200 }
       let(:bitbucket_response) { fixture("bitbucket", "business_files.json") }
-      let(:source) { { "host" => "bitbucket", "repo" => "org/business" } }
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "bitbucket",
+          repo: "org/#{dependency_name}"
+        )
+      end
 
       before do
         stub_request(:get, bitbucket_url).

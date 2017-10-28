@@ -34,7 +34,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
   let(:dependency_previous_version) { "1.0.0" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:source) do
-    { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
+    Dependabot::MetadataFinders::Base::Source.new(
+      host: "github",
+      repo: "gocardless/#{dependency_name}"
+    )
   end
 
   context "#commits_url" do
@@ -235,7 +238,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
       let(:gitlab_status) { 200 }
       let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
       let(:source) do
-        { "host" => "gitlab", "repo" => "org/#{dependency_name}" }
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "gitlab",
+          repo: "org/#{dependency_name}"
+        )
       end
       before do
         stub_request(:get, gitlab_url).
@@ -280,7 +286,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
       let(:bitbucket_status) { 200 }
       let(:bitbucket_response) { fixture("bitbucket", "business_tags.json") }
       let(:source) do
-        { "host" => "bitbucket", "repo" => "org/#{dependency_name}" }
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "bitbucket",
+          repo: "org/#{dependency_name}"
+        )
       end
 
       before do

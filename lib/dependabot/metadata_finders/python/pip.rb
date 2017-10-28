@@ -22,7 +22,8 @@ module Dependabot
           source_url ||= source_from_description
 
           return nil unless source_url
-          source_url.match(SOURCE_REGEX).named_captures
+          captures = source_url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
         def source_from_description

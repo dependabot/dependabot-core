@@ -52,7 +52,8 @@ module Dependabot
                        find { |url| url =~ SOURCE_REGEX }
 
           return nil unless source_url
-          source_url.match(SOURCE_REGEX).named_captures
+          captures = source_url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
         def find_source_from_git_url
@@ -60,7 +61,8 @@ module Dependabot
 
           url = info[:url] || info.fetch("url")
           return nil unless url.match?(SOURCE_REGEX)
-          url.match(SOURCE_REGEX).named_captures
+          captures = url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
         def rubygems_listing

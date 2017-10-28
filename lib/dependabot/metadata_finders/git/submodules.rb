@@ -13,7 +13,8 @@ module Dependabot
                 dependency.requirements.first.fetch(source).fetch("url")
 
           return nil unless url.match?(SOURCE_REGEX)
-          url.match(SOURCE_REGEX).named_captures
+          captures = url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
       end
     end
