@@ -57,21 +57,21 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits_url" do
     subject { finder.commits_url }
-    let(:dummy_commits_url_builder) do
-      instance_double(Dependabot::MetadataFinders::Base::CommitsUrlBuilder)
+    let(:dummy_commits_url_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::CommitsUrlFinder)
     end
 
-    it "delegates to CommitsUrlBuilder (and caches the instance)" do
+    it "delegates to CommitsUrlFinder (and caches the instance)" do
       expected_source =
         { "host" => "github", "repo" => "gocardless/#{dependency_name}" }
-      expect(Dependabot::MetadataFinders::Base::CommitsUrlBuilder).
+      expect(Dependabot::MetadataFinders::Base::CommitsUrlFinder).
         to receive(:new).
         with(
           github_client: github_client,
           source: expected_source,
           dependency: dependency
-        ).once.and_return(dummy_commits_url_builder)
-      expect(dummy_commits_url_builder).
+        ).once.and_return(dummy_commits_url_finder)
+      expect(dummy_commits_url_finder).
         to receive(:commits_url).twice.
         and_return("https://example.com/commits")
       expect(finder.commits_url).to eq("https://example.com/commits")

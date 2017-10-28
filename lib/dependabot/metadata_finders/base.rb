@@ -9,7 +9,7 @@ module Dependabot
     class Base
       require "dependabot/metadata_finders/base/changelog_finder"
       require "dependabot/metadata_finders/base/release_finder"
-      require "dependabot/metadata_finders/base/commits_url_builder"
+      require "dependabot/metadata_finders/base/commits_url_finder"
 
       SOURCE_REGEX = %r{
         (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
@@ -53,12 +53,12 @@ module Dependabot
       end
 
       def commits_url
-        @commits_url_builder ||= CommitsUrlBuilder.new(
+        @commits_url_finder ||= CommitsUrlFinder.new(
           dependency: dependency,
           source: source,
           github_client: github_client
         )
-        @commits_url_builder.commits_url
+        @commits_url_finder.commits_url
       end
 
       private
