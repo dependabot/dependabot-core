@@ -1,3 +1,8 @@
+## v0.24.10, 28 October 2017
+
+- Refactor MetadataFinders for readability (shouldn't have any impact on use,
+  but it's a big refactor so should be released early)
+
 ## v0.24.9, 25 October 2017
 
 - Treat Ruby dependencies which explicitly specify the default source the same
