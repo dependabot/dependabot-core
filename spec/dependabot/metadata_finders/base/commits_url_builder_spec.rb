@@ -17,18 +17,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlBuilder do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: dependency_version,
-      requirements: [
-        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-      ],
+      requirements: dependency_requirements,
+      previous_requirements: dependency_previous_requirements,
       previous_version: dependency_previous_version,
       package_manager: "bundler"
     )
   end
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
+  let(:dependency_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
+  let(:dependency_previous_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
   let(:dependency_previous_version) { "1.0.0" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:source) do
@@ -129,7 +131,103 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlBuilder do
       end
     end
 
-    context "with a gitlab source" do
+    context "with a dependency that has a git source" do
+      let(:dependency_previous_requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business"
+            }
+          }
+        ]
+      end
+      let(:dependency_requirements) { dependency_previous_requirements }
+      let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+      let(:dependency_previous_version) do
+        "7638417db6d59f3c431d3e1f261cc637155684cd"
+      end
+
+      it "uses the SHA-1 hashes to build the compare URL" do
+        expect(builder.commits_url).
+          to eq(
+            "https://github.com/gocardless/business/compare/"\
+            "7638417db6d59f3c431d3e1f261cc637155684cd..."\
+            "cd8274d15fa3ae2ab983129fb037999f264ba9a7"
+          )
+      end
+
+      context "without a previous version" do
+        let(:dependency_previous_version) { nil }
+
+        it "uses the new SHA1 hash to build the compare URL" do
+          expect(builder.commits_url).
+            to eq("https://github.com/gocardless/business/commits/"\
+                  "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
+        end
+      end
+
+      context "for the previous requirement only" do
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+        end
+        let(:dependency_version) { "1.4.0" }
+
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        end
+
+        it do
+          is_expected.
+            to eq("https://github.com/gocardless/business/compare/"\
+                  "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
+        end
+
+        context "without a previous version" do
+          let(:dependency_previous_version) { nil }
+
+          it "uses the reference specified" do
+            expect(builder.commits_url).
+              to eq("https://github.com/gocardless/business/commits/v1.4.0")
+          end
+
+          context "but with a previously specified reference" do
+            let(:dependency_previous_requirements) do
+              [
+                {
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    ref: "7638417"
+                  }
+                }
+              ]
+            end
+
+            it "uses the reference specified" do
+              expect(builder.commits_url).
+                to eq("https://github.com/gocardless/business/compare/"\
+                      "7638417...v1.4.0")
+            end
+          end
+        end
+      end
+    end
+
+    context "with a gitlab repo" do
       let(:gitlab_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
       end
@@ -173,7 +271,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlBuilder do
       end
     end
 
-    context "with a bitbucket source" do
+    context "with a bitbucket repo" do
       let(:bitbucket_url) do
         "https://api.bitbucket.org/2.0/repositories/org/business/refs/tags"\
         "?pagelen=100"

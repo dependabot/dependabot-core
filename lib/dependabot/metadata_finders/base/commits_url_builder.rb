@@ -27,14 +27,14 @@ module Dependabot
           previous_version = dependency.previous_version
 
           current_tag =
-            if new_source_type == "git"
+            if git_source?(dependency.requirements)
               current_version
             else
               dependency_tags.find { |t| t =~ version_regex(current_version) }
             end
 
           previous_tag =
-            if old_source_type == "git"
+            if git_source?(dependency.previous_requirements)
               previous_version || previous_ref
             else
               dependency_tags.find { |t| t =~ version_regex(previous_version) }
@@ -55,26 +55,16 @@ module Dependabot
           end
         end
 
-        def new_source_type
-          sources =
-            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-          return "default" if sources.empty?
+        def git_source?(requirements)
+          sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
+          return false if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-          sources.first[:type] || sources.first.fetch("type")
-        end
-
-        def old_source_type
-          sources = dependency.previous_requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact
-
-          return "default" if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-          sources.first[:type] || sources.first.fetch("type")
+          source_type = sources.first[:type] || sources.first.fetch("type")
+          source_type == "git"
         end
 
         def previous_ref
-          return unless old_source_type == "git"
+          return unless git_source?(dependency.previous_requirements)
           dependency.previous_requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.compact.first
