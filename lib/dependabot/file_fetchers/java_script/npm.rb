@@ -7,7 +7,7 @@ module Dependabot
     module JavaScript
       class Npm < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(package.json package-json.lock) - filenames).empty?
+          (%w(package.json package-lock.json) - filenames).empty?
         end
 
         def self.required_files_message
