@@ -12,9 +12,17 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
-      version: "sha2",
-      previous_version: "sha1",
+      version: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+      previous_version: "7638417db6d59f3c431d3e1f261cc637155684cd",
       requirements: [
+        {
+          file: ".gitmodules",
+          requirement: nil,
+          groups: [],
+          source: { type: "git", url: url, branch: "master", ref: "master" }
+        }
+      ],
+      previous_requirements: [
         {
           file: ".gitmodules",
           requirement: nil,
@@ -57,7 +65,9 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
       let(:url) { "https://github.com/example/manifesto.git" }
       it do
         is_expected.
-          to eq("https://github.com/example/manifesto/compare/sha1...sha2")
+          to eq("https://github.com/example/manifesto/compare/"\
+                "7638417db6d59f3c431d3e1f261cc637155684cd..."\
+                "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
       end
     end
 
@@ -66,7 +76,8 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
       it do
         is_expected.
           to eq("https://bitbucket.org/example/manifesto/branches/"\
-                "compare/sha2..sha1")
+                "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7"\
+                "..7638417db6d59f3c431d3e1f261cc637155684cd")
       end
     end
 

@@ -313,7 +313,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          version: "sha1def",
+          version: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
           previous_version: previous_version,
           requirements: [
             {
@@ -340,12 +340,14 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           package_manager: "bundler"
         )
       end
-      let(:previous_version) { "sha1abc" }
+      let(:previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
 
       it "uses the SHA-1 hashes to build the compare URL" do
         expect(commits_url).
           to eq(
-            "https://github.com/gocardless/business/compare/sha1abc...sha1def"
+            "https://github.com/gocardless/business/compare/"\
+            "7638417db6d59f3c431d3e1f261cc637155684cd..."\
+            "cd8274d15fa3ae2ab983129fb037999f264ba9a7"
           )
       end
 
@@ -353,7 +355,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "business",
-            version: "sha1def",
+            version: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
             previous_version: previous_version,
             requirements: [
               {
@@ -404,7 +406,8 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it "finds the commits as normal" do
           expect(commits_url).
-            to eq("https://github.com/gocardless/business/commits")
+            to eq("https://github.com/gocardless/business/commits/"\
+                  "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
         end
       end
     end
@@ -449,14 +452,14 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
                   type: "git",
                   url: "https://github.com/gocardless/business",
                   branch: "master",
-                  ref: "sha1abc"
+                  ref: "7638417d"
                 }
               }
             ],
             package_manager: "bundler"
           )
         end
-        let(:previous_version) { "sha1abcd" }
+        let(:previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
         let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
         let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
 
@@ -476,7 +479,8 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         it "uses the SHA-1 hash previous version to build the compare URL" do
           expect(commits_url).
             to eq(
-              "https://github.com/gocardless/business/compare/sha1abcd...v1.5.0"
+              "https://github.com/gocardless/business/compare/"\
+              "7638417db6d59f3c431d3e1f261cc637155684cd...v1.5.0"
             )
         end
 
@@ -486,7 +490,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           it "uses the reference specified" do
             expect(commits_url).
               to eq("https://github.com/gocardless/business/compare/"\
-                    "sha1abc...v1.5.0")
+                    "7638417d...v1.5.0")
           end
         end
       end

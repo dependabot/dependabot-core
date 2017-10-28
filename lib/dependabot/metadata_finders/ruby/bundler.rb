@@ -39,36 +39,6 @@ module Dependabot
           end
         end
 
-        def look_up_commits_url
-          return super unless new_source_type == "git"
-          return super unless dependency.previous_version
-
-          return unless source_url
-
-          build_compare_commits_url(
-            dependency.version,
-            dependency.previous_version
-          )
-        end
-
-        def build_compare_commits_url(current_tag, previous_tag)
-          unless switching_source_from_git_to_default?
-            return super(current_tag, previous_tag)
-          end
-
-          old_ref =
-            if dependency.previous_version
-              dependency.previous_version
-            else
-              old_source =
-                dependency.previous_requirements.
-                map { |r| r.fetch(:source) }.uniq.compact.first
-              old_source[:ref] || old_source.fetch("ref")
-            end
-
-          super(current_tag, old_ref)
-        end
-
         def previous_ref
           dependency.previous_requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
@@ -85,22 +55,9 @@ module Dependabot
           previous_ref && new_ref && previous_ref != new_ref
         end
 
-        def switching_source_from_git_to_default?
-          new_source_type == "default" && old_source_type == "git"
-        end
-
         def new_source_type
           sources =
             dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-          return "default" if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-          sources.first[:type] || sources.first.fetch("type")
-        end
-
-        def old_source_type
-          sources = dependency.previous_requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact
 
           return "default" if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1

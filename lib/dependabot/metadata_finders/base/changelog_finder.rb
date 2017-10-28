@@ -5,6 +5,7 @@ require "gitlab"
 require "octokit"
 require "excon"
 
+require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
