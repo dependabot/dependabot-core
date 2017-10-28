@@ -15,14 +15,17 @@ dependencies:
     - gem update --system
     - gem install bundler -v 1.16.0.pre.3
   post:
-    - cd helpers/javascript && yarn install
+    - cd helpers/yarn && yarn install
+    - cd helpers/npm && yarn install
     - cd helpers/php && composer install
     - pip install pip==9.0.1
 
 test:
   pre:
     - bundle exec rubocop
-    - cd helpers/javascript && node_modules/.bin/eslint lib test bin
+    - cd helpers/yarn && node_modules/.bin/eslint lib test bin
+    - cd helpers/npm && node_modules/.bin/eslint lib test bin
   override:
     - bundle exec rspec spec
-    - cd helpers/javascript && node_modules/.bin/jest
+    - cd helpers/yarn && node_modules/.bin/jest
+    - cd helpers/npm && node_modules/.bin/jest
