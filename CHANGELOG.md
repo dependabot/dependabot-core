@@ -1,3 +1,8 @@
+## v0.25.2, 30 October 2017
+
+- Link to Ruby dependency homepage if source code can't be found
+- Refactor GitHub specific logic out of PullRequestCreator
+
 ## v0.25.1, 28 October 2017
 
 - Add npm require line to FileUpdaters
