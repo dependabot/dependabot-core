@@ -42,6 +42,10 @@ module Dependabot
         source&.url
       end
 
+      def homepage_url
+        source_url
+      end
+
       def changelog_url
         @changelog_finder ||= ChangelogFinder.new(
           dependency: dependency,

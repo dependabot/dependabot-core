@@ -243,4 +243,25 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       end
     end
   end
+
+  describe "#homepage_url" do
+    subject(:homepage_url) { finder.homepage_url }
+    let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+    let(:rubygems_response_code) { 200 }
+
+    before do
+      stub_request(:get, rubygems_url).
+        to_return(status: rubygems_response_code, body: rubygems_response)
+    end
+
+    context "when there is a homepage link in the rubygems response" do
+      let(:rubygems_response) do
+        fixture("ruby", "rubygems_response_changelog.json")
+      end
+
+      it "returns the specified homepage" do
+        expect(homepage_url).to eq("http://rubyonrails.org")
+      end
+    end
+  end
 end

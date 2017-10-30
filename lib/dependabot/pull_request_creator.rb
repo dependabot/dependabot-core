@@ -70,6 +70,8 @@ module Dependabot
     def version_pr_message
       msg = if source_url
               "Bumps [#{dependency.name}](#{source_url}) "
+            elsif homepage_url
+              "Bumps [#{dependency.name}](#{homepage_url}) "
             else
               "Bumps #{dependency.name} "
             end
@@ -80,6 +82,11 @@ module Dependabot
         msg += " This release includes the previously tagged commit."
       end
 
+      msg + metadata_links
+    end
+
+    def metadata_links
+      msg =  ""
       msg += "\n- [Release notes](#{release_url})" if release_url
       msg += "\n- [Changelog](#{changelog_url})" if changelog_url
       msg += "\n- [Commits](#{commits_url})" if commits_url
@@ -90,14 +97,14 @@ module Dependabot
       msg = "Updates the requirements on "
       msg += if source_url
                "[#{dependency.name}](#{source_url}) "
+             elsif homepage_url
+               "[#{dependency.name}](#{homepage_url}) "
              else
                "#{dependency.name} "
              end
 
       msg += "to permit the latest version."
-      msg += "\n- [Release notes](#{release_url})" if release_url
-      msg += "\n- [Changelog](#{changelog_url})" if changelog_url
-      msg
+      msg + metadata_links
     end
 
     def pr_message_with_custom_footer
@@ -143,6 +150,10 @@ module Dependabot
 
     def source_url
       metadata_finder.source_url
+    end
+
+    def homepage_url
+      metadata_finder.homepage_url
     end
 
     def metadata_finder

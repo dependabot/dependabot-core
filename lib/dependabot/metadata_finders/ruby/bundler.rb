@@ -25,6 +25,14 @@ module Dependabot
           super
         end
 
+        def homepage_url
+          if new_source_type == "default" && rubygems_listing["homepage_uri"]
+            return rubygems_listing["homepage_uri"]
+          end
+
+          super
+        end
+
         private
 
         def look_up_source

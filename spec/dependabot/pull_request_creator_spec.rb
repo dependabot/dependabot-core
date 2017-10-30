@@ -589,7 +589,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)"
+                    "/CHANGELOG.md)\n- [Commits]"\
+                    "(https://github.com/gocardless/business/commits/v1.5.0)"
             }
           )
       end
@@ -691,7 +692,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                     "(https://github.com/gocardless/business/releases?after="\
                     "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)"
+                    "/CHANGELOG.md)\n- [Commits]"\
+                    "(https://github.com/gocardless/business/commits/v1.5.0)"
             }
           )
       end
