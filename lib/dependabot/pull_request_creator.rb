@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
-require "octokit"
 
 module Dependabot
   class PullRequestCreator
+    require "dependabot/pull_request_creator/github"
+
     attr_reader :watched_repo, :dependency, :files, :base_commit,
                 :github_client, :pr_message_footer
 
@@ -29,110 +30,19 @@ module Dependabot
     end
 
     def create
-      return if branch_exists?
-
-      commit = create_commit
-      return unless create_branch(commit)
-
-      create_label unless dependencies_label_exists?
-
-      pull_request = create_pull_request
-
-      add_label_to_pull_request(pull_request)
-
-      pull_request
+      Github.new(
+        repo_name: watched_repo,
+        branch_name: new_branch_name,
+        base_commit: base_commit,
+        github_client: github_client,
+        files: files,
+        commit_message: commit_message,
+        pr_description: pr_message_with_custom_footer,
+        pr_name: pr_name
+      ).create
     end
 
     private
-
-    def branch_exists?
-      github_client.ref(watched_repo, "heads/#{new_branch_name}")
-      true
-    rescue Octokit::NotFound
-      false
-    end
-
-    def create_commit
-      tree = create_tree
-
-      github_client.create_commit(
-        watched_repo,
-        commit_message,
-        tree.sha,
-        base_commit
-      )
-    end
-
-    def create_tree
-      file_trees = files.map do |file|
-        if file.type == "file"
-          {
-            path: file.path.sub(%r{^/}, ""),
-            mode: "100644",
-            type: "blob",
-            content: file.content
-          }
-        elsif file.type == "submodule"
-          {
-            path: file.path.sub(%r{^/}, ""),
-            mode: "160000",
-            type: "commit",
-            sha: file.content
-          }
-        else
-          raise "Unknown file type #{file.type}"
-        end
-      end
-
-      github_client.create_tree(
-        watched_repo,
-        file_trees,
-        base_tree: base_commit
-      )
-    end
-
-    def create_branch(commit)
-      github_client.create_ref(
-        watched_repo,
-        "heads/#{new_branch_name}",
-        commit.sha
-      )
-    rescue Octokit::UnprocessableEntity => error
-      # Return quietly in the case of a race
-      return nil if error.message.match?(/Reference already exists/)
-      raise
-    end
-
-    def dependencies_label_exists?
-      github_client.
-        labels(watched_repo, per_page: 100).
-        map(&:name).
-        include?("dependencies")
-    end
-
-    def create_label
-      github_client.add_label(watched_repo, "dependencies", "0025ff")
-    rescue Octokit::UnprocessableEntity => error
-      raise unless error.errors.first.fetch(:code) == "already_exists"
-    end
-
-    def add_label_to_pull_request(pull_request)
-      github_client.add_labels_to_an_issue(
-        watched_repo,
-        pull_request.number,
-        ["dependencies"]
-      )
-    end
-
-    def create_pull_request
-      github_client.create_pull_request(
-        watched_repo,
-        default_branch,
-        new_branch_name,
-        pr_name,
-        pr_message_with_custom_footer
-      )
-    end
 
     def commit_message
       pr_name + "\n\n" + pr_message
@@ -193,10 +103,6 @@ module Dependabot
     def pr_message_with_custom_footer
       return pr_message unless pr_message_footer
       pr_message + "\n\n#{pr_message_footer}"
-    end
-
-    def default_branch
-      @default_branch ||= github_client.repository(watched_repo).default_branch
     end
 
     def new_branch_name
