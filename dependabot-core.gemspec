@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parseconfig", "~> 1.0"
   spec.add_dependency "parser", "~> 2.4"
   spec.add_dependency "toml-rb", "~> 1.1"
+  spec.add_dependency "nokogiri", "~> 1.8"
 
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec", "~> 3.7.0"
