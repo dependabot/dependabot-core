@@ -4,7 +4,7 @@ root = true
 [*]
 indent_size = 2
 translate_tabs_to_spaces = true
-indent_style = spaces
+indent_style = space
 end_of_line = lf
 charset = utf-8
 trim_trailing_whitespace = true
