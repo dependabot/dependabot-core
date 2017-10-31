@@ -1,3 +1,7 @@
+## v0.25.3, 31 October 2017
+
+- Require Bundler 1.16.0
+
 ## v0.25.2, 30 October 2017
 
 - Link to Ruby dependency homepage if source code can't be found
