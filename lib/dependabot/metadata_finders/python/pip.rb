@@ -8,6 +8,10 @@ module Dependabot
   module MetadataFinders
     module Python
       class Pip < Dependabot::MetadataFinders::Base
+        def homepage_url
+          pypi_listing.dig("info", "home_page") || super
+        end
+
         private
 
         def look_up_source
