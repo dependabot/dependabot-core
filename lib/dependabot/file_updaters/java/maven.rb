@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "nokogiri"
 require "dependabot/file_updaters/base"
 
 module Dependabot
@@ -23,14 +24,21 @@ module Dependabot
         end
 
         def updated_pom_content
-          # TODO: Update the pom.xml file for the new version requirement
-          # (which will be in dependency.requirements if that was set correctly
-          # in the updater)
-          pom.content
+          doc = Nokogiri::XML(pom.content)
+          original_node = doc.css("dependencies dependency").find do |node|
+            node_name = [
+              node.at_css("groupId").content,
+              node.at_css("artifactId").content
+            ].join("/")
+            node_name == dependency.name
+          end
+
+          original_node.at_css("version").content = dependency.version
+          doc.to_xml
         end
 
         def pom
-          @pom ||= dependency_files.find { |f| f.name == "pom.xml" }
+          @pom ||= get_original_file("pom.xml")
         end
       end
     end
