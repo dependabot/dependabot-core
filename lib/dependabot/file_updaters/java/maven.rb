@@ -29,7 +29,7 @@ module Dependabot
             node_name = [
               node.at_css("groupId").content,
               node.at_css("artifactId").content
-            ].join("/")
+            ].join(":")
             node_name == dependency.name
           end
 

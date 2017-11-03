@@ -33,7 +33,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
   end
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "org.apache.httpcomponents/httpclient",
+      name: "org.apache.httpcomponents:httpclient",
       version: "4.6.1",
       requirements: [
         {

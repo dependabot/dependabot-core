@@ -32,7 +32,7 @@ module Dependabot
           [
             dependency_node.at_css("groupId").content,
             dependency_node.at_css("artifactId").content
-          ].join("/")
+          ].join(":")
         end
 
         def pom

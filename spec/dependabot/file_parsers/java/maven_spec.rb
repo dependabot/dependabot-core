@@ -30,7 +30,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("com.google.guava/guava")
+        expect(dependency.name).to eq("com.google.guava:guava")
         expect(dependency.version).to eq("23.3-jre")
         expect(dependency.requirements).to eq(
           [
