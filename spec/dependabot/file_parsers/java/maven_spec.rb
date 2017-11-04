@@ -80,12 +80,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.google.guava:guava")
-          expect(dependency.version).to eq("23.3-jre")
+          expect(dependency.name).to eq("org.springframework.boot:spring-boot-maven-plugin")
+          expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "23.3-jre",
+                requirement: "1.5.8.RELEASE",
                 file: "pom.xml",
                 groups: [],
                 source: nil

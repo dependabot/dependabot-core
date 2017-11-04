@@ -5,30 +5,30 @@
   <groupId>com.dependabot</groupId>
   <artifactId>basic-pom</artifactId>
   <version>0.0.1-RELEASE</version>
-  <name>Dependabot Basic POM</name>
+  <name>Dependabot Plugin POM</name>
 
   <packaging>pom</packaging>
 
   <build>
     <plugins>
+      <!-- Spring Boot integration -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.2</version>
-
-        <dependencies>
-          <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>23.3-jre</version>
-          </dependency>
-
-          <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.3</version>
-          </dependency>
-        </dependencies>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>1.5.8.RELEASE</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Code coverage -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.7.9</version>
       </plugin>
     </plugins>
   </build>
