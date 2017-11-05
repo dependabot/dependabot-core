@@ -3,8 +3,6 @@
 require "dependabot/file_fetchers/base"
 require "dependabot/errors"
 
-require "rubygems_yaml_load_patch"
-
 module Dependabot
   module FileFetchers
     module Ruby

@@ -3,8 +3,6 @@
 require "dependabot/update_checkers/base"
 require "dependabot/git_commit_checker"
 
-require "rubygems_yaml_load_patch"
-
 module Dependabot
   module UpdateCheckers
     module Ruby

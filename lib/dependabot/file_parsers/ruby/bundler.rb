@@ -5,8 +5,6 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
-require "rubygems_yaml_load_patch"
-
 module Dependabot
   module FileParsers
     module Ruby
