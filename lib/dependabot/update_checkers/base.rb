@@ -79,8 +79,10 @@ module Dependabot
       end
 
       def requirements_need_update?
-        (updated_requirements - dependency.requirements).any? &&
-          updated_requirements.none? { |r| r[:requirement] == :unfixable }
+        changed_reqs = updated_requirements - dependency.requirements
+
+        return false if changed_reqs.none?
+        changed_reqs.none? { |r| r[:requirement] == :unfixable }
       end
     end
   end
