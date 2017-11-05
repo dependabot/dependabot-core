@@ -10,7 +10,7 @@ module Dependabot
 
         def look_up_source
           url = dependency.requirements.first.fetch(:source)[:url] ||
-                dependency.requirements.first.fetch(source).fetch("url")
+                dependency.requirements.first.fetch(:source).fetch("url")
 
           return nil unless url.match?(SOURCE_REGEX)
           captures = url.match(SOURCE_REGEX).named_captures
