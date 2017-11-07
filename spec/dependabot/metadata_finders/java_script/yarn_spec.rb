@@ -114,4 +114,23 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
       end
     end
   end
+
+  describe "#homepage_url" do
+    subject(:homepage_url) { finder.homepage_url }
+    let(:npm_url) { "https://registry.npmjs.org/etag" }
+
+    before do
+      stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
+    end
+
+    context "when there is a homepage link in the npm response" do
+      let(:npm_response) do
+        fixture("javascript", "npm_response_no_source.json")
+      end
+
+      it "returns the specified homepage" do
+        expect(homepage_url).to eq("https://example.come/jshttp/etag")
+      end
+    end
+  end
 end
