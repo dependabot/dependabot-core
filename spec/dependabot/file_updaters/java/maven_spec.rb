@@ -73,4 +73,25 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       its(:content) { is_expected.to include "<version>23.3-jre</version>" }
     end
   end
+
+  context "pom with dependency management" do
+    let(:pom_body) { fixture("java", "poms", "dependency_management_pom.xml") }
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    it "returns DependencyFile objects" do
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    end
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the updated pom file" do
+      subject(:updated_pom_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
+      its(:content) { is_expected.to include "<dependencyManagement>" }
+      its(:content) { is_expected.to include "<version>4.6.1</version>" }
+      its(:content) { is_expected.to include "<version>23.3-jre</version>" }
+    end
+  end
 end
