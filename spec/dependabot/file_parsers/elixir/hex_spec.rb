@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/elixir/hex"
@@ -14,8 +15,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "mix.lock", content: lockfile_body)
   end
-  let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version_specified") }
-  let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version_specified") }
+  let(:mixfile_body) do
+    fixture("elixir", "mixfiles", "minor_version_specified")
+  end
+  let(:lockfile_body) do
+    fixture("elixir", "lockfiles", "minor_version_specified")
+  end
   let(:parser) { described_class.new(dependency_files: files) }
 
   describe "parse" do

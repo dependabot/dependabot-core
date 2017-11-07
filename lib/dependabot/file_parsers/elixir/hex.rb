@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/elixir/hex"
@@ -19,7 +20,7 @@ module Dependabot
                 source: nil,
                 file: "mix.exs"
               }],
-              package_manager: "hex",
+              package_manager: "hex"
             )
           end
         end
@@ -30,14 +31,17 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "mix.exs"), mixfile.content)
             File.write(File.join(dir, "mix.lock"), lockfile.content)
-            FileUtils.cp(elixir_helper_load_deps_path, File.join(dir, "load_deps.exs"))
+            FileUtils.cp(
+              elixir_helper_load_deps_path,
+              File.join(dir, "load_deps.exs")
+            )
 
             SharedHelpers.run_helper_subprocess(
               env: {
                 "MIX_EXS" => elixir_helper_mix_exs_path,
                 "MIX_LOCK" => elixir_helper_mix_lock_path,
                 "MIX_DEPS" => elixir_helper_mix_deps_path,
-                "MIX_QUIET" => "1",
+                "MIX_QUIET" => "1"
               },
               command: "mix run #{elixir_helper_path}",
               function: "parse",
@@ -71,14 +75,13 @@ module Dependabot
           File.join(project_root, "helpers/elixir/bin/load_deps.exs")
         end
 
-
         def required_files
           Dependabot::FileFetchers::Elixir::Hex.required_files
         end
 
         def check_required_files
           # TODO
-          return
+          nil
         end
 
         def mixfile
