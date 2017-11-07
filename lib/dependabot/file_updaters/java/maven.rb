@@ -7,6 +7,8 @@ module Dependabot
   module FileUpdaters
     module Java
       class Maven < Dependabot::FileUpdaters::Base
+        DEPENDENCY_SELECTOR = "dependencies > dependency, plugins plugin"
+
         def self.updated_files_regex
           [/^pom\.xml$/]
         end
@@ -25,7 +27,7 @@ module Dependabot
 
         def updated_pom_content
           doc = Nokogiri::XML(pom.content)
-          original_node = doc.css("dependencies dependency").find do |node|
+          original_node = doc.css(DEPENDENCY_SELECTOR).find do |node|
             node_name = [
               node.at_css("groupId").content,
               node.at_css("artifactId").content
