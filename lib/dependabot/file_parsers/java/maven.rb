@@ -9,9 +9,11 @@ module Dependabot
   module FileParsers
     module Java
       class Maven < Dependabot::FileParsers::Base
+        DEPENDENCY_SELECTOR = "dependencies > dependency, plugins plugin"
+
         def parse
           doc = Nokogiri::XML(pom.content)
-          doc.css("dependencies > dependency, plugins plugin").map do |dependency_node|
+          doc.css(DEPENDENCY_SELECTOR).map do |dependency_node|
             Dependency.new(
               name: dependency_name(dependency_node),
               version: dependency_version(dependency_node),

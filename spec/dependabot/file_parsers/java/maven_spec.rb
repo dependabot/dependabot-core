@@ -80,7 +80,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("org.springframework.boot:spring-boot-maven-plugin")
+          expect(dependency.name).
+            to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [
@@ -97,7 +98,9 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for pluginManagement dependencies" do
-      let(:pom_body) { fixture("java", "poms", "plugin_management_dependencies_pom.xml") }
+      let(:pom_body) do
+        fixture("java", "poms", "plugin_management_dependencies_pom.xml")
+      end
 
       its(:length) { is_expected.to eq(2) }
 
@@ -106,15 +109,16 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("org.springframework.boot:spring-boot-maven-plugin")
+          expect(dependency.name).
+            to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
             [
               {
-               requirement: "1.5.8.RELEASE",
-               file: "pom.xml",
-               groups: [],
-               source: nil
+                requirement: "1.5.8.RELEASE",
+                file: "pom.xml",
+                groups: [],
+                source: nil
               }
             ]
           )
