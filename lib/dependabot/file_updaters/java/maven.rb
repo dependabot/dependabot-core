@@ -35,7 +35,18 @@ module Dependabot
             node_name == dependency.name
           end
 
-          original_node.at_css("version").content = dependency.version
+          version_content = original_node.at_css("version").content
+
+          if version_content.start_with?("${")
+            property_name = version_content.strip[2..-2]
+
+            doc.remove_namespaces!
+            doc.at_xpath("//properties/#{property_name}").content =
+              dependency.version
+          else
+            original_node.at_css("version").content = dependency.version
+          end
+
           doc.to_xml
         end
 
