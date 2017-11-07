@@ -1,3 +1,8 @@
+## v0.25.4, 07 November 2017
+
+- Add homepage links for Python and JavaScript
+- Remove Rubygems monkeypatch in favour of required rubygems version
+
 ## v0.25.3, 31 October 2017
 
 - Require Bundler 1.16.0
