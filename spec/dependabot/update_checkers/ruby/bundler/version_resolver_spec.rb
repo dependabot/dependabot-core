@@ -217,6 +217,28 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         end
       end
 
+      context "that doesn't have details of the gem" do
+        before do
+          stub_request(:get, gemfury_business_url).
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 404)
+
+          # Stub indexes to return details of other gems (but not this one)
+          stub_request(:get, registry_url + "specs.4.8.gz").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "contribsys_old_index_response")
+            )
+          stub_request(:get, registry_url + "prerelease_specs.4.8.gz").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "contribsys_old_index_prerelease_response")
+            )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "that only implements the old Bundler index format..." do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "sidekiq_pro") }
         let(:lockfile_body) { fixture("ruby", "lockfiles", "sidekiq_pro.lock") }

@@ -78,6 +78,7 @@ module Dependabot
                     reject { |s| s.version.prerelease? }
                 end.
                 sort_by(&:version).last
+              return nil if spec.nil?
               { version: spec.version }
             end
           end
