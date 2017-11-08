@@ -38,16 +38,29 @@ module Dependabot
           version_content = original_node.at_css("version").content
 
           if version_content.start_with?("${")
-            property_name = version_content.strip[2..-2]
-
-            doc.remove_namespaces!
-            doc.at_xpath("//properties/#{property_name}").content =
-              dependency.version
+            update_property_node(doc: doc, version_content: version_content)
           else
             original_node.at_css("version").content = dependency.version
           end
 
           doc.to_xml
+        end
+
+        def update_property_node(doc:, version_content:)
+          property_name = version_content.strip[2..-2]
+          namespace = doc.namespaces["xmlns"]
+
+          property_node =
+            if namespace
+              doc.at_xpath(
+                "//ns:properties/ns:#{property_name}",
+                "ns" => namespace
+              )
+            else
+              doc.at_xpath("//properties/#{property_name}")
+            end
+
+          property_node.content = dependency.version
         end
 
         def pom
