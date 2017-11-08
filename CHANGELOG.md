@@ -1,3 +1,7 @@
+## v0.25.6, 08 November 2017
+
+- Handle missing Ruby private dependencies
+
 ## v0.25.5, 08 November 2017
 
 - Allow Rubygems 2.6.13 for now (since Heroku uses it)
