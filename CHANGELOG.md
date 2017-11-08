@@ -1,3 +1,7 @@
+## v0.25.5, 08 November 2017
+
+- Allow Rubygems 2.6.13 for now (since Heroku uses it)
+
 ## v0.25.4, 07 November 2017
 
 - Add homepage links for Python and JavaScript
