@@ -376,6 +376,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
       end
+
+      context "without a `tests_require` key" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "no_tests_require.py")
+          )
+        end
+
+        its(:length) { is_expected.to eq(11) }
+      end
     end
   end
 end

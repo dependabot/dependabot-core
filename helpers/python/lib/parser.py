@@ -17,19 +17,20 @@ def parse(directory):
                 session=PipSession()
             )
             for install_req in requirements:
-                if (not install_req.original_link and install_req.is_pinned):
-                    specifier = next(iter(install_req.specifier))
+                if (install_req.original_link or not install_req.is_pinned):
+                    continue
+                specifier = next(iter(install_req.specifier))
 
-                    pattern = r"-[cr] (.*) \(line \d+\)"
-                    abs_path = re.search(pattern, install_req.comes_from).group(1)
-                    rel_path = os.path.relpath(abs_path, directory)
+                pattern = r"-[cr] (.*) \(line \d+\)"
+                abs_path = re.search(pattern, install_req.comes_from).group(1)
+                rel_path = os.path.relpath(abs_path, directory)
 
-                    requirement_packages.append({
-                        "name": install_req.req.name,
-                        "version": specifier.version,
-                        "file": rel_path,
-                        "requirement": str(specifier)
-                    })
+                requirement_packages.append({
+                    "name": install_req.req.name,
+                    "version": specifier.version,
+                    "file": rel_path,
+                    "requirement": str(specifier)
+                })
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
             exit(1)
@@ -40,16 +41,19 @@ def parse(directory):
     if os.path.isfile(directory + '/setup.py'):
         def setup(*args, **kwargs):
             for arg in ['install_requires', 'tests_require']:
+                if not kwargs.get(arg):
+                    continue
                 for req in kwargs.get(arg):
                     install_req = InstallRequirement.from_line(req)
-                    if (not install_req.original_link and install_req.is_pinned):
-                        specifier = next(iter(install_req.specifier))
-                        setup_packages.append({
-                            "name": install_req.req.name,
-                            "version": specifier.version,
-                            "file": "setup.py",
-                            "requirement": str(specifier)
-                        })
+                    if (install_req.original_link or not install_req.is_pinned):
+                        continue
+                    specifier = next(iter(install_req.specifier))
+                    setup_packages.append({
+                        "name": install_req.req.name,
+                        "version": specifier.version,
+                        "file": "setup.py",
+                        "requirement": str(specifier)
+                    })
         setuptools.setup = setup
         try:
             setup_file = open(directory + '/setup.py', 'r')
