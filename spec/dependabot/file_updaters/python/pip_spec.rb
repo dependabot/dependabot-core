@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [requirements],
+      dependency_files: dependency_files,
       dependency: dependency,
       credentials: [
         {
@@ -23,6 +23,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       ]
     )
   end
+  let(:dependency_files) { [requirements] }
   let(:requirements) do
     Dependabot::DependencyFile.new(
       content: requirements_body,
@@ -104,19 +105,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
 
       context "when the dependency is in a child requirement file" do
-        let(:updater) do
-          described_class.new(
-            dependency_files: [requirements, more_requirements],
-            dependency: dependency,
-            credentials: [
-              {
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }
-            ]
-          )
-        end
+        let(:dependency_files) { [requirements, more_requirements] }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -160,21 +149,75 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
     end
 
-    context "when the dependency is in constraints.txt and requirement.txt" do
-      let(:updater) do
-        described_class.new(
-          dependency_files: [requirements, constraints],
-          dependency: dependency,
-          credentials: [
+    context "with only a setup.py" do
+      subject(:updated_setup_file) do
+        updated_files.find { |f| f.name == "setup.py" }
+      end
+      let(:dependency_files) { [setup] }
+      let(:setup) do
+        Dependabot::DependencyFile.new(
+          content: fixture("python", "setup_files", "setup.py"),
+          name: "setup.py"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "psycopg2",
+          version: "2.8.1",
+          requirements: [
             {
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
+              file: "setup.py",
+              requirement: "==2.8.1",
+              groups: [],
+              source: nil
             }
-          ]
+          ],
+          previous_requirements: [
+            {
+              file: "setup.py",
+              requirement: "==2.7.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
         )
       end
 
+      its(:content) { is_expected.to include "'psycopg2==2.8.1',\n" }
+      its(:content) { is_expected.to include "pep8==1.7.0" }
+
+      context "with non-standard formatting" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "raven",
+            version: "5.34.0",
+            requirements: [
+              {
+                file: "setup.py",
+                requirement: "==5.34.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "setup.py",
+                requirement: "==5.32.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "'raven == 5.34.0',\n" }
+      end
+    end
+
+    context "when the dependency is in constraints.txt and requirement.txt" do
+      let(:dependency_files) { [requirements, constraints] }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "requests",

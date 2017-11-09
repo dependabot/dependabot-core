@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "python_requirement_line_parser"
+require "python_requirement_parser"
 require "dependabot/file_updaters/base"
 
 module Dependabot
@@ -10,7 +10,8 @@ module Dependabot
         def self.updated_files_regex
           [
             /^requirements\.txt$/,
-            /^constraints\.txt$/
+            /^constraints\.txt$/,
+            /^setup\.py$/
           ]
         end
 
@@ -29,15 +30,13 @@ module Dependabot
         private
 
         def check_required_files
-          %w(requirements.txt).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          return if get_original_file("requirements.txt")
+          return if get_original_file("setup.py")
+          raise "No requirements.txt or setup.py!"
         end
 
         def original_file(filename)
-          file = get_original_file(filename)
-          raise "No #{filename} in #{dependency_files.map(&:name)}!" unless file
-          file
+          get_original_file(filename)
         end
 
         def updated_file_content(requirement)
@@ -48,7 +47,7 @@ module Dependabot
         end
 
         def original_dependency_declaration_string(requirements)
-          regex = PythonRequirementLineParser::REQUIREMENT_LINE
+          regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
           matches = []
 
           original_file(requirements.fetch(:file)).
@@ -60,9 +59,9 @@ module Dependabot
 
         def updated_dependency_declaration_string(requirement)
           original_dependency_declaration_string(requirement).
-            sub(PythonRequirementLineParser::REQUIREMENT) do |req|
+            sub(PythonRequirementParser::REQUIREMENT) do |req|
               req.sub(
-                PythonRequirementLineParser::VERSION,
+                PythonRequirementParser::VERSION,
                 dependency.version
               )
             end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
-require "python_requirement_line_parser"
+require "python_requirement_parser"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 
@@ -25,7 +25,7 @@ module Dependabot
 
           dependency.requirements.map do |req|
             updated_requirement_string = req[:requirement].sub(
-              PythonRequirementLineParser::VERSION,
+              PythonRequirementParser::VERSION,
               latest_resolvable_version.to_s
             )
 
