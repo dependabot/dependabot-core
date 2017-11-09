@@ -1,3 +1,7 @@
+## v0.27.0, 09 November 2017
+
+- Add support for Python libraries (i.e., repos with a setup.py)
+
 ## v0.26.0, 09 November 2017
 
 - Make repo a required argument to FileParsers
