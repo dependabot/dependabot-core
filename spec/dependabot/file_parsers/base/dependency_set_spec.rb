@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_parsers/ruby/bundler/dependency_set"
+require "dependabot/file_parsers/base/dependency_set"
 
-RSpec.describe Dependabot::FileParsers::Ruby::Bundler::DependencySet do
+RSpec.describe Dependabot::FileParsers::Base::DependencySet do
   let(:dependency_set) { described_class.new }
   let(:dependency) do
     Dependabot::Dependency.new(

@@ -261,8 +261,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      # Path based dependencies get ignored
-      its(:length) { is_expected.to eq(1) }
+      # setup.py dependencies get imported
+      its(:length) { is_expected.to eq(13) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -270,12 +270,18 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("requests")
-          expect(dependency.version).to eq("2.1.4")
+          expect(dependency.version).to eq("2.1.0")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "==2.1.4",
+                requirement: "==2.1.0",
                 file: "requirements.txt",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "==2.12.4",
+                file: "setup.py",
                 groups: [],
                 source: nil
               }
@@ -331,6 +337,38 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.2.0",
                 file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
+    context "with a setup.py" do
+      let(:files) { [setup_file] }
+      let(:setup_file) do
+        Dependabot::DependencyFile.new(
+          name: "setup.py",
+          content: fixture("python", "setup_files", "setup.py")
+        )
+      end
+
+      its(:length) { is_expected.to eq(13) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("boto3")
+          expect(dependency.version).to eq("1.3.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==1.3.1",
+                file: "setup.py",
                 groups: [],
                 source: nil
               }

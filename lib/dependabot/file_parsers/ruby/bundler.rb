@@ -9,7 +9,7 @@ module Dependabot
   module FileParsers
     module Ruby
       class Bundler < Dependabot::FileParsers::Base
-        require "dependabot/file_parsers/ruby/bundler/dependency_set"
+        require "dependabot/file_parsers/base/dependency_set"
         require "dependabot/file_parsers/ruby/bundler/file_preparer"
         require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
 

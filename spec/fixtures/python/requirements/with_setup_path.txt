@@ -1,2 +1,2 @@
 -e .
-requests==2.1.4
+requests==2.1.0
