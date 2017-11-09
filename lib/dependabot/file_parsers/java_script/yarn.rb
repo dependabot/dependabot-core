@@ -9,7 +9,12 @@ module Dependabot
     module JavaScript
       class Yarn < Dependabot::FileParsers::Base
         DEPENDENCY_TYPES =
-          %w(dependencies devDependencies optionalDependencies).freeze
+          %w(
+            dependencies
+            devDependencies
+            optionalDependencies
+            resolutions
+          ).freeze
 
         def parse
           dependency_versions.map do |dep|

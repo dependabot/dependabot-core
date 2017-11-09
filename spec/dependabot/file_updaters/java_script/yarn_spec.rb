@@ -97,6 +97,43 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
       end
 
+      context "when the the dependency is specified as a resolution" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.7.0",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "1.7.0",
+                groups: ["resolutions"],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "1.0.0",
+                groups: ["resolutions"],
+                source: nil
+              }
+            ]
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "resolutions.json")
+        end
+        let(:yarn_lock) do
+          Dependabot::DependencyFile.new(
+            name: "yarn.lock",
+            content: fixture("javascript", "lockfiles", "resolutions.lock")
+          )
+        end
+
+        its(:content) { is_expected.to include "\"etag\": \"1.7.0\"" }
+      end
+
       context "with a path-based dependency" do
         let(:files) { [package_json, yarn_lock, path_dep] }
         let(:package_json_body) do
