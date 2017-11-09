@@ -7,27 +7,35 @@ module Dependabot
     module Python
       class Pip < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          filenames.include?("requirements.txt")
+          return true if filenames.include?("requirements.txt")
+          filenames.include?("setup.py")
         end
 
         def self.required_files_message
-          "Repo must contain a requirements.txt."
+          "Repo must contain a requirements.txt or setup.py."
         end
 
         private
 
         def fetch_files
           fetched_files = []
-          fetched_files << requirement_file
+
           fetched_files << setup_file unless setup_file.nil?
-          fetched_files += child_requirement_files
-          fetched_files += constraints_files
-          fetched_files += path_setup_files
+
+          if requirement_file
+            fetched_files << requirement_file
+            fetched_files += child_requirement_files
+            fetched_files += constraints_files
+            fetched_files += path_setup_files
+          end
+
           fetched_files
         end
 
         def requirement_file
           @requirements_file ||= fetch_file_from_github("requirements.txt")
+        rescue Dependabot::DependencyFileNotFound
+          raise unless setup_file
         end
 
         def setup_file

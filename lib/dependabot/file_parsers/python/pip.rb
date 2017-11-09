@@ -9,25 +9,30 @@ module Dependabot
   module FileParsers
     module Python
       class Pip < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
         def parse
-          dependency_versions.
-            group_by { |dep| dep["name"] }.
-            map do |_, deps|
-              next if deps.first["version"].include?("*")
+          dependency_set = DependencySet.new
+
+          dependency_versions.each do |dep|
+            next if dep["version"].include?("*")
+            dependency_set <<
               Dependency.new(
-                name: deps.first["name"],
-                version: deps.first["version"],
-                requirements: deps.map do |dep|
+                name: dep["name"],
+                version: dep["version"],
+                requirements: [
                   {
                     requirement: dep["requirement"],
                     file: Pathname.new(dep["file"]).cleanpath.to_path,
                     source: nil,
                     groups: []
                   }
-                end,
+                ],
                 package_manager: "pip"
               )
-            end.compact
+          end
+
+          dependency_set.dependencies
         end
 
         private
@@ -61,9 +66,9 @@ module Dependabot
         end
 
         def check_required_files
-          %w(requirements.txt).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          return if get_original_file("requirements.txt")
+          return if get_original_file("setup.py")
+          raise "No requirements.txt or setup.py!"
         end
       end
     end

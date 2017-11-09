@@ -33,7 +33,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
     end
   end
 
-  # TODO: To support Python libraries we'd want to fetch these.
   context "with only a setup.py file" do
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
 
@@ -48,6 +47,25 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           body: fixture("github", "setup_content.json"),
           headers: { "content-type" => "application/json" }
         )
+    end
+
+    it "fetches the setup.py file" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(["setup.py"])
+    end
+  end
+
+  context "with neither a setup.py file not a requirements.txt" do
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "requirements.txt?ref=sha").
+        to_return(status: 404)
+      stub_request(:get, url + "setup.py?ref=sha").
+        to_return(status: 404)
     end
 
     it "raises a Dependabot::DependencyFileNotFound error" do

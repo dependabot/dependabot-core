@@ -19,13 +19,9 @@ setup(name='python-package',
           'pandas==0.19.2',
           'pep8==1.7.0',
           'psycopg2==2.6.1',
-          'raven == 5.32.0',
+          'raven==5.32.0',
           'requests==2.12.4',
           'scipy==0.18.1',
           'scikit-learn==0.18.1',
-      ],
-      tests_require=[
-          'pytest==2.9.1',
-          'responses==0.5.1',
       ]
       )
