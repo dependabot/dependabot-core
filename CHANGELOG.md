@@ -1,3 +1,7 @@
+## v0.25.8, 09 November 2017
+
+- Ignore custom names for submodule dependencies
+
 ## v0.25.7, 09 November 2017
 
 - Handle relative URLs for git submodules
