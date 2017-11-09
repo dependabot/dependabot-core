@@ -30,7 +30,7 @@ module Dependabot
                   file: ".gitmodules",
                   source: {
                     type: "git",
-                    url: params["url"],
+                    url: absolute_url(params["url"]),
                     branch: branch,
                     ref: branch
                   },
@@ -42,6 +42,14 @@ module Dependabot
         end
 
         private
+
+        def absolute_url(url)
+          # Submodules can be specified with a relative URL (e.g., ../repo.git)
+          # which we want to expand out into a full URL if present.
+          return url unless url.start_with?("../", "./")
+          path = Pathname.new(File.join(gitmodules_file.repo, url)).cleanpath
+          "https://github.com/#{path}"
+        end
 
         def submodule_sha(path)
           submodule = dependency_files.find { |f| f.name == path }
