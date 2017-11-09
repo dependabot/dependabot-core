@@ -1,3 +1,7 @@
+## v0.25.7, 09 November 2017
+
+- Handle relative URLs for git submodules
+
 ## v0.25.6, 08 November 2017
 
 - Handle missing Ruby private dependencies
