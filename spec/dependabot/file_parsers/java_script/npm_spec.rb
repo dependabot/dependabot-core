@@ -27,7 +27,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Npm do
   let(:lockfile_body) do
     fixture("javascript", "npm_lockfiles", "package-lock.json")
   end
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

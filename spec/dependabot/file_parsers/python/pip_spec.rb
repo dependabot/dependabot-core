@@ -18,7 +18,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
   let(:requirements_body) do
     fixture("python", "requirements", "version_specified.txt")
   end
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

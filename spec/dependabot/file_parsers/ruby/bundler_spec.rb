@@ -18,7 +18,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       content: lockfile_content
     )
   end
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

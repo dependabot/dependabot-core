@@ -43,8 +43,7 @@ module Dependabot
           # Submodules can be specified with a relative URL (e.g., ../repo.git)
           # which we want to expand out into a full URL if present.
           return url unless url.start_with?("../", "./")
-          path = Pathname.new(File.join(gitmodules_file.repo, url)).cleanpath
-          "https://github.com/#{path}"
+          "https://github.com/#{Pathname.new(File.join(repo, url)).cleanpath}"
         end
 
         def submodule_sha(path)

@@ -16,7 +16,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     )
   end
   let(:dockerfile_body) { fixture("docker", "dockerfiles", "tag") }
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -236,7 +236,8 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             let(:parser) do
               described_class.new(
                 dependency_files: files,
-                credentials: credentials
+                credentials: credentials,
+                repo: "org/nm"
               )
             end
             let(:credentials) do

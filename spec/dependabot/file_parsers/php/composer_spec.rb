@@ -27,7 +27,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
   let(:lockfile_body) do
     fixture("php", "lockfiles", "minor_version")
   end
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

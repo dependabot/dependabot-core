@@ -46,7 +46,6 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
 
         expect(file_fetcher_instance.files.first.name).to eq(".gitmodules")
         expect(file_fetcher_instance.files.first.type).to eq("file")
-        expect(file_fetcher_instance.files.first.repo).to eq("gocardless/bump")
 
         expect(file_fetcher_instance.files[1].name).to eq("about/documents")
         expect(file_fetcher_instance.files[1].type).to eq("submodule")

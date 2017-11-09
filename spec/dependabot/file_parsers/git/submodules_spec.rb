@@ -14,8 +14,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
   let(:gitmodules) do
     Dependabot::DependencyFile.new(
       name: ".gitmodules",
-      content: gitmodules_body,
-      repo: "org/repo"
+      content: gitmodules_body
     )
   end
   let(:manifesto_submodule) do
@@ -30,7 +29,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
   let(:gitmodules_body) do
     fixture("git", "gitmodules", ".gitmodules")
   end
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

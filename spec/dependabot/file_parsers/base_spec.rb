@@ -16,7 +16,7 @@ RSpec.describe Dependabot::FileParsers::Base do
     end
   end
   let(:parser_instance) do
-    child_class.new(dependency_files: files)
+    child_class.new(dependency_files: files, repo: "gocardless/business")
   end
 
   let(:gemfile) do

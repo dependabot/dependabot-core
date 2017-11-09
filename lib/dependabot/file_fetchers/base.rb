@@ -44,8 +44,7 @@ module Dependabot
         DependencyFile.new(
           name: Pathname.new(file_name).cleanpath.to_path,
           content: Base64.decode64(content).force_encoding("UTF-8").encode,
-          directory: directory,
-          repo: repo
+          directory: directory
         )
       rescue Octokit::NotFound
         raise Dependabot::DependencyFileNotFound, path

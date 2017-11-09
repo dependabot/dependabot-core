@@ -2,14 +2,13 @@
 
 module Dependabot
   class DependencyFile
-    attr_accessor :name, :content, :directory, :type, :repo
+    attr_accessor :name, :content, :directory, :type
 
-    def initialize(name:, content:, directory: "/", type: "file", repo: nil)
+    def initialize(name:, content:, directory: "/", type: "file")
       @name = name
       @content = content
       @directory = clean_directory(directory)
       @type = type
-      @repo = repo
     end
 
     def to_h
