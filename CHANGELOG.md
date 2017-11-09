@@ -1,3 +1,7 @@
+## v0.26.0, 09 November 2017
+
+- Make repo a required argument to FileParsers
+
 ## v0.25.8, 09 November 2017
 
 - Ignore custom names for submodule dependencies
