@@ -150,9 +150,19 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         fixture("python", "requirements", "version_between_bounds.txt")
       end
 
-      # TODO: For now we ignore dependencies with multiple requirements, because
-      # they would cause trouble at the dependency update step.
       its(:length) { is_expected.to eq(1) }
+
+      # describe "the first dependency" do
+      #   subject(:dependency) { dependencies.first }
+
+      #   it "has the right details" do
+      #     expect(dependency).to be_a(Dependabot::Dependency)
+      #     expect(dependency.name).to eq("psycopg2")
+      #     expect(dependency.version).to be_nil
+      #     expect(dependency.requirements.first[:requirement]).
+      #       to eq("<=3.0.0,==2.6.1")
+      #   end
+      # end
     end
 
     context "with a git dependency" do
@@ -178,6 +188,18 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
 
         its(:length) { is_expected.to eq(0) }
+
+        # describe "the first dependency" do
+        #   subject(:dependency) { dependencies.first }
+
+        #   it "has the right details" do
+        #     expect(dependency).to be_a(Dependabot::Dependency)
+        #     expect(dependency.name).to eq("requests")
+        #     expect(dependency.version).to be_nil
+        #     expect(dependency.requirements.first[:requirement]).
+        #       to eq("<2.0.0")
+        #   end
+        # end
       end
 
       context "that are specific" do
@@ -262,7 +284,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       # setup.py dependencies get imported
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(10) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -355,7 +377,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(10) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }

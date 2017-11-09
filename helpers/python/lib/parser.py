@@ -17,9 +17,12 @@ def parse(directory):
                 session=PipSession()
             )
             for install_req in requirements:
-                if (install_req.original_link or not install_req.is_pinned):
+                if install_req.original_link:
                     continue
-                specifier = next(iter(install_req.specifier))
+                if install_req.is_pinned:
+                    version = next(iter(install_req.specifier)).version
+                else:
+                    version = None
 
                 pattern = r"-[cr] (.*) \(line \d+\)"
                 abs_path = re.search(pattern, install_req.comes_from).group(1)
@@ -27,9 +30,9 @@ def parse(directory):
 
                 requirement_packages.append({
                     "name": install_req.req.name,
-                    "version": specifier.version,
+                    "version": version,
                     "file": rel_path,
-                    "requirement": str(specifier)
+                    "requirement": str(install_req.specifier) or None
                 })
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
@@ -45,14 +48,17 @@ def parse(directory):
                     continue
                 for req in kwargs.get(arg):
                     install_req = InstallRequirement.from_line(req)
-                    if (install_req.original_link or not install_req.is_pinned):
+                    if install_req.original_link:
                         continue
-                    specifier = next(iter(install_req.specifier))
+                    if install_req.is_pinned:
+                        version = next(iter(install_req.specifier)).version
+                    else:
+                        version = None
                     setup_packages.append({
                         "name": install_req.req.name,
-                        "version": specifier.version,
+                        "version": version,
                         "file": "setup.py",
-                        "requirement": str(specifier)
+                        "requirement": str(install_req.specifier) or None
                     })
         setuptools.setup = setup
         try:

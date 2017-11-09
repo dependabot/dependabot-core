@@ -15,6 +15,7 @@ module Dependabot
           dependency_set = DependencySet.new
 
           dependency_versions.each do |dep|
+            next if dep["version"].nil?
             next if dep["version"].include?("*")
             dependency_set <<
               Dependency.new(
