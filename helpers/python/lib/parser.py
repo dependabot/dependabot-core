@@ -64,7 +64,7 @@ def parse(directory):
         def noop(*args, **kwargs):
             pass
         def fake_open(*args, **kwargs):
-            return io.StringIO("VERSION = (0, 0, 1)")
+            return io.StringIO("VERSION = (0, 0, 1)\n__version__ = '0.0.1'\n")
         setuptools.setup = setup
         try:
             setup_file = open(directory + '/setup.py', 'r')
