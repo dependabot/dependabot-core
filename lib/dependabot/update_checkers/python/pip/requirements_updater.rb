@@ -34,8 +34,25 @@ module Dependabot
 
           def updated_setup_requirement(req)
             return req unless latest_resolvable_version
+            return req unless req.fetch(:requirement)
             return req if new_version_satisfies?(req)
-            updated_requirement(req)
+
+            req_strings = req[:requirement].split(",").map(&:strip)
+
+            new_requirement =
+              if req_strings.any? { |r| ruby_requirement(r).exact? }
+                find_and_update_equality_match(req_strings)
+              elsif req_strings.any? { |r| r.start_with?("~=", "==") }
+                tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
+                convert_twidle_to_range(
+                  ruby_requirement(tw_req),
+                  latest_resolvable_version
+                )
+              else
+                update_requirements_range(req_strings)
+              end
+
+            req.merge(requirement: new_requirement)
           end
 
           def updated_requirement(req)
@@ -120,17 +137,39 @@ module Dependabot
               when "<", "<="
                 op + update_greatest_version(r.to_s, latest_resolvable_version)
               when "!="
-                []
+                nil
               else
                 raise "Unexpected op for unsatisfied requirement: #{op}"
               end
-            end.map(&:to_s).join(",").delete(" ")
+            end.compact.map(&:to_s).join(",").delete(" ")
           end
 
           # Updates the version in a "~>" constraint to allow the given version
           def update_twiddle_version(req_string, version_to_be_permitted)
             old_version = req_string.gsub("~=", "")
             "~=#{at_same_precision(version_to_be_permitted, old_version)}"
+          end
+
+          def convert_twidle_to_range(requirement, version_to_be_permitted)
+            version = requirement.requirements.first.last
+            version = version.release if version.prerelease?
+
+            index_to_update = version.segments.count - 2
+
+            ub_segments = version_to_be_permitted.segments
+            ub_segments << 0 while ub_segments.count <= index_to_update
+            ub_segments = ub_segments[0..index_to_update]
+            ub_segments[index_to_update] += 1
+
+            lb_segments = version.segments
+            lb_segments.pop while lb_segments.last.zero?
+
+            # Ensure versions have the same length as each other (cosmetic)
+            length = [lb_segments.count, ub_segments.count].max
+            lb_segments.fill(0, lb_segments.count...length)
+            ub_segments.fill(0, ub_segments.count...length)
+
+            ">=#{lb_segments.join('.')},<#{ub_segments.join('.')}"
           end
 
           # Updates the version in a "<" or "<=" constraint to allow the given

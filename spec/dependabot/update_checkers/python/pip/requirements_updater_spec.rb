@@ -116,5 +116,82 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
         end
       end
     end
+
+    context "for a setup.py dependency" do
+      subject { updated_requirements.find { |r| r[:file] == "setup.py" } }
+
+      context "when there is no resolvable version" do
+        let(:latest_resolvable_version) { nil }
+        it { is_expected.to eq(setup_py_req) }
+      end
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        context "and a full version was previously pinned" do
+          let(:setup_py_req_string) { "==1.4.0" }
+          its([:requirement]) { is_expected.to eq("==1.5.0") }
+
+          context "that has fewer digits than the new version" do
+            let(:setup_py_req_string) { "==1.4.0" }
+            let(:latest_resolvable_version) { "1.5.0.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0.1") }
+          end
+        end
+
+        context "and no requirement was specified" do
+          let(:setup_py_req_string) { nil }
+          it { is_expected.to eq(setup_py_req) }
+        end
+
+        context "and a range requirement was specified" do
+          let(:setup_py_req_string) { ">=1.3.0" }
+          it { is_expected.to eq(setup_py_req) }
+
+          context "with an upper bound" do
+            let(:setup_py_req_string) { ">=1.3.0, <=1.5.0" }
+            it { is_expected.to eq(setup_py_req) }
+
+            context "that needs updating" do
+              let(:setup_py_req_string) { ">=1.3.0, <1.5" }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+            end
+          end
+        end
+
+        context "and a compatibility requirement was specified" do
+          let(:setup_py_req_string) { "~=1.3.0" }
+          its([:requirement]) { is_expected.to eq(">=1.3,<1.6") }
+
+          context "that supports the new version" do
+            let(:setup_py_req_string) { "~=1.3" }
+            it { is_expected.to eq(setup_py_req) }
+          end
+
+          context "that needs to be upated and maintain its precision" do
+            let(:setup_py_req_string) { "~=1.3" }
+            let(:latest_resolvable_version) { "2.1.0" }
+            its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
+          end
+        end
+
+        context "and a prefix match was specified" do
+          context "that is satisfied" do
+            let(:setup_py_req_string) { "==1.*.*" }
+            it { is_expected.to eq(setup_py_req) }
+          end
+
+          context "that needs updating" do
+            let(:setup_py_req_string) { "==1.4.*" }
+            its([:requirement]) { is_expected.to eq(">=1.4,<1.6") }
+          end
+
+          context "along with an exact match" do
+            let(:setup_py_req_string) { "==1.4.*, ==1.4.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0") }
+          end
+        end
+      end
+    end
   end
 end
