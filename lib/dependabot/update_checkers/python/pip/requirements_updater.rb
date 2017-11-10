@@ -57,6 +57,9 @@ module Dependabot
                 req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
                 next req_string unless req_string.include?(".*")
 
+                # Note: This isn't perfect. It replaces the "!= 1.0.x"
+                # case with "!= 1.0.0". There's no way to model this correctly
+                # in Ruby :'(
                 req_string.
                   split(".").
                   first(req_string.split(".").index("*") + 1).
