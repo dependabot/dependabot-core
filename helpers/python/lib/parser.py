@@ -60,10 +60,14 @@ def parse(directory):
                         "file": "setup.py",
                         "requirement": str(install_req.specifier) or None
                     })
+        def noop(*args, **kwargs):
+            pass
         setuptools.setup = setup
         try:
             setup_file = open(directory + '/setup.py', 'r')
-            exec(setup_file.read())
+            content = setup_file.read()
+            content = content.replace("print(", "noop(")
+            exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
             exit(1)
