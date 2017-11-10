@@ -1,3 +1,7 @@
+## v0.27.4, 10 November 2017
+
+- Sanitize Python requirement branch names
+
 ## v0.27.3, 10 November 2017
 
 - Handle Python range requirements
