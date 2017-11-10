@@ -1,3 +1,8 @@
+## v0.27.1, 10 November 2017
+
+- Handle setup.py file that include a print statement
+- Retry Docker timeouts
+
 ## v0.27.0, 09 November 2017
 
 - Add support for Python libraries (i.e., repos with a setup.py)
