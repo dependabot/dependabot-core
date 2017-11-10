@@ -131,9 +131,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         fixture("python", "requirements", "version_not_specified.txt")
       end
 
-      # If no version is specified, Python will always use the latest, and we
-      # don't need to attempt to bump the dependency.
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with prefix matching specified" do
@@ -150,19 +148,19 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         fixture("python", "requirements", "version_between_bounds.txt")
       end
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
 
-      # describe "the first dependency" do
-      #   subject(:dependency) { dependencies.first }
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
 
-      #   it "has the right details" do
-      #     expect(dependency).to be_a(Dependabot::Dependency)
-      #     expect(dependency.name).to eq("psycopg2")
-      #     expect(dependency.version).to be_nil
-      #     expect(dependency.requirements.first[:requirement]).
-      #       to eq("<=3.0.0,==2.6.1")
-      #   end
-      # end
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements.first[:requirement]).
+            to eq("<=3.0.0,==2.6.1")
+        end
+      end
     end
 
     context "with a git dependency" do
@@ -187,19 +185,20 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(0) }
+        its(:length) { is_expected.to eq(1) }
 
-        # describe "the first dependency" do
-        #   subject(:dependency) { dependencies.first }
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
 
-        #   it "has the right details" do
-        #     expect(dependency).to be_a(Dependabot::Dependency)
-        #     expect(dependency.name).to eq("requests")
-        #     expect(dependency.version).to be_nil
-        #     expect(dependency.requirements.first[:requirement]).
-        #       to eq("<2.0.0")
-        #   end
-        # end
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements.first[:requirement]).to be_nil
+            expect(dependency.requirements.last[:requirement]).
+              to eq("<2.0.0")
+          end
+        end
       end
 
       context "that are specific" do
@@ -219,8 +218,14 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to eq("2.0.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements).to match_array(
               [
+                {
+                  requirement: nil,
+                  file: "requirements.txt",
+                  groups: [],
+                  source: nil
+                },
                 {
                   requirement: "==2.0.0",
                   file: "constraints.txt",
@@ -284,7 +289,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       # setup.py dependencies get imported
-      its(:length) { is_expected.to eq(10) }
+      its(:length) { is_expected.to eq(13) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -377,7 +382,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(10) }
+      its(:length) { is_expected.to eq(13) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -418,7 +423,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(10) }
+        its(:length) { is_expected.to eq(13) }
       end
     end
   end
