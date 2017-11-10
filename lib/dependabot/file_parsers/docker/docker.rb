@@ -82,22 +82,7 @@ module Dependabot
 
           repo = image.split("/").count < 2 ? "library/#{image}" : image
 
-          registry =
-            if private_registry
-              credentials = private_registry_credentials(private_registry)
-              unless credentials
-                raise PrivateSourceNotReachable, private_registry
-              end
-
-              DockerRegistry2::Registry.new(
-                "https://#{private_registry}",
-                user: credentials["username"],
-                password: credentials["password"]
-              )
-            else
-              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
-            end
-
+          registry = docker_registry_client(private_registry)
           registry.tags(repo).fetch("tags").find do |tag|
             begin
               head = registry.dohead "/v2/#{repo}/manifests/#{tag}"
@@ -107,6 +92,21 @@ module Dependabot
               # no manifest is "library/python", "2-windowsservercore".
               false
             end
+          end
+        end
+
+        def docker_registry_client(private_registry)
+          if private_registry
+            credentials = private_registry_credentials(private_registry)
+            raise PrivateSourceNotReachable, private_registry unless credentials
+
+            DockerRegistry2::Registry.new(
+              "https://#{private_registry}",
+              user: credentials["username"],
+              password: credentials["password"]
+            )
+          else
+            DockerRegistry2::Registry.new("https://registry.hub.docker.com")
           end
         end
 

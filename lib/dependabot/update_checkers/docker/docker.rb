@@ -54,14 +54,21 @@ module Dependabot
 
         def tags_from_registry
           @tags_from_registry ||=
-            if dependency.name.split("/").count < 2
-              docker_registry_client.
-                tags("library/#{dependency.name}").
-                fetch("tags")
-            else
-              docker_registry_client.
-                tags(dependency.name).
-                fetch("tags")
+            begin
+              if dependency.name.split("/").count < 2
+                docker_registry_client.
+                  tags("library/#{dependency.name}").
+                  fetch("tags")
+              else
+                docker_registry_client.
+                  tags(dependency.name).
+                  fetch("tags")
+              end
+            rescue RestClient::Exceptions::Timeout
+              @attempt ||= 1
+              @attempt += 1
+              raise if @attempt > 3
+              retry
             end
         end
 

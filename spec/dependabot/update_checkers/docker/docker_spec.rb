@@ -93,6 +93,31 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it { is_expected.to eq("artful-20170916") }
     end
 
+    context "when the docker registry times out" do
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/ubuntu/tags/list"
+        stub_request(:get, tags_url).
+          to_raise(RestClient::Exceptions::OpenTimeout).then.
+          to_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("17.10") }
+
+      context "every time" do
+        before do
+          tags_url =
+            "https://registry.hub.docker.com/v2/library/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            to_raise(RestClient::Exceptions::OpenTimeout)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }.
+            to raise_error(RestClient::Exceptions::OpenTimeout)
+        end
+      end
+    end
+
     context "when the dependency's version has a suffix" do
       let(:dependency_name) { "ruby" }
       let(:version) { "2.4.0-slim" }

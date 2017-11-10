@@ -80,21 +80,37 @@ module Dependabot
         end
 
         def new_digest
-          image = dependency.name
-          repo = image.split("/").count < 2 ? "library/#{image}" : image
-          tag = dependency.version
+          @attempt = 1
+          @new_digest ||=
+            begin
+              image = dependency.name
+              repo = image.split("/").count < 2 ? "library/#{image}" : image
+              tag = dependency.version
 
-          response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
-          response.headers.fetch(:docker_content_digest)
+              response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
+              response.headers.fetch(:docker_content_digest)
+            rescue RestClient::Exceptions::Timeout
+              @attempt += 1
+              raise if @attempt > 3
+              retry
+            end
         end
 
         def old_digest
-          image = dependency.name
-          repo = image.split("/").count < 2 ? "library/#{image}" : image
-          tag = dependency.previous_version
+          @attempt = 1
+          @old_digest ||=
+            begin
+              image = dependency.name
+              repo = image.split("/").count < 2 ? "library/#{image}" : image
+              tag = dependency.previous_version
 
-          response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
-          response.headers.fetch(:docker_content_digest)
+              response = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
+              response.headers.fetch(:docker_content_digest)
+            rescue RestClient::Exceptions::Timeout
+              @attempt += 1
+              raise if @attempt > 3
+              retry
+            end
         end
 
         def private_registry_url
