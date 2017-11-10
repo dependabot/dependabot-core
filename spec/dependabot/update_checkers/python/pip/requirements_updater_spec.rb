@@ -70,6 +70,18 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:requirement_txt_req_string) { ">=1.3.0" }
             it { is_expected.to eq(requirement_txt_req) }
           end
+
+          context "because a prefix match was specified" do
+            context "that is satisfied" do
+              let(:requirement_txt_req_string) { "==1.*.*" }
+              it { is_expected.to eq(requirement_txt_req) }
+            end
+
+            context "that needs updating" do
+              let(:requirement_txt_req_string) { "==1.4.*" }
+              its([:requirement]) { is_expected.to eq("==1.5.*") }
+            end
+          end
         end
       end
     end

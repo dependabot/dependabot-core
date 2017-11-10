@@ -58,13 +58,10 @@ module Dependabot
         end
 
         def updated_dependency_declaration_string(requirement)
-          original_dependency_declaration_string(requirement).
-            sub(PythonRequirementParser::REQUIREMENT) do |req|
-              req.sub(
-                PythonRequirementParser::VERSION,
-                dependency.version
-              )
-            end
+          original_dependency_declaration_string(requirement).sub(
+            PythonRequirementParser::REQUIREMENTS,
+            requirement.fetch(:requirement)
+          )
         end
       end
     end

@@ -15,11 +15,10 @@ module Dependabot
           dependency_set = DependencySet.new
 
           dependency_versions.each do |dep|
-            next if dep["version"]&.include?("*")
             dependency_set <<
               Dependency.new(
                 name: dep["name"],
-                version: dep["version"],
+                version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [
                   {
                     requirement: dep["requirement"],

@@ -212,7 +212,39 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           )
         end
 
-        its(:content) { is_expected.to include "'raven == 5.34.0',\n" }
+        # It would be nice to preserve the formatting (which should be
+        # 'raven == 5.34.0') but it's no big deal.
+        its(:content) { is_expected.to include "'raven ==5.34.0',\n" }
+      end
+
+      context "with a prefix-matcher" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: nil,
+            requirements: [
+              {
+                file: "setup.py",
+                requirement: "==2.13.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "setup.py",
+                requirement: "==2.12.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+
+        # It would be nice to preserve the formatting (which should be
+        # 'raven == 5.34.0') but it's no big deal.
+        its(:content) { is_expected.to include "'requests==2.13.*',\n" }
       end
     end
 

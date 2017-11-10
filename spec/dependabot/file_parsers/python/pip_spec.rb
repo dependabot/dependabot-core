@@ -139,8 +139,18 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         fixture("python", "requirements", "prefix_match.txt")
       end
 
-      # TODO: we should support bumping prefix matches
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements.first[:requirement]).to eq("==2.6.*")
+        end
+      end
     end
 
     context "with a version specified as between two constraints" do
@@ -307,7 +317,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
                 source: nil
               },
               {
-                requirement: "==2.12.4",
+                requirement: "==2.12.*",
                 file: "setup.py",
                 groups: [],
                 source: nil
