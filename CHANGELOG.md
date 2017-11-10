@@ -1,3 +1,7 @@
+## v0.27.2, 10 November 2017
+
+- Handle Python requirements that specify a prefix-match
+
 ## v0.27.1, 10 November 2017
 
 - Handle setup.py file that include a print statement
