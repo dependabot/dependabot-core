@@ -130,9 +130,11 @@ module Dependabot
         gsub(">=", "gte-").
         gsub("<=", "lte-").
         gsub("~>", "tw-").
-        gsub("=", "eq-").
+        gsub("~=", "tw-").
+        gsub(/==*/, "eq-").
         gsub(">", "gt-").
         gsub("<", "lt-").
+        gsub("*", "star").
         gsub(",", "-and-")
     end
 
