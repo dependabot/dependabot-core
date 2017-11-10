@@ -9,6 +9,8 @@ module Dependabot
   module UpdateCheckers
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
+        require_relative "pip/requirements_updater"
+
         def latest_version
           @latest_version ||= fetch_latest_version
         end
@@ -21,16 +23,12 @@ module Dependabot
         end
 
         def updated_requirements
-          return dependency.requirements unless latest_resolvable_version
-
-          dependency.requirements.map do |req|
-            updated_requirement_string = req[:requirement].sub(
-              PythonRequirementParser::VERSION,
-              latest_resolvable_version.to_s
-            )
-
-            req.merge(requirement: updated_requirement_string)
-          end
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            existing_version: dependency.version,
+            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s
+          ).updated_requirements
         end
 
         private
