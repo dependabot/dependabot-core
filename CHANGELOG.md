@@ -1,3 +1,7 @@
+## v0.27.5, 10 November 2017
+
+- Attempt to handle setup.py file that include an "open" line
+
 ## v0.27.4, 10 November 2017
 
 - Sanitize Python requirement branch names
