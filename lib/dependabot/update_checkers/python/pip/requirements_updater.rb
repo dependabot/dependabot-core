@@ -53,10 +53,17 @@ module Dependabot
 
           def equivalent_ruby_requirement(requirement_string)
             requirement_string =
-              requirement_string.
-              gsub("~=", "~>").
-              gsub(/===?/, "=").
-              gsub(".*", "")
+              requirement_string.split(",").map do |req_string|
+                req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
+                next req_string unless req_string.include?(".*")
+
+                req_string.
+                  split(".").
+                  first(req_string.split(".").index("*") + 1).
+                  join(".").
+                  tr("*", "0").
+                  gsub(/^(?<!!)=/, "~>")
+              end.join(",")
             Gem::Requirement.new(requirement_string)
           end
 
