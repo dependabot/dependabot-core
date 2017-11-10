@@ -1,5 +1,6 @@
 import json
 import re
+import io
 import os.path
 
 import setuptools
@@ -62,11 +63,14 @@ def parse(directory):
                     })
         def noop(*args, **kwargs):
             pass
+        def fake_open(*args, **kwargs):
+            return io.StringIO("VERSION = (0, 0, 1)")
         setuptools.setup = setup
         try:
             setup_file = open(directory + '/setup.py', 'r')
             content = setup_file.read()
             content = content.replace("print(", "noop(")
+            content = content.replace("open(", "fake_open(")
             exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))

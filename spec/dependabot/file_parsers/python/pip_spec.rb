@@ -435,6 +435,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
         its(:length) { is_expected.to eq(13) }
       end
+
+      context "with an `open` statement" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "with_open.py")
+          )
+        end
+
+        its(:length) { is_expected.to eq(13) }
+      end
     end
   end
 end
