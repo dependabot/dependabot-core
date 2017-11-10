@@ -242,9 +242,35 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           )
         end
 
-        # It would be nice to preserve the formatting (which should be
-        # 'raven == 5.34.0') but it's no big deal.
         its(:content) { is_expected.to include "'requests==2.13.*',\n" }
+      end
+
+      context "with a range requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "flake8",
+            version: nil,
+            requirements: [
+              {
+                file: "setup.py",
+                requirement: ">2.5.4,<3.4.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "setup.py",
+                requirement: ">2.5.4,<3.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "'flake8 >2.5.4,<3.4.0',\n" }
       end
     end
 
