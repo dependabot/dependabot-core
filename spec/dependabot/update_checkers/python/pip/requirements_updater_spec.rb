@@ -7,7 +7,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      existing_version: existing_version,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -33,7 +32,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
   let(:requirement_txt_req_string) { "==1.4.0" }
   let(:setup_py_req_string) { ">= 1.4.0" }
 
-  let(:existing_version) { "1.4.0" }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -56,31 +54,64 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
         context "and a full version was previously pinned" do
           let(:requirement_txt_req_string) { "==1.4.0" }
           its([:requirement]) { is_expected.to eq("==1.5.0") }
+
+          context "that has fewer digits than the new version" do
+            let(:requirement_txt_req_string) { "==1.4.0" }
+            let(:latest_resolvable_version) { "1.5.0.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0.1") }
+          end
         end
 
-        context "when there is no `existing_version`" do
-          let(:existing_version) { nil }
+        context "and no requirement was specified" do
+          let(:requirement_txt_req_string) { nil }
+          it { is_expected.to eq(requirement_txt_req) }
+        end
 
-          context "because no requirement was specified" do
-            let(:requirement_txt_req_string) { nil }
+        context "and a range requirement was specified" do
+          let(:requirement_txt_req_string) { ">=1.3.0" }
+          it { is_expected.to eq(requirement_txt_req) }
+
+          context "with an upper bound" do
+            let(:requirement_txt_req_string) { ">=1.3.0, <=1.5.0" }
             it { is_expected.to eq(requirement_txt_req) }
-          end
-
-          context "because a range requirement was specified" do
-            let(:requirement_txt_req_string) { ">=1.3.0" }
-            it { is_expected.to eq(requirement_txt_req) }
-          end
-
-          context "because a prefix match was specified" do
-            context "that is satisfied" do
-              let(:requirement_txt_req_string) { "==1.*.*" }
-              it { is_expected.to eq(requirement_txt_req) }
-            end
 
             context "that needs updating" do
-              let(:requirement_txt_req_string) { "==1.4.*" }
-              its([:requirement]) { is_expected.to eq("==1.5.*") }
+              let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
             end
+          end
+        end
+
+        context "and a compatibility requirement was specified" do
+          let(:requirement_txt_req_string) { "~=1.3.0" }
+          its([:requirement]) { is_expected.to eq("~=1.5.0") }
+
+          context "that supports the new version" do
+            let(:requirement_txt_req_string) { "~=1.3" }
+            its([:requirement]) { is_expected.to eq("~=1.5") }
+          end
+
+          context "that needs to be upated and maintain its precision" do
+            let(:requirement_txt_req_string) { "~=1.3" }
+            let(:latest_resolvable_version) { "2.1.0" }
+            its([:requirement]) { is_expected.to eq("~=2.1") }
+          end
+        end
+
+        context "and a prefix match was specified" do
+          context "that is satisfied" do
+            let(:requirement_txt_req_string) { "==1.*.*" }
+            it { is_expected.to eq(requirement_txt_req) }
+          end
+
+          context "that needs updating" do
+            let(:requirement_txt_req_string) { "==1.4.*" }
+            its([:requirement]) { is_expected.to eq("==1.5.*") }
+          end
+
+          context "along with an exact match" do
+            let(:requirement_txt_req_string) { "==1.4.*, ==1.4.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0") }
           end
         end
       end

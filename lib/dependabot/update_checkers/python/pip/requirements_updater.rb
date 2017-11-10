@@ -7,16 +7,11 @@ module Dependabot
     module Python
       class Pip
         class RequirementsUpdater
-          attr_reader :requirements, :existing_version,
-                      :latest_version, :latest_resolvable_version
+          attr_reader :requirements, :latest_version, :latest_resolvable_version
 
-          def initialize(requirements:, existing_version:,
-                         latest_version:, latest_resolvable_version:)
+          def initialize(requirements:, latest_version:,
+                         latest_resolvable_version:)
             @requirements = requirements
-
-            if existing_version
-              @existing_version = Gem::Version.new(existing_version)
-            end
 
             @latest_version = Gem::Version.new(latest_version) if latest_version
 
@@ -26,33 +21,64 @@ module Dependabot
           end
 
           def updated_requirements
-            requirements.map { |req| updated_requirement(req) }
+            requirements.map do |req|
+              if req[:file] == "setup.py"
+                updated_setup_requirement(req)
+              else
+                updated_requirement(req)
+              end
+            end
           end
 
           private
 
+          def updated_setup_requirement(req)
+            return req unless latest_resolvable_version
+            return req if new_version_satisfies?(req)
+            updated_requirement(req)
+          end
+
           def updated_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
-            return req if new_version_satisfies?(req)
-            return req unless req.fetch(:requirement).split(",").count == 1
-            return req unless req.fetch(:requirement).start_with?("==")
 
-            updated_requirement_string =
-              req[:requirement].sub(PythonRequirementParser::VERSION) do |v|
-                at_same_precision(latest_resolvable_version.to_s, v)
+            requirement_strings = req[:requirement].split(",").map(&:strip)
+
+            new_requirement =
+              if requirement_strings.any? { |r| r.start_with?("==") }
+                find_and_update_equality_match(requirement_strings)
+              elsif requirement_strings.any? { |r| r.start_with?("~=") }
+                tw_req = requirement_strings.find { |r| r.start_with?("~=") }
+                update_twiddle_version(tw_req, latest_resolvable_version.to_s)
+              elsif new_version_satisfies?(req)
+                req.fetch(:requirement)
+              else
+                update_requirements_range(requirement_strings)
               end
 
-            req.merge(requirement: updated_requirement_string)
+            req.merge(requirement: new_requirement)
           end
 
           def new_version_satisfies?(req)
-            equivalent_ruby_requirement(req.fetch(:requirement)).
+            ruby_requirement(req.fetch(:requirement)).
               satisfied_by?(latest_resolvable_version)
           end
 
-          def equivalent_ruby_requirement(requirement_string)
-            requirement_string =
+          def find_and_update_equality_match(requirement_strings)
+            if requirement_strings.any? { |r| ruby_requirement(r).exact? }
+              # True equality match
+              "==#{latest_resolvable_version}"
+            else
+              # Prefix match
+              requirement_strings.find { |r| r.start_with?("==") }.
+                sub(PythonRequirementParser::VERSION) do |v|
+                  at_same_precision(latest_resolvable_version.to_s, v)
+                end
+            end
+          end
+
+          def ruby_requirement(requirement_string)
+            requirement_array =
               requirement_string.split(",").map do |req_string|
                 req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
                 next req_string unless req_string.include?(".*")
@@ -66,21 +92,70 @@ module Dependabot
                   join(".").
                   tr("*", "0").
                   gsub(/^(?<!!)=/, "~>")
-              end.join(",")
-            Gem::Requirement.new(requirement_string)
+              end
+            Gem::Requirement.new(requirement_array)
           end
 
           def at_same_precision(new_version, old_version)
-            return new_version unless old_version.include?("*")
+            # return new_version unless old_version.include?("*")
 
             count = old_version.split(".").count
-            precision = old_version.split(".").index("*")
+            precision = old_version.split(".").index("*") || count
 
             new_version.
               split(".").
               first(count).
               map.with_index { |s, i| i < precision ? s : "*" }.
               join(".")
+          end
+
+          def update_requirements_range(requirement_strings)
+            ruby_requirements =
+              requirement_strings.map { |r| ruby_requirement(r) }
+
+            ruby_requirements.flat_map do |r|
+              next r if r.satisfied_by?(latest_resolvable_version)
+
+              case op = r.requirements.first.first
+              when "<", "<="
+                op + update_greatest_version(r.to_s, latest_resolvable_version)
+              when "!="
+                []
+              else
+                raise "Unexpected op for unsatisfied requirement: #{op}"
+              end
+            end.map(&:to_s).join(",").delete(" ")
+          end
+
+          # Updates the version in a "~>" constraint to allow the given version
+          def update_twiddle_version(req_string, version_to_be_permitted)
+            old_version = req_string.gsub("~=", "")
+            "~=#{at_same_precision(version_to_be_permitted, old_version)}"
+          end
+
+          # Updates the version in a "<" or "<=" constraint to allow the given
+          # version
+          def update_greatest_version(req_string, version_to_be_permitted)
+            if version_to_be_permitted.is_a?(String)
+              version_to_be_permitted =
+                Gem::Version.new(version_to_be_permitted)
+            end
+            version = Gem::Version.new(req_string.gsub(/<=?/, ""))
+            version = version.release if version.prerelease?
+
+            index_to_update =
+              version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
+
+            new_segments = version.segments.map.with_index do |_, index|
+              if index < index_to_update
+                version_to_be_permitted.segments[index]
+              elsif index == index_to_update
+                version_to_be_permitted.segments[index] + 1
+              else 0
+              end
+            end
+
+            new_segments.join(".")
           end
         end
       end
