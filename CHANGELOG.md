@@ -1,3 +1,7 @@
+## v0.27.3, 10 November 2017
+
+- Handle Python range requirements
+
 ## v0.27.2, 10 November 2017
 
 - Handle Python requirements that specify a prefix-match
