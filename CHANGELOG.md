@@ -1,3 +1,7 @@
+## v0.27.8, 11 November 2017
+
+- Python: more setup.py handling
+
 ## v0.27.7, 10 November 2017
 
 - Fix typo
