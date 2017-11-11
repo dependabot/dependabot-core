@@ -64,14 +64,22 @@ def parse(directory):
         def noop(*args, **kwargs):
             pass
         def fake_open(*args, **kwargs):
-            return io.StringIO("VERSION = (0, 0, 1)\n__version__ = '0.0.1'\n")
+            content = ("VERSION = (0, 0, 1)\n"
+                       "__version__ = '0.0.1'\n"
+                       "__author__ = '0.0.1'\n"
+                       "__title__ = '0.0.1'\n"
+                       "__description__ = '0.0.1'\n"
+                       "__author_email__ = 'something'\n"
+                       "__license__ = 'something'\n"
+                       "__url__ = 'something'\n")
+            return io.StringIO(content)
         setuptools.setup = setup
         try:
             setup_file = open(directory + '/setup.py', 'r')
             content = setup_file.read()
             content = content.replace("print(", "noop(")
-            content = re.sub(r"\bopen\(", "fake_open(", content)
             content = content.replace("codecs.open(", "fake_open(")
+            content = re.sub(r"\bopen\(", "fake_open(", content)
             exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))

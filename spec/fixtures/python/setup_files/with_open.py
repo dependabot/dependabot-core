@@ -1,7 +1,11 @@
+import codecs
 from setuptools import setup, find_packages
 
 file = open("some_file", "r")
 file.read()
+
+file2 = codecs.open("some_file", "r")
+file2.read()
 
 setup(name='python-package',
       version='0.0',
