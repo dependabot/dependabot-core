@@ -71,7 +71,7 @@ def parse(directory):
             content = setup_file.read()
             content = content.replace("print(", "noop(")
             content = re.sub(r"\bopen\(", "fake_open(", content)
-            content = content.replace("codec.open(", "fake_open(")
+            content = content.replace("codecs.open(", "fake_open(")
             exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
