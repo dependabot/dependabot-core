@@ -1,3 +1,7 @@
+## v0.27.6, 10 November 2017
+
+- Handle Python setup.py files that use codec.open
+
 ## v0.27.5, 10 November 2017
 
 - Attempt to handle setup.py file that include an "open" line
