@@ -1,3 +1,7 @@
+## v0.27.7, 10 November 2017
+
+- Fix typo
+
 ## v0.27.6, 10 November 2017
 
 - Handle Python setup.py files that use codec.open
