@@ -1,3 +1,7 @@
+## v0.27.9, 11 November 2017
+
+- Add support for passing a target branch to create PRs against
+
 ## v0.27.8, 11 November 2017
 
 - Python: more setup.py handling
