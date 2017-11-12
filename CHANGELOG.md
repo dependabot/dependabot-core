@@ -1,3 +1,7 @@
+## v0.27.10, 12 November 2017
+
+- Case insensitive Ruby version replacement
+
 ## v0.27.9, 11 November 2017
 
 - Add support for passing a target branch to create PRs against
