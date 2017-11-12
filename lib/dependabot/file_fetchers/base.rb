@@ -7,7 +7,7 @@ require "octokit"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :repo, :github_client, :directory
+      attr_reader :repo, :github_client, :directory, :target_branch
 
       def self.required_files_in?(_)
         raise NotImplementedError
@@ -17,10 +17,11 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(repo:, github_client:, directory: "/")
+      def initialize(repo:, github_client:, directory: "/", target_branch: nil)
         @repo = repo
         @github_client = github_client
         @directory = directory
+        @target_branch = target_branch
       end
 
       def files
@@ -30,8 +31,9 @@ module Dependabot
       def commit
         @commit ||=
           begin
-            default_branch = github_client.repository(repo).default_branch
-            github_client.ref(repo, "heads/#{default_branch}").object.sha
+            branch = target_branch ||
+                     github_client.repository(repo).default_branch
+            github_client.ref(repo, "heads/#{branch}").object.sha
           end
       end
 
