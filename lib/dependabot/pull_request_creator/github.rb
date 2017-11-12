@@ -6,13 +6,16 @@ module Dependabot
   class PullRequestCreator
     class Github
       attr_reader :repo_name, :branch_name, :base_commit, :github_client,
-                  :files, :pr_description, :pr_name, :commit_message
+                  :files, :pr_description, :pr_name, :commit_message,
+                  :target_branch
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
-                     files:, commit_message:, pr_description:, pr_name:)
+                     files:, commit_message:, pr_description:, pr_name:,
+                     target_branch:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
+        @target_branch  = target_branch
         @github_client  = github_client
         @files          = files
         @commit_message = commit_message
@@ -119,7 +122,7 @@ module Dependabot
       def create_pull_request
         github_client.create_pull_request(
           repo_name,
-          default_branch,
+          target_branch || default_branch,
           branch_name,
           pr_name,
           pr_description

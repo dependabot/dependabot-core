@@ -45,6 +45,25 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+
+    context "with a target branch" do
+      let(:file_fetcher_instance) do
+        child_class.new(
+          repo: repo,
+          github_client: github_client,
+          target_branch: "my_branch"
+        )
+      end
+
+      before do
+        stub_request(:get, url + "/git/refs/heads/my_branch").
+          to_return(status: 200,
+                    body: fixture("github", "ref_my_branch.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
+    end
   end
 
   describe "#files" do
