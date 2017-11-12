@@ -60,7 +60,7 @@ module Dependabot
             # check so we're not going to persist any changes to the lockfile.
             gemspec_content.
               gsub(/^\s*require.*$/, "").
-              gsub(/=.*VERSION.*$/, "= '0.0.1'")
+              gsub(/=.*VERSION.*$/i, "= '0.0.1'")
           end
         end
       end
