@@ -1,3 +1,7 @@
+## v0.27.14, 13 November 2017
+
+- Ruby: handle yet more private gem repo failure cases
+
 ## v0.27.13, 13 November 2017
 
 - Ruby: handle more private gem repo failure cases
