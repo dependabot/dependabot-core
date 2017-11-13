@@ -457,6 +457,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
         its(:length) { is_expected.to eq(10) }
       end
+
+      context "with an import of a config file" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "imports_version.py")
+          )
+        end
+
+        its(:length) { is_expected.to eq(13) }
+      end
     end
   end
 end

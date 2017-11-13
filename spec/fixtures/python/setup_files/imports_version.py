@@ -1,19 +1,9 @@
-import codecs
 from setuptools import setup, find_packages
 
-file = open("some_file", "r")
-file.read()
-
-file2 = codecs.open("some_file", "r")
-file2.read()
-
-file3 = io.open("some_file", "r")
-file3.read()
-
-file4 = file('README.rst').read()
+from split_settings import __version__
 
 setup(name='python-package',
-      version='0.0',
+      version=__version__,
       description='Example setup.py',
       url='httos://github.com/example/python-package',
       author='Dependabot',
@@ -32,7 +22,7 @@ setup(name='python-package',
           'pep8==1.7.0',
           'psycopg2==2.6.1',
           'raven == 5.32.0',
-          'requests==2.12.4',
+          'requests==2.12.*',
           'scipy==0.18.1',
           'scikit-learn==0.18.1',
       ],

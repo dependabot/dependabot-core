@@ -75,11 +75,12 @@ def parse(directory):
             return io.StringIO(content)
         setuptools.setup = setup
         try:
-            setup_file = open(directory + '/setup.py', 'r')
-            content = setup_file.read()
+            content = open(directory + '/setup.py', 'r').read()
             content = content.replace("print(", "noop(")
-            content = content.replace("codecs.open(", "fake_open(")
-            content = re.sub(r"\bopen\(", "fake_open(", content)
+            content = re.sub(r"\b(\w+\.)*(open|file)\(", "fake_open(", content)
+            version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
+            content = re.sub(version_re, "", content)
+            __version__ = '0.0.1'
             exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
