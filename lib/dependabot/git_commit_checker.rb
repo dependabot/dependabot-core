@@ -196,6 +196,8 @@ module Dependabot
 
     def listing_tags
       @listing_tags ||= github_client.tags(listing_source_repo, per_page: 100)
+    rescue Octokit::NotFound
+      []
     end
 
     def local_source_url
@@ -218,6 +220,8 @@ module Dependabot
       return [] unless local_source_url
       return [] unless local_source_hosted_on_github?
       @local_tags ||= github_client.tags(local_source_repo, per_page: 100)
+    rescue Octokit::NotFound
+      []
     end
 
     def github_client

@@ -117,6 +117,12 @@ RSpec.describe Dependabot::GitCommitChecker do
           it { is_expected.to eq(false) }
         end
 
+        context "but GitHub returns a 404" do
+          before { stub_request(:get, tags_url).to_return(status: 404) }
+          let(:tags_response) { "unused" }
+          it { is_expected.to eq(false) }
+        end
+
         context "with tags on GitHub" do
           let(:tags_response) { fixture("github", "business_tags.json") }
           let(:comparison_url) { repo_url + "/compare/v1.5.0...df9f605" }
@@ -399,6 +405,12 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "with a non-GitHub URL" do
       before { source.merge(url: "https://example.com") }
       let(:tags_response) { [].to_json }
+      it { is_expected.to eq(nil) }
+    end
+
+    context "but GitHub returns a 404" do
+      before { stub_request(:get, tags_url).to_return(status: 404) }
+      let(:tags_response) { "unused" }
       it { is_expected.to eq(nil) }
     end
 
