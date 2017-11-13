@@ -240,6 +240,29 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         end
       end
 
+      context "that bad-requested, but was a private repo" do
+        before do
+          stub_request(:get, registry_url + "versions").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 400)
+          stub_request(:get, registry_url + "api/v1/dependencies").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 400)
+          stub_request(:get, registry_url + "specs.4.8.gz").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 400)
+        end
+
+        it "blows up with a useful error" do
+          expect { resolver.latest_version_details }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).
+                to eq("https://repo.fury.io/greysteil/")
+            end
+        end
+      end
+
       context "that doesn't have details of the gem" do
         before do
           stub_request(:get, gemfury_business_url).

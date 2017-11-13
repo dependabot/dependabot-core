@@ -175,6 +175,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
           # rubocop:disable Metrics/MethodLength
           def handle_bundler_errors(error)
@@ -220,10 +221,17 @@ module Dependabot
               regex = /Bad username or password for (?<repo>.*)\.$/
               source = error.error_message.match(regex)[:repo]
               raise Dependabot::PrivateSourceNotReachable, source
+            when "Bundler::HTTPError"
+              regex = /Could not fetch specs from (?<repo>.*)$/
+              raise unless error.error_message.match?(regex)
+              source = error.error_message.match(regex)[:repo]
+              raise if source.include?("rubygems")
+              raise Dependabot::PrivateSourceNotReachable, source
             else raise
             end
           end
           # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
           # rubocop:enable Metrics/MethodLength
 
