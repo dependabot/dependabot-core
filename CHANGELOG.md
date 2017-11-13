@@ -1,3 +1,7 @@
+## v0.27.12, 13 November 2017
+
+- Python: Ignore errors when parsing setup.py (temporary)
+
 ## v0.27.11, 13 November 2017
 
 - Handle bad GitHub source data links in GitCommitChecker
