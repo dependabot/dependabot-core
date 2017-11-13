@@ -1,3 +1,8 @@
+## v0.27.11, 13 November 2017
+
+- Handle bad GitHub source data links in GitCommitChecker
+- Python: Handle setup.py calls better
+
 ## v0.27.10, 12 November 2017
 
 - Case insensitive Ruby version replacement
