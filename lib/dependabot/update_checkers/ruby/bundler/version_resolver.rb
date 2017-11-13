@@ -216,6 +216,10 @@ module Dependabot
               regex = /bundle config (?<repo>.*) username:password/
               source = error.error_message.match(regex)[:repo]
               raise Dependabot::PrivateSourceNotReachable, source
+            when "Bundler::Fetcher::BadAuthenticationError"
+              regex = /Bad username or password for (?<repo>.*)\.$/
+              source = error.error_message.match(regex)[:repo]
+              raise Dependabot::PrivateSourceNotReachable, source
             else raise
             end
           end

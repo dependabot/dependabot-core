@@ -217,6 +217,29 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         end
       end
 
+      context "that we have bad authentication details for" do
+        before do
+          stub_request(:get, registry_url + "versions").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 403)
+          stub_request(:get, registry_url + "api/v1/dependencies").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 403)
+          stub_request(:get, registry_url + "specs.4.8.gz").
+            with(basic_auth: ["SECRET_CODES", ""]).
+            to_return(status: 403)
+        end
+
+        it "blows up with a useful error" do
+          expect { resolver.latest_version_details }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).
+                to eq("https://SECRET_CODES@repo.fury.io/greysteil/")
+            end
+        end
+      end
+
       context "that doesn't have details of the gem" do
         before do
           stub_request(:get, gemfury_business_url).
