@@ -12,6 +12,11 @@ file3.read()
 
 file4 = file('README.rst').read()
 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+read("soemthing")
+
 setup(name='python-package',
       version='0.0',
       description='Example setup.py',

@@ -61,26 +61,42 @@ def parse(directory):
                         "file": "setup.py",
                         "requirement": str(install_req.specifier) or None
                     })
+        setuptools.setup = setup
+
         def noop(*args, **kwargs):
             pass
+
+        global fake_open
         def fake_open(*args, **kwargs):
             content = ("VERSION = (0, 0, 1)\n"
                        "__version__ = '0.0.1'\n"
-                       "__author__ = '0.0.1'\n"
-                       "__title__ = '0.0.1'\n"
-                       "__description__ = '0.0.1'\n"
+                       "__author__ = 'someone'\n"
+                       "__title__ = 'something'\n"
+                       "__description__ = 'something'\n"
                        "__author_email__ = 'something'\n"
                        "__license__ = 'something'\n"
                        "__url__ = 'something'\n")
             return io.StringIO(content)
-        setuptools.setup = setup
+
         try:
             content = open(directory + '/setup.py', 'r').read()
+
+            # Remove `print`, `open` and import statements
             content = content.replace("print(", "noop(")
             content = re.sub(r"\b(\w+\.)*(open|file)\(", "fake_open(", content)
             version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
             content = re.sub(version_re, "", content)
+
+            # Set variables likely to be imported
             __version__ = '0.0.1'
+            __author__ = 'someone'
+            __title__ = 'something'
+            __description__ = 'something'
+            __author_email__ = 'something'
+            __license__ = 'something'
+            __url__ = 'something'
+
+            # Exec the setup.py
             exec(content)
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
