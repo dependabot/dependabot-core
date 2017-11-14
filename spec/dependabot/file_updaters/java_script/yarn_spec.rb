@@ -71,6 +71,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         updated_files.find { |f| f.name == "package.json" }
       end
 
+      its(:content) { is_expected.to include "{{ name }}" }
       its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
       its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
 

@@ -45,7 +45,7 @@ module Dependabot
           @updated_dependency_files_content ||=
             SharedHelpers.in_a_temporary_directory do
               File.write(self.class::LOCKFILE_NAME, lockfile.content)
-              File.write("package.json", package_json.content)
+              File.write("package.json", sanitized_package_json_content)
 
               path_dependencies.each do |file|
                 path = file.name
@@ -53,12 +53,35 @@ module Dependabot
                 File.write(path, file.content)
               end
 
-              SharedHelpers.run_helper_subprocess(
+              updated_files = SharedHelpers.run_helper_subprocess(
                 command: "node #{js_helper_path}",
                 function: "update",
                 args: [Dir.pwd, dependency.name, dependency.version]
               )
+
+              replacement_map.each do |key, value|
+                updated_files["package.json"].gsub!(key, value)
+              end
+              updated_files
             end
+        end
+
+        def sanitized_package_json_content
+          int = 0
+          package_json.content.gsub(/\{\{.*\}\}/) do
+            int += 1
+            "something-#{int}"
+          end
+        end
+
+        def replacement_map
+          int = 0
+          replacements = {}
+          package_json.content.gsub(/\{\{.*\}\}/) do |match|
+            int += 1
+            replacements["something-#{int}"] = match
+          end
+          replacements
         end
 
         def js_helper_path

@@ -33,7 +33,7 @@ module Dependabot
 
         def dependency_versions
           SharedHelpers.in_a_temporary_directory do
-            File.write("package.json", package_json.content)
+            File.write("package.json", sanitized_package_json_content)
             File.write("yarn.lock", yarn_lock.content)
 
             SharedHelpers.run_helper_subprocess(
@@ -57,6 +57,10 @@ module Dependabot
 
         def package_json
           @package_json ||= get_original_file("package.json")
+        end
+
+        def sanitized_package_json_content
+          package_json.content.gsub(/\{\{.*\}\}/, "something")
         end
 
         def group(dep_name)
