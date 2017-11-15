@@ -1,3 +1,7 @@
+## v0.27.16, 15 November 2017
+
+- MetadataFinders: Strip out # characters from source URLs
+
 ## v0.27.15, 15 November 2017
 
 - JS: Sanitize any variables in a package.json before parsing/updating
