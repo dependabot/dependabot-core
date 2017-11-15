@@ -1,3 +1,7 @@
+## v0.27.15, 15 November 2017
+
+- JS: Sanitize any variables in a package.json before parsing/updating
+
 ## v0.27.14, 13 November 2017
 
 - Ruby: handle yet more private gem repo failure cases
