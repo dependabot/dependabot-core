@@ -10,7 +10,7 @@ module Dependabot
       SOURCE_REGEX = %r{
         (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
         (?:\.com|\.org)/
-        (?<repo>[^/\s]+/(?:(?!\.git)[^/\s])+)[\./]?
+        (?<repo>[^/\s]+/(?:(?!\.git)[^/\s#])+)[\./]?
       }x
 
       class Source

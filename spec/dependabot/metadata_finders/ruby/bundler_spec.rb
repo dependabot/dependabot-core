@@ -144,12 +144,20 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           expect(WebMock).to have_requested(:get, rubygems_url).once
         end
 
-        context "that contains a .git suffix" do
+        context "that contains a . suffix (not .git)" do
           let(:rubygems_response) do
             fixture("ruby", "rubygems_response_period_github.json")
           end
 
           it { is_expected.to eq("https://github.com/gocardless/business.rb") }
+        end
+
+        context "that contains a # suffix" do
+          let(:rubygems_response) do
+            fixture("ruby", "rubygems_response_hash_github.json")
+          end
+
+          it { is_expected.to eq("https://github.com/gocardless/business") }
         end
       end
 
