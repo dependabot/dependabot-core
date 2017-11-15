@@ -17,13 +17,6 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Yarn do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
-      stub_request(:get, url + "?ref=sha").
-        to_return(
-          status: 200,
-          body: fixture("github", "business_files_no_gemspec.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
       stub_request(:get, url + "package.json?ref=sha").
         to_return(
           status: 200,
