@@ -22,7 +22,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       ]
     )
   end
-  let(:files) { [package_json, yarn_lock] }
+  let(:files) { [package_json, lockfile] }
   let(:package_json) do
     Dependabot::DependencyFile.new(
       content: package_json_body,
@@ -32,12 +32,13 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
   end
-  let(:yarn_lock) do
+  let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("javascript", "yarn_lockfiles", "yarn.lock")
+      content: lockfile_body
     )
   end
+  let(:lockfile_body) { fixture("javascript", "yarn_lockfiles", "yarn.lock") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "fetch-factory",
@@ -99,7 +100,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
 
       context "with a path-based dependency" do
-        let(:files) { [package_json, yarn_lock, path_dep] }
+        let(:files) { [package_json, lockfile, path_dep] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "path_dependency.json")
         end
@@ -146,7 +147,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
 
       context "with a path-based dependency" do
-        let(:files) { [package_json, yarn_lock, path_dep] }
+        let(:files) { [package_json, lockfile, path_dep] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "path_dependency.json")
         end
