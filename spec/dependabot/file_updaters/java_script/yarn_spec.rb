@@ -247,6 +247,64 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
             to include("lodash@^1.3.1")
         end
       end
+
+      context "with workspaces" do
+        let(:files) { [package_json, lockfile, package1, other_package] }
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "workspaces.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", "workspaces.lock")
+        end
+        let(:package1) do
+          Dependabot::DependencyFile.new(
+            name: "packages/package1/package.json",
+            content: fixture("javascript", "package_files", "package1.json")
+          )
+        end
+        let(:other_package) do
+          Dependabot::DependencyFile.new(
+            name: "other_package/package.json",
+            content: other_package_body
+          )
+        end
+        let(:other_package_body) do
+          fixture("javascript", "package_files", "other_package.json")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "1.3.1",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.2.0",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "packages/package1/package.json",
+                requirement: "^1.2.1",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "other_package/package.json",
+                requirement: "^1.2.1",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        it "updates the yarn.lock based on all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+          expect(lockfile.content).to include("lodash@^1.3.1:")
+        end
+      end
     end
   end
 end
