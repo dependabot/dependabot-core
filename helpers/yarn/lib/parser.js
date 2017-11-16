@@ -32,7 +32,7 @@ function isNotPrivate(dep) {
 }
 
 async function parse(directory) {
-  const flags = { ignoreScripts: true };
+  const flags = { ignoreScripts: true, includeWorkspaceDeps: true };
   const reporter = new NoopReporter();
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -43,14 +43,18 @@ async function parse(directory) {
   const { requests, patterns } = await install.fetchRequestFromCwd();
   const deps = requests
     .filter(isNotExotic)
-    .map(request => lockfile.getLocked(request.pattern))
-    .filter(dep => dep)
-    .filter(isNotPrivate);
+    .map(request => ({
+      request: request,
+      resolved: lockfile.getLocked(request.pattern)
+    }))
+    .filter(dep => dep.resolved)
+    .filter(dep => isNotPrivate(dep.resolved));
 
   return deps.map(dep => ({
-    name: dep.name,
-    resolved: dep.resolved,
-    version: semver.clean(dep.version)
+    name: dep.resolved.name,
+    resolved: dep.resolved.resolved,
+    version: semver.clean(dep.resolved.version),
+    workspace: dep.request.workspaceName
   }));
 }
 
