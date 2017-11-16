@@ -1,3 +1,7 @@
+## v0.27.17, 16 November 2017
+
+- JS: Fetch and parse workspace package.json files (awaiting FileUpdater change)
+
 ## v0.27.16, 15 November 2017
 
 - MetadataFinders: Strip out # characters from source URLs
