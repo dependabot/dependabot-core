@@ -1,3 +1,7 @@
+## v0.28.0, 16 November 2017
+
+- JS: Support Yarn workspaces
+
 ## v0.27.17, 16 November 2017
 
 - JS: Fetch and parse workspace package.json files (awaiting FileUpdater change)
