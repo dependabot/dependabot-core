@@ -187,7 +187,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           )
         end
 
-        its(:content) { is_expected.to include "\"lodash\": \"^1.3.1\"" }
+        it "updates the three package.json files" do
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+          expect(package.content).to include("\"lodash\": \"^1.3.1\"")
+          expect(package1.content).to include("\"lodash\": \"^1.3.1\"")
+          expect(other_package.content).to include("\"lodash\": \"^1.3.1\"")
+        end
       end
     end
 

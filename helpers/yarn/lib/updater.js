@@ -72,15 +72,38 @@ function recoverVersionComments(oldLockfile, newLockfile) {
     .replace(nodeRegex, match => oldMatch(nodeRegex) || "");
 }
 
-async function updateDependencyFiles(directory, depName, desiredVersion) {
+async function updateDependencyFiles(
+  directory,
+  depName,
+  desiredVersion,
+  workspaces
+) {
+  // process.stdout.write(JSON.stringify(workspaces));
+  const update_run_results = await Promise.all(
+    workspaces.map(workspace =>
+      updateDependencyFile(directory, depName, desiredVersion, workspace)
+    )
+  );
+  return Object.assign.apply(this, update_run_results);
+}
+
+async function updateDependencyFile(
+  directory,
+  depName,
+  desiredVersion,
+  workspace
+) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
 
-  const flags = { ignoreScripts: true };
+  const flags = { ignoreScripts: true, ignoreWorkspaceRootCheck: true };
   const reporter = new EventReporter();
   const config = new Config(reporter);
-  await config.init({ cwd: directory, nonInteractive: true });
+  await config.init({
+    cwd: path.join(directory, workspace),
+    nonInteractive: true
+  });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
   // Find the old dependency pattern from the package.json, so we can construct
@@ -99,11 +122,11 @@ async function updateDependencyFiles(directory, depName, desiredVersion) {
   await add.init();
 
   const updatedYarnLock = readFile("yarn.lock");
-  const updatedPackageJson = readFile("package.json");
+  const updatedPackageJson = readFile(path.join(workspace, "package.json"));
 
   return {
     "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock),
-    "package.json": updatedPackageJson
+    [path.join(workspace, "package.json")]: updatedPackageJson
   };
 }
 

@@ -18,7 +18,12 @@ const npm = require("npm");
 const npmlog = require("npmlog");
 const { Installer } = require("npm/lib/install");
 
-async function updateDependencyFiles(directory, depName, desiredVersion) {
+async function updateDependencyFiles(
+  directory,
+  depName,
+  desiredVersion,
+  workspaces
+) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
