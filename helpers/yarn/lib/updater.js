@@ -78,7 +78,6 @@ async function updateDependencyFiles(
   desiredVersion,
   workspaces
 ) {
-  // process.stdout.write(JSON.stringify(workspaces));
   const update_run_results = await Promise.all(
     workspaces.map(workspace =>
       updateDependencyFile(directory, depName, desiredVersion, workspace)
