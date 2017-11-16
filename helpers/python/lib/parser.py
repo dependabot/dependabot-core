@@ -1,3 +1,4 @@
+from itertools import chain
 import json
 import re
 import io
@@ -43,24 +44,29 @@ def parse(directory):
     # Parse the setup.py
     setup_packages = []
     if os.path.isfile(directory + '/setup.py'):
+        def parse_requirement(req):
+            install_req = InstallRequirement.from_line(req)
+            if install_req.original_link:
+                return
+            if install_req.is_pinned:
+                version = next(iter(install_req.specifier)).version
+            else:
+                version = None
+            setup_packages.append({
+                "name": install_req.req.name,
+                "version": version,
+                "file": "setup.py",
+                "requirement": str(install_req.specifier) or None
+            })
+
         def setup(*args, **kwargs):
-            for arg in ['install_requires', 'tests_require']:
+            for arg in ['setup_requires', 'install_requires', 'tests_require']:
                 if not kwargs.get(arg):
                     continue
                 for req in kwargs.get(arg):
-                    install_req = InstallRequirement.from_line(req)
-                    if install_req.original_link:
-                        continue
-                    if install_req.is_pinned:
-                        version = next(iter(install_req.specifier)).version
-                    else:
-                        version = None
-                    setup_packages.append({
-                        "name": install_req.req.name,
-                        "version": version,
-                        "file": "setup.py",
-                        "requirement": str(install_req.specifier) or None
-                    })
+                    parse_requirement(req)
+            for reqs in chain.from_iterable(kwargs.get('extras_require', {}).values()):
+                parse_requirement(req)
         setuptools.setup = setup
 
         def noop(*args, **kwargs):

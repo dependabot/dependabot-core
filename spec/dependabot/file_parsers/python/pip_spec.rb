@@ -299,7 +299,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       # setup.py dependencies get imported
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(14) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -392,19 +392,19 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(14) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("boto3")
-          expect(dependency.version).to eq("1.3.1")
+          expect(dependency.name).to eq("numpy")
+          expect(dependency.version).to eq("1.11.0")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "==1.3.1",
+                requirement: "==1.11.0",
                 file: "setup.py",
                 groups: [],
                 source: nil
@@ -422,7 +422,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(11) }
+        its(:length) { is_expected.to eq(12) }
       end
 
       context "with a `print` statement" do
@@ -433,7 +433,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
 
       context "with an `open` statement" do
@@ -444,7 +444,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
 
       context "with the setup.py from requests" do
@@ -466,7 +466,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
     end
   end
