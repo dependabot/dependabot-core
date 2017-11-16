@@ -8,16 +8,9 @@ module Dependabot
     module JavaScript
       class Base < Dependabot::FileUpdaters::Base
         def updated_dependency_files
-          [
-            updated_file(
-              file: package_json,
-              content: updated_dependency_files_content["package.json"]
-            ),
-            updated_file(
-              file: lockfile,
-              content: updated_dependency_files_content[lockfile.name]
-            )
-          ]
+          dependency_files.
+            reject { |f| f.content == updated_contents[f.name] }.
+            map { |f| updated_file(file: f, content: updated_contents[f.name]) }
         end
 
         private
@@ -28,16 +21,12 @@ module Dependabot
           end
         end
 
-        def package_json
-          @package_json ||= get_original_file("package.json")
-        end
-
         def lockfile
           @lockfile ||= get_original_file(self.class::LOCKFILE_NAME)
         end
 
-        def updated_dependency_files_content
-          @updated_dependency_files_content ||=
+        def updated_contents
+          @updated_contents ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
