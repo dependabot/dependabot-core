@@ -33,7 +33,12 @@ module Dependabot
               updated_files = SharedHelpers.run_helper_subprocess(
                 command: "node #{js_helper_path}",
                 function: "update",
-                args: [Dir.pwd, dependency.name, dependency.version]
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  workspaces_for(dependency)
+                ]
               )
 
               updated_files.
@@ -77,6 +82,12 @@ module Dependabot
               replacements["something-#{int}"] = match
             end
           replacements
+        end
+
+        def workspaces_for(dependency)
+          dependency.requirements.map do |details|
+            Pathname.new(details.fetch(:file)).dirname
+          end
         end
 
         def js_helper_path

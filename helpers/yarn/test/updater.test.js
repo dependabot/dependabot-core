@@ -30,7 +30,9 @@ describe("updater", () => {
   it("generates an updated package.json and yarn.lock", async () => {
     await copyDependencies("original", tempDir);
 
-    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3");
+    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
+      "."
+    ]);
     expect(result).toEqual({
       "package.json": helpers.loadFixture("updater/updated/package.json"),
       "yarn.lock": helpers.loadFixture("updater/updated/yarn.lock")
@@ -40,7 +42,9 @@ describe("updater", () => {
   it("doesn't modify existing version comments", async () => {
     await copyDependencies("with-version-comments", tempDir);
 
-    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3");
+    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
+      "."
+    ]);
     expect(result["yarn.lock"]).toContain("\n# yarn v0.0.0-0\n");
     expect(result["yarn.lock"]).toContain("\n# node v0.0.0\n");
   });
@@ -48,7 +52,9 @@ describe("updater", () => {
   it("doesn't add version comments if they're not already there", async () => {
     await copyDependencies("original", tempDir);
 
-    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3");
+    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
+      "."
+    ]);
     expect(result["yarn.lock"]).not.toContain("\n# yarn v");
     expect(result["yarn.lock"]).not.toContain("\n# node");
   });
@@ -59,7 +65,7 @@ describe("updater", () => {
     expect.assertions(1);
     try {
       // Change this test if left-pad ever reaches v99.99.99
-      await updateDependencyFiles(tempDir, "left-pad", "99.99.99");
+      await updateDependencyFiles(tempDir, "left-pad", "99.99.99", ".");
     } catch (error) {
       expect(error).not.toBeNull();
     }
