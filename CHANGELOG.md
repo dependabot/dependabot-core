@@ -1,3 +1,7 @@
+## v0.28.3, 17 November 2017
+
+- JS: Handle wildcards in package.json
+
 ## v0.28.2, 17 November 2017
 
 - JS: Ignore empty files in FileUpdater
