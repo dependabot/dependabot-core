@@ -1,8 +1,9 @@
 from itertools import chain
-import json
-import re
+import glob
 import io
+import json
 import os.path
+import re
 
 import setuptools
 import pip.req.req_file
@@ -12,10 +13,10 @@ from pip.req.req_install import InstallRequirement
 def parse(directory):
     # Parse the requirements.txt
     requirement_packages = []
-    if os.path.isfile(directory + '/requirements.txt'):
+    for reqs_file in glob.glob(os.path.join(directory, 'requirements*.txt')):
         try:
             requirements = pip.req.req_file.parse_requirements(
-                directory + '/requirements.txt',
+                reqs_file,
                 session=PipSession()
             )
             for install_req in requirements:
