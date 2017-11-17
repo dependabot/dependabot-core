@@ -85,7 +85,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
             requirements: [
               {
                 file: "package.json",
-                requirement: "^0.0.1",
+                requirement: "0.1.x",
                 groups: [],
                 source: nil
               }
@@ -97,6 +97,34 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         end
 
         its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      end
+
+      context "when a wildcard is specified" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: "0.2.1",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "*",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "wildcard.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", "wildcard.lock")
+        end
+
+        it "only updates the lockfile" do
+          expect(updated_files.map(&:name)).to eq(["yarn.lock"])
+        end
       end
 
       context "with a path-based dependency" do
@@ -268,6 +296,35 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         it "has details of the updated item" do
           expect(updated_yarn_lock_file.content).
             to include("lodash@^1.3.1")
+        end
+      end
+
+      context "when a wildcard is specified" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: "0.2.1",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "*",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "wildcard.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", "wildcard.lock")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock_file.content).
+            to include("fetch-factory@*:\n  version \"0.2.1\"")
         end
       end
 
