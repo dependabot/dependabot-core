@@ -82,7 +82,7 @@ module Dependabot
           file = dependency_files.find { |f| f.name == dep["source_file"] }
           return file unless file.nil?
 
-          raise "Unexpected file #{dep["source_file"]}"
+          raise "Unexpected file #{dep['source_file']}"
         end
 
         def group_for(dep_name, parsed_package_json)
