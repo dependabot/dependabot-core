@@ -1,3 +1,7 @@
+## v0.28.7, 17 November 2017
+
+- Start commit messages with "chore(dependencies): "
+
 ## v0.28.6, 17 November 2017
 
 - JS: FileUpdaters::JavaScript::Yarn.updated_files_regex now includes
