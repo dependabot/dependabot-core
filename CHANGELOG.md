@@ -1,3 +1,7 @@
+## v0.28.1, 17 November 2017
+
+- JS: Handle workspace names more robustly
+
 ## v0.28.0, 16 November 2017
 
 - JS: Support Yarn workspaces
