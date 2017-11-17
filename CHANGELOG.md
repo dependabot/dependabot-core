@@ -1,3 +1,8 @@
+## v0.28.6, 17 November 2017
+
+- JS: FileUpdaters::JavaScript::Yarn.updated_files_regex now includes
+  package.json files that aren't at the top level
+
 ## v0.28.5, 17 November 2017
 
 - JS: Fix Yarn workspace handling in FileUpdater
