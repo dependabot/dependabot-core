@@ -9,6 +9,7 @@ module Dependabot
       class Base < Dependabot::FileUpdaters::Base
         def updated_dependency_files
           dependency_files.
+            select { |f| updated_contents[f.name] }.
             reject { |f| f.content == updated_contents[f.name] }.
             map { |f| updated_file(file: f, content: updated_contents[f.name]) }
         end

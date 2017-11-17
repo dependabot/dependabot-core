@@ -6,13 +6,12 @@ ansi-styles@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-1.0.0.tgz#cb102df1c56f5123eab8b67cd7b98027a0279178"
 
-chalk@0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/chalk/-/chalk-0.4.0.tgz#5199a3ddcd0c1efe23bc08c1b027b06176e0c64f"
+chalk@0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/chalk/-/chalk-0.3.0.tgz#1c98437737f1199ebcc1d4c48fd41b9f9c8e8f23"
   dependencies:
-    ansi-styles "~1.0.0"
+    ansi-styles "~0.2.0"
     has-color "~0.1.0"
-    strip-ansi "~0.1.0"
 
 etag@^1.0.0, etag@^1.1.0:
   version "1.8.1"
@@ -25,7 +24,3 @@ has-color@~0.1.0:
 lodash@^1.2.0, lodash@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-1.2.1.tgz#a4663b53686b895ff074e2ba504dfb76a8e2b770"
-
-strip-ansi@~0.1.0:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-0.1.1.tgz#39e8a98d044d150660abe4a6808acf70bb7bc991"

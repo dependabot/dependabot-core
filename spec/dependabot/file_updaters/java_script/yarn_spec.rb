@@ -199,6 +199,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           expect(package1.content).to include("\"lodash\": \"^1.3.1\"")
           expect(other_package.content).to include("\"lodash\": \"^1.3.1\"")
         end
+
+        context "with a dependency that doesn't appear in all the workspaces" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "chalk",
+              version: "0.4.0",
+              package_manager: "yarn",
+              requirements: [
+                {
+                  file: "packages/package1/package.json",
+                  requirement: "0.4.0",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+
+          it "updates the right file" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(yarn.lock packages/package1/package.json))
+          end
+        end
       end
     end
 
@@ -303,6 +326,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         it "updates the yarn.lock based on all three package.jsons" do
           lockfile = updated_files.find { |f| f.name == "yarn.lock" }
           expect(lockfile.content).to include("lodash@^1.3.1:")
+        end
+
+        context "with a dependency that doesn't appear in all the workspaces" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "chalk",
+              version: "0.4.0",
+              package_manager: "yarn",
+              requirements: [
+                {
+                  file: "packages/package1/package.json",
+                  requirement: "0.4.0",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+
+          it "updates the yarn.lock" do
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            expect(lockfile.content).to include("chalk@0.4.0:")
+          end
         end
       end
     end

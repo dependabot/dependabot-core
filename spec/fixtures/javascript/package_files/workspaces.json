@@ -20,5 +20,8 @@
   "dependencies": {
     "lodash": "^1.2.0"
   },
-  "workspaces": ["packages/*", "other_package"]
+  "workspaces": [
+    "packages/*",
+    "other_package"
+  ]
 }
