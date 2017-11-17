@@ -65,7 +65,7 @@ def parse(directory):
                     continue
                 for req in kwargs.get(arg):
                     parse_requirement(req)
-            for reqs in chain.from_iterable(kwargs.get('extras_require', {}).values()):
+            for req in chain.from_iterable(kwargs.get('extras_require', {}).values()):
                 parse_requirement(req)
         setuptools.setup = setup
 
