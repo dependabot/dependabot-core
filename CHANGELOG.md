@@ -1,3 +1,7 @@
+## v0.28.2, 17 November 2017
+
+- JS: Ignore empty files in FileUpdater
+
 ## v0.28.1, 17 November 2017
 
 - JS: Handle workspace names more robustly
