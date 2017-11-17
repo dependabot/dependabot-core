@@ -383,6 +383,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         it "updates the yarn.lock based on all three package.jsons" do
           lockfile = updated_files.find { |f| f.name == "yarn.lock" }
           expect(lockfile.content).to include("lodash@^1.3.1:")
+          expect(lockfile.content).to_not include("lodash@^1.2.1:")
+          expect(lockfile.content).to_not include("workspace-aggregator")
         end
 
         context "with a dependency that doesn't appear in all the workspaces" do
@@ -405,6 +407,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           it "updates the yarn.lock" do
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@0.4.0:")
+            expect(lockfile.content).to_not include("workspace-aggregator")
           end
         end
       end

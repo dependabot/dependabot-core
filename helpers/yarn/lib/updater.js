@@ -40,10 +40,10 @@ class LightweightAdd extends Add {
   // Add overrides Install's implementation to always return false - meaning
   // that it will always continue to the fetch and install steps. We want to
   // do the opposite - just save the new lockfile and stop there.
-  async bailout(patterns) {
+  async bailout(patterns, workspaceLayout) {
     // This is the only part of the original bailout implementation that
     // matters: saving the new lockfile
-    await this.saveLockfileAndIntegrity(patterns);
+    await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
 
     // Skip over the unnecessary steps - fetching and linking packages, etc.
     return true;
