@@ -9,6 +9,7 @@
  * Extract a list of the packages specified in the package.json, with their
  * currently installed versions (which are in the yarn.lock)
  */
+const path = require("path");
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { NoopReporter } = require("@dependabot/yarn-lib/lib/reporters");
@@ -29,6 +30,14 @@ function isNotExotic(request) {
 function isNotPrivate(dep) {
   const re = /registry\.yarnpkg\.com/;
   return re.test(dep.resolved);
+}
+
+function source_file(dep, directory) {
+  if (dep.request.workspaceLoc) {
+    return path.relative(directory, dep.request.workspaceLoc);
+  } else {
+    return "package.json";
+  }
 }
 
 async function parse(directory) {
@@ -54,7 +63,7 @@ async function parse(directory) {
     name: dep.resolved.name,
     resolved: dep.resolved.resolved,
     version: semver.clean(dep.resolved.version),
-    workspace: dep.request.workspaceName
+    source_file: source_file(dep, directory)
   }));
 }
 

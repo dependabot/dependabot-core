@@ -79,11 +79,10 @@ module Dependabot
         end
 
         def package_json_for(dep)
-          worspace_file =
-            dependency_files.
-            find { |f| f.name.split("/")[-2] == dep["workspace"] }
+          file = dependency_files.find { |f| f.name == dep["source_file"] }
+          return file unless file.nil?
 
-          worspace_file || get_original_file("package.json")
+          raise "Unexpected file #{dep["source_file"]}"
         end
 
         def group_for(dep_name, parsed_package_json)
