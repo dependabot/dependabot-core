@@ -15,7 +15,6 @@ setup(name='python-package',
           'boto3==1.3.1',
           'flake8 > 2.5.4, < 3.0.0',
           'gocardless_pro',
-          'numpy>=1.11.0',
           'pandas==0.19.2',
           'pep8==1.7.0',
           'psycopg2==2.6.1',
@@ -27,5 +26,10 @@ setup(name='python-package',
       tests_require=[
           'pytest==2.9.1',
           'responses==0.5.1',
-      ]
-      )
+      ],
+      extras_require=dict(
+          API=[
+              'flask==0.12.2',
+          ],
+      ),
+)

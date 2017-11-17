@@ -299,7 +299,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
 
       # setup.py dependencies get imported
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(15) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -392,10 +392,10 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(15) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      describe "an install_requires dependencies" do
+        subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -414,6 +414,66 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
       end
 
+      describe "a setup_requires dependencies" do
+        subject(:dependency) { dependencies.find { |d| d.name == "numpy" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("numpy")
+          expect(dependency.version).to eq("1.11.0")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==1.11.0",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      describe "a tests_require dependencies" do
+        subject(:dependency) { dependencies.find { |d| d.name == "responses" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("responses")
+          expect(dependency.version).to eq("0.5.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==0.5.1",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      describe "an extras_require dependencies" do
+        subject(:dependency) { dependencies.find { |d| d.name == "flask" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("flask")
+          expect(dependency.version).to eq("0.12.2")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==0.12.2",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
       context "without a `tests_require` key" do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
@@ -422,7 +482,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(11) }
+        its(:length) { is_expected.to eq(12) }
       end
 
       context "with a `print` statement" do
@@ -433,7 +493,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
 
       context "with an `open` statement" do
@@ -444,7 +504,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
 
       context "with the setup.py from requests" do
@@ -455,7 +515,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(10) }
+        its(:length) { is_expected.to eq(13) }
       end
 
       context "with an import of a config file" do
@@ -466,7 +526,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(14) }
       end
     end
   end
