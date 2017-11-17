@@ -47,7 +47,7 @@ module Dependabot
     private
 
     def commit_message
-      pr_name + "\n\n" + pr_message
+      "chore(dependencies): " + pr_name + "\n\n" + pr_message
     end
 
     def pr_name
