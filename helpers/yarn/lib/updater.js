@@ -114,11 +114,18 @@ async function updateDependencyFile(
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
-  const args = [`${depName}@${newPattern}`];
+  const args = [`${depName}@${desiredVersion}`];
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
 
   // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
+
+  // Repeat the process to set the right pattern in the lockfile
+  // TODO: REFACTOR ME!
+  const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
+  const args2 = [`${depName}@${newPattern}`];
+  const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
+  await add2.init();
 
   const updatedYarnLock = readFile("yarn.lock");
   const updatedPackageJson = readFile(path.join(workspace, "package.json"));
