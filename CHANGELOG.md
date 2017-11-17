@@ -1,3 +1,8 @@
+## v0.28.4, 17 November 2017
+
+- Python: Extract dependencies from `setup_requires` and `extras_require`
+  (thanks @tristan0x)
+
 ## v0.28.3, 17 November 2017
 
 - JS: Handle wildcards in package.json
