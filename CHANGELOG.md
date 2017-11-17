@@ -1,3 +1,7 @@
+## v0.28.5, 17 November 2017
+
+- JS: Fix Yarn workspace handling in FileUpdater
+
 ## v0.28.4, 17 November 2017
 
 - Python: Extract dependencies from `setup_requires` and `extras_require`
