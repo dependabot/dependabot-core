@@ -31,7 +31,7 @@ describe("updater", () => {
     await copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
-      "."
+      { file: "package.json", groups: ["dependencies"] }
     ]);
     expect(result).toEqual({
       "package.json": helpers.loadFixture("updater/updated/package.json"),
@@ -43,7 +43,7 @@ describe("updater", () => {
     await copyDependencies("with-version-comments", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
-      "."
+      { file: "package.json", groups: ["dependencies"] }
     ]);
     expect(result["yarn.lock"]).toContain("\n# yarn v0.0.0-0\n");
     expect(result["yarn.lock"]).toContain("\n# node v0.0.0\n");
@@ -53,7 +53,7 @@ describe("updater", () => {
     await copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
-      "."
+      { file: "package.json", groups: ["dependencies"] }
     ]);
     expect(result["yarn.lock"]).not.toContain("\n# yarn v");
     expect(result["yarn.lock"]).not.toContain("\n# node");
@@ -65,7 +65,9 @@ describe("updater", () => {
     expect.assertions(1);
     try {
       // Change this test if left-pad ever reaches v99.99.99
-      await updateDependencyFiles(tempDir, "left-pad", "99.99.99", ".");
+      await updateDependencyFiles(tempDir, "left-pad", "99.99.99", [
+        { file: "package.json", groups: ["dependencies"] }
+      ]);
     } catch (error) {
       expect(error).not.toBeNull();
     }
