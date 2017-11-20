@@ -1,3 +1,7 @@
+## v0.29.1, 20 November 2017
+
+- JS: Pass full requirements to Yarn updater.js to circumvent Yarn bug
+
 ## v0.29.0, 20 November 2017
 
 - JS: Ignore node manifest engine constraints
