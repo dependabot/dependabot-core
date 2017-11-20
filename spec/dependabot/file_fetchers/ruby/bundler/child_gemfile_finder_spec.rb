@@ -6,9 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/file_fetchers/ruby/bundler/child_gemfile_finder"
 
 RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::ChildGemfileFinder do
-  let(:finder) do
-    described_class.new(gemfile: gemfile)
-  end
+  let(:finder) { described_class.new(gemfile: gemfile) }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: gemfile_name)

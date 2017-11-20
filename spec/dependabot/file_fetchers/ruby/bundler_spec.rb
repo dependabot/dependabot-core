@@ -116,6 +116,19 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         expect(file_fetcher_instance.files.map(&:name)).
           to include("plugins/bump-core/bump-core.gemspec")
       end
+
+      context "without a Gemfile.lock" do
+        before do
+          stub_request(:get, url + "Gemfile.lock?ref=sha").
+            to_return(status: 404)
+        end
+
+        it "fetches gemspec from path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("plugins/bump-core/bump-core.gemspec")
+        end
+      end
     end
 
     context "that has an unfetchable path" do
@@ -265,7 +278,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
       stub_request(:get, url + "?ref=sha").
         to_return(
           status: 200,
-          body: fixture("github", "business_files_no_gemspec.json"),
+          body: fixture("github", "business_files.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -283,7 +296,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           headers: { "content-type" => "application/json" }
         )
 
-      stub_request(:get, url + "example.gemspec?ref=sha").
+      stub_request(:get, url + "business.gemspec?ref=sha").
         to_return(
           status: 200,
           body: fixture("github", "gemspec_content.json"),
@@ -294,7 +307,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
     it "fetches gemspec" do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name)).
-        to include("example.gemspec")
+        to include("business.gemspec")
     end
   end
 

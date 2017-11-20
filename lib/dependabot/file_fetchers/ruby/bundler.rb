@@ -7,6 +7,7 @@ module Dependabot
   module FileFetchers
     module Ruby
       class Bundler < Dependabot::FileFetchers::Base
+        require "dependabot/file_fetchers/ruby/bundler/path_gemspec_finder"
         require "dependabot/file_fetchers/ruby/bundler/child_gemfile_finder"
 
         def self.required_files_in?(filenames)
@@ -35,8 +36,8 @@ module Dependabot
           fetched_files << lockfile unless lockfile.nil?
           fetched_files << gemspec unless gemspec.nil?
           fetched_files << ruby_version_file unless ruby_version_file.nil?
-          fetched_files += path_gemspecs
           fetched_files += child_gemfiles
+          fetched_files += path_gemspecs
 
           unless self.class.required_files_in?(fetched_files.map(&:name))
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
@@ -81,16 +82,17 @@ module Dependabot
           gemspec_files = []
           unfetchable_gems = []
 
-          return [] unless lockfile
-          ::Bundler::LockfileParser.new(lockfile.content).specs.each do |spec|
-            next unless spec.source.instance_of?(::Bundler::Source::Path)
+          gemfiles = ([gemfile] + child_gemfiles).compact
 
-            file = File.join(spec.source.path, "#{spec.name}.gemspec")
+          gemspec_paths = gemfiles.flat_map do |file|
+            PathGemspecFinder.new(gemfile: file).path_gemspec_paths
+          end
 
+          gemspec_paths.each do |path|
             begin
-              gemspec_files << fetch_file_from_github(file)
+              gemspec_files << fetch_file_from_github(path)
             rescue Dependabot::DependencyFileNotFound
-              unfetchable_gems << spec.name
+              unfetchable_gems << path.split("/").last.gsub(".gemspec", "")
             end
           end
 
