@@ -85,12 +85,6 @@ module Dependabot
           replacements
         end
 
-        def workspaces_for(dependency)
-          dependency.requirements.map do |details|
-            Pathname.new(details.fetch(:file)).dirname
-          end
-        end
-
         def js_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, self.class::HELPER_PATH)
