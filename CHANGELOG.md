@@ -1,3 +1,7 @@
+## v0.28.8, 20 November 2017
+
+- Ruby: Handle Gemfiles with path sources but no Gemfile.lock
+
 ## v0.28.7, 17 November 2017
 
 - Start commit messages with "chore(dependencies): "
