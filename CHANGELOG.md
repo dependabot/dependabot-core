@@ -1,3 +1,7 @@
+## v0.28.9, 20 November 2017
+
+- Ruby: Respect user's spacing between specifier and version
+
 ## v0.28.8, 20 November 2017
 
 - Ruby: Handle Gemfiles with path sources but no Gemfile.lock
