@@ -127,6 +127,36 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         end
       end
 
+      context "when a dev dependency is specified" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.8.1",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "package.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", "yarn.lock")
+        end
+
+        it "updates the existing development declaration" do
+          parsed_file = JSON.parse(updated_package_json_file.content)
+          expect(parsed_file.dig("dependencies", "etag")).to be_nil
+          expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+        end
+      end
+
       context "with a path-based dependency" do
         let(:files) { [package_json, lockfile, path_dep] }
         let(:package_json_body) do
@@ -248,6 +278,38 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           it "updates the right file" do
             expect(updated_files.map(&:name)).
               to match_array(%w(yarn.lock packages/package1/package.json))
+          end
+        end
+
+        context "with a dependency that appears as a development dependency" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "etag",
+              version: "1.8.1",
+              package_manager: "yarn",
+              requirements: [
+                {
+                  file: "packages/package1/package.json",
+                  requirement: "^1.1.0",
+                  groups: ["devDependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
+
+          it "updates the right file" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(yarn.lock packages/package1/package.json))
+          end
+
+          it "updates the existing development declaration" do
+            file = updated_files.find do |f|
+              f.name == "packages/package1/package.json"
+            end
+            parsed_file = JSON.parse(file.content)
+            expect(parsed_file.dig("dependencies", "etag")).to be_nil
+            expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
           end
         end
       end

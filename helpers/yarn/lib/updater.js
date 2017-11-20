@@ -4,7 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - new dependency version
- *  - workspaces this dependency appears in
+ *  - previous requirements for this dependency
  *
  * Outputs:
  *  - updated package.json and yarn.lock files
@@ -73,25 +73,43 @@ function recoverVersionComments(oldLockfile, newLockfile) {
     .replace(nodeRegex, match => oldMatch(nodeRegex) || "");
 }
 
+function devRequirement(requirements) {
+  const groups = requirements.groups;
+  return (
+    groups.indexOf("devDependencies") > -1 &&
+    groups.indexOf("dependencies") == -1
+  );
+}
+
+function optionalRequirement(requirements) {
+  const groups = requirements.groups;
+  return (
+    groups.indexOf("optionalDependencies") > -1 &&
+    groups.indexOf("dependencies") == -1
+  );
+}
+
 async function updateDependencyFiles(
   directory,
   depName,
   desiredVersion,
-  workspaces
+  requirements
 ) {
-  const update_run_results = await Promise.all(
-    workspaces.map(workspace =>
-      updateDependencyFile(directory, depName, desiredVersion, workspace)
-    )
-  );
-  return Object.assign.apply(this, update_run_results);
+  var update_run_results = {};
+  for (let reqs of requirements) {
+    update_run_results = Object.assign(
+      update_run_results,
+      await updateDependencyFile(directory, depName, desiredVersion, reqs)
+    );
+  }
+  return update_run_results;
 }
 
 async function updateDependencyFile(
   directory,
   depName,
   desiredVersion,
-  workspace
+  requirements
 ) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
@@ -100,12 +118,14 @@ async function updateDependencyFile(
   const flags = {
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
-    ignoreEngines: true
+    ignoreEngines: true,
+    dev: devRequirement(requirements),
+    optional: optionalRequirement(requirements)
   };
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({
-    cwd: path.join(directory, workspace),
+    cwd: path.join(directory, path.dirname(requirements.file)),
     nonInteractive: true
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
@@ -133,11 +153,11 @@ async function updateDependencyFile(
   await add2.init();
 
   const updatedYarnLock = readFile("yarn.lock");
-  const updatedPackageJson = readFile(path.join(workspace, "package.json"));
+  const updatedPackageJson = readFile(requirements.file);
 
   return {
     "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock),
-    [path.join(workspace, "package.json")]: updatedPackageJson
+    [requirements.file]: updatedPackageJson
   };
 }
 

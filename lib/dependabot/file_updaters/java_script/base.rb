@@ -38,7 +38,7 @@ module Dependabot
                   Dir.pwd,
                   dependency.name,
                   dependency.version,
-                  workspaces_for(dependency)
+                  dependency.requirements
                 ]
               )
 
