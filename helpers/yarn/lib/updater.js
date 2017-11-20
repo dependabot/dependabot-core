@@ -4,6 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - new dependency version
+ *  - workspaces this dependency appears in
  *
  * Outputs:
  *  - updated package.json and yarn.lock files

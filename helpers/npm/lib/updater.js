@@ -4,6 +4,7 @@
  *  - directory containing a package.json and a package-lock.json
  *  - dependency name
  *  - new dependency version
+ *  - workspaces this dependency appears in
  *
  * Outputs:
  *  - updated package.json and package-lock.json files
