@@ -7,13 +7,13 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   it_behaves_like "a dependency file fetcher"
 
   let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:source) { { host: "github", repo: "gocardless/bump" } }
   let(:file_fetcher_instance) do
-    described_class.new(repo: "gocardless/bump", github_client: github_client)
+    described_class.new(source: source, github_client: github_client)
   end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
 
   context "with only a requirements.txt" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -34,8 +34,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with only a setup.py file" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -57,8 +55,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with neither a setup.py file not a requirements.txt" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -77,8 +73,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with a requirements.txt and a setup.py" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -104,8 +98,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with a cascading requirement" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -202,8 +194,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with a constraints file" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -247,8 +237,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   context "with a path-based dependency" do
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 

@@ -6,14 +6,14 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
   it_behaves_like "a dependency file fetcher"
 
+  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:source) { { host: "github", repo: "gocardless/bump" } }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, github_client: github_client)
+  end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
   context "with a path dependency" do
-    let(:github_client) { Octokit::Client.new(access_token: "token") }
-    let(:file_fetcher_instance) do
-      described_class.new(repo: "gocardless/bump", github_client: github_client)
-    end
-
-    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 

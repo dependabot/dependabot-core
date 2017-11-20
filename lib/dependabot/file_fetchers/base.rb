@@ -7,7 +7,7 @@ require "octokit"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :repo, :github_client, :directory, :target_branch
+      attr_reader :source, :github_client, :directory, :target_branch
 
       def self.required_files_in?(_)
         raise NotImplementedError
@@ -17,11 +17,20 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(repo:, github_client:, directory: "/", target_branch: nil)
-        @repo = repo
+      def initialize(source:, github_client:, directory: "/",
+                     target_branch: nil)
+        @source = source
         @github_client = github_client
         @directory = directory
         @target_branch = target_branch
+      end
+
+      def repo
+        source.fetch(:repo)
+      end
+
+      def host
+        source.fetch(:host)
       end
 
       def files

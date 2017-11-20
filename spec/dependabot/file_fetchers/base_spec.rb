@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/file_fetchers/ruby/bundler"
 
 RSpec.describe Dependabot::FileFetchers::Base do
+  let(:source) { { host: "github", repo: repo } }
   let(:repo) { "gocardless/bump" }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
 
@@ -26,7 +27,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
   end
   let(:file_fetcher_instance) do
-    child_class.new(repo: repo, github_client: github_client)
+    child_class.new(source: source, github_client: github_client)
   end
 
   describe "#commit" do
@@ -49,7 +50,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     context "with a target branch" do
       let(:file_fetcher_instance) do
         child_class.new(
-          repo: repo,
+          source: source,
           github_client: github_client,
           target_branch: "my_branch"
         )
@@ -101,7 +102,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     context "with a directory specified" do
       let(:file_fetcher_instance) do
         child_class.new(
-          repo: repo,
+          source: source,
           github_client: github_client,
           directory: directory
         )
@@ -144,7 +145,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     context "with an interesting filename" do
       let(:file_fetcher_instance) do
         child_class.new(
-          repo: repo,
+          source: source,
           github_client: github_client,
           directory: directory
         )
