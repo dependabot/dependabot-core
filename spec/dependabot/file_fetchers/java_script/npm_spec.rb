@@ -6,18 +6,27 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
   it_behaves_like "a dependency file fetcher"
 
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:source) { { host: "github", repo: "gocardless/bump" } }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, github_client: github_client)
+    described_class.new(source: source, credentials: credentials)
   end
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
 
   context "with a path dependency" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, url + "package.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "package_json_with_path_content.json"),
@@ -25,6 +34,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
         )
 
       stub_request(:get, url + "package-lock.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "package_lock_content.json"),
@@ -35,6 +45,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     context "with a bad package.json" do
       before do
         stub_request(:get, url + "package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
             body: fixture("github", "gemfile_content.json"),
@@ -53,6 +64,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     context "that has a fetchable path" do
       before do
         stub_request(:get, url + "deps/etag/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
@@ -70,6 +82,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     context "that has an unfetchable path" do
       before do
         stub_request(:get, url + "deps/etag/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
       end
 
