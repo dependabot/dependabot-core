@@ -130,8 +130,8 @@ module Dependabot
             ruby_requirements =
               requirement_strings.map { |r| ruby_requirement(r) }
 
-            ruby_requirements.flat_map do |r|
-              next r if r.satisfied_by?(latest_resolvable_version)
+            updated_requirement_strings = ruby_requirements.flat_map do |r|
+              next r.to_s if r.satisfied_by?(latest_resolvable_version)
 
               case op = r.requirements.first.first
               when "<", "<="
@@ -141,7 +141,11 @@ module Dependabot
               else
                 raise "Unexpected op for unsatisfied requirement: #{op}"
               end
-            end.compact.map(&:to_s).join(",").delete(" ")
+            end.compact
+
+            updated_requirement_strings.
+              sort_by { |r| Gem::Requirement.new(r).requirements.first.last }.
+              map(&:to_s).join(",").delete(" ")
           end
 
           # Updates the version in a "~>" constraint to allow the given version
