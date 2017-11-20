@@ -1,3 +1,8 @@
+## v0.30.0, 20 November 2017
+
+- Pass a source hash to FileFetchers, rather than a repo name
+- Pass a credentials hash to FileFetchers, rather than a GitHub client
+
 ## v0.29.1, 20 November 2017
 
 - JS: Pass full requirements to Yarn updater.js to circumvent Yarn bug
