@@ -1,3 +1,8 @@
+## v0.29.0, 20 November 2017
+
+- JS: Ignore node manifest engine constraints
+- Make MetadataFinders provider agnostic (i.e., don't treat GitHub differently)
+
 ## v0.28.9, 20 November 2017
 
 - Ruby: Respect user's spacing between specifier and version
