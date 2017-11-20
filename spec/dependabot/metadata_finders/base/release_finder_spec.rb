@@ -11,7 +11,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     described_class.new(
       source: source,
       dependency: dependency,
-      github_client: github_client
+      credentials: credentials
     )
   end
   let(:dependency) do
@@ -28,7 +28,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:source) do
     Dependabot::MetadataFinders::Base::Source.new(
       host: "github",
@@ -48,6 +56,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
       before do
         stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })

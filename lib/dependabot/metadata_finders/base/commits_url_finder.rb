@@ -12,12 +12,12 @@ module Dependabot
   module MetadataFinders
     class Base
       class CommitsUrlFinder
-        attr_reader :source, :dependency, :github_client
+        attr_reader :source, :dependency, :credentials
 
-        def initialize(source:, dependency:, github_client:)
+        def initialize(source:, dependency:, credentials:)
           @source = source
           @dependency = dependency
-          @github_client = github_client
+          @credentials = credentials
         end
 
         def commits_url
@@ -147,6 +147,15 @@ module Dependabot
               endpoint: "https://gitlab.com/api/v4",
               private_token: ""
             )
+        end
+
+        def github_client
+          access_token =
+            credentials.
+            find { |cred| cred["host"] == "github.com" }&.
+            fetch("password")
+
+          @github_client ||= Octokit::Client.new(access_token: access_token)
         end
       end
     end

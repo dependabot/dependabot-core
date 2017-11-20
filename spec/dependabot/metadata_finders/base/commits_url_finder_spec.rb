@@ -9,7 +9,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
   subject(:builder) do
     described_class.new(
       dependency: dependency,
-      github_client: github_client,
+      credentials: credentials,
       source: source
     )
   end
@@ -32,7 +32,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
   end
   let(:dependency_previous_version) { "1.0.0" }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:source) do
     Dependabot::MetadataFinders::Base::Source.new(
       host: "github",
@@ -50,11 +58,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
         stub_request(
           :get,
           "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).to_return(
-          status: 200,
-          body: fixture("github", "business_tags.json"),
-          headers: { "Content-Type" => "application/json" }
-        )
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
       end
 
       it do
@@ -68,11 +77,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
         stub_request(
           :get,
           "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).to_return(
-          status: 200,
-          body: fixture("github", "business_tags.json"),
-          headers: { "Content-Type" => "application/json" }
-        )
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
       end
 
       it do
@@ -86,11 +96,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
         stub_request(
           :get,
           "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).to_return(
-          status: 200,
-          body: fixture("github", "prefixed_tags.json"),
-          headers: { "Content-Type" => "application/json" }
-        )
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "prefixed_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
       end
 
       it do
@@ -104,11 +115,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
         stub_request(
           :get,
           "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).to_return(
-          status: 200,
-          body: fixture("github", "unprefixed_tags.json"),
-          headers: { "Content-Type" => "application/json" }
-        )
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "unprefixed_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
       end
 
       it do
@@ -122,11 +134,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
         stub_request(
           :get,
           "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).to_return(
-          status: 200,
-          body: "[]",
-          headers: { "Content-Type" => "application/json" }
-        )
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: "[]",
+            headers: { "Content-Type" => "application/json" }
+          )
       end
 
       it do
@@ -183,11 +196,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-          ).to_return(
-            status: 200,
-            body: fixture("github", "business_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_tags.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
         end
 
         it do

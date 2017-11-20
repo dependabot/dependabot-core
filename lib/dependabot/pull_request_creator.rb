@@ -164,7 +164,7 @@ module Dependabot
       @metadata_finder ||=
         MetadataFinders.
         for_package_manager(dependency.package_manager).
-        new(dependency: dependency, github_client: github_client)
+        new(dependency: dependency, credentials: credentials)
     end
 
     def previous_version
@@ -207,6 +207,16 @@ module Dependabot
       gemspec = updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
       return gemspec[:requirement] if gemspec
       updated_reqs.first[:requirement]
+    end
+
+    def credentials
+      [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => github_client.access_token
+        }
+      ]
     end
 
     def library?

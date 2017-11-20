@@ -7,7 +7,7 @@ require "dependabot/metadata_finders/base"
 
 RSpec.describe Dependabot::MetadataFinders::Base do
   subject(:finder) do
-    described_class.new(dependency: dependency, github_client: github_client)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -26,7 +26,15 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   before { allow(finder).to receive(:source).and_return(source) }
   let(:source) do
     Dependabot::MetadataFinders::Base::Source.new(
@@ -67,7 +75,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       expect(Dependabot::MetadataFinders::Base::CommitsUrlFinder).
         to receive(:new).
         with(
-          github_client: github_client,
+          credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_commits_url_finder)
@@ -89,7 +97,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
         to receive(:new).
         with(
-          github_client: github_client,
+          credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_changelog_finder)
@@ -111,7 +119,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
         to receive(:new).
         with(
-          github_client: github_client,
+          credentials: credentials,
           source: source,
           dependency: dependency
         ).once.and_return(dummy_release_finder)

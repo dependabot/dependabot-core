@@ -3,17 +3,26 @@
 require "octokit"
 require "gitlab"
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/metadata_finders/base/changelog_finder"
 
 RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   subject(:finder) do
     described_class.new(
       source: source,
-      github_client: github_client,
+      credentials: credentials,
       dependency: dependency
     )
   end
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:source) do
     Dependabot::MetadataFinders::Base::Source.new(
       host: "github",
@@ -52,6 +61,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       before do
         stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })

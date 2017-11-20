@@ -35,9 +35,17 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
   end
   let(:url) { "https://github.com/example/manifesto.git" }
   subject(:finder) do
-    described_class.new(dependency: dependency, github_client: github_client)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

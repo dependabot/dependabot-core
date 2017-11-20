@@ -26,7 +26,7 @@ dependency = update_checker.updated_dependency
 metadata_finder_class = Dependabot::MetadataFinders::Ruby::Bundler
 metadata_finder = metadata_finder_class.new(
   dependency: dependency,
-  github_client: client
+  credentials: credentials
 )
 
 puts "Changelog for #{dependency.name} is at #{metadata_finder.changelog_url}"

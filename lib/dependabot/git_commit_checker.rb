@@ -172,10 +172,7 @@ module Dependabot
 
           MetadataFinders.
             for_package_manager(dependency.package_manager).
-            new(
-              dependency: candidate_dep,
-              github_client: github_client
-            ).
+            new(dependency: candidate_dep, credentials: credentials).
             source_url
         end
     end
@@ -204,7 +201,7 @@ module Dependabot
       @local_source_url ||=
         MetadataFinders.
         for_package_manager(dependency.package_manager).
-        new(dependency: dependency, github_client: github_client).
+        new(dependency: dependency, credentials: credentials).
         source_url
     end
 
@@ -227,6 +224,16 @@ module Dependabot
     def github_client
       @github_client ||=
         Octokit::Client.new(access_token: github_access_token)
+    end
+
+    def credentials
+      [
+        {
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => github_access_token
+        }
+      ]
     end
   end
 end
