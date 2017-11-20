@@ -50,10 +50,11 @@ module Dependabot
               return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
 
               quote_characters = extract_quote_characters_from(req_nodes)
+              space_after_specifier = space_after_specifier?(req_nodes)
 
               replace(
                 range_for(req_nodes),
-                new_requirement_string(quote_characters)
+                new_requirement_string(quote_characters, space_after_specifier)
               )
             end
 
@@ -87,11 +88,29 @@ module Dependabot
               end
             end
 
-            def new_requirement_string(quote_characters)
+            def space_after_specifier?(requirement_nodes)
+              req_string =
+                case requirement_nodes.first.type
+                when :str, :dstr
+                  requirement_nodes.first.loc.expression.source
+                else
+                  requirement_nodes.first.children.first.loc.expression.source
+                end
+
+              ops = Gem::Requirement::OPS.keys
+              return true if ops.none? { |op| req_string.include?(op) }
+              req_string.include?(" ")
+            end
+
+            def new_requirement_string(quote_characters, space_after_specifier)
               open_quote, close_quote = quote_characters
-              updated_requirement.split(",").
+              new_requirement_string =
+                updated_requirement.split(",").
                 map { |r| %(#{open_quote}#{r.strip}#{close_quote}) }.
                 join(", ")
+
+              new_requirement_string.delete!(" ") unless space_after_specifier
+              new_requirement_string
             end
 
             def range_for(nodes)

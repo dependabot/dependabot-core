@@ -84,6 +84,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
         let(:content) { %(gem "business", %(1.0)) }
         it { is_expected.to eq(%(gem "business", %(~> 1.5.0))) }
       end
+
+      context "with a dependency that uses doesn't have a space" do
+        let(:content) { %(gem "business", "~>1.0") }
+        it { is_expected.to eq(%(gem "business", "~>1.5.0")) }
+      end
     end
 
     context "with a gemspec" do
