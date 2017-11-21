@@ -1,3 +1,7 @@
+## v0.30.5, 21 November 2017
+
+- Python: Further fix for UpdateChecker prerelease handling
+
 ## v0.30.4, 21 November 2017
 
 - Python: Better pre-release handling in UpdateChecker
