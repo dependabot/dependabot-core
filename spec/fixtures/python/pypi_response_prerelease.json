@@ -582,21 +582,6 @@
                 "size": 71168
             }
         ],
-        "2.6.0": [
-            {
-                "has_sig": false,
-                "upload_time": "2017-02-10T06:57:18",
-                "comment_text": "",
-                "python_version": "source",
-                "url": "https://pypi.python.org/packages/9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz",
-                "md5_digest": "8c36cf3d37525ccc57f6ecc24431bdef",
-                "downloads": 0,
-                "filename": "luigi-2.6.0.tar.gz",
-                "packagetype": "sdist",
-                "path": "9f/aa/5067601c565d61c8e1f172035eee4f1d50f25a193b9041f17ebc6fff5764/luigi-2.6.0.tar.gz",
-                "size": 1158747
-            }
-        ],
         "2.6.0.beta1": [
             {
                 "has_sig": false,

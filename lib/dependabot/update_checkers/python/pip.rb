@@ -65,7 +65,7 @@ module Dependabot
           end
 
           dependency.requirements.any? do |req|
-            reqs = req.fetch(:requirement).split(",").map(&:strip)
+            reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
             reqs.any? { |r| r.split(".").last.match?(/\D/) }
           end
         end
