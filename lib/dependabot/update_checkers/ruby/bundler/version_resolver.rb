@@ -244,20 +244,16 @@ module Dependabot
                   # Piggy-back off some private Bundler methods to configure the
                   # URI with auth details in the same way Bundler does.
                   git_proxy = spec.source.send(:git_proxy)
-                  uri = git_proxy.send(:configured_uri_for, spec.source.uri)
+                  uri = spec.source.uri.gsub("git://", "https://")
+                  uri = git_proxy.send(:configured_uri_for, uri)
                   uri += ".git" unless uri.end_with?(".git")
                   uri += "/info/refs?service=git-upload-pack"
 
-                  begin
-                    Excon.get(
-                      uri,
-                      idempotent: true,
-                      middlewares: SharedHelpers.excon_middleware
-                    ).status == 200
-                  rescue Excon::Error::Timeout
-                    # Ignore timeouts (since they're probably temporary)
-                    true
-                  end
+                  Excon.get(
+                    uri,
+                    idempotent: true,
+                    middlewares: SharedHelpers.excon_middleware
+                  ).status == 200
                 end
             end
           end
