@@ -36,6 +36,11 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::PathGemspecFinder do
 
         it { is_expected.to eq(["nested/plugins/example/example.gemspec"]) }
       end
+
+      context "that is behind a conditional that is false" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_if") }
+        it { is_expected.to eq([]) }
+      end
     end
   end
 end
