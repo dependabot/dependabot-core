@@ -41,7 +41,7 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          if Gem::Version.new(dependency.version).prerelease?
+          if wants_prerelease?(dependency)
             Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
           else
             versions = JSON.parse(pypi_response.body).fetch("releases").keys
@@ -57,6 +57,17 @@ module Dependabot
           end
         rescue JSON::ParserError
           nil
+        end
+
+        def wants_prerelease?(dependency)
+          if dependency.version
+            return Gem::Version.new(dependency.version).prerelease?
+          end
+
+          dependency.requirements.any? do |req|
+            reqs = req.fetch(:requirement).split(",").map(&:strip)
+            reqs.any? { |r| r.split(".").last.match?(/\D/) }
+          end
         end
 
         def dependency_url

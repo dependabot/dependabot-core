@@ -128,6 +128,25 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         end
         it { is_expected.to eq(Gem::Version.new("2.6.0.beta1")) }
       end
+
+      context "and the current version has a pre-release requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "luigi",
+            version: nil,
+            requirements: [
+              {
+                file: "requirements.txt",
+                requirement: ">=2.6.0.alpha",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+        it { is_expected.to eq(Gem::Version.new("2.6.0.beta1")) }
+      end
     end
   end
 
