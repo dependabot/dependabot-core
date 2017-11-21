@@ -1,3 +1,7 @@
+## v0.30.6, 21 November 2017
+
+- Python: More robust setup.py error handling
+
 ## v0.30.5, 21 November 2017
 
 - Python: Further fix for UpdateChecker prerelease handling
