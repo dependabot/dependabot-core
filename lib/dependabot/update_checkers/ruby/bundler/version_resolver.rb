@@ -248,11 +248,16 @@ module Dependabot
                   uri += ".git" unless uri.end_with?(".git")
                   uri += "/info/refs?service=git-upload-pack"
 
-                  Excon.get(
-                    uri,
-                    idempotent: true,
-                    middlewares: SharedHelpers.excon_middleware
-                  ).status == 200
+                  begin
+                    Excon.get(
+                      uri,
+                      idempotent: true,
+                      middlewares: SharedHelpers.excon_middleware
+                    ).status == 200
+                  rescue Excon::Error::Timeout
+                    # Ignore timeouts (since they're probably temporary)
+                    true
+                  end
                 end
             end
           end
