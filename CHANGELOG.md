@@ -1,3 +1,7 @@
+## v0.30.1, 21 November 2017
+
+- Ruby: Handle GitHub sources when checking for inaccessible dependencies
+
 ## v0.30.0, 20 November 2017
 
 - Pass a source hash to FileFetchers, rather than a repo name
