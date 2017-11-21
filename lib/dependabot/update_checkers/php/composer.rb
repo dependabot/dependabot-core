@@ -73,6 +73,10 @@ module Dependabot
           else
             Gem::Version.new(latest_resolvable_version)
           end
+        rescue SharedHelpers::HelperSubprocessFailed
+          # TODO: We shouldn't be suppressing these errors but they're caused
+          # by memory issues that we don't currently have a solution to.
+          nil
         end
 
         def composer_file
