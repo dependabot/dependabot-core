@@ -104,7 +104,7 @@ def parse(directory):
 
             # Exec the setup.py
             exec(content)
-        except Exception as e:
+        except:
             pass
 
     return json.dumps({ "result": requirement_packages + setup_packages })
