@@ -1,3 +1,7 @@
+## v0.30.3, 21 November 2017
+
+- Ruby: Ignore path gemspecs that are behind falsey conditional
+
 ## v0.30.2, 21 November 2017
 
 - PHP: Silence out-of-memory errors
