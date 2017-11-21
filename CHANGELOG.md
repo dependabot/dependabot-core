@@ -1,3 +1,7 @@
+## v0.30.2, 21 November 2017
+
+- PHP: Silence out-of-memory errors
+
 ## v0.30.1, 21 November 2017
 
 - Ruby: Handle GitHub sources when checking for inaccessible dependencies
