@@ -41,8 +41,8 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
   let(:url) { "https://github.com/example/manifesto.git" }
   let(:branch) { "master" }
 
-  describe "#needs_update?" do
-    subject { checker.needs_update? }
+  describe "#can_update?" do
+    subject { checker.can_update? }
 
     context "given an outdated dependency" do
       before { allow(checker).to receive(:latest_version).and_return("sha2") }

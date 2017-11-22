@@ -13,16 +13,24 @@ module Dependabot
         @credentials = credentials
       end
 
-      def needs_update?
+      def up_to_date?
         if dependency.appears_in_lockfile?
-          version_needs_update?
+          version_up_to_date?
         else
-          requirements_need_update?
+          requirements_up_to_date?
+        end
+      end
+
+      def can_update?
+        if dependency.appears_in_lockfile?
+          version_can_update?
+        else
+          requirements_can_update?
         end
       end
 
       def updated_dependency
-        return unless needs_update?
+        return unless can_update?
 
         Dependency.new(
           name: dependency.name,
@@ -48,9 +56,14 @@ module Dependabot
 
       private
 
-      def version_needs_update?
-        return sha1_version_needs_update? if existing_version_is_sha1?
-        numeric_version_needs_update?
+      def version_up_to_date?
+        return sha1_version_up_to_date? if existing_version_is_sha1?
+        numeric_version_up_to_date?
+      end
+
+      def version_can_update?
+        return sha1_version_can_update? if existing_version_is_sha1?
+        numeric_version_can_update?
       end
 
       def existing_version_is_sha1?
@@ -58,27 +71,35 @@ module Dependabot
         dependency.version.match?(/^[0-9a-f]{40}$/)
       end
 
-      def sha1_version_needs_update?
+      def sha1_version_up_to_date?
+        latest_version && latest_version == dependency.version
+      end
+
+      def sha1_version_can_update?
         # All we can do with SHA-1 hashes is check for presence and equality
-        return false if latest_version && latest_version == dependency.version
+        return false if sha1_version_up_to_date?
         return false if latest_resolvable_version.nil?
         latest_resolvable_version != dependency.version
       end
 
-      def numeric_version_needs_update?
+      def numeric_version_up_to_date?
+        latest_version && latest_version <= Gem::Version.new(dependency.version)
+      end
+
+      def numeric_version_can_update?
         # Check if we're up-to-date with the latest version.
         # Saves doing resolution if so.
-        if latest_version &&
-           latest_version <= Gem::Version.new(dependency.version)
-          return false
-        end
-
+        return false if numeric_version_up_to_date?
         return false if latest_resolvable_version.nil?
 
         latest_resolvable_version > Gem::Version.new(dependency.version)
       end
 
-      def requirements_need_update?
+      def requirements_up_to_date?
+        (updated_requirements - dependency.requirements).none?
+      end
+
+      def requirements_can_update?
         changed_reqs = updated_requirements - dependency.requirements
 
         return false if changed_reqs.none?

@@ -29,15 +29,22 @@ module Dependabot
 
         private
 
-        def version_needs_update?
-          return false unless dependency.version.match?(NAME_WITH_VERSION)
-          return false unless latest_version
+        def version_up_to_date?
+          return unless dependency.version.match?(NAME_WITH_VERSION)
+          return unless latest_version
 
           original_version_number = numeric_version_from(dependency.version)
           latest_version_number = numeric_version_from(latest_version)
 
-          Gem::Version.new(latest_version_number) >
+          Gem::Version.new(latest_version_number) <=
             Gem::Version.new(original_version_number)
+        end
+
+        def version_can_update?
+          return false unless dependency.version.match?(NAME_WITH_VERSION)
+          return false unless latest_version
+
+          !version_up_to_date?
         end
 
         def fetch_latest_version

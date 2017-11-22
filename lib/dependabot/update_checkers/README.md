@@ -12,7 +12,8 @@ Each `Dependabot::UpdateCheckers` class implements the following methods:
 
 | Method                       | Description                                                                                   |
 |------------------------------|-----------------------------------------------------------------------------------------------|
-| `#needs_update?`             | Returns a boolean for whether the dependency this instance was created with needs updating. This will be true if the dependency and/or its requirements can be updated to support a newer version whilst keeping the dependency files it came from resolvable. |
+| `#up_to_date?`               | Returns a boolean for whether the dependency this instance was created with is currently at the latest version. |
+| `#can_update?`               | Returns a boolean for whether the dependency this instance was created with needs updating. This will be true if the dependency and/or its requirements can be updated to support a newer version whilst keeping the dependency files it came from resolvable. |
 | `#updated_dependency`        | Returns an updated `Dependabot::Dependency` instance with updated `version` and `requirements` attributes. The previous valuse are stored on the instance as `previous_version` and `previous_requirements`. |
 | `#latest_version`            | See the "Writing an update checker" section. |
 | `#latest_resolvable_version` | See the "Writing an update checker" section. |
@@ -32,7 +33,7 @@ update_checker = update_checker_class.new(
   credentials: [{ "host" => "github.com", "token" => "token" }]
 )
 
-puts "Update needed for #{dependency.name}? #{update_checker.needs_update?}"
+puts "Update needed for #{dependency.name}? #{update_checker.can_update?}"
 ```
 
 ## Writing an update checker for a new language

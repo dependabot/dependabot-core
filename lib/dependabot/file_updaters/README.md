@@ -20,7 +20,7 @@ An integration might look as follows:
 ```ruby
 require 'dependabot/file_updaters'
 
-raise "Dependency doesn't need update!" unless update_checker.needs_update?
+raise "Dependency doesn't need update!" unless update_checker.can_update?
 dependency = update_checker.updated_dependency
 
 file_updater_class = Dependabot::FileUpdaters::Ruby::Bundler

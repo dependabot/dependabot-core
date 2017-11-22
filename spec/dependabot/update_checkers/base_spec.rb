@@ -55,8 +55,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       and_return(updated_requirements)
   end
 
-  describe "#needs_update?" do
-    subject(:needs_update) { updater_instance.needs_update? }
+  describe "#can_update?" do
+    subject(:can_update) { updater_instance.can_update? }
 
     context "when the dependency is outdated" do
       let(:latest_version) { Gem::Version.new("1.6.0") }
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       it "doesn't attempt to resolve the dependency" do
         expect(updater_instance).to_not receive(:latest_resolvable_version)
-        needs_update
+        can_update
       end
     end
 

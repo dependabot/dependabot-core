@@ -45,8 +45,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     )
   end
 
-  describe "#needs_update?" do
-    subject { checker.needs_update? }
+  describe "#can_update?" do
+    subject { checker.can_update? }
 
     context "given an outdated dependency" do
       it { is_expected.to be_truthy }

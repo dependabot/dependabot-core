@@ -54,8 +54,8 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       and_return(status: 200, body: registry_tags)
   end
 
-  describe "#needs_update?" do
-    subject { checker.needs_update? }
+  describe "#can_update?" do
+    subject { checker.can_update? }
 
     context "given an outdated dependency" do
       let(:version) { "17.04" }

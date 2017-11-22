@@ -214,7 +214,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
             it "respects the pin" do
               expect(checker.latest_version).to eq(current_version)
-              expect(checker.needs_update?).to eq(false)
+              expect(checker.can_update?).to eq(false)
             end
           end
 
@@ -761,7 +761,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             it "respects the pin" do
               expect(checker.latest_resolvable_version).
                 to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
-              expect(checker.needs_update?).to eq(false)
+              expect(checker.can_update?).to eq(false)
             end
           end
 
