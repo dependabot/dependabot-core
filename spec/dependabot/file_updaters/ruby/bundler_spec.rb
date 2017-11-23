@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
-      dependencies: [dependency],
+      dependencies: dependencies,
       credentials: [
         {
           "host" => "github.com",
@@ -47,6 +47,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       ]
     )
   end
+  let(:dependencies) { [dependency] }
   let(:dependency_files) { [gemfile, lockfile] }
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
@@ -229,6 +230,78 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       context "when the previous version used a function" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "function_version") }
         its(:content) { is_expected.to include "\"business\", version" }
+      end
+
+      context "with multiple dependencies" do
+        before do
+          info_url = "https://index.rubygems.org/info/"
+          stub_request(:get, info_url + "diff-lcs").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-diff-lcs")
+            )
+          stub_request(:get, info_url + "rspec-mocks").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-mocks")
+            )
+          stub_request(:get, info_url + "rspec-support").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-support")
+            )
+        end
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict.lock")
+        end
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "rspec-mocks",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "rspec-support",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            )
+          ]
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "3.6.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "3.5.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+
+        it "updates both dependencies" do
+          expect(updated_gemfile.content).
+            to include("\"rspec-mocks\", \"3.6.0\"")
+          expect(updated_gemfile.content).
+            to include("\"rspec-support\", \"3.6.0\"")
+        end
       end
 
       context "with a gem that has a git source" do
@@ -652,6 +725,76 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
         it "doesn't change the version of the other (also outdated) gem" do
           expect(file.content).to include "statesman (1.2.1)"
+        end
+      end
+
+      context "with multiple dependencies" do
+        before do
+          info_url = "https://index.rubygems.org/info/"
+          stub_request(:get, info_url + "diff-lcs").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-diff-lcs")
+            )
+          stub_request(:get, info_url + "rspec-mocks").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-mocks")
+            )
+          stub_request(:get, info_url + "rspec-support").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-support")
+            )
+        end
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict.lock")
+        end
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "rspec-mocks",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "rspec-support",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "bundler"
+            )
+          ]
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "3.6.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "3.5.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+
+        it "updates both dependencies" do
+          expect(file.content).to include("rspec-mocks (3.6.0)")
+          expect(file.content).to include("rspec-support (3.6.0)")
         end
       end
 
