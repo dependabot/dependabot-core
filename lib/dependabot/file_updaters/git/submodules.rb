@@ -16,6 +16,11 @@ module Dependabot
 
         private
 
+        def dependency
+          # Git submodules will only ever be updating a single dependency
+          dependencies.first
+        end
+
         def check_required_files
           %w(.gitmodules).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)

@@ -13,7 +13,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
   let(:updater) do
     described_class.new(
       dependency_files: [dockerfile],
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: credentials
     )
   end

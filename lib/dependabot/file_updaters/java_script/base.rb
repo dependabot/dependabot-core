@@ -16,6 +16,11 @@ module Dependabot
 
         private
 
+        def dependency
+          # For now, we'll only ever be updating a single dependency for JS
+          dependencies.first
+        end
+
         def check_required_files
           ["package.json", self.class::LOCKFILE_NAME].each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)

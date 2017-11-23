@@ -18,7 +18,7 @@ RSpec.describe Dependabot::FileUpdaters::Base do
   let(:updater_instance) do
     child_class.new(
       dependency_files: files,
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",

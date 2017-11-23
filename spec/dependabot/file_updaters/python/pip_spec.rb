@@ -13,7 +13,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",

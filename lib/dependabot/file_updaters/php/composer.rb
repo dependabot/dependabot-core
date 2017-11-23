@@ -31,6 +31,11 @@ module Dependabot
 
         private
 
+        def dependency
+          # For now, we'll only ever be updating a single dependency for PHP
+          dependencies.first
+        end
+
         def check_required_files
           %w(composer.json composer.lock).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)

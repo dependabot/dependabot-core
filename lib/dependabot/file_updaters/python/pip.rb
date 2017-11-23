@@ -29,6 +29,11 @@ module Dependabot
 
         private
 
+        def dependency
+          # For now, we'll only ever be updating a single dependency for Python
+          dependencies.first
+        end
+
         def check_required_files
           return if get_original_file("requirements.txt")
           return if get_original_file("setup.py")

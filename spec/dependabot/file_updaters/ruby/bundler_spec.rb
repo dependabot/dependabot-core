@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",
@@ -615,7 +615,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:updater) do
           described_class.new(
             dependency_files: [gemfile, lockfile, ruby_version_file],
-            dependency: dependency,
+            dependencies: [dependency],
             credentials: [
               {
                 "host" => "github.com",

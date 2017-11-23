@@ -40,7 +40,7 @@ module Dependabot
               )
           end
 
-          if lockfile && dependency.appears_in_lockfile?
+          if lockfile && dependencies.any?(&:appears_in_lockfile?)
             updated_files <<
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
@@ -99,9 +99,16 @@ module Dependabot
 
         def file_changed?(file)
           changed_requirements =
-            dependency.requirements - dependency.previous_requirements
+            dependencies.flat_map do |dep|
+              dep.requirements - dep.previous_requirements
+            end
 
           changed_requirements.any? { |f| f[:file] == file.name }
+        end
+
+        def dependency
+          # For now, we'll only ever be updating a single dependency for Ruby
+          dependencies.first
         end
 
         def remove_git_source?

@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
   let(:updater) do
     described_class.new(
       dependency_files: [gitmodules, submodule],
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",

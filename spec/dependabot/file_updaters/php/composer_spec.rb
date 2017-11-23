@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
   let(:updater) do
     described_class.new(
       dependency_files: [composer_json, lockfile],
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",

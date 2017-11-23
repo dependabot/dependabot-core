@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
   let(:updater) do
     described_class.new(
       dependency_files: files,
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",
