@@ -10,7 +10,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   subject(:creator) do
     Dependabot::PullRequestCreator.new(repo: repo,
                                        base_commit: base_commit,
-                                       dependency: dependency,
+                                       dependencies: [dependency],
                                        files: files,
                                        github_client: github_client)
   end
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::PullRequestCreator do
         Dependabot::PullRequestCreator.new(repo: repo,
                                            base_commit: base_commit,
                                            target_branch: "my_branch",
-                                           dependency: dependency,
+                                           dependencies: [dependency],
                                            files: files,
                                            github_client: github_client)
       end
@@ -782,7 +782,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       subject(:creator) do
         Dependabot::PullRequestCreator.new(repo: repo,
                                            base_commit: base_commit,
-                                           dependency: dependency,
+                                           dependencies: [dependency],
                                            files: files,
                                            github_client: github_client,
                                            pr_message_footer: "Example text")
