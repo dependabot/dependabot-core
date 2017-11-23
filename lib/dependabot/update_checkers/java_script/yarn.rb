@@ -18,11 +18,6 @@ module Dependabot
           latest_version
         end
 
-        def latest_version_resolvable_with_full_unlock?
-          # Always true, since we're not doing resolution
-          !latest_resolvable_version.nil?
-        end
-
         def updated_requirements
           return dependency.requirements unless latest_resolvable_version
 
@@ -46,6 +41,15 @@ module Dependabot
         end
 
         private
+
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't implemented for Yarn (yet)
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
 
         def fetch_latest_version
           npm_response = Excon.get(

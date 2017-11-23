@@ -309,13 +309,18 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
   end
 
-  describe "#updated_dependency" do
-    subject(:updated_dependency) { updater_instance.updated_dependency }
+  describe "#updated_dependencies" do
+    subject(:updated_dependencies) { updater_instance.updated_dependencies }
     let(:latest_version) { Gem::Version.new("1.9.0") }
 
-    its(:version) { is_expected.to eq("1.9.0") }
-    its(:previous_version) { is_expected.to eq("1.5.0") }
-    its(:package_manager) { is_expected.to eq(dependency.package_manager) }
-    its(:name) { is_expected.to eq(dependency.name) }
+    its(:count) { is_expected.to eq(1) }
+
+    describe "the dependency" do
+      subject { updated_dependencies.first }
+      its(:version) { is_expected.to eq("1.9.0") }
+      its(:previous_version) { is_expected.to eq("1.5.0") }
+      its(:package_manager) { is_expected.to eq(dependency.package_manager) }
+      its(:name) { is_expected.to eq(dependency.name) }
+    end
   end
 end

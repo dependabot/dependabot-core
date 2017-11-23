@@ -23,16 +23,20 @@ module Dependabot
           latest_version
         end
 
-        def latest_version_resolvable_with_full_unlock?
-          # Always true, since we're not doing resolution
-          !latest_resolvable_version.nil?
-        end
-
         def updated_requirements
           dependency.requirements
         end
 
         private
+
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't relevant for submodules
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
 
         def version_up_to_date?
           return unless dependency.version.match?(NAME_WITH_VERSION)

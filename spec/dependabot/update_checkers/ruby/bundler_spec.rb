@@ -339,7 +339,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    subject { checker.latest_version_resolvable_with_full_unlock? }
+    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
       before do
@@ -419,6 +419,94 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_name) { "rspec-mocks" }
 
         it { is_expected.to be_truthy }
+      end
+    end
+  end
+
+  describe "#updated_dependencies_after_full_unlock" do
+    subject(:updated_dependencies_after_full_unlock) do
+      checker.send(:updated_dependencies_after_full_unlock)
+    end
+
+    context "with a latest version" do
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(target_version)
+      end
+
+      context "when the force updater succeeds" do
+        before do
+          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
+            to receive(:etag_for).and_return("")
+          stub_request(:get, "https://index.rubygems.org/versions").
+            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+          info_url = "https://index.rubygems.org/info/"
+          stub_request(:get, info_url + "diff-lcs").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-diff-lcs")
+            )
+          stub_request(:get, info_url + "rspec-mocks").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-mocks")
+            )
+          stub_request(:get, info_url + "rspec-support").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-support")
+            )
+        end
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict.lock")
+        end
+        let(:target_version) { "3.6.0" }
+        let(:dependency_name) { "rspec-mocks" }
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "= 3.5.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        end
+        let(:expected_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "3.6.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        end
+
+        it "returns the right array of updated dependencies" do
+          expect(updated_dependencies_after_full_unlock).to match_array(
+            [
+              Dependabot::Dependency.new(
+                name: "rspec-mocks",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              ),
+              Dependabot::Dependency.new(
+                name: "rspec-support",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              )
+            ]
+          )
+        end
       end
     end
   end

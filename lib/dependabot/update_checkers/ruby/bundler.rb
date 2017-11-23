@@ -22,14 +22,6 @@ module Dependabot
           latest_resolvable_version_details&.fetch(:version)
         end
 
-        def latest_version_resolvable_with_full_unlock?
-          return false unless latest_version
-          force_updater.updated_dependencies
-          true
-        rescue Dependabot::DependencyFileNotResolvable
-          false
-        end
-
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
@@ -42,6 +34,18 @@ module Dependabot
         end
 
         private
+
+        def latest_version_resolvable_with_full_unlock?
+          return false unless latest_version
+          force_updater.updated_dependencies
+          true
+        rescue Dependabot::DependencyFileNotResolvable
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          force_updater.updated_dependencies
+        end
 
         def git_dependency?
           git_commit_checker.git_dependency?

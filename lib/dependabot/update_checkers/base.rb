@@ -30,17 +30,23 @@ module Dependabot
         end
       end
 
-      def updated_dependency
-        return unless can_update?(full_unlock: false)
+      def updated_dependencies(full_unlock: false)
+        return [] unless can_update?(full_unlock: full_unlock)
 
-        Dependency.new(
-          name: dependency.name,
-          version: latest_resolvable_version.to_s,
-          requirements: updated_requirements,
-          previous_version: dependency.version,
-          previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
-        )
+        if full_unlock
+          updated_dependencies_after_full_unlock
+        else
+          [
+            Dependency.new(
+              name: dependency.name,
+              version: latest_resolvable_version.to_s,
+              requirements: updated_requirements,
+              previous_version: dependency.version,
+              previous_requirements: dependency.requirements,
+              package_manager: dependency.package_manager
+            )
+          ]
+        end
       end
 
       def latest_version
@@ -51,15 +57,19 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def latest_version_resolvable_with_full_unlock?
-        raise NotImplementedError
-      end
-
       def updated_requirements
         raise NotImplementedError
       end
 
       private
+
+      def latest_version_resolvable_with_full_unlock?
+        raise NotImplementedError
+      end
+
+      def updated_dependencies_after_full_unlock
+        raise NotImplementedError
+      end
 
       def version_up_to_date?
         return sha1_version_up_to_date? if existing_version_is_sha1?
