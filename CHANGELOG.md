@@ -1,3 +1,8 @@
+## v0.32.0, 23 November 2017
+
+- BREAKING: Return an array of dependencies from
+  `UpdateCheckers::Base#updated_dependencies`
+
 ## v0.31.0, 22 November 2017
 
 - BREAKING: Split `UpdateCheckers::Base#needs_update?` method into `up_to_date?`
