@@ -21,11 +21,11 @@ An integration might look as follows:
 require 'dependabot/file_updaters'
 
 raise "Dependency doesn't need update!" unless update_checker.can_update?
-dependency = update_checker.updated_dependency
+dependencies = update_checker.updated_dependencies
 
 file_updater_class = Dependabot::FileUpdaters::Ruby::Bundler
 file_updater = file_updater_class.new(
-  dependency: dependency,
+  dependencies: dependencies,
   dependency_files: files,
   credentials: [{ "host" => "github.com", "token" => "token" }]
 )
