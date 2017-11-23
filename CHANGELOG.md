@@ -1,3 +1,7 @@
+## v0.33.0, 23 November 2017
+
+- BREAKING: FileUpdaters now take an array of `dependencies`, not a `dependency`
+
 ## v0.32.0, 23 November 2017
 
 - BREAKING: Return an array of dependencies from
