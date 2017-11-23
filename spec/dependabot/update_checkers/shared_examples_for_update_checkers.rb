@@ -25,6 +25,16 @@ RSpec.shared_examples "an update checker" do
         to include(:latest_resolvable_version)
     end
 
+    it "implements latest_version_resolvable_with_full_unlock?" do
+      expect(described_class.private_instance_methods(false)).
+        to include(:latest_version_resolvable_with_full_unlock?)
+    end
+
+    it "implements updated_dependencies_after_full_unlock" do
+      expect(described_class.private_instance_methods(false)).
+        to include(:updated_dependencies_after_full_unlock)
+    end
+
     it "doesn't define any additional public instance methods" do
       expect(described_class.public_instance_methods).
         to match_array(base_class.public_instance_methods)

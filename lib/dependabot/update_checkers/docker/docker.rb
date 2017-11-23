@@ -29,6 +29,15 @@ module Dependabot
 
         private
 
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't relevant for submodules
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
+
         def version_up_to_date?
           return unless dependency.version.match?(NAME_WITH_VERSION)
           return unless latest_version
@@ -40,7 +49,7 @@ module Dependabot
             Gem::Version.new(original_version_number)
         end
 
-        def version_can_update?
+        def version_can_update?(*)
           return false unless dependency.version.match?(NAME_WITH_VERSION)
           return false unless latest_version
 

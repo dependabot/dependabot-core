@@ -24,6 +24,15 @@ module Dependabot
 
         private
 
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't relevant for submodules
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
+
         def fetch_latest_version
           git_commit_checker = GitCommitChecker.new(
             dependency: dependency,

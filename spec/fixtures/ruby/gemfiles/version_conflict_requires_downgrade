@@ -1,0 +1,4 @@
+source "https://rubygems.org"
+
+gem "ibandit", "~> 0.8.2"
+gem "i18n", "~> 0.7.0"

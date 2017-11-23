@@ -32,6 +32,18 @@ module Dependabot
 
         private
 
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't implemented for pip because they're not
+          # relevant (pip doesn't have a resolver). This method always returns
+          # false to ensure `updated_dependencies_after_full_unlock` is never
+          # called.
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
+
         def fetch_latest_version
           # TODO: Support private repos, as described at
           # https://gemfury.com/help/pypi-server#requirements-txt

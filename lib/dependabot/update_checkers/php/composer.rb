@@ -55,6 +55,15 @@ module Dependabot
 
         private
 
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't implemented for Composer (yet)
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
+
         def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
