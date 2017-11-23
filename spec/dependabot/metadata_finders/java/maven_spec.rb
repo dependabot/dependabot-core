@@ -24,9 +24,17 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     )
   end
   subject(:finder) do
-    described_class.new(dependency: dependency, github_client: github_client)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:dependency_name) { "com.google.guava/guava" }
 
   describe "#source_url" do

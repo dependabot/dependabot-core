@@ -13,7 +13,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
   let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

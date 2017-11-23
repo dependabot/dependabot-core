@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
   let(:updater) do
     described_class.new(
       dependency_files: [pom],
-      dependency: dependency,
+      dependencies: [dependency],
       credentials: [
         {
           "host" => "github.com",

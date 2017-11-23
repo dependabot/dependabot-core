@@ -20,6 +20,17 @@ module Dependabot
           # TODO: Update the original requirement (from the pom.xml)
           # to accommodate the latest version
         end
+
+        private
+
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't implemented for Yarn (yet)
+          false
+        end
+
+        def updated_dependencies_after_full_unlock
+          raise NotImplementedError
+        end
       end
     end
   end
