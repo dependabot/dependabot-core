@@ -22,6 +22,11 @@ module Dependabot
           latest_version
         end
 
+        def latest_version_resolvable_with_full_unlock?
+          # Always true, since pip doesn't do dependency resolution
+          true
+        end
+
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,

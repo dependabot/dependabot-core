@@ -7,6 +7,7 @@ module Dependabot
   module UpdateCheckers
     module Ruby
       class Bundler < Dependabot::UpdateCheckers::Base
+        require_relative "bundler/force_updater"
         require_relative "bundler/file_preparer"
         require_relative "bundler/requirements_updater"
         require_relative "bundler/version_resolver"
@@ -19,6 +20,14 @@ module Dependabot
         def latest_resolvable_version
           return latest_resolvable_version_for_git_dependency if git_dependency?
           latest_resolvable_version_details&.fetch(:version)
+        end
+
+        def latest_version_resolvable_with_full_unlock?
+          return false unless latest_version
+          force_updater.updated_dependencies
+          true
+        rescue Dependabot::DependencyFileNotResolvable
+          false
         end
 
         def updated_requirements
@@ -191,6 +200,16 @@ module Dependabot
           true
         rescue ArgumentError
           false
+        end
+
+        def force_updater
+          @force_updater ||=
+            ForceUpdater.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              target_version: latest_version
+            )
         end
 
         def git_commit_checker

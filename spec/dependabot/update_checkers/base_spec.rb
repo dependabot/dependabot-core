@@ -164,6 +164,48 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   describe "#can_update?" do
     subject(:can_update) { updater_instance.can_update? }
 
+    context "with full_unlock" do
+      subject(:can_update) { updater_instance.can_update?(full_unlock: true) }
+
+      context "when the dependency is up-to-date" do
+        let(:latest_version) { Gem::Version.new("1.5.0") }
+        it { is_expected.to be_falsey }
+
+        it "doesn't attempt to resolve the dependency" do
+          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).
+            to_not receive(:latest_version_resolvable_with_full_unlock?)
+          can_update
+        end
+      end
+
+      context "when the dependency is outdated" do
+        let(:latest_version) { Gem::Version.new("1.6.0") }
+
+        context "and cannot resolve to the new version" do
+          let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+
+          context "even with a full unlock" do
+            before do
+              allow(updater_instance).
+                to receive(:latest_version_resolvable_with_full_unlock?).
+                and_return(false)
+            end
+            it { is_expected.to be_falsey }
+          end
+
+          context "but can with a full unlock" do
+            before do
+              allow(updater_instance).
+                to receive(:latest_version_resolvable_with_full_unlock?).
+                and_return(true)
+            end
+            it { is_expected.to be_truthy }
+          end
+        end
+      end
+    end
+
     context "when the dependency is outdated" do
       let(:latest_version) { Gem::Version.new("1.6.0") }
 

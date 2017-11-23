@@ -18,6 +18,11 @@ module Dependabot
           latest_version
         end
 
+        def latest_version_resolvable_with_full_unlock?
+          # Always true, since we're not doing resolution
+          !latest_resolvable_version.nil?
+        end
+
         def updated_requirements
           return dependency.requirements unless latest_resolvable_version
 

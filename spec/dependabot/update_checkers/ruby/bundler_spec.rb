@@ -15,14 +15,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
+  end
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:github_token) { "token" }
@@ -305,13 +308,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           described_class.new(
             dependency: dependency,
             dependency_files: [gemfile, lockfile, gemspec],
-            credentials: [
-              {
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }
-            ]
+            credentials: credentials
           )
         end
 
@@ -337,6 +334,91 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           it { is_expected.to be_nil }
         end
+      end
+    end
+  end
+
+  describe "#latest_version_resolvable_with_full_unlock?" do
+    subject { checker.latest_version_resolvable_with_full_unlock? }
+
+    context "with no latest version" do
+      before do
+        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+          to_return(status: 404, body: "This rubygem could not be found.")
+      end
+
+      it { is_expected.to be_falsey }
+    end
+
+    context "with a latest version" do
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(target_version)
+      end
+
+      context "when the force updater raises" do
+        before do
+          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
+            to receive(:etag_for).and_return("")
+          stub_request(:get, "https://index.rubygems.org/versions").
+            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
+            to_return(status: 200, body: fixture("ruby", "rubygems-info-i18n"))
+          stub_request(:get, "https://index.rubygems.org/info/ibandit").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-ibandit")
+            )
+        end
+
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_conflict_requires_downgrade")
+        end
+        let(:lockfile_body) do
+          fixture(
+            "ruby",
+            "lockfiles",
+            "version_conflict_requires_downgrade.lock"
+          )
+        end
+        let(:target_version) { "0.8.6" }
+        let(:dependency_name) { "i18n" }
+
+        it { is_expected.to be_falsey }
+      end
+
+      context "when the force updater succeeds" do
+        before do
+          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
+            to receive(:etag_for).and_return("")
+          stub_request(:get, "https://index.rubygems.org/versions").
+            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+          info_url = "https://index.rubygems.org/info/"
+          stub_request(:get, info_url + "diff-lcs").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-diff-lcs")
+            )
+          stub_request(:get, info_url + "rspec-mocks").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-mocks")
+            )
+          stub_request(:get, info_url + "rspec-support").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-rspec-support")
+            )
+        end
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict.lock")
+        end
+        let(:target_version) { "3.6.0" }
+        let(:dependency_name) { "rspec-mocks" }
+
+        it { is_expected.to be_truthy }
       end
     end
   end

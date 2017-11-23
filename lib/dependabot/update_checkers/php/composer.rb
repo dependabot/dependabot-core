@@ -33,6 +33,11 @@ module Dependabot
           @latest_resolvable_version ||= fetch_latest_resolvable_version
         end
 
+        def latest_version_resolvable_with_full_unlock?
+          # TODO: implement full unlock logic for Composer (like we do for Ruby)
+          !latest_resolvable_version.nil?
+        end
+
         def updated_requirements
           return dependency.requirements unless latest_resolvable_version
 
