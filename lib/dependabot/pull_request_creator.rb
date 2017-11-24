@@ -88,7 +88,7 @@ module Dependabot
       names = dependencies.map do |dependency|
         if source_url(dependency)
           "[#{dependency.name}](#{source_url(dependency)})"
-        elsif homepage_url
+        elsif homepage_url(dependency)
           "[#{dependency.name}](#{homepage_url(dependency)})"
         else
           dependency.name
