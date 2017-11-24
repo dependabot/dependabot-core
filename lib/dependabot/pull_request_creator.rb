@@ -144,13 +144,13 @@ module Dependabot
       else
         dependencies.each do |d|
           if release_url(d)
-            msg += "\n- [#{d.name} Release notes](#{release_url(d)})"
+            msg += "\n- [`#{d.name}` Release notes](#{release_url(d)})"
           end
           if changelog_url(d)
-            msg += "\n- [#{d.name} Changelog](#{changelog_url(d)})"
+            msg += "\n- [`#{d.name}` Changelog](#{changelog_url(d)})"
           end
           if commits_url(d)
-            msg += "\n- [#{d.name} Commits](#{commits_url(dep)})"
+            msg += "\n- [`#{d.name}` Commits](#{commits_url(d)})"
           end
         end
       end
