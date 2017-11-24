@@ -353,20 +353,21 @@ RSpec.describe Dependabot::PullRequestCreator do
               title: "Bump business and statesman",
               body: "Bumps [business](https://github.com/gocardless/business) "\
                     "and [statesman](https://github.com/gocardless/statesman)."\
-                    " These dependencies needed to be updated at the same "\
-                    "time."\
-                    "\n- [`business` Release notes]"\
+                    " These dependencies needed to be updated together.\n\n"\
+                    "Update `business` from 1.4.0 to 1.5.0"\
+                    "\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases?after="\
-                    "v1.6.0)\n- [`business` Changelog]"\
+                    "v1.6.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/business/blob/master"\
-                    "/CHANGELOG.md)\n- [`business` Commits]"\
+                    "/CHANGELOG.md)\n- [Commits]"\
                     "(https://github.com/gocardless/business/"\
                     "compare/v1.4.0...v1.5.0)"\
-                    "\n- [`statesman` Release notes]"\
+                    "\n\nUpdate `statesman` from 1.6.0 to 1.7.0"\
+                    "\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases/tag/"\
-                    "v1.7.0)\n- [`statesman` Changelog]"\
+                    "v1.7.0)\n- [Changelog]"\
                     "(https://github.com/gocardless/statesman/blob/master"\
-                    "/CHANGELOG.md)\n- [`statesman` Commits]"\
+                    "/CHANGELOG.md)\n- [Commits]"\
                     "(https://github.com/gocardless/statesman/commits)"
             }
           )

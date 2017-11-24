@@ -126,7 +126,7 @@ module Dependabot
         end
       else
         msg = "Bumps #{names[0..-2].join(', ')} and #{names[-1]}. These "\
-        "dependencies needed to be updated at the same time."
+        "dependencies needed to be updated together."
       end
 
       msg + metadata_links
@@ -143,15 +143,11 @@ module Dependabot
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
       else
         dependencies.each do |d|
-          if release_url(d)
-            msg += "\n- [`#{d.name}` Release notes](#{release_url(d)})"
-          end
-          if changelog_url(d)
-            msg += "\n- [`#{d.name}` Changelog](#{changelog_url(d)})"
-          end
-          if commits_url(d)
-            msg += "\n- [`#{d.name}` Commits](#{commits_url(d)})"
-          end
+          msg += "\n\nUpdate `#{d.name}` from #{previous_version(d)} "\
+                 "to #{new_version(d)}"
+          msg += "\n- [Release notes](#{release_url(d)})" if release_url(d)
+          msg += "\n- [Changelog](#{changelog_url(d)})" if changelog_url(d)
+          msg += "\n- [Commits](#{commits_url(d)})" if commits_url(d)
         end
       end
       msg
