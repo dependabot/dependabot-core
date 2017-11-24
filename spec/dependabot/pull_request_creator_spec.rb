@@ -291,6 +291,88 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "with multiple dependencies" do
+      subject(:creator) do
+        Dependabot::PullRequestCreator.new(
+          repo: repo,
+          base_commit: base_commit,
+          dependencies: [dependency, dependency2],
+          files: files,
+          github_client: github_client
+        )
+      end
+      let(:dependency2) do
+        Dependabot::Dependency.new(
+          name: "statesman",
+          version: "1.7.0",
+          previous_version: "1.6.0",
+          package_manager: "bundler",
+          requirements: [
+            { file: "Gemfile", requirement: "~> 1.7", groups: [], source: nil }
+          ],
+          previous_requirements: [
+            { file: "Gemfile", requirement: "~> 1.6", groups: [], source: nil }
+          ]
+        )
+      end
+      before do
+        statesman_repo_url = "https://api.github.com/repos/gocardless/statesman"
+        stub_request(:get, statesman_repo_url).
+          to_return(status: 200,
+                    body: fixture("github", "statesman_repo.json"),
+                    headers: json_header)
+        stub_request(:get, "#{statesman_repo_url}/contents/").
+          to_return(status: 200,
+                    body: fixture("github", "statesman_files.json"),
+                    headers: json_header)
+        stub_request(:get, "#{statesman_repo_url}/tags?per_page=100").
+          to_return(status: 200,
+                    body: fixture("github", "business_tags.json"),
+                    headers: json_header)
+        stub_request(:get, "#{statesman_repo_url}/releases").
+          to_return(status: 200,
+                    body: fixture("github", "business_releases.json"),
+                    headers: json_header)
+        stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
+          to_return(
+            status: 200,
+            body: fixture("ruby", "rubygems_response_statesman.json")
+          )
+      end
+      let(:branch_name) { "dependabot/bundler/business-and-statesman" }
+
+      it "creates a PR with the right details" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-and-statesman",
+              title: "Bump business and statesman",
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "and [statesman](https://github.com/gocardless/statesman)."\
+                    " These dependencies needed to be updated at the same "\
+                    "time."\
+                    "\n- [`business` Release notes]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [`business` Changelog]"\
+                    "(https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md)\n- [`business` Commits]"\
+                    "(https://github.com/gocardless/business/"\
+                    "compare/v1.4.0...v1.5.0)"\
+                    "\n- [`statesman` Release notes]"\
+                    "(https://github.com/gocardless/business/releases/tag/"\
+                    "v1.7.0)\n- [`statesman` Changelog]"\
+                    "(https://github.com/gocardless/statesman/blob/master"\
+                    "/CHANGELOG.md)\n- [`statesman` Commits]"\
+                    "(https://github.com/gocardless/statesman/commits)"
+            }
+          )
+      end
+    end
+
     context "with SHA-1 versions" do
       let(:dependency) do
         Dependabot::Dependency.new(
