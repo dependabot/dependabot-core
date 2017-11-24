@@ -1,3 +1,7 @@
+## v0.34.3, 24 November 2017
+
+- Fix for PullRequestCreator metadata links with multiple dependencies
+
 ## v0.34.2, 23 November 2017
 
 - Fix another bug in PullRequestCreator
