@@ -1,3 +1,7 @@
+## v0.34.1, 23 November 2017
+
+- Fix bug in PullRequestCreator which occurs when a source_url can't be found
+
 ## v0.34.0, 23 November 2017
 
 - BREAKING: PullRequestCreator now takes an array of `dependencies`
