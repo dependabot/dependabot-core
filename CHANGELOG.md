@@ -1,3 +1,7 @@
+## v0.34.4, 24 November 2017
+
+- Better pull request text for multi-dependency PRs
+
 ## v0.34.3, 24 November 2017
 
 - Fix for PullRequestCreator metadata links with multiple dependencies
