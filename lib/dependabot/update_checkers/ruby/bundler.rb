@@ -51,6 +51,20 @@ module Dependabot
           git_commit_checker.git_dependency?
         end
 
+        def latest_version_details(remove_git_source: false)
+          @latest_version_details ||= {}
+          @latest_version_details[remove_git_source] ||=
+            version_resolver(remove_git_source: remove_git_source).
+            latest_version_details
+        end
+
+        def latest_resolvable_version_details(remove_git_source: false)
+          @latest_resolvable_version_details ||= {}
+          @latest_resolvable_version_details[remove_git_source] ||=
+            version_resolver(remove_git_source: remove_git_source).
+            latest_resolvable_version_details
+        end
+
         def latest_version_for_git_dependency
           latest_release =
             latest_version_details(remove_git_source: true)&.
@@ -77,18 +91,6 @@ module Dependabot
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
           dependency.version
-        end
-
-        def latest_version_details(remove_git_source: false)
-          if remove_git_source
-            @latest_version_details_without_git_source ||=
-              version_resolver(remove_git_source: true).
-              latest_version_details
-          else
-            @latest_version_details_with_git_source ||=
-              version_resolver(remove_git_source: false).
-              latest_version_details
-          end
         end
 
         def latest_resolvable_version_for_git_dependency
@@ -152,18 +154,6 @@ module Dependabot
           false
         end
 
-        def latest_resolvable_version_details(remove_git_source: false)
-          if remove_git_source
-            @latest_resolvable_version_details_without_git_source ||=
-              version_resolver(remove_git_source: true).
-              latest_resolvable_version_details
-          else
-            @latest_resolvable_version_details_with_git_source ||=
-              version_resolver(remove_git_source: false).
-              latest_resolvable_version_details
-          end
-        end
-
         def git_branch_or_ref_in_release?(release)
           return false unless release
           git_commit_checker.branch_or_ref_in_release?(release)
@@ -225,14 +215,18 @@ module Dependabot
         end
 
         def version_resolver(remove_git_source:)
-          prepared_dependency_files =
-            prepared_dependency_files(remove_git_source: remove_git_source)
+          @version_resolver ||= {}
+          @version_resolver[remove_git_source] ||=
+            begin
+              prepared_dependency_files =
+                prepared_dependency_files(remove_git_source: remove_git_source)
 
-          VersionResolver.new(
-            dependency: dependency,
-            dependency_files: prepared_dependency_files,
-            credentials: credentials
-          )
+              VersionResolver.new(
+                dependency: dependency,
+                dependency_files: prepared_dependency_files,
+                credentials: credentials
+              )
+            end
         end
 
         def prepared_dependency_files(remove_git_source:)
