@@ -85,7 +85,7 @@ module Dependabot
           def new_dependencies_to_unlock_from(error:, already_unlocked:)
             error.cause.conflicts.values.
               flat_map { |conflict| conflict.requirement_trees.map(&:first) }.
-              reject { |dep| already_unlocked.include?(dep.name) }.
+              reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
               reject { |dep| dep.name == dependency.name }.
               uniq
           end
@@ -100,7 +100,8 @@ module Dependabot
             definition = ::Bundler::Definition.build(
               "Gemfile",
               lockfile&.name,
-              gems: gems_to_unlock
+              gems: gems_to_unlock,
+              lock_shared_dependencies: true
             )
 
             # Remove the Gemfile / gemspec requirements on the gems we're
