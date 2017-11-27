@@ -151,7 +151,9 @@ module Dependabot
                     requirements: original_dep.requirements,
                     existing_version: original_dep.version,
                     updated_source:
-                      original_dep.requirements.find { |r| r.fetch(:source) },
+                      original_dep.requirements.
+                        find { |r| r.fetch(:source) }&.
+                        fetch(:source),
                     latest_version: spec.version.to_s,
                     latest_resolvable_version: spec.version.to_s
                   ).updated_requirements,
