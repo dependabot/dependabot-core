@@ -1,3 +1,7 @@
+## v0.34.6, 27 November 2017
+
+- Make dependency we're force updating the first in the returned array
+
 ## v0.34.5, 27 November 2017
 
 - Minor improvement to PR text
