@@ -102,7 +102,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to match_array(
+        expect(updated_dependencies).to eq(
           [
             Dependabot::Dependency.new(
               name: "rspec-mocks",
@@ -173,10 +173,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to match_array(
+        expect(updated_dependencies).to eq(
           [
             Dependabot::Dependency.new(
-              name: "rspec-mocks",
+              name: "rspec-support",
               version: "3.6.0",
               previous_version: "3.5.0",
               requirements: expected_requirements,
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
               package_manager: "bundler"
             ),
             Dependabot::Dependency.new(
-              name: "rspec-support",
+              name: "rspec-mocks",
               version: "3.6.0",
               previous_version: "3.5.0",
               requirements: expected_requirements,
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to match_array(
+        expect(updated_dependencies).to eq(
           [
             Dependabot::Dependency.new(
               name: "rspec-mocks",

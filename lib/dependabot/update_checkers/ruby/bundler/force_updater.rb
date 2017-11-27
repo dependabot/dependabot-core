@@ -39,7 +39,7 @@ module Dependabot
                 definition = build_definition(other_updates: other_updates)
                 definition.resolve_remotely!
                 specs = definition.resolve
-                dependencies_from(other_updates + [dependency], specs)
+                dependencies_from([dependency] + other_updates, specs)
               rescue ::Bundler::VersionConflict => error
                 # TODO: Not sure this won't unlock way too many things...
                 new_dependencies_to_unlock =
