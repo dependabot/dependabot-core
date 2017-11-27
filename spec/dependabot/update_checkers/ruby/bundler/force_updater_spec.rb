@@ -102,10 +102,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
+        expect(updated_dependencies.first).to eq(
+          Dependabot::Dependency.new(
+            name: "rspec-mocks",
+            version: "3.6.0",
+            previous_version: "3.5.0",
+            requirements: expected_requirements,
+            previous_requirements: requirements,
+            package_manager: "bundler"
+          )
+        )
+
+        expect(updated_dependencies[1..-1]).to match_array(
           [
             Dependabot::Dependency.new(
-              name: "rspec-mocks",
+              name: "rspec-support",
               version: "3.6.0",
               previous_version: "3.5.0",
               requirements: expected_requirements,
@@ -113,11 +124,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
               package_manager: "bundler"
             ),
             Dependabot::Dependency.new(
-              name: "rspec-support",
+              name: "rspec-core",
               version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
+              previous_version: nil,
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "bundler"
+            ),
+            # Ideally this wouldn't be here, but it does no harm
+            Dependabot::Dependency.new(
+              name: "rspec-expectations",
+              version: "3.6.0",
+              previous_version: nil,
+              requirements: [],
+              previous_requirements: [],
               package_manager: "bundler"
             )
           ]
@@ -173,10 +193,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
+        expect(updated_dependencies.first).to eq(
+          Dependabot::Dependency.new(
+            name: "rspec-support",
+            version: "3.6.0",
+            previous_version: "3.5.0",
+            requirements: expected_requirements,
+            previous_requirements: requirements,
+            package_manager: "bundler"
+          )
+        )
+
+        expect(updated_dependencies[1..-1]).to match_array(
           [
             Dependabot::Dependency.new(
-              name: "rspec-support",
+              name: "rspec-mocks",
               version: "3.6.0",
               previous_version: "3.5.0",
               requirements: expected_requirements,
@@ -184,11 +215,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
               package_manager: "bundler"
             ),
             Dependabot::Dependency.new(
-              name: "rspec-mocks",
+              name: "rspec-core",
               version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
+              previous_version: nil,
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "bundler"
+            ),
+            # Ideally this wouldn't be here, but it does no harm
+            Dependabot::Dependency.new(
+              name: "rspec-expectations",
+              version: "3.6.0",
+              previous_version: nil,
+              requirements: [],
+              previous_requirements: [],
               package_manager: "bundler"
             )
           ]
@@ -252,22 +292,34 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       end
 
       it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
+        expect(updated_dependencies.first).to eq(
+          Dependabot::Dependency.new(
+            name: "rspec-mocks",
+            version: "3.6.0",
+            previous_version: "3.5.0",
+            requirements: expected_requirements,
+            previous_requirements: requirements,
+            package_manager: "bundler"
+          )
+        )
+
+        expect(updated_dependencies[1..-1]).to match_array(
           [
-            Dependabot::Dependency.new(
-              name: "rspec-mocks",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
-            ),
             Dependabot::Dependency.new(
               name: "rspec-expectations",
               version: "3.6.0",
               previous_version: "3.5.0",
               requirements: expected_requirements,
               previous_requirements: requirements,
+              package_manager: "bundler"
+            ),
+            # Ideally this wouldn't be here, but it does no harm
+            Dependabot::Dependency.new(
+              name: "rspec-support",
+              version: "3.6.0",
+              previous_version: nil,
+              requirements: [],
+              previous_requirements: [],
               package_manager: "bundler"
             )
           ]

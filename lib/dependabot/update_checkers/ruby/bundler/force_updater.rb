@@ -83,11 +83,17 @@ module Dependabot
           end
 
           def new_dependencies_to_unlock_from(error:, already_unlocked:)
+            already_unlocked_names = already_unlocked.map(&:name)
             error.cause.conflicts.values.
-              flat_map { |conflict| conflict.requirement_trees.map(&:first) }.
-              reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
-              reject { |dep| dep.name == dependency.name }.
-              uniq
+              flat_map do |conflict|
+                conflict.requirement_trees.map do |tree|
+                  tree.reverse.find do |spec|
+                    next false if already_unlocked_names.include?(spec.name)
+                    spec.name != dependency.name
+                  end
+                end
+              end.
+              compact.uniq(&:name)
           end
 
           def raise_unresolvable_error(error)
@@ -144,25 +150,30 @@ module Dependabot
               original_dep =
                 original_dependencies.find { |d| d.name == dep.name }
               spec = specs.find { |d| d.name == dep.name }
+
               Dependency.new(
                 name: dep.name,
                 version: spec.version.to_s,
-                requirements:
-                  RequirementsUpdater.new(
-                    requirements: original_dep.requirements,
-                    existing_version: original_dep.version,
-                    updated_source:
-                      original_dep.requirements.
-                        find { |r| r.fetch(:source) }&.
-                        fetch(:source),
-                    latest_version: spec.version.to_s,
-                    latest_resolvable_version: spec.version.to_s
-                  ).updated_requirements,
-                previous_version: original_dep.version,
-                previous_requirements: original_dep.requirements,
-                package_manager: original_dep.package_manager
+                requirements: updated_requirement_for(spec, original_dep),
+                previous_version: original_dep&.version,
+                previous_requirements: original_dep&.requirements || [],
+                package_manager: dependency.package_manager
               )
             end
+          end
+
+          def updated_requirement_for(spec, original_dep)
+            return [] unless original_dep
+            RequirementsUpdater.new(
+              requirements: original_dep.requirements,
+              existing_version: original_dep.version,
+              updated_source:
+                original_dep.requirements.
+                  find { |r| r.fetch(:source) }&.
+                  fetch(:source),
+              latest_version: spec.version.to_s,
+              latest_resolvable_version: spec.version.to_s
+            ).updated_requirements
           end
 
           def gemfile
