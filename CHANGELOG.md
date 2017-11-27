@@ -1,3 +1,8 @@
+## v0.34.5, 27 November 2017
+
+- Minor improvement to PR text
+- Make new_dependencies_to_unlock_from unique
+
 ## v0.34.4, 24 November 2017
 
 - Better pull request text for multi-dependency PRs
