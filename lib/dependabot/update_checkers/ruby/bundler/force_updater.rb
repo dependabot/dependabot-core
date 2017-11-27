@@ -86,7 +86,8 @@ module Dependabot
             error.cause.conflicts.values.
               flat_map { |conflict| conflict.requirement_trees.map(&:first) }.
               reject { |dep| already_unlocked.include?(dep.name) }.
-              reject { |dep| dep.name == dependency.name }
+              reject { |dep| dep.name == dependency.name }.
+              uniq
           end
 
           def raise_unresolvable_error(error)
