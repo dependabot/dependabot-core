@@ -1,3 +1,7 @@
+## v0.34.7, 27 November 2017
+
+- Ruby: Fix for custom-sourced peer dependencies in ForceUpdater
+
 ## v0.34.6, 27 November 2017
 
 - Make dependency we're force updating the first in the returned array
