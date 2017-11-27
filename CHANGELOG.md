@@ -1,3 +1,7 @@
+## v0.34.8, 27 November 2017
+
+- Ruby: Make ForceUpdater more conservative about what it unlocks
+
 ## v0.34.7, 27 November 2017
 
 - Ruby: Fix for custom-sourced peer dependencies in ForceUpdater
