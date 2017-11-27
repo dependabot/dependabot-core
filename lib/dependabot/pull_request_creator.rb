@@ -143,7 +143,7 @@ module Dependabot
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
       else
         dependencies.each do |d|
-          msg += "\n\nUpdate `#{d.name}` from #{previous_version(d)} "\
+          msg += "\n\nUpdates `#{d.name}` from #{previous_version(d)} "\
                  "to #{new_version(d)}"
           msg += "\n- [Release notes](#{release_url(d)})" if release_url(d)
           msg += "\n- [Changelog](#{changelog_url(d)})" if changelog_url(d)
