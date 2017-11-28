@@ -120,6 +120,34 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
           to have_requested(:get,
                             "https://registry.npmjs.org/@etag%2Fsomething")
       end
+
+      context "that is private" do
+        before do
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
+            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 200, body: npm_response)
+        end
+
+        context "with credentials" do
+          let(:credentials) do
+            [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "registry" => "registry.npmjs.org",
+                "token" => "secret_token"
+              }
+            ]
+          end
+
+          it { is_expected.to eq("https://github.com/jshttp/etag") }
+        end
+      end
     end
   end
 

@@ -18,14 +18,18 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
+  end
+
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
   end
 
   let(:dependency) do
@@ -110,6 +114,65 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+    end
+
+    context "for a private dependency" do
+      before do
+        body = fixture("javascript", "npm_response_prerelease.json")
+        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+          with(headers: { "Authorization" => "Bearer secret_token" }).
+          to_return(status: 200, body: body)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@blep/blep",
+          version: "1.0.0",
+          requirements: [
+            {
+              file: "yarn.lock",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "yarn"
+        )
+      end
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "registry.npmjs.org",
+              "token" => "secret_token"
+            }
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
+
+      context "without credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "when the npm link resolves to a redirect" do
