@@ -1,3 +1,7 @@
+## v0.34.11, 28 November 2017
+
+- Ruby: Handle Bundler::Fetcher::CertificateFailureError errors
+
 ## v0.34.10, 27 November 2017
 
 - Ruby: Roll back regression in ForceUpdater
