@@ -1,3 +1,7 @@
+## v0.34.9, 27 November 2017
+
+- Ruby: More conservative ForceUpdater (traverse requirement trees from top)
+
 ## v0.34.8, 27 November 2017
 
 - Ruby: Make ForceUpdater more conservative about what it unlocks
