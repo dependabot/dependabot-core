@@ -214,21 +214,21 @@ module Dependabot
               raise unless error.error_message.include?("Unable to find a spec")
               raise DependencyFileNotResolvable, msg
             when "Bundler::Fetcher::AuthenticationRequiredError"
-              regex = /bundle config (?<repo>.*) username:password/
-              source = error.error_message.match(regex)[:repo]
+              regex = /bundle config (?<source>.*) username:password/
+              source = error.error_message.match(regex)[:source]
               raise Dependabot::PrivateSourceNotReachable, source
             when "Bundler::Fetcher::BadAuthenticationError"
-              regex = /Bad username or password for (?<repo>.*)\.$/
-              source = error.error_message.match(regex)[:repo]
+              regex = /Bad username or password for (?<source>.*)\.$/
+              source = error.error_message.match(regex)[:source]
               raise Dependabot::PrivateSourceNotReachable, source
             when "Bundler::Fetcher::CertificateFailureError"
-              regex = /verify the SSL certificate for (?<repo>.*)\.$/
-              source = error.error_message.match(regex)[:repo]
+              regex = /verify the SSL certificate for (?<source>.*)\.$/
+              source = error.error_message.match(regex)[:source]
               raise Dependabot::PrivateSourceCertificateFailure, source
             when "Bundler::HTTPError"
-              regex = /Could not fetch specs from (?<repo>.*)$/
+              regex = /Could not fetch specs from (?<source>.*)$/
               raise unless error.error_message.match?(regex)
-              source = error.error_message.match(regex)[:repo]
+              source = error.error_message.match(regex)[:source]
               raise if source.include?("rubygems")
               raise Dependabot::PrivateSourceNotReachable, source
             else raise
