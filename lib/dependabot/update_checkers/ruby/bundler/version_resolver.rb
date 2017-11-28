@@ -221,6 +221,10 @@ module Dependabot
               regex = /Bad username or password for (?<repo>.*)\.$/
               source = error.error_message.match(regex)[:repo]
               raise Dependabot::PrivateSourceNotReachable, source
+            when "Bundler::Fetcher::CertificateFailureError"
+              regex = /verify the SSL certificate for (?<repo>.*)\.$/
+              source = error.error_message.match(regex)[:repo]
+              raise Dependabot::PrivateSourceCertificateFailure, source
             when "Bundler::HTTPError"
               regex = /Could not fetch specs from (?<repo>.*)$/
               raise unless error.error_message.match?(regex)

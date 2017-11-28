@@ -96,4 +96,13 @@ module Dependabot
       super(msg)
     end
   end
+
+  class PrivateSourceCertificateFailure < DependabotError
+    attr_reader :source
+
+    def initialize(source)
+      @source = source
+      super("Could not verify the SSL certificate for #{source}")
+    end
+  end
 end
