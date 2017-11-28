@@ -1,3 +1,7 @@
+## v0.34.10, 27 November 2017
+
+- Ruby: Roll back regression in ForceUpdater
+
 ## v0.34.9, 27 November 2017
 
 - Ruby: More conservative ForceUpdater (traverse requirement trees from top)
