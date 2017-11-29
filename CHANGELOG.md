@@ -1,3 +1,7 @@
+## v0.34.15, 29 November 2017
+
+- JS: Pull credentials from npmrc file, if present
+
 ## v0.34.14, 29 November 2017
 
 - JS: Raise a PrivateSourceNotReachable error for missing private details
