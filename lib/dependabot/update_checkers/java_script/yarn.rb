@@ -54,6 +54,7 @@ module Dependabot
         def fetch_latest_version
           npm_response = Excon.get(
             dependency_url,
+            headers: npm_headers,
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
@@ -80,6 +81,17 @@ module Dependabot
           # NPM registry expects slashes to be escaped
           path = dependency.name.gsub("/", "%2F")
           "https://registry.npmjs.org/#{path}"
+        end
+
+        def npm_headers
+          return {} unless npm_auth_token
+          { "Authorization" => "Bearer #{npm_auth_token}" }
+        end
+
+        def npm_auth_token
+          credentials.
+            find { |cred| cred["registry"] == "registry.npmjs.org" }&.
+            fetch("token")
         end
       end
     end
