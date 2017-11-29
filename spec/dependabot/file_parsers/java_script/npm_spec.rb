@@ -85,6 +85,40 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Npm do
       end
     end
 
+    context "with a private-source dependency" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "private_source.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "npm_lockfiles", "private_source.json")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the private dependency" do
+        subject { dependencies.last }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("@dependabot/etag") }
+        its(:version) { is_expected.to eq("1.8.1") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^1.0.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "private_registry",
+                  url: "https://npm.fury.io/dependabot"
+                }
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with an optional dependency" do
       let(:package_json_body) do
         fixture("javascript", "package_files", "optional_dependencies.json")

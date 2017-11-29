@@ -10,6 +10,7 @@ module Dependabot
       class Npm < Dependabot::FileParsers::Base
         DEPENDENCY_TYPES =
           %w(dependencies devDependencies optionalDependencies).freeze
+        CENTRAL_REGISTRY_URL = "https://registry.npmjs.org"
 
         def parse
           DEPENDENCY_TYPES.flat_map do |type|
@@ -17,7 +18,7 @@ module Dependabot
             deps.map do |name, requirement|
               dep = parsed_package_lock_json.dig("dependencies", name)
 
-              next unless dep&.fetch("resolved", nil)
+              next unless dep["resolved"]
 
               Dependency.new(
                 name: name,
@@ -27,7 +28,7 @@ module Dependabot
                   requirement: requirement,
                   file: "package.json",
                   groups: [type],
-                  source: nil
+                  source: source_for(dep)
                 }]
               )
             end
@@ -40,6 +41,15 @@ module Dependabot
           %w(package.json package-lock.json).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)
           end
+        end
+
+        def source_for(dep)
+          return if dep["resolved"].start_with?(CENTRAL_REGISTRY_URL)
+
+          {
+            type: "private_registry",
+            url: dep["resolved"].split("/~/").first
+          }
         end
 
         def package_json

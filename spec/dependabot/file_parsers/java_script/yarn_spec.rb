@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "package_files", "private_source.json")
       end
       let(:lockfile_body) do
-        fixture("javascript", "lockfiles", "private_source.lock")
+        fixture("javascript", "yarn_lockfiles", "private_source.lock")
       end
 
       its(:length) { is_expected.to eq(1) }
