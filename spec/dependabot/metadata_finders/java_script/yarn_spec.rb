@@ -105,6 +105,14 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
       it { is_expected.to eq("https://github.com/jshttp/etag") }
     end
 
+    context "when the npm link 404s" do
+      before { stub_request(:get, npm_url).to_return(status: 404) }
+      let(:npm_response) { fixture("javascript", "npm_response.json") }
+
+      # Not an idea error, but this should never happen
+      specify { expect { finder.source_url }.to raise_error(JSON::ParserError) }
+    end
+
     context "for a scoped package name" do
       before do
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
@@ -146,6 +154,16 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
           end
 
           it { is_expected.to eq("https://github.com/jshttp/etag") }
+        end
+
+        context "without credentials" do
+          before do
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+          end
+
+          it { is_expected.to be_nil }
         end
       end
 
@@ -194,6 +212,16 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
           end
 
           it { is_expected.to eq("https://github.com/jshttp/etag") }
+        end
+
+        context "without credentials" do
+          before do
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+          end
+
+          it { is_expected.to be_nil }
         end
       end
     end

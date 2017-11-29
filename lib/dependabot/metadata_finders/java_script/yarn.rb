@@ -40,6 +40,8 @@ module Dependabot
         end
 
         def version_listings
+          return [] if npm_listing["versions"].nil?
+
           npm_listing["versions"].
             sort_by { |version, _| Gem::Version.new(version) }.
             reverse
@@ -65,7 +67,12 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          @npm_listing = JSON.parse(response.body)
+          begin
+            @npm_listing = JSON.parse(response.body)
+          rescue JSON::ParserError
+            raise unless private_dependency_not_reachable?(response)
+            @npm_listing = {}
+          end
         end
 
         def dependency_registry
@@ -81,6 +88,16 @@ module Dependabot
           credentials.
             find { |cred| cred["registry"] == dependency_registry }&.
             fetch("token")
+        end
+
+        def private_dependency_not_reachable?(npm_response)
+          # Check whether this dependency is (likely to be) private
+          if dependency_registry == "registry.npmjs.org" &&
+             !dependency.name.start_with?("@")
+            return false
+          end
+
+          [401, 403, 404].include?(npm_response.status)
         end
       end
     end

@@ -17,10 +17,11 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      dependency_files: [],
+      dependency_files: dependency_files,
       credentials: credentials
     )
   end
+  let(:dependency_files) { [] }
 
   let(:credentials) do
     [
@@ -243,6 +244,34 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
             to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
+        end
+
+        context "with credentials in the .npmrc" do
+          let(:dependency_files) { [npmrc] }
+          let(:npmrc) do
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: fixture("javascript", "npmrc", "auth_token")
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
+
+          context "that require an environment variable" do
+            let(:npmrc) do
+              Dependabot::DependencyFile.new(
+                name: ".npmrc",
+                content: fixture("javascript", "npmrc", "env_auth_token")
+              )
+            end
+
+            it "raises a to Dependabot::PrivateSourceNotReachable error" do
+              expect { checker.latest_version }.
+                to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                  expect(error.source).to eq("npm.fury.io/dependabot")
+                end
+            end
+          end
         end
       end
     end

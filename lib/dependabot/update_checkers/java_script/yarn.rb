@@ -107,9 +107,28 @@ module Dependabot
         end
 
         def auth_token
-          credentials.
+          env_token =
+            credentials.
             find { |cred| cred["registry"] == dependency_registry }&.
             fetch("token")
+
+          return env_token if env_token
+          return unless npmrc
+
+          auth_token_regex = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+          matches = []
+          npmrc.content.scan(auth_token_regex) { matches << Regexp.last_match }
+
+          npmrc_token =
+            matches.find { |match| match[:registry] == dependency_registry }&.
+            [](:token)
+
+          return if npmrc_token.nil? || npmrc_token.start_with?("${")
+          npmrc_token
+        end
+
+        def npmrc
+          @npmrc ||= dependency_files.find { |f| f.name == ".npmrc" }
         end
       end
     end
