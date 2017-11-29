@@ -61,7 +61,7 @@ module Dependabot
 
         def write_temporary_dependency_files
           File.write(self.class::LOCKFILE_NAME, lockfile.content)
-          File.write(".npmrc", npmrc_content) if npmrc_content
+          File.write(".npmrc", npmrc_content)
           dependency_files.
             select { |f| f.name.end_with?("package.json") }.
             each do |file|
@@ -71,15 +71,14 @@ module Dependabot
             end
         end
 
+        # Construct a .npmrc from the passed credentials. In future we may want
+        # to fetch the .npmrc and augment it, instead
         def npmrc_content
-          npm_auth_token =
-            credentials.
-            find { |cred| cred["registry"] == "registry.npmjs.org" }&.
-            fetch("token")
-
-          return unless npm_auth_token
-
-          "//registry.npmjs.org/:_authToken=#{npm_auth_token}"
+          credentials.
+            select { |cred| cred.key?("registry") }.
+            map do |cred|
+              "//#{cred.fetch('registry')}/:_authToken=#{cred.fetch('token')}"
+            end.join("\n")
         end
 
         def sanitized_package_json_content(file)
