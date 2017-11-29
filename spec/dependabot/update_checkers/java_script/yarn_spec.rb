@@ -171,7 +171,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           ]
         end
 
-        it { is_expected.to be_nil }
+        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+          expect { checker.latest_version }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("registry.npmjs.org")
+            end
+        end
       end
     end
 
@@ -233,7 +238,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           ]
         end
 
-        it { is_expected.to be_nil }
+        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+          expect { checker.latest_version }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("npm.fury.io/dependabot")
+            end
+        end
       end
     end
 
@@ -296,7 +306,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           )
         end
 
-        it { is_expected.to be_nil }
+        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+          expect { checker.latest_version }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("registry.npmjs.org")
+            end
+        end
       end
     end
 

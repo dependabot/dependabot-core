@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -59,10 +60,8 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          # TODO: Hack until credentials are supported. A 404 for a namespaced
-          # dependency almost certainly signifies a private registry
-          if dependency.name.start_with?("@") && npm_response.status == 404
-            return nil
+          if private_dependency_not_reachable?(npm_response)
+            raise PrivateSourceNotReachable, dependency_registry
           end
 
           latest_dist_tag = JSON.parse(npm_response.body)["dist-tags"]["latest"]
@@ -75,6 +74,16 @@ module Dependabot
             reject(&:prerelease?).sort.last
 
           Gem::Version.new(latest_full_release)
+        end
+
+        def private_dependency_not_reachable?(npm_response)
+          # Check whether this dependency is (likely to be) private
+          if dependency_registry == "registry.npmjs.org" &&
+             !dependency.name.start_with?("@")
+            return false
+          end
+
+          [401, 403, 404].include?(npm_response.status)
         end
 
         def dependency_url
