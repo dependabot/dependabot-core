@@ -1,3 +1,7 @@
+## v0.34.12, 29 November 2017
+
+- JS: Add basic support for private npm packages
+
 ## v0.34.11, 28 November 2017
 
 - Ruby: Handle Bundler::Fetcher::CertificateFailureError errors
