@@ -74,11 +74,19 @@ module Dependabot
         # Construct a .npmrc from the passed credentials. In future we may want
         # to fetch the .npmrc and augment it, instead
         def npmrc_content
-          credentials.
+          npmrc_file = dependency_files.find { |f| f.name == ".npmrc" }
+
+          updated_credential_lines =
+            credentials.
             select { |cred| cred.key?("registry") }.
             map do |cred|
               "//#{cred.fetch('registry')}/:_authToken=#{cred.fetch('token')}"
-            end.join("\n")
+            end
+
+          return updated_credential_lines.join("\n") if npmrc_file.nil?
+
+          original_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
+          ([original_content] + updated_credential_lines).join("\n")
         end
 
         def sanitized_package_json_content(file)

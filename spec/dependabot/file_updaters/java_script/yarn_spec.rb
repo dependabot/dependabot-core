@@ -193,6 +193,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         end
       end
 
+      context "with a .npmrc" do
+        let(:files) { [package_json, lockfile, npmrc] }
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "env_auth_token")
+          )
+        end
+
+        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+      end
+
       context "with workspaces" do
         let(:files) { [package_json, lockfile, package1, other_package] }
         let(:package_json_body) do

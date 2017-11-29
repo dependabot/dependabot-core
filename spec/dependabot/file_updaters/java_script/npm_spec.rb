@@ -133,6 +133,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
           is_expected.to include "\"etag\": \"file:./deps/etag\""
         end
       end
+
+      context "with a .npmrc" do
+        let(:files) { [package_json, lockfile, npmrc] }
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "env_auth_token")
+          )
+        end
+
+        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+      end
     end
 
     describe "the updated lockfile" do
