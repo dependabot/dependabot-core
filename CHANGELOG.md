@@ -1,3 +1,11 @@
+## v0.34.13, 29 November 2017
+
+- JS: Pass credentials for non-npm registries to file updater
+- JS: use custom registries (with credentials) in UpdateChecker and
+  MetadataFinder
+- JS: Fetch .npmrc files
+- JS: Use sanitized .npmrc files in FileUpdater
+
 ## v0.34.12, 29 November 2017
 
 - JS: Add basic support for private npm packages
