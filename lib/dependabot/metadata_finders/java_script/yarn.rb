@@ -48,17 +48,19 @@ module Dependabot
         def npm_listing
           return @npm_listing unless @npm_listing.nil?
 
-          npm_headers =
-            if npm_auth_token
-              { "Authorization" => "Bearer #{npm_auth_token}" }
+          registry_auth_headers =
+            if auth_token
+              { "Authorization" => "Bearer #{auth_token}" }
             else
               {}
             end
 
-          # NPM registry expects slashes to be escaped
+          # NPM registries expect slashes to be escaped
+          escaped_dependency_name = dependency.name.gsub("/", "%2f")
+
           response = Excon.get(
-            "https://registry.npmjs.org/#{dependency.name.gsub('/', '%2f')}",
-            headers: npm_headers,
+            "https://#{dependency_registry}/#{escaped_dependency_name}",
+            headers: registry_auth_headers,
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
@@ -66,9 +68,18 @@ module Dependabot
           @npm_listing = JSON.parse(response.body)
         end
 
-        def npm_auth_token
+        def dependency_registry
+          source =
+            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
+
+          if source.nil? then "registry.npmjs.org"
+          else source.fetch(:url).gsub("https://", "")
+          end
+        end
+
+        def auth_token
           credentials.
-            find { |cred| cred["registry"] == "registry.npmjs.org" }&.
+            find { |cred| cred["registry"] == dependency_registry }&.
             fetch("token")
         end
       end

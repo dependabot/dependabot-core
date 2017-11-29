@@ -116,7 +116,30 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "lockfiles", "private_source.lock")
       end
 
-      its(:length) { is_expected.to eq(0) }
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject { dependencies.last }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("@dependabot/etag") }
+        its(:version) { is_expected.to eq("1.8.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^1.0.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "private_registry",
+                  url: "https://npm.fury.io/dependabot"
+                }
+              }
+            ]
+          )
+        end
+      end
     end
 
     context "with a path-based dependency" do

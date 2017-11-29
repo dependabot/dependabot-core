@@ -12,6 +12,7 @@ module Dependabot
 
         DEPENDENCY_TYPES =
           %w(dependencies devDependencies optionalDependencies).freeze
+        CENTRAL_REGISTRY_URL = "https://registry.yarnpkg.com"
 
         def parse
           dependency_set = DependencySet.new
@@ -73,8 +74,17 @@ module Dependabot
           {
             requirement: parsed_package_json.dig(group, dep["name"]),
             file: package_file.name,
-            source: nil,
+            source: source_for(dep),
             groups: [group]
+          }
+        end
+
+        def source_for(dep)
+          return if dep["resolved"].start_with?(CENTRAL_REGISTRY_URL)
+
+          {
+            type: "private_registry",
+            url: dep["resolved"].split("/~/").first
           }
         end
 

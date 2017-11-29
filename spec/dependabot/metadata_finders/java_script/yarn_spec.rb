@@ -107,10 +107,10 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
           to_return(status: 200, body: npm_response)
       end
-      let(:dependency_name) { "@etag/something" }
+      let(:dependency_name) { "@etag/etag" }
       let(:npm_response) { fixture("javascript", "npm_response.json") }
 
       it "requests the escaped name" do
@@ -118,14 +118,14 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
 
         expect(WebMock).
           to have_requested(:get,
-                            "https://registry.npmjs.org/@etag%2Fsomething")
+                            "https://registry.npmjs.org/@etag%2Fetag")
       end
 
       context "that is private" do
         before do
-          stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
-          stub_request(:get, "https://registry.npmjs.org/@etag%2Fsomething").
+          stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: npm_response)
         end
@@ -140,6 +140,54 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
               },
               {
                 "registry" => "registry.npmjs.org",
+                "token" => "secret_token"
+              }
+            ]
+          end
+
+          it { is_expected.to eq("https://github.com/jshttp/etag") }
+        end
+      end
+
+      context "that is hosted on gemfury" do
+        before do
+          body = fixture("javascript", "gemfury_response_etag.json")
+          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
+            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 200, body: body)
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.0",
+                groups: [],
+                source: {
+                  type: "private_registry",
+                  url: "https://npm.fury.io/dependabot"
+                }
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+
+        context "with credentials" do
+          let(:credentials) do
+            [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "registry" => "npm.fury.io/dependabot",
                 "token" => "secret_token"
               }
             ]

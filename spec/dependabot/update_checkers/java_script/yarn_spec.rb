@@ -116,7 +116,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
-    context "for a private dependency" do
+    context "for a private npm-hosted dependency" do
       before do
         body = fixture("javascript", "npm_response_prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
@@ -158,6 +158,68 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         end
 
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
+
+      context "without credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "for a dependency hosted on another registry" do
+      before do
+        body = fixture("javascript", "gemfury_response_etag.json")
+        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+          with(headers: { "Authorization" => "Bearer secret_token" }).
+          to_return(status: 200, body: body)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@blep/blep",
+          version: "1.0.0",
+          requirements: [
+            {
+              file: "yarn.lock",
+              requirement: "^1.0.0",
+              groups: [],
+              source: {
+                type: "private_registry",
+                url: "https://npm.fury.io/dependabot"
+              }
+            }
+          ],
+          package_manager: "yarn"
+        )
+      end
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "npm.fury.io/dependabot",
+              "token" => "secret_token"
+            }
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.8.1")) }
       end
 
       context "without credentials" do

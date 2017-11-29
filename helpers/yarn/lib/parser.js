@@ -27,11 +27,6 @@ function isNotExotic(request) {
   return !getExoticResolver(range);
 }
 
-function isNotPrivate(dep) {
-  const re = /registry\.yarnpkg\.com/;
-  return re.test(dep.resolved);
-}
-
 function source_file(dep, directory) {
   if (dep.request.workspaceLoc) {
     return path.relative(directory, dep.request.workspaceLoc);
@@ -56,8 +51,7 @@ async function parse(directory) {
       request: request,
       resolved: lockfile.getLocked(request.pattern)
     }))
-    .filter(dep => dep.resolved)
-    .filter(dep => isNotPrivate(dep.resolved));
+    .filter(dep => dep.resolved);
 
   return deps.map(dep => ({
     name: dep.resolved.name,
