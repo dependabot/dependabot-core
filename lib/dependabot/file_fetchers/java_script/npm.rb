@@ -21,6 +21,7 @@ module Dependabot
           fetched_files = []
           fetched_files << package_json
           fetched_files << package_lock
+          fetched_files << npmrc unless npmrc.nil?
           fetched_files += path_dependencies
           fetched_files
         end
@@ -31,6 +32,12 @@ module Dependabot
 
         def package_lock
           @package_lock ||= fetch_file_from_github("package-lock.json")
+        end
+
+        def npmrc
+          @npmrc ||= fetch_file_from_github(".npmrc")
+        rescue Dependabot::DependencyFileNotFound
+          nil
         end
 
         def path_dependencies

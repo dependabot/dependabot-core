@@ -1,0 +1,18 @@
+{
+  "name": ".npmrc",
+  "path": ".npmrc",
+  "sha": "5c7b3419e0056515122b981f1566ebe22c208251",
+  "size": 594,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/.npmrc?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/.npmrc",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.npmrc?token=ABMwe0apDiKCctWHnEHnszRBAebVHjQnks5WJWD9wA%3D%3D",
+  "type": "file",
+  "content": "VGhpcyBpcyBhIC5ucG1yYw==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/.npmrc?ref=master",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+    "html": "https://github.com/gocardless/bump/blob/master/.npmrc"
+  }
+}

@@ -21,23 +21,55 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     ]
   end
 
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, url + "package.json?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "package_json_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+
+    stub_request(:get, url + "package-lock.json?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "package_lock_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+
+    stub_request(:get, url + ".npmrc?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
+  end
+
+  context "with a .npmrc file" do
+    before do
+      stub_request(:get, url + ".npmrc?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "npmrc_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the .npmrc" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include(".npmrc")
+    end
+  end
+
   context "with a path dependency" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "package.json?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "package_json_with_path_content.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, url + "package-lock.json?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "package_lock_content.json"),
           headers: { "content-type" => "application/json" }
         )
     end
