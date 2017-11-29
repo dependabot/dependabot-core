@@ -1,3 +1,7 @@
+## v0.34.16, 29 November 2017
+
+- JS: Include private dependencies when parsing npm package-lock.json
+
 ## v0.34.15, 29 November 2017
 
 - JS: Pull credentials from npmrc file, if present
