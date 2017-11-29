@@ -1,3 +1,7 @@
+## v0.34.14, 29 November 2017
+
+- JS: Raise a PrivateSourceNotReachable error for missing private details
+
 ## v0.34.13, 29 November 2017
 
 - JS: Pass credentials for non-npm registries to file updater
