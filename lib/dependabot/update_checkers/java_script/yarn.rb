@@ -87,9 +87,17 @@ module Dependabot
         end
 
         def dependency_url
+          source =
+            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
+
+          registry_url =
+            if source.nil? then "https://registry.npmjs.org"
+            else source.fetch(:url)
+            end
+
           # NPM registries expect slashes to be escaped
           escaped_dependency_name = dependency.name.gsub("/", "%2F")
-          "https://#{dependency_registry}/#{escaped_dependency_name}"
+          "#{registry_url}/#{escaped_dependency_name}"
         end
 
         def dependency_registry

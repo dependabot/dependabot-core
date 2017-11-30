@@ -228,6 +228,16 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
         context "without https" do
+          before do
+            body = fixture("javascript", "gemfury_response_etag.json")
+            stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+            stub_request(:get, "http://npm.fury.io/dependabot/@blep%2Fblep").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 200, body: body)
+          end
+
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "@blep/blep",

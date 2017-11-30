@@ -57,11 +57,8 @@ module Dependabot
               {}
             end
 
-          # NPM registries expect slashes to be escaped
-          escaped_dependency_name = dependency.name.gsub("/", "%2f")
-
           response = Excon.get(
-            "https://#{dependency_registry}/#{escaped_dependency_name}",
+            dependency_url,
             headers: registry_auth_headers,
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
@@ -73,6 +70,20 @@ module Dependabot
             raise unless private_dependency_not_reachable?(response)
             @npm_listing = {}
           end
+        end
+
+        def dependency_url
+          source =
+            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
+
+          registry_url =
+            if source.nil? then "https://registry.npmjs.org"
+            else source.fetch(:url)
+            end
+
+          # NPM registries expect slashes to be escaped
+          escaped_dependency_name = dependency.name.gsub("/", "%2F")
+          "#{registry_url}/#{escaped_dependency_name}"
         end
 
         def dependency_registry
