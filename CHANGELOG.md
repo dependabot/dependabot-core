@@ -1,3 +1,7 @@
+## v0.34.17, 30 November 2017
+
+- JS: Better parsing of private registry URLs
+
 ## v0.34.16, 29 November 2017
 
 - JS: Include private dependencies when parsing npm package-lock.json
