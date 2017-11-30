@@ -1,3 +1,8 @@
+## v0.35.0, 30 November 2017
+
+- JS: Perform package.json update in Ruby (and avoid changing package.json
+  format)
+
 ## v0.34.20, 30 November 2017
 
 - Ruby: Handle repos with a gemspec and a Gemfile that doesn't import it
