@@ -240,6 +240,16 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
       end
 
+      context "with non-standard whitespace" do
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "non_standard_whitespace.json")
+        end
+
+        its(:content) do
+          is_expected.to include %("*.js": ["eslint --fix", "git add"])
+        end
+      end
+
       context "with workspaces" do
         let(:files) { [package_json, lockfile, package1, other_package] }
         let(:package_json_body) do
