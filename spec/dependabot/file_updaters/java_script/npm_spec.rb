@@ -44,6 +44,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
       version: "0.0.2",
       package_manager: "npm",
       requirements: [
+        { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
+      ],
+      previous_requirements: [
         { file: "package.json", requirement: "^0.0.1", groups: [], source: nil }
       ]
     )
@@ -84,7 +87,15 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
             requirements: [
               {
                 file: "package.json",
-                requirement: "^0.0.1",
+                requirement: "0.2.x",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "0.1.x",
                 groups: [],
                 source: nil
               }
@@ -118,6 +129,14 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
             version: "1.3.1",
             package_manager: "npm",
             requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.3.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
               {
                 file: "package.json",
                 requirement: "^1.2.1",
@@ -178,6 +197,14 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
             version: "1.3.1",
             package_manager: "npm",
             requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.3.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
               {
                 file: "package.json",
                 requirement: "^1.2.1",

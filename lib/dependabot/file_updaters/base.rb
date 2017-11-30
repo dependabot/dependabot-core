@@ -31,6 +31,17 @@ module Dependabot
         dependency_files.find { |f| f.name == filename }
       end
 
+      def file_changed?(file)
+        dependencies.any? { |dep| requirement_changed?(file, dep) }
+      end
+
+      def requirement_changed?(file, dependency)
+        changed_requirements =
+          dependency.requirements - dependency.previous_requirements
+
+        changed_requirements.any? { |f| f[:file] == file.name }
+      end
+
       def updated_file(file:, content:)
         updated_file = file.dup
         updated_file.content = content

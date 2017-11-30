@@ -97,17 +97,6 @@ module Dependabot
             reject { |f| f.name == "Gemfile" }
         end
 
-        def file_changed?(file)
-          dependencies.any? { |dep| requirement_changed?(file, dep) }
-        end
-
-        def requirement_changed?(file, dependency)
-          changed_requirements =
-            dependency.requirements - dependency.previous_requirements
-
-          changed_requirements.any? { |f| f[:file] == file.name }
-        end
-
         def remove_git_source?(dependency)
           old_gemfile_req =
             dependency.previous_requirements.find { |f| f[:file] == "Gemfile" }

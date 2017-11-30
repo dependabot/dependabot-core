@@ -1,10 +1,11 @@
 /* DEPENDENCY FILE UPDATER
  *
  * Inputs:
- *  - directory containing a package.json and a package-lock.json
- *  - dependency name
- *  - new dependency version
- *  - previous requirements for this dependency
+ *  - directory containing an up-to-date package.json and a package-lock.json
+ *    to be updated
+ *  - name of the dependency to be updated
+ *  - new dependency version (unused)
+ *  - previous requirements for this dependency (unused)
  *
  * Outputs:
  *  - updated package.json and package-lock.json files
@@ -23,14 +24,13 @@ async function updateDependencyFiles(
   directory,
   depName,
   desiredVersion,
-  workspaces
+  requirements
 ) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   // Read the original manifest, and update the dependency specification
   const manifest = JSON.parse(readFile("package.json"));
-  updateVersionInManifest(manifest, depName, desiredVersion);
 
   // JSONify the new package.json, and write ready for npm install to pick up
   const updatedManifest = JSON.stringify(manifest, null, 2) + "\n";
@@ -64,31 +64,6 @@ async function updateDependencyFiles(
   };
 }
 
-function updateVersionPattern(currentPattern, desiredVersion) {
-  const versionRegex = /[0-9]+(\.[A-Za-z0-9\-_]+)*/;
-  return currentPattern.replace(versionRegex, oldVersion => {
-    const oldParts = oldVersion.split(".");
-    const newParts = desiredVersion.split(".");
-    return oldParts
-      .slice(0, newParts.length)
-      .map((part, i) => (part.match(/^x\b/) ? "x" : newParts[i]))
-      .join(".");
-  });
-}
-
-function updateVersionInManifest(manifest, depName, desiredVersion) {
-  const depTypes = ["dependencies", "devDependencies", "optionalDependencies"];
-  for (let depType of depTypes) {
-    if ((manifest[depType] || {})[depName]) {
-      manifest[depType][depName] = updateVersionPattern(
-        manifest[depType][depName],
-        desiredVersion
-      );
-      return;
-    }
-  }
-}
-
 function runAsync(obj, method, args) {
   return new Promise((resolve, reject) => {
     const cb = (err, ...returnValues) => {
@@ -110,4 +85,4 @@ function muteStderr() {
   };
 }
 
-module.exports = { updateDependencyFiles, updateVersionPattern };
+module.exports = { updateDependencyFiles };

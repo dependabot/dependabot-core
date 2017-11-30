@@ -434,9 +434,21 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         its([:requirement]) { is_expected.to eq("1.5") }
       end
 
+      context "and only the major part was previously specified" do
+        let(:original_requirement) { "1" }
+        let(:latest_resolvable_version) { Gem::Version.new("4.5.0") }
+        its([:requirement]) { is_expected.to eq("4") }
+      end
+
       context "and the new version has fewer digits than the old one§" do
         let(:original_requirement) { "1.1.0.1" }
         its([:requirement]) { is_expected.to eq("1.5.0") }
+      end
+
+      context "and the new version has much fewer digits than the old one§" do
+        let(:original_requirement) { "1.1.0.1" }
+        let(:latest_resolvable_version) { Gem::Version.new("4") }
+        its([:requirement]) { is_expected.to eq("4") }
       end
 
       context "and a caret was previously specified" do
@@ -449,8 +461,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         its([:requirement]) { is_expected.to eq("^1.5.0") }
       end
 
+      context "and a pre-release was previously specified with four places" do
+        let(:original_requirement) { "^1.2.3.rc1" }
+        its([:requirement]) { is_expected.to eq("^1.5.0") }
+      end
+
       context "and an x.x was previously specified" do
-        let(:original_requirement) { "^0.x.x-rc1" }
+        let(:original_requirement) { "^0.x.x" }
         its([:requirement]) { is_expected.to eq("^1.x.x") }
       end
 
