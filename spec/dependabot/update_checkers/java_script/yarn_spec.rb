@@ -397,7 +397,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         version: "1.0.0",
         requirements: [
           {
-            file: "yarn.lock",
+            file: "package.json",
             requirement: original_requirement,
             groups: [],
             source: nil
@@ -457,6 +457,51 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       context "and an x.x was previously specified with four places" do
         let(:original_requirement) { "^0.x.x.rc1" }
         its([:requirement]) { is_expected.to eq("^1.x.x") }
+      end
+
+      context "and there were multiple requirements" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.0.0",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: original_requirement,
+                groups: [],
+                source: nil
+              },
+              {
+                file: "another/package.json",
+                requirement: other_requirement,
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+        let(:original_requirement) { "^1.2.3" }
+        let(:other_requirement) { "^0.x.x" }
+
+        it "updates both requirements" do
+          expect(checker.updated_requirements).to match_array(
+            [
+              {
+                file: "package.json",
+                requirement: "^1.5.0",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "another/package.json",
+                requirement: "^1.x.x",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
       end
     end
   end
