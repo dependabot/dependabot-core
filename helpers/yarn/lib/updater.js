@@ -133,7 +133,6 @@ async function updateDependencyFile(
   // Find the old dependency pattern from the package.json, so we can construct
   // a new pattern that contains the new version but maintains the old format
   const currentPattern = (await allDependencyPatterns(config))[depName];
-  const newPattern = updateVersionPattern(currentPattern, desiredVersion);
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -148,29 +147,15 @@ async function updateDependencyFile(
   // Repeat the process to set the right pattern in the lockfile
   // TODO: REFACTOR ME!
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const args2 = [`${depName}@${newPattern}`];
+  const args2 = [`${depName}@${currentPattern}`];
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
 
   const updatedYarnLock = readFile("yarn.lock");
-  const updatedPackageJson = readFile(requirements.file);
 
   return {
-    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock),
-    [requirements.file]: updatedPackageJson
+    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock)
   };
 }
 
-function updateVersionPattern(currentPattern, desiredVersion) {
-  const versionRegex = /[0-9]+(\.[A-Za-z0-9\-_]+)*/;
-  return currentPattern.replace(versionRegex, oldVersion => {
-    const oldParts = oldVersion.split(".");
-    const newParts = desiredVersion.split(".");
-    return oldParts
-      .slice(0, newParts.length)
-      .map((part, i) => (part.match(/^x\b/) ? "x" : newParts[i]))
-      .join(".");
-  });
-}
-
-module.exports = { updateDependencyFiles, updateVersionPattern };
+module.exports = { updateDependencyFiles };

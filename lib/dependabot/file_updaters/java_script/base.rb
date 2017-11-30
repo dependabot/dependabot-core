@@ -8,10 +8,21 @@ module Dependabot
     module JavaScript
       class Base < Dependabot::FileUpdaters::Base
         def updated_dependency_files
-          dependency_files.
-            select { |f| updated_contents[f.name] }.
-            reject { |f| f.content == updated_contents[f.name] }.
-            map { |f| updated_file(file: f, content: updated_contents[f.name]) }
+          updated_files = []
+
+          updated_files <<
+            updated_file(file: lockfile, content: updated_lockfile_content)
+
+          package_files.each do |file|
+            next unless file_changed?(file)
+            updated_files <<
+              updated_file(
+                file: file,
+                content: updated_package_json_content(file)
+              )
+          end
+
+          updated_files
         end
 
         private
@@ -31,8 +42,12 @@ module Dependabot
           @lockfile ||= get_original_file(self.class::LOCKFILE_NAME)
         end
 
-        def updated_contents
-          @updated_contents ||=
+        def package_files
+          dependency_files.select { |f| f.name.end_with?("package.json") }
+        end
+
+        def updated_lockfile_content
+          @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
@@ -47,28 +62,20 @@ module Dependabot
                 ]
               )
 
-              updated_files.
-                select { |name, _| name.end_with?("package.json") }.
-                each_key do |name|
-                  replacement_map(name).each do |key, value|
-                    updated_files[name] = updated_files[name].gsub!(key, value)
-                  end
-                end
-
-              updated_files
+              updated_files.fetch(lockfile.name)
             end
         end
 
         def write_temporary_dependency_files
           File.write(self.class::LOCKFILE_NAME, lockfile.content)
           File.write(".npmrc", npmrc_content)
-          dependency_files.
-            select { |f| f.name.end_with?("package.json") }.
-            each do |file|
-              path = file.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(file.name, sanitized_package_json_content(file))
-            end
+          package_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            updated_content = updated_package_json_content(file)
+            updated_content = sanitized_package_json_content(updated_content)
+            File.write(file.name, updated_content)
+          end
         end
 
         # Construct a .npmrc from the passed credentials. In future we may want
@@ -89,9 +96,40 @@ module Dependabot
           ([original_content] + updated_credential_lines).join("\n")
         end
 
-        def sanitized_package_json_content(file)
+        def updated_package_json_content(file)
+          dependencies.
+            select { |dep| requirement_changed?(file, dep) }.
+            reduce(file.content.dup) do |content, dep|
+              updated_requirement =
+                dep.requirements.find { |r| r[:file] == file.name }.
+                fetch(:requirement)
+
+              old_req =
+                dep.previous_requirements.find { |r| r[:file] == file.name }.
+                fetch(:requirement)
+
+              updated_content = content.gsub(
+                /"#{Regexp.escape(dep.name)}":\s*"#{Regexp.escape(old_req)}"/,
+                %("#{dep.name}": "#{updated_requirement}")
+              )
+
+              raise "Expected content to change!" if content == updated_content
+              updated_content
+            end
+        end
+
+        def replace_package_json_version_requirement(dependency:, file:,
+                                                     content:)
+          return content unless requirement_changed?(file, dependency)
+
+          dep.requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:requirement)
+        end
+
+        def sanitized_package_json_content(content)
           int = 0
-          file.content.gsub(/\{\{.*\}\}/) do
+          content.gsub(/\{\{.*\}\}/) do
             int += 1
             "something-#{int}"
           end

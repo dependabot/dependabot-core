@@ -1,6 +1,6 @@
 {
   "dependencies": {
     "is-positive": "^3.1.0",
-    "left-pad": "^1.0.0"
+    "left-pad": "^1.1.3"
   }
 }

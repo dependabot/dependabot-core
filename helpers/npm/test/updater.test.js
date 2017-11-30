@@ -27,49 +27,14 @@ describe("updater", () => {
     await fs.copy(srcLockfile, `${destDir}/package-lock.json`);
   }
 
-  it("generates an updated package.json and package-lock.json", async () => {
+  it("generates an updated package-lock.json", async () => {
     await copyDependencies("original", tempDir);
 
-    const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3");
+    const result = await updateDependencyFiles(tempDir, "left-pad");
     expect(result).toEqual({
-      "package.json": helpers.loadFixture("updater/updated/package.json"),
       "package-lock.json": helpers.loadFixture(
         "updater/updated/package-lock.json"
       )
     });
-  });
-});
-
-describe("updateVersionPattern", () => {
-  it("handles exact versions", () => {
-    expect(updateVersionPattern("1.2.3", "4.5.6")).toEqual("4.5.6");
-  });
-
-  it("handles unspecific patterns", () => {
-    expect(updateVersionPattern("1", "4.5.6")).toEqual("4");
-  });
-
-  it("handles unspecific versions", () => {
-    expect(updateVersionPattern("1.2.3", "4")).toEqual("4");
-  });
-
-  it("handles caret versions", () => {
-    expect(updateVersionPattern("^1.2.3", "4.5.6")).toEqual("^4.5.6");
-  });
-
-  it("handles pre-release versions", () => {
-    expect(updateVersionPattern("^1.2.3-rc1", "4.5.6")).toEqual("^4.5.6");
-  });
-
-  it("handles pre-release versions using four places", () => {
-    expect(updateVersionPattern("^1.2.3.rc1", "4.5.6")).toEqual("^4.5.6");
-  });
-
-  it("handles x.x versions", () => {
-    expect(updateVersionPattern("^1.x.x-rc1", "4.5.6")).toEqual("^4.x.x");
-  });
-
-  it("handles x.x versions using four places", () => {
-    expect(updateVersionPattern("^1.x.x.rc1", "4.5.6")).toEqual("^4.x.x");
   });
 });
