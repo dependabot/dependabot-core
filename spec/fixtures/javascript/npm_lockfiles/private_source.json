@@ -4,6 +4,16 @@
     "lockfileVersion": 1,
     "requires": true,
     "dependencies": {
+        "chalk": {
+          "version": "2.3.0",
+          "resolved": "http://registry.npm.taobao.org/chalk/download/chalk-2.3.0.tgz",
+          "integrity": "sha1-tepI78nBeT3MybR2fJORTT8tUro=",
+          "requires": {
+            "ansi-styles": "3.2.0",
+            "escape-string-regexp": "1.0.5",
+            "supports-color": "4.4.0"
+          }
+        },
         "encoding": {
             "version": "0.1.12",
             "resolved": "https://registry.npmjs.org/encoding/-/encoding-0.1.12.tgz",

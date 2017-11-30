@@ -93,9 +93,32 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Npm do
         fixture("javascript", "npm_lockfiles", "private_source.json")
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
-      describe "the private dependency" do
+      describe "the first private dependency" do
+        subject { dependencies[1] }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("chalk") }
+        its(:version) { is_expected.to eq("2.3.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^2.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "private_registry",
+                  url: "http://registry.npm.taobao.org"
+                }
+              }
+            ]
+          )
+        end
+      end
+
+      describe "the second private dependency" do
         subject { dependencies.last }
 
         it { is_expected.to be_a(Dependabot::Dependency) }

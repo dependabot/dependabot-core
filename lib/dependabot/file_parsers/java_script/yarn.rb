@@ -81,10 +81,16 @@ module Dependabot
 
         def source_for(dep)
           return if dep["resolved"].start_with?(CENTRAL_REGISTRY_URL)
+          url =
+            if dep["resolved"].include?("/~/")
+              dep["resolved"].split("/~/").first
+            else
+              dep["resolved"].split("/")[0..2].join("/")
+            end
 
           {
             type: "private_registry",
-            url: dep["resolved"].split("/~/").first
+            url: url
           }
         end
 

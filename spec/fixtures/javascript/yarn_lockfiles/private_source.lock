@@ -5,3 +5,11 @@
 "@dependabot/etag@^1.0.0":
   version "1.8.0"
   resolved "https://npm.fury.io/dependabot/~/d/%40dependabot%2Fetag/%40dependabot%2Fetag-1.8.0.tgz#6f631aef336d6c46362b51764044ce216be3c051"
+
+chalk@^2.0.0:
+  version "2.3.0"
+  resolved "http://registry.npm.taobao.org/chalk/download/chalk-2.3.0.tgz#b5ea48efc9c1793dccc9b4767c93914d3f2d52ba"
+  dependencies:
+    ansi-styles "^3.1.0"
+    escape-string-regexp "^1.0.5"
+    supports-color "^4.0.0"

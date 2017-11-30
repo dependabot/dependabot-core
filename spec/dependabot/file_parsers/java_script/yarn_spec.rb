@@ -116,9 +116,32 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Yarn do
         fixture("javascript", "yarn_lockfiles", "private_source.lock")
       end
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
 
-      describe "the dependency" do
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("chalk") }
+        its(:version) { is_expected.to eq("2.3.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^2.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "private_registry",
+                  url: "http://registry.npm.taobao.org"
+                }
+              }
+            ]
+          )
+        end
+      end
+
+      describe "the second dependency" do
         subject { dependencies.last }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
