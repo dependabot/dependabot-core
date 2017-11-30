@@ -1388,6 +1388,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("1.8.0"))
       end
+
+      context "when the Gemfile doesn't import the gemspec" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "only_statesman") }
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response.json")
+          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        it "doesn't just fall back to latest_version" do
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("1.5.0"))
+        end
+      end
     end
 
     context "with only a gemspec" do

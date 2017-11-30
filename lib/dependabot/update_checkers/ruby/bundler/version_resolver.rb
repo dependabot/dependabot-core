@@ -126,6 +126,13 @@ module Dependabot
 
               definition.resolve_remotely!
               dep = definition.resolve.find { |d| d.name == dependency.name }
+
+              # If the dependency wasn't found in the definition, it's because
+              # the Gemfile didn't import the gemspec. This is unusual, but
+              # the correct behaviour if/when it happens is to behave as if
+              # the repo was gemspec-only
+              next latest_version_details unless dep
+
               details = { version: dep.version }
               if dependency_source.instance_of?(::Bundler::Source::Git)
                 details[:commit_sha] = dep.source.revision
