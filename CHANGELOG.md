@@ -1,3 +1,7 @@
+## v0.34.19, 30 November 2017
+
+- JS: Preserve protocol for private registries
+
 ## v0.34.18, 30 November 2017
 
 - JS: Handle private registries that don't use https
