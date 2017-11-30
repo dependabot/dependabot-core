@@ -226,6 +226,29 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         end
 
         it { is_expected.to eq(Gem::Version.new("1.8.1")) }
+
+        context "without https" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "@blep/blep",
+              version: "1.0.0",
+              requirements: [
+                {
+                  file: "yarn.lock",
+                  requirement: "^1.0.0",
+                  groups: [],
+                  source: {
+                    type: "private_registry",
+                    url: "http://npm.fury.io/dependabot"
+                  }
+                }
+              ],
+              package_manager: "yarn"
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
+        end
       end
 
       context "without credentials" do

@@ -80,7 +80,7 @@ module Dependabot
             dependency.requirements.map { |r| r.fetch(:source) }.compact.first
 
           if source.nil? then "registry.npmjs.org"
-          else source.fetch(:url).gsub("https://", "")
+          else source.fetch(:url).gsub("https://", "").gsub("http://", "")
           end
         end
 
