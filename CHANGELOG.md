@@ -1,3 +1,7 @@
+## v0.34.18, 30 November 2017
+
+- JS: Handle private registries that don't use https
+
 ## v0.34.17, 30 November 2017
 
 - JS: Better parsing of private registry URLs
