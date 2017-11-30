@@ -29,13 +29,6 @@ async function updateDependencyFiles(
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  // Read the original manifest, and update the dependency specification
-  const manifest = JSON.parse(readFile("package.json"));
-
-  // JSONify the new package.json, and write ready for npm install to pick up
-  const updatedManifest = JSON.stringify(manifest, null, 2) + "\n";
-  fs.writeFileSync(path.join(directory, "package.json"), updatedManifest);
-
   await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
 
   // dryRun mode prevents the actual install
@@ -58,10 +51,7 @@ async function updateDependencyFiles(
 
   const updatedLockfile = readFile("package-lock.json");
 
-  return {
-    "package.json": updatedManifest,
-    "package-lock.json": updatedLockfile
-  };
+  return { "package-lock.json": updatedLockfile };
 }
 
 function runAsync(obj, method, args) {

@@ -27,14 +27,13 @@ describe("updater", () => {
     await fs.copy(srcYarnLock, `${destDir}/yarn.lock`);
   }
 
-  it("generates an updated package.json and yarn.lock", async () => {
+  it("generates an updated yarn.lock", async () => {
     await copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "left-pad", "1.1.3", [
       { file: "package.json", groups: ["dependencies"] }
     ]);
     expect(result).toEqual({
-      "package.json": helpers.loadFixture("updater/updated/package.json"),
       "yarn.lock": helpers.loadFixture("updater/updated/yarn.lock")
     });
   });
@@ -73,4 +72,3 @@ describe("updater", () => {
     }
   });
 });
-

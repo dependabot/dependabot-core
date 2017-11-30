@@ -152,11 +152,9 @@ async function updateDependencyFile(
   await add2.init();
 
   const updatedYarnLock = readFile("yarn.lock");
-  const updatedPackageJson = readFile(requirements.file);
 
   return {
-    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock),
-    [requirements.file]: updatedPackageJson
+    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock)
   };
 }
 
