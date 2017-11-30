@@ -1,3 +1,7 @@
+## v0.34.20, 30 November 2017
+
+- Ruby: Handle repos with a gemspec and a Gemfile that doesn't import it
+
 ## v0.34.19, 30 November 2017
 
 - JS: Preserve protocol for private registries
