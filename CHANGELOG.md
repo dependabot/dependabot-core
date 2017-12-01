@@ -1,3 +1,7 @@
+## v0.35.2, 1 December 2017
+
+- Ruby: More robust gemspec sanitizing
+
 ## v0.35.1, 1 December 2017
 
 - JS: Ignore transitory errors from custom registries
