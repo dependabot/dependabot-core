@@ -30,12 +30,6 @@ module Dependabot
         github_client.pull_request(watched_repo, pull_request_number)
     end
 
-    def pull_request_exists?
-      !pull_request.nil?
-    rescue Octokit::NotFound
-      false
-    end
-
     def branch_exists?
       github_client.branch(watched_repo, pull_request.head.ref)
     rescue Octokit::NotFound
