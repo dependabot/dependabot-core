@@ -24,6 +24,10 @@ module Dependabot
       File.join(directory, name)
     end
 
+    def ==(other)
+      other.instance_of?(self.class) && to_h == other.to_h
+    end
+
     private
 
     def clean_directory(directory)
