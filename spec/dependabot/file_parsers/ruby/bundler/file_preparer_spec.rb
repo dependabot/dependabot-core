@@ -48,7 +48,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler::FilePreparer do
       end
 
       its(:content) { is_expected.to_not include("require ") }
-      its(:content) { is_expected.to include(%(version      = '0.0.1')) }
+      its(:content) { is_expected.to include(%(version      = "0.0.1")) }
     end
 
     describe "the updated ruby version file" do

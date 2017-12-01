@@ -13,6 +13,7 @@ module Dependabot
   module FileUpdaters
     module Ruby
       class Bundler < Dependabot::FileUpdaters::Base
+        require "dependabot/file_updaters/ruby/bundler/gemspec_sanitizer"
         require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
         require "dependabot/file_updaters/ruby/bundler/git_source_remover"
         require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
@@ -289,13 +290,13 @@ module Dependabot
         end
 
         def sanitized_gemspec_content(gemspec)
-          gemspec_content = gemspec.content.gsub(/^\s*require.*$/, "")
-          gemspec_content.gsub(/=.*VERSION.*$/i) do
-            parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
-            gem_name = gemspec.name.split("/").last.split(".").first
-            spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
-            "='#{spec&.version || '0.0.1'}'"
-          end
+          parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+          gem_name = gemspec.name.split("/").last.split(".").first
+          spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
+
+          GemspecSanitizer.new(
+            replacement_version: spec&.version || "0.0.1"
+          ).rewrite(gemspec.content)
         end
       end
     end

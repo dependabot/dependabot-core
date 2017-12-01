@@ -2,6 +2,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/ruby/bundler"
+require "dependabot/file_updaters/ruby/bundler/gemspec_sanitizer"
 
 module Dependabot
   module FileParsers
@@ -58,9 +59,9 @@ module Dependabot
           def sanitize_gemspec_content(gemspec_content)
             # No need to set the version correctly - this is just an update
             # check so we're not going to persist any changes to the lockfile.
-            gemspec_content.
-              gsub(/^\s*require.*$/, "").
-              gsub(/=.*VERSION.*$/i, "= '0.0.1'")
+            FileUpdaters::Ruby::Bundler::GemspecSanitizer.
+              new(replacement_version: "0.0.1").
+              rewrite(gemspec_content)
           end
         end
       end
