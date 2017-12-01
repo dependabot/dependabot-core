@@ -1,3 +1,7 @@
+## v0.35.4, 1 December 2017
+
+- Ruby: Fix bug in gemspec sanitizing
+
 ## v0.35.3, 1 December 2017
 
 - Implement equality operator for DependencyFile
