@@ -74,6 +74,10 @@ module Dependabot
             reject(&:prerelease?).sort.last
 
           Gem::Version.new(latest_full_release)
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          raise if dependency_registry == "registry.npmjs.org"
+          # Sometimes custom registries are flaky. We don't want to make that
+          # our problem, so we quietly return `nil` here.
         end
 
         def private_dependency_not_reachable?(npm_response)
