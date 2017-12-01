@@ -1,3 +1,7 @@
+## v0.35.1, 1 December 2017
+
+- JS: Ignore transitory errors from custom registries
+
 ## v0.35.0, 30 November 2017
 
 - JS: Perform package.json update in Ruby (and avoid changing package.json
