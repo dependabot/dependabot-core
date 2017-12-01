@@ -34,9 +34,14 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
 
     # rubocop:disable Lint/InterpolationCheck
     context "with an assignment to a string-interpolated constant" do
-      let(:content) { %q(Spec.new { |s| s.version = "#{Example::Version}" }) }
-      it { is_expected.to eq(%q(Spec.new { |s| s.version = "#{"1.5.0"}" })) }
+      let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
+      it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
     end
     # rubocop:enable Lint/InterpolationCheck
+
+    context "with a block" do
+      let(:content) { fixture("ruby", "gemspecs", "with_nested_block") }
+      specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
+    end
   end
 end

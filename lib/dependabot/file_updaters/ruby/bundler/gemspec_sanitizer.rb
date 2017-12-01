@@ -43,19 +43,22 @@ module Dependabot
             end
 
             def node_assigns_to_version_constant?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
               return false unless node.children.first&.type == :lvar
-              return true if node_is_version_constant?(node.children.last)
-              return false unless node.children.last&.type == :dstr
 
-              string_interpolates_version_constant?(node.children.last)
+              return true if node_is_version_constant?(node.children.last)
+              node_interpolates_version_constant?(node.children.last)
             end
 
             def node_is_version_constant?(node)
+              return false unless node.is_a?(Parser::AST::Node)
               return false unless node&.type == :const
               node.children.last.to_s.match?(/version/i)
             end
 
-            def string_interpolates_version_constant?(node)
+            def node_interpolates_version_constant?(node)
+              return false unless node.is_a?(Parser::AST::Node)
               return false unless node.type == :dstr
 
               node.children.
