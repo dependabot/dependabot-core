@@ -1,3 +1,10 @@
+## v0.35.5, 2 December 2017
+
+- JS: Fix updated_files_regex for Yarn
+- JS: handle updates without a lockfile in FileUpdater
+- JS: support repos without a lockfile in npm parser, and spec support in UpdateChecker
+- JS: support repos without a package-lock.json in npm FileFetcher
+
 ## v0.35.4, 1 December 2017
 
 - Ruby: Fix bug in gemspec sanitizing
