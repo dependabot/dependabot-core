@@ -12,7 +12,7 @@ module Dependabot
 
         def self.updated_files_regex
           [
-            /package\.json$/,
+            /^package\.json$/,
             /^yarn\.lock$/
           ]
         end
