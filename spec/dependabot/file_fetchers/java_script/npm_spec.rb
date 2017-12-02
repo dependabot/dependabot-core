@@ -58,8 +58,20 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
 
     it "fetches the .npmrc" do
       expect(file_fetcher_instance.files.count).to eq(3)
-      expect(file_fetcher_instance.files.map(&:name)).
-        to include(".npmrc")
+      expect(file_fetcher_instance.files.map(&:name)).to include(".npmrc")
+    end
+  end
+
+  context "without a package-lock.json file" do
+    before do
+      stub_request(:get, url + "package-lock.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+    end
+
+    it "fetches the package.json" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).to eq(["package.json"])
     end
   end
 

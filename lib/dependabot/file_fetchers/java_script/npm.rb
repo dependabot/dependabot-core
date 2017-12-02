@@ -8,11 +8,11 @@ module Dependabot
     module JavaScript
       class Npm < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(package.json package-lock.json) - filenames).empty?
+          filenames.include?("package.json")
         end
 
         def self.required_files_message
-          "Repo must contain a package.json and a package-lock.json."
+          "Repo must contain a package.json."
         end
 
         private
@@ -20,7 +20,7 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << package_json
-          fetched_files << package_lock
+          fetched_files << package_lock if package_lock
           fetched_files << npmrc unless npmrc.nil?
           fetched_files += path_dependencies
           fetched_files
@@ -32,6 +32,8 @@ module Dependabot
 
         def package_lock
           @package_lock ||= fetch_file_from_github("package-lock.json")
+        rescue Dependabot::DependencyFileNotFound
+          nil
         end
 
         def npmrc
