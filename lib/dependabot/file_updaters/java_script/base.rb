@@ -10,8 +10,10 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          updated_files <<
-            updated_file(file: lockfile, content: updated_lockfile_content)
+          if lockfile
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
 
           package_files.each do |file|
             next unless file_changed?(file)
@@ -33,9 +35,7 @@ module Dependabot
         end
 
         def check_required_files
-          ["package.json", self.class::LOCKFILE_NAME].each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No package.json!" unless get_original_file("package.json")
         end
 
         def lockfile

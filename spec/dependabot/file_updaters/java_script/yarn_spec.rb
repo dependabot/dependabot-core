@@ -70,6 +70,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
     specify { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(2) }
 
+    context "without a yarn.lock" do
+      let(:files) { [package_json] }
+      its(:length) { is_expected.to eq(1) }
+    end
+
     describe "the updated package_json_file" do
       subject(:updated_package_json_file) do
         updated_files.find { |f| f.name == "package.json" }
@@ -248,6 +253,14 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         its(:content) do
           is_expected.to include %("*.js": ["eslint --fix", "git add"])
         end
+      end
+
+      context "without a yarn.lock" do
+        let(:files) { [package_json] }
+
+        its(:content) { is_expected.to include "{{ name }}" }
+        its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
+        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
       end
 
       context "with workspaces" do
