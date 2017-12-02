@@ -16,19 +16,20 @@ module Dependabot
           DEPENDENCY_TYPES.flat_map do |type|
             deps = parsed_package_json[type] || {}
             deps.map do |name, requirement|
-              dep = parsed_package_lock_json.dig("dependencies", name)
+              lockfile_details = lockfile_details(name)
 
-              next unless dep&.fetch("resolved", nil)
+              next if package_lock && !lockfile_details
+              next if package_lock && !lockfile_details["resolved"]
 
               Dependency.new(
                 name: name,
-                version: dep["version"],
+                version: lockfile_details&.fetch("version", nil),
                 package_manager: "yarn",
                 requirements: [{
                   requirement: requirement,
                   file: "package.json",
                   groups: [type],
-                  source: source_for(dep)
+                  source: source_for(name)
                 }]
               )
             end
@@ -38,18 +39,18 @@ module Dependabot
         private
 
         def check_required_files
-          %w(package.json package-lock.json).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No package.json!" unless get_original_file("package.json")
         end
 
-        def source_for(dep)
-          return if dep["resolved"].start_with?(CENTRAL_REGISTRY_URL)
+        def source_for(name)
+          details = lockfile_details(name)
+          return unless details
+          return if details["resolved"].start_with?(CENTRAL_REGISTRY_URL)
           url =
-            if dep["resolved"].include?("/~/")
-              dep["resolved"].split("/~/").first
+            if details["resolved"].include?("/~/")
+              details["resolved"].split("/~/").first
             else
-              dep["resolved"].split("/")[0..2].join("/")
+              details["resolved"].split("/")[0..2].join("/")
             end
 
           {
@@ -68,6 +69,11 @@ module Dependabot
 
         def package_lock
           @package_lock ||= get_original_file("package-lock.json")
+        end
+
+        def lockfile_details(name)
+          return nil unless package_lock
+          parsed_package_lock_json.dig("dependencies", name)
         end
 
         def parsed_package_lock_json

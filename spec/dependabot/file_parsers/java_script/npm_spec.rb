@@ -214,5 +214,31 @@ RSpec.describe Dependabot::FileParsers::JavaScript::Npm do
         expect(dependencies.map(&:name)).to_not include("etag")
       end
     end
+
+    context "without a package-lock.json" do
+      let(:files) { [package_json] }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("fetch-factory") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "^0.0.1",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
   end
 end

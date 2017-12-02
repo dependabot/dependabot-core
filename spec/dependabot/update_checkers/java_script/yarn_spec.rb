@@ -38,7 +38,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       name: "etag",
       version: "1.0.0",
       requirements: [
-        { file: "yarn.lock", requirement: "^1.0.0", groups: [], source: nil }
+        { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
       ],
       package_manager: "yarn"
     )
@@ -49,6 +49,26 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
 
     context "given an outdated dependency" do
       it { is_expected.to be_truthy }
+
+      context "with no version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^0.9.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+
+        it { is_expected.to be_truthy }
+      end
     end
 
     context "given an up-to-date dependency" do
@@ -58,7 +78,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           version: "1.7.0",
           requirements: [
             {
-              file: "yarn.lock",
+              file: "package.json",
               requirement: "^1.0.0",
               groups: [],
               source: nil
@@ -69,6 +89,36 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       end
 
       it { is_expected.to be_falsey }
+
+      context "with no version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            requirements: [
+              {
+                file: "package.json",
+                requirement: requirement,
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+
+        context "and a requirement that exactly matches" do
+          let(:requirement) { "^1.7.0" }
+          it { is_expected.to be_falsey }
+        end
+
+        context "and a requirement that covers but doesn't exactly match" do
+          # TODO: Arguably, we might want this to return false (to reduce the
+          # number of PRs repos without a lockfile receive).
+          let(:requirement) { "^1.6.0" }
+          it { is_expected.to be_truthy }
+        end
+      end
     end
 
     context "for a scoped package name" do
@@ -85,7 +135,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           version: "1.0.0",
           requirements: [
             {
-              file: "yarn.lock",
+              file: "package.json",
               requirement: "^1.0.0",
               groups: [],
               source: nil
@@ -133,7 +183,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           version: "1.0.0",
           requirements: [
             {
-              file: "yarn.lock",
+              file: "package.json",
               requirement: "^1.0.0",
               groups: [],
               source: nil
@@ -197,7 +247,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
           version: "1.0.0",
           requirements: [
             {
-              file: "yarn.lock",
+              file: "package.json",
               requirement: "^1.0.0",
               groups: [],
               source: {
@@ -244,7 +294,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
               version: "1.0.0",
               requirements: [
                 {
-                  file: "yarn.lock",
+                  file: "package.json",
                   requirement: "^1.0.0",
                   groups: [],
                   source: {
@@ -358,7 +408,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
             version: "1.0.0",
             requirements: [
               {
-                file: "yarn.lock",
+                file: "package.json",
                 requirement: "^1.0.0",
                 groups: [],
                 source: nil
