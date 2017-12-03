@@ -1,3 +1,8 @@
+## v0.35.8, 3 December 2017
+
+- JS: Handle JS requirements in branch names
+- JS: Handle library requirements differently to application requirements
+
 ## v0.35.7, 3 December 2017
 
 - JS: Return pre-release versions in UpdateChecker if one is currently in use
