@@ -1,3 +1,7 @@
+## v0.35.7, 3 December 2017
+
+- JS: Return pre-release versions in UpdateChecker if one is currently in use
+
 ## v0.35.6, 3 December 2017
 
 - JS: raise DependencyFileNotResolvable when no satisfiable version can be found
