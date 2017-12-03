@@ -26,9 +26,10 @@ module Dependabot
           fetched_files << npmrc if npmrc
           fetched_files << package_lock if package_lock && !ignore_package_lock?
           fetched_files << yarn_lock if yarn_lock
+          fetched_files << lerna_json if lerna_json
           fetched_files += workspace_package_jsons
           fetched_files += path_dependencies
-
+          fetched_files += lerna_packages
           fetched_files
         end
 
@@ -46,6 +47,10 @@ module Dependabot
 
         def npmrc
           @npmrc ||= fetch_file_if_present(".npmrc")
+        end
+
+        def lerna_json
+          @lerna_json ||= fetch_file_if_present("lerna.json")
         end
 
         def path_dependencies
@@ -104,6 +109,28 @@ module Dependabot
           package_json_files
         end
 
+        def lerna_packages
+          return [] unless parsed_lerna_json["packages"]
+          package_files = []
+          unfetchable_deps = []
+
+          workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
+            file = File.join(workspace, "package.json")
+
+            begin
+              package_files << fetch_file_from_host(file)
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_deps << file
+            end
+          end
+
+          if unfetchable_deps.any?
+            raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
+          end
+
+          package_files
+        end
+
         def workspace_paths(workspace_object)
           paths_array =
             if workspace_object.is_a?(Hash) then workspace_object["packages"]
@@ -112,13 +139,13 @@ module Dependabot
             end
 
           paths_array.flat_map do |path|
-            if path.end_with?("*") then expand_workspaces(path)
+            if path.end_with?("*") then expand_paths(path)
             else path
             end
           end
         end
 
-        def expand_workspaces(path)
+        def expand_paths(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
           repo_contents(dir: path.gsub(/\*$/, "")).
             select { |file| file.type == "dir" }.
@@ -155,6 +182,13 @@ module Dependabot
               yarn_lock: yarn_lock
             ).dependency_file
           end
+        end
+
+        def parsed_lerna_json
+          return {} unless lerna_json
+          JSON.parse(lerna_json.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, lerna_json.path
         end
       end
     end
