@@ -1,3 +1,7 @@
+## v0.35.9, 3 December 2017
+
+- JS: Handle thorny single requirements
+
 ## v0.35.8, 3 December 2017
 
 - JS: Handle JS requirements in branch names
