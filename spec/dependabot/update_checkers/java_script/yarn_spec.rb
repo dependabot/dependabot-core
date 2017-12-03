@@ -113,10 +113,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         end
 
         context "and a requirement that covers but doesn't exactly match" do
-          # TODO: Arguably, we might want this to return false (to reduce the
-          # number of PRs repos without a lockfile receive).
           let(:requirement) { "^1.6.0" }
-          it { is_expected.to be_truthy }
+          it { is_expected.to be_falsey }
         end
       end
     end
