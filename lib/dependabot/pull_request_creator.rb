@@ -186,6 +186,9 @@ module Dependabot
         gsub(">=", "gte-").
         gsub("<=", "lte-").
         gsub("~>", "tw-").
+        gsub("^", "tw-").
+        gsub("||", "or-").
+        gsub("~", "approx-").
         gsub("~=", "tw-").
         gsub(/==*/, "eq-").
         gsub(">", "gt-").
