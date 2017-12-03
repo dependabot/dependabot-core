@@ -32,9 +32,9 @@ module Dependabot
 
             requirements.map do |req|
               if existing_version
-                updated_library_requirement(req)
-              else
                 updated_app_requirement(req)
+              else
+                updated_library_requirement(req)
               end
             end
           end
@@ -42,8 +42,15 @@ module Dependabot
           private
 
           def updated_library_requirement(req)
+            current_requirement = req[:requirement]
+            return req if current_requirement.strip.split(" ").count > 1
+            return req if current_requirement.strip == ""
+
+            ruby_req = ruby_requirement(current_requirement)
+            return req if ruby_req.satisfied_by?(latest_resolvable_version)
+
             updated_requirement =
-              req[:requirement].
+              current_requirement.
               sub(VERSION_REGEX) do |old_version|
                 old_parts = old_version.split(".")
                 new_parts = latest_resolvable_version.to_s.split(".").
@@ -57,8 +64,10 @@ module Dependabot
           end
 
           def updated_app_requirement(req)
+            current_requirement = req[:requirement]
+
             updated_requirement =
-              req[:requirement].
+              current_requirement.
               sub(VERSION_REGEX) do |old_version|
                 old_parts = old_version.split(".")
                 new_parts = latest_resolvable_version.to_s.split(".").
@@ -69,6 +78,50 @@ module Dependabot
               end
 
             req.merge(requirement: updated_requirement)
+          end
+
+          def ruby_requirement(requirement_string)
+            if requirement_string.start_with?("~")
+              ruby_tilde_range(requirement_string)
+            elsif requirement_string.start_with?("^")
+              ruby_caret_range(requirement_string)
+            else
+              ruby_x_range(requirement_string)
+            end
+          end
+
+          def ruby_hyphen_range(req_string)
+            lower_bound, upper_bound = req_string.split("-")
+            Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
+          end
+
+          def ruby_tilde_range(req_string)
+            version = req_string.gsub(/^~/, "")
+            parts = version.split(".")
+            parts << "0" if parts.count < 3
+            Gem::Requirement.new("~> #{parts.join('.')}")
+          end
+
+          def ruby_x_range(req_string)
+            version = req_string.gsub(/\.[xX*]/, "").gsub(/^[xX*]/, "")
+            parts = version.split(".")
+            parts << "0" if parts.count < 3
+            Gem::Requirement.new("~> #{parts.join('.')}")
+          end
+
+          def ruby_caret_range(req_string)
+            version = req_string.gsub(/^\^/, "")
+            parts = version.split(".")
+            first_non_zero = parts.find { |d| d != "0" }
+            first_non_zero_index = parts.index(first_non_zero)
+            upper_bound = parts.map.with_index do |part, i|
+              if i < first_non_zero_index then part
+              elsif i == first_non_zero_index then (part.to_i + 1).to_s
+              else 0
+              end
+            end.join(".")
+
+            Gem::Requirement.new(">= #{version}", "< #{upper_bound}")
           end
         end
       end
