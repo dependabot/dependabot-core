@@ -170,12 +170,12 @@ RSpec.describe module_to_test::Base::RequirementsUpdater do
         end
 
         context "and a caret was previously specified" do
-          context "that satisfies the latest version" do
+          context "that the latest version satisfies" do
             let(:package_json_req_string) { "^1.2.3" }
             its([:requirement]) { is_expected.to eq("^1.2.3") }
           end
 
-          context "that does not satisfy the latest version" do
+          context "that the latest version does not satisfy" do
             let(:package_json_req_string) { "^0.8.0" }
             its([:requirement]) { is_expected.to eq("^1.5.0") }
           end
@@ -189,16 +189,62 @@ RSpec.describe module_to_test::Base::RequirementsUpdater do
             let(:package_json_req_string) { "^1.2.3.rc1" }
             its([:requirement]) { is_expected.to eq("^1.2.3.rc1") }
           end
+
+          context "including an x" do
+            let(:latest_resolvable_version) { Gem::Version.new("0.0.2") }
+            let(:package_json_req_string) { "^0.0.x" }
+            its([:requirement]) { is_expected.to eq("^0.0.x") }
+
+            context "when the range isn't covered" do
+              let(:latest_resolvable_version) { Gem::Version.new("0.2.0") }
+              its([:requirement]) { is_expected.to eq("^0.2.x") }
+            end
+          end
+
+          context "on a version that is all zeros" do
+            let(:latest_resolvable_version) { Gem::Version.new("0.0.2") }
+            let(:package_json_req_string) { "^0.0.0" }
+            its([:requirement]) { is_expected.to eq("^0.0.2") }
+          end
         end
 
         context "and an x.x was previously specified" do
           let(:package_json_req_string) { "0.x.x" }
           its([:requirement]) { is_expected.to eq("1.x.x") }
+
+          context "four places" do
+            let(:package_json_req_string) { "0.x.x.rc1" }
+            its([:requirement]) { is_expected.to eq("1.x.x") }
+          end
         end
 
-        context "and an x.x was previously specified with four places" do
-          let(:package_json_req_string) { "^0.x.x.rc1" }
-          its([:requirement]) { is_expected.to eq("^1.x.x") }
+        context "and a tilda was previously specified" do
+          let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
+
+          context "that the latest version satisfies" do
+            let(:package_json_req_string) { "~2.5.1" }
+            its([:requirement]) { is_expected.to eq("~2.5.1") }
+          end
+
+          context "that the latest version does not satisfy" do
+            let(:package_json_req_string) { "~2.4.1" }
+            its([:requirement]) { is_expected.to eq("~2.5.3") }
+          end
+
+          context "including a pre-release" do
+            let(:package_json_req_string) { "~2.5.1-rc1" }
+            its([:requirement]) { is_expected.to eq("~2.5.1-rc1") }
+          end
+
+          context "including an x" do
+            let(:package_json_req_string) { "~2.x.x" }
+            its([:requirement]) { is_expected.to eq("~2.x.x") }
+
+            context "when the range isn't covered" do
+              let(:package_json_req_string) { "~2.4.x" }
+              its([:requirement]) { is_expected.to eq("~2.5.x") }
+            end
+          end
         end
 
         context "and there were multiple requirements" do

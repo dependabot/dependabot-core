@@ -81,12 +81,15 @@ module Dependabot
           end
 
           def ruby_requirement(requirement_string)
+            requirement_string = requirement_string.strip
+            requirement_string = requirement_string.gsub(/(?:\.|^)[xX*]/, "")
+
             if requirement_string.start_with?("~")
               ruby_tilde_range(requirement_string)
             elsif requirement_string.start_with?("^")
               ruby_caret_range(requirement_string)
             else
-              ruby_x_range(requirement_string)
+              ruby_range(requirement_string)
             end
           end
 
@@ -102,9 +105,8 @@ module Dependabot
             Gem::Requirement.new("~> #{parts.join('.')}")
           end
 
-          def ruby_x_range(req_string)
-            version = req_string.gsub(/\.[xX*]/, "").gsub(/^[xX*]/, "")
-            parts = version.split(".")
+          def ruby_range(req_string)
+            parts = req_string.split(".")
             parts << "0" if parts.count < 3
             Gem::Requirement.new("~> #{parts.join('.')}")
           end
@@ -113,7 +115,8 @@ module Dependabot
             version = req_string.gsub(/^\^/, "")
             parts = version.split(".")
             first_non_zero = parts.find { |d| d != "0" }
-            first_non_zero_index = parts.index(first_non_zero)
+            first_non_zero_index =
+              first_non_zero ? parts.index(first_non_zero) : parts.count - 1
             upper_bound = parts.map.with_index do |part, i|
               if i < first_non_zero_index then part
               elsif i == first_non_zero_index then (part.to_i + 1).to_s
