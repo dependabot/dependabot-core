@@ -1,3 +1,8 @@
+## v0.35.6, 3 December 2017
+
+- JS: raise DependencyFileNotResolvable when no satisfiable version can be found
+  for a yarn dep
+
 ## v0.35.5, 2 December 2017
 
 - JS: Fix updated_files_regex for Yarn
