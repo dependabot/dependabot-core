@@ -71,7 +71,8 @@ module Dependabot
           latest_full_release =
             JSON.parse(npm_response.body)["versions"].
             keys.map { |v| Gem::Version.new(v) }.
-            reject(&:prerelease?).sort.last
+            reject { |v| v.prerelease? && !wants_prerelease }.
+            sort.last
 
           Gem::Version.new(latest_full_release)
         rescue Excon::Error::Socket, Excon::Error::Timeout
@@ -90,6 +91,16 @@ module Dependabot
           [401, 403, 404].include?(npm_response.status)
         end
 
+        def wants_prerelease
+          current_version = dependency.version
+          if current_version && Gem::Version.new(current_version).prerelease?
+            return true
+          end
+
+          # TODO: Handle pre-release requirements, too
+          false
+        end
+
         def dependency_url
           source =
             dependency.requirements.map { |r| r.fetch(:source) }.compact.first
@@ -99,7 +110,7 @@ module Dependabot
             else source.fetch(:url)
             end
 
-          # NPM registries expect slashes to be escaped
+          # npm registries expect slashes to be escaped
           escaped_dependency_name = dependency.name.gsub("/", "%2F")
           "#{registry_url}/#{escaped_dependency_name}"
         end

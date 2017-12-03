@@ -165,6 +165,26 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+      context "and the user wants pre-release versions" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.7.0.beta1",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "yarn"
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
+      end
     end
 
     context "for a private npm-hosted dependency" do
