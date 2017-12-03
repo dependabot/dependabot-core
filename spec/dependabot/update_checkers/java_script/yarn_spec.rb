@@ -459,137 +459,46 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements.first }
-
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "etag",
         version: "1.0.0",
-        requirements: [
-          {
-            file: "package.json",
-            requirement: original_requirement,
-            groups: [],
-            source: nil
-          }
-        ],
+        requirements: dependency_requirements,
         package_manager: "yarn"
       )
     end
-
-    let(:original_requirement) { "^1.0.0" }
-    let(:latest_resolvable_version) { nil }
-
-    before do
-      allow(checker).
-        to receive(:latest_resolvable_version).
-        and_return(latest_resolvable_version)
+    let(:dependency_requirements) do
+      [
+        {
+          file: "package.json",
+          requirement: "^1.0.0",
+          groups: [],
+          source: nil
+        }
+      ]
     end
 
-    context "when there is no resolvable version" do
-      let(:latest_resolvable_version) { nil }
-      its([:requirement]) { is_expected.to eq(original_requirement) }
-    end
-
-    context "when there is a resolvable version" do
-      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
-
-      context "and a full version was previously specified" do
-        let(:original_requirement) { "1.2.3" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and a partial version was previously specified" do
-        let(:original_requirement) { "0.1" }
-        its([:requirement]) { is_expected.to eq("1.5") }
-      end
-
-      context "and only the major part was previously specified" do
-        let(:original_requirement) { "1" }
-        let(:latest_resolvable_version) { Gem::Version.new("4.5.0") }
-        its([:requirement]) { is_expected.to eq("4") }
-      end
-
-      context "and the new version has fewer digits than the old one§" do
-        let(:original_requirement) { "1.1.0.1" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and the new version has much fewer digits than the old one§" do
-        let(:original_requirement) { "1.1.0.1" }
-        let(:latest_resolvable_version) { Gem::Version.new("4") }
-        its([:requirement]) { is_expected.to eq("4") }
-      end
-
-      context "and a caret was previously specified" do
-        let(:original_requirement) { "^1.2.3" }
-        its([:requirement]) { is_expected.to eq("^1.5.0") }
-      end
-
-      context "and a pre-release was previously specified" do
-        let(:original_requirement) { "^1.2.3-rc1" }
-        its([:requirement]) { is_expected.to eq("^1.5.0") }
-      end
-
-      context "and a pre-release was previously specified with four places" do
-        let(:original_requirement) { "^1.2.3.rc1" }
-        its([:requirement]) { is_expected.to eq("^1.5.0") }
-      end
-
-      context "and an x.x was previously specified" do
-        let(:original_requirement) { "^0.x.x" }
-        its([:requirement]) { is_expected.to eq("^1.x.x") }
-      end
-
-      context "and an x.x was previously specified with four places" do
-        let(:original_requirement) { "^0.x.x.rc1" }
-        its([:requirement]) { is_expected.to eq("^1.x.x") }
-      end
-
-      context "and there were multiple requirements" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "etag",
-            version: "1.0.0",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: original_requirement,
-                groups: [],
-                source: nil
-              },
-              {
-                file: "another/package.json",
-                requirement: other_requirement,
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "yarn"
-          )
-        end
-        let(:original_requirement) { "^1.2.3" }
-        let(:other_requirement) { "^0.x.x" }
-
-        it "updates both requirements" do
-          expect(checker.updated_requirements).to match_array(
-            [
-              {
-                file: "package.json",
-                requirement: "^1.5.0",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "another/package.json",
-                requirement: "^1.x.x",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-      end
+    it "delegates to the RequirementsUpdater" do
+      expect(Dependabot::UpdateCheckers::JavaScript::Base::RequirementsUpdater).
+        to receive(:new).
+        with(
+          requirements: dependency_requirements,
+          latest_version: "1.7.0",
+          latest_resolvable_version: "1.7.0",
+          existing_version: "1.0.0"
+        ).
+        and_call_original
+      expect(checker.updated_requirements).
+        to eq(
+          [
+            {
+              file: "package.json",
+              requirement: "^1.7.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
     end
   end
 end

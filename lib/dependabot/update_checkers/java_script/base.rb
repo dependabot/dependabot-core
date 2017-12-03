@@ -9,6 +9,8 @@ module Dependabot
   module UpdateCheckers
     module JavaScript
       class Base < Dependabot::UpdateCheckers::Base
+        require_relative "base/requirements_updater"
+
         def latest_version
           @latest_version ||= fetch_latest_version
         end
@@ -20,25 +22,12 @@ module Dependabot
         end
 
         def updated_requirements
-          return dependency.requirements unless latest_resolvable_version
-
-          version_regex = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-
-          dependency.requirements.map do |requirement|
-            updated_requirement =
-              requirement[:requirement].
-              sub(version_regex) do |old_version|
-                old_parts = old_version.split(".")
-                new_parts =
-                  latest_resolvable_version.to_s.
-                  split(".").first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i].match?(/^x\b/) ? "x" : part
-                end.join(".")
-              end
-
-            requirement.merge(requirement: updated_requirement)
-          end
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s,
+            existing_version: dependency.version&.to_s
+          ).updated_requirements
         end
 
         private
