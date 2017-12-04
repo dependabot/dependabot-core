@@ -42,23 +42,12 @@ module Dependabot
         end
 
         def fetch_latest_version
-          npm_response = Excon.get(
-            dependency_url,
-            headers: registry_auth_headers,
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
-
-          if private_dependency_not_reachable?(npm_response)
-            raise PrivateSourceNotReachable, dependency_registry
-          end
-
-          latest_dist_tag = JSON.parse(npm_response.body)["dist-tags"]["latest"]
+          latest_dist_tag = npm_details["dist-tags"]["latest"]
           latest_version = Gem::Version.new(latest_dist_tag)
           return latest_version unless latest_version.prerelease?
 
           latest_full_release =
-            JSON.parse(npm_response.body)["versions"].
+            npm_details["versions"].
             keys.map { |v| Gem::Version.new(v) }.
             reject { |v| v.prerelease? && !wants_prerelease }.
             sort.last
@@ -68,6 +57,29 @@ module Dependabot
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def npm_details
+          @npm_details =
+            begin
+              npm_response = Excon.get(
+                dependency_url,
+                headers: registry_auth_headers,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+
+              if private_dependency_not_reachable?(npm_response)
+                raise PrivateSourceNotReachable, dependency_registry
+              end
+
+              JSON.parse(npm_response.body)
+            rescue JSON::ParserError
+              @retry_count ||= 0
+              @retry_count += 1
+              retry unless retry_count > 1
+              raise
+            end
         end
 
         def private_dependency_not_reachable?(npm_response)
