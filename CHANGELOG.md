@@ -1,3 +1,8 @@
+## v0.35.10, 4 December 2017
+
+- JS: raise DependencyFileNotResolvable when no satisfiable version can be found
+  for an npm dep
+
 ## v0.35.9, 3 December 2017
 
 - JS: Handle thorny single requirements
@@ -14,7 +19,7 @@
 ## v0.35.6, 3 December 2017
 
 - JS: raise DependencyFileNotResolvable when no satisfiable version can be found
-  for a yarn dep
+  for a Yarn dep
 
 ## v0.35.5, 2 December 2017
 
