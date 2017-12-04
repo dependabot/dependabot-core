@@ -1,3 +1,7 @@
+## v0.35.11, 4 December 2017
+
+- JS: retry transitory JSON parsing failures
+
 ## v0.35.10, 4 December 2017
 
 - JS: raise DependencyFileNotResolvable when no satisfiable version can be found
