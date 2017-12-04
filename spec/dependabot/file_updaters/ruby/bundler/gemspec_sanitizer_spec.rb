@@ -30,6 +30,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
         let(:content) { %(Spec.new { |s| s.version = Example::VERSION }) }
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
       end
+
+      context "that is dup-ed" do
+        let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
+        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+      end
     end
 
     # rubocop:disable Lint/InterpolationCheck

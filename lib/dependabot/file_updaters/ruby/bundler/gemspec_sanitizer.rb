@@ -48,13 +48,20 @@ module Dependabot
               return false unless node.children.first&.type == :lvar
 
               return true if node_is_version_constant?(node.children.last)
+              return true if node_calls_version_constant?(node.children.last)
               node_interpolates_version_constant?(node.children.last)
             end
 
             def node_is_version_constant?(node)
               return false unless node.is_a?(Parser::AST::Node)
-              return false unless node&.type == :const
+              return false unless node.type == :const
               node.children.last.to_s.match?(/version/i)
+            end
+
+            def node_calls_version_constant?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.type == :send
+              node.children.any? { |n| node_is_version_constant?(n) }
             end
 
             def node_interpolates_version_constant?(node)
@@ -69,7 +76,7 @@ module Dependabot
 
             def replace_constant(node)
               case node.children.last&.type
-              when :const
+              when :const, :send
                 replace(
                   node.children.last.loc.expression,
                   %("#{replacement_version}")
