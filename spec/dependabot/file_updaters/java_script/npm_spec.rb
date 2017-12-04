@@ -74,6 +74,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Npm do
       its(:length) { is_expected.to eq(1) }
     end
 
+    context "with a dependency version that can't be found" do
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "yanked_version.json")
+      end
+      let(:lockfile_body) do
+        fixture("javascript", "npm_lockfiles", "yanked_version.lock")
+      end
+      it "raises a helpful error" do
+        expect { updated_files }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     describe "the updated package_json_file" do
       subject(:updated_package_json_file) do
         updated_files.find { |f| f.name == "package.json" }

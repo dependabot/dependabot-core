@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters/java_script/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileUpdaters
@@ -15,6 +16,15 @@ module Dependabot
             /^package\.json$/,
             /^package-lock\.json$/
           ]
+        end
+
+        private
+
+        def updated_lockfile_content
+          super
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.start_with?("No matching version found")
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
       end
     end
