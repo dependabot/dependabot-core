@@ -1,3 +1,7 @@
+## v0.35.12, 4 December 2017
+
+- Ruby: handle gemspecs that dup a version constant
+
 ## v0.35.11, 4 December 2017
 
 - JS: retry transitory JSON parsing failures
