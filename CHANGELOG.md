@@ -1,3 +1,7 @@
+## v0.36.0, 5 December 2017
+
+- Stop supporting npm and yarn as package managers (in favour of npm_and_yarn)
+
 ## v0.35.15, 5 December 2017
 
 - JS: Combine Yarn and npm package managers into NpmAndYarn
