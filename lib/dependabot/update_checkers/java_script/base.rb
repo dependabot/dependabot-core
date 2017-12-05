@@ -43,20 +43,33 @@ module Dependabot
 
         def fetch_latest_version
           latest_dist_tag = npm_details["dist-tags"]["latest"]
-          latest_version = Gem::Version.new(latest_dist_tag)
-          return latest_version unless latest_version.prerelease?
+          latest_dist_tag = Gem::Version.new(latest_dist_tag)
+          return latest_dist_tag if use_latest_dist_tag?(latest_dist_tag)
 
-          latest_full_release =
+          latest_release =
             npm_details["versions"].
             keys.map { |v| Gem::Version.new(v) }.
-            reject { |v| v.prerelease? && !wants_prerelease }.
-            sort.last
+            reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
+            find { |version| !yanked?(version) }
 
-          Gem::Version.new(latest_full_release)
+          Gem::Version.new(latest_release)
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def use_latest_dist_tag?(version)
+          !wants_prerelease? && !version.prerelease? && !yanked?(version)
+        end
+
+        def yanked?(version)
+          Excon.get(
+            dependency_url + "/#{version}",
+            headers: registry_auth_headers,
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          ).status == 404
         end
 
         def npm_details
@@ -92,7 +105,7 @@ module Dependabot
           [401, 403, 404].include?(npm_response.status)
         end
 
-        def wants_prerelease
+        def wants_prerelease?
           current_version = dependency.version
           if current_version && Gem::Version.new(current_version).prerelease?
             return true

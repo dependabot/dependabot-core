@@ -12,6 +12,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
   before do
     stub_request(:get, "https://registry.npmjs.org/etag").
       to_return(status: 200, body: fixture("javascript", "npm_response.json"))
+    stub_request(:get, "https://registry.npmjs.org/etag/1.7.0").
+      to_return(status: 200)
   end
 
   let(:checker) do
@@ -126,6 +128,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
             status: 200,
             body: fixture("javascript", "npm_response.json")
           )
+        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
+          to_return(status: 200)
       end
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -160,6 +164,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         body = fixture("javascript", "npm_response_prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/etag").
           to_return(status: 200, body: body)
+        stub_request(:get, "https://registry.npmjs.org/etag/2.0.0.pre.rc1").
+          to_return(status: 200)
       end
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
@@ -193,6 +199,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
+        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
+          to_return(status: 200)
       end
 
       let(:dependency) do
@@ -257,6 +265,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
+        stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1").
+          to_return(status: 200)
       end
 
       let(:dependency) do
@@ -304,6 +314,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
             stub_request(:get, "http://npm.fury.io/dependabot/@blep%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 200, body: body)
+            stub_request(
+              :get, "http://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+            ).to_return(status: 200)
           end
 
           let(:dependency) do
@@ -404,6 +417,20 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
+    context "when the latest version has been yanked" do
+      before do
+        body = fixture("javascript", "npm_response_old_latest.json")
+        stub_request(:get, "https://registry.npmjs.org/etag").
+          to_return(status: 200, body: body)
+        stub_request(:get, "https://registry.npmjs.org/etag/1.7.0").
+          to_return(status: 404)
+        stub_request(:get, "https://registry.npmjs.org/etag/1.6.0").
+          to_return(status: 200)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
     context "when the npm link resolves to a 404" do
       before do
         stub_request(:get, "https://registry.npmjs.org/etag").
@@ -450,6 +477,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
         body = fixture("javascript", "npm_response_old_latest.json")
         stub_request(:get, "https://registry.npmjs.org/etag").
           to_return(status: 200, body: body)
+        stub_request(:get, "https://registry.npmjs.org/etag/1.6.0").
+          to_return(status: 200)
       end
 
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
