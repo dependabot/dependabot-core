@@ -1,3 +1,7 @@
+## v0.35.13, 5 December 2017
+
+- JS: Fix UpdateChecker retrying
+
 ## v0.35.12, 4 December 2017
 
 - Ruby: handle gemspecs that dup a version constant
