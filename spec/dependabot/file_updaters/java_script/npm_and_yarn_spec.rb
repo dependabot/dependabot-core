@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java_script/yarn"
+require "dependabot/file_updaters/java_script/npm_and_yarn"
 require_relative "../shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
+RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -22,7 +22,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       ]
     )
   end
-  let(:files) { [package_json, lockfile] }
+  let(:files) { [package_json, yarn_lock, package_lock] }
   let(:package_json) do
     Dependabot::DependencyFile.new(
       content: package_json_body,
@@ -32,18 +32,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
   let(:package_json_body) do
     fixture("javascript", "package_files", "package.json")
   end
-  let(:lockfile) do
+  let(:package_lock) do
     Dependabot::DependencyFile.new(
-      name: "yarn.lock",
-      content: lockfile_body
+      name: "package-lock.json",
+      content: package_lock_body
     )
   end
-  let(:lockfile_body) { fixture("javascript", "yarn_lockfiles", "yarn.lock") }
+  let(:package_lock_body) do
+    fixture("javascript", "npm_lockfiles", "package-lock.json")
+  end
+  let(:yarn_lock) do
+    Dependabot::DependencyFile.new(
+      name: "yarn.lock",
+      content: yarn_lock_body
+    )
+  end
+  let(:yarn_lock_body) do
+    fixture("javascript", "yarn_lockfiles", "yarn.lock")
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "fetch-factory",
       version: "0.0.2",
-      package_manager: "yarn",
+      package_manager: "npm",
       requirements: [
         { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
       ],
@@ -68,9 +79,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
     end
 
     specify { expect { updated_files }.to_not output.to_stdout }
-    its(:length) { is_expected.to eq(2) }
+    its(:length) { is_expected.to eq(3) }
 
-    context "without a yarn.lock" do
+    context "without a package-lock.json or yarn.lock" do
       let(:files) { [package_json] }
       its(:length) { is_expected.to eq(1) }
     end
@@ -79,8 +90,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       let(:package_json_body) do
         fixture("javascript", "package_files", "yanked_version.json")
       end
-      let(:lockfile_body) do
-        fixture("javascript", "yarn_lockfiles", "yanked_version.lock")
+      let(:package_lock_body) do
+        fixture("javascript", "npm_lockfiles", "yanked_version.json")
       end
       it "raises a helpful error" do
         expect { updated_files }.
@@ -102,7 +113,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "yarn",
+            package_manager: "npm",
             requirements: [
               {
                 file: "package.json",
@@ -155,12 +166,13 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         let(:package_json_body) do
           fixture("javascript", "package_files", "wildcard.json")
         end
-        let(:lockfile_body) do
+        let(:yarn_lock_body) do
           fixture("javascript", "yarn_lockfiles", "wildcard.lock")
         end
 
-        it "only updates the lockfile" do
-          expect(updated_files.map(&:name)).to eq(["yarn.lock"])
+        it "only updates the lockfiles" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(yarn.lock package-lock.json))
         end
       end
 
@@ -191,9 +203,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         let(:package_json_body) do
           fixture("javascript", "package_files", "package.json")
         end
-        let(:lockfile_body) do
-          fixture("javascript", "yarn_lockfiles", "yarn.lock")
-        end
 
         it "updates the existing development declaration" do
           parsed_file = JSON.parse(updated_package_json_file.content)
@@ -202,13 +211,13 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         end
       end
 
-      context "with a path-based dependency (not this dependency)" do
-        let(:files) { [package_json, lockfile, path_dep] }
+      context "with a path-based dependency" do
+        let(:files) { [package_json, yarn_lock, path_dep] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "path_dependency.json")
         end
-        let(:lockfile_body) do
-          fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
+        let(:package_lock_body) do
+          fixture("javascript", "npm_lockfiles", "path_dependency.json")
         end
         let(:path_dep) do
           Dependabot::DependencyFile.new(
@@ -220,7 +229,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm",
             requirements: [
               {
                 file: "package.json",
@@ -247,7 +256,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
 
       context "with a .npmrc" do
-        let(:files) { [package_json, lockfile, npmrc] }
+        let(:files) { [package_json, yarn_lock, npmrc] }
         let(:npmrc) do
           Dependabot::DependencyFile.new(
             name: ".npmrc",
@@ -255,6 +264,14 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
           )
         end
 
+        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+      end
+
+      context "without a package-lock.json or yarn.lock" do
+        let(:files) { [package_json] }
+
+        its(:content) { is_expected.to include "{{ name }}" }
+        its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
         its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
       end
 
@@ -268,20 +285,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         end
       end
 
-      context "without a yarn.lock" do
-        let(:files) { [package_json] }
-
-        its(:content) { is_expected.to include "{{ name }}" }
-        its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
-      end
-
-      context "with workspaces" do
-        let(:files) { [package_json, lockfile, package1, other_package] }
+      context "with Yarn workspaces" do
+        let(:files) { [package_json, yarn_lock, package1, other_package] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "workspaces.json")
         end
-        let(:lockfile_body) do
+        let(:yarn_lock_body) do
           fixture("javascript", "yarn_lockfiles", "workspaces.lock")
         end
         let(:package1) do
@@ -434,6 +443,63 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
     end
 
+    describe "the updated package-lock.json" do
+      subject(:updated_lockfile) do
+        updated_files.find { |f| f.name == "package-lock.json" }
+      end
+
+      it "has details of the updated item" do
+        parsed_lockfile = JSON.parse(updated_lockfile.content)
+        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+          to eq("0.0.2")
+      end
+
+      context "with a path-based dependency" do
+        let(:files) { [package_json, package_lock, path_dep] }
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "path_dependency.json")
+        end
+        let(:package_lock_body) do
+          fixture("javascript", "npm_lockfiles", "path_dependency.json")
+        end
+        let(:path_dep) do
+          Dependabot::DependencyFile.new(
+            name: "deps/etag/package.json",
+            content: fixture("javascript", "package_files", "etag.json")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "1.3.1",
+            package_manager: "npm",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.3.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.2.1",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        it "has details of the updated item" do
+          parsed_lockfile = JSON.parse(updated_lockfile.content)
+          expect(parsed_lockfile["dependencies"]["lodash"]["version"]).
+            to eq("1.3.1")
+        end
+      end
+    end
+
     describe "the updated yarn_lock" do
       subject(:updated_yarn_lock_file) do
         updated_files.find { |f| f.name == "yarn.lock" }
@@ -445,11 +511,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
 
       context "with a path-based dependency" do
-        let(:files) { [package_json, lockfile, path_dep] }
+        let(:files) { [package_json, yarn_lock, path_dep] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "path_dependency.json")
         end
-        let(:lockfile_body) do
+        let(:yarn_lock_body) do
           fixture("javascript", "yarn_lockfiles", "path_dependency.lock")
         end
         let(:path_dep) do
@@ -515,7 +581,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
         let(:package_json_body) do
           fixture("javascript", "package_files", "wildcard.json")
         end
-        let(:lockfile_body) do
+        let(:yarn_lock_body) do
           fixture("javascript", "yarn_lockfiles", "wildcard.lock")
         end
 
@@ -526,11 +592,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::Yarn do
       end
 
       context "with workspaces" do
-        let(:files) { [package_json, lockfile, package1, other_package] }
+        let(:files) { [package_json, yarn_lock, package1, other_package] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "workspaces.json")
         end
-        let(:lockfile_body) do
+        let(:yarn_lock_body) do
           fixture("javascript", "yarn_lockfiles", "workspaces.lock")
         end
         let(:package1) do

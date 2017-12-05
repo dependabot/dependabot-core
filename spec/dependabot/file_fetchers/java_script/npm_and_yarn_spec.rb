@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/java_script/npm"
+require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require_relative "../shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
+RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
   it_behaves_like "a dependency file fetcher"
 
   let(:source) { { host: "github", repo: "gocardless/bump" } }

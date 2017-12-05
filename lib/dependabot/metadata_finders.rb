@@ -2,8 +2,7 @@
 
 require "dependabot/metadata_finders/ruby/bundler"
 require "dependabot/metadata_finders/python/pip"
-require "dependabot/metadata_finders/java_script/npm"
-require "dependabot/metadata_finders/java_script/yarn"
+require "dependabot/metadata_finders/java_script/npm_and_yarn"
 require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/git/submodules"
 require "dependabot/metadata_finders/docker/docker"
@@ -14,8 +13,8 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then MetadataFinders::Ruby::Bundler
-      when "npm" then MetadataFinders::JavaScript::Npm
-      when "yarn" then MetadataFinders::JavaScript::Yarn
+      when "npm", "yarn", "npm_and_yarn"
+        MetadataFinders::JavaScript::NpmAndYarn
       when "pip" then MetadataFinders::Python::Pip
       when "composer" then MetadataFinders::Php::Composer
       when "submodules" then MetadataFinders::Git::Submodules

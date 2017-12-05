@@ -7,7 +7,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileParsers
     module JavaScript
-      class Npm < Dependabot::FileParsers::Base
+      class NpmAndYarn < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
 
         DEPENDENCY_TYPES =

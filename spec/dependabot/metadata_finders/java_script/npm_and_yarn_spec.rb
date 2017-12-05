@@ -3,10 +3,10 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/java_script/yarn"
+require "dependabot/metadata_finders/java_script/npm_and_yarn"
 require_relative "../shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::JavaScript::Yarn do
+RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do

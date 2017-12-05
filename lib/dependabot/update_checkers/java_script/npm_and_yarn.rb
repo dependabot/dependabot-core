@@ -8,8 +8,8 @@ require "dependabot/errors"
 module Dependabot
   module UpdateCheckers
     module JavaScript
-      class Base < Dependabot::UpdateCheckers::Base
-        require_relative "base/requirements_updater"
+      class NpmAndYarn < Dependabot::UpdateCheckers::Base
+        require_relative "npm_and_yarn/requirements_updater"
 
         def latest_version
           @latest_version ||= fetch_latest_version

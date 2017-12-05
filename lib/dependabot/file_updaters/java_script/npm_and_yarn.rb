@@ -2,17 +2,33 @@
 
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileUpdaters
     module JavaScript
-      class Base < Dependabot::FileUpdaters::Base
+      class NpmAndYarn < Dependabot::FileUpdaters::Base
+        def self.updated_files_regex
+          [
+            /^package\.json$/,
+            /^package-lock\.json$/,
+            /^yarn\.lock$/
+          ]
+        end
+
         def updated_dependency_files
           updated_files = []
 
-          if lockfile
+          if yarn_lock
             updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
+              updated_file(file: yarn_lock, content: updated_yarn_lock_content)
+          end
+
+          if package_lock
+            updated_files << updated_file(
+              file: package_lock,
+              content: updated_package_lock_content
+            )
           end
 
           package_files.each do |file|
@@ -38,21 +54,28 @@ module Dependabot
           raise "No package.json!" unless get_original_file("package.json")
         end
 
-        def lockfile
-          @lockfile ||= get_original_file(self.class::LOCKFILE_NAME)
+        def yarn_lock
+          @yarn_lock ||= get_original_file("yarn.lock")
+        end
+
+        def package_lock
+          @package_lock ||= get_original_file("package-lock.json")
         end
 
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
         end
 
-        def updated_lockfile_content
-          @updated_lockfile_content ||=
+        def updated_yarn_lock_content
+          @updated_yarn_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
+              project_root = File.join(File.dirname(__FILE__), "../../../..")
+              helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
+
               updated_files = SharedHelpers.run_helper_subprocess(
-                command: "node #{js_helper_path}",
+                command: "node #{helper_path}",
                 function: "update",
                 args: [
                   Dir.pwd,
@@ -62,12 +85,42 @@ module Dependabot
                 ]
               )
 
-              updated_files.fetch(lockfile.name)
+              updated_files.fetch("yarn.lock")
             end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.start_with?("Couldn't find any versions")
+          raise Dependabot::DependencyFileNotResolvable, error.message
+        end
+
+        def updated_package_lock_content
+          @updated_package_lock_content ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+
+              project_root = File.join(File.dirname(__FILE__), "../../../..")
+              helper_path = File.join(project_root, "helpers/npm/bin/run.js")
+
+              updated_files = SharedHelpers.run_helper_subprocess(
+                command: "node #{helper_path}",
+                function: "update",
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  dependency.requirements
+                ]
+              )
+
+              updated_files.fetch("package-lock.json")
+            end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.start_with?("No matching version found")
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
         def write_temporary_dependency_files
-          File.write(self.class::LOCKFILE_NAME, lockfile.content)
+          File.write("yarn.lock", yarn_lock.content) if yarn_lock
+          File.write("package-lock.json", package_lock.content) if package_lock
           File.write(".npmrc", npmrc_content)
           package_files.each do |file|
             path = file.name
@@ -145,11 +198,6 @@ module Dependabot
               replacements["something-#{int}"] = match
             end
           replacements
-        end
-
-        def js_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, self.class::HELPER_PATH)
         end
       end
     end

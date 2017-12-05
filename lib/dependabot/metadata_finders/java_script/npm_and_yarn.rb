@@ -7,7 +7,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module MetadataFinders
     module JavaScript
-      class Yarn < Dependabot::MetadataFinders::Base
+      class NpmAndYarn < Dependabot::MetadataFinders::Base
         def homepage_url
           listing = version_listings.find { |_, l| l["homepage"] }
           listing&.last&.fetch("homepage", nil) || super

@@ -2,8 +2,7 @@
 
 require "dependabot/file_parsers/ruby/bundler"
 require "dependabot/file_parsers/python/pip"
-require "dependabot/file_parsers/java_script/npm"
-require "dependabot/file_parsers/java_script/yarn"
+require "dependabot/file_parsers/java_script/npm_and_yarn"
 require "dependabot/file_parsers/php/composer"
 require "dependabot/file_parsers/git/submodules"
 require "dependabot/file_parsers/docker/docker"
@@ -14,8 +13,8 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then FileParsers::Ruby::Bundler
-      when "npm" then FileParsers::JavaScript::Npm
-      when "yarn" then FileParsers::JavaScript::Yarn
+      when "npm", "yarn", "npm_and_yarn"
+        FileParsers::JavaScript::NpmAndYarn
       when "pip" then FileParsers::Python::Pip
       when "composer" then FileParsers::Php::Composer
       when "submodules" then FileParsers::Git::Submodules

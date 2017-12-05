@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java_script/yarn"
+require "dependabot/update_checkers/java_script/npm_and_yarn"
 require_relative "../shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
+RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   it_behaves_like "an update checker"
 
   before do
@@ -506,7 +506,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::Yarn do
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(Dependabot::UpdateCheckers::JavaScript::Base::RequirementsUpdater).
+      expect(described_class::RequirementsUpdater).
         to receive(:new).
         with(
           requirements: dependency_requirements,

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/java_script/base"
+require "dependabot/update_checkers/java_script/npm_and_yarn"
 
 module Dependabot
   module UpdateCheckers
     module JavaScript
-      class Base
+      class NpmAndYarn
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
