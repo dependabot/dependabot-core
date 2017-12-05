@@ -1,3 +1,7 @@
+## v0.35.15, 5 December 2017
+
+- JS: Combine Yarn and npm package managers into NpmAndYarn
+
 ## v0.35.14, 5 December 2017
 
 - JS: Check for yanked versions in UpdateChecker
