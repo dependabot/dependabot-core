@@ -1,0 +1,34 @@
+[
+  {
+    "name": "requirements-dev.txt",
+    "path": "requirements-dev.txt",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 2433,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/requirements-dev.txt?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/requirements-dev.txt",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/requirements-dev.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/requirements-dev.txt?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/requirements-dev.txt"
+    }
+  },
+  {
+    "name": "requirements-prod.txt",
+    "path": "requirements-prod.txt",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 2433,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/requirements-prod.txt?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/requirements-prod.txt",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/requirements-prod.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/requirements-prod.txt?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/requirements-prod.txt"
+    }
+  }
+]
