@@ -13,8 +13,7 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then FileUpdaters::Ruby::Bundler
-      when "npm", "yarn", "npm_and_yarn"
-        FileUpdaters::JavaScript::NpmAndYarn
+      when "npm_and_yarn" then FileUpdaters::JavaScript::NpmAndYarn
       when "pip" then FileUpdaters::Python::Pip
       when "composer" then FileUpdaters::Php::Composer
       when "submodules" then FileUpdaters::Git::Submodules

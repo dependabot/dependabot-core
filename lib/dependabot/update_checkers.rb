@@ -13,8 +13,7 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then UpdateCheckers::Ruby::Bundler
-      when "npm", "yarn", "npm_and_yarn"
-        UpdateCheckers::JavaScript::NpmAndYarn
+      when "npm_and_yarn" then UpdateCheckers::JavaScript::NpmAndYarn
       when "pip" then UpdateCheckers::Python::Pip
       when "composer" then UpdateCheckers::Php::Composer
       when "submodules" then UpdateCheckers::Git::Submodules

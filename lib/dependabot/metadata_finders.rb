@@ -13,8 +13,7 @@ module Dependabot
     def self.for_package_manager(package_manager)
       case package_manager
       when "bundler" then MetadataFinders::Ruby::Bundler
-      when "npm", "yarn", "npm_and_yarn"
-        MetadataFinders::JavaScript::NpmAndYarn
+      when "npm_and_yarn" then MetadataFinders::JavaScript::NpmAndYarn
       when "pip" then MetadataFinders::Python::Pip
       when "composer" then MetadataFinders::Php::Composer
       when "submodules" then MetadataFinders::Git::Submodules
