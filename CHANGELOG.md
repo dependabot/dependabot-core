@@ -1,3 +1,7 @@
+## v0.35.14, 5 December 2017
+
+- JS: Check for yanked versions in UpdateChecker
+
 ## v0.35.13, 5 December 2017
 
 - JS: Fix UpdateChecker retrying
