@@ -77,7 +77,7 @@ module Dependabot
             rescue JSON::ParserError
               @retry_count ||= 0
               @retry_count += 1
-              retry unless retry_count > 1
+              retry unless @retry_count > 1
               raise
             end
         end
