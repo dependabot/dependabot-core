@@ -21,8 +21,10 @@ module Dependabot
           fetched_files = []
           fetched_files << package_json
           fetched_files << package_lock if package_lock
-          fetched_files << npmrc unless npmrc.nil?
+          fetched_files << yarn_lock if yarn_lock
+          fetched_files << npmrc if npmrc
           fetched_files += path_dependencies
+          fetched_files += workspace_package_jsons
           fetched_files
         end
 
@@ -32,6 +34,12 @@ module Dependabot
 
         def package_lock
           @package_lock ||= fetch_file_from_github("package-lock.json")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
+
+        def yarn_lock
+          @yarn_lock ||= fetch_file_from_github("yarn.lock")
         rescue Dependabot::DependencyFileNotFound
           nil
         end
@@ -67,6 +75,43 @@ module Dependabot
           end
 
           package_json_files
+        end
+
+        def workspace_package_jsons
+          return [] unless parsed_package_json["workspaces"]
+          package_json_files = []
+          unfetchable_deps = []
+
+          parsed_package_json["workspaces"].each do |path|
+            workspaces =
+              if path.end_with?("*") then expand_workspaces(path)
+              else [Pathname.new(File.join(directory, path)).cleanpath.to_path]
+              end
+
+            workspaces.each do |workspace|
+              file = File.join(workspace, "package.json")
+
+              begin
+                package_json_files << fetch_file_from_github(file)
+              rescue Dependabot::DependencyFileNotFound
+                unfetchable_deps << file
+              end
+            end
+          end
+
+          if unfetchable_deps.any?
+            raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
+          end
+
+          package_json_files
+        end
+
+        def expand_workspaces(path)
+          path = File.join(directory, path.gsub(/\*$/, ""))
+          path = Pathname.new(path).cleanpath.to_path
+          github_client.contents(repo, path: path, ref: commit).
+            select { |file| file.type == "dir" }.
+            map(&:path)
         end
 
         def parsed_package_json

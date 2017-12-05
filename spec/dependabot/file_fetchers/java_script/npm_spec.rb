@@ -43,6 +43,9 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     stub_request(:get, url + ".npmrc?ref=sha").
       with(headers: { "Authorization" => "token token" }).
       to_return(status: 404)
+    stub_request(:get, url + "yarn.lock?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
   end
 
   context "with a .npmrc file" do
@@ -62,7 +65,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     end
   end
 
-  context "without a package-lock.json file" do
+  context "without a package-lock.json file or a yarn.lock" do
     before do
       stub_request(:get, url + "package-lock.json?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -70,8 +73,71 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
     end
 
     it "fetches the package.json" do
-      expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).to eq(["package.json"])
+    end
+  end
+
+  context "with a yarn.lock but no package-lock.json file" do
+    before do
+      stub_request(:get, url + "package-lock.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, url + "yarn.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "yarn_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the package.json and yarn.lock" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(package.json yarn.lock))
+    end
+  end
+
+  context "with a package-lock.json file but no yarn.lock" do
+    before do
+      stub_request(:get, url + "yarn.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, url + "package-lock.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "package_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the package.json and package-lock.json" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(package.json package-lock.json))
+    end
+  end
+
+  context "with both a package-lock.json file and a yarn.lock" do
+    before do
+      stub_request(:get, url + "yarn.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "yarn_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "package-lock.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "package_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the package.json, package-lock.json and yarn.lock" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(package.json package-lock.json yarn.lock))
     end
   end
 
@@ -136,6 +202,109 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::Npm do
             Dependabot::PathDependenciesNotReachable,
             "The following path based dependencies could not be retrieved: " \
             "etag"
+          )
+      end
+    end
+  end
+
+  context "with workspaces" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "package.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "package_json_with_workspaces_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "yarn.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "yarn_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    context "that have fetchable paths" do
+      before do
+        stub_request(:get, url + "packages?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "packages_files.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "packages/package1/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "packages/package2/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "other_package/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches package.json from path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("packages/package2/package.json")
+      end
+    end
+
+    context "that has an unfetchable path" do
+      before do
+        stub_request(:get, url + "packages?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "packages_files.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "packages/package1/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "packages/package2/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "other_package/package.json?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a PathDependenciesNotReachable error with details" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: " \
+            "/other_package/package.json"
           )
       end
     end
