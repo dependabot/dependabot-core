@@ -6,7 +6,7 @@ machine:
   python:
     version: 3.6.1
   php:
-    version: 7.1.6
+    version: 7.1.9
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
 
