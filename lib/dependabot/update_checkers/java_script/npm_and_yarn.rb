@@ -90,8 +90,8 @@ module Dependabot
             rescue JSON::ParserError
               @retry_count ||= 0
               @retry_count += 1
-              retry unless @retry_count > 1
-              raise
+              raise if @retry_count > 1
+              sleep(rand(3.0..10.0)) && retry
             end
         end
 
