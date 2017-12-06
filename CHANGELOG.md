@@ -1,3 +1,7 @@
+## v0.36.1, 6 December 2017
+
+- JS: Give registries a break before retrying if they return bad JSON
+
 ## v0.36.0, 5 December 2017
 
 - Stop supporting npm and yarn as package managers (in favour of npm_and_yarn)
