@@ -79,9 +79,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         JSON.parse(raw).to_json
       end
 
-      it do
-        is_expected.to include "\"monolog/monolog\":\"1.22.1\""
-      end
+      it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
 
       it { is_expected.to include "\"symfony/polyfill-mbstring\":\"1.0.1\"" }
 
@@ -117,8 +115,36 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
       end
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).
-          to include("\"version\":\"1.22.1\"")
+        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+      end
+
+      context "when an old version of PHP is specified" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "old_php_specified")
+        end
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "old_php_specified")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "illuminate/support",
+            version: "v5.4.36",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "^5.2.0",
+                groups: ["runtime"],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
+        end
       end
     end
   end
