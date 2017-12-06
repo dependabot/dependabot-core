@@ -10,7 +10,7 @@ $request = json_decode(file_get_contents("php://stdin"));
 // Increase the default memory limit. Calling `composer update` is otherwise
 // vulnerable to scenarios where there are unconstrained versions, resulting in
 // it checking huge numbers of dependency combinations and causing OOM issues.
-ini_set('memory_limit','256M');
+ini_set('memory_limit','1536M');
 
 switch ($request->function) {
     case "update":
