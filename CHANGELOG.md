@@ -1,3 +1,7 @@
+## v0.36.2, 6 December 2017
+
+- PHP: Try setting a much higher memory limit for composer
+
 ## v0.36.1, 6 December 2017
 
 - JS: Give registries a break before retrying if they return bad JSON
