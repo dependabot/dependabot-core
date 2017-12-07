@@ -1,3 +1,8 @@
+## v0.36.6, 7 December 2017
+
+- PHP: Update composer.json files in Ruby, to avoid changing their formatting
+- PHP: Better requirements updater in UpdateCheckers
+
 ## v0.36.5, 7 December 2017
 
 - JS: Better npm update_checker errors
