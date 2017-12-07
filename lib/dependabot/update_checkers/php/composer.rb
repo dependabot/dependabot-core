@@ -65,6 +65,12 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
+          # For now, return `nil` if a specific PHP version is requested
+          if parsed_composer_json.dig("require", "php") ||
+             parsed_composer_json.dig("config", "platform", "php")
+            return nil
+          end
+
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", composer_file.content)
@@ -82,6 +88,10 @@ module Dependabot
           else
             Gem::Version.new(latest_resolvable_version)
           end
+        end
+
+        def parsed_composer_json
+          @parsed_composer_json ||= JSON.parse(composer_file.content)
         end
 
         def composer_file

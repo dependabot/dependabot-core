@@ -3,7 +3,6 @@
   "description": "A parsedown wrapper for Laravel and Lumen.",
   "license": "mit",
   "require": {
-    "php": ">=5.6.0",
     "erusev/parsedown": "^1.6.0",
     "illuminate/support": "^5.2.0"
   },
