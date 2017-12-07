@@ -42,6 +42,7 @@ module Dependabot
         end
 
         def fetch_latest_version
+          return nil unless npm_details&.fetch("versions", nil)
           latest_dist_tag = npm_details["dist-tags"]["latest"]
           latest_dist_tag = Gem::Version.new(latest_dist_tag)
           return latest_dist_tag if use_latest_dist_tag?(latest_dist_tag)
@@ -82,17 +83,28 @@ module Dependabot
                 middlewares: SharedHelpers.excon_middleware
               )
 
-              if private_dependency_not_reachable?(npm_response)
-                raise PrivateSourceNotReachable, dependency_registry
-              end
+              check_npm_response(npm_response)
 
               JSON.parse(npm_response.body)
             rescue JSON::ParserError
               @retry_count ||= 0
               @retry_count += 1
-              raise if @retry_count > 1
+              if @retry_count > 2
+                raise if dependency_registry == "registry.npmjs.org"
+                return nil
+              end
               sleep(rand(3.0..10.0)) && retry
             end
+        end
+
+        def check_npm_response(npm_response)
+          if private_dependency_not_reachable?(npm_response)
+            raise PrivateSourceNotReachable, dependency_registry
+          end
+
+          return unless [401, 403, 404].include?(npm_response.status)
+          raise "Got #{npm_response.status} response with body "\
+                "#{npm_response.body}"
         end
 
         def private_dependency_not_reachable?(npm_response)

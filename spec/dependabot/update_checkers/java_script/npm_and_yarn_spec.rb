@@ -406,6 +406,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
+    context "when the npm link resolves to an empty hash" do
+      before do
+        stub_request(:get, "https://registry.npmjs.org/etag").
+          to_return(status: 200, body: "{}")
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the npm link fails at first" do
       before do
         body = fixture("javascript", "npm_response_prerelease.json")
@@ -438,8 +447,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       end
 
       it "raises an error" do
-        # TODO: This should raise a better error
-        expect { checker.latest_version }.to raise_error(NoMethodError)
+        expect { checker.latest_version }.to raise_error(RuntimeError)
       end
 
       context "for a namespaced dependency" do
