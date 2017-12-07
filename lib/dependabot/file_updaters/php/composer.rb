@@ -57,7 +57,12 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: "php #{php_helper_path}",
                 function: "update",
-                args: [Dir.pwd, dependency.name, dependency.version]
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  github_access_token
+                ]
               )
             end
         end
@@ -89,6 +94,12 @@ module Dependabot
         def php_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/php/bin/run.php")
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end

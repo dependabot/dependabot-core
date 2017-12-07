@@ -52,7 +52,7 @@ class UpdateChecker
 {
   public static function get_latest_resolvable_version($args)
   {
-    list($workingDirectory, $dependencyName) = $args;
+    list($workingDirectory, $dependencyName, $githubToken) = $args;
 
     // Relax the version on the dependency we're bumping
     // TODO: Explain why we do this.
@@ -64,10 +64,13 @@ class UpdateChecker
     $io = new \Composer\IO\NullIO();
     $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
 
+    $config = $composer->getConfig();
+    $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
+
     $installationManager = new DependabotInstallationManager();
     $install = new \Composer\Installer(
       $io,
-      $composer->getConfig(),
+      $config,
       $composer->getPackage(),
       $composer->getDownloadManager(),
       $composer->getRepositoryManager(),

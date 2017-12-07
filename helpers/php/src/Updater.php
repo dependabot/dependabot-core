@@ -4,7 +4,7 @@ class Updater
 {
   public static function update($args)
   {
-    list($workingDirectory, $dependencyName, $dependencyVersion) = $args;
+    list($workingDirectory, $dependencyName, $dependencyVersion, $githubToken) = $args;
 
     // Change working directory to the one provided, this ensures that we
     // install dependencies into the working dir, rather than a vendor folder
@@ -15,11 +15,14 @@ class Updater
     $io = new \Composer\IO\NullIO();
     $composer = \Composer\Factory::create($io);
 
+    $config = $composer->getConfig();
+    $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
+
     $installationManager = new DependabotInstallationManager();
 
     $install = new \Composer\Installer(
       $io,
-      $composer->getConfig(),
+      $config,
       $composer->getPackage(),
       $composer->getDownloadManager(),
       $composer->getRepositoryManager(),
