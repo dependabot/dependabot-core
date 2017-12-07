@@ -140,6 +140,42 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         end
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
+
+        context "that is unreachable" do
+          let(:lockfile_content) do
+            fixture("php", "lockfiles", "git_source_unreachable")
+          end
+          let(:composer_file_content) do
+            fixture("php", "composer_files", "git_source_unreachable")
+          end
+
+          it "raises a helpful error" do
+            expect { checker.latest_resolvable_version }.
+              to raise_error do |error|
+                expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+                expect(error.dependency_urls).
+                  to eq(["https://github.com/no-exist-sorry/monolog"])
+              end
+          end
+
+          context "with a git URL" do
+            let(:lockfile_content) do
+              fixture("php", "lockfiles", "git_source_unreachable_git_url")
+            end
+            let(:composer_file_content) do
+              fixture("php", "composer_files", "git_source_unreachable_git_url")
+            end
+
+            it "raises a helpful error" do
+              expect { checker.latest_resolvable_version }.
+                to raise_error do |error|
+                  expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+                  expect(error.dependency_urls).
+                    to eq(["git@github.com:no-exist-sorry/monolog"])
+                end
+            end
+          end
+        end
       end
     end
 

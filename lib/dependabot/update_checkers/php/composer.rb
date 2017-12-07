@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 require "json"
 
@@ -73,6 +74,8 @@ module Dependabot
           else
             Gem::Version.new(latest_resolvable_version)
           end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          handle_composer_errors(error)
         end
 
         def parsed_composer_json
@@ -109,6 +112,22 @@ module Dependabot
           return nil unless response.status == 200
 
           @packagist_listing = JSON.parse(response.body)
+        end
+
+        def handle_composer_errors(error)
+          if error.message.start_with?("Failed to execute git clone")
+            dependency_url =
+              error.message.match(/--mirror '(?<url>.*?)'/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          elsif error.message.start_with?("Failed to clone")
+            dependency_url =
+              error.message.match(/Failed to clone (?<url>.*?) via/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          else
+            raise error
+          end
         end
 
         def github_access_token

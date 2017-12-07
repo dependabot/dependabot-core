@@ -1,0 +1,12 @@
+{
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/no-exist-sorry/monolog"
+        }
+    ],
+    "require": {
+        "monolog/monolog": "dev-example",
+        "symfony/polyfill-mbstring": "1.0.1"
+    }
+}
