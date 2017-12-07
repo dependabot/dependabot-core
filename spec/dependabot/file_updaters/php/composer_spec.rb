@@ -118,6 +118,8 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
       end
 
+      it { is_expected.to include "\"prefer-stable\":false" }
+
       context "when an old version of PHP is specified" do
         let(:composer_body) do
           fixture("php", "composer_files", "old_php_specified")

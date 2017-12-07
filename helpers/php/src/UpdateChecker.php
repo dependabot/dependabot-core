@@ -82,7 +82,6 @@ class UpdateChecker
       ->setDryRun(true)
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
-      ->setPreferStable(true)
       ->setExecuteOperations(false)
       ->setDumpAutoloader(false)
       ->setRunScripts(false)

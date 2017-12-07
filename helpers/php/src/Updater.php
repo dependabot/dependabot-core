@@ -63,7 +63,6 @@ class Updater
       ->setWriteLock(true)
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
-      ->setPreferStable(true)
       ->setExecuteOperations(false)
       ->setDumpAutoloader(false)
       ->setRunScripts(false)
