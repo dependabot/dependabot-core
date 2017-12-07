@@ -232,49 +232,51 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       Dependabot::Dependency.new(
         name: "monolog/monolog",
         version: "1.0.1",
-        requirements: [
-          {
-            file: "composer.json",
-            requirement: old_requirement,
-            groups: [],
-            source: nil
-          }
-        ],
+        requirements: dependency_requirements,
         package_manager: "composer"
       )
     end
-
-    let(:old_requirement) { "1.0.*" }
-    let(:latest_resolvable_version) { nil }
+    let(:dependency_requirements) do
+      [
+        {
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }
+      ]
+    end
 
     before do
       allow(checker).
         to receive(:latest_resolvable_version).
-        and_return(latest_resolvable_version)
+        and_return(Gem::Version.new("1.6.0"))
+      allow(checker).
+        to receive(:latest_version).
+        and_return(Gem::Version.new("1.7.0"))
     end
 
-    context "when there is no resolvable version" do
-      let(:latest_resolvable_version) { nil }
-      its([:requirement]) { is_expected.to eq(old_requirement) }
-    end
-
-    context "when there is a resolvable version" do
-      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
-
-      context "and a full version was previously specified" do
-        let(:old_requirement) { "1.4.0" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and a pre-release was previously specified" do
-        let(:old_requirement) { "1.5.0beta" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and a minor version was previously specified" do
-        let(:old_requirement) { "1.4.*" }
-        its([:requirement]) { is_expected.to eq("1.5.*") }
-      end
+    it "delegates to the RequirementsUpdater" do
+      expect(described_class::RequirementsUpdater).
+        to receive(:new).
+        with(
+          requirements: dependency_requirements,
+          latest_version: "1.7.0",
+          latest_resolvable_version: "1.6.0",
+          existing_version: "1.0.1"
+        ).
+        and_call_original
+      expect(checker.updated_requirements).
+        to eq(
+          [
+            {
+              file: "composer.json",
+              requirement: "1.6.*",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
     end
   end
 end

@@ -10,6 +10,8 @@ module Dependabot
   module UpdateCheckers
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
+        require_relative "composer/requirements_updater"
+
         def latest_version
           # Fall back to latest_resolvable_version if no listing on main
           # registry.
@@ -34,23 +36,12 @@ module Dependabot
         end
 
         def updated_requirements
-          return dependency.requirements unless latest_resolvable_version
-
-          version_regex = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
-          updated_requirement =
-            dependency.requirements.first[:requirement].
-            sub(version_regex) do |old_version|
-              precision = old_version.split(".").count
-              latest_resolvable_version.to_s.
-                split(".").
-                first(precision).
-                join(".")
-            end
-
-          [
-            dependency.requirements.first.
-              merge(requirement: updated_requirement)
-          ]
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s,
+            existing_version: dependency.version&.to_s
+          ).updated_requirements
         end
 
         private
