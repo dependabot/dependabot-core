@@ -1,3 +1,8 @@
+## v0.36.5, 7 December 2017
+
+- JS: Better npm update_checker errors
+- JS: prune git dependencies out during file parsing
+
 ## v0.36.4, 7 December 2017
 
 - PHP: Stop setting prefer-stable explicitly
