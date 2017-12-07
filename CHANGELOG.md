@@ -1,3 +1,7 @@
+## v0.36.7, 7 December 2017
+
+- PHP: Add back platform override now it's properly specced
+
 ## v0.36.6, 7 December 2017
 
 - PHP: Update composer.json files in Ruby, to avoid changing their formatting
