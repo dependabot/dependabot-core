@@ -221,7 +221,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      it { is_expected.to be_nil }
+      it { is_expected.to be >= Gem::Version.new("5.4.36") }
+
+      # 5.5.0 series requires PHP 7
+      it { is_expected.to be < Gem::Version.new("5.5.0") }
     end
   end
 
