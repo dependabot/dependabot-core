@@ -217,7 +217,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
-      context "without a package-lock.json" do
+      context "with only a package.json" do
         let(:files) { [package_json] }
 
         its(:length) { is_expected.to eq(2) }
@@ -239,6 +239,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                 }
               ]
             )
+          end
+        end
+
+        context "with a git dependency" do
+          let(:package_json_body) do
+            fixture("javascript", "package_files", "git_dependency.json")
+          end
+          its(:length) { is_expected.to eq(3) }
+
+          it "excludes the git dependency" do
+            expect { dependencies.map(&:name).to_not include?("is-number") }
           end
         end
       end

@@ -37,10 +37,12 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/CyclomaticComplexity
         def build_dependency(file:, type:, name:, requirement:)
           lockfile_details = lockfile_details(name)
           return if lockfile? && !lockfile_details
           return if lockfile? && !lockfile_details["resolved"]
+          return if requirement.include?("/")
 
           Dependency.new(
             name: name,
@@ -54,6 +56,7 @@ module Dependabot
             }]
           )
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def check_required_files
           raise "No package.json!" unless get_original_file("package.json")
