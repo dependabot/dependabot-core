@@ -171,33 +171,8 @@ module Dependabot
             end
         end
 
-        def replace_package_json_version_requirement(dependency:, file:,
-                                                     content:)
-          return content unless requirement_changed?(file, dependency)
-
-          dep.requirements.
-            find { |r| r[:file] == file.name }.
-            fetch(:requirement)
-        end
-
         def sanitized_package_json_content(content)
-          int = 0
-          content.gsub(/\{\{.*\}\}/) do
-            int += 1
-            "something-#{int}"
-          end
-        end
-
-        def replacement_map(file_name)
-          int = 0
-          replacements = {}
-          dependency_files.
-            find { |f| f.name == file_name }.content.
-            gsub(/\{\{.*\}\}/) do |match|
-              int += 1
-              replacements["something-#{int}"] = match
-            end
-          replacements
+          content.gsub(/\{\{.*\}\}/, "something")
         end
       end
     end
