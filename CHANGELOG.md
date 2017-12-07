@@ -1,3 +1,7 @@
+## v0.36.9, 7 December 2017
+
+- PHP: Handle repo not reachable errors
+
 ## v0.36.8, 7 December 2017
 
 - PHP: Pass GitHub access token to PHP helpers
