@@ -1,3 +1,7 @@
+## v0.36.8, 7 December 2017
+
+- PHP: Pass GitHub access token to PHP helpers
+
 ## v0.36.7, 7 December 2017
 
 - PHP: Add back platform override now it's properly specced
