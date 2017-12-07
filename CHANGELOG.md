@@ -1,3 +1,8 @@
+## v0.36.4, 7 December 2017
+
+- PHP: Stop setting prefer-stable explicitly
+- PHP: Temporarily disable updates where a PHP version is specified
+
 ## v0.36.3, 7 December 2017
 
 - PHP: Don't check platform requirements during updates
