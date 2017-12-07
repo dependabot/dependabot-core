@@ -46,7 +46,16 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
       requirements: [
         {
           file: "composer.json",
-          requirement: "1.22.*",
+          requirement: "1.22.1",
+          groups: [],
+          source: nil
+        }
+      ],
+      previous_version: "1.0.1",
+      previous_requirements: [
+        {
+          file: "composer.json",
+          requirement: "1.0.1",
           groups: [],
           source: nil
         }
@@ -88,12 +97,62 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           fixture("php", "composer_files", "minor_version")
         end
 
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "monolog/monolog",
+            version: "1.22.1",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.22.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.0.1",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
         it { is_expected.to include "\"monolog/monolog\":\"1.22.*\"" }
       end
 
       context "when a pre-release version is specified" do
         let(:composer_body) do
           fixture("php", "composer_files", "prerelease_version")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "monolog/monolog",
+            version: "1.22.1",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.22.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.1.13beta.2",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.1.13beta.2",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
         end
 
         it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
@@ -105,6 +164,17 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
 
         it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
+      end
+
+      context "with non-standard whitespace" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "non_standard_whitespace")
+        end
+
+        it "keeps the non-standard whitespace" do
+          file = updated_files.find { |f| f.name == "composer.json" }
+          expect(file.content).to include %(\n    "monolog/monolog": "1.22.1",)
+        end
       end
     end
 
@@ -133,6 +203,15 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
             name: "illuminate/support",
             version: "v5.4.36",
             requirements: [
+              {
+                file: "composer.json",
+                requirement: "^5.4.36",
+                groups: ["runtime"],
+                source: nil
+              }
+            ],
+            previous_version: "v5.2.1",
+            previous_requirements: [
               {
                 file: "composer.json",
                 requirement: "^5.2.0",

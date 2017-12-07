@@ -7,8 +7,6 @@ module Dependabot
   module FileUpdaters
     module Php
       class Composer < Base
-        VERSION = /[0-9]+(?:\.[a-zA-Z0-9]+)*/
-
         def self.updated_files_regex
           [
             /^composer\.json$/,
@@ -20,7 +18,7 @@ module Dependabot
           [
             updated_file(
               file: composer_json,
-              content: updated_dependency_files_content["composer.json"]
+              content: updated_composer_json_content
             ),
             updated_file(
               file: lockfile,
@@ -53,7 +51,7 @@ module Dependabot
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("composer.json", composer_json.content)
+              File.write("composer.json", updated_composer_json_content)
               File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
@@ -61,6 +59,30 @@ module Dependabot
                 function: "update",
                 args: [Dir.pwd, dependency.name, dependency.version]
               )
+            end
+        end
+
+        def updated_composer_json_content
+          file = composer_json
+
+          dependencies.
+            select { |dep| requirement_changed?(file, dep) }.
+            reduce(file.content.dup) do |content, dep|
+              updated_requirement =
+                dep.requirements.find { |r| r[:file] == file.name }.
+                fetch(:requirement)
+
+              old_req =
+                dep.previous_requirements.find { |r| r[:file] == file.name }.
+                fetch(:requirement)
+
+              updated_content = content.gsub(
+                /"#{Regexp.escape(dep.name)}":\s*"#{Regexp.escape(old_req)}"/,
+                %("#{dep.name}": "#{updated_requirement}")
+              )
+
+              raise "Expected content to change!" if content == updated_content
+              updated_content
             end
         end
 
