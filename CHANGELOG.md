@@ -1,3 +1,7 @@
+## v0.36.3, 7 December 2017
+
+- PHP: Don't check platform requirements during updates
+
 ## v0.36.2, 6 December 2017
 
 - PHP: Try setting a much higher memory limit for composer
