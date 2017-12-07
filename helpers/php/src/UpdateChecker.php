@@ -83,19 +83,21 @@ class UpdateChecker
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
       ->setPreferStable(true)
+      ->setExecuteOperations(false)
+      ->setDumpAutoloader(false)
+      ->setRunScripts(false)
+      ->setIgnorePlatformRequirements(true)
       ;
 
     $install->run();
 
     $installedPackages = $installationManager->getInstalledPackages();
-    $updatedPackages = $installationManager->getUpdatedPackages();
-    $uninstalledPackages = $installationManager->getUninstalledPackages();
 
     $updatedPackage = current(array_filter($installedPackages, function($package) use($dependencyName) {
       return $package->getName() == $dependencyName;
     }));
 
-    if ($updatedPackage == FALSE || $updatedPackage->getRepository()->getRepoConfig()["type"] == "vcs") {
+    if ($updatedPackage->getRepository()->getRepoConfig()["type"] == "vcs") {
       return NULL;
     } else {
       return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());

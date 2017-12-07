@@ -71,7 +71,7 @@ module Dependabot
               File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
+                command: "php -d memory_limit=-1 #{php_helper_path}",
                 function: "get_latest_resolvable_version",
                 args: [Dir.pwd, dependency.name]
               )
@@ -82,10 +82,6 @@ module Dependabot
           else
             Gem::Version.new(latest_resolvable_version)
           end
-        rescue SharedHelpers::HelperSubprocessFailed
-          # TODO: We shouldn't be suppressing these errors but they're caused
-          # by memory issues that we don't currently have a solution to.
-          nil
         end
 
         def composer_file

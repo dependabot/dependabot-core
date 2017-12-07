@@ -167,7 +167,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      it { is_expected.to be >= Gem::Version.new("2.2.1") }
+      it { is_expected.to be >= Gem::Version.new("3.0.2") }
     end
 
     context "when an autoload is specified" do
@@ -194,7 +194,34 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      it { is_expected.to be >= Gem::Version.new("5.2.7") }
+      it { is_expected.to be >= Gem::Version.new("5.2.30") }
+    end
+
+    context "when an old version of PHP is specified" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "old_php_specified")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "old_php_specified")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "illuminate/support",
+          version: "v5.2.7",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      it { is_expected.to be >= Gem::Version.new("5.4.36") }
     end
   end
 

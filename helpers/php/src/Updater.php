@@ -60,9 +60,14 @@ class Updater
 
     // For all potential options, see UpdateCommand in composer
     $install
+      ->setWriteLock(true)
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
-      ->setWriteLock(true)
+      ->setPreferStable(true)
+      ->setExecuteOperations(false)
+      ->setDumpAutoloader(false)
+      ->setRunScripts(false)
+      ->setIgnorePlatformRequirements(true)
       ;
 
     $install->run();
