@@ -5,5 +5,7 @@
 Gemfile.lock
 /helpers/yarn/node_modules
 /helpers/npm/node_modules
+/helpers/php/vendor
+/helpers/php/.php_cs.cache
 vendor
 *.pyc

@@ -25,6 +25,7 @@ test:
     - bundle exec rubocop
     - cd helpers/yarn && node_modules/.bin/eslint lib test bin
     - cd helpers/npm && node_modules/.bin/eslint lib test bin
+    - cd helpers/php && vendor/bin/php-cs-fixer fix --dry-run
   override:
     - bundle exec rspec spec
     - cd helpers/yarn && node_modules/.bin/jest
