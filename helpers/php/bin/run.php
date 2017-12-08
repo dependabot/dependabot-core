@@ -22,7 +22,7 @@ try {
             fwrite(STDOUT, json_encode(['result' => $updatedFiles]));
             break;
         case 'get_latest_resolvable_version':
-            $latestVersion = UpdateChecker::get_latest_resolvable_version($request['args']);
+            $latestVersion = UpdateChecker::getLatestResolvableVersion($request['args']);
             fwrite(STDOUT, json_encode(['result' => $latestVersion]));
             break;
         default:

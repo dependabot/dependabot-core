@@ -6,7 +6,7 @@ namespace Dependabot\PHP;
 
 class UpdateChecker
 {
-    public static function get_latest_resolvable_version($args)
+    public static function getLatestResolvableVersion($args)
     {
         [$workingDirectory, $dependencyName, $githubToken] = $args;
 
