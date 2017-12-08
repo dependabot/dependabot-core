@@ -1,3 +1,7 @@
+## v0.36.18, 8 December 2017
+
+- PHP: Actually use auth credentials
+
 ## v0.36.17, 8 December 2017
 
 - PHP: Fix for SSH URLs
