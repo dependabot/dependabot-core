@@ -1,32 +1,33 @@
 <?php
 
+declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
-use \Composer\Installer\InstallationManager;
-use \Composer\Repository\RepositoryInterface;
-use \Composer\DependencyResolver\Operation\InstallOperation;
-use \Composer\DependencyResolver\Operation\UpdateOperation;
-use \Composer\DependencyResolver\Operation\UninstallOperation;
+use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\Operation\UninstallOperation;
+use Composer\DependencyResolver\Operation\UpdateOperation;
+use Composer\Installer\InstallationManager;
+use Composer\Repository\RepositoryInterface;
 
 class DependabotInstallationManager extends InstallationManager
 {
-    private $installed = array();
-    private $updated = array();
-    private $uninstalled = array();
+    private $installed = [];
+    private $updated = [];
+    private $uninstalled = [];
 
-    public function install(RepositoryInterface $repo, InstallOperation $operation)
+    public function install(RepositoryInterface $repo, InstallOperation $operation): void
     {
         parent::install($repo, $operation);
         $this->installed[] = $operation->getPackage();
     }
 
-    public function update(RepositoryInterface $repo, UpdateOperation $operation)
+    public function update(RepositoryInterface $repo, UpdateOperation $operation): void
     {
         parent::update($repo, $operation);
-        $this->updated[] = array($operation->getInitialPackage(), $operation->getTargetPackage());
+        $this->updated[] = [$operation->getInitialPackage(), $operation->getTargetPackage()];
     }
 
-    public function uninstall(RepositoryInterface $repo, UninstallOperation $operation)
+    public function uninstall(RepositoryInterface $repo, UninstallOperation $operation): void
     {
         parent::uninstall($repo, $operation);
         $this->uninstalled[] = $operation->getPackage();
@@ -50,23 +51,23 @@ class DependabotInstallationManager extends InstallationManager
 
 class UpdateChecker
 {
-  public static function get_latest_resolvable_version($args)
-  {
-    list($workingDirectory, $dependencyName, $githubToken) = $args;
+    public static function get_latest_resolvable_version($args)
+    {
+        [$workingDirectory, $dependencyName, $githubToken] = $args;
 
-    date_default_timezone_set("Europe/London");
-    $io = new \Composer\IO\NullIO();
-    $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
+        date_default_timezone_set('Europe/London');
+        $io = new \Composer\IO\NullIO();
+        $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
 
-    $config = $composer->getConfig();
+        $config = $composer->getConfig();
 
-    if ($githubToken) {
-      $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
-      $io->loadConfiguration($config);
-    }
+        if ($githubToken) {
+            $config->merge(['config' => ['github-oauth' => ['github.com' => $githubToken]]]);
+            $io->loadConfiguration($config);
+        }
 
-    $installationManager = new DependabotInstallationManager();
-    $install = new \Composer\Installer(
+        $installationManager = new DependabotInstallationManager();
+        $install = new \Composer\Installer(
       $io,
       $config,
       $composer->getPackage(),
@@ -78,29 +79,28 @@ class UpdateChecker
       $composer->getAutoloadGenerator()
     );
 
-    // For all potential options, see UpdateCommand in composer
-    $install
+        // For all potential options, see UpdateCommand in composer
+        $install
       ->setDryRun(true)
       ->setUpdate(true)
       ->setUpdateWhitelist([$dependencyName])
       ->setExecuteOperations(false)
       ->setDumpAutoloader(false)
       ->setRunScripts(false)
-      ->setIgnorePlatformRequirements(true)
-      ;
+      ->setIgnorePlatformRequirements(true);
 
-    $install->run();
+        $install->run();
 
-    $installedPackages = $installationManager->getInstalledPackages();
+        $installedPackages = $installationManager->getInstalledPackages();
 
-    $updatedPackage = current(array_filter($installedPackages, function($package) use($dependencyName) {
-      return $package->getName() == $dependencyName;
-    }));
+        $updatedPackage = current(array_filter($installedPackages, function ($package) use ($dependencyName) {
+            return $package->getName() == $dependencyName;
+        }));
 
-    if ($updatedPackage->getRepository()->getRepoConfig()["type"] == "vcs") {
-      return NULL;
-    } else {
-      return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
+        if ($updatedPackage->getRepository()->getRepoConfig()['type'] == 'vcs') {
+            return null;
+        }
+
+        return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
     }
-  }
 }
