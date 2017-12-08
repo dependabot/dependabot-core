@@ -1,3 +1,8 @@
+## v0.36.15, 8 December 2017
+
+- Ruby: More conservative full-unlocking. Reduces number of dependencies
+  unlocked and/or number of iterations to discover unlocking is impossible.
+
 ## v0.36.14, 8 December 2017
 
 - Prepare composer.json files in Ruby to avoid re-writing JSON
