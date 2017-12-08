@@ -1,3 +1,7 @@
+## v0.36.11, 8 December 2017
+
+- Allow author details to be passed to PullRequestCreator and PullRequestUpdater
+
 ## v0.36.10, 8 December 2017
 
 - PHP: Handle 404s from packagist
