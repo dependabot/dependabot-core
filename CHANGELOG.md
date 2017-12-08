@@ -1,3 +1,7 @@
+## v0.36.12, 8 December 2017
+
+- Don't submit empty author details to GitHub
+
 ## v0.36.11, 8 December 2017
 
 - Allow author details to be passed to PullRequestCreator and PullRequestUpdater
