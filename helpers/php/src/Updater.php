@@ -19,9 +19,9 @@ class Updater
         // in the root of the project
         $originalDir = getcwd();
         chdir($workingDirectory);
+
         $io = new NullIO();
         $composer = Factory::create($io);
-
         $config = $composer->getConfig();
 
         if ($githubToken) {

@@ -17,7 +17,6 @@ class UpdateChecker
 
         $io = new NullIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
-
         $config = $composer->getConfig();
 
         if ($githubToken) {
