@@ -1,3 +1,7 @@
+## v0.36.19, 8 December 2017
+
+- PHP: Only use github token if provided one
+
 ## v0.36.18, 8 December 2017
 
 - PHP: Actually use auth credentials
