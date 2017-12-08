@@ -60,7 +60,7 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", lockfile.content)
+              File.write("composer.lock", prepared_lockfile_content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "php -d memory_limit=-1 #{php_helper_path}",
@@ -83,6 +83,10 @@ module Dependabot
             /"#{Regexp.escape(dependency.name)}":\s*".*"/,
             %("#{dependency.name}": "*")
           ).gsub("git@github.com:", "https://github.com/")
+        end
+
+        def prepared_lockfile_content
+          lockfile.content.gsub("git@github.com:", "https://github.com/")
         end
 
         def composer_file
