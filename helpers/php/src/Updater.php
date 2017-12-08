@@ -10,7 +10,7 @@ use Composer\IO\NullIO;
 
 class Updater
 {
-    public static function update($args)
+    public static function update(array $args): array
     {
         [$workingDirectory, $dependencyName, $dependencyVersion, $githubToken] = $args;
 

@@ -7,10 +7,11 @@ namespace Dependabot\PHP;
 use Composer\Factory;
 use Composer\Installer;
 use Composer\IO\NullIO;
+use Composer\Package\PackageInterface;
 
 class UpdateChecker
 {
-    public static function getLatestResolvableVersion($args)
+    public static function getLatestResolvableVersion(array $args): ?string
     {
         [$workingDirectory, $dependencyName, $githubToken] = $args;
 
@@ -51,7 +52,7 @@ class UpdateChecker
 
         $installedPackages = $installationManager->getInstalledPackages();
 
-        $updatedPackage = current(array_filter($installedPackages, function ($package) use ($dependencyName) {
+        $updatedPackage = current(array_filter($installedPackages, function (PackageInterface $package) use ($dependencyName) {
             return $package->getName() == $dependencyName;
         }));
 

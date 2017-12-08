@@ -8,6 +8,7 @@ use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\Installer\InstallationManager;
+use Composer\Package\PackageInterface;
 use Composer\Repository\RepositoryInterface;
 
 class DependabotInstallationManager extends InstallationManager
@@ -34,17 +35,26 @@ class DependabotInstallationManager extends InstallationManager
         $this->uninstalled[] = $operation->getPackage();
     }
 
-    public function getInstalledPackages()
+    /**
+     * @return PackageInterface[]
+     */
+    public function getInstalledPackages(): array
     {
         return $this->installed;
     }
 
-    public function getUpdatedPackages()
+    /**
+     * @return PackageInterface[]
+     */
+    public function getUpdatedPackages(): array
     {
         return $this->updated;
     }
 
-    public function getUninstalledPackages()
+    /**
+     * @return PackageInterface[]
+     */
+    public function getUninstalledPackages(): array
     {
         return $this->uninstalled;
     }
