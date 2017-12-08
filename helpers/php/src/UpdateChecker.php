@@ -54,12 +54,6 @@ class UpdateChecker
   {
     list($workingDirectory, $dependencyName, $githubToken) = $args;
 
-    // Relax the version on the dependency we're bumping
-    // TODO: Explain why we do this.
-    $composerJson = json_decode(file_get_contents($workingDirectory . "/composer.json"), true);
-    $composerJson["require"][$dependencyName] = "*";
-    file_put_contents($workingDirectory . "/composer.json", json_encode($composerJson));
-
     date_default_timezone_set("Europe/London");
     $io = new \Composer\IO\NullIO();
     $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');

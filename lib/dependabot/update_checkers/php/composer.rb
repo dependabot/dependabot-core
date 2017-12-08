@@ -59,7 +59,7 @@ module Dependabot
         def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
-              File.write("composer.json", composer_file.content)
+              File.write("composer.json", prepared_composer_json_content)
               File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
@@ -78,8 +78,11 @@ module Dependabot
           handle_composer_errors(error)
         end
 
-        def parsed_composer_json
-          @parsed_composer_json ||= JSON.parse(composer_file.content)
+        def prepared_composer_json_content
+          composer_file.content.gsub(
+            /"#{Regexp.escape(dependency.name)}":\s*".*"/,
+            %("#{dependency.name}": "*")
+          )
         end
 
         def composer_file
