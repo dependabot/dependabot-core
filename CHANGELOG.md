@@ -1,3 +1,7 @@
+## v0.36.10, 8 December 2017
+
+- PHP: Handle 404s from packagist
+
 ## v0.36.9, 7 December 2017
 
 - PHP: Handle repo not reachable errors
