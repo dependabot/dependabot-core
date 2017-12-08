@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Dependabot\PHP;
 
+use Composer\Factory;
+use Composer\Installer;
+use Composer\IO\NullIO;
+
 class Updater
 {
     public static function update($args)
@@ -15,8 +19,8 @@ class Updater
         // in the root of the project
         $originalDir = getcwd();
         chdir($workingDirectory);
-        $io = new \Composer\IO\NullIO();
-        $composer = \Composer\Factory::create($io);
+        $io = new NullIO();
+        $composer = Factory::create($io);
 
         $config = $composer->getConfig();
 
@@ -25,7 +29,7 @@ class Updater
             $io->loadConfiguration($config);
         }
 
-        $install = new \Composer\Installer(
+        $install = new Installer(
             $io,
             $config,
             $composer->getPackage(),

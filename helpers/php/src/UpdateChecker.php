@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Dependabot\PHP;
 
+use Composer\Factory;
+use Composer\Installer;
+use Composer\IO\NullIO;
+
 class UpdateChecker
 {
     public static function getLatestResolvableVersion($args)
     {
         [$workingDirectory, $dependencyName, $githubToken] = $args;
 
-        $io = new \Composer\IO\NullIO();
-        $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
+        $io = new NullIO();
+        $composer = Factory::create($io, $workingDirectory . '/composer.json');
 
         $config = $composer->getConfig();
 
@@ -21,7 +25,7 @@ class UpdateChecker
         }
 
         $installationManager = new DependabotInstallationManager();
-        $install = new \Composer\Installer(
+        $install = new Installer(
             $io,
             $config,
             $composer->getPackage(),
