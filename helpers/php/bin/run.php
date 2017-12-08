@@ -15,6 +15,8 @@ $request = json_decode(file_get_contents('php://stdin'), true);
 // it checking huge numbers of dependency combinations and causing OOM issues.
 ini_set('memory_limit', '1536M');
 
+date_default_timezone_set('Europe/London');
+
 try {
     switch ($request['function']) {
         case 'update':

@@ -15,7 +15,6 @@ class Updater
         // in the root of the project
         $originalDir = getcwd();
         chdir($workingDirectory);
-        date_default_timezone_set('Europe/London');
         $io = new \Composer\IO\NullIO();
         $composer = \Composer\Factory::create($io);
 

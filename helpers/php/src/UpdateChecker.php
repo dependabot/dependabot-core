@@ -10,7 +10,6 @@ class UpdateChecker
     {
         [$workingDirectory, $dependencyName, $githubToken] = $args;
 
-        date_default_timezone_set('Europe/London');
         $io = new \Composer\IO\NullIO();
         $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
 
