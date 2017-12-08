@@ -6,6 +6,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
+      SEMANTIC_PREFIXES = %w(chore docs feat fix refactor style test).freeze
       attr_reader :repo_name, :dependencies, :files, :github_client,
                   :pr_message_footer
 
@@ -19,7 +20,9 @@ module Dependabot
       end
 
       def commit_message
-        "chore(dependencies): " + pr_name + "\n\n" + pr_message_without_footer
+        message = ""
+        message += "chore(dependencies): " if using_semantic_commit_messages?
+        message + pr_name + "\n\n" + pr_message_without_footer
       end
 
       def pr_name
@@ -34,6 +37,7 @@ module Dependabot
             names = dependencies.map(&:name)
             "Bump #{names[0..-2].join(', ')} and #{names[-1]}"
           end
+
         return base if files.first.directory == "/"
 
         base + " in #{files.first.directory}"
@@ -45,6 +49,24 @@ module Dependabot
       end
 
       private
+
+      def using_semantic_commit_messages?
+        return false if recent_commit_messages.none?
+
+        semantic_messages = recent_commit_messages.select do |message|
+          SEMANTIC_PREFIXES.any? { |pre| message.downcase.start_with?(pre) }
+        end
+
+        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
+      def recent_commit_messages
+        @recent_messages ||=
+          github_client.commits(repo_name).
+          map(&:commit).
+          map(&:message).
+          compact
+      end
 
       def pr_message_without_footer
         return requirement_pr_message if library?

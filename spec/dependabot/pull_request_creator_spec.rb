@@ -57,6 +57,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       to_return(status: 200,
                 body: fixture("github", "bump_repo.json"),
                 headers: json_header)
+    stub_request(:get, watched_repo_url + "/commits").
+      to_return(status: 200, body: "[]", headers: json_header)
     stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
       to_return(status: 404,
                 body: fixture("github", "not_found.json"),
@@ -200,7 +202,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     it "has the right commit message" do
       creator.create
 
-      message = "chore(dependencies): Bump business from 1.4.0 to 1.5.0\n\n"\
+      message = "Bump business from 1.4.0 to 1.5.0\n\n"\
                 "Bumps [busines"
 
       expect(WebMock).
@@ -701,7 +703,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       it "has the right commit message" do
         creator.create
 
-        message = "chore(dependencies): Update business requirement to >= 1"
+        message = "Update business requirement to >= 1"
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits").
@@ -916,6 +918,27 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "with a repo using semantic commit messages" do
+      before do
+        stub_request(:get, watched_repo_url + "/commits").
+          to_return(status: 200,
+                    body: fixture("github", "commits_semantic.json"),
+                    headers: json_header)
+      end
+
+      it "includes a semantic commit message prefix" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          with(body: {
+                 parents: ["basecommitsha"],
+                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                 message: /\Achore\(dependencies\): Bump/
+               })
+      end
+    end
+
     context "with a directory specified" do
       let(:gemfile) do
         Dependabot::DependencyFile.new(
@@ -960,8 +983,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       it "includes the directory in the commit message" do
         creator.create
 
-        message = "chore(dependencies): Bump business from 1.4.0 to 1.5.0 "\
-                  "in /directory"
+        message = "Bump business from 1.4.0 to 1.5.0 in /directory"
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits").

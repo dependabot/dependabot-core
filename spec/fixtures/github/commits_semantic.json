@@ -1,0 +1,2282 @@
+[
+  {
+    "sha": "10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-08T08:52:57Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-08T08:52:57Z"
+      },
+      "message": "chore(dependencies): Bump sinon from 4.1.2 to 4.1.3 (#103)\n\nBumps [sinon](https://github.com/sinonjs/sinon) from 4.1.2 to 4.1.3.\r\n- [Changelog](https://github.com/sinonjs/sinon/blob/master/History.md)\r\n- [Commits](https://github.com/sinonjs/sinon/commits/v4.1.3)",
+      "tree": {
+        "sha": "6eb23c51f73515e851071be31319ea1a9e109bba",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/6eb23c51f73515e851071be31319ea1a9e109bba"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/10c8e4fc039ec6fa512264149067fbb8b0752452",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/10c8e4fc039ec6fa512264149067fbb8b0752452/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b855453dd17c485121387eb24139bec9f25f5f37",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b855453dd17c485121387eb24139bec9f25f5f37",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b855453dd17c485121387eb24139bec9f25f5f37"
+      }
+    ]
+  },
+  {
+    "sha": "b855453dd17c485121387eb24139bec9f25f5f37",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-08T08:09:48Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-08T08:09:48Z"
+      },
+      "message": "chore(dependencies): Bump @types/node from 8.0.56 to 8.0.57 (#102)\n\nBumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) from 8.0.56 to 8.0.57.\r\n- [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits)",
+      "tree": {
+        "sha": "ecf76d181b5274e26aac5b9084f2e1a29e5096f0",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/ecf76d181b5274e26aac5b9084f2e1a29e5096f0"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/b855453dd17c485121387eb24139bec9f25f5f37",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b855453dd17c485121387eb24139bec9f25f5f37",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/b855453dd17c485121387eb24139bec9f25f5f37",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b855453dd17c485121387eb24139bec9f25f5f37/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "8f6929e10819c859105db18b682c3025b72a66ae",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/8f6929e10819c859105db18b682c3025b72a66ae",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/8f6929e10819c859105db18b682c3025b72a66ae"
+      }
+    ]
+  },
+  {
+    "sha": "8f6929e10819c859105db18b682c3025b72a66ae",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-07T10:52:54Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-07T10:52:54Z"
+      },
+      "message": "chore(dependencies): Bump webpack-dev-server from 2.9.5 to 2.9.7 (#100)",
+      "tree": {
+        "sha": "1e9472ba9e0967b24eef334cd28a87ffe22a3a29",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/1e9472ba9e0967b24eef334cd28a87ffe22a3a29"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/8f6929e10819c859105db18b682c3025b72a66ae",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/8f6929e10819c859105db18b682c3025b72a66ae",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/8f6929e10819c859105db18b682c3025b72a66ae",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/8f6929e10819c859105db18b682c3025b72a66ae/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d228811861937310b060465239e8d4693c8c8d12",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d228811861937310b060465239e8d4693c8c8d12",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/d228811861937310b060465239e8d4693c8c8d12"
+      }
+    ]
+  },
+  {
+    "sha": "d228811861937310b060465239e8d4693c8c8d12",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-07T10:47:03Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-07T10:47:03Z"
+      },
+      "message": "chore(dependencies): Bump @types/node from 8.0.55 to 8.0.56 (#101)",
+      "tree": {
+        "sha": "d7d64c24cbd552c1df829d19f0052924462b8315",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/d7d64c24cbd552c1df829d19f0052924462b8315"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/d228811861937310b060465239e8d4693c8c8d12",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d228811861937310b060465239e8d4693c8c8d12",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/d228811861937310b060465239e8d4693c8c8d12",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d228811861937310b060465239e8d4693c8c8d12/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "ba3218808305357473f5f3ea75bed5a70f407fb9",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ba3218808305357473f5f3ea75bed5a70f407fb9",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/ba3218808305357473f5f3ea75bed5a70f407fb9"
+      }
+    ]
+  },
+  {
+    "sha": "ba3218808305357473f5f3ea75bed5a70f407fb9",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-06T14:21:50Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-06T14:21:50Z"
+      },
+      "message": "chore: Update prettier from version 1.8.2 to 1.9.1 (#99)",
+      "tree": {
+        "sha": "529bcfff3ca4c793efe3c578687f12a9e0e58d66",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/529bcfff3ca4c793efe3c578687f12a9e0e58d66"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/ba3218808305357473f5f3ea75bed5a70f407fb9",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ba3218808305357473f5f3ea75bed5a70f407fb9",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/ba3218808305357473f5f3ea75bed5a70f407fb9",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ba3218808305357473f5f3ea75bed5a70f407fb9/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d39e00a8824c8569fdae2983c109be7dae239bc7",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d39e00a8824c8569fdae2983c109be7dae239bc7",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/d39e00a8824c8569fdae2983c109be7dae239bc7"
+      }
+    ]
+  },
+  {
+    "sha": "d39e00a8824c8569fdae2983c109be7dae239bc7",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-06T14:11:44Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-06T14:11:44Z"
+      },
+      "message": "chore(dependencies): Bump @types/node from 8.0.54 to 8.0.55 (#98)",
+      "tree": {
+        "sha": "0fcc912c9233763454ac93fa9f718da51775aa66",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/0fcc912c9233763454ac93fa9f718da51775aa66"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/d39e00a8824c8569fdae2983c109be7dae239bc7",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d39e00a8824c8569fdae2983c109be7dae239bc7",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/d39e00a8824c8569fdae2983c109be7dae239bc7",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d39e00a8824c8569fdae2983c109be7dae239bc7/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4"
+      }
+    ]
+  },
+  {
+    "sha": "1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-06T09:17:18Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-06T09:17:18Z"
+      },
+      "message": "chore(dependencies): Bump fs-extra from 4.0.2 to 4.0.3 (#97)\n\nBumps [fs-extra](https://github.com/jprichardson/node-fs-extra) from 4.0.2 to 4.0.3.\r\n- [Changelog](https://github.com/jprichardson/node-fs-extra/blob/master/CHANGELOG.md)\r\n- [Commits](https://github.com/jprichardson/node-fs-extra/compare/4.0.2...4.0.3)",
+      "tree": {
+        "sha": "b72c6557fafe25e426ef8d99f3e4faf19272c434",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/b72c6557fafe25e426ef8d99f3e4faf19272c434"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/1cbdc2389b705fa88a79e6fbb752cde646a6c2a4/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "c85fb5fed3eda46c746448cbe73169386d22e21d",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/c85fb5fed3eda46c746448cbe73169386d22e21d",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/c85fb5fed3eda46c746448cbe73169386d22e21d"
+      }
+    ]
+  },
+  {
+    "sha": "c85fb5fed3eda46c746448cbe73169386d22e21d",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-05T10:01:08Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-05T10:01:08Z"
+      },
+      "message": "chore(dependencies): Bump webpack from 3.9.1 to 3.10.0 (#96)",
+      "tree": {
+        "sha": "1be3da1218348fc111fb563d5c08db8159c5959b",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/1be3da1218348fc111fb563d5c08db8159c5959b"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/c85fb5fed3eda46c746448cbe73169386d22e21d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/c85fb5fed3eda46c746448cbe73169386d22e21d",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/c85fb5fed3eda46c746448cbe73169386d22e21d",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/c85fb5fed3eda46c746448cbe73169386d22e21d/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "43e609f3153f28311ff5325903a696d4f753b695",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/43e609f3153f28311ff5325903a696d4f753b695",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/43e609f3153f28311ff5325903a696d4f753b695"
+      }
+    ]
+  },
+  {
+    "sha": "43e609f3153f28311ff5325903a696d4f753b695",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-04T17:08:17Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-04T17:08:17Z"
+      },
+      "message": "chore(api-client): Version bump",
+      "tree": {
+        "sha": "90e2b844c96001953178af86858b95f7737e2910",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/90e2b844c96001953178af86858b95f7737e2910"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/43e609f3153f28311ff5325903a696d4f753b695",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/43e609f3153f28311ff5325903a696d4f753b695",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/43e609f3153f28311ff5325903a696d4f753b695",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/43e609f3153f28311ff5325903a696d4f753b695/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/23a445c2f3902b70dcb3dff136b09ed24c37fd05"
+      }
+    ]
+  },
+  {
+    "sha": "23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-12-04T17:04:45Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-04T17:04:45Z"
+      },
+      "message": "feat(api-client): Delete payment data (#95)",
+      "tree": {
+        "sha": "1d728ad34adc4593cb04416cc067ba1000c81434",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/1d728ad34adc4593cb04416cc067ba1000c81434"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaJYAtCRBK7hj4Ov3rIwAAdHIIAEW2YpqS9ofiElZ6xQUoEb2h\nZdpQ3WIJzdrF9vs5FHINgt8N1eDlxDaIGef+REvWZoqv5lbEPr2FMAxuUFaLxltq\n+MznwF+61r5QaUot+NSI1QhF4vlWOYF83JBlISzbXKZ0kxOxVHf51uBq+dhTFQRe\nPWQz7/SPHQaXe81oxrU617SAxwcIEeuuwXa1SfnPj8/tZhPkl61n0BIPKsVHfmoN\nZr4XoSlvRh7809qRs+Du0xcZmtd5VwfA3WvgKi3F06NBctcrX7nP3jqbRCF7u+Sz\nZCsyYPI9SvYGGvTqHaJSNDRD8G+ykpv7mczT1ruAQSW6e1DCp2OseKbfJ9B3oQY=\n=Xh4l\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 1d728ad34adc4593cb04416cc067ba1000c81434\nparent d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512407085 +0100\ncommitter GitHub <noreply@github.com> 1512407085 +0100\n\nfeat(api-client): Delete payment data (#95)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4"
+      }
+    ]
+  },
+  {
+    "sha": "d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-04T10:09:21Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-04T10:09:21Z"
+      },
+      "message": "chore(dependencies): Bump nock from 9.1.3 to 9.1.4 (#91)",
+      "tree": {
+        "sha": "f679c9152d18098c7121d8d3fe5b957e65fa942e",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/f679c9152d18098c7121d8d3fe5b957e65fa942e"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/95d0e0da9d82951264ad2b1dcb463f3942fc918e"
+      }
+    ]
+  },
+  {
+    "sha": "95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-04T09:56:52Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-04T09:56:52Z"
+      },
+      "message": "chore(dependencies): Bump pure-uuid from 1.4.10 to 1.4.11 (#92)",
+      "tree": {
+        "sha": "41304133b2d30d03e53d0b5b24c07013e2131b0c",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/41304133b2d30d03e53d0b5b24c07013e2131b0c"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/95d0e0da9d82951264ad2b1dcb463f3942fc918e",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/95d0e0da9d82951264ad2b1dcb463f3942fc918e/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b7875c7184e078c40d64446d298863592e292763",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b7875c7184e078c40d64446d298863592e292763",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b7875c7184e078c40d64446d298863592e292763"
+      }
+    ]
+  },
+  {
+    "sha": "b7875c7184e078c40d64446d298863592e292763",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-04T09:39:39Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-04T09:39:39Z"
+      },
+      "message": "chore(dependencies): Bump @types/node from 8.0.53 to 8.0.54 (#93)\n\nBumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) from 8.0.53 to 8.0.54.\r\n- [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits)",
+      "tree": {
+        "sha": "638bcedb0c268b1be307ed909df030b6aa65fb54",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/638bcedb0c268b1be307ed909df030b6aa65fb54"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/b7875c7184e078c40d64446d298863592e292763",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b7875c7184e078c40d64446d298863592e292763",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/b7875c7184e078c40d64446d298863592e292763",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b7875c7184e078c40d64446d298863592e292763/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "be87964e57e6193eba0edf4cb6669c329b1e92aa",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/be87964e57e6193eba0edf4cb6669c329b1e92aa",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/be87964e57e6193eba0edf4cb6669c329b1e92aa"
+      }
+    ]
+  },
+  {
+    "sha": "be87964e57e6193eba0edf4cb6669c329b1e92aa",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-04T09:16:07Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-04T09:16:07Z"
+      },
+      "message": "chore(dependencies): Bump babel-eslint from 8.0.2 to 8.0.3 (#94)\n\nBumps [babel-eslint](https://github.com/babel/babel-eslint) from 8.0.2 to 8.0.3.\r\n- [Commits](https://github.com/babel/babel-eslint/compare/v8.0.2...v8.0.3)",
+      "tree": {
+        "sha": "b9720c7590342ea7efdbab551bdf9bf335f333ec",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/b9720c7590342ea7efdbab551bdf9bf335f333ec"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/be87964e57e6193eba0edf4cb6669c329b1e92aa",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/be87964e57e6193eba0edf4cb6669c329b1e92aa",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/be87964e57e6193eba0edf4cb6669c329b1e92aa",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/be87964e57e6193eba0edf4cb6669c329b1e92aa/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/2a8490b3c4864a7ca961d1cdeff3beab47b1b707"
+      }
+    ]
+  },
+  {
+    "sha": "2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T14:40:04Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T14:40:04Z"
+      },
+      "message": "chore(dependencies): Bump protobufjs from 6.8.0 to 6.8.3 (#75)",
+      "tree": {
+        "sha": "92e2de64f667aac967162916d0056c87bdfbc3fb",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/92e2de64f667aac967162916d0056c87bdfbc3fb"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/2a8490b3c4864a7ca961d1cdeff3beab47b1b707",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/2a8490b3c4864a7ca961d1cdeff3beab47b1b707/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3f7dd0f3563f247c60c7a8829679004582cc05d3",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/3f7dd0f3563f247c60c7a8829679004582cc05d3",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/3f7dd0f3563f247c60c7a8829679004582cc05d3"
+      }
+    ]
+  },
+  {
+    "sha": "3f7dd0f3563f247c60c7a8829679004582cc05d3",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T14:25:29Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T14:25:29Z"
+      },
+      "message": "chore(dependencies): Bump lint-staged from 5.0.0 to 6.0.0 (#88)",
+      "tree": {
+        "sha": "657318c1beab9fc2e6af55263a179328308d3ac6",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/657318c1beab9fc2e6af55263a179328308d3ac6"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/3f7dd0f3563f247c60c7a8829679004582cc05d3",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/3f7dd0f3563f247c60c7a8829679004582cc05d3",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/3f7dd0f3563f247c60c7a8829679004582cc05d3",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/3f7dd0f3563f247c60c7a8829679004582cc05d3/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960"
+      }
+    ]
+  },
+  {
+    "sha": "fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T14:16:08Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T14:16:08Z"
+      },
+      "message": "chore(dependencies): Bump styled-components from 2.2.3 to 2.2.4 (#79)",
+      "tree": {
+        "sha": "6046535385a208f3723760c650d1133f72bfd1bc",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/6046535385a208f3723760c650d1133f72bfd1bc"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/fb3bed9a89b8caf54d8cbbbdfa86f5c662622960/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/f1ccb6b0565c74259d13962ab7997a19f0f4a161"
+      }
+    ]
+  },
+  {
+    "sha": "f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T13:31:51Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T13:31:51Z"
+      },
+      "message": "chore(dependencies): Bump react-dom from 16.1.1 to 16.2.0 (#73)",
+      "tree": {
+        "sha": "619dd2e78323572a29b388d484b128f1a75795ce",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/619dd2e78323572a29b388d484b128f1a75795ce"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/f1ccb6b0565c74259d13962ab7997a19f0f4a161",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/f1ccb6b0565c74259d13962ab7997a19f0f4a161/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d0e6098d0b37a71d724216a6965b43eaa463c126",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d0e6098d0b37a71d724216a6965b43eaa463c126",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/d0e6098d0b37a71d724216a6965b43eaa463c126"
+      }
+    ]
+  },
+  {
+    "sha": "d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "commit": {
+      "author": {
+        "name": "AndyLnd",
+        "email": "andy.bialystock@gmail.com",
+        "date": "2017-12-01T12:33:29Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-01T12:33:29Z"
+      },
+      "message": " feat(react-ui-kit): added shakebox (#86)",
+      "tree": {
+        "sha": "0623550f03ef10d0005471703940f273290fb013",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/0623550f03ef10d0005471703940f273290fb013"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/d0e6098d0b37a71d724216a6965b43eaa463c126",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaIUwZCRBK7hj4Ov3rIwAAdHIIAHWKtq76yD8J/847EBxuiVGv\nlgdpVyKe6Qp2CZ4+bPBJShrPVCxGCPJ7rRznwNSTBNJq5sFW77kM4JeitNSbey55\neEsD8py1mBcwiUQX2x+tHr8vSapzd4KpO5tT1lat0hH4MpQmNmL0Jy6e5S5EF61n\nYKOsP3f5/u6kzqwQZ0ZkmLwEhaVAk235sBfDmX7LB1hmjLjoNEl8LjbcAvgMKp8k\nZF75lVFyt4rrMpgAKDKvnk3snWbTU0XOAQ+Kuse0mJ5eZkq0K1a9HT5E4q54MGTq\n0+YJEPAyixKQtg3zzimZyRCjnjiaTUmxN44yBu3brlfBnKDkX4SQiFIdiyJXi2M=\n=oB5s\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 0623550f03ef10d0005471703940f273290fb013\nparent 93592a0a5ab7b7587a456b427ba7f9b29eb066ac\nauthor AndyLnd <andy.bialystock@gmail.com> 1512131609 +0100\ncommitter GitHub <noreply@github.com> 1512131609 +0100\n\n feat(react-ui-kit): added shakebox (#86)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d0e6098d0b37a71d724216a6965b43eaa463c126/comments",
+    "author": {
+      "login": "AndyLnd",
+      "id": 1122618,
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1122618?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/AndyLnd",
+      "html_url": "https://github.com/AndyLnd",
+      "followers_url": "https://api.github.com/users/AndyLnd/followers",
+      "following_url": "https://api.github.com/users/AndyLnd/following{/other_user}",
+      "gists_url": "https://api.github.com/users/AndyLnd/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/AndyLnd/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/AndyLnd/subscriptions",
+      "organizations_url": "https://api.github.com/users/AndyLnd/orgs",
+      "repos_url": "https://api.github.com/users/AndyLnd/repos",
+      "events_url": "https://api.github.com/users/AndyLnd/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/AndyLnd/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/93592a0a5ab7b7587a456b427ba7f9b29eb066ac"
+      }
+    ]
+  },
+  {
+    "sha": "93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T11:24:06Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T11:24:06Z"
+      },
+      "message": "chore(dependencies): Bump react from 16.1.1 to 16.2.0 (#72)",
+      "tree": {
+        "sha": "a01be072b486e3f9a6df2853330057d2000ef998",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/a01be072b486e3f9a6df2853330057d2000ef998"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/93592a0a5ab7b7587a456b427ba7f9b29eb066ac/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "32b34bca98b5e139d3cdc377af251f8e5088b852",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/32b34bca98b5e139d3cdc377af251f8e5088b852",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/32b34bca98b5e139d3cdc377af251f8e5088b852"
+      }
+    ]
+  },
+  {
+    "sha": "32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-01T11:00:17Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-01T11:00:17Z"
+      },
+      "message": "chore: Bump api-client",
+      "tree": {
+        "sha": "250b31bc18466de566375c4e27db23430726a3d9",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/250b31bc18466de566375c4e27db23430726a3d9"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/32b34bca98b5e139d3cdc377af251f8e5088b852",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/32b34bca98b5e139d3cdc377af251f8e5088b852/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6a1bba587856ef631c180f5ea7a0f19486980681",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6a1bba587856ef631c180f5ea7a0f19486980681",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/6a1bba587856ef631c180f5ea7a0f19486980681"
+      }
+    ]
+  },
+  {
+    "sha": "6a1bba587856ef631c180f5ea7a0f19486980681",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T10:32:23Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T10:32:23Z"
+      },
+      "message": "chore(dependencies): Bump webpack-dev-server from 2.9.4 to 2.9.5 (#65)",
+      "tree": {
+        "sha": "cdac759f929391e940d348ee3e83b23fd93da0d7",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/cdac759f929391e940d348ee3e83b23fd93da0d7"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/6a1bba587856ef631c180f5ea7a0f19486980681",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6a1bba587856ef631c180f5ea7a0f19486980681",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/6a1bba587856ef631c180f5ea7a0f19486980681",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6a1bba587856ef631c180f5ea7a0f19486980681/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "753b3116c2b5dcc172c62179b94c1282104e8ab0",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/753b3116c2b5dcc172c62179b94c1282104e8ab0"
+      }
+    ]
+  },
+  {
+    "sha": "753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-12-01T10:15:49Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-01T10:15:49Z"
+      },
+      "message": "chore: Remove getPaymentPlan (#90)",
+      "tree": {
+        "sha": "e4e3c1c47edb2343c2365c19085aab5d217b7610",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/e4e3c1c47edb2343c2365c19085aab5d217b7610"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaISvVCRBK7hj4Ov3rIwAAdHIIAJKG7bjLddWO0X98gSsOXOLy\n1SUHuAVH8Iw00qvIylRyMsl8VdYZ/ZGbhp0yYxc8O5J23BgTFITO+ECSS810qlVW\nfHpsY4BVsso4ayJwljuurkkLp9X0V85rzUq/u+8AucF9ElU+byiHxTyYOsnPB3Nz\ngn/PfSa8BxL2ArSrN5LgJgy+kQn35iu/wumZaGw31XYLxC9Z2DRcSxfwB4AjxGlp\nFuhFnvonHKTIsPg4GM6AFTfadZ6g1gr7mpuee5TEuy5ziffh0hJuZCfj5C+g8a/X\nEFmdPAr8XyjzwEZpSBlBVJRaqEC2YrPZMZrkDzGhJD2PhDocw6KJr8XQDdOaZu8=\n=gzY+\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree e4e3c1c47edb2343c2365c19085aab5d217b7610\nparent 6402631f60c785414943c9bb7f4630d29340635f\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512123349 +0100\ncommitter GitHub <noreply@github.com> 1512123349 +0100\n\nchore: Remove getPaymentPlan (#90)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6402631f60c785414943c9bb7f4630d29340635f",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6402631f60c785414943c9bb7f4630d29340635f",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/6402631f60c785414943c9bb7f4630d29340635f"
+      }
+    ]
+  },
+  {
+    "sha": "6402631f60c785414943c9bb7f4630d29340635f",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T10:08:07Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T10:08:07Z"
+      },
+      "message": "chore(dependencies): Bump karma-jasmine from 1.1.0 to 1.1.1 (#89)",
+      "tree": {
+        "sha": "d3735e26931d6a4f8d8962c3f99b18bc1ef3ca7f",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/d3735e26931d6a4f8d8962c3f99b18bc1ef3ca7f"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/6402631f60c785414943c9bb7f4630d29340635f",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6402631f60c785414943c9bb7f4630d29340635f",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/6402631f60c785414943c9bb7f4630d29340635f",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6402631f60c785414943c9bb7f4630d29340635f/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b6b398dce0e45b2b2087c0f849b29f2521d8b736"
+      }
+    ]
+  },
+  {
+    "sha": "b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-01T10:07:33Z"
+      },
+      "committer": {
+        "name": "Gregor Herdmann",
+        "email": "gregor@wire.com",
+        "date": "2017-12-01T10:07:33Z"
+      },
+      "message": "chore(dependencies): Bump webpack from 3.8.1 to 3.9.1 (#87)",
+      "tree": {
+        "sha": "418ecad019a719775b668fb0926e48b3b8d484da",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/418ecad019a719775b668fb0926e48b3b8d484da"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/b6b398dce0e45b2b2087c0f849b29f2521d8b736",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b6b398dce0e45b2b2087c0f849b29f2521d8b736/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "gregor",
+      "id": 10243309,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10243309?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/gregor",
+      "html_url": "https://github.com/gregor",
+      "followers_url": "https://api.github.com/users/gregor/followers",
+      "following_url": "https://api.github.com/users/gregor/following{/other_user}",
+      "gists_url": "https://api.github.com/users/gregor/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/gregor/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/gregor/subscriptions",
+      "organizations_url": "https://api.github.com/users/gregor/orgs",
+      "repos_url": "https://api.github.com/users/gregor/repos",
+      "events_url": "https://api.github.com/users/gregor/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/gregor/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5"
+      }
+    ]
+  },
+  {
+    "sha": "73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "commit": {
+      "author": {
+        "name": "Benny Neugebauer",
+        "email": "bn@bennyn.de",
+        "date": "2017-11-30T17:38:45Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-11-30T17:38:45Z"
+      },
+      "message": "fix: Persisting non-temporary clients (#85)",
+      "tree": {
+        "sha": "0f09cc0262e7bac8d6c5242d6c2d64bc0017416d",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/0f09cc0262e7bac8d6c5242d6c2d64bc0017416d"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5/comments",
+    "author": {
+      "login": "bennyn",
+      "id": 469989,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/469989?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/bennyn",
+      "html_url": "https://github.com/bennyn",
+      "followers_url": "https://api.github.com/users/bennyn/followers",
+      "following_url": "https://api.github.com/users/bennyn/following{/other_user}",
+      "gists_url": "https://api.github.com/users/bennyn/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/bennyn/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/bennyn/subscriptions",
+      "organizations_url": "https://api.github.com/users/bennyn/orgs",
+      "repos_url": "https://api.github.com/users/bennyn/repos",
+      "events_url": "https://api.github.com/users/bennyn/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/bennyn/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b3833212e8bc837e2cb9daaad766799548fb447d",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b3833212e8bc837e2cb9daaad766799548fb447d",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b3833212e8bc837e2cb9daaad766799548fb447d"
+      }
+    ]
+  },
+  {
+    "sha": "b3833212e8bc837e2cb9daaad766799548fb447d",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-11-30T16:57:56Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-11-30T16:57:56Z"
+      },
+      "message": "chore(dependencies): Bump @wireapp/react-ui-kit from 0.0.14 to 0.0.16 (#82)\n\nBumps [@wireapp/react-ui-kit](https://github.com/wireapp/wire-web-packages) from 0.0.14 to 0.0.16.\r\n- [Commits](https://github.com/wireapp/wire-web-packages/commits)",
+      "tree": {
+        "sha": "2b25437eeb14001a269339ab59eaf9efdae4a2db",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/2b25437eeb14001a269339ab59eaf9efdae4a2db"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/b3833212e8bc837e2cb9daaad766799548fb447d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b3833212e8bc837e2cb9daaad766799548fb447d",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/b3833212e8bc837e2cb9daaad766799548fb447d",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b3833212e8bc837e2cb9daaad766799548fb447d/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/15e12159bc86b7ac050bc94d70fcfeccfe1871aa"
+      }
+    ]
+  },
+  {
+    "sha": "15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-11-30T16:42:55Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-11-30T16:42:55Z"
+      },
+      "message": "chore(api-client): Version 0.2.12",
+      "tree": {
+        "sha": "9abfc831f97aef1626a41acbfc56c42264d4e2b1",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/9abfc831f97aef1626a41acbfc56c42264d4e2b1"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee"
+      }
+    ]
+  },
+  {
+    "sha": "63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-11-30T16:12:19Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-11-30T16:12:19Z"
+      },
+      "message": "feat: Payment plan endpoints (#83)",
+      "tree": {
+        "sha": "d54daa2757609c496498113538df81ec1692e07a",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/d54daa2757609c496498113538df81ec1692e07a"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaIC3jCRBK7hj4Ov3rIwAAdHIIAKUockstZPbo83qrUZY87i4X\nC/ckDPtBoHlR+hN9O3mEo/Vq65unQ+JwStZpT+H8oQYCxnsgMhWGGanXdedBThtI\nE+S8a1+kL+OLyB6CkGDBZoNE3TnhdY/pJ9MfYNX1hHONy/UNnJqhWvEjcsSlhIXM\ngfPBNypf1TJ1o8ogAvoJMg8TjEIv3n1LM2RYYdH0qeMDzJfYqn2CRovplUaxJW84\nBrIASQIPdShpythK3niKrBYDOeCe4aqmPQJ8Kgwjx/O7H50xYAikEtAC27UgGt4t\nnecnVi/asSnH7gnPYl/A+VSRW8jsmid9jc2mV6jF9AI08Ypo2Tfm6VZDr7LPEbY=\n=r5qb\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree d54daa2757609c496498113538df81ec1692e07a\nparent ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512058339 +0100\ncommitter GitHub <noreply@github.com> 1512058339 +0100\n\nfeat: Payment plan endpoints (#83)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93"
+      }
+    ]
+  },
+  {
+    "sha": "ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-11-30T08:44:10Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-11-30T08:44:10Z"
+      },
+      "message": "chore(dependencies): Bump eslint from 4.12.0 to 4.12.1 (#81)\n\nBumps [eslint](https://github.com/eslint/eslint) from 4.12.0 to 4.12.1.\r\n- [Release notes](https://github.com/eslint/eslint/releases/tag/v4.12.1)\r\n- [Changelog](https://github.com/eslint/eslint/blob/master/CHANGELOG.md)\r\n- [Commits](https://github.com/eslint/eslint/compare/v4.12.0...v4.12.1)",
+      "tree": {
+        "sha": "4a4681a44fe06662c1d817d5b8f0d7ca09c95e3f",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/4a4681a44fe06662c1d817d5b8f0d7ca09c95e3f"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "01458e845dfa9873934e7710b7ba046a62ec6066",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/01458e845dfa9873934e7710b7ba046a62ec6066",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/01458e845dfa9873934e7710b7ba046a62ec6066"
+      }
+    ]
+  }
+]
