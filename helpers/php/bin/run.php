@@ -17,18 +17,18 @@ ini_set('memory_limit', '1536M');
 
 try {
     switch ($request->function) {
-    case 'update':
-      $updatedFiles = Updater::update($request->args);
-      fwrite(STDOUT, json_encode(['result' => $updatedFiles]));
-      break;
-    case 'get_latest_resolvable_version':
-      $latestVersion = UpdateChecker::get_latest_resolvable_version($request->args);
-      fwrite(STDOUT, json_encode(['result' => $latestVersion]));
-      break;
-    default:
-      fwrite(STDOUT, '{"error": "Invalid function ' . $request->{'function'} . '" }');
-      exit(1);
-  }
+        case 'update':
+            $updatedFiles = Updater::update($request->args);
+            fwrite(STDOUT, json_encode(['result' => $updatedFiles]));
+            break;
+        case 'get_latest_resolvable_version':
+            $latestVersion = UpdateChecker::get_latest_resolvable_version($request->args);
+            fwrite(STDOUT, json_encode(['result' => $latestVersion]));
+            break;
+        default:
+            fwrite(STDOUT, '{"error": "Invalid function ' . $request->{'function'} . '" }');
+            exit(1);
+    }
 } catch (\Exception $e) {
     fwrite(STDOUT, json_encode(['error' => $e->getMessage()]));
     exit(1);

@@ -26,36 +26,34 @@ class Updater
             $io->loadConfiguration($config);
         }
 
-        $installationManager = new DependabotInstallationManager();
-
         $install = new \Composer\Installer(
-      $io,
-      $config,
-      $composer->getPackage(),
-      $composer->getDownloadManager(),
-      $composer->getRepositoryManager(),
-      $composer->getLocker(),
-      $composer->getInstallationManager(),
-      $composer->getEventDispatcher(),
-      $composer->getAutoloadGenerator()
-    );
+            $io,
+            $config,
+            $composer->getPackage(),
+            $composer->getDownloadManager(),
+            $composer->getRepositoryManager(),
+            $composer->getLocker(),
+            $composer->getInstallationManager(),
+            $composer->getEventDispatcher(),
+            $composer->getAutoloadGenerator()
+        );
 
         // For all potential options, see UpdateCommand in composer
         $install
-      ->setWriteLock(true)
-      ->setUpdate(true)
-      ->setUpdateWhitelist([$dependencyName])
-      ->setExecuteOperations(false)
-      ->setDumpAutoloader(false)
-      ->setRunScripts(false)
-      ->setIgnorePlatformRequirements(true);
+            ->setWriteLock(true)
+            ->setUpdate(true)
+            ->setUpdateWhitelist([$dependencyName])
+            ->setExecuteOperations(false)
+            ->setDumpAutoloader(false)
+            ->setRunScripts(false)
+            ->setIgnorePlatformRequirements(true);
 
         $install->run();
 
         $result = [
-      'composer.json' => file_get_contents('composer.json'),
-      'composer.lock' => file_get_contents('composer.lock'),
-    ];
+            'composer.json' => file_get_contents('composer.json'),
+            'composer.lock' => file_get_contents('composer.lock'),
+        ];
 
         chdir($originalDir);
 

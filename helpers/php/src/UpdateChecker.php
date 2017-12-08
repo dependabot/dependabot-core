@@ -23,26 +23,26 @@ class UpdateChecker
 
         $installationManager = new DependabotInstallationManager();
         $install = new \Composer\Installer(
-      $io,
-      $config,
-      $composer->getPackage(),
-      $composer->getDownloadManager(),
-      $composer->getRepositoryManager(),
-      $composer->getLocker(),
-      $installationManager,
-      $composer->getEventDispatcher(),
-      $composer->getAutoloadGenerator()
-    );
+            $io,
+            $config,
+            $composer->getPackage(),
+            $composer->getDownloadManager(),
+            $composer->getRepositoryManager(),
+            $composer->getLocker(),
+            $installationManager,
+            $composer->getEventDispatcher(),
+            $composer->getAutoloadGenerator()
+        );
 
         // For all potential options, see UpdateCommand in composer
         $install
-      ->setDryRun(true)
-      ->setUpdate(true)
-      ->setUpdateWhitelist([$dependencyName])
-      ->setExecuteOperations(false)
-      ->setDumpAutoloader(false)
-      ->setRunScripts(false)
-      ->setIgnorePlatformRequirements(true);
+            ->setDryRun(true)
+            ->setUpdate(true)
+            ->setUpdateWhitelist([$dependencyName])
+            ->setExecuteOperations(false)
+            ->setDumpAutoloader(false)
+            ->setRunScripts(false)
+            ->setIgnorePlatformRequirements(true);
 
         $install->run();
 
