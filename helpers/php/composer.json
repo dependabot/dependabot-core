@@ -8,7 +8,7 @@
     },
     "autoload": {
         "psr-4": {
-            "\\Dependabot\\PHP\\": "src/"
+            "Dependabot\\PHP\\": "src/"
         }
     }
 }
