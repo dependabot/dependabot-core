@@ -1,3 +1,7 @@
+## v0.36.16, 8 December 2017
+
+- PHP: Handle SSH URLs in FileUpdater
+
 ## v0.36.15, 8 December 2017
 
 - Ruby: More conservative full-unlocking. Reduces number of dependencies
