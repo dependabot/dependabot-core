@@ -160,7 +160,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
                      "- [Changelog](https://github.com/gocardless/business/blo"\
                      "b/master/CHANGELOG.md)\n"\
                      "- [Commits](https://github.com/gocardless/business/compa"\
-                     "re/v3.0.0...v1.5.0)"
+                     "re/v3.0.0...v1.5.0)",
+            author: {}
           }
         )
     end

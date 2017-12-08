@@ -208,7 +208,8 @@ RSpec.describe Dependabot::PullRequestCreator do
         with(body: {
                parents: ["basecommitsha"],
                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: /#{Regexp.escape(message)}/
+               message: /#{Regexp.escape(message)}/,
+               author: {}
              })
     end
 
@@ -679,7 +680,8 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /#{Regexp.escape(message)}/
+                 message: /#{Regexp.escape(message)}/,
+                 author: {}
                })
       end
 
@@ -782,7 +784,8 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /Update business requirement to ~> 1/
+                 message: /Update business requirement to ~> 1/,
+                 author: {}
                })
       end
 
@@ -939,7 +942,8 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /#{Regexp.escape(message)}/
+                 message: /#{Regexp.escape(message)}/,
+                 author: {}
                })
       end
 

@@ -7,11 +7,11 @@ module Dependabot
     class Github
       attr_reader :repo_name, :branch_name, :base_commit, :github_client,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch
+                  :target_branch, :author_details
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:)
+                     target_branch:, author_details: {})
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -20,7 +20,8 @@ module Dependabot
         @files          = files
         @commit_message = commit_message
         @pr_description = pr_description
-        @pr_name = pr_name
+        @pr_name        = pr_name
+        @author_details = author_details
       end
 
       def create
@@ -54,7 +55,8 @@ module Dependabot
           repo_name,
           commit_message,
           tree.sha,
-          base_commit
+          base_commit,
+          author: author_details
         )
       end
 

@@ -5,15 +5,16 @@ require "octokit"
 module Dependabot
   class PullRequestUpdater
     attr_reader :watched_repo, :files, :base_commit, :github_client,
-                :pull_request_number
+                :pull_request_number, :author_details
 
     def initialize(repo:, base_commit:, files:, github_client:,
-                   pull_request_number:)
+                   pull_request_number:, author_details: {})
       @watched_repo = repo
       @base_commit = base_commit
       @files = files
       @github_client = github_client
       @pull_request_number = pull_request_number
+      @author_details = author_details
     end
 
     def update
@@ -43,7 +44,8 @@ module Dependabot
         watched_repo,
         commit_message,
         tree.sha,
-        base_commit
+        base_commit,
+        author: author_details
       )
     end
 

@@ -7,10 +7,12 @@ module Dependabot
     require "dependabot/pull_request_creator/github"
 
     attr_reader :watched_repo, :dependencies, :files, :base_commit,
-                :github_client, :pr_message_footer, :target_branch
+                :github_client, :pr_message_footer, :target_branch,
+                :author_details
 
     def initialize(repo:, base_commit:, dependencies:, files:, github_client:,
-                   pr_message_footer: nil, target_branch: nil)
+                   pr_message_footer: nil, target_branch: nil,
+                   author_details: {})
       @dependencies = dependencies
       @watched_repo = repo
       @base_commit = base_commit
@@ -18,6 +20,7 @@ module Dependabot
       @github_client = github_client
       @pr_message_footer = pr_message_footer
       @target_branch = target_branch
+      @author_details = author_details
 
       check_dependencies_have_previous_version
     end
@@ -40,7 +43,8 @@ module Dependabot
         files: files,
         commit_message: commit_message,
         pr_description: pr_message_with_custom_footer,
-        pr_name: pr_name
+        pr_name: pr_name,
+        author_details: author_details
       ).create
     end
 
