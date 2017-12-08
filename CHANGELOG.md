@@ -1,3 +1,7 @@
+## v0.36.20, 8 December 2017
+
+- PHP: Refactored and cleaned up PHP code (thanks @nesl247)
+
 ## v0.36.19, 8 December 2017
 
 - PHP: Only use github token if provided one
