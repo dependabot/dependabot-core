@@ -1,3 +1,7 @@
+## v0.36.17, 8 December 2017
+
+- PHP: Fix for SSH URLs
+
 ## v0.36.16, 8 December 2017
 
 - PHP: Handle SSH URLs in FileUpdater
