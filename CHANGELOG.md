@@ -1,3 +1,7 @@
+## v0.36.13, 8 December 2017
+
+- Include semantic commit message prefix only if repo uses them
+
 ## v0.36.12, 8 December 2017
 
 - Don't submit empty author details to GitHub
