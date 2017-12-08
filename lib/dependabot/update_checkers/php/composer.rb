@@ -82,7 +82,7 @@ module Dependabot
           composer_file.content.gsub(
             /"#{Regexp.escape(dependency.name)}":\s*".*"/,
             %("#{dependency.name}": "*")
-          ).gsub("git@github.com:", "https://github.com/")
+          )
         end
 
         def composer_file
@@ -118,11 +118,19 @@ module Dependabot
         end
 
         def handle_composer_errors(error)
-          raise error unless error.message.start_with?("Failed to clone")
-          dependency_url =
-            error.message.match(/Failed to clone (?<url>.*?) via/).
-            named_captures.fetch("url")
-          raise Dependabot::GitDependenciesNotReachable, dependency_url
+          if error.message.start_with?("Failed to execute git clone")
+            dependency_url =
+              error.message.match(/--mirror '(?<url>.*?)'/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          elsif error.message.start_with?("Failed to clone")
+            dependency_url =
+              error.message.match(/Failed to clone (?<url>.*?) via/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          else
+            raise error
+          end
         end
 
         def github_access_token
