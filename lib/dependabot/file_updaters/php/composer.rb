@@ -90,15 +90,11 @@ module Dependabot
             gsub("git@github.com:", "https://github.com/")
         end
 
-        def prepared_lockfile_content
-          lockfile.content.gsub("git@github.com:", "https://github.com/")
-        end
-
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", prepared_lockfile_content)
+              File.write("composer.lock", lockfile.content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "php #{php_helper_path}",
