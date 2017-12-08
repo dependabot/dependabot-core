@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+
+namespace Dependabot\PHP;
+
 class Updater
 {
     public static function update($args)

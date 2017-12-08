@@ -1,8 +1,10 @@
 <?php
 
 declare(strict_types=1);
-require dirname(__FILE__) . '/../src/UpdateChecker.php';
-require dirname(__FILE__) . '/../src/Updater.php';
+
+namespace Dependabot\PHP;
+
+require __DIR__ . '/../vendor/autoload.php';
 
 // Get details of the process to run from STDIN. It will have a `function`
 // and an `args` method, as passed in by UpdateCheckers::Php
