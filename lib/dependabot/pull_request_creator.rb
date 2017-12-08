@@ -12,7 +12,7 @@ module Dependabot
 
     def initialize(repo:, base_commit:, dependencies:, files:, github_client:,
                    pr_message_footer: nil, target_branch: nil,
-                   author_details: {})
+                   author_details: nil)
       @dependencies = dependencies
       @watched_repo = repo
       @base_commit = base_commit

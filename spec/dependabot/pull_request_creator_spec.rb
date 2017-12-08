@@ -208,9 +208,37 @@ RSpec.describe Dependabot::PullRequestCreator do
         with(body: {
                parents: ["basecommitsha"],
                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: /#{Regexp.escape(message)}/,
-               author: {}
+               message: /#{Regexp.escape(message)}/
              })
+    end
+
+    context "with author details" do
+      subject(:creator) do
+        Dependabot::PullRequestCreator.new(
+          repo: repo,
+          base_commit: base_commit,
+          dependencies: [dependency],
+          files: files,
+          github_client: github_client,
+          author_details: {
+            email: "support@dependabot.com",
+            name: "dependabot"
+          }
+        )
+      end
+
+      it "passes the author details to GitHub" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          with(body: {
+                 parents: anything,
+                 tree: anything,
+                 message: anything,
+                 author: { email: "support@dependabot.com", name: "dependabot" }
+               })
+      end
     end
 
     it "creates a branch for that commit" do
@@ -680,8 +708,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /#{Regexp.escape(message)}/,
-                 author: {}
+                 message: /#{Regexp.escape(message)}/
                })
       end
 
@@ -784,8 +811,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /Update business requirement to ~> 1/,
-                 author: {}
+                 message: /Update business requirement to ~> 1/
                })
       end
 
@@ -942,8 +968,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /#{Regexp.escape(message)}/,
-                 author: {}
+                 message: /#{Regexp.escape(message)}/
                })
       end
 

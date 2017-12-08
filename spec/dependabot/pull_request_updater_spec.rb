@@ -160,10 +160,38 @@ RSpec.describe Dependabot::PullRequestUpdater do
                      "- [Changelog](https://github.com/gocardless/business/blo"\
                      "b/master/CHANGELOG.md)\n"\
                      "- [Commits](https://github.com/gocardless/business/compa"\
-                     "re/v3.0.0...v1.5.0)",
-            author: {}
+                     "re/v3.0.0...v1.5.0)"
           }
         )
+    end
+
+    context "with author details" do
+      subject(:updater) do
+        Dependabot::PullRequestUpdater.new(
+          repo: repo,
+          base_commit: base_commit,
+          files: files,
+          github_client: github_client,
+          pull_request_number: pull_request_number,
+          author_details: {
+            email: "support@dependabot.com",
+            name: "dependabot"
+          }
+        )
+      end
+
+      it "passes the author details to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          with(body: {
+                 parents: anything,
+                 tree: anything,
+                 message: anything,
+                 author: { email: "support@dependabot.com", name: "dependabot" }
+               })
+      end
     end
 
     it "updates the PR's branch to point to that commit" do

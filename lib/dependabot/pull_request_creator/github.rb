@@ -11,7 +11,7 @@ module Dependabot
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details: {})
+                     target_branch:, author_details:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -51,12 +51,13 @@ module Dependabot
       def create_commit
         tree = create_tree
 
+        options = author_details&.any? ? { author: author_details } : {}
         github_client.create_commit(
           repo_name,
           commit_message,
           tree.sha,
           base_commit,
-          author: author_details
+          options
         )
       end
 

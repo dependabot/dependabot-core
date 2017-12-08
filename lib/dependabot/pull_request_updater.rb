@@ -8,7 +8,7 @@ module Dependabot
                 :pull_request_number, :author_details
 
     def initialize(repo:, base_commit:, files:, github_client:,
-                   pull_request_number:, author_details: {})
+                   pull_request_number:, author_details: nil)
       @watched_repo = repo
       @base_commit = base_commit
       @files = files
@@ -40,12 +40,13 @@ module Dependabot
     def create_commit
       tree = create_tree
 
+      options = author_details&.any? ? { author: author_details } : {}
       github_client.create_commit(
         watched_repo,
         commit_message,
         tree.sha,
         base_commit,
-        author: author_details
+        options
       )
     end
 
