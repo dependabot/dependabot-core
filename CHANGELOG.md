@@ -1,3 +1,7 @@
+## v0.36.14, 8 December 2017
+
+- Prepare composer.json files in Ruby to avoid re-writing JSON
+
 ## v0.36.13, 8 December 2017
 
 - Include semantic commit message prefix only if repo uses them
