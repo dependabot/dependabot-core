@@ -22,7 +22,7 @@ module Dependabot
             ),
             updated_file(
               file: lockfile,
-              content: updated_lockfile_content
+              content: updated_dependency_files_content["composer.lock"]
             )
           ]
         end
@@ -48,6 +48,25 @@ module Dependabot
           @lockfile ||= get_original_file("composer.lock")
         end
 
+        def updated_dependency_files_content
+          @updated_dependency_files_content ||=
+            SharedHelpers.in_a_temporary_directory do
+              File.write("composer.json", updated_composer_json_content)
+              File.write("composer.lock", lockfile.content)
+
+              SharedHelpers.run_helper_subprocess(
+                command: "php #{php_helper_path}",
+                function: "update",
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  github_access_token
+                ]
+              )
+            end
+        end
+
         def updated_composer_json_content
           file = composer_json
 
@@ -70,47 +89,6 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
-        end
-
-        def updated_lockfile_content
-          raw_content = updated_dependency_files_content["composer.lock"]
-
-          replaced_urls.each do |url|
-            raw_content.gsub!(
-              "https://github.com/#{url}",
-              "git@github.com:#{url}"
-            )
-          end
-
-          raw_content
-        end
-
-        def prepared_composer_json_content
-          updated_composer_json_content.
-            gsub("git@github.com:", "https://github.com/")
-        end
-
-        def updated_dependency_files_content
-          @updated_dependency_files_content ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", lockfile.content)
-
-              SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
-                function: "update",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  dependency.version,
-                  github_access_token
-                ]
-              )
-            end
-        end
-
-        def replaced_urls
-          lockfile.content.scan(/"git@github\.com:(.*?)"/).flatten
         end
 
         def php_helper_path

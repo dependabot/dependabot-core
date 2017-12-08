@@ -227,23 +227,6 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
         end
       end
-
-      context "with a git URL" do
-        let(:composer_body) do
-          fixture("php", "composer_files", "git_source_git_url")
-        end
-        let(:lockfile_body) do
-          fixture("php", "lockfiles", "git_source_git_url")
-        end
-
-        it "has details of the updated item" do
-          expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
-          expect(updated_lockfile_content).
-            to include("git@github.com:dependabot/monolog.git")
-          expect(updated_lockfile_content).
-            to include("https://github.com/symfony/polyfill-mbstring.git")
-        end
-      end
     end
   end
 end
