@@ -16,8 +16,11 @@ class Updater
     $composer = \Composer\Factory::create($io);
 
     $config = $composer->getConfig();
-    $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
-    $io->loadConfiguration($config);
+
+    if ($githubToken) {
+      $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
+      $io->loadConfiguration($config);
+    }
 
     $installationManager = new DependabotInstallationManager();
 

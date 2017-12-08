@@ -59,8 +59,11 @@ class UpdateChecker
     $composer = \Composer\Factory::create($io, $workingDirectory . '/composer.json');
 
     $config = $composer->getConfig();
-    $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
-    $io->loadConfiguration($config);
+
+    if ($githubToken) {
+      $config->merge(array('config' => array('github-oauth' => array('github.com' => $githubToken))));
+      $io->loadConfiguration($config);
+    }
 
     $installationManager = new DependabotInstallationManager();
     $install = new \Composer\Installer(
