@@ -92,5 +92,12 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
 
       it { is_expected.to eq("https://github.com/Seldaek/monolog") }
     end
+
+    context "when the packagist link 404s" do
+      let(:packagist_response) { fixture("php", "packagist_response.json") }
+
+      before { stub_request(:get, packagist_url).to_return(status: 404) }
+      it { is_expected.to be_nil }
+    end
   end
 end

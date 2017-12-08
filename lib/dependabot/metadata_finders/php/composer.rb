@@ -11,6 +11,8 @@ module Dependabot
         private
 
         def look_up_source
+          return nil unless packagist_listing
+
           version_listings =
             packagist_listing["packages"][dependency.name].
             sort_by do |version, _|
@@ -42,6 +44,8 @@ module Dependabot
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
+
+          return nil unless response.status == 200
 
           @packagist_listing = JSON.parse(response.body)
         end
