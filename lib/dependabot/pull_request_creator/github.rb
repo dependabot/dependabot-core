@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "octokit"
+require "dependabot/pull_request_creator"
 
 module Dependabot
   class PullRequestCreator
