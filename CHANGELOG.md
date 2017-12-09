@@ -1,3 +1,8 @@
+## v0.36.21, 9 December 2017
+
+- PHP: Store details of source URL during file parsing
+- PHP: Pull source URL details from dependency in MetadataFinder, if present
+
 ## v0.36.20, 8 December 2017
 
 - PHP: Refactored and cleaned up PHP code (thanks @nesl247)
