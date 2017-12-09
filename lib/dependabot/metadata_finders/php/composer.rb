@@ -11,6 +11,21 @@ module Dependabot
         private
 
         def look_up_source
+          source_from_dependency || look_up_source_from_packagist
+        end
+
+        def source_from_dependency
+          source_url =
+            dependency.requirements.
+            map { |r| r.fetch(:source) }.compact.
+            first&.fetch(:url, nil)
+
+          return unless source_url&.match?(SOURCE_REGEX)
+          captures = source_url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+        end
+
+        def look_up_source_from_packagist
           return nil unless packagist_listing
 
           version_listings =

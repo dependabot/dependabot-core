@@ -13,11 +13,12 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirements: [
-        { file: "composer.json", requirement: "1.*", groups: [], source: nil }
-      ],
+      requirements: requirements,
       package_manager: "composer"
     )
+  end
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
   end
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
@@ -76,6 +77,29 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
       it "caches the call to packagist" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, packagist_url).once
+      end
+
+      context "but there is a source URL on the dependency" do
+        let(:requirements) do
+          [
+            {
+              file: "composer.json",
+              requirement: "1.*",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/Seldaek/monolog.git"
+              }
+            }
+          ]
+        end
+
+        it { is_expected.to eq("https://github.com/Seldaek/monolog") }
+
+        it "doesn't hit packagist" do
+          source_url
+          expect(WebMock).to_not have_requested(:get, packagist_url)
+        end
       end
     end
 
