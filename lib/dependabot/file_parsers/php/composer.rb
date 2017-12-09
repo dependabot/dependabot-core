@@ -33,7 +33,7 @@ module Dependabot
               requirements: [{
                 requirement: req,
                 file: "composer.json",
-                source: nil,
+                source: dependency_source(name),
                 groups: ["runtime"]
               }],
               package_manager: "composer"
@@ -59,7 +59,7 @@ module Dependabot
               requirements: [{
                 requirement: req,
                 file: "composer.json",
-                source: nil,
+                source: dependency_source(name),
                 groups: ["development"]
               }],
               package_manager: "composer"
@@ -70,6 +70,15 @@ module Dependabot
         def dependency_version(name)
           package = parsed_lockfile["packages"].find { |d| d["name"] == name }
           package&.fetch("version")&.sub(/^v?/, "")
+        end
+
+        def dependency_source(name)
+          package = parsed_lockfile["packages"].find { |d| d["name"] == name }
+          return unless package&.dig("source", "type") == "git"
+          {
+            type: "git",
+            url: package.dig("source", "url")
+          }
         end
 
         def check_required_files
