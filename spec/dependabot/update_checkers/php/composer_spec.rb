@@ -100,16 +100,67 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       end
 
       let(:composer_file_content) do
-        fixture("php", "composer_files", "version_conflict")
+        fixture("php", "composer_files", "version_conflict_at_latest")
       end
       let(:lockfile_content) do
-        fixture("php", "lockfiles", "version_conflict")
+        fixture("php", "lockfiles", "version_conflict_at_latest")
       end
 
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
         expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
       end
+    end
+
+    context "with a version conflict in the current files" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/monolog",
+          version: "2.1.5",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "version_conflict")
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with an update that can't resolve" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "longman/telegram-bot",
+          version: "2.1.5",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "version_conflict_on_update")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "version_conflict_on_update")
+      end
+
+      it { is_expected.to be_nil }
     end
 
     context "with a dependency with a git source" do

@@ -128,6 +128,12 @@ module Dependabot
               error.message.match(/Failed to clone (?<url>.*?) via/).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
+          elsif error.message == "Requirements could not be resolved"
+            # We should raise a Dependabot::DependencyFileNotResolvable error
+            # here, but can't confidently distinguish between cases where we
+            # can't install and cases where we can't update. For now, we
+            # therefore just ignore the dependency.
+            nil
           else
             raise error
           end
