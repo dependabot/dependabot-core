@@ -67,7 +67,7 @@ module Dependabot
           begin
             @npm_listing = JSON.parse(response.body)
           rescue JSON::ParserError
-            raise unless private_dependency_not_reachable?(response)
+            raise unless non_standard_registry?
             @npm_listing = {}
           end
         end
@@ -109,6 +109,10 @@ module Dependabot
           end
 
           [401, 403, 404].include?(npm_response.status)
+        end
+
+        def non_standard_registry?
+          dependency_registry != "registry.npmjs.org"
         end
       end
     end
