@@ -283,6 +283,38 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
     end
 
+    context "with requirements-dev.txt" do
+      let(:file) { [requirements] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements-dev.txt",
+          content: fixture("python", "requirements", "version_specified.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements-dev.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with reference to its setup.py" do
       let(:files) { [requirements, setup_file] }
       let(:requirements) do

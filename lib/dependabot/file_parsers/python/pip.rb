@@ -65,6 +65,7 @@ module Dependabot
         end
 
         def check_required_files
+          return if get_original_file("requirements-dev.txt")
           return if get_original_file("requirements.txt")
           return if get_original_file("setup.py")
           raise "No requirements.txt or setup.py!"
