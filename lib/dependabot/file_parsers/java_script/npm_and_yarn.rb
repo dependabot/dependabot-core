@@ -3,6 +3,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileParsers
@@ -93,6 +94,8 @@ module Dependabot
 
         def parsed_package_lock_json
           JSON.parse(package_lock.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, package_lock.path
         end
 
         def parsed_yarn_lock

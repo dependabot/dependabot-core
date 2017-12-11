@@ -58,6 +58,19 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "that contains bad JSON" do
+        let(:lockfile_body) do
+          '{ "bad": "json" "no": "comma" }'
+        end
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("package-lock.json")
+            end
+        end
+      end
+
       context "with only dev dependencies" do
         let(:package_json_body) do
           fixture("javascript", "package_files", "only_dev_dependencies.json")
