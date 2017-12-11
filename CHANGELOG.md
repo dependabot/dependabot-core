@@ -1,3 +1,7 @@
+## v0.36.23, 11 December 2017
+
+- PHP: Handle resolvability errors (silence them)
+
 ## v0.36.22, 11 December 2017
 
 - JS: Handle unparseable package-lock.json files
