@@ -1,3 +1,8 @@
+## v0.36.22, 11 December 2017
+
+- JS: Handle unparseable package-lock.json files
+- JS: Handle JSON parser errors in non-standard registries
+
 ## v0.36.21, 9 December 2017
 
 - PHP: Store details of source URL during file parsing
