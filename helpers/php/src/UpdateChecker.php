@@ -6,7 +6,6 @@ namespace Dependabot\PHP;
 
 use Composer\Factory;
 use Composer\Installer;
-use Composer\IO\NullIO;
 use Composer\Package\PackageInterface;
 
 class UpdateChecker
@@ -15,7 +14,7 @@ class UpdateChecker
     {
         [$workingDirectory, $dependencyName, $githubToken] = $args;
 
-        $io = new NullIO();
+        $io = new ExceptionIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
         $config = $composer->getConfig();
 
