@@ -1,3 +1,7 @@
+## v0.36.26, 12 December 2017
+
+- PHP: Downcase dependency names when constructing packagist URLs
+
 ## v0.36.25, 12 December 2017
 
 - Python: Only fetch files that end in `.txt` from any requirements folder
