@@ -27,7 +27,7 @@ Metrics/BlockLength:
     - dependabot-core.gemspec
 
 Metrics/ParameterLists:
-  Max: 10
+  CountKeywordArgs: false
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes

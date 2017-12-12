@@ -12,7 +12,8 @@ RSpec.describe Dependabot::PullRequestCreator do
                                        base_commit: base_commit,
                                        dependencies: [dependency],
                                        files: files,
-                                       github_client: github_client)
+                                       github_client: github_client,
+                                       custom_label: custom_label)
   end
 
   let(:dependency) do
@@ -29,6 +30,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       ]
     )
   end
+  let(:custom_label) { nil }
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
@@ -643,10 +645,6 @@ RSpec.describe Dependabot::PullRequestCreator do
           to_return(status: 200,
                     body: fixture("github", "labels_with_custom.json"),
                     headers: json_header)
-        stub_request(:post, "#{watched_repo_url}/labels").
-          to_return(status: 201,
-                    body: fixture("github", "create_label.json"),
-                    headers: json_header)
       end
 
       it "does not create a 'dependencies' label" do
@@ -662,6 +660,47 @@ RSpec.describe Dependabot::PullRequestCreator do
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
           with(body: '["Dependency: Gems"]')
+      end
+    end
+
+    context "when a custom dependencies label has been requested" do
+      let(:custom_label) { "wontfix" }
+
+      it "does not create a 'dependencies' label" do
+        creator.create
+
+        expect(WebMock).
+          to_not have_requested(:post, "#{watched_repo_url}/labels")
+      end
+
+      it "labels the PR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+          with(body: '["wontfix"]')
+      end
+
+      context "that doesn't exist" do
+        let(:custom_label) { "non-existent" }
+
+        # Alternatively we could create the label (current choise isn't fixed)
+        it "does not create any labels" do
+          creator.create
+
+          expect(WebMock).
+            to_not have_requested(:post, "#{watched_repo_url}/labels")
+        end
+
+        it "does not label the PR" do
+          creator.create
+
+          expect(WebMock).
+            to_not have_requested(
+              :post,
+              "#{watched_repo_url}/issues/1347/labels"
+            )
+        end
       end
     end
 
