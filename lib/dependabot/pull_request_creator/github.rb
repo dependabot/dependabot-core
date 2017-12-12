@@ -96,15 +96,19 @@ module Dependabot
         )
       rescue Octokit::UnprocessableEntity => error
         # Return quietly in the case of a race
-        return nil if error.message.match?(/Reference already exists/)
+        return nil if error.message.match?(/Reference already exists/i)
         raise
       end
 
       def dependencies_label_exists?
-        github_client.
+        labels.any? { |l| l.match?(/dependenc/i) }
+      end
+
+      def labels
+        @labels ||=
+          github_client.
           labels(repo_name, per_page: 100).
-          map(&:name).
-          include?("dependencies")
+          map(&:name)
       end
 
       def create_label
@@ -117,7 +121,7 @@ module Dependabot
         github_client.add_labels_to_an_issue(
           repo_name,
           pull_request.number,
-          ["dependencies"]
+          [labels.find { |l| l.match?(/dependenc/i) } || "dependencies"]
         )
       end
 

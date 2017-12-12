@@ -637,6 +637,34 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "when there is a custom dependencies label" do
+      before do
+        stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+          to_return(status: 200,
+                    body: fixture("github", "labels_with_custom.json"),
+                    headers: json_header)
+        stub_request(:post, "#{watched_repo_url}/labels").
+          to_return(status: 201,
+                    body: fixture("github", "create_label.json"),
+                    headers: json_header)
+      end
+
+      it "does not create a 'dependencies' label" do
+        creator.create
+
+        expect(WebMock).
+          to_not have_requested(:post, "#{watched_repo_url}/labels")
+      end
+
+      it "labels the PR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+          with(body: '["Dependency: Gems"]')
+      end
+    end
+
     context "for a library" do
       let(:files) { [gemspec] }
       let(:gemspec) do
