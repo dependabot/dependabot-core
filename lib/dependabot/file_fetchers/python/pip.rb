@@ -74,6 +74,7 @@ module Dependabot
           github_client.
             contents(repo, path: requirements_directory.path, ref: commit).
             select { |f| f.type == "file" }.
+            select { |f| f.name.end_with?(".txt") }.
             map { |f| fetch_file_from_github("requirements/#{f.name}") }
         end
 
