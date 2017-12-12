@@ -52,6 +52,19 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
+
+      context "when the package name includes capitals" do
+        let(:dependency_name) { "monolog/MonoLog" }
+
+        it "downcases the dependency name" do
+          expect(finder.source_url).to eq("https://github.com/Seldaek/monolog")
+          expect(WebMock).
+            to have_requested(
+              :get,
+              "https://packagist.org/p/monolog/monolog.json"
+            )
+        end
+      end
     end
 
     context "when there is a bitbucket link in the packagist response" do

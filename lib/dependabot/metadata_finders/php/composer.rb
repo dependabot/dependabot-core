@@ -29,7 +29,7 @@ module Dependabot
           return nil unless packagist_listing
 
           version_listings =
-            packagist_listing["packages"][dependency.name].
+            packagist_listing["packages"][dependency.name.downcase].
             sort_by do |version, _|
               begin
                 Gem::Version.new(version)
@@ -55,7 +55,7 @@ module Dependabot
           return @packagist_listing unless @packagist_listing.nil?
 
           response = Excon.get(
-            "https://packagist.org/p/#{dependency.name}.json",
+            "https://packagist.org/p/#{dependency.name.downcase}.json",
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )

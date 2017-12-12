@@ -71,6 +71,33 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
       it { is_expected.to eq(Gem::Version.new("1.17.0")) }
     end
+
+    context "with a package with capitals" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/MonoLog",
+          version: "1.0.1",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      it "downcases the dependency name" do
+        expect(checker.latest_version).to eq(Gem::Version.new("1.22.1"))
+        expect(WebMock).
+          to have_requested(
+            :get,
+            "https://packagist.org/p/monolog/monolog.json"
+          )
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
