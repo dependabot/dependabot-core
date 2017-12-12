@@ -130,6 +130,32 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
+    context "with a PEAR dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pear-pear.horde.org/Horde_Date",
+          version: "2.4.1",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "^2.4.0@stable",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      let(:composer_file_content) { fixture("php", "composer_files", "pear") }
+      let(:lockfile_content) { fixture("php", "lockfiles", "pear") }
+
+      it "is between 2.0.0 and 3.0.0" do
+        expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
+        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
+      end
+    end
+
     context "with a version conflict at the latest version" do
       let(:dependency) do
         Dependabot::Dependency.new(

@@ -67,7 +67,7 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: "php -d memory_limit=-1 #{php_helper_path}",
                 function: "get_latest_resolvable_version",
-                args: [Dir.pwd, dependency.name, github_access_token]
+                args: [Dir.pwd, dependency.name.downcase, github_access_token]
               )
             end
 
