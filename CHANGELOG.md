@@ -1,3 +1,7 @@
+## v0.36.30, 12 December 2017
+
+- Allow `custom_label` to be passed to PullRequestCreator
+
 ## v0.36.29, 12 December 2017
 
 - Use existing dependencies label if present
