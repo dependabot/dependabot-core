@@ -1,3 +1,7 @@
+## v0.36.28, 12 December 2017
+
+- PHP: Handle dependendencies with capitals (especially PEAR dependencies)
+
 ## v0.36.27, 12 December 2017
 
 - PHP: Handle packagist returning packages for a different name
