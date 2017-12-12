@@ -9,7 +9,7 @@ module Dependabot
       class Pip < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
           [
-            /^requirements\.txt$/,
+            /requirements.*\.txt$/,
             /^constraints\.txt$/,
             /^setup\.py$/
           ]
