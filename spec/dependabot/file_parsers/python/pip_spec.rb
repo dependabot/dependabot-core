@@ -283,6 +283,102 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
     end
 
+    context "with requirements-dev.txt" do
+      let(:file) { [requirements] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements-dev.txt",
+          content: fixture("python", "requirements", "version_specified.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements-dev.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
+    context "with dev-requirements.txt" do
+      let(:file) { [requirements] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "dev-requirements.txt",
+          content: fixture("python", "requirements", "version_specified.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "dev-requirements.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
+    context "with requirements/dev.txt" do
+      let(:file) { [requirements] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/dev.txt",
+          content: fixture("python", "requirements", "version_specified.txt")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements/dev.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with reference to its setup.py" do
       let(:files) { [requirements, setup_file] }
       let(:requirements) do
@@ -342,44 +438,50 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
       its(:length) { is_expected.to eq(3) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("requests")
-          expect(dependency.version).to eq("2.4.1")
-          expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "==2.4.1",
-                file: "requirements.txt",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-      end
-
-      describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("luigi")
-          expect(dependency.version).to eq("2.2.0")
-          expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "==2.2.0",
-                file: "more_requirements.txt",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
+      it "has the right details" do
+        expect(dependencies).to match_array(
+          [
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.4.1",
+              requirements: [
+                {
+                  requirement: "==2.4.1",
+                  file: "requirements.txt",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "luigi",
+              version: "2.2.0",
+              requirements: [
+                {
+                  requirement: "==2.2.0",
+                  file: "more_requirements.txt",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "psycopg2",
+              version: "2.6.1",
+              requirements: [
+                {
+                  requirement: "==2.6.1",
+                  file: "more_requirements.txt",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "pip"
+            )
+          ]
+        )
       end
     end
 
