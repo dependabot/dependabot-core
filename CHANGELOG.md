@@ -1,3 +1,7 @@
+## v0.36.29, 12 December 2017
+
+- Use existing dependencies label if present
+
 ## v0.36.28, 12 December 2017
 
 - PHP: Handle dependendencies with capitals (especially PEAR dependencies)
