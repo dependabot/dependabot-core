@@ -1,3 +1,7 @@
+## v0.36.25, 12 December 2017
+
+- Python: Only fetch files that end in `.txt` from any requirements folder
+
 ## v0.36.24, 12 December 2017
 
 - Python: Support alternative names / locations for requirements.txt files
