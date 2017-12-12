@@ -1,3 +1,7 @@
+## v0.36.24, 12 December 2017
+
+- Python: Support alternative names / locations for requirements.txt files
+
 ## v0.36.23, 11 December 2017
 
 - PHP: Handle resolvability errors (silence them)
