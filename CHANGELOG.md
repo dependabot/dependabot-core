@@ -1,3 +1,7 @@
+## v0.36.27, 12 December 2017
+
+- PHP: Handle packagist returning packages for a different name
+
 ## v0.36.26, 12 December 2017
 
 - PHP: Downcase dependency names when constructing packagist URLs
