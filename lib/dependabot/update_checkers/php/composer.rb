@@ -17,7 +17,9 @@ module Dependabot
           # Fall back to latest_resolvable_version if no listing on main
           # registry.
           # TODO: Check against all repositories, if alternatives are specified
-          return latest_resolvable_version unless packagist_listing
+          unless packagist_listing&.dig("packages", dependency.name.downcase)
+            return latest_resolvable_version
+          end
 
           versions =
             packagist_listing["packages"][dependency.name.downcase].

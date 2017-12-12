@@ -72,6 +72,27 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to eq(Gem::Version.new("1.17.0")) }
     end
 
+    context "when packagist returns details of a different dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/something",
+          version: "1.0.1",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+      let(:packagist_url) { "https://packagist.org/p/monolog/something.json" }
+
+      it { is_expected.to eq(Gem::Version.new("1.17.0")) }
+    end
+
     context "with a package with capitals" do
       let(:dependency) do
         Dependabot::Dependency.new(

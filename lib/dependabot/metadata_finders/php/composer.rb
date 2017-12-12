@@ -26,7 +26,9 @@ module Dependabot
         end
 
         def look_up_source_from_packagist
-          return nil unless packagist_listing
+          unless packagist_listing&.dig("packages", dependency.name.downcase)
+            return nil
+          end
 
           version_listings =
             packagist_listing["packages"][dependency.name.downcase].

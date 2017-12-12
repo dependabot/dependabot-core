@@ -65,6 +65,13 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
             )
         end
       end
+
+      context "when the package listing is for a different" do
+        let(:dependency_name) { "monolog/something" }
+        let(:packagist_url) { "https://packagist.org/p/monolog/something.json" }
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "when there is a bitbucket link in the packagist response" do
