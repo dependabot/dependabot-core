@@ -1,3 +1,7 @@
+## v0.38.1, 13 December 2017
+
+- Python: Make Pipfile an explicit dependency
+
 ## v0.38.0, 13 December 2017
 
 - Python: Add experimental Pipfile support
