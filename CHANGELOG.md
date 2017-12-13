@@ -1,3 +1,8 @@
+## v0.37.0, 13 December 2017
+
+- Python: update hashes in requirements.txt file if present
+- BREAKING: Install Python requirements from a requirements.txt
+
 ## v0.36.30, 12 December 2017
 
 - Allow `custom_label` to be passed to PullRequestCreator
