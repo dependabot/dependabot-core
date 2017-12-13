@@ -67,6 +67,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
           it { is_expected.to eq(requirement_txt_req) }
         end
 
+        context "and an asterisk was specified" do
+          let(:requirement_txt_req_string) { "*" }
+          it { is_expected.to eq(requirement_txt_req) }
+        end
+
         context "and a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
           it { is_expected.to eq(requirement_txt_req) }

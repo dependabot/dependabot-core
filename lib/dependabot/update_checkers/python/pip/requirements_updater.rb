@@ -98,6 +98,7 @@ module Dependabot
             requirement_array =
               requirement_string.split(",").map do |req_string|
                 req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
+                next nil if req_string == "*"
                 next req_string unless req_string.include?(".*")
 
                 # Note: This isn't perfect. It replaces the "!= 1.0.x"
