@@ -1,3 +1,7 @@
+## v0.38.3, 13 December 2017
+
+- Python: Preserve original host environment markers in Pipfile.lock
+
 ## v0.38.2, 13 December 2017
 
 - Python: Handle * version strings in UpdateChecker
