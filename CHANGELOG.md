@@ -1,3 +1,7 @@
+## v0.38.2, 13 December 2017
+
+- Python: Handle * version strings in UpdateChecker
+
 ## v0.38.1, 13 December 2017
 
 - Python: Make Pipfile an explicit dependency
