@@ -9,19 +9,28 @@ describe PythonRequirementParser do
       line.chomp.match(described_class::INSTALL_REQ_WITH_REQUIREMENT)
     return if requirement.nil?
 
-    requirements =
-      requirement[:requirements].to_s.
-      to_enum(:scan, described_class::REQUIREMENT).
-      map do
-        {
-          comparison: Regexp.last_match[:comparison],
-          version: Regexp.last_match[:version]
-        }
-      end
+    requirements = requirement[:requirements].to_s.
+                   to_enum(:scan, described_class::REQUIREMENT).
+                   map do
+                     {
+                       comparison: Regexp.last_match[:comparison],
+                       version: Regexp.last_match[:version]
+                     }
+                   end
+
+    hashes = requirement[:hashes].to_s.
+             to_enum(:scan, described_class::HASH).
+             map do
+               {
+                 algorithm: Regexp.last_match[:algorithm],
+                 hash: Regexp.last_match[:hash]
+               }
+             end
 
     {
       name: requirement[:name],
-      requirements: requirements
+      requirements: requirements,
+      hashes: hashes
     }
   end
 
@@ -46,14 +55,6 @@ describe PythonRequirementParser do
     context "with no specification" do
       let(:line) { "luigi" }
       it { is_expected.to be_nil }
-
-      context "with a comment" do
-        let(:line) { "luigi==0.1.0 # some comment" }
-        its([:name]) { is_expected.to eq "luigi" }
-        its([:requirements]) do
-          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
-        end
-      end
     end
 
     context "with a simple specification" do
@@ -67,6 +68,39 @@ describe PythonRequirementParser do
         its([:name]) { is_expected.to eq "luigi" }
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+      end
+
+      context "with a comment" do
+        let(:line) { "luigi==0.1.0 # some comment" }
+        its([:name]) { is_expected.to eq "luigi" }
+        its([:requirements]) do
+          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+      end
+
+      context "with a hash" do
+        let(:line) { "luigi==0.1.0 --hash=sha256:2ccb79b01769d9911" }
+        its([:name]) { is_expected.to eq "luigi" }
+        its([:requirements]) do
+          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+        its([:hashes]) do
+          is_expected.to eq [{ algorithm: "sha256", hash: "2ccb79b01769d9911" }]
+        end
+      end
+
+      context "with multiple hashes" do
+        let(:line) do
+          "luigi==0.1.0 --hash=sha256:2ccb79b01 --hash=sha256:2ccb79b02"
+        end
+        its([:hashes]) do
+          is_expected.to match_array(
+            [
+              { algorithm: "sha256", hash: "2ccb79b01" },
+              { algorithm: "sha256", hash: "2ccb79b02" }
+            ]
+          )
         end
       end
     end

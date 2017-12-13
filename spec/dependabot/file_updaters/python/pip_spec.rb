@@ -96,6 +96,45 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "when there are hashes" do
+        let(:requirements_body) do
+          fixture("python", "requirements", "hashes.txt")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "3.3.1",
+            requirements: [
+              {
+                file: "requirements.txt",
+                requirement: "==3.3.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "3.2.3",
+            previous_requirements: [
+              {
+                file: "requirements.txt",
+                requirement: "==3.2.3",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "pip"
+          )
+        end
+        its(:content) do
+          is_expected.to include(
+            "pytest==3.3.1 "\
+            "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc42ad7"\
+            "331c9ad06d0efe4962  "\
+            "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d64096"\
+            "cebe79fb51ecb2eb93\n"
+          )
+        end
+      end
+
       context "when there are unused lines" do
         let(:requirements_body) do
           fixture("python", "requirements", "invalid_lines.txt")

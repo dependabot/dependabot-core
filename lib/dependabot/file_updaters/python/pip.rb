@@ -2,6 +2,7 @@
 
 require "python_requirement_parser"
 require "dependabot/file_updaters/base"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module FileUpdaters
@@ -63,10 +64,36 @@ module Dependabot
         end
 
         def updated_dependency_declaration_string(requirement)
-          original_dependency_declaration_string(requirement).sub(
-            PythonRequirementParser::REQUIREMENTS,
-            requirement.fetch(:requirement)
+          updated_string =
+            original_dependency_declaration_string(requirement).sub(
+              PythonRequirementParser::REQUIREMENTS,
+              requirement.fetch(:requirement)
+            )
+
+          return updated_string unless requirement_include_hashes?(requirement)
+
+          updated_string.sub(
+            PythonRequirementParser::HASHES,
+            package_hash_for(dependency.name, dependency.version)
           )
+        end
+
+        def requirement_include_hashes?(requirements)
+          original_dependency_declaration_string(requirements).
+            match?(PythonRequirementParser::HASHES)
+        end
+
+        def package_hash_for(dependency_name, dependency_version)
+          SharedHelpers.run_helper_subprocess(
+            command: "python3.6 #{python_helper_path}",
+            function: "get_hash",
+            args: [dependency_name, dependency_version]
+          ).map { |h| "--hash=sha256:#{h['hash']}" }.join("  ")
+        end
+
+        def python_helper_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/python/run.py")
         end
       end
     end

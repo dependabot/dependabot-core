@@ -18,7 +18,7 @@ dependencies:
     - cd helpers/yarn && yarn install
     - cd helpers/npm && yarn install
     - cd helpers/php && composer install
-    - pip install pip==9.0.1
+    - cd helpers/python && pip install -r requirements.txt
 
 test:
   pre:
