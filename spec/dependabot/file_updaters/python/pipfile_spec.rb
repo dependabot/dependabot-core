@@ -87,19 +87,15 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
 
       let(:json_lockfile) { JSON.parse(updated_lockfile.content) }
 
-      it "has an updated version of requests" do
+      it "updates only what it needs to" do
         expect(json_lockfile["default"]["requests"]["version"]).
           to eq("==2.18.4")
-      end
-
-      it "has an unupdated version of pytest" do
-        expect(json_lockfile["develop"]["pytest"]["version"]).
-          to eq("==3.2.3")
-      end
-
-      it "has the correct (unupdated) Pipfile hash" do
+        expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
         expect(json_lockfile["_meta"]["hash"]).
           to eq(JSON.parse(lockfile_body)["_meta"]["hash"])
+        expect(
+          json_lockfile["_meta"]["host-environment-markers"]["python_version"]
+        ).to eq("2.7")
       end
     end
   end
