@@ -45,6 +45,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
     Dependabot::Dependency.new(
       name: "requests",
       version: "2.18.4",
+      previous_version: "2.18.0",
       package_manager: "pipfile",
       requirements: [
         { requirement: "*", file: "Pipfile", source: nil, groups: ["default"] }
@@ -89,6 +90,11 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       it "has an updated version of requests" do
         expect(json_lockfile["default"]["requests"]["version"]).
           to eq("==2.18.4")
+      end
+
+      it "has an unupdated version of pytest" do
+        expect(json_lockfile["develop"]["pytest"]["version"]).
+          to eq("==3.2.3")
       end
 
       it "has the correct (unupdated) Pipfile hash" do

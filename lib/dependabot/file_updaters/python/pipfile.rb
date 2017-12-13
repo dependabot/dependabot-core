@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
 require "dependabot/file_updaters/base"
 require "dependabot/file_fetchers/python/pipfile"
 require "dependabot/shared_helpers"
@@ -23,17 +25,12 @@ module Dependabot
             ),
             updated_file(
               file: lockfile,
-              content: updated_dependency_files_content["Pipfile.lock"]
+              content: updated_lockfile_content
             )
           ]
         end
 
         private
-
-        def dependency
-          # For now, we'll only ever be updating a single dependency for Python
-          dependencies.first
-        end
 
         def check_required_files
           %w(Pipfile Pipfile.lock).each do |filename|
@@ -71,18 +68,59 @@ module Dependabot
             end
         end
 
-        def updated_dependency_files_content
-          @updated_dependency_files_content ||=
-            SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
-              File.write(File.join(dir, "Pipfile"), updated_pipfile_content)
-
-              SharedHelpers.run_helper_subprocess(
-                command: "python #{python_helper_path}",
-                function: "update_pipfile",
-                args: [dir]
+        def updated_lockfile_content
+          @updated_lockfile_content ||=
+            begin
+              pipfile_hash = pipfile_hash_for(updated_pipfile_content)
+              updated_lockfile =
+                updated_lockfile_content_for(frozen_pipfile_content)
+              updated_lockfile.sub(
+                /"sha256": ".*?"/,
+                %("sha256": "#{pipfile_hash}")
               )
             end
+        end
+
+        def frozen_pipfile_content
+          frozen_pipfile_json = TomlRB.parse(updated_pipfile_content)
+          parsed_lockfile = JSON.parse(lockfile.content)
+
+          frozen_pipfile_json.dup.fetch("packages", {}).each_key do |nm|
+            next if dependencies.map(&:name).include?(nm)
+            version = parsed_lockfile.dig("default", nm, "version")
+            frozen_pipfile_json["packages"][nm] = version
+          end
+          frozen_pipfile_json.dup.fetch("dev-packages", {}).each_key do |nm|
+            next if dependencies.map(&:name).include?(nm)
+            version = parsed_lockfile.dig("develop", nm, "version")
+            frozen_pipfile_json["dev-packages"][nm] = version
+          end
+
+          TomlRB.dump(frozen_pipfile_json)
+        end
+
+        def updated_lockfile_content_for(pipfile_content)
+          SharedHelpers.in_a_temporary_directory do |dir|
+            File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
+            File.write(File.join(dir, "Pipfile"), pipfile_content)
+
+            SharedHelpers.run_helper_subprocess(
+              command: "python #{python_helper_path}",
+              function: "update_pipfile",
+              args: [dir]
+            )
+          end.fetch("Pipfile.lock")
+        end
+
+        def pipfile_hash_for(pipfile_content)
+          SharedHelpers.in_a_temporary_directory do |dir|
+            File.write(File.join(dir, "Pipfile"), pipfile_content)
+            SharedHelpers.run_helper_subprocess(
+              command: "python #{python_helper_path}",
+              function: "get_pipfile_hash",
+              args: [dir]
+            )
+          end
         end
 
         def python_helper_path

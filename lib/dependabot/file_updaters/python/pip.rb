@@ -106,7 +106,7 @@ module Dependabot
         def package_hashes_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
             command: "python3.6 #{python_helper_path}",
-            function: "get_hash",
+            function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
         end
