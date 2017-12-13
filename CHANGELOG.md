@@ -1,3 +1,7 @@
+## v0.37.1, 13 December 2017
+
+- Python: Handle custom algorithms for hashes
+
 ## v0.37.0, 13 December 2017
 
 - Python: update hashes in requirements.txt file if present
