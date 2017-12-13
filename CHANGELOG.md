@@ -1,3 +1,7 @@
+## v0.38.0, 13 December 2017
+
+- Python: Add experimental Pipfile support
+
 ## v0.37.2, 13 December 2017
 
 - Python: Handle multi-line requirements, and preserve previous whitespace
