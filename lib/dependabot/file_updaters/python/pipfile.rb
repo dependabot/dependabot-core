@@ -19,7 +19,7 @@ module Dependabot
           [
             updated_file(
               file: pipfile,
-              content: updated_dependency_files_content["Pipfile"]
+              content: updated_pipfile_content
             ),
             updated_file(
               file: lockfile,
@@ -49,16 +49,38 @@ module Dependabot
           @lockfile ||= get_original_file("Pipfile.lock")
         end
 
+        def updated_pipfile_content
+          dependencies.
+            select { |dep| requirement_changed?(pipfile, dep) }.
+            reduce(pipfile.content.dup) do |content, dep|
+              updated_requirement =
+                dep.requirements.find { |r| r[:file] == pipfile.name }.
+                fetch(:requirement)
+
+              old_req =
+                dep.previous_requirements.find { |r| r[:file] == pipfile.name }.
+                fetch(:requirement)
+
+              updated_content = content.gsub(
+                /#{Regexp.escape(dep.name)}\s*=\s*"#{Regexp.escape(old_req)}"/,
+                %("#{dep.name}" = "#{updated_requirement}")
+              )
+
+              raise "Expected content to change!" if content == updated_content
+              updated_content
+            end
+        end
+
         def updated_dependency_files_content
           @updated_dependency_files_content ||=
             SharedHelpers.in_a_temporary_directory do |dir|
               File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
-              File.write(File.join(dir, "Pipfile"), pipfile.content)
+              File.write(File.join(dir, "Pipfile"), updated_pipfile_content)
 
               SharedHelpers.run_helper_subprocess(
                 command: "python #{python_helper_path}",
                 function: "update_pipfile",
-                args: [dir, dependency.name, dependency.version]
+                args: [dir]
               )
             end
         end

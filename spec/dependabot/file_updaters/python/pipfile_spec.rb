@@ -48,6 +48,9 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       package_manager: "pipfile",
       requirements: [
         { requirement: "*", file: "Pipfile", source: nil, groups: ["default"] }
+      ],
+      previous_requirements: [
+        { requirement: "*", file: "Pipfile", source: nil, groups: ["default"] }
       ]
     )
   end
