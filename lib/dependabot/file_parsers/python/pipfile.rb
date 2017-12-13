@@ -1,56 +1,70 @@
 # frozen_string_literal: true
 
+require "toml"
+
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 module Dependabot
   module FileParsers
     module Python
       class Pipfile < Dependabot::FileParsers::Base
         def parse
-          dependency_versions.map do |dep|
-            Dependency.new(
-              name: dep["name"],
-              version: dep["version"],
-              requirements: [
-                {
-                  requirement: dep["requirement"],
-                  file: pipfile.name,
-                  source: nil,
-                  groups: [dep["group"]]
-                }
-              ],
-              package_manager: "pipfile"
-            )
-          end.compact
+          runtime_dependencies + development_dependencies
         end
 
         private
-
-        def dependency_versions
-          SharedHelpers.in_a_temporary_directory do
-            File.write("Pipfile", pipfile.content)
-            File.write("Pipfile.lock", lockfile.content)
-
-            SharedHelpers.run_helper_subprocess(
-              command: "python3.6 #{python_helper_path}",
-              function: "parse_pipfile",
-              args: [Dir.pwd]
-            )
-          end
-        end
-
-        def python_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/python/run.py")
-        end
 
         def check_required_files
           %w(Pipfile Pipfile.lock).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)
           end
+        end
+
+        def runtime_dependencies
+          parsed_pipfile.fetch("packages", {}).map do |dep_name, req|
+            version = parsed_lockfile.dig("default", dep_name, "version")
+            Dependency.new(
+              name: dep_name,
+              version: version.gsub(/^==/, ""),
+              requirements: [
+                {
+                  requirement: req,
+                  file: pipfile.name,
+                  source: nil,
+                  groups: ["default"]
+                }
+              ],
+              package_manager: "pipfile"
+            )
+          end
+        end
+
+        def development_dependencies
+          parsed_pipfile.fetch("dev-packages", {}).map do |dep_name, req|
+            version = parsed_lockfile.dig("develop", dep_name, "version")
+            Dependency.new(
+              name: dep_name,
+              version: version.gsub(/^==/, ""),
+              requirements: [
+                {
+                  requirement: req,
+                  file: pipfile.name,
+                  source: nil,
+                  groups: ["develop"]
+                }
+              ],
+              package_manager: "pipfile"
+            )
+          end
+        end
+
+        def parsed_pipfile
+          TOML::Parser.new(pipfile.content).parsed
+        end
+
+        def parsed_lockfile
+          JSON.parse(lockfile.content)
         end
 
         def pipfile
