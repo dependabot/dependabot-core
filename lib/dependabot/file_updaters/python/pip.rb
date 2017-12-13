@@ -74,11 +74,11 @@ module Dependabot
 
           updated_string.sub(
             PythonRequirementParser::HASHES,
-            package_hash_for(
+            package_hashes_for(
               name: dependency.name,
               version: dependency.version,
               algorithm: hash_algorithm(requirement)
-            )
+            ).join(hash_separator(requirement))
           )
         end
 
@@ -94,12 +94,21 @@ module Dependabot
             named_captures.fetch("algorithm")
         end
 
-        def package_hash_for(name:, version:, algorithm:)
+        def hash_separator(requirement)
+          return unless requirement_includes_hashes?(requirement)
+
+          hash_regex = PythonRequirementParser::HASH
+          original_dependency_declaration_string(requirement).
+            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
+            named_captures.fetch("separator")
+        end
+
+        def package_hashes_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
             command: "python3.6 #{python_helper_path}",
             function: "get_hash",
             args: [name, version, algorithm]
-          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }.join("  ")
+          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
         end
 
         def python_helper_path

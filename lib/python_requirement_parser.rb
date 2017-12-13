@@ -5,16 +5,16 @@ class PythonRequirementParser
   EXTRA = /[a-zA-Z0-9\-_\.]+/
   COMPARISON = /===|==|>=|<=|<|>|~=|!=/
   VERSION = /[0-9]+[a-zA-Z0-9\-_\.*]*/
-  REQUIREMENT = /(?<comparison>#{COMPARISON})\s*(?<version>#{VERSION})/
+  REQUIREMENT = /(?<comparison>#{COMPARISON})\s*\\?\s*(?<version>#{VERSION})/
   HASH = /--hash=(?<algorithm>.*?):(?<hash>.*?)(?=\s|$)/
-  REQUIREMENTS = /#{REQUIREMENT}(\s*,\s*#{REQUIREMENT})*/
-  HASHES = /#{HASH}(\s*#{HASH})*/
+  REQUIREMENTS = /#{REQUIREMENT}(\s*,\s*\\?\s*#{REQUIREMENT})*/
+  HASHES = /#{HASH}(\s*\\?\s*#{HASH})*/
 
   INSTALL_REQ_WITH_REQUIREMENT =
-    /\s*(?<name>#{NAME})
-      \s*(\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
-      \s*(?<requirements>#{REQUIREMENTS})
-      \s*(?<hashes>#{HASHES})?
+    /\s*\\?\s*(?<name>#{NAME})
+      \s*\\?\s*(\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
+      \s*\\?\s*(?<requirements>#{REQUIREMENTS})
+      \s*\\?\s*(?<hashes>#{HASHES})?
       \s*#*\s*(?<comment>.+)?
     /x
 end

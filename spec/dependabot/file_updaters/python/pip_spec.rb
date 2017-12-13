@@ -126,7 +126,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         end
 
         its(:content) do
-          is_expected.to include(
+          is_expected.to eq(
             "pytest==3.3.1 "\
             "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc42ad7"\
             "331c9ad06d0efe4962  "\
@@ -149,6 +149,60 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               "--hash=sha512:f190f9a8a8f55e9dbf311429eb86e023e096d5388e1c4216"\
               "fc8d833fbdec8fa67f67b89a174dfead663b34e5f5df124085825446297cf7"\
               "d9500527d9e8ddb15d\n"
+            )
+          end
+        end
+
+        context "with linebreaks" do
+          let(:requirements_body) do
+            fixture("python", "requirements", "hashes_multiline.txt")
+          end
+
+          its(:content) do
+            is_expected.to eq(
+              "pytest==3.3.1 \\\n"\
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4"\
+              "2ad7331c9ad06d0efe4962 \\\n"\
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6"\
+              "4096cebe79fb51ecb2eb93\n"
+            )
+          end
+        end
+
+        context "with a single hash" do
+          let(:requirements_body) do
+            fixture("python", "requirements", "hashes_single.txt")
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "flask-featureflags",
+              version: "0.6",
+              requirements: [
+                {
+                  file: "requirements.txt",
+                  requirement: "==0.6",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_version: "0.5",
+              previous_requirements: [
+                {
+                  file: "requirements.txt",
+                  requirement: "==0.5",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "pip"
+            )
+          end
+
+          its(:content) do
+            is_expected.to eq(
+              "flask-featureflags==0.6 \\\n"\
+              "    --hash=sha256:fc8490e4e4c1eac03e306fade8ef4be3cddff6229"\
+              "aaa3bb96466ede7d107b241\n"
             )
           end
         end

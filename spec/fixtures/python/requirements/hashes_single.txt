@@ -1,0 +1,2 @@
+flask-featureflags==0.5 \
+    --hash=sha256:dbe86c9697bf7cc76e44d6a5641726a414234fea466cb0e5df8352059333e418

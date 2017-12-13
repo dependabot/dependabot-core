@@ -102,6 +102,23 @@ describe PythonRequirementParser do
             ]
           )
         end
+
+        context "spread over multiple lines" do
+          let(:line) do
+            "luigi==0.1.0 \\\n"\
+            "    --hash=sha256:2ccb79b01 \\\n"\
+            "    --hash=sha256:2ccb79b02"
+          end
+
+          its([:hashes]) do
+            is_expected.to match_array(
+              [
+                { algorithm: "sha256", hash: "2ccb79b01" },
+                { algorithm: "sha256", hash: "2ccb79b02" }
+              ]
+            )
+          end
+        end
       end
     end
 
