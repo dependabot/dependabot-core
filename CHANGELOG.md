@@ -1,3 +1,7 @@
+## v0.37.2, 13 December 2017
+
+- Python: Handle multi-line requirements, and preserve previous whitespace
+
 ## v0.37.1, 13 December 2017
 
 - Python: Handle custom algorithms for hashes
