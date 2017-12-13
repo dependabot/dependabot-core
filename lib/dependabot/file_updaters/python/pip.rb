@@ -70,25 +70,36 @@ module Dependabot
               requirement.fetch(:requirement)
             )
 
-          return updated_string unless requirement_include_hashes?(requirement)
+          return updated_string unless requirement_includes_hashes?(requirement)
 
           updated_string.sub(
             PythonRequirementParser::HASHES,
-            package_hash_for(dependency.name, dependency.version)
+            package_hash_for(
+              name: dependency.name,
+              version: dependency.version,
+              algorithm: hash_algorithm(requirement)
+            )
           )
         end
 
-        def requirement_include_hashes?(requirements)
-          original_dependency_declaration_string(requirements).
+        def requirement_includes_hashes?(requirement)
+          original_dependency_declaration_string(requirement).
             match?(PythonRequirementParser::HASHES)
         end
 
-        def package_hash_for(dependency_name, dependency_version)
+        def hash_algorithm(requirement)
+          return unless requirement_includes_hashes?(requirement)
+          original_dependency_declaration_string(requirement).
+            match(PythonRequirementParser::HASHES).
+            named_captures.fetch("algorithm")
+        end
+
+        def package_hash_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
             command: "python3.6 #{python_helper_path}",
             function: "get_hash",
-            args: [dependency_name, dependency_version]
-          ).map { |h| "--hash=sha256:#{h['hash']}" }.join("  ")
+            args: [name, version, algorithm]
+          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }.join("  ")
         end
 
         def python_helper_path

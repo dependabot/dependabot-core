@@ -124,6 +124,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             package_manager: "pip"
           )
         end
+
         its(:content) do
           is_expected.to include(
             "pytest==3.3.1 "\
@@ -132,6 +133,24 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d64096"\
             "cebe79fb51ecb2eb93\n"
           )
+        end
+
+        context "using a sha512 algorithm" do
+          let(:requirements_body) do
+            fixture("python", "requirements", "hashes_512.txt")
+          end
+
+          its(:content) do
+            is_expected.to include(
+              "pytest==3.3.1 "\
+              "--hash=sha512:f3d73e475dbfbcd9f218268caefeab86038dde4380fcf727"\
+              "b3436847849e57309c14f6f9769e85502c6121dab354d20a1316e2e30249c0"\
+              "a2b28e87d90f71e65e  "\
+              "--hash=sha512:f190f9a8a8f55e9dbf311429eb86e023e096d5388e1c4216"\
+              "fc8d833fbdec8fa67f67b89a174dfead663b34e5f5df124085825446297cf7"\
+              "d9500527d9e8ddb15d\n"
+            )
+          end
         end
       end
 
