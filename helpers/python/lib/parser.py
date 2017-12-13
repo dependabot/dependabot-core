@@ -107,7 +107,7 @@ def parse(directory):
             __url__ = 'something'
 
             # Exec the setup.py
-            exec(content)
+            exec(content) in globals(), locals()
         except:
             pass
 
