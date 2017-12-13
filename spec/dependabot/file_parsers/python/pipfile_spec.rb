@@ -71,5 +71,31 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
+
+    context "with a git source" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "git_source") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "git_source.lock") }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("requests") }
+        its(:version) { is_expected.to eq("2.18.4") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "toml"
+require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
@@ -23,6 +23,7 @@ module Dependabot
 
         def runtime_dependencies
           parsed_pipfile.fetch("packages", {}).map do |dep_name, req|
+            next unless req.is_a?(String)
             version = parsed_lockfile.dig("default", dep_name, "version")
             Dependency.new(
               name: dep_name,
@@ -37,11 +38,12 @@ module Dependabot
               ],
               package_manager: "pipfile"
             )
-          end
+          end.compact
         end
 
         def development_dependencies
           parsed_pipfile.fetch("dev-packages", {}).map do |dep_name, req|
+            next unless req.is_a?(String)
             version = parsed_lockfile.dig("develop", dep_name, "version")
             Dependency.new(
               name: dep_name,
@@ -56,11 +58,11 @@ module Dependabot
               ],
               package_manager: "pipfile"
             )
-          end
+          end.compact
         end
 
         def parsed_pipfile
-          TOML::Parser.new(pipfile.content).parsed
+          TomlRB.parse(pipfile.content)
         end
 
         def parsed_lockfile
