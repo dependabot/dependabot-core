@@ -62,7 +62,7 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", lockfile.content)
+              File.write("composer.lock", lockfile.content) if lockfile
 
               SharedHelpers.run_helper_subprocess(
                 command: "php -d memory_limit=-1 #{php_helper_path}",
@@ -95,9 +95,7 @@ module Dependabot
         end
 
         def lockfile
-          lockfile = dependency_files.find { |f| f.name == "composer.lock" }
-          raise "No composer.lock!" unless lockfile
-          lockfile
+          dependency_files.find { |f| f.name == "composer.lock" }
         end
 
         def php_helper_path

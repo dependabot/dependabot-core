@@ -12,7 +12,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      dependency_files: [composer_file, lockfile],
+      dependency_files: files,
       credentials: [
         {
           "host" => "github.com",
@@ -34,6 +34,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     )
   end
 
+  let(:files) { [composer_file, lockfile] }
   let(:composer_file) do
     Dependabot::DependencyFile.new(
       content: composer_file_content,
@@ -65,6 +66,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+
+    context "without a lockfile" do
+      let(:files) { [composer_file] }
+      it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+    end
 
     context "when packagist 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
@@ -129,6 +135,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
+
+    context "without a lockfile" do
+      let(:files) { [composer_file] }
+      it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    end
 
     context "with a PEAR dependency" do
       let(:dependency) do
