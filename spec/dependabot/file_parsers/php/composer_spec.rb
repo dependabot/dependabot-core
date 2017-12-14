@@ -117,6 +117,70 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       end
     end
 
+    context "without a lockfile" do
+      let(:files) { [composer_json] }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("monolog/monolog") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirements) do
+          is_expected.to eq(
+            [
+              {
+                requirement: "1.0.*",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      context "for development dependencies" do
+        let(:composer_json_body) do
+          fixture("php", "composer_files", "development_dependencies")
+        end
+
+        it "includes development dependencies" do
+          expect(dependencies.length).to eq(2)
+        end
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("monolog/monolog") }
+          its(:version) { is_expected.to be_nil }
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: "1.0.1",
+                  file: "composer.json",
+                  groups: ["development"],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
+
+      context "with the PHP version specified" do
+        let(:composer_json_body) do
+          fixture("php", "composer_files", "php_specified")
+        end
+
+        its(:length) { is_expected.to eq(2) }
+      end
+    end
+
     context "with a bad lockfile" do
       let(:lockfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
 
