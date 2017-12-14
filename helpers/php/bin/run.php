@@ -17,9 +17,9 @@ ini_set('memory_limit', '1536M');
 
 date_default_timezone_set('Europe/London');
 
-register_shutdown_function(function(){
+register_shutdown_function(function (): void {
     $error = error_get_last();
-    if(null !== $error) {
+    if (null !== $error) {
         fwrite(STDOUT, json_encode(['error' => $error->getMessage()]));
     }
 });
