@@ -54,7 +54,6 @@ class Updater
         $install->run();
 
         $result = [
-            'composer.json' => file_get_contents('composer.json'),
             'composer.lock' => file_get_contents('composer.lock'),
         ];
 

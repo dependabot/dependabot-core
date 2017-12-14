@@ -43,7 +43,7 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
-            existing_version: dependency.version&.to_s
+            library: library?
           ).updated_requirements
         end
 
@@ -62,7 +62,7 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", lockfile.content)
+              File.write("composer.lock", lockfile.content) if lockfile
 
               SharedHelpers.run_helper_subprocess(
                 command: "php -d memory_limit=-1 #{php_helper_path}",
@@ -95,9 +95,7 @@ module Dependabot
         end
 
         def lockfile
-          lockfile = dependency_files.find { |f| f.name == "composer.lock" }
-          raise "No composer.lock!" unless lockfile
-          lockfile
+          dependency_files.find { |f| f.name == "composer.lock" }
         end
 
         def php_helper_path
@@ -141,6 +139,11 @@ module Dependabot
           else
             raise error
           end
+        end
+
+        def library?
+          return true if lockfile.nil?
+          JSON.parse(composer_file.content)["type"] == "library"
         end
 
         def github_access_token

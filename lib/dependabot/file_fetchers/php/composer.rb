@@ -7,11 +7,11 @@ module Dependabot
     module Php
       class Composer < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(composer.json composer.lock) - filenames).empty?
+          filenames.include?("composer.json")
         end
 
         def self.required_files_message
-          "Repo must contain a composer.json and a composer.lock."
+          "Repo must contain a composer.json."
         end
 
         private
@@ -19,7 +19,7 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << composer_json
-          fetched_files << composer_lock
+          fetched_files << composer_lock if composer_lock
           fetched_files
         end
 
@@ -29,6 +29,8 @@ module Dependabot
 
         def composer_lock
           @composer_lock ||= fetch_file_from_github("composer.lock")
+        rescue Dependabot::DependencyFileNotFound
+          nil
         end
       end
     end
