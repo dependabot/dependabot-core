@@ -1,3 +1,7 @@
+## v0.38.4, 14 December 2017
+
+- PHP: Throw out of memory errors
+
 ## v0.38.3, 13 December 2017
 
 - Python: Preserve original host environment markers in Pipfile.lock
