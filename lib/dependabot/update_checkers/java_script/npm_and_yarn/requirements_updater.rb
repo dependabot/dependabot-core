@@ -41,13 +41,8 @@ module Dependabot
 
           private
 
-          def updated_library_requirement(req)
+          def updated_app_requirement(req)
             current_requirement = req[:requirement]
-            return req if current_requirement.strip.split(" ").count > 1
-            return req if current_requirement.strip == ""
-
-            ruby_req = ruby_requirement(current_requirement)
-            return req if ruby_req.satisfied_by?(latest_resolvable_version)
 
             updated_requirement =
               current_requirement.
@@ -63,8 +58,13 @@ module Dependabot
             req.merge(requirement: updated_requirement)
           end
 
-          def updated_app_requirement(req)
+          def updated_library_requirement(req)
             current_requirement = req[:requirement]
+            return req if current_requirement.strip.split(" ").count > 1
+            return req if current_requirement.strip == ""
+
+            ruby_req = ruby_requirement(current_requirement)
+            return req if ruby_req.satisfied_by?(latest_resolvable_version)
 
             updated_requirement =
               current_requirement.
