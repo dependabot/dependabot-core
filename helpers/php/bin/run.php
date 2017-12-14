@@ -17,7 +17,11 @@ ini_set('memory_limit', '1536M');
 
 date_default_timezone_set('Europe/London');
 
+// This storage is freed on error (case of allowed memory exhausted)
+$memory = str_repeat('*', 1024 * 1024);
+
 register_shutdown_function(function (): void {
+    $memory = null;
     $error = error_get_last();
     if (null !== $error) {
         fwrite(STDOUT, json_encode(['error' => $error->getMessage()]));
