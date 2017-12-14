@@ -94,9 +94,14 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
-        context "and an *.* was previously specified" do
+        context "and a *.* was previously specified" do
           let(:composer_json_req_string) { "0.*.*" }
           its([:requirement]) { is_expected.to eq("1.*.*") }
+
+          context "with fewer digits than the new version" do
+            let(:composer_json_req_string) { "0.*" }
+            its([:requirement]) { is_expected.to eq("1.*") }
+          end
         end
 
         context "and there were multiple requirements" do
@@ -194,6 +199,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         context "and a *.* was previously specified" do
           let(:composer_json_req_string) { "0.*.*" }
           its([:requirement]) { is_expected.to eq("1.*.*") }
+
+          context "with fewer digits than the new version" do
+            let(:composer_json_req_string) { "0.*" }
+            its([:requirement]) { is_expected.to eq("1.*") }
+          end
         end
 
         context "and a tilda was previously specified" do
