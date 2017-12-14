@@ -1,3 +1,7 @@
+## v0.38.8, 14 December 2017
+
+- PHP: Raise clear error when Composer is out of memory
+
 ## v0.38.7, 14 December 2017
 
 - PHP: Treat last error correctly (as an array)
