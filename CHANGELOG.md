@@ -1,3 +1,7 @@
+## v0.39.1, 14 December 2017
+
+- PHP: Only treat repos as libraries if they declare "library" as their type
+
 ## v0.39.0, 14 December 2017
 
 - PHP: Support PHP libraries
