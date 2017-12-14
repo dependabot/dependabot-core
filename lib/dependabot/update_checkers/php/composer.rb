@@ -136,6 +136,8 @@ module Dependabot
             # can't install and cases where we can't update. For now, we
             # therefore just ignore the dependency.
             nil
+          elsif error.message.start_with?("Allowed memory size")
+            raise "Composer out of memory"
           else
             raise error
           end
