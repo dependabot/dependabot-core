@@ -12,8 +12,6 @@ class ExceptionIO extends NullIO
     {
         if (strpos($messages, 'Your requirements could not be resolved') !== false) {
             throw new \RuntimeException('Requirements could not be resolved');
-        } elseif (strpos($messages, 'bytes exhausted') !== false) {
-            throw new \RuntimeException('Out of memory!');
         }
     }
 }
