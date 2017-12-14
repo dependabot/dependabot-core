@@ -1,3 +1,7 @@
+## v0.38.7, 14 December 2017
+
+- PHP: Treat last error correctly (as an array)
+
 ## v0.38.6, 14 December 2017
 
 - PHP: Try and add some memory that will be freed on error
