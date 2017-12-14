@@ -15,16 +15,20 @@ module Dependabot
         end
 
         def updated_dependency_files
-          [
+          updated_files = []
+
+          updated_files <<
             updated_file(
               file: composer_json,
               content: updated_composer_json_content
-            ),
-            updated_file(
-              file: lockfile,
-              content: updated_dependency_files_content["composer.lock"]
             )
-          ]
+
+          if lockfile
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
+
+          updated_files
         end
 
         private
@@ -35,9 +39,7 @@ module Dependabot
         end
 
         def check_required_files
-          %w(composer.json composer.lock).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No composer.json!" unless get_original_file("composer.json")
         end
 
         def composer_json
@@ -48,8 +50,8 @@ module Dependabot
           @lockfile ||= get_original_file("composer.lock")
         end
 
-        def updated_dependency_files_content
-          @updated_dependency_files_content ||=
+        def updated_lockfile_content
+          @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               File.write("composer.json", updated_composer_json_content)
               File.write("composer.lock", lockfile.content)
@@ -64,7 +66,7 @@ module Dependabot
                   github_access_token
                 ]
               )
-            end
+            end.fetch("composer.lock")
         end
 
         def updated_composer_json_content

@@ -11,7 +11,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [composer_json, lockfile],
+      dependency_files: files,
       dependencies: [dependency],
       credentials: [
         {
@@ -23,6 +23,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
     )
   end
 
+  let(:files) { [composer_json, lockfile] }
   let(:composer_json) do
     Dependabot::DependencyFile.new(
       content: composer_body,
@@ -182,6 +183,11 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
       subject(:updated_lockfile_content) do
         raw = updated_files.find { |f| f.name == "composer.lock" }.content
         JSON.parse(raw).to_json
+      end
+
+      context "without a lockfile" do
+        let(:files) { [composer_json] }
+        specify { expect(updated_files.map(&:name)).to eq(["composer.json"]) }
       end
 
       it "has details of the updated item" do
