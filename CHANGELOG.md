@@ -1,3 +1,7 @@
+## v0.38.5, 14 December 2017
+
+- PHP: Handle shutdown errors
+
 ## v0.38.4, 14 December 2017
 
 - PHP: Throw out of memory errors
