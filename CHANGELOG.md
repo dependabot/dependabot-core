@@ -1,3 +1,7 @@
+## v0.38.6, 14 December 2017
+
+- PHP: Try and add some memory that will be freed on error
+
 ## v0.38.5, 14 December 2017
 
 - PHP: Handle shutdown errors
