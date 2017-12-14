@@ -24,7 +24,7 @@ register_shutdown_function(function (): void {
     $memory = null;
     $error = error_get_last();
     if (null !== $error) {
-        fwrite(STDOUT, json_encode(['error' => $error->getMessage()]));
+        fwrite(STDOUT, json_encode(['error' => $error['message']]));
     }
 });
 
