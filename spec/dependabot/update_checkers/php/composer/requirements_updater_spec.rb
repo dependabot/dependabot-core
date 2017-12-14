@@ -89,6 +89,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
+        context "and a >= was previously specified" do
+          let(:composer_json_req_string) { ">= 1.2.3" }
+          its([:requirement]) { is_expected.to eq(">= 1.5.0") }
+        end
+
         context "and a tilda was previously specified" do
           let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
 
@@ -120,6 +125,21 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "with just *" do
             let(:composer_json_req_string) { "*" }
             its([:requirement]) { is_expected.to eq("*") }
+          end
+        end
+
+        context "and there were multiple specifications" do
+          let(:composer_json_req_string) { "> 1.0.0 < 1.2.0" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "specified with commas" do
+            let(:composer_json_req_string) { "> 1.0.0, < 1.2.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "specified with ||" do
+            let(:composer_json_req_string) { "^1.0.0 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
           end
         end
 
@@ -213,6 +233,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
             let(:composer_json_req_string) { "^0.0.0" }
             its([:requirement]) { is_expected.to eq("^0.0.2") }
           end
+        end
+
+        context "and a >= was previously specified" do
+          let(:composer_json_req_string) { ">= 1.2.3" }
+          its([:requirement]) { is_expected.to eq(">= 1.2.3") }
         end
 
         context "and a *.* was previously specified" do

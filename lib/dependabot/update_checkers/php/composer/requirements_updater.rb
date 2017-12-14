@@ -13,6 +13,7 @@ module Dependabot
       class Composer
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*]+)*/
+          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+/
 
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
@@ -50,6 +51,10 @@ module Dependabot
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
 
+            if current_requirement.strip.split(SEPARATOR).count > 1
+              return req.merge(requirement: "^#{latest_resolvable_version}")
+            end
+
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
@@ -71,7 +76,7 @@ module Dependabot
 
           def updated_library_requirement(req)
             current_requirement = req[:requirement]
-            return req if current_requirement.strip.split(/[\s,|]/).count > 1
+            return req if current_requirement.strip.split(SEPARATOR).count > 1
 
             ruby_req = ruby_requirement(current_requirement)
             return req if ruby_req.satisfied_by?(latest_resolvable_version)
@@ -122,9 +127,7 @@ module Dependabot
           end
 
           def ruby_range(req_string)
-            parts = req_string.split(".")
-            parts << "0" if parts.count < 3
-            Gem::Requirement.new("~> #{parts.join('.')}")
+            Gem::Requirement.new(req_string)
           end
 
           def ruby_caret_range(req_string)
