@@ -142,7 +142,6 @@ module Dependabot
         end
 
         def library?
-          return true if lockfile.nil?
           JSON.parse(composer_file.content)["type"] == "library"
         end
 
