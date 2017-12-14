@@ -89,6 +89,20 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
+        context "and a tilda was previously specified" do
+          let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
+
+          context "with three digits" do
+            let(:composer_json_req_string) { "~2.5.1" }
+            its([:requirement]) { is_expected.to eq("~2.5.3") }
+          end
+
+          context "with two digits" do
+            let(:composer_json_req_string) { "~2.4" }
+            its([:requirement]) { is_expected.to eq("~2.5") }
+          end
+        end
+
         context "and a pre-release was previously specified" do
           let(:composer_json_req_string) { "^1.2.3beta" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
@@ -101,6 +115,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "with fewer digits than the new version" do
             let(:composer_json_req_string) { "0.*" }
             its([:requirement]) { is_expected.to eq("1.*") }
+          end
+
+          context "with just *" do
+            let(:composer_json_req_string) { "*" }
+            its([:requirement]) { is_expected.to eq("*") }
           end
         end
 
@@ -203,6 +222,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "with fewer digits than the new version" do
             let(:composer_json_req_string) { "0.*" }
             its([:requirement]) { is_expected.to eq("1.*") }
+          end
+
+          context "with just *" do
+            let(:composer_json_req_string) { "*" }
+            its([:requirement]) { is_expected.to eq("*") }
           end
         end
 

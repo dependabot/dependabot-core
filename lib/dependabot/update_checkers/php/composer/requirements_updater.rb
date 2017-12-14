@@ -53,7 +53,8 @@ module Dependabot
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
-                unless old_version.include?("*")
+                unless old_version.include?("*") ||
+                       current_requirement.include?("~")
                   next latest_resolvable_version.to_s
                 end
 
@@ -70,7 +71,7 @@ module Dependabot
 
           def updated_library_requirement(req)
             current_requirement = req[:requirement]
-            return req if current_requirement.strip.split(" ").count > 1
+            return req if current_requirement.strip.split(/[\s,|]/).count > 1
 
             ruby_req = ruby_requirement(current_requirement)
             return req if ruby_req.satisfied_by?(latest_resolvable_version)
@@ -78,7 +79,8 @@ module Dependabot
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
-                unless old_version.include?("*")
+                unless old_version.include?("*") ||
+                       current_requirement.include?("~")
                   next latest_resolvable_version.to_s
                 end
 
