@@ -1,3 +1,7 @@
+## v0.39.0, 14 December 2017
+
+- PHP: Support PHP libraries
+
 ## v0.38.8, 14 December 2017
 
 - PHP: Raise clear error when Composer is out of memory
