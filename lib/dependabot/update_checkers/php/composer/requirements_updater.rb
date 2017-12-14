@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-###############################################################################
-# For more details on Composer version constraints, see:
-# https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
-###############################################################################
+################################################################################
+# For more details on Composer version constraints, see:                       #
+# https://getcomposer.org/doc/articles/versions.md#writing-version-constraints #
+################################################################################
 
 require "dependabot/update_checkers/php/composer"
 
@@ -14,18 +14,13 @@ module Dependabot
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*]+)*/
 
-          attr_reader :requirements, :existing_version,
-                      :latest_version, :latest_resolvable_version
-
-          def initialize(requirements:, existing_version:,
+          def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
 
             @latest_version = Gem::Version.new(latest_version) if latest_version
 
-            if existing_version
-              @existing_version = Gem::Version.new(existing_version)
-            end
+            @library = library
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
@@ -36,15 +31,21 @@ module Dependabot
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
-              if existing_version
-                updated_app_requirement(req)
-              else
+              if library?
                 updated_library_requirement(req)
+              else
+                updated_app_requirement(req)
               end
             end
           end
 
           private
+
+          attr_reader :requirements, :latest_version, :latest_resolvable_version
+
+          def library?
+            @library
+          end
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]

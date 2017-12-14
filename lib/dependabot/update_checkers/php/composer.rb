@@ -43,7 +43,7 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
-            existing_version: dependency.version&.to_s
+            library: library?
           ).updated_requirements
         end
 
@@ -139,6 +139,11 @@ module Dependabot
           else
             raise error
           end
+        end
+
+        def library?
+          return true if lockfile.nil?
+          JSON.parse(composer_file.content)["type"] == "library"
         end
 
         def github_access_token

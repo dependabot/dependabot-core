@@ -7,7 +7,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      existing_version: existing_version,
+      library: library,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -24,7 +24,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
   end
   let(:composer_json_req_string) { "^1.4.0" }
 
-  let(:existing_version) { "1.0.0" }
+  let(:library) { false }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -41,8 +41,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
       its([:requirement]) { is_expected.to eq(composer_json_req_string) }
     end
 
-    context "with an existing version" do
-      let(:existing_version) { "1.0.0" }
+    context "for an app requirement" do
+      let(:library) { false }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -135,8 +135,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
       end
     end
 
-    context "without an existing version" do
-      let(:existing_version) { nil }
+    context "for a library requirement" do
+      let(:library) { true }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
