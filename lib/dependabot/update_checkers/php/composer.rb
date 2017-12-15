@@ -25,7 +25,7 @@ module Dependabot
             packagist_listing["packages"][dependency.name.downcase].
             keys.map do |version|
               begin
-                Gem::Version.new(version)
+                Gem::Version.new(version.gsub(/^v/, ""))
               rescue ArgumentError
                 nil
               end

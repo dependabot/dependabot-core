@@ -1700,7 +1700,7 @@
                 "version": "1.22.0",
                 "version_normalized": "1.22.0.0"
             },
-            "1.22.1": {
+            "v1.22.1": {
                 "authors": [
                     {
                         "email": "j.boggiano@seld.be",
