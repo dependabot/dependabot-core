@@ -274,6 +274,36 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           end
         end
 
+        context "and there were multiple specifications" do
+          let(:composer_json_req_string) { "> 1.0.0 < 1.2.0" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "specified with commas" do
+            let(:composer_json_req_string) { "> 1.0.0, < 1.2.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "specified with commas and valid" do
+            let(:composer_json_req_string) { "> 1.0.0, < 1.6.0" }
+            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
+
+          context "specified with ||" do
+            let(:composer_json_req_string) { "^1.0.0 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
+
+          context "specified with || and commas and invalid" do
+            let(:composer_json_req_string) { "> 1.0, < 1.2 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "specified with || and commas and valid" do
+            let(:composer_json_req_string) { "> 1.0, < 1.6 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
+        end
+
         context "and there were multiple requirements" do
           let(:requirements) { [composer_json_req, other_composer_json_req] }
 

@@ -13,6 +13,8 @@ module Dependabot
       class Composer
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*]+)*/
+          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]+(?![\s,]*\|)/
+          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|+/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+/
 
           def initialize(requirements:, library:,
@@ -76,10 +78,15 @@ module Dependabot
 
           def updated_library_requirement(req)
             current_requirement = req[:requirement]
-            return req if current_requirement.strip.split(SEPARATOR).count > 1
+            ruby_reqs = ruby_requirements(current_requirement)
 
-            ruby_req = ruby_requirement(current_requirement)
-            return req if ruby_req.satisfied_by?(latest_resolvable_version)
+            if ruby_reqs.any? { |r| r.satisfied_by?(latest_resolvable_version) }
+              return req
+            end
+
+            if current_requirement.strip.split(SEPARATOR).count > 1
+              return req.merge(requirement: "^#{latest_resolvable_version}")
+            end
 
             updated_requirement =
               current_requirement.
@@ -100,17 +107,24 @@ module Dependabot
             req.merge(requirement: updated_requirement)
           end
 
-          def ruby_requirement(requirement_string)
+          def ruby_requirements(requirement_string)
             requirement_string = requirement_string.strip
 
-            if requirement_string.include?("*")
-              ruby_tilde_range(requirement_string.gsub(/(?:\.|^)\*/, ""))
-            elsif requirement_string.start_with?("~")
-              ruby_tilde_range(requirement_string)
-            elsif requirement_string.start_with?("^")
-              ruby_caret_range(requirement_string)
-            else
-              ruby_range(requirement_string)
+            requirement_string.split(OR_SEPARATOR).map do |req_string|
+              ruby_requirements =
+                req_string.strip.split(AND_SEPARATOR).map do |r_string|
+                  if r_string.include?("*")
+                    ruby_tilde_range(r_string.gsub(/(?:\.|^)\*/, ""))
+                  elsif r_string.start_with?("~")
+                    ruby_tilde_range(r_string)
+                  elsif r_string.start_with?("^")
+                    ruby_caret_range(r_string)
+                  else
+                    ruby_range(r_string)
+                  end
+                end
+
+              Gem::Requirement.new(ruby_requirements.join(",").split(","))
             end
           end
 
