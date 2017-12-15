@@ -1,3 +1,7 @@
+## v0.39.4, 15 December 2017
+
+- PHP: Make UpdateChecker work for dev dependencies
+
 ## v0.39.3, 15 December 2017
 
 - PHP: Parse development dependencies properly
