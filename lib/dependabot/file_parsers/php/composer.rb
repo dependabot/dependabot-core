@@ -17,25 +17,27 @@ module Dependabot
 
         def runtime_dependencies
           parsed_composer_json.fetch("require", {}).map do |name, req|
-            # Ignore dependencies which appear in the composer.json but not the
-            # composer.lock. For instance, if a specific PHP version or
-            # extension is required, it won't appear in the packages section of
-            # the lockfile.
-            next if lockfile && dependency_version(name).nil?
+            if lockfile
+              version = dependency_version(name: name, type: "runtime")
 
-            # Ignore dependency versions which are non-numeric, since they can't
-            # be compared later in the process.
-            next if lockfile && !dependency_version(name).match?(/^\d/)
+              # Ignore dependencies which appear in the composer.json but not
+              # the composer.lock.
+              next if version.nil?
+
+              # Ignore dependency versions which are non-numeric, since they
+              # can't be compared later in the process.
+              next unless version.match?(/^\d/)
+            end
 
             next if php_or_extension?(name)
 
             Dependency.new(
               name: name,
-              version: dependency_version(name),
+              version: dependency_version(name: name, type: "runtime"),
               requirements: [{
                 requirement: req,
                 file: "composer.json",
-                source: dependency_source(name),
+                source: dependency_source(name: name, type: "runtime"),
                 groups: ["runtime"]
               }],
               package_manager: "composer"
@@ -45,23 +47,27 @@ module Dependabot
 
         def development_dependencies
           parsed_composer_json.fetch("require-dev", {}).map do |name, req|
-            # Ignore dependencies which appear in the composer.json but not the
-            # composer.lock. For instance, if a specific PHP version or
-            # extension is required, it won't appear in the packages section of
-            # the lockfile.
-            next if lockfile && dependency_version(name).nil?
+            if lockfile
+              version = dependency_version(name: name, type: "development")
 
-            # Ignore dependency versions which are non-numeric, since they can't
-            # be compared later in the process.
-            next if lockfile && !dependency_version(name).match?(/^\d/)
+              # Ignore dependencies which appear in the composer.json but not
+              # the composer.lock.
+              next if version.nil?
+
+              # Ignore dependency versions which are non-numeric, since they
+              # can't be compared later in the process.
+              next unless version.match?(/^\d/)
+            end
+
+            next if php_or_extension?(name)
 
             Dependency.new(
               name: name,
-              version: dependency_version(name),
+              version: dependency_version(name: name, type: "development"),
               requirements: [{
                 requirement: req,
                 file: "composer.json",
-                source: dependency_source(name),
+                source: dependency_source(name: name, type: "development"),
                 groups: ["development"]
               }],
               package_manager: "composer"
@@ -69,20 +75,30 @@ module Dependabot
           end.compact
         end
 
-        def dependency_version(name)
+        def dependency_version(name:, type:)
           return unless lockfile
-          package = parsed_lockfile["packages"].find { |d| d["name"] == name }
+          key = lockfile_key(type)
+          package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
           package&.fetch("version")&.sub(/^v?/, "")
         end
 
-        def dependency_source(name)
+        def dependency_source(name:, type:)
           return unless lockfile
-          package = parsed_lockfile["packages"].find { |d| d["name"] == name }
+          key = lockfile_key(type)
+          package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
           return unless package&.dig("source", "type") == "git"
           {
             type: "git",
             url: package.dig("source", "url")
           }
+        end
+
+        def lockfile_key(type)
+          case type
+          when "runtime" then "packages"
+          when "development" then "packages-dev"
+          else raise "unknown type #{type}"
+          end
         end
 
         def php_or_extension?(name)

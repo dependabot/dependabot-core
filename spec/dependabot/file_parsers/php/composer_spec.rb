@@ -63,6 +63,9 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       let(:composer_json_body) do
         fixture("php", "composer_files", "development_dependencies")
       end
+      let(:lockfile_body) do
+        fixture("php", "lockfiles", "development_dependencies")
+      end
 
       it "includes development dependencies" do
         expect(dependencies.length).to eq(2)
@@ -73,7 +76,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
+        its(:version) { is_expected.to eq("1.0.1") }
         its(:requirements) do
           is_expected.to eq(
             [
