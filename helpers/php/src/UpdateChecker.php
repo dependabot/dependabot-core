@@ -40,6 +40,7 @@ class UpdateChecker
         $install
             ->setDryRun(true)
             ->setUpdate(true)
+            ->setDevMode(true)
             ->setUpdateWhitelist([$dependencyName])
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)

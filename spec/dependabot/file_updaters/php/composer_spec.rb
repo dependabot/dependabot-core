@@ -163,6 +163,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         let(:composer_body) do
           fixture("php", "composer_files", "development_dependencies")
         end
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "development_dependencies")
+        end
 
         it { is_expected.to include "\"monolog/monolog\":\"1.22.1\"" }
       end
@@ -195,6 +198,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
       end
 
       it { is_expected.to include "\"prefer-stable\":false" }
+
+      context "when the dependency is a development dependency" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "development_dependencies")
+        end
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "development_dependencies")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        end
+      end
 
       context "when an old version of PHP is specified" do
         let(:composer_body) do

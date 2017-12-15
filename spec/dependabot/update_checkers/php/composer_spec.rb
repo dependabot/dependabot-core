@@ -141,6 +141,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
     end
 
+    context "with a dev dependency" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "development_dependencies")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "development_dependencies")
+      end
+
+      it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    end
+
     context "with a PEAR dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
