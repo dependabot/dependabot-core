@@ -1,3 +1,7 @@
+## v0.39.3, 15 December 2017
+
+- PHP: Parse development dependencies properly
+
 ## v0.39.2, 15 December 2017
 
 - PHP: Strip leading `v` from versions in packagist API response
