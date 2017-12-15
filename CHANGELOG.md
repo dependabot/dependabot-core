@@ -1,3 +1,7 @@
+## v0.39.2, 15 December 2017
+
+- PHP: Strip leading `v` from versions in packagist API response
+
 ## v0.39.1, 14 December 2017
 
 - PHP: Only treat repos as libraries if they declare "library" as their type
