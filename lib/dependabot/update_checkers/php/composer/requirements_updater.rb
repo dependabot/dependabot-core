@@ -52,18 +52,16 @@ module Dependabot
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
+            version = latest_resolvable_version
 
             if current_requirement.strip.split(SEPARATOR).count > 1
-              return req.merge(requirement: "^#{latest_resolvable_version}")
+              return req.merge(requirement: "^#{version}")
             end
 
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
-                unless old_version.include?("*") ||
-                       current_requirement.include?("~")
-                  next latest_resolvable_version.to_s
-                end
+                next version.to_s unless current_requirement.match?(/[~*]/)
 
                 old_parts = old_version.split(".")
                 new_parts = latest_resolvable_version.to_s.split(".").
@@ -80,28 +78,22 @@ module Dependabot
             current_requirement = req[:requirement]
             ruby_reqs = ruby_requirements(current_requirement)
 
-            if ruby_reqs.any? { |r| r.satisfied_by?(latest_resolvable_version) }
-              return req
-            end
+            version = latest_resolvable_version
+            return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
 
-            if current_requirement.strip.split(SEPARATOR).count > 1
-              return req.merge(requirement: "^#{latest_resolvable_version}")
-            end
+            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
-              current_requirement.
-              sub(VERSION_REGEX) do |old_version|
-                unless old_version.include?("*") ||
-                       current_requirement.include?("~")
-                  next latest_resolvable_version.to_s
-                end
-
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i] == "*" ? "*" : part
-                end.join(".")
+              if reqs.any? { |r| r.start_with?("^") }
+                update_caret_requirement(current_requirement)
+              elsif reqs.any? { |r| r.start_with?("~") }
+                update_tilda_requirement(current_requirement)
+              elsif reqs.any? { |r| r.include?("*") }
+                update_wildcard_requirement(current_requirement)
+              elsif reqs.any? { |r| r.match?(/[<->]/) }
+                update_range_requirement(current_requirement)
+              else
+                update_exact_requirement(current_requirement)
               end
 
             req.merge(requirement: updated_requirement)
@@ -113,7 +105,9 @@ module Dependabot
             requirement_string.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  if r_string.include?("*")
+                  if r_string.start_with?("*")
+                    Gem::Requirement.new(">= 0")
+                  elsif r_string.include?("*")
                     ruby_tilde_range(r_string.gsub(/(?:\.|^)\*/, ""))
                   elsif r_string.start_with?("~")
                     ruby_tilde_range(r_string)
@@ -158,6 +152,61 @@ module Dependabot
             end.join(".")
 
             Gem::Requirement.new(">= #{version}", "< #{upper_bound}")
+          end
+
+          def update_caret_requirement(req_string)
+            caret_requirements =
+              req_string.split(SEPARATOR).select { |r| r.start_with?("^") }
+            version_parts = latest_resolvable_version.segments
+
+            min_existing_precision =
+              caret_requirements.map { |r| r.split(".").count }.min
+            first_non_zero_index =
+              version_parts.count.times.find { |i| version_parts[i] != 0 }
+
+            precision = [min_existing_precision, first_non_zero_index + 1].max
+            version = version_parts.first(precision).map.with_index do |part, i|
+              i <= first_non_zero_index ? part : 0
+            end.join(".")
+
+            req_string + "|^#{version}"
+          end
+
+          def update_tilda_requirement(req_string)
+            tilda_requirements =
+              req_string.split(SEPARATOR).select { |r| r.start_with?("~") }
+            precision = tilda_requirements.map { |r| r.split(".").count }.min
+
+            version_parts = latest_resolvable_version.segments.first(precision)
+            version_parts[-1] = 0
+            version = version_parts.join(".")
+
+            req_string + "|~#{version}"
+          end
+
+          def update_wildcard_requirement(req_string)
+            wildcard_requirements =
+              req_string.split(SEPARATOR).select { |r| r.include?("*") }
+            precision = wildcard_requirements.map do |r|
+              r.split(".").reject { |s| s == "*" }.count
+            end.min
+            wildcard_count = wildcard_requirements.map do |r|
+              r.split(".").select { |s| s == "*" }.count
+            end.min
+
+            version_parts = latest_resolvable_version.segments.first(precision)
+            version = version_parts.join(".")
+
+            req_string + "|#{version}#{'.*' * wildcard_count}"
+          end
+
+          def update_range_requirement(req_string)
+            # TODO
+            req_string + "|^#{latest_resolvable_version}"
+          end
+
+          def update_exact_requirement(_req_string)
+            latest_resolvable_version.to_s
           end
         end
       end
