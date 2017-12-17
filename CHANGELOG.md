@@ -1,3 +1,8 @@
+## v0.39.7, 17 December 2017
+
+- PHP: Handle hyphen ranges properly
+- PHP: Handle range requirements better for app updates
+
 ## v0.39.6, 17 December 2017
 
 - PHP: Better requirement updating for library requirements
