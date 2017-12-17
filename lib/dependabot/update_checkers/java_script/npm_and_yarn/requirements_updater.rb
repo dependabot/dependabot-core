@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+################################################################################
+# For more details on Composer version constraints, see:                       #
+# https://docs.npmjs.com/misc/semver                                           #
+################################################################################
+
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 
 module Dependabot
@@ -8,6 +13,9 @@ module Dependabot
       class NpmAndYarn
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
+          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
 
           attr_reader :requirements, :existing_version,
                       :latest_version, :latest_resolvable_version
@@ -43,53 +51,51 @@ module Dependabot
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
-
-            updated_requirement =
-              current_requirement.
-              sub(VERSION_REGEX) do |old_version|
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i].match?(/^x\b/) ? "x" : part
-                end.join(".")
-              end
-
-            req.merge(requirement: updated_requirement)
+            req.merge(requirement: update_version_string(current_requirement))
           end
 
           def updated_library_requirement(req)
             current_requirement = req[:requirement]
-            return req if current_requirement.strip.split(" ").count > 1
+            version = latest_resolvable_version
             return req if current_requirement.strip == ""
 
-            ruby_req = ruby_requirement(current_requirement)
-            return req if ruby_req.satisfied_by?(latest_resolvable_version)
+            ruby_reqs = ruby_requirements(current_requirement)
+            return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
+
+            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
-              current_requirement.
-              sub(VERSION_REGEX) do |old_version|
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i].match?(/^x\b/) ? "x" : part
-                end.join(".")
+              if reqs.any? { |r| r.match?(/[<-]/) }
+                update_range_requirement(current_requirement)
+              elsif current_requirement.strip.split(SEPARATOR).count == 1
+                update_version_string(current_requirement)
+              else
+                current_requirement
               end
 
             req.merge(requirement: updated_requirement)
           end
 
-          def ruby_requirement(requirement_string)
-            requirement_string = requirement_string.strip
-            requirement_string = requirement_string.gsub(/(?:\.|^)[xX*]/, "")
+          def ruby_requirements(requirement_string)
+            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+              req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")
 
-            if requirement_string.start_with?("~")
-              ruby_tilde_range(requirement_string)
-            elsif requirement_string.start_with?("^")
-              ruby_caret_range(requirement_string)
-            else
-              ruby_range(requirement_string)
+              ruby_requirements =
+                req_string.strip.split(AND_SEPARATOR).map do |r_string|
+                  if r_string.start_with?("~")
+                    ruby_tilde_range(r_string)
+                  elsif r_string.start_with?("^")
+                    ruby_caret_range(r_string)
+                  elsif r_string.include?("-")
+                    ruby_hyphen_range(r_string)
+                  elsif r_string.include?("<") || r_string.include?(">")
+                    Gem::Requirement.new(r_string)
+                  else
+                    ruby_range(r_string)
+                  end
+                end
+
+              Gem::Requirement.new(ruby_requirements.join(",").split(","))
             end
           end
 
@@ -125,6 +131,54 @@ module Dependabot
             end.join(".")
 
             Gem::Requirement.new(">= #{version}", "< #{upper_bound}")
+          end
+
+          def update_range_requirement(req_string)
+            range_requirements =
+              req_string.split(SEPARATOR).select { |r| r.match?(/[<-]/) }
+
+            if range_requirements.count == 1
+              range_requirement = range_requirements.first
+              versions = range_requirement.scan(VERSION_REGEX)
+              upper_bound = versions.map { |v| Gem::Version.new(v) }.max
+              new_upper_bound = update_greatest_version(
+                upper_bound,
+                latest_resolvable_version
+              )
+
+              req_string.sub(upper_bound.to_s, new_upper_bound.to_s)
+            else
+              req_string + " || ^#{latest_resolvable_version}"
+            end
+          end
+
+          def update_version_string(req_string)
+            req_string.
+              sub(VERSION_REGEX) do |old_version|
+                old_parts = old_version.split(".")
+                new_parts = latest_resolvable_version.to_s.split(".").
+                            first(old_parts.count)
+                new_parts.map.with_index do |part, i|
+                  old_parts[i].match?(/^x\b/) ? "x" : part
+                end.join(".")
+              end
+          end
+
+          def update_greatest_version(old_version, version_to_be_permitted)
+            version = Gem::Version.new(old_version)
+            version = version.release if version.prerelease?
+
+            index_to_update =
+              version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
+
+            version.segments.map.with_index do |_, index|
+              if index < index_to_update
+                version_to_be_permitted.segments[index]
+              elsif index == index_to_update
+                version_to_be_permitted.segments[index] + 1
+              else 0
+              end
+            end.join(".")
           end
         end
       end
