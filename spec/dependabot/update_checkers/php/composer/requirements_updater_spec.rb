@@ -240,6 +240,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq(">= 1.2.3") }
         end
 
+        context "and a < was previously specified" do
+          let(:composer_json_req_string) { "< 1.2.3" }
+          its([:requirement]) { is_expected.to eq("< 1.5.1") }
+        end
+
+        context "and a - was previously specified" do
+          let(:composer_json_req_string) { "1.2.3 - 1.4.0" }
+          its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+        end
+
         context "and a *.* was previously specified" do
           let(:composer_json_req_string) { "0.*.*" }
           its([:requirement]) { is_expected.to eq("0.*.*|1.*.*") }
@@ -284,7 +294,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           end
 
           context "specified with commas and valid" do
-            let(:composer_json_req_string) { "> 1.0.0, < 1.6.0" }
+            let(:composer_json_req_string) { "> 1.0.0, < 1.7.0" }
             its([:requirement]) { is_expected.to eq(composer_json_req_string) }
           end
 

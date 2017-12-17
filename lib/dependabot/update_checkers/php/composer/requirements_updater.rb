@@ -13,9 +13,9 @@ module Dependabot
       class Composer
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*]+)*/
-          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]+(?![\s,]*\|)/
+          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]+(?![\s,]*[|-])/
           OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|+/
-          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+/
+          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+(?![\s,|-])/
 
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
@@ -90,7 +90,7 @@ module Dependabot
                 update_tilda_requirement(current_requirement)
               elsif reqs.any? { |r| r.include?("*") }
                 update_wildcard_requirement(current_requirement)
-              elsif reqs.any? { |r| r.match?(/[<->]/) }
+              elsif reqs.any? { |r| r.match?(/[<>-]/) }
                 update_range_requirement(current_requirement)
               else
                 update_exact_requirement(current_requirement)
@@ -100,9 +100,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            requirement_string = requirement_string.strip
-
-            requirement_string.split(OR_SEPARATOR).map do |req_string|
+            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
                   if r_string.start_with?("*")
@@ -113,6 +111,8 @@ module Dependabot
                     ruby_tilde_range(r_string)
                   elsif r_string.start_with?("^")
                     ruby_caret_range(r_string)
+                  elsif r_string.include?("-")
+                    ruby_hyphen_range(r_string)
                   else
                     ruby_range(r_string)
                   end
@@ -120,11 +120,6 @@ module Dependabot
 
               Gem::Requirement.new(ruby_requirements.join(",").split(","))
             end
-          end
-
-          def ruby_hyphen_range(req_string)
-            lower_bound, upper_bound = req_string.split("-")
-            Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
           end
 
           def ruby_tilde_range(req_string)
@@ -135,7 +130,20 @@ module Dependabot
           end
 
           def ruby_range(req_string)
-            Gem::Requirement.new(req_string)
+            return Gem::Requirement.new(req_string)
+          end
+
+          def ruby_hyphen_range(req_string)
+            lower_bound, upper_bound = req_string.split("-")
+            if upper_bound.split(".").count < 3
+              upper_bound_parts = upper_bound.split(".")
+              upper_bound_parts[-1] = (upper_bound_parts[-1].to_i + 1).to_s
+              upper_bound = upper_bound_parts.join(".")
+
+              Gem::Requirement.new(">= #{lower_bound}", "< #{upper_bound}")
+            else
+              Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
+            end
           end
 
           def ruby_caret_range(req_string)
