@@ -1,3 +1,7 @@
+## v0.39.6, 17 December 2017
+
+- PHP: Better requirement updating for library requirements
+
 ## v0.39.5, 15 December 2017
 
 - PHP: More sensitive handling of multi-version library requirements
