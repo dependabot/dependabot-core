@@ -276,11 +276,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
         context "and there were multiple specifications" do
           let(:composer_json_req_string) { "> 1.0.0 < 1.2.0" }
-          its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.2.0|^1.5.0") }
+          its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
 
           context "specified with commas" do
             let(:composer_json_req_string) { "> 1.0.0, < 1.2.0" }
-            its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.2.0|^1.5.0") }
+            its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
           end
 
           context "specified with commas and valid" do

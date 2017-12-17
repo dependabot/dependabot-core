@@ -201,8 +201,39 @@ module Dependabot
           end
 
           def update_range_requirement(req_string)
-            # TODO
-            req_string + "|^#{latest_resolvable_version}"
+            range_requirements =
+              req_string.split(SEPARATOR).select { |r| r.match?(/[<-]/) }
+
+            if range_requirements.count == 1
+              range_requirement = range_requirements.first
+              versions = range_requirement.scan(VERSION_REGEX)
+              upper_bound = versions.map { |v| Gem::Version.new(v) }.max
+              new_upper_bound = update_greatest_version(
+                upper_bound,
+                latest_resolvable_version
+              )
+
+              req_string.sub(upper_bound.to_s, new_upper_bound.to_s)
+            else
+              req_string + "|^#{latest_resolvable_version}"
+            end
+          end
+
+          def update_greatest_version(old_version, version_to_be_permitted)
+            version = Gem::Version.new(old_version)
+            version = version.release if version.prerelease?
+
+            index_to_update =
+              version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
+
+            version.segments.map.with_index do |_, index|
+              if index < index_to_update
+                version_to_be_permitted.segments[index]
+              elsif index == index_to_update
+                version_to_be_permitted.segments[index] + 1
+              else 0
+              end
+            end.join(".")
           end
 
           def update_exact_requirement(_req_string)
