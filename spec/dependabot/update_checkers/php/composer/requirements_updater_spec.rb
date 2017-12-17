@@ -128,6 +128,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           end
         end
 
+        context "and a < was previously specified" do
+          let(:composer_json_req_string) { "< 1.2.3" }
+          its([:requirement]) { is_expected.to eq("< 1.5.1") }
+        end
+
+        context "and a - was previously specified" do
+          let(:composer_json_req_string) { "1.2.3 - 1.4.0" }
+          its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+        end
+
         context "and there were multiple specifications" do
           let(:composer_json_req_string) { "> 1.0.0 < 1.2.0" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }

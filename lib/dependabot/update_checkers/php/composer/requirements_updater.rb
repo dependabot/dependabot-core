@@ -58,6 +58,13 @@ module Dependabot
               return req.merge(requirement: "^#{version}")
             end
 
+            if current_requirement.match?(/[<-]/)
+              ruby_req = ruby_requirements(current_requirement).first
+              return req if ruby_req.satisfied_by?(version)
+              updated_req = update_range_requirement(current_requirement)
+              return req.merge(requirement: updated_req)
+            end
+
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
@@ -114,7 +121,7 @@ module Dependabot
                   elsif r_string.include?("-")
                     ruby_hyphen_range(r_string)
                   else
-                    ruby_range(r_string)
+                    Gem::Requirement.new(r_string)
                   end
                 end
 
@@ -127,10 +134,6 @@ module Dependabot
             parts = version.split(".")
             parts << "0" if parts.count < 3
             Gem::Requirement.new("~> #{parts.join('.')}")
-          end
-
-          def ruby_range(req_string)
-            return Gem::Requirement.new(req_string)
           end
 
           def ruby_hyphen_range(req_string)
