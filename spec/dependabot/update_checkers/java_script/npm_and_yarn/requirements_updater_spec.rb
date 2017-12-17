@@ -91,6 +91,26 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
+        context "with just *" do
+          let(:package_json_req_string) { "*" }
+          its([:requirement]) { is_expected.to eq("*") }
+        end
+
+        context "with a < condition" do
+          let(:package_json_req_string) { "< 1.2.0" }
+          its([:requirement]) { is_expected.to eq("< 1.6.0") }
+        end
+
+        context "and there were multiple range specifications" do
+          let(:package_json_req_string) { "> 1.0.0 < 1.2.0" }
+          its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
+
+          context "already valid" do
+            let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
+            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+          end
+        end
+
         context "and an x.x was previously specified" do
           let(:package_json_req_string) { "^0.x.x" }
           its([:requirement]) { is_expected.to eq("^1.x.x") }
@@ -170,6 +190,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("4") }
         end
 
+        context "with a < condition" do
+          let(:package_json_req_string) { "< 1.2.0" }
+          its([:requirement]) { is_expected.to eq("< 1.6.0") }
+        end
+
         context "and a - was previously specified" do
           let(:package_json_req_string) { "1.2.3 - 1.4.0" }
           its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
@@ -222,6 +247,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
             let(:package_json_req_string) { "0.x.x.rc1" }
             its([:requirement]) { is_expected.to eq("1.x.x") }
           end
+        end
+
+        context "with just *" do
+          let(:package_json_req_string) { "*" }
+          its([:requirement]) { is_expected.to eq("*") }
         end
 
         context "and a tilda was previously specified" do

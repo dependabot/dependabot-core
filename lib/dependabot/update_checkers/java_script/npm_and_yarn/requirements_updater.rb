@@ -51,6 +51,14 @@ module Dependabot
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
+
+            if current_requirement.match?(/(<|-\s)/i)
+              ruby_req = ruby_requirements(current_requirement).first
+              return req if ruby_req.satisfied_by?(latest_resolvable_version)
+              updated_req = update_range_requirement(current_requirement)
+              return req.merge(requirement: updated_req)
+            end
+
             req.merge(requirement: update_version_string(current_requirement))
           end
 
@@ -65,7 +73,7 @@ module Dependabot
             reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
-              if reqs.any? { |r| r.match?(/[<-]/) }
+              if reqs.any? { |r| r.match?(/(<|-\s)/i) }
                 update_range_requirement(current_requirement)
               elsif current_requirement.strip.split(SEPARATOR).count == 1
                 update_version_string(current_requirement)
@@ -135,7 +143,7 @@ module Dependabot
 
           def update_range_requirement(req_string)
             range_requirements =
-              req_string.split(SEPARATOR).select { |r| r.match?(/[<-]/) }
+              req_string.split(SEPARATOR).select { |r| r.match?(/(<|-\s)/i) }
 
             if range_requirements.count == 1
               range_requirement = range_requirements.first
