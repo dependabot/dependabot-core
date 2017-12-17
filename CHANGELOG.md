@@ -1,3 +1,7 @@
+## v0.39.8, 17 December 2017
+
+- JS: More sophisticated JavaScript requirement updating
+
 ## v0.39.7, 17 December 2017
 
 - PHP: Handle hyphen ranges properly
