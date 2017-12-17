@@ -90,7 +90,7 @@ module Dependabot
                 update_tilda_requirement(current_requirement)
               elsif reqs.any? { |r| r.include?("*") }
                 update_wildcard_requirement(current_requirement)
-              elsif reqs.any? { |r| r.match?(/[<>-]/) }
+              elsif reqs.any? { |r| r.match?(/[<-]/) }
                 update_range_requirement(current_requirement)
               else
                 update_exact_requirement(current_requirement)
