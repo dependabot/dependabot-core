@@ -1,3 +1,7 @@
+## v0.39.10, 18 December 2017
+
+- PHP Handle "v" prefixes in versions
+
 ## v0.39.9, 18 December 2017
 
 - JS: Handle versions with a hyphen in them
