@@ -6,7 +6,6 @@ namespace Dependabot\PHP;
 
 use Composer\Factory;
 use Composer\Installer;
-use Composer\IO\NullIO;
 
 class Updater
 {
@@ -20,7 +19,7 @@ class Updater
         $originalDir = getcwd();
         chdir($workingDirectory);
 
-        $io = new NullIO();
+        $io = new ExceptionIO();
         $composer = Factory::create($io);
         $config = $composer->getConfig();
 
@@ -45,6 +44,7 @@ class Updater
         $install
             ->setWriteLock(true)
             ->setUpdate(true)
+            ->setDevMode(true)
             ->setUpdateWhitelist([$dependencyName])
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)

@@ -130,6 +130,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         let(:composer_body) do
           fixture("php", "composer_files", "prerelease_version")
         end
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "prerelease_version")
+        end
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -143,11 +146,11 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
                 source: nil
               }
             ],
-            previous_version: "1.1.13beta.2",
+            previous_version: "1.0.0-RC1",
             previous_requirements: [
               {
                 file: "composer.json",
-                requirement: "1.1.13beta.2",
+                requirement: "1.0.0-RC1",
                 groups: [],
                 source: nil
               }
@@ -209,6 +212,47 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
         it "has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        end
+      end
+
+      context "regression spec for media-organizer" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "media_organizer")
+        end
+        let(:lockfile_body) { fixture("php", "lockfiles", "media_organizer") }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "monolog/monolog",
+            version: "1.23.0",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "~1.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.20.0",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "~1.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          updated_dep = JSON.parse(updated_lockfile_content).
+                        fetch("packages-dev").
+                        find { |p| p["name"] == "monolog/monolog" }
+
+          expect(Gem::Version.new(updated_dep.fetch("version"))).
+            to be >= Gem::Version.new("1.23.0")
         end
       end
 
