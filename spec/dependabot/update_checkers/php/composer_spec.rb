@@ -266,7 +266,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       end
 
       context "that is the gem we're checking" do
-        it { is_expected.to be_nil }
+        it { is_expected.to be >= Gem::Version.new("1.22.1") }
       end
 
       context "that is not the gem we're checking" do

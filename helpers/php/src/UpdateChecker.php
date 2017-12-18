@@ -55,10 +55,6 @@ class UpdateChecker
             return $package->getName() == $dependencyName;
         }));
 
-        if ($updatedPackage->getRepository()->getRepoConfig()['type'] == 'vcs') {
-            return null;
-        }
-
         return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
     }
 }
