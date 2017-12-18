@@ -107,6 +107,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
+            requirement_string = requirement_string.gsub(/v(?=\d)/, "")
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
