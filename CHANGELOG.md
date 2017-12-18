@@ -1,3 +1,8 @@
+## v0.39.13, 18 December 2017
+
+- PHP: Spec library handling on caret constraints
+- PHP: Keep digit length for two-digit caret version
+
 ## v0.39.12, 18 December 2017
 
 - PHP: More robust file updating
