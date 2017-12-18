@@ -1,3 +1,7 @@
+## v0.39.15, 18 December 2017
+
+- Ruby: Clone down submodules when evaluating git dependencies
+
 ## v0.39.14, 18 December 2017
 
 - PHP: Stop ignoring git repos
