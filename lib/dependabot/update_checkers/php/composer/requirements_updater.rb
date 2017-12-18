@@ -68,7 +68,7 @@ module Dependabot
             updated_requirement =
               current_requirement.
               sub(VERSION_REGEX) do |old_version|
-                next version.to_s unless current_requirement.match?(/[~*]/)
+                next version.to_s unless current_requirement.match?(/[~*\^]/)
 
                 old_parts = old_version.split(".")
                 new_parts = latest_resolvable_version.to_s.split(".").

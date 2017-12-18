@@ -87,6 +87,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         context "and a caret was previously specified" do
           let(:composer_json_req_string) { "^1.2.3" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "specified at two digits" do
+            let(:composer_json_req_string) { "^1.2" }
+            its([:requirement]) { is_expected.to eq("^1.5") }
+          end
         end
 
         context "and a >= was previously specified" do
