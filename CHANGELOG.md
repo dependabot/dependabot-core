@@ -1,3 +1,7 @@
+## v0.39.12, 18 December 2017
+
+- PHP: More robust file updating
+
 ## v0.39.11, 18 December 2017
 
 - PHP: Update handling of ~ constraints
