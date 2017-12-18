@@ -1,3 +1,7 @@
+## v0.39.9, 18 December 2017
+
+- JS: Handle versions with a hyphen in them
+
 ## v0.39.8, 17 December 2017
 
 - JS: More sophisticated JavaScript requirement updating
