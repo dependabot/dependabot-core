@@ -228,9 +228,19 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("^1.2.3") }
           end
 
+          context "with two digits" do
+            let(:composer_json_req_string) { "^1.2" }
+            its([:requirement]) { is_expected.to eq("^1.2") }
+          end
+
           context "that the latest version does not satisfy" do
             let(:composer_json_req_string) { "^0.8.0" }
             its([:requirement]) { is_expected.to eq("^0.8.0|^1.0.0") }
+
+            context "with two digits" do
+              let(:composer_json_req_string) { "^0.8" }
+              its([:requirement]) { is_expected.to eq("^0.8|^1.0") }
+            end
           end
 
           context "including a pre-release" do
