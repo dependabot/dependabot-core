@@ -101,7 +101,8 @@ module Dependabot
               source = ::Bundler::Source::Git.new(
                 "uri" => dependency_source_details[:url],
                 "branch" => dependency_source_details[:branch],
-                "name" => dependency.name
+                "name" => dependency.name,
+                "submodules" => true
               )
 
               # Tell Bundler we're fine with fetching the source remotely
