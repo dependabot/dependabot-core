@@ -1,6 +1,10 @@
+## v0.39.11, 18 December 2017
+
+- PHP: Update handling of ~ constraints
+
 ## v0.39.10, 18 December 2017
 
-- PHP Handle "v" prefixes in versions
+- PHP: Handle "v" prefixes in versions
 
 ## v0.39.9, 18 December 2017
 
