@@ -94,7 +94,7 @@ module Dependabot
                     ruby_tilde_range(r_string)
                   elsif r_string.start_with?("^")
                     ruby_caret_range(r_string)
-                  elsif r_string.include?("-")
+                  elsif r_string.include?(" - ")
                     ruby_hyphen_range(r_string)
                   elsif r_string.include?("<") || r_string.include?(">")
                     Gem::Requirement.new(r_string)

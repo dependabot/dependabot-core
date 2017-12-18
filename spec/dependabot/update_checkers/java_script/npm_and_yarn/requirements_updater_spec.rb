@@ -84,6 +84,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and a pre-release was previously specified" do
           let(:package_json_req_string) { "^1.2.3-rc1" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "that needs updating" do
+            let(:package_json_req_string) { "1.2.3-rc1" }
+            its([:requirement]) { is_expected.to eq("1.5.0") }
+          end
         end
 
         context "and a pre-release was previously specified with four places" do
@@ -198,6 +203,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and a - was previously specified" do
           let(:package_json_req_string) { "1.2.3 - 1.4.0" }
           its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+        end
+
+        context "and a pre-release was previously specified" do
+          let(:package_json_req_string) { "1.2.3-rc1" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
         end
 
         context "and a caret was previously specified" do
