@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.required_rubygems_version = ">= 2.6.13"
 
   spec.add_dependency "bundler", "~> 1.16"
-  spec.add_dependency "docker_registry2", "~> 1.2"
+  spec.add_dependency "docker_registry2", "~> 1.3", ">= 1.3.3"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gitlab", "~> 4.1"
   spec.add_dependency "octokit", "~> 4.6"
