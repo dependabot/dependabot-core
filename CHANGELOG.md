@@ -1,3 +1,7 @@
+## v0.39.14, 18 December 2017
+
+- PHP: Stop ignoring git repos
+
 ## v0.39.13, 18 December 2017
 
 - PHP: Spec library handling on caret constraints
