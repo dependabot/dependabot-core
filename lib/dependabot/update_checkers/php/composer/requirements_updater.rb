@@ -132,9 +132,7 @@ module Dependabot
 
           def ruby_tilde_range(req_string)
             version = req_string.gsub(/^~/, "")
-            parts = version.split(".")
-            parts << "0" if parts.count < 3
-            Gem::Requirement.new("~> #{parts.join('.')}")
+            Gem::Requirement.new("~> #{version}")
           end
 
           def ruby_hyphen_range(req_string)
