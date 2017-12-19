@@ -1,3 +1,10 @@
+## v0.39.16, 18 December 2017
+
+- PHP: Bump composer/composer from 1.5.5 to 1.5.6
+- PHP: Show metadata for git dependencies
+- JS: Check for dist-tags in npm response
+- Docker: Use latest version of docker_registry2
+
 ## v0.39.15, 18 December 2017
 
 - Ruby: Clone down submodules when evaluating git dependencies
