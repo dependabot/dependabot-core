@@ -42,7 +42,7 @@ module Dependabot
         end
 
         def fetch_latest_version
-          return nil unless npm_details&.fetch("versions", nil)
+          return nil unless npm_details&.fetch("dist-tags", nil)
           latest_dist_tag = npm_details["dist-tags"]["latest"]
           latest_dist_tag = Gem::Version.new(latest_dist_tag)
           return latest_dist_tag if use_latest_dist_tag?(latest_dist_tag)
