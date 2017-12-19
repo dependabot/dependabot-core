@@ -20,9 +20,7 @@ module Dependabot
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-
             @latest_version = Gem::Version.new(latest_version) if latest_version
-
             @library = library
 
             return unless latest_resolvable_version

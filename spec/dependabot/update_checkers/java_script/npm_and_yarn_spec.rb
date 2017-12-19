@@ -520,7 +520,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           requirements: dependency_requirements,
           latest_version: "1.7.0",
           latest_resolvable_version: "1.7.0",
-          existing_version: "1.0.0"
+          library: false
         ).
         and_call_original
       expect(checker.updated_requirements).

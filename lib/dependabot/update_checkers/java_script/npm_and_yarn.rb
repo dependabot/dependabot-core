@@ -26,7 +26,7 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
-            existing_version: dependency.version&.to_s
+            library: library?
           ).updated_requirements
         end
 
@@ -125,6 +125,10 @@ module Dependabot
 
           # TODO: Handle pre-release requirements, too
           false
+        end
+
+        def library?
+          dependency.version.nil?
         end
 
         def dependency_url
