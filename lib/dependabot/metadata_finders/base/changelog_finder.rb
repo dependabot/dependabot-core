@@ -101,6 +101,7 @@ module Dependabot
           previous_ref && new_ref && previous_ref != new_ref
         end
 
+        # TODO: Refactor me so that Composer doesn't need to be special cased
         def git_source?(requirements)
           # Special case Composer, which uses git as a source but handles tags
           # internally
