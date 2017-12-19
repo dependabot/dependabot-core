@@ -20,9 +20,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
       requirements: dependency_requirements,
       previous_requirements: dependency_previous_requirements,
       previous_version: dependency_previous_version,
-      package_manager: "bundler"
+      package_manager: package_manager
     )
   end
+  let(:package_manager) { "bundler" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_requirements) do
@@ -174,6 +175,30 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
             "7638417db6d59f3c431d3e1f261cc637155684cd..."\
             "cd8274d15fa3ae2ab983129fb037999f264ba9a7"
           )
+      end
+
+      context "when the package manager is composer" do
+        let(:package_manager) { "composer" }
+
+        let(:dependency_version) { "1.4.0" }
+        let(:dependency_previous_version) { "1.3.0" }
+
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_tags.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it do
+          is_expected.to eq("https://github.com/gocardless/business/"\
+                            "compare/v1.3.0...v1.4.0")
+        end
       end
 
       context "without a previous version" do

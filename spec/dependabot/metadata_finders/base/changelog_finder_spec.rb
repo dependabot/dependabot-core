@@ -36,9 +36,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       requirements: dependency_requirements,
       previous_requirements: dependency_previous_requirements,
       previous_version: dependency_previous_version,
-      package_manager: "bundler"
+      package_manager: package_manager
     )
   end
+  let(:package_manager) { "bundler" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_requirements) do
@@ -133,6 +134,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:old_ref) { "master" }
 
         it { is_expected.to be_nil }
+
+        context "when the package manager is composer" do
+          let(:package_manager) { "composer" }
+
+          it "finds the changelog as normal" do
+            expect(subject).
+              to eq("https://github.com/gocardless/business/blob/master/"\
+                    "CHANGELOG.md")
+          end
+        end
 
         context "when the ref has changed" do
           let(:new_ref) { "v1.1.0" }

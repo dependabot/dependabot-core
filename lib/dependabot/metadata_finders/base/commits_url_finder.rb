@@ -46,6 +46,10 @@ module Dependabot
         private
 
         def git_source?(requirements)
+          # Special case Composer, which uses git as a source but handles tags
+          # internally
+          return false if dependency.package_manager == "composer"
+
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
