@@ -1,3 +1,7 @@
+## v0.39.17, 19 December 2017
+
+- Ruby: Make Ruby library split explicit in UpdateChecker (just a refactor)
+
 ## v0.39.16, 18 December 2017
 
 - PHP: Bump composer/composer from 1.5.5 to 1.5.6
