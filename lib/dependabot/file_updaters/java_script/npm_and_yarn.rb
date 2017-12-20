@@ -146,6 +146,7 @@ module Dependabot
           return updated_credential_lines.join("\n") if npmrc_file.nil?
 
           original_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
+          original_content = original_content.gsub(/^_auth = \${.*}/, "")
           ([original_content] + updated_credential_lines).join("\n")
         end
 

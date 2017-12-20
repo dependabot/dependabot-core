@@ -265,6 +265,20 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+
+        context "that has an _auth line" do
+          let(:npmrc) do
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: fixture("javascript", "npmrc", "env_global_auth")
+            )
+          end
+
+          it "handles the auth correctly" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(/returned a 403/)
+          end
+        end
       end
 
       context "without a package-lock.json or yarn.lock" do
