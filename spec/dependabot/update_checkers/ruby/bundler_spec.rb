@@ -1561,7 +1561,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            existing_version: "1.4.0",
+            library: false,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
             updated_source: nil
@@ -1624,7 +1624,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           expect(requirements_updater).
             to receive(:new).with(
               requirements: requirements,
-              existing_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+              library: false,
               latest_version: "1.10.0",
               latest_resolvable_version: "1.10.0",
               updated_source: requirements.first[:source]
@@ -1677,7 +1677,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               expect(requirements_updater).
                 to receive(:new).with(
                   requirements: requirements,
-                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  library: false,
                   latest_version: "1.10.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: requirements.first[:source]
@@ -1723,7 +1723,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               expect(requirements_updater).
                 to receive(:new).with(
                   requirements: requirements,
-                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  library: false,
                   latest_version: "1.10.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: {
@@ -1773,7 +1773,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               expect(requirements_updater).
                 to receive(:new).with(
                   requirements: requirements,
-                  existing_version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
+                  library: false,
                   latest_version: "1.10.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: nil
@@ -1824,7 +1824,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            existing_version: "1.4.0",
+            library: false,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
@@ -1868,7 +1868,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            existing_version: nil,
+            library: true,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
@@ -1905,7 +1905,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            existing_version: nil,
+            library: true,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
@@ -1941,7 +1941,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            existing_version: nil,
+            library: true,
             latest_version: "1.5.0",
             latest_resolvable_version: "1.5.0",
             updated_source: requirements.first[:source]

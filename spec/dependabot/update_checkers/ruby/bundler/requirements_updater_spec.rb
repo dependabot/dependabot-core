@@ -7,7 +7,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      existing_version: existing_version,
+      library: library,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version,
       updated_source: updated_source
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:gemspec_groups) { [] }
   let(:updated_source) { nil }
 
-  let(:existing_version) { "1.4.0" }
+  let(:library) { false }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -52,7 +52,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
       end
 
       context "with a SHA-1 version" do
-        let(:existing_version) { "1530024bd6a68d36ac18e04836ce110e0d433c36" }
         before { gemfile_requirement.merge!(source: { type: "git" }) }
         let(:updated_source) { { type: "git" } }
 
@@ -106,10 +105,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
-        context "when there is no `existing_version`" do
-          # In this case we don't have a Gemfile.lock for this repo, so want
-          # slightly different updating behaviour.
-          let(:existing_version) { nil }
+        context "for a library" do
+          let(:library) { true }
 
           context "and the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }

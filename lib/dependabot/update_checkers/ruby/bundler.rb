@@ -25,7 +25,7 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            existing_version: dependency.version,
+            library: library?,
             updated_source: updated_source,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
@@ -34,6 +34,10 @@ module Dependabot
         end
 
         private
+
+        def library?
+          dependency.version.nil?
+        end
 
         def latest_version_resolvable_with_full_unlock?
           return false unless latest_version

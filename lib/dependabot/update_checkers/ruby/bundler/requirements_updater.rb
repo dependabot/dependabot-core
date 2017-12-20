@@ -9,21 +9,11 @@ module Dependabot
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 
-          attr_reader :requirements, :existing_version,
-                      :latest_version, :latest_resolvable_version,
-                      :updated_source
-
-          def initialize(requirements:, existing_version:,
-                         latest_version:, latest_resolvable_version:,
-                         updated_source:)
+          def initialize(requirements:, library:, updated_source:,
+                         latest_version:, latest_resolvable_version:)
             @requirements = requirements
 
-            @existing_version =
-              if existing_version&.match?(/^[0-9a-f]{40}$/)
-                existing_version
-              elsif !existing_version.nil?
-                Gem::Version.new(existing_version)
-              end
+            @library = library
 
             @latest_version = Gem::Version.new(latest_version) if latest_version
             @updated_source = updated_source
@@ -47,12 +37,16 @@ module Dependabot
 
           private
 
-          # rubocop:disable Metrics/CyclomaticComplexity
-          # rubocop:disable Metrics/PerceivedComplexity
+          attr_reader :requirements, :updated_source,
+                      :latest_version, :latest_resolvable_version
+
+          def library?
+            @library
+          end
+
           def updated_gemfile_requirement(req)
             return req unless latest_resolvable_version
-            return req if numeric_existing_version? && no_change_in_version?
-            return req if existing_version.nil? && new_version_satisfies?(req)
+            return req if library? && new_version_satisfies?(req)
 
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
@@ -67,16 +61,6 @@ module Dependabot
               end
 
             req.merge(requirement: new_requirement, source: updated_source)
-          end
-          # rubocop:enable Metrics/CyclomaticComplexity
-          # rubocop:enable Metrics/PerceivedComplexity
-
-          def numeric_existing_version?
-            existing_version.is_a?(Gem::Version)
-          end
-
-          def no_change_in_version?
-            latest_resolvable_version <= existing_version
           end
 
           def new_version_satisfies?(req)

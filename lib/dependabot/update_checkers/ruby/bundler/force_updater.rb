@@ -159,7 +159,7 @@ module Dependabot
                 requirements:
                   RequirementsUpdater.new(
                     requirements: original_dep.requirements,
-                    existing_version: original_dep.version,
+                    library: library?,
                     updated_source:
                       original_dep.requirements.
                         find { |r| r.fetch(:source) }&.
@@ -180,6 +180,10 @@ module Dependabot
 
           def lockfile
             dependency_files.find { |f| f.name == "Gemfile.lock" }
+          end
+
+          def library?
+            dependency.version.nil?
           end
 
           def write_temporary_dependency_files
