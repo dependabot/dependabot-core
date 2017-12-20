@@ -1,3 +1,7 @@
+## v0.39.18, 20 December 2017
+
+- JS: Handle global auth declarations
+
 ## v0.39.17, 20 December 2017
 
 - Ruby: Make Ruby library split explicit in UpdateChecker (just a refactor)
