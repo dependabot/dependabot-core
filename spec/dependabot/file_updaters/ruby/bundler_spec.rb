@@ -314,7 +314,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "business",
-            version: "d31e445215b5af70c1604715d97dd953e868380e",
+            version: "c170ea081c121c00ed6fe8764e3557e731454b9d",
             previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
             requirements: requirements,
             previous_requirements: previous_requirements,
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           [
             {
               file: "Gemfile",
-              requirement: "~> 1.10.0",
+              requirement: "~> 1.11.1",
               groups: [],
               source: {
                 type: "git",
@@ -348,7 +348,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           ]
         end
         its(:content) do
-          is_expected.to include "\"business\", \"~> 1.10.0\", git"
+          is_expected.to include "\"business\", \"~> 1.11.1\", git"
         end
 
         context "that should have its tag updated" do
@@ -934,7 +934,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "business",
-                version: "d31e445215b5af70c1604715d97dd953e868380e",
+                version: "c170ea081c121c00ed6fe8764e3557e731454b9d",
                 previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
                 requirements: requirements,
                 previous_requirements: previous_requirements,
@@ -945,7 +945,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               [
                 {
                   file: "Gemfile",
-                  requirement: "~> 1.10.0",
+                  requirement: "~> 1.11.1",
                   groups: [],
                   source: {
                     type: "git",
@@ -967,7 +967,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 }
               ]
             end
-            its(:content) { is_expected.to include "business (~> 1.10.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.11.1)!" }
           end
         end
       end
