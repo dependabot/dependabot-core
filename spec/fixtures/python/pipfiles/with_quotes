@@ -1,0 +1,12 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "==3.2.3"
+extension-pytest = "==3.2.3"
+pytest-extension = "==3.2.3"
+
+[packages]
+"requests" = "==2.18.0"
+'python_decouple' = "==3.1"

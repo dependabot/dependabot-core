@@ -58,10 +58,10 @@ module Dependabot
                 dep.previous_requirements.find { |r| r[:file] == pipfile.name }.
                 fetch(:requirement)
 
-              updated_content = content.gsub(
-                /#{Regexp.escape(dep.name)}\s*=\s*"#{Regexp.escape(old_req)}"/,
-                %("#{dep.name}" = "#{updated_requirement}")
-              )
+              updated_content =
+                content.gsub(/(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/) do |line|
+                  line.gsub(old_req, updated_requirement)
+                end
 
               raise "Expected content to change!" if content == updated_content
               updated_content

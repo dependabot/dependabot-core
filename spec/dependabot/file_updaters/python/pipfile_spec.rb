@@ -114,4 +114,100 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       end
     end
   end
+
+  describe "#updated_pipfile_content" do
+    subject(:updated_pipfile_content) { updater.send(:updated_pipfile_content) }
+
+    context "with single quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python_decouple",
+          version: "3.2",
+          previous_version: "3.1",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==3.2",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==3.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include(%q('python_decouple' = "==3.2")) }
+    end
+
+    context "with double quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include(%q("requests" = "==2.18.4")) }
+    end
+
+    context "without quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "3.3.1",
+          previous_version: "3.2.3",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==3.3.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==3.2.3",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include(%(\npytest = "==3.3.1"\n)) }
+      it { is_expected.to include(%(\npytest-extension = "==3.2.3"\n)) }
+      it { is_expected.to include(%(\nextension-pytest = "==3.2.3"\n)) }
+    end
+  end
 end
