@@ -1,3 +1,7 @@
+## v0.40.0, 21 December 2017
+
+- Don't update package.json and composer.json if requirements already met
+
 ## v0.39.26, 21 December 2017
 
 - Python: Actually handle requirements.txt files that self-reference with extras
