@@ -24,8 +24,11 @@ module Dependabot
         def runtime_dependencies
           parsed_pipfile.fetch("packages", {}).map do |dep_name, req|
             next unless req.is_a?(String)
-            version =
-              parsed_lockfile.dig("default", dep_name.downcase, "version")
+            version = parsed_lockfile.dig(
+              "default",
+              normalised_name(dep_name),
+              "version"
+            )
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),
@@ -45,8 +48,11 @@ module Dependabot
         def development_dependencies
           parsed_pipfile.fetch("dev-packages", {}).map do |dep_name, req|
             next unless req.is_a?(String)
-            version =
-              parsed_lockfile.dig("develop", dep_name.downcase, "version")
+            version = parsed_lockfile.dig(
+              "develop",
+              normalised_name(dep_name),
+              "version"
+            )
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),
@@ -61,6 +67,10 @@ module Dependabot
               package_manager: "pipfile"
             )
           end.compact
+        end
+
+        def normalised_name(name)
+          name.downcase.tr("_", "-")
         end
 
         def parsed_pipfile

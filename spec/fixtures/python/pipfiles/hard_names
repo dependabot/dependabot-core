@@ -7,3 +7,4 @@ Pytest = "*"
 
 [packages]
 Requests = "*"
+python_decouple = "*"

@@ -72,10 +72,11 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       end
     end
 
-    context "with capitalised dependencies" do
-      let(:pipfile_body) { fixture("python", "pipfiles", "capitalised") }
+    context "with dependency names that need normalising" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "hard_names.lock") }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
         subject { dependencies.first }
@@ -92,7 +93,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Requests") }
-        its(:version) { is_expected.to eq("2.18.0") }
+        its(:version) { is_expected.to eq("2.18.4") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
