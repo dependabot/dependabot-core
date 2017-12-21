@@ -27,6 +27,7 @@ module Dependabot
           fetched_files = []
 
           fetched_files << setup_file unless setup_file.nil?
+          fetched_files << pip_conf unless pip_conf.nil?
 
           if requirement_files.any?
             fetched_files += requirement_files
@@ -40,6 +41,10 @@ module Dependabot
 
         def setup_file
           @setup_file ||= fetch_file_if_present("setup.py")
+        end
+
+        def pip_conf
+          @pip_conf ||= fetch_file_if_present("pip.conf")
         end
 
         def requirement_files
