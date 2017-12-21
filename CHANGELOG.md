@@ -1,3 +1,7 @@
+## v0.39.20, 20 December 2017
+
+- Python: Handle dependency names with an underscore in Pipfile
+
 ## v0.39.19, 20 December 2017
 
 - Python: Handle capitalised dependency names in Pipfile
