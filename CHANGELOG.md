@@ -1,12 +1,16 @@
-## v0.39.21, 20 December 2017
+## v0.39.22, 21 December 2017
+
+- Python: Honour existing quote style when updating Pipfile dependencies
+
+## v0.39.21, 21 December 2017
 
 - Python: Handle names that need normalising in Pipfile FileUpdater
 
-## v0.39.20, 20 December 2017
+## v0.39.20, 21 December 2017
 
 - Python: Handle dependency names with an underscore in Pipfile
 
-## v0.39.19, 20 December 2017
+## v0.39.19, 21 December 2017
 
 - Python: Handle capitalised dependency names in Pipfile
 
