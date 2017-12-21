@@ -85,36 +85,36 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         end
 
         context "and a caret was previously specified" do
-          let(:composer_json_req_string) { "^1.2.3" }
+          let(:composer_json_req_string) { "^0.2.3" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
 
           context "specified at two digits" do
-            let(:composer_json_req_string) { "^1.2" }
+            let(:composer_json_req_string) { "^0.2" }
             its([:requirement]) { is_expected.to eq("^1.5") }
           end
         end
 
         context "and a >= was previously specified" do
           let(:composer_json_req_string) { ">= 1.2.3" }
-          its([:requirement]) { is_expected.to eq(">= 1.5.0") }
+          its([:requirement]) { is_expected.to eq(">= 1.2.3") }
         end
 
         context "and a tilda was previously specified" do
           let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
 
           context "with three digits" do
-            let(:composer_json_req_string) { "~2.5.1" }
+            let(:composer_json_req_string) { "~1.5.1" }
             its([:requirement]) { is_expected.to eq("~2.5.3") }
           end
 
           context "with two digits" do
-            let(:composer_json_req_string) { "~2.4" }
+            let(:composer_json_req_string) { "~1.4" }
             its([:requirement]) { is_expected.to eq("~2.5") }
           end
         end
 
         context "and a pre-release was previously specified" do
-          let(:composer_json_req_string) { "^1.2.3beta" }
+          let(:composer_json_req_string) { "^0.2.3beta" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           end
 
           context "specified with ||" do
-            let(:composer_json_req_string) { "^1.0.0 || ^2.0.0" }
+            let(:composer_json_req_string) { "^0.0.0 || ^2.0.0" }
             its([:requirement]) { is_expected.to eq("^1.5.0") }
           end
         end

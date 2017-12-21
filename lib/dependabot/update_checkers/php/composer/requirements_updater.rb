@@ -32,6 +32,9 @@ module Dependabot
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
+              next req unless req[:requirement].match?(/\d/)
+              next req if req_satisfied_by_latest_resolvable?(req[:requirement])
+
               if library?
                 updated_library_requirement(req)
               else
@@ -50,30 +53,15 @@ module Dependabot
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
-            version = latest_resolvable_version
-
-            if current_requirement.strip.split(SEPARATOR).count > 1
-              return req.merge(requirement: "^#{version}")
-            end
-
-            if current_requirement.match?(/[<-]/)
-              ruby_req = ruby_requirements(current_requirement).first
-              return req if ruby_req.satisfied_by?(version)
-              updated_req = update_range_requirement(current_requirement)
-              return req.merge(requirement: updated_req)
-            end
+            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
-              current_requirement.
-              sub(VERSION_REGEX) do |old_version|
-                next version.to_s unless current_requirement.match?(/[~*\^]/)
-
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i] == "*" ? "*" : part
-                end.join(".")
+              if reqs.count > 1
+                "^#{latest_resolvable_version}"
+              elsif reqs.any? { |r| r.match?(/[<-]/) }
+                update_range_requirement(current_requirement)
+              else
+                update_version_string(current_requirement)
               end
 
             req.merge(requirement: updated_requirement)
@@ -81,11 +69,6 @@ module Dependabot
 
           def updated_library_requirement(req)
             current_requirement = req[:requirement]
-            ruby_reqs = ruby_requirements(current_requirement)
-
-            version = latest_resolvable_version
-            return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
-
             reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
@@ -102,6 +85,27 @@ module Dependabot
               end
 
             req.merge(requirement: updated_requirement)
+          end
+
+          def req_satisfied_by_latest_resolvable?(requirement_string)
+            ruby_requirements(requirement_string).
+              any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          end
+
+          def update_version_string(req_string)
+            req_string.
+              sub(VERSION_REGEX) do |old_version|
+                unless req_string.match?(/[~*\^]/)
+                  next latest_resolvable_version.to_s
+                end
+
+                old_parts = old_version.split(".")
+                new_parts = latest_resolvable_version.to_s.split(".").
+                            first(old_parts.count)
+                new_parts.map.with_index do |part, i|
+                  old_parts[i] == "*" ? "*" : part
+                end.join(".")
+              end
           end
 
           def ruby_requirements(requirement_string)

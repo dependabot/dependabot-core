@@ -78,12 +78,17 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
         context "and a caret was previously specified" do
           let(:package_json_req_string) { "^1.2.3" }
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
+          its([:requirement]) { is_expected.to eq("^1.2.3") }
+
+          context "that needs updating" do
+            let(:package_json_req_string) { "^0.2.3" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
         end
 
         context "and a pre-release was previously specified" do
           let(:package_json_req_string) { "^1.2.3-rc1" }
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
+          its([:requirement]) { is_expected.to eq("^1.2.3-rc1") }
 
           context "that needs updating" do
             let(:package_json_req_string) { "1.2.3-rc1" }
@@ -93,7 +98,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
         context "and a pre-release was previously specified with four places" do
           let(:package_json_req_string) { "^1.2.3.rc1" }
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
+          its([:requirement]) { is_expected.to eq("^1.2.3.rc1") }
+
+          context "that needs updating" do
+            let(:package_json_req_string) { "^0.2.3.rc1" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
         end
 
         context "with just *" do
@@ -140,12 +150,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           let(:package_json_req_string) { "^1.2.3" }
           let(:other_requirement_string) { "^0.x.x" }
 
-          it "updates both requirements" do
+          it "updates only the requirement that needs updating" do
             expect(updater.updated_requirements).to match_array(
               [
                 {
                   file: "package.json",
-                  requirement: "^1.5.0",
+                  requirement: "^1.2.3",
                   groups: [],
                   source: nil
                 },

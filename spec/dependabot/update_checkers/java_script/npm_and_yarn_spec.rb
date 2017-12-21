@@ -528,7 +528,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           [
             {
               file: "package.json",
-              requirement: "^1.7.0",
+              requirement: "^1.0.0",
               groups: [],
               source: nil
             }
