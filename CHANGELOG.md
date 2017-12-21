@@ -1,3 +1,7 @@
+## v0.39.21, 20 December 2017
+
+- Python: Handle names that need normalising in Pipfile FileUpdater
+
 ## v0.39.20, 20 December 2017
 
 - Python: Handle dependency names with an underscore in Pipfile
