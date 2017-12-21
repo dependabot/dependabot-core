@@ -1,3 +1,7 @@
+## v0.39.25, 21 December 2017
+
+- Python: Handle requirements.txt files that self-reference with extras
+
 ## v0.39.24, 21 December 2017
 
 - Use semanic prefix for Dependabot PR names (when appropriate)
