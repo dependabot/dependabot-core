@@ -13,16 +13,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     described_class.new(
       dependency_files: files,
       dependencies: [dependency],
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
   end
   let(:files) { [package_json, yarn_lock, package_lock] }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:package_json) do
     Dependabot::DependencyFile.new(
       content: package_json_body,
@@ -274,9 +277,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             )
           end
 
-          it "handles the auth correctly" do
-            expect { updater.updated_dependency_files }.
-              to raise_error(/returned a 403/)
+          let(:credentials) do
+            [
+              {
+                "registry" => "registry.npmjs.org",
+                "token" => "secret_token"
+              }
+            ]
+          end
+
+          its(:content) do
+            is_expected.to include "\"fetch-factory\": \"^0.0.2\""
           end
         end
       end

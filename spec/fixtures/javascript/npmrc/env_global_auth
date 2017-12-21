@@ -1,4 +1,4 @@
 _auth = ${NPM_AUTH}
 always-auth = true
 strict-ssl = true
-registry = https://npm.fury.io/dependabot/
+//npm.fury.io/dependabot/:_authToken=secret_token

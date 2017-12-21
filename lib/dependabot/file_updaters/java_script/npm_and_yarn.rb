@@ -145,9 +145,12 @@ module Dependabot
 
           return updated_credential_lines.join("\n") if npmrc_file.nil?
 
-          original_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
-          original_content = original_content.gsub(/^_auth = \${.*}/, "")
-          ([original_content] + updated_credential_lines).join("\n")
+          initial_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
+          initial_content = initial_content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
+            cred = credentials.find { |c| c.key?("registry") }
+            cred.nil? ? ln : ln.sub(/\${.*}/, cred.fetch("token"))
+          end
+          ([initial_content] + updated_credential_lines).join("\n")
         end
 
         def updated_package_json_content(file)
