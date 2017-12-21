@@ -91,12 +91,14 @@ module Dependabot
 
           frozen_pipfile_json.dup.fetch("packages", {}).each_key do |nm|
             next if dependencies.map(&:name).include?(nm)
-            version = parsed_lockfile.dig("default", nm, "version")
+            version =
+              parsed_lockfile.dig("default", normalised_name(nm), "version")
             frozen_pipfile_json["packages"][nm] = version
           end
           frozen_pipfile_json.dup.fetch("dev-packages", {}).each_key do |nm|
             next if dependencies.map(&:name).include?(nm)
-            version = parsed_lockfile.dig("develop", nm, "version")
+            version =
+              parsed_lockfile.dig("develop", normalised_name(nm), "version")
             frozen_pipfile_json["dev-packages"][nm] = version
           end
 
@@ -125,6 +127,10 @@ module Dependabot
               args: [dir]
             )
           end
+        end
+
+        def normalised_name(name)
+          name.downcase.tr("_", "-")
         end
 
         def python_helper_path

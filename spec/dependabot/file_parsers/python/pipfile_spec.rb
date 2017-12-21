@@ -93,7 +93,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Requests") }
-        its(:version) { is_expected.to eq("2.18.4") }
+        its(:version) { is_expected.to eq("2.18.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end

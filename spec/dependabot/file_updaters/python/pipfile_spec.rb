@@ -43,7 +43,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
   end
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "requests",
+      name: dependency_name,
       version: "2.18.4",
       previous_version: "2.18.0",
       package_manager: "pipfile",
@@ -55,6 +55,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       ]
     )
   end
+  let(:dependency_name) { "requests" }
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -96,6 +97,20 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
         expect(
           json_lockfile["_meta"]["host-environment-markers"]["python_version"]
         ).to eq("2.7")
+      end
+
+      describe "with dependency names that need to be normalised" do
+        let(:dependency_name) { "Requests" }
+        let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+        let(:lockfile_body) do
+          fixture("python", "lockfiles", "hard_names.lock")
+        end
+
+        it "updates only what it needs to" do
+          expect(json_lockfile["default"]["requests"]["version"]).
+            to eq("==2.18.4")
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
+        end
       end
     end
   end
