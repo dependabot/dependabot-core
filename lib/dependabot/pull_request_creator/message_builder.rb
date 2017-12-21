@@ -20,15 +20,16 @@ module Dependabot
       end
 
       def commit_message
-        message = ""
-        message += "chore(dependencies): " if using_semantic_commit_messages?
-        message + pr_name + "\n\n" + pr_message_without_footer
+        pr_name + "\n\n" + pr_message_without_footer
       end
 
       def pr_name
         return library_pr_name if library?
 
-        base =
+        pr_name = ""
+        pr_name += "chore(dependencies): " if using_semantic_commit_messages?
+
+        pr_name +=
           if dependencies.count == 1
             dependency = dependencies.first
             "Bump #{dependency.name} from #{previous_version(dependency)} "\
@@ -38,9 +39,9 @@ module Dependabot
             "Bump #{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
-        return base if files.first.directory == "/"
+        return pr_name if files.first.directory == "/"
 
-        base + " in #{files.first.directory}"
+        pr_name + " in #{files.first.directory}"
       end
 
       def pr_message
@@ -74,13 +75,20 @@ module Dependabot
       end
 
       def library_pr_name
-        if dependencies.count == 1
-          "Update #{dependencies.first.name} requirement to "\
-          "#{new_library_requirement(dependencies.first)}"
-        else
-          names = dependencies.map(&:name)
-          "Update requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
-        end
+        pr_name = ""
+        pr_name += "chore(dependencies): " if using_semantic_commit_messages?
+
+        pr_name +=
+          if dependencies.count == 1
+            "Update #{dependencies.first.name} requirement to "\
+            "#{new_library_requirement(dependencies.first)}"
+          else
+            names = dependencies.map(&:name)
+            "Update requirements for #{names[0..-2].join(', ')} and "\
+            "#{names[-1]}"
+          end
+
+        pr_name
       end
 
       def requirement_pr_message

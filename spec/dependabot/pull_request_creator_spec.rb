@@ -993,8 +993,26 @@ RSpec.describe Dependabot::PullRequestCreator do
                     headers: json_header)
       end
 
-      it "includes a semantic commit message prefix" do
+      it "includes semantic prefixes for the commit and PR name" do
         creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-1.5.0",
+              title: "chore(dependencies): Bump business from 1.4.0 to 1.5.0",
+              body: "Bumps [business](https://github.com/gocardless/business) "\
+                    "from 1.4.0 to 1.5.0.\n- [Release notes]"\
+                    "(https://github.com/gocardless/business/releases?after="\
+                    "v1.6.0)\n- [Changelog]"\
+                    "(https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md)\n- [Commits]"\
+                    "(https://github.com/gocardless/business/"\
+                    "compare/v1.4.0...v1.5.0)"
+            }
+          )
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits").
