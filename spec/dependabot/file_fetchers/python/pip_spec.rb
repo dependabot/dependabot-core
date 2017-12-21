@@ -393,6 +393,28 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
             to include("setup.py")
         end
 
+        context "and references extras" do
+          let(:requirements_txt) do
+            fixture("github", "requirements_with_self_reference_extras.json")
+          end
+
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: requirements_txt,
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "fetches the setup.py" do
+            expect(file_fetcher_instance.files.count).to eq(2)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to include("setup.py")
+          end
+        end
+
         context "but is in a child requirement file" do
           before do
             stub_request(:get, url + "requirements.txt?ref=sha").

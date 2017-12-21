@@ -154,7 +154,7 @@ module Dependabot
 
         def path_setup_file_paths
           (requirement_files + child_requirement_files).map do |req_file|
-            req_file.content.scan(/^(?:-e\s)?(?<path>\..*)/).flatten
+            req_file.content.scan(/^(?:-e\s)?(?<path>\..*)(?=\[|#|$)/).flatten
           end.flatten
         end
       end
