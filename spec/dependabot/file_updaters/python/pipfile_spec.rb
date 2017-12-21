@@ -175,7 +175,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
         )
       end
 
-      it { is_expected.to include(%q("requests" = "==2.18.4")) }
+      it { is_expected.to include('"requests" = "==2.18.4"') }
     end
 
     context "without quotes" do

@@ -59,7 +59,7 @@ module Dependabot
                 fetch(:requirement)
 
               updated_content =
-                content.gsub(/(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/) do |line|
+                content.gsub(declaration_regex(dep)) do |line|
                   line.gsub(old_req, updated_requirement)
                 end
 
@@ -131,6 +131,10 @@ module Dependabot
 
         def normalised_name(name)
           name.downcase.tr("_", "-")
+        end
+
+        def declaration_regex(dep)
+          /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/
         end
 
         def python_helper_path
