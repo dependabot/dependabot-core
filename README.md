@@ -68,10 +68,12 @@ recurring payments from Europe, check them out.
 
 We'd love to see the following improvements to Dependabot Core:
 
-- Support for Python's upcoming [Pipfile](https://github.com/pypa/pipfile)
-- Support for additional languages (Elixir, anyone?)
+- Support for Elixir. We have a PR that is in a semi-abandoned state
+  [here][elixir-pr] that we'd love to be able to merge. The Dependabot team
+  would be very happy to work on it with you!
 
 [dependabot]: https://dependabot.com
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
+[elixir-pr]: https://github.com/dependabot/dependabot-core/pull/10
