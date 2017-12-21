@@ -1,3 +1,7 @@
+## v0.39.19, 20 December 2017
+
+- Python: Handle capitalised dependency names in Pipfile
+
 ## v0.39.18, 20 December 2017
 
 - JS: Handle global auth declarations
