@@ -72,6 +72,31 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       end
     end
 
+    context "with capitalised dependencies" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "capitalised") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("Requests") }
+        its(:version) { is_expected.to eq("2.18.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
     context "with a git source" do
       let(:pipfile_body) { fixture("python", "pipfiles", "git_source") }
       let(:lockfile_body) { fixture("python", "lockfiles", "git_source.lock") }

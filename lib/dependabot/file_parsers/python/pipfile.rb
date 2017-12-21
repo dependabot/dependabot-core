@@ -24,7 +24,8 @@ module Dependabot
         def runtime_dependencies
           parsed_pipfile.fetch("packages", {}).map do |dep_name, req|
             next unless req.is_a?(String)
-            version = parsed_lockfile.dig("default", dep_name, "version")
+            version =
+              parsed_lockfile.dig("default", dep_name.downcase, "version")
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),
@@ -44,7 +45,8 @@ module Dependabot
         def development_dependencies
           parsed_pipfile.fetch("dev-packages", {}).map do |dep_name, req|
             next unless req.is_a?(String)
-            version = parsed_lockfile.dig("develop", dep_name, "version")
+            version =
+              parsed_lockfile.dig("develop", dep_name.downcase, "version")
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),
