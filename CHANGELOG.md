@@ -1,3 +1,7 @@
+## v0.39.23, 21 December 2017
+
+- JS: Better handling of global auth credentials in .npmrc
+
 ## v0.39.22, 21 December 2017
 
 - Python: Honour existing quote style when updating Pipfile dependencies
