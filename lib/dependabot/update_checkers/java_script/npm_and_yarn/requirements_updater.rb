@@ -50,13 +50,10 @@ module Dependabot
 
           def updated_app_requirement(req)
             current_requirement = req[:requirement]
-            version = latest_resolvable_version
-            return req if current_requirement.strip == ""
-
-            ruby_reqs = ruby_requirements(current_requirement)
-            return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
 
             if current_requirement.match?(/(<|-\s)/i)
+              ruby_req = ruby_requirements(current_requirement).first
+              return req if ruby_req.satisfied_by?(latest_resolvable_version)
               updated_req = update_range_requirement(current_requirement)
               return req.merge(requirement: updated_req)
             end
