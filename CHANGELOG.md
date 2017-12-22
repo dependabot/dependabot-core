@@ -1,3 +1,7 @@
+## v0.40.1, 22 December 2017
+
+- JS: Handle pre-releases in requirement specifiers correctly
+
 ## v0.40.0, 21 December 2017
 
 - Don't update package.json and composer.json if requirements already met
