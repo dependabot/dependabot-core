@@ -1,3 +1,8 @@
+## v0.40.9, 22 December 2017
+
+- Python: Use correct URL for PyPI simple index
+- Python: Handle filenames with underscores and periods in updater
+
 ## v0.40.8, 22 December 2017
 
 - Python: Handle capitalised dependency names in simple index response
