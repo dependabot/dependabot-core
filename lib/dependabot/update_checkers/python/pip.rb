@@ -78,6 +78,7 @@ module Dependabot
               version =
                 filename.
                 gsub(/#{Regexp.quote(normalised_name)}-/i, "").
+                gsub(/#{Regexp.quote(dependency.name)}-/i, "").
                 split(/-|(\.tar\.gz)/).
                 first
               begin

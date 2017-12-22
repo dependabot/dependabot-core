@@ -106,8 +106,24 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "when the dependency name isn't normalised" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Luigi_ext",
+          version: "2.0.0",
+          requirements: [
+            {
+              file: "requirements.txt",
+              requirement: "==2.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
+      end
+      let(:pypi_url) { "https://pypi.python.org/pypi/simple/luigi-ext" }
       let(:pypi_response) do
-        fixture("python", "pypi_simple_response_capital.html")
+        fixture("python", "pypi_simple_response_underscore.html")
       end
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
