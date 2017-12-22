@@ -83,7 +83,12 @@ module Dependabot
         end
 
         def dependency_url
-          "https://pypi.python.org/pypi/#{dependency.name}/json"
+          "https://pypi.python.org/pypi/#{normalised_name}/json"
+        end
+
+        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+        def normalised_name
+          dependency.name.downcase.tr("_", "-").tr(".", "-")
         end
       end
     end

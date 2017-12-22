@@ -129,8 +129,9 @@ module Dependabot
           end
         end
 
+        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name(name)
-          name.downcase.tr("_", "-")
+          name.downcase.tr("_", "-").tr(".", "-")
         end
 
         def declaration_regex(dep)
