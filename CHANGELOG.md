@@ -1,3 +1,7 @@
+## v0.40.7, 22 December 2017
+
+- Python: Use simple index to find latest version
+
 ## v0.40.6, 22 December 2017
 
 - PHP: Don't update composer.json if requirements already met
