@@ -123,8 +123,9 @@ module Dependabot
             return true
           end
 
-          # TODO: Handle pre-release requirements, too
-          false
+          dependency.requirements.any? do |req|
+            req[:requirement].match?(/\d[-|.][A-Za-z]/)
+          end
         end
 
         def library?

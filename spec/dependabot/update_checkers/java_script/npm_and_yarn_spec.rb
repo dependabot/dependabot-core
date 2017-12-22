@@ -188,6 +188,32 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         end
 
         it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
+
+        context "but only says so in their requirements (with a .)" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "etag",
+              version: nil,
+              requirements: [
+                {
+                  file: "package.json",
+                  requirement: requirement,
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "yarn"
+            )
+          end
+          let(:requirement) { "^2.0.0.pre" }
+
+          it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
+
+          context "specified with a dash" do
+            let(:requirement) { "^2.0.0-pre" }
+            it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
+          end
+        end
       end
     end
 
