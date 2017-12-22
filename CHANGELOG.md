@@ -1,3 +1,7 @@
+## v0.40.4, 22 December 2017
+
+- JS: Handle pre-release strings properly
+
 ## v0.40.3, 22 December 2017
 
 - Raise error in FileUpdaters if lockfile is present and doesn't change
