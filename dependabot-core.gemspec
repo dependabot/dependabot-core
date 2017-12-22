@@ -26,9 +26,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gitlab", "~> 4.1"
   spec.add_dependency "octokit", "~> 4.6"
-  spec.add_dependency "parseconfig", "~> 1.0.8"
-  spec.add_dependency "parser", "~> 2.4.0"
-  spec.add_dependency "toml-rb", "~> 1.1.1"
+  spec.add_dependency "parseconfig", "~> 1.0"
+  spec.add_dependency "parser", "~> 2.4"
+  spec.add_dependency "toml-rb", "~> 1.1"
 
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec", "~> 3.7.0"
