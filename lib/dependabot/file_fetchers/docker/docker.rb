@@ -7,7 +7,7 @@ module Dependabot
     module Docker
       class Docker < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(Dockerfile) - filenames).empty?
+          filenames.include?("Dockerfile")
         end
 
         def self.required_files_message
