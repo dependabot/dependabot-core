@@ -12,8 +12,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/pypi/luigi/json" }
-  let(:pypi_response) { fixture("python", "pypi_response.json") }
+  let(:pypi_url) { "https://pypi.python.org/pypi/simple/luigi" }
+  let(:pypi_response) { fixture("python", "pypi_simple_response.html") }
 
   let(:checker) do
     described_class.new(
@@ -105,67 +105,42 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       it { is_expected.to be_nil }
     end
 
-    context "when the latest version is a pre-release" do
-      let(:pypi_response) { fixture("python", "pypi_response_prerelease.json") }
-
-      it { is_expected.to eq(Gem::Version.new("2.5.0")) }
-
-      context "and the current version is a pre-release" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "luigi",
-            version: "2.6.0.alpha",
-            requirements: [
-              {
-                file: "requirements.txt",
-                requirement: "==2.6.0.alpha",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "pip"
-          )
-        end
-        it { is_expected.to eq(Gem::Version.new("2.6.0.beta1")) }
+    context "when the user's current version is a pre-release" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "luigi",
+          version: "2.6.0a1",
+          requirements: [
+            {
+              file: "requirements.txt",
+              requirement: "==2.6.0a1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
       end
+      it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+    end
 
-      context "and the current requirement has a pre-release requirement" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "luigi",
-            version: nil,
-            requirements: [
-              {
-                file: "requirements.txt",
-                requirement: ">=2.6.0.alpha",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "pip"
-          )
-        end
-        it { is_expected.to eq(Gem::Version.new("2.6.0.beta1")) }
+    context "and the current requirement has a pre-release requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "luigi",
+          version: nil,
+          requirements: [
+            {
+              file: "requirements.txt",
+              requirement: ">=2.6.0a1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "pip"
+        )
       end
-
-      context "and the current requirement is nil" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "luigi",
-            version: nil,
-            requirements: [
-              {
-                file: "requirements.txt",
-                requirement: nil,
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "pip"
-          )
-        end
-        it { is_expected.to eq(Gem::Version.new("2.5.0")) }
-      end
+      it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
   end
 

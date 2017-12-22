@@ -45,33 +45,14 @@ module Dependabot
         end
 
         def fetch_latest_version
-          # TODO: Support private repos, as described at
-          # https://gemfury.com/help/pypi-server#requirements-txt
-          pypi_response = Excon.get(
-            dependency_url,
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
-
-          if wants_prerelease?(dependency)
-            Gem::Version.new(JSON.parse(pypi_response.body)["info"]["version"])
-          else
-            versions = JSON.parse(pypi_response.body).fetch("releases").keys
-            versions = versions.map do |v|
-              begin
-                Gem::Version.new(v)
-              rescue ArgumentError
-                nil
-              end
-            end.compact
-            versions.reject!(&:prerelease?)
-            versions.sort.last
-          end
+          versions = available_versions
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.sort.last
         rescue JSON::ParserError
           nil
         end
 
-        def wants_prerelease?(dependency)
+        def wants_prerelease?
           if dependency.version
             return Gem::Version.new(dependency.version).prerelease?
           end
@@ -82,8 +63,28 @@ module Dependabot
           end
         end
 
-        def dependency_url
-          "https://pypi.python.org/pypi/#{normalised_name}/json"
+        def available_versions
+          # TODO: Support private repos, as described at
+          # https://gemfury.com/help/pypi-server#requirements-txt
+          pypi_response = Excon.get(
+            "https://pypi.python.org/pypi/simple/#{normalised_name}",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+
+          pypi_response.body.
+            scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
+            map do |filename|
+              version =
+                filename.gsub("#{normalised_name}-", "").
+                split(/-|(\.tar\.gz)/).
+                first
+              begin
+                Gem::Version.new(version)
+              rescue ArgumentError
+                nil
+              end
+            end.compact
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
