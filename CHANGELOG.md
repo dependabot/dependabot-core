@@ -1,3 +1,7 @@
+## v0.40.5, 22 December 2017
+
+- Ruby: Use tag_sha, not commit_sha, when checking if a git dep needs updating
+
 ## v0.40.4, 22 December 2017
 
 - JS: Handle pre-release strings properly
