@@ -1,3 +1,7 @@
+## v0.40.3, 22 December 2017
+
+- Raise error in FileUpdaters if lockfile is present and doesn't change
+
 ## v0.40.2, 22 December 2017
 
 - JS: Temporarily back out v0.40.0 changes
