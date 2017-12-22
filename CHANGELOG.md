@@ -1,3 +1,7 @@
+## v0.40.6, 22 December 2017
+
+- PHP: Don't update composer.json if requirements already met
+
 ## v0.40.5, 22 December 2017
 
 - Ruby: Use tag_sha, not commit_sha, when checking if a git dep needs updating
