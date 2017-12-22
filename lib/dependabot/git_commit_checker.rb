@@ -63,7 +63,11 @@ module Dependabot
         end
 
       return unless tag
-      { tag: tag.name, commit_sha: tag.commit.sha }
+      {
+        tag: tag.name,
+        commit_sha: tag.commit.sha,
+        tag_sha: local_tag_sha(tag.name)
+      }
     end
 
     private
@@ -219,6 +223,17 @@ module Dependabot
       @local_tags ||= github_client.tags(local_source_repo, per_page: 100)
     rescue Octokit::NotFound
       []
+    end
+
+    def local_tag_sha(tag)
+      @local_tag_shas ||= {}
+      @local_tag_shas[tag] ||= {}
+      if @local_tag_shas[tag][:lookup_attempted]
+        return @local_tag_shas[tag][:sha]
+      end
+      @local_tag_shas[tag][:lookup_attempted] = true
+      @local_tag_shas[tag][:sha] =
+        github_client.ref(local_source_repo, "tags/#{tag}").object.sha
     end
 
     def github_client
