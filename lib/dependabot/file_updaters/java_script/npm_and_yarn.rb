@@ -85,7 +85,11 @@ module Dependabot
                 ]
               )
 
-              updated_files.fetch("yarn.lock")
+              updated_content = updated_files.fetch("yarn.lock")
+              if yarn_lock.content == updated_content
+                raise "Expected content to change!"
+              end
+              updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("Couldn't find any versions")
@@ -111,7 +115,11 @@ module Dependabot
                 ]
               )
 
-              updated_files.fetch("package-lock.json")
+              updated_content = updated_files.fetch("package-lock.json")
+              if package_lock.content == updated_content
+                raise "Expected content to change!"
+              end
+              updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("No matching version found")

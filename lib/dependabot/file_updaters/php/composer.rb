@@ -56,17 +56,23 @@ module Dependabot
               File.write("composer.json", updated_composer_json_content)
               File.write("composer.lock", lockfile.content)
 
-              SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
-                function: "update",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  dependency.version,
-                  github_access_token
-                ]
-              )
-            end.fetch("composer.lock")
+              updated_content =
+                SharedHelpers.run_helper_subprocess(
+                  command: "php #{php_helper_path}",
+                  function: "update",
+                  args: [
+                    Dir.pwd,
+                    dependency.name,
+                    dependency.version,
+                    github_access_token
+                  ]
+                ).fetch("composer.lock")
+
+              if lockfile.content == updated_content
+                raise "Expected content to change!"
+              end
+              updated_content
+            end
         end
 
         def updated_composer_json_content

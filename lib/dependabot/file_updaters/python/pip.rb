@@ -46,10 +46,16 @@ module Dependabot
         end
 
         def updated_file_content(requirement)
-          original_file(requirement.fetch(:file)).content.gsub(
-            original_dependency_declaration_string(requirement),
-            updated_dependency_declaration_string(requirement)
-          )
+          content = original_file(requirement.fetch(:file)).content
+
+          updated_content =
+            content.gsub(
+              original_dependency_declaration_string(requirement),
+              updated_dependency_declaration_string(requirement)
+            )
+
+          raise "Expected content to change!" if content == updated_content
+          updated_content
         end
 
         def original_dependency_declaration_string(requirements)

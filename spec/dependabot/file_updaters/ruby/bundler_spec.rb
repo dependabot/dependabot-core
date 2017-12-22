@@ -511,6 +511,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:child_gemfile_body) do
           fixture("ruby", "gemfiles", "version_not_specified")
         end
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_not_specified")
+        end
         let(:requirements) do
           [
             {
@@ -546,7 +549,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         it { is_expected.to be_nil }
       end
 
-      context "when no change is required" do
+      context "when a change is required" do
         let(:child_gemfile_body) do
           fixture("ruby", "gemfiles", "version_specified")
         end
@@ -589,6 +592,22 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
     describe "the updated lockfile" do
       subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
+
+      context "when no change is required" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "Gemfile")
+        end
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: "~>1.4.0", groups: [], source: nil }]
+        end
+        let(:previous_requirements) do
+          [{ file: "Gemfile", requirement: "~>1.4.0", groups: [], source: nil }]
+        end
+
+        it "raises" do
+          expect { updated_files }.to raise_error(/Expected content to change/)
+        end
+      end
 
       context "when the old Gemfile specified the version" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
