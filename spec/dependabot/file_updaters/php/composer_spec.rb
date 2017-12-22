@@ -202,6 +202,48 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
       it { is_expected.to include "\"prefer-stable\":false" }
 
+      context "when the new version is covered by the old requirements" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "minor_version")
+        end
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "covered_version")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "monolog/monolog",
+            version: "1.0.2",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.0.0",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.*",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          updated_dep = JSON.parse(updated_lockfile_content).
+                        fetch("packages").
+                        find { |p| p["name"] == "monolog/monolog" }
+
+          expect(updated_dep.fetch("version")).to eq("1.0.2")
+        end
+      end
+
       context "when the dependency is a development dependency" do
         let(:composer_body) do
           fixture("php", "composer_files", "development_dependencies")
