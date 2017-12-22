@@ -1,3 +1,7 @@
+## v0.40.2, 22 December 2017
+
+- JS: Temporarily back out v0.40.0 changes
+
 ## v0.40.1, 22 December 2017
 
 - JS: Handle pre-releases in requirement specifiers correctly
