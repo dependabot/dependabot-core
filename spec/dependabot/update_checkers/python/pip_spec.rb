@@ -12,7 +12,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/pypi/simple/luigi" }
+  let(:pypi_url) { "https://pypi.python.org/simple/luigi" }
   let(:pypi_response) { fixture("python", "pypi_simple_response.html") }
 
   let(:checker) do
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
     context "when the pypi link resolves to a redirect" do
-      let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
+      let(:redirect_url) { "https://pypi.python.org/LuiGi/json" }
 
       before do
         stub_request(:get, pypi_url).
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           package_manager: "pip"
         )
       end
-      let(:pypi_url) { "https://pypi.python.org/pypi/simple/luigi-ext" }
+      let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext" }
       let(:pypi_response) do
         fixture("python", "pypi_simple_response_underscore.html")
       end

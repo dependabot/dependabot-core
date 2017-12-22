@@ -67,7 +67,7 @@ module Dependabot
           # TODO: Support private repos, as described at
           # https://gemfury.com/help/pypi-server#requirements-txt
           pypi_response = Excon.get(
-            "https://pypi.python.org/pypi/simple/#{normalised_name}",
+            "https://pypi.python.org/simple/#{normalised_name}",
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
