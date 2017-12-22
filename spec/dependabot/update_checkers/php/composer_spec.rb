@@ -457,7 +457,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           [
             {
               file: "composer.json",
-              requirement: "1.6.*",
+              requirement: "1.0.*",
               groups: [],
               source: nil
             }
