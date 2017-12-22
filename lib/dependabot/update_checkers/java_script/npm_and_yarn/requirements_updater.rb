@@ -153,17 +153,22 @@ module Dependabot
                 latest_resolvable_version
               )
 
-              req_string.sub(upper_bound.to_s, new_upper_bound.to_s)
+              req_string.sub(
+                version_as_string(upper_bound),
+                version_as_string(new_upper_bound)
+              )
             else
-              req_string + " || ^#{latest_resolvable_version}"
+              version_string = version_as_string(latest_resolvable_version)
+              req_string + " || ^#{version_string}"
             end
           end
 
           def update_version_string(req_string)
+            new_version_string = version_as_string(latest_resolvable_version)
             req_string.
               sub(VERSION_REGEX) do |old_version|
                 old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
+                new_parts = new_version_string.to_s.split(".").
                             first(old_parts.count)
                 new_parts.map.with_index do |part, i|
                   old_parts[i].match?(/^x\b/) ? "x" : part
@@ -186,6 +191,10 @@ module Dependabot
               else 0
               end
             end.join(".")
+          end
+
+          def version_as_string(version)
+            version.to_s.gsub(".pre.", "-")
           end
         end
       end

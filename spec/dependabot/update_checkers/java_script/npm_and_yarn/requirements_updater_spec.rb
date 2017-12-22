@@ -91,11 +91,6 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           end
         end
 
-        context "and a pre-release was previously specified with four places" do
-          let(:package_json_req_string) { "^1.2.3.rc1" }
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
-        end
-
         context "with just *" do
           let(:package_json_req_string) { "*" }
           its([:requirement]) { is_expected.to eq("*") }
@@ -224,11 +219,6 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           context "including a pre-release" do
             let(:package_json_req_string) { "^1.2.3-rc1" }
             its([:requirement]) { is_expected.to eq("^1.2.3-rc1") }
-          end
-
-          context "including a pre-release with four places" do
-            let(:package_json_req_string) { "^1.2.3.rc1" }
-            its([:requirement]) { is_expected.to eq("^1.2.3.rc1") }
           end
 
           context "including an x" do

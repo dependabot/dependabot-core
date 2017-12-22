@@ -65,8 +65,9 @@ module Dependabot
         end
 
         def yanked?(version)
+          version_string = version.to_s.gsub(".pre.", "-")
           Excon.get(
-            dependency_url + "/#{version}",
+            dependency_url + "/#{version_string}",
             headers: registry_auth_headers,
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware

@@ -164,7 +164,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         body = fixture("javascript", "npm_response_prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/etag").
           to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/etag/2.0.0.pre.rc1").
+        stub_request(:get, "https://registry.npmjs.org/etag/2.0.0-rc1").
           to_return(status: 200)
       end
 
