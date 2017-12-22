@@ -1,3 +1,7 @@
+## v0.40.8, 22 December 2017
+
+- Python: Handle capitalised dependency names in simple index response
+
 ## v0.40.7, 22 December 2017
 
 - Python: Use simple index to find latest version
