@@ -76,7 +76,8 @@ module Dependabot
             scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
             map do |filename|
               version =
-                filename.gsub("#{normalised_name}-", "").
+                filename.
+                gsub(/#{Regexp.quote(normalised_name)}-/i, "").
                 split(/-|(\.tar\.gz)/).
                 first
               begin

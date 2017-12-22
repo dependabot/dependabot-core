@@ -105,6 +105,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       it { is_expected.to be_nil }
     end
 
+    context "when the dependency name isn't normalised" do
+      let(:pypi_response) do
+        fixture("python", "pypi_simple_response_capital.html")
+      end
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "when the user's current version is a pre-release" do
       let(:dependency) do
         Dependabot::Dependency.new(
