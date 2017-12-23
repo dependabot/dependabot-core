@@ -52,12 +52,12 @@ module Dependabot
 
         def wants_prerelease?
           if dependency.version
-            return Gem::Version.new(dependency.version).prerelease?
+            return Gem::Version.new(dependency.version.tr("+", ".")).prerelease?
           end
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
-            reqs.any? { |r| r.split(".").last.match?(/\D/) }
+            reqs.any? { |r| r.match?(/[A-Za-z]/) }
           end
         end
 
