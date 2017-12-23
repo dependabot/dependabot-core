@@ -32,9 +32,10 @@ module Dependabot
 
         def source_from_description
           github_urls = []
-          pypi_listing.
-            dig("info", "description").
-            scan(SOURCE_REGEX) { github_urls << Regexp.last_match.to_s }
+          desc = pypi_listing.dig("info", "description")
+          return unless desc
+
+          desc.scan(SOURCE_REGEX) { github_urls << Regexp.last_match.to_s }
 
           github_urls.find do |url|
             repo = url.match(SOURCE_REGEX).named_captures["repo"]
@@ -44,6 +45,7 @@ module Dependabot
 
         def pypi_listing
           return @pypi_listing unless @pypi_listing.nil?
+          return @pypi_listing = {} if dependency.version.include?("+")
 
           response = Excon.get(
             "https://pypi.python.org/pypi/#{dependency.name}/json",

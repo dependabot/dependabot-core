@@ -12,11 +12,11 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
-      version: "1.0",
+      version: version,
       requirements: [
         {
           file: "requirements.txt",
-          requirement: "=1.0",
+          requirement: "==#{version}",
           groups: [],
           source: nil
         }
@@ -37,6 +37,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     ]
   end
   let(:dependency_name) { "luigi" }
+  let(:version) { "1.0" }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -54,6 +55,18 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
       it "caches the call to pypi" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
+      end
+    end
+
+    context "when the dependency came from a local repository" do
+      let(:pypi_response) { fixture("python", "pypi_response.json") }
+      let(:version) { "1.0+gc.1" }
+
+      it { is_expected.to be_nil }
+
+      it "doesn't call pypi" do
+        source_url
+        expect(WebMock).to_not have_requested(:get, pypi_url).once
       end
     end
 
