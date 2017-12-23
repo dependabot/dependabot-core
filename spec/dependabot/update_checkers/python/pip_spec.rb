@@ -18,7 +18,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      dependency_files: [],
+      dependency_files: dependency_files,
       credentials: [
         {
           "host" => "github.com",
@@ -29,6 +29,14 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     )
   end
 
+  let(:dependency_files) do
+    [
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: fixture("python", "requirements", "version_specified.txt")
+      )
+    ]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "luigi",
@@ -164,6 +172,79 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         )
       end
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+    end
+
+    context "with a custom index-url" do
+      context "set in a pip.conf file" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "pip.conf",
+              content: fixture("python", "conf_files", "custom_index")
+            )
+          ]
+        end
+        let(:pypi_url) do
+          "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
+
+      context "set in a requirements.txt file" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: fixture("python", "requirements", "custom_index.txt")
+            )
+          ]
+        end
+        let(:pypi_url) do
+          "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
+    end
+
+    context "with an extra-index-url" do
+      let(:extra_url) do
+        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+      end
+      let(:extra_response) do
+        fixture("python", "pypi_simple_response_extra.html")
+      end
+      before do
+        stub_request(:get, extra_url).
+          to_return(status: 200, body: extra_response)
+      end
+
+      context "set in a pip.conf file" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "pip.conf",
+              content: fixture("python", "conf_files", "extra_index")
+            )
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+      end
+
+      context "set in a requirements.txt file" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: fixture("python", "requirements", "extra_index.txt")
+            )
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+      end
     end
   end
 

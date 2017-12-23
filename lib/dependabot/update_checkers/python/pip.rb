@@ -48,8 +48,6 @@ module Dependabot
           versions = available_versions
           versions.reject!(&:prerelease?) unless wants_prerelease?
           versions.sort.last
-        rescue JSON::ParserError
-          nil
         end
 
         def wants_prerelease?
@@ -63,35 +61,71 @@ module Dependabot
           end
         end
 
+        # See https://www.python.org/dev/peps/pep-0503/ for details of the
+        # Simple Repository API we use here.
         def available_versions
-          # TODO: Support private repos, as described at
-          # https://gemfury.com/help/pypi-server#requirements-txt
-          pypi_response = Excon.get(
-            "https://pypi.python.org/simple/#{normalised_name}",
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
+          index_urls.flat_map do |index_url|
+            index_response = Excon.get(
+              Pathname.new(File.join(index_url, normalised_name)).to_s,
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
 
-          pypi_response.body.
-            scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
-            map do |filename|
-              version =
-                filename.
-                gsub(/#{Regexp.quote(normalised_name)}-/i, "").
-                gsub(/#{Regexp.quote(dependency.name)}-/i, "").
-                split(/-|(\.tar\.gz)/).
-                first
-              begin
-                Gem::Version.new(version)
-              rescue ArgumentError
-                nil
-              end
-            end.compact
+            index_response.body.
+              scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
+              map do |filename|
+                version =
+                  filename.
+                  gsub(/#{Regexp.quote(normalised_name)}-/i, "").
+                  gsub(/#{Regexp.quote(dependency.name)}-/i, "").
+                  split(/-|(\.tar\.gz)/).
+                  first
+                begin
+                  Gem::Version.new(version)
+                rescue ArgumentError
+                  nil
+                end
+              end.compact
+          end
+        end
+
+        def index_urls
+          main_index_url = "https://pypi.python.org/simple/"
+          extra_index_urls = []
+
+          requirements_files.each do |file|
+            if file.content.match?(/--index-url\s(.+)/)
+              main_index_url =
+                file.content.match(/--index-url\s(.+)/).captures.first
+            end
+            extra_index_urls +=
+              file.content.scan(/--extra-index-url\s(.+)/).flatten
+          end
+
+          if pip_conf
+            if pip_conf.content.match?(/index-url\s*=/x)
+              main_index_url =
+                pip_conf.content.match(/index-url\s*=\s*(.+)/).captures.first
+            end
+            extra_index_urls +=
+              pip_conf.content.scan(/extra-index-url\s*=(.+)/).flatten
+          end
+
+          index_urls = [main_index_url] + extra_index_urls
+          index_urls.map(&:strip)
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name
           dependency.name.downcase.tr("_", "-").tr(".", "-")
+        end
+
+        def pip_conf
+          dependency_files.find { |f| f.name == "pip.conf" }
+        end
+
+        def requirements_files
+          dependency_files.select { |f| f.name.match?(/requirements/x) }
         end
       end
     end
