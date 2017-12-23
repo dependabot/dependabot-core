@@ -10,6 +10,8 @@ module Dependabot
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
         require_relative "pip/requirements_updater"
+        require_relative "pip/version"
+        require_relative "pip/requirement"
 
         def latest_version
           @latest_version ||= fetch_latest_version
@@ -28,6 +30,10 @@ module Dependabot
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s
           ).updated_requirements
+        end
+
+        def version_class
+          Pip::Version
         end
 
         private
@@ -52,7 +58,7 @@ module Dependabot
 
         def wants_prerelease?
           if dependency.version
-            return Gem::Version.new(dependency.version.tr("+", ".")).prerelease?
+            return Pip::Version.new(dependency.version.tr("+", ".")).prerelease?
           end
 
           dependency.requirements.any? do |req|
@@ -81,7 +87,7 @@ module Dependabot
                   split(/-|(\.tar\.gz)/).
                   first
                 begin
-                  Gem::Version.new(version)
+                  Pip::Version.new(version)
                 rescue ArgumentError
                   nil
                 end

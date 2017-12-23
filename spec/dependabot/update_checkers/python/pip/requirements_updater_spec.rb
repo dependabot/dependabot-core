@@ -60,6 +60,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:latest_resolvable_version) { "1.5.0.1" }
             its([:requirement]) { is_expected.to eq("==1.5.0.1") }
           end
+
+          context "that had a local version" do
+            let(:requirement_txt_req_string) { "==1.4.0+gc.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0") }
+          end
         end
 
         context "and no requirement was specified" do
@@ -75,6 +80,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
         context "and a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
           it { is_expected.to eq(requirement_txt_req) }
+
+          context "that had a local version" do
+            let(:requirement_txt_req_string) { ">=1.3.0+gc.1" }
+            it { is_expected.to eq(requirement_txt_req) }
+          end
 
           context "with an upper bound" do
             let(:requirement_txt_req_string) { ">=1.3.0, <=1.5.0" }

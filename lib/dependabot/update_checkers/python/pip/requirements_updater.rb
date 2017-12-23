@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/python/pip"
+require "dependabot/update_checkers/python/pip/version"
+require "dependabot/update_checkers/python/pip/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -13,11 +15,11 @@ module Dependabot
                          latest_resolvable_version:)
             @requirements = requirements
 
-            @latest_version = Gem::Version.new(latest_version) if latest_version
+            @latest_version = Pip::Version.new(latest_version) if latest_version
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Gem::Version.new(latest_resolvable_version)
+              Pip::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -111,7 +113,7 @@ module Dependabot
                   tr("*", "0").
                   gsub(/^(?<!!)=/, "~>")
               end
-            Gem::Requirement.new(requirement_array)
+            Pip::Requirement.new(requirement_array)
           end
 
           def at_same_precision(new_version, old_version)
@@ -145,7 +147,7 @@ module Dependabot
             end.compact
 
             updated_requirement_strings.
-              sort_by { |r| Gem::Requirement.new(r).requirements.first.last }.
+              sort_by { |r| Pip::Requirement.new(r).requirements.first.last }.
               map(&:to_s).join(",").delete(" ")
           end
 
@@ -182,9 +184,9 @@ module Dependabot
           def update_greatest_version(req_string, version_to_be_permitted)
             if version_to_be_permitted.is_a?(String)
               version_to_be_permitted =
-                Gem::Version.new(version_to_be_permitted)
+                Pip::Version.new(version_to_be_permitted)
             end
-            version = Gem::Version.new(req_string.gsub(/<=?/, ""))
+            version = Pip::Version.new(req_string.gsub(/<=?/, ""))
             version = version.release if version.prerelease?
 
             index_to_update =

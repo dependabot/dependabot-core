@@ -230,7 +230,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           ]
         end
 
-        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+        its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
       end
 
       context "set in a requirements.txt file" do
@@ -243,7 +243,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           ]
         end
 
-        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+        its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
       end
     end
   end
