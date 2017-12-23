@@ -48,16 +48,18 @@ module Dependabot
       private
 
       def fetch_file_if_present(filename)
-        return unless repo_contents.map(&:name).include?(filename)
+        dir = File.dirname(filename)
+        basename = File.basename(filename)
+        return unless repo_contents(dir: dir).map(&:name).include?(basename)
         fetch_file_from_github(filename)
       end
 
-      def fetch_file_from_github(file_name)
-        path = Pathname.new(File.join(directory, file_name)).cleanpath.to_path
+      def fetch_file_from_github(filename)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = github_client.contents(repo, path: path, ref: commit).content
 
         DependencyFile.new(
-          name: Pathname.new(file_name).cleanpath.to_path,
+          name: Pathname.new(filename).cleanpath.to_path,
           content: Base64.decode64(content).force_encoding("UTF-8").encode,
           directory: directory
         )
@@ -65,10 +67,11 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      def repo_contents
-        @repo_contents ||= github_client.contents(
+      def repo_contents(dir: ".")
+        @repo_contents ||= {}
+        @repo_contents[dir] ||= github_client.contents(
           repo,
-          path: Pathname.new(directory).cleanpath.to_path,
+          path: Pathname.new(File.join(directory, dir)).cleanpath.to_path,
           ref: commit
         )
       end
