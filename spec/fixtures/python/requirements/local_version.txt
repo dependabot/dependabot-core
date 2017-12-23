@@ -1,0 +1,2 @@
+psycopg2==2.6.1+gc.1
+luigi==2.2.0+gc.1

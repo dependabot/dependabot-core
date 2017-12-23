@@ -79,6 +79,14 @@ describe PythonRequirementParser do
         end
       end
 
+      context "with a local version" do
+        let(:line) { "luigi==0.1.0+gc.1" }
+        its([:name]) { is_expected.to eq "luigi" }
+        its([:requirements]) do
+          is_expected.to eq [{ comparison: "==", version: "0.1.0+gc.1" }]
+        end
+      end
+
       context "with a hash" do
         let(:line) { "luigi==0.1.0 --hash=sha256:2ccb79b01769d9911" }
         its([:name]) { is_expected.to eq "luigi" }

@@ -4,7 +4,7 @@ class PythonRequirementParser
   NAME = /[a-zA-Z0-9\-_\.]+/
   EXTRA = /[a-zA-Z0-9\-_\.]+/
   COMPARISON = /===|==|>=|<=|<|>|~=|!=/
-  VERSION = /[0-9]+[a-zA-Z0-9\-_\.*]*/
+  VERSION = /[0-9]+[a-zA-Z0-9\-_\.*]*(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?/
   REQUIREMENT = /(?<comparison>#{COMPARISON})\s*\\?\s*(?<version>#{VERSION})/
   HASH = /--hash=(?<algorithm>.*?):(?<hash>.*?)(?=\s|$)/
   REQUIREMENTS = /#{REQUIREMENT}(\s*,\s*\\?\s*#{REQUIREMENT})*/

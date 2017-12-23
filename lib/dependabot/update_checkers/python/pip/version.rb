@@ -14,7 +14,7 @@ module Dependabot
           attr_reader :local_version
 
           VERSION_PATTERN = Gem::Version::VERSION_PATTERN +
-                            '(?>\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
+                            '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
 
           def initialize(version)
             @version_string = version.to_s

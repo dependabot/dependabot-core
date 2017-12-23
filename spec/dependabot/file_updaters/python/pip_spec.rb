@@ -89,6 +89,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
+      context "when a local version is specified" do
+        let(:requirements_body) do
+          fixture("python", "requirements", "local_version.txt")
+        end
+
+        its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+      end
+
       context "when there is a comment" do
         let(:requirements_body) do
           fixture("python", "requirements", "comments.txt")
