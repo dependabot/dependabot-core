@@ -61,6 +61,12 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Update checkers can (optionally) define their own version class, to be
+      # used when comparing and serializing versions
+      def version_class
+        Gem::Version
+      end
+
       private
 
       def latest_version_resolvable_with_full_unlock?
@@ -103,7 +109,8 @@ module Dependabot
       end
 
       def numeric_version_up_to_date?
-        latest_version && latest_version <= Gem::Version.new(dependency.version)
+        return false unless latest_version
+        latest_version <= version_class.new(dependency.version)
       end
 
       def numeric_version_can_update?(full_unlock: false)
@@ -113,7 +120,7 @@ module Dependabot
 
         return latest_version_resolvable_with_full_unlock? if full_unlock
         return false if latest_resolvable_version.nil?
-        latest_resolvable_version > Gem::Version.new(dependency.version)
+        latest_resolvable_version > version_class.new(dependency.version)
       end
 
       def requirements_up_to_date?

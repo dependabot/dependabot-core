@@ -6,6 +6,7 @@
 ################################################################################
 
 require "dependabot/update_checkers/java_script/npm_and_yarn"
+require "dependabot/update_checkers/java_script/npm_and_yarn/version"
 
 module Dependabot
   module UpdateCheckers
@@ -20,12 +21,14 @@ module Dependabot
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-            @latest_version = Gem::Version.new(latest_version) if latest_version
             @library = library
+            if latest_version
+              @latest_version = version_class.new(latest_version)
+            end
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Gem::Version.new(latest_resolvable_version)
+              version_class.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -147,28 +150,26 @@ module Dependabot
             if range_requirements.count == 1
               range_requirement = range_requirements.first
               versions = range_requirement.scan(VERSION_REGEX)
-              upper_bound = versions.map { |v| Gem::Version.new(v) }.max
+              upper_bound = versions.map { |v| version_class.new(v) }.max
               new_upper_bound = update_greatest_version(
                 upper_bound,
                 latest_resolvable_version
               )
 
               req_string.sub(
-                version_as_string(upper_bound),
-                version_as_string(new_upper_bound)
+                upper_bound.to_s,
+                new_upper_bound.to_s
               )
             else
-              version_string = version_as_string(latest_resolvable_version)
-              req_string + " || ^#{version_string}"
+              req_string + " || ^#{latest_resolvable_version}"
             end
           end
 
           def update_version_string(req_string)
-            new_version_string = version_as_string(latest_resolvable_version)
             req_string.
               sub(VERSION_REGEX) do |old_version|
                 old_parts = old_version.split(".")
-                new_parts = new_version_string.to_s.split(".").
+                new_parts = latest_resolvable_version.to_s.split(".").
                             first(old_parts.count)
                 new_parts.map.with_index do |part, i|
                   old_parts[i].match?(/^x\b/) ? "x" : part
@@ -177,7 +178,7 @@ module Dependabot
           end
 
           def update_greatest_version(old_version, version_to_be_permitted)
-            version = Gem::Version.new(old_version)
+            version = version_class.new(old_version)
             version = version.release if version.prerelease?
 
             index_to_update =
@@ -193,8 +194,8 @@ module Dependabot
             end.join(".")
           end
 
-          def version_as_string(version)
-            version.to_s.gsub(".pre.", "-")
+          def version_class
+            NpmAndYarn::Version
           end
         end
       end

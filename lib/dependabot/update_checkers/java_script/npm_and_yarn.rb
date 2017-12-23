@@ -10,6 +10,7 @@ module Dependabot
     module JavaScript
       class NpmAndYarn < Dependabot::UpdateCheckers::Base
         require_relative "npm_and_yarn/requirements_updater"
+        require_relative "npm_and_yarn/version"
 
         def latest_version
           @latest_version ||= fetch_latest_version
@@ -30,6 +31,10 @@ module Dependabot
           ).updated_requirements
         end
 
+        def version_class
+          NpmAndYarn::Version
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?
@@ -44,16 +49,16 @@ module Dependabot
         def fetch_latest_version
           return nil unless npm_details&.fetch("dist-tags", nil)
           latest_dist_tag = npm_details["dist-tags"]["latest"]
-          latest_dist_tag = Gem::Version.new(latest_dist_tag)
+          latest_dist_tag = version_class.new(latest_dist_tag)
           return latest_dist_tag if use_latest_dist_tag?(latest_dist_tag)
 
           latest_release =
             npm_details["versions"].
-            keys.map { |v| Gem::Version.new(v) }.
+            keys.map { |v| version_class.new(v) }.
             reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
             find { |version| !yanked?(version) }
 
-          Gem::Version.new(latest_release)
+          version_class.new(latest_release)
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
@@ -65,9 +70,8 @@ module Dependabot
         end
 
         def yanked?(version)
-          version_string = version.to_s.gsub(".pre.", "-")
           Excon.get(
-            dependency_url + "/#{version_string}",
+            dependency_url + "/#{version}",
             headers: registry_auth_headers,
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
@@ -120,7 +124,7 @@ module Dependabot
 
         def wants_prerelease?
           current_version = dependency.version
-          if current_version && Gem::Version.new(current_version).prerelease?
+          if current_version && version_class.new(current_version).prerelease?
             return true
           end
 
