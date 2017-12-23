@@ -1,3 +1,7 @@
+## v0.40.12, 23 December 2017
+
+- Python: Update regexes to make FileUpdater more accurate
+
 ## v0.40.11, 23 December 2017
 
 - Python: Handle local version modifiers in metadata finder
