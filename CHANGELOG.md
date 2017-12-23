@@ -1,3 +1,7 @@
+## v0.40.11, 23 December 2017
+
+- Python: Handle local version modifiers in metadata finder
+
 ## v0.40.10, 23 December 2017
 
 - Python: Handle local version modifiers
