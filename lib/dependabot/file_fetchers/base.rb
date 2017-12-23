@@ -47,6 +47,11 @@ module Dependabot
 
       private
 
+      def fetch_file_if_present(filename)
+        return unless repo_contents.map(&:name).include?(filename)
+        fetch_file_from_github(filename)
+      end
+
       def fetch_file_from_github(file_name)
         path = Pathname.new(File.join(directory, file_name)).cleanpath.to_path
         content = github_client.contents(repo, path: path, ref: commit).content
@@ -60,7 +65,15 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      # One day day this class, and all others, will be provider agnostic. For
+      def repo_contents
+        @repo_contents ||= github_client.contents(
+          repo,
+          path: Pathname.new(directory).cleanpath.to_path,
+          ref: commit
+        )
+      end
+
+      # One day this class, and all others, will be provider agnostic. For
       # now it's fine that it only supports GitHub.
       def github_client
         access_token =

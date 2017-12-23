@@ -24,6 +24,14 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
+    stub_request(:get, url + "?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_js_npm.json"),
+        headers: { "content-type" => "application/json" }
+      )
+
     stub_request(:get, url + "package.json?ref=sha").
       with(headers: { "Authorization" => "token token" }).
       to_return(
@@ -39,17 +47,18 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         body: fixture("github", "package_lock_content.json"),
         headers: { "content-type" => "application/json" }
       )
-
-    stub_request(:get, url + ".npmrc?ref=sha").
-      with(headers: { "Authorization" => "token token" }).
-      to_return(status: 404)
-    stub_request(:get, url + "yarn.lock?ref=sha").
-      with(headers: { "Authorization" => "token token" }).
-      to_return(status: 404)
   end
 
   context "with a .npmrc file" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm_with_config.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
       stub_request(:get, url + ".npmrc?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -67,6 +76,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
 
   context "without a package-lock.json file or a yarn.lock" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_library.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "package-lock.json?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
@@ -79,6 +95,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
 
   context "with a yarn.lock but no package-lock.json file" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_yarn.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "package-lock.json?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
@@ -99,6 +122,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
 
   context "with a package-lock.json file but no yarn.lock" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "yarn.lock?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
@@ -119,6 +149,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
 
   context "with both a package-lock.json file and a yarn.lock" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm_and_yarn.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "yarn.lock?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -261,7 +298,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       end
 
       it "fetches package.json from path dependency" do
-        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.count).to eq(5)
         expect(file_fetcher_instance.files.map(&:name)).
           to include("packages/package2/package.json")
       end

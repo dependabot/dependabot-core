@@ -21,15 +21,15 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
     ]
   end
 
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   context "with a .ruby-version file" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "business_files_no_gemspec.json"),
+          body: fixture("github", "contents_ruby.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -50,45 +50,30 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         )
     end
 
-    context "that is fetchable" do
-      before do
-        stub_request(:get, url + ".ruby-version?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "ruby_version_content.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-
-      it "fetches the ruby-version file" do
-        expect(file_fetcher_instance.files.count).to eq(3)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include(".ruby-version")
-      end
+    before do
+      stub_request(:get, url + ".ruby-version?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "ruby_version_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
     end
 
-    context "that has an unfetchable path" do
-      before do
-        stub_request(:get, url + ".ruby-version?ref=sha").
-          to_return(status: 404)
-      end
-
-      it "quietly ignores the error (we'll serve a different one later)" do
-        expect(file_fetcher_instance.files.count).to eq(2)
-      end
+    it "fetches the ruby-version file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include(".ruby-version")
     end
   end
 
   context "with a path dependency" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "business_files_no_gemspec.json"),
+          body: fixture("github", "contents_ruby.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -128,9 +113,13 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
       context "without a Gemfile.lock" do
         before do
-          stub_request(:get, url + "Gemfile.lock?ref=sha").
+          stub_request(:get, url + "?ref=sha").
             with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_ruby_no_lockfile.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches gemspec from path dependency" do
@@ -161,8 +150,6 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with a child Gemfile" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -278,13 +265,11 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with a gemspec" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "business_files.json"),
+          body: fixture("github", "contents_ruby_library_locked.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -300,7 +285,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "gemfile_lock_with_gemspec_content.json"),
+          body: fixture("github", "gemfile_lock_content.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -322,13 +307,11 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with only a gemspec and a Gemfile" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "business_files.json"),
+          body: fixture("github", "contents_ruby_library.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -339,10 +322,6 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           body: fixture("github", "gemfile_with_gemspec_content.json"),
           headers: { "content-type" => "application/json" }
         )
-
-      stub_request(:get, url + "Gemfile.lock?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
 
       stub_request(:get, url + "business.gemspec?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -362,23 +341,13 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with only a gemspec" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "business_files.json"),
+          body: fixture("github", "contents_ruby_library_no_gemfile.json"),
           headers: { "content-type" => "application/json" }
         )
-
-      stub_request(:get, url + "Gemfile?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-
-      stub_request(:get, url + "Gemfile.lock?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
 
       stub_request(:get, url + "business.gemspec?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -398,8 +367,6 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with only a Gemfile" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -430,8 +397,6 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   context "with only a Gemfile.lock" do
     before do
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(

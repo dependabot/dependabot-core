@@ -83,11 +83,6 @@ module Dependabot
             map { |f| fetch_file_from_github("requirements/#{f.name}") }
         end
 
-        def fetch_file_if_present(filename)
-          return unless repo_contents.map(&:name).include?(filename)
-          fetch_file_from_github(filename)
-        end
-
         def child_requirement_files
           @child_requirement_files ||=
             requirement_files.flat_map do |requirement_file|
@@ -147,14 +142,6 @@ module Dependabot
           end
 
           path_setup_files
-        end
-
-        def repo_contents
-          @repo_contents ||= github_client.contents(
-            repo,
-            path: directory.sub(%r{^/}, ""),
-            ref: commit
-          )
         end
 
         def path_setup_file_paths

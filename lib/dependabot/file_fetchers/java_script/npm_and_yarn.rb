@@ -33,21 +33,15 @@ module Dependabot
         end
 
         def package_lock
-          @package_lock ||= fetch_file_from_github("package-lock.json")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          @package_lock ||= fetch_file_if_present("package-lock.json")
         end
 
         def yarn_lock
-          @yarn_lock ||= fetch_file_from_github("yarn.lock")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          @yarn_lock ||= fetch_file_if_present("yarn.lock")
         end
 
         def npmrc
-          @npmrc ||= fetch_file_from_github(".npmrc")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          @npmrc ||= fetch_file_if_present(".npmrc")
         end
 
         def path_dependencies

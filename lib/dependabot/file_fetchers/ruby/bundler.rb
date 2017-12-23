@@ -32,10 +32,10 @@ module Dependabot
 
         def fetch_files
           fetched_files = []
-          fetched_files << gemfile unless gemfile.nil?
-          fetched_files << lockfile unless lockfile.nil?
-          fetched_files << gemspec unless gemspec.nil?
-          fetched_files << ruby_version_file unless ruby_version_file.nil?
+          fetched_files << gemfile if gemfile
+          fetched_files << lockfile if lockfile
+          fetched_files << gemspec if gemspec
+          fetched_files << ruby_version_file if ruby_version_file
           fetched_files += child_gemfiles
           fetched_files += path_gemspecs
 
@@ -47,35 +47,30 @@ module Dependabot
         end
 
         def gemfile
-          @gemfile ||= fetch_file_from_github("Gemfile")
-        rescue Dependabot::DependencyFileNotFound
-          raise unless gemspec
+          @gemfile ||=
+            if gemspec
+              fetch_file_if_present("Gemfile")
+            else
+              # This will raise if there is no Gemfile, which is what we want
+              # (since there is no gemspec)
+              fetch_file_from_github("Gemfile")
+            end
         end
 
         def lockfile
-          @lockfile ||= fetch_file_from_github("Gemfile.lock")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          @lockfile ||= fetch_file_if_present("Gemfile.lock")
         end
 
         def gemspec
-          return @gemspec if @gemspec_fetch_attempted
-          @gemspec_fetch_attempted = true
-          path = Pathname.new(directory).cleanpath.to_path
-          gemspec =
-            github_client.contents(repo, path: path, ref: commit).
-            find { |file| file.name.end_with?(".gemspec") }
-
+          gemspec = repo_contents.find { |f| f.name.end_with?(".gemspec") }
           return unless gemspec
-          @gemspec = fetch_file_from_github(gemspec.name)
+          @gemspec ||= fetch_file_from_github(gemspec.name)
         end
 
         def ruby_version_file
           return unless gemfile
           return unless gemfile.content.include?(".ruby-version")
-          fetch_file_from_github(".ruby-version")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          fetch_file_if_present(".ruby-version")
         end
 
         def path_gemspecs
