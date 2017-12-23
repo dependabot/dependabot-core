@@ -1,3 +1,7 @@
+## v0.40.10, 23 December 2017
+
+- Python: Handle local version modifiers
+
 ## v0.40.9, 22 December 2017
 
 - Python: Use correct URL for PyPI simple index
