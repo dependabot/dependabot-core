@@ -1,3 +1,7 @@
+## v0.40.15, 24 December 2017
+
+- Docker: Handle suffices with periods
+
 ## v0.40.14, 24 December 2017
 
 - JS: Ensure updates hit specific version
