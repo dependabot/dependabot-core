@@ -1,3 +1,9 @@
+## v0.40.13, 24 December 2017
+
+- Python: Handle setup.py calls to parse_requirements
+- JS: Handle Yarn workspaces where the parent package.json is in a directory
+- All: Make fewer requests from file fetchers
+
 ## v0.40.12, 23 December 2017
 
 - Python: Update regexes to make FileUpdater more accurate
