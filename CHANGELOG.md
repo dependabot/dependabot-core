@@ -1,3 +1,7 @@
+## v0.40.14, 24 December 2017
+
+- JS: Ensure updates hit specific version
+
 ## v0.40.13, 24 December 2017
 
 - Python: Handle setup.py calls to parse_requirements
