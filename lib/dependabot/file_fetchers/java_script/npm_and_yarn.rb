@@ -79,7 +79,7 @@ module Dependabot
           parsed_package_json["workspaces"].each do |path|
             workspaces =
               if path.end_with?("*") then expand_workspaces(path)
-              else [Pathname.new(File.join(directory, path)).cleanpath.to_path]
+              else [path]
               end
 
             workspaces.each do |workspace|
@@ -101,11 +101,12 @@ module Dependabot
         end
 
         def expand_workspaces(path)
-          path = File.join(directory, path.gsub(/\*$/, ""))
+          dir = directory.gsub(%r{(^/|/$)}, "")
+          path = File.join(dir, path.gsub(/\*$/, ""))
           path = Pathname.new(path).cleanpath.to_path
           github_client.contents(repo, path: path, ref: commit).
             select { |file| file.type == "dir" }.
-            map(&:path)
+            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
         end
 
         def parsed_package_json
