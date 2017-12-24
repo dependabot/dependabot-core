@@ -76,6 +76,9 @@ def parse(directory):
         def noop(*args, **kwargs):
             pass
 
+        def fake_parse(*args, **kwargs):
+            return []
+
         global fake_open
         def fake_open(*args, **kwargs):
             content = ("VERSION = (0, 0, 1)\n"
@@ -94,6 +97,7 @@ def parse(directory):
             # Remove `print`, `open` and import statements
             content = content.replace("print(", "noop(")
             content = re.sub(r"\b(\w+\.)*(open|file)\(", "fake_open(", content)
+            content = content.replace("parse_requirements(", "fake_parse(")
             version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
             content = re.sub(version_re, "", content)
 

@@ -422,6 +422,57 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           )
         end
       end
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("flask")
+          expect(dependency.version).to eq("0.12.2")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==0.12.2",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      context "with a parse_requirements statement" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "with_parse_reqs.py")
+          )
+        end
+
+        its(:length) { is_expected.to eq(5) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to eq("2.1.0")
+            expect(dependency.requirements).to eq(
+              [
+                {
+                  requirement: "==2.1.0",
+                  file: "requirements.txt",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
     end
 
     context "with child requirement files" do
