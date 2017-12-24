@@ -33,7 +33,8 @@ async function updateDependencyFiles(
 
   // dryRun mode prevents the actual install
   const dryRun = true;
-  const installer = new Installer(directory, dryRun, []);
+  const args = [`${depName}@${desiredVersion}`];
+  const installer = new Installer(directory, dryRun, args);
 
   // Skip printing the success message
   installer.printInstalled = cb => cb();

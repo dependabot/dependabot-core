@@ -479,6 +479,38 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           to eq("0.0.2")
       end
 
+      context "when the requirement has not been updated" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: "0.0.2",
+            package_manager: "npm",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^0.0.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "^0.0.1",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        it "has details of the updated item" do
+          parsed_lockfile = JSON.parse(updated_lockfile.content)
+          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.0.2")
+        end
+      end
+
       context "with a path-based dependency" do
         let(:files) { [package_json, package_lock, path_dep] }
         let(:package_json_body) do
