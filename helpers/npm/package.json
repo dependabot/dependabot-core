@@ -5,7 +5,7 @@
     "semver": "^5.4.1"
   },
   "devDependencies": {
-    "eslint": "^4.13.1",
+    "eslint": "^4.14.0",
     "eslint-plugin-prettier": "^2.4.0",
     "fs-extra": "^5.0.0",
     "jest": "^22.0.4",
