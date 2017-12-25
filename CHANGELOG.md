@@ -1,3 +1,7 @@
+## v0.40.17, 25 December 2017
+
+- JS: Handle pre-release updates when precision needs increasing
+
 ## v0.40.16, 25 December 2017
 
 - PHP & JS: Handle pre-releases in a hyphen range
