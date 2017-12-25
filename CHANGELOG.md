@@ -1,3 +1,7 @@
+## v0.40.16, 25 December 2017
+
+- PHP & JS: Handle pre-releases in a hyphen range
+
 ## v0.40.15, 24 December 2017
 
 - Docker: Handle suffices with periods
