@@ -168,12 +168,16 @@ module Dependabot
           def update_version_string(req_string)
             req_string.
               sub(VERSION_REGEX) do |old_version|
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i].match?(/^x\b/) ? "x" : part
-                end.join(".")
+                if old_version.match?(/\d-/)
+                  latest_resolvable_version.to_s
+                else
+                  old_parts = old_version.split(".")
+                  new_parts = latest_resolvable_version.to_s.split(".").
+                              first(old_parts.count)
+                  new_parts.map.with_index do |part, i|
+                    old_parts[i].match?(/^x\b/) ? "x" : part
+                  end.join(".")
+                end
               end
           end
 
