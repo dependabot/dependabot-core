@@ -110,7 +110,7 @@ module Dependabot
           end
 
           def ruby_hyphen_range(req_string)
-            lower_bound, upper_bound = req_string.split("-")
+            lower_bound, upper_bound = req_string.split(/\s+-\s+/)
             Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
           end
 
@@ -145,7 +145,7 @@ module Dependabot
 
           def update_range_requirement(req_string)
             range_requirements =
-              req_string.split(SEPARATOR).select { |r| r.match?(/(<|-\s)/i) }
+              req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
             if range_requirements.count == 1
               range_requirement = range_requirements.first

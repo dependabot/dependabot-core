@@ -109,6 +109,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
             let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
             its([:requirement]) { is_expected.to eq(package_json_req_string) }
           end
+
+          context "that include a pre-release" do
+            let(:package_json_req_string) { ">=1.2.0 <1.4.0-dev" }
+            its([:requirement]) { is_expected.to eq(">=1.2.0 <1.6.0") }
+          end
         end
 
         context "and an x.x was previously specified" do
@@ -198,6 +203,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and a - was previously specified" do
           let(:package_json_req_string) { "1.2.3 - 1.4.0" }
           its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+
+          context "with a pre-release version" do
+            let(:package_json_req_string) { "1.2.3-rc1 - 1.4.0" }
+            its([:requirement]) { is_expected.to eq("1.2.3-rc1 - 1.6.0") }
+          end
         end
 
         context "and a pre-release was previously specified" do
@@ -295,6 +305,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           context "specified with || and valid" do
             let(:package_json_req_string) { "^1.0.0 || ^2.0.0" }
             its([:requirement]) { is_expected.to eq(package_json_req_string) }
+          end
+
+          context "that include a pre-release" do
+            let(:package_json_req_string) { ">=1.2.0 <1.4.0-dev" }
+            its([:requirement]) { is_expected.to eq(">=1.2.0 <1.6.0") }
           end
         end
 

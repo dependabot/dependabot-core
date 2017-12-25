@@ -58,7 +58,7 @@ module Dependabot
             updated_requirement =
               if reqs.count > 1
                 "^#{latest_resolvable_version}"
-              elsif reqs.any? { |r| r.match?(/[<-]/) }
+              elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
                 update_range_requirement(current_requirement)
               else
                 update_version_string(current_requirement)
@@ -78,7 +78,7 @@ module Dependabot
                 update_tilda_requirement(current_requirement)
               elsif reqs.any? { |r| r.include?("*") }
                 update_wildcard_requirement(current_requirement)
-              elsif reqs.any? { |r| r.match?(/[<-]/) }
+              elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
                 update_range_requirement(current_requirement)
               else
                 update_exact_requirement(current_requirement)
@@ -121,7 +121,7 @@ module Dependabot
                     ruby_tilde_range(r_string)
                   elsif r_string.start_with?("^")
                     ruby_caret_range(r_string)
-                  elsif r_string.include?("-")
+                  elsif r_string.match?(/\s+-\s+/)
                     ruby_hyphen_range(r_string)
                   else
                     Gem::Requirement.new(r_string)
@@ -138,7 +138,7 @@ module Dependabot
           end
 
           def ruby_hyphen_range(req_string)
-            lower_bound, upper_bound = req_string.split("-")
+            lower_bound, upper_bound = req_string.split(/\s+-\s+/)
             if upper_bound.split(".").count < 3
               upper_bound_parts = upper_bound.split(".")
               upper_bound_parts[-1] = (upper_bound_parts[-1].to_i + 1).to_s
@@ -214,7 +214,7 @@ module Dependabot
 
           def update_range_requirement(req_string)
             range_requirements =
-              req_string.split(SEPARATOR).select { |r| r.match?(/[<-]/) }
+              req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
             if range_requirements.count == 1
               range_requirement = range_requirements.first

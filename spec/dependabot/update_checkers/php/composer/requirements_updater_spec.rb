@@ -141,6 +141,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         context "and a - was previously specified" do
           let(:composer_json_req_string) { "1.2.3 - 1.4.0" }
           its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+
+          context "with a pre-release version" do
+            let(:composer_json_req_string) { "1.2.3-rc1 - 1.4.0" }
+            its([:requirement]) { is_expected.to eq("1.2.3-rc1 - 1.6.0") }
+          end
         end
 
         context "and there were multiple specifications" do
@@ -154,6 +159,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
           context "specified with ||" do
             let(:composer_json_req_string) { "^0.0.0 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "that include a pre-release" do
+            let(:composer_json_req_string) { ">=1.2.0,<1.4.0-dev" }
             its([:requirement]) { is_expected.to eq("^1.5.0") }
           end
         end
@@ -331,6 +341,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "specified with commas and valid" do
             let(:composer_json_req_string) { "> 1.0.0, < 1.7.0" }
             its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
+
+          context "that include a pre-release" do
+            let(:composer_json_req_string) { ">=1.2.0,<1.4.0-dev" }
+            its([:requirement]) { is_expected.to eq(">=1.2.0,<1.6.0-dev") }
           end
 
           context "specified with ||" do
