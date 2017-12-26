@@ -9,10 +9,11 @@ require_relative "../shared_examples_for_update_checkers"
 RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   it_behaves_like "an update checker"
 
+  let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
   before do
-    stub_request(:get, "https://registry.npmjs.org/etag").
+    stub_request(:get, registry_listing_url).
       to_return(status: 200, body: fixture("javascript", "npm_response.json"))
-    stub_request(:get, "https://registry.npmjs.org/etag/1.7.0").
+    stub_request(:get, registry_listing_url + "/1.7.0").
       to_return(status: 200)
   end
 
@@ -159,12 +160,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     subject { checker.latest_version }
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
+    it "only hits the registry once" do
+      checker.latest_version
+      expect(WebMock).to have_requested(:get, registry_listing_url).once
+    end
+
     context "when the latest version is a prerelease" do
       before do
         body = fixture("javascript", "npm_response_prerelease.json")
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/etag/2.0.0-rc1").
+        stub_request(:get, registry_listing_url + "/2.0.0-rc1").
           to_return(status: 200)
       end
 
@@ -420,7 +426,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       let(:redirect_url) { "https://registry.npmjs.org/eTag" }
 
       before do
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 302, headers: { "Location" => redirect_url })
         stub_request(:get, redirect_url).
           to_return(
@@ -434,7 +440,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the npm link resolves to an empty hash" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 200, body: "{}")
       end
 
@@ -444,7 +450,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     context "when the npm link fails at first" do
       before do
         body = fixture("javascript", "npm_response_prerelease.json")
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_raise(Excon::Error::Timeout).then.
           to_return(status: 200, body: body)
       end
@@ -455,11 +461,11 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     context "when the latest version has been yanked" do
       before do
         body = fixture("javascript", "npm_response_old_latest.json")
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/etag/1.7.0").
+        stub_request(:get, registry_listing_url + "/1.7.0").
           to_return(status: 404)
-        stub_request(:get, "https://registry.npmjs.org/etag/1.6.0").
+        stub_request(:get, registry_listing_url + "/1.6.0").
           to_return(status: 200)
       end
 
@@ -468,7 +474,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the npm link resolves to a 404" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
       end
 
@@ -509,9 +515,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     context "when the latest version is older than another, non-prerelease" do
       before do
         body = fixture("javascript", "npm_response_old_latest.json")
-        stub_request(:get, "https://registry.npmjs.org/etag").
+        stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
-        stub_request(:get, "https://registry.npmjs.org/etag/1.6.0").
+        stub_request(:get, registry_listing_url + "/1.6.0").
           to_return(status: 200)
       end
 

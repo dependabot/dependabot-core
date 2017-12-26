@@ -79,7 +79,7 @@ module Dependabot
         end
 
         def npm_details
-          @npm_details =
+          @npm_details ||=
             begin
               npm_response = Excon.get(
                 dependency_url,
