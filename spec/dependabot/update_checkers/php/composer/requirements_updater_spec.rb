@@ -62,6 +62,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("@stable") }
         end
 
+        context "and a stability flag was specified" do
+          let(:composer_json_req_string) { "1.2.3@dev" }
+          its([:requirement]) { is_expected.to eq("1.5.0@dev") }
+        end
+
         context "and a partial version was previously specified" do
           let(:composer_json_req_string) { "0.1" }
           its([:requirement]) { is_expected.to eq("1.5.0") }
@@ -91,6 +96,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "specified at two digits" do
             let(:composer_json_req_string) { "^0.2" }
             its([:requirement]) { is_expected.to eq("^1.5") }
+          end
+
+          context "with a stability flag" do
+            let(:composer_json_req_string) { "^0.2.3@dev" }
+            its([:requirement]) { is_expected.to eq("^1.5.0@dev") }
           end
         end
 
@@ -218,6 +228,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         context "and a partial version was previously specified" do
           let(:composer_json_req_string) { "0.1" }
           its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "with a stability flag" do
+          let(:composer_json_req_string) { "1.2.3@dev" }
+          its([:requirement]) { is_expected.to eq("1.5.0@dev") }
         end
 
         context "and only the major part was previously specified" do

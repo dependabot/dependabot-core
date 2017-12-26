@@ -81,7 +81,7 @@ module Dependabot
               elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
                 update_range_requirement(current_requirement)
               else
-                update_exact_requirement(current_requirement)
+                update_version_string(current_requirement)
               end
 
             req.merge(requirement: updated_requirement)
@@ -124,7 +124,7 @@ module Dependabot
                   elsif r_string.match?(/\s+-\s+/)
                     ruby_hyphen_range(r_string)
                   else
-                    Gem::Requirement.new(r_string)
+                    Gem::Requirement.new(r_string.gsub(/@\w+/, ""))
                   end
                 end
 
@@ -133,11 +133,12 @@ module Dependabot
           end
 
           def ruby_tilde_range(req_string)
-            version = req_string.gsub(/^~/, "")
+            version = req_string.gsub(/^~/, "").gsub(/@\w+/, "")
             Gem::Requirement.new("~> #{version}")
           end
 
           def ruby_hyphen_range(req_string)
+            req_string = req_string.gsub(/@\w+/, "")
             lower_bound, upper_bound = req_string.split(/\s+-\s+/)
             if upper_bound.split(".").count < 3
               upper_bound_parts = upper_bound.split(".")
@@ -151,7 +152,7 @@ module Dependabot
           end
 
           def ruby_caret_range(req_string)
-            version = req_string.gsub(/^\^/, "")
+            version = req_string.gsub(/^\^/, "").gsub(/@\w+/, "")
             parts = version.split(".")
             first_non_zero = parts.find { |d| d != "0" }
             first_non_zero_index =
@@ -246,10 +247,6 @@ module Dependabot
               else 0
               end
             end.join(".")
-          end
-
-          def update_exact_requirement(_req_string)
-            latest_resolvable_version.to_s
           end
         end
       end
