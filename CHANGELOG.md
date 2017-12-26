@@ -1,3 +1,9 @@
+## v0.40.18, 26 December 2017
+
+- Python: Handle simple index etries with spaces in filenames
+- JS: Only request registry index once during update check
+- PHP: Handle stability flags in requirements updater
+
 ## v0.40.17, 25 December 2017
 
 - JS: Handle pre-release updates when precision needs increasing
