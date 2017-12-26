@@ -1,3 +1,7 @@
+## v0.40.19, 26 December 2017
+
+- PHP: Handle wildcard versions better in requirement updater
+
 ## v0.40.18, 26 December 2017
 
 - Python: Handle simple index etries with spaces in filenames
