@@ -134,6 +134,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         fixture("python", "pypi_simple_response_underscore.html")
       end
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      context "and contains spaces" do
+        let(:pypi_response) do
+          fixture("python", "pypi_simple_response_space.html")
+        end
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
     end
 
     context "when the user's current version is a pre-release" do

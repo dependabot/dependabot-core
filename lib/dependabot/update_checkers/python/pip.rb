@@ -82,8 +82,7 @@ module Dependabot
               map do |filename|
                 version =
                   filename.
-                  gsub(/#{Regexp.quote(normalised_name)}-/i, "").
-                  gsub(/#{Regexp.quote(dependency.name)}-/i, "").
+                  gsub(/#{name_regex}-/i, "").
                   split(/-|(\.tar\.gz)/).
                   first
                 begin
@@ -124,6 +123,11 @@ module Dependabot
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name
           dependency.name.downcase.tr("_", "-").tr(".", "-")
+        end
+
+        def name_regex
+          parts = dependency.name.split(/[\s_-]/).map { |n| Regexp.quote(n) }
+          /#{parts.join("[\s_-]")}/i
         end
 
         def pip_conf
