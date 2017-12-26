@@ -116,7 +116,7 @@ module Dependabot
                   if r_string.start_with?("*")
                     Gem::Requirement.new(">= 0")
                   elsif r_string.include?("*")
-                    ruby_tilde_range(r_string.gsub(/(?:\.|^)\*/, ""))
+                    ruby_wildcard_range(r_string)
                   elsif r_string.start_with?("~")
                     ruby_tilde_range(r_string)
                   elsif r_string.start_with?("^")
@@ -130,6 +130,12 @@ module Dependabot
 
               Gem::Requirement.new(ruby_requirements.join(",").split(","))
             end
+          end
+
+          def ruby_wildcard_range(req_string)
+            version =
+              req_string.gsub(/^~/, "").gsub(/@\w+/, "").gsub(/(?:\.|^)\*/, "")
+            Gem::Requirement.new("~> #{version}.0")
           end
 
           def ruby_tilde_range(req_string)

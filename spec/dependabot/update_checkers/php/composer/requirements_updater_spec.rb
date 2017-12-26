@@ -128,9 +128,21 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
-        context "and a *.* was previously specified" do
-          let(:composer_json_req_string) { "0.*.*" }
-          its([:requirement]) { is_expected.to eq("1.*.*") }
+        context "and a * was previously specified" do
+          context "and two *'s were specified" do
+            let(:composer_json_req_string) { "1.4.*" }
+            its([:requirement]) { is_expected.to eq("1.5.*") }
+          end
+
+          context "and two *'s were specified" do
+            let(:composer_json_req_string) { "1.*.*" }
+            its([:requirement]) { is_expected.to eq("1.*.*") }
+
+            context "that aren't satisfied" do
+              let(:composer_json_req_string) { "0.*.*" }
+              its([:requirement]) { is_expected.to eq("1.*.*") }
+            end
+          end
 
           context "with fewer digits than the new version" do
             let(:composer_json_req_string) { "0.*" }
