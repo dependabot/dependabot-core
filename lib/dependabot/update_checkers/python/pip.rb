@@ -95,29 +95,44 @@ module Dependabot
         end
 
         def index_urls
-          main_index_url = "https://pypi.python.org/simple/"
-          extra_index_urls = []
+          main_index_url =
+            requirement_file_index_urls[:main] ||
+            pip_conf_index_urls[:main] ||
+            "https://pypi.python.org/simple/"
+
+          extra_index_urls =
+            requirement_file_index_urls[:extra] +
+            pip_conf_index_urls[:extra]
+
+          ([main_index_url] + extra_index_urls).map(&:strip)
+        end
+
+        def requirement_file_index_urls
+          urls = { main: nil, extra: [] }
 
           requirements_files.each do |file|
             if file.content.match?(/--index-url\s(.+)/)
-              main_index_url =
+              urls[:main] =
                 file.content.match(/--index-url\s(.+)/).captures.first
             end
-            extra_index_urls +=
-              file.content.scan(/--extra-index-url\s(.+)/).flatten
+            urls[:extra] += file.content.scan(/--extra-index-url\s(.+)/).flatten
           end
 
-          if pip_conf
-            if pip_conf.content.match?(/index-url\s*=/x)
-              main_index_url =
-                pip_conf.content.match(/index-url\s*=\s*(.+)/).captures.first
-            end
-            extra_index_urls +=
-              pip_conf.content.scan(/extra-index-url\s*=(.+)/).flatten
-          end
+          urls
+        end
 
-          index_urls = [main_index_url] + extra_index_urls
-          index_urls.map(&:strip)
+        def pip_conf_index_urls
+          urls = { main: nil, extra: [] }
+
+          return urls unless pip_conf
+          content = pip_conf.content
+
+          if content.match?(/index-url\s*=/x)
+            urls[:main] = content.match(/index-url\s*=\s*(.+)/).captures.first
+          end
+          urls[:extra] += content.scan(/extra-index-url\s*=(.+)/).flatten
+
+          urls
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
