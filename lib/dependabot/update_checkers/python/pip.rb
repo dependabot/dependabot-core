@@ -96,11 +96,13 @@ module Dependabot
 
         def index_urls
           main_index_url =
+            config_variable_index_urls[:main] ||
             requirement_file_index_urls[:main] ||
             pip_conf_index_urls[:main] ||
             "https://pypi.python.org/simple/"
 
           extra_index_urls =
+            config_variable_index_urls[:extra] +
             requirement_file_index_urls[:extra] +
             pip_conf_index_urls[:extra]
 
@@ -131,6 +133,22 @@ module Dependabot
             urls[:main] = content.match(/index-url\s*=\s*(.+)/).captures.first
           end
           urls[:extra] += content.scan(/extra-index-url\s*=(.+)/).flatten
+
+          urls
+        end
+
+        def config_variable_index_urls
+          urls = { main: nil, extra: [] }
+
+          index_url_creds = credentials.select { |cred| cred["index-url"] }
+          urls[:main] =
+            index_url_creds.
+            find { |cred| cred["replaces-base"] }&.
+            fetch("index-url")
+          urls[:extra] =
+            index_url_creds.
+            reject { |cred| cred["replaces-base"] }.
+            map { |cred| cred["index-url"] }
 
           urls
         end

@@ -19,16 +19,19 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
   end
 
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -182,6 +185,10 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "with a custom index-url" do
+      let(:pypi_url) do
+        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+      end
+
       context "set in a pip.conf file" do
         let(:dependency_files) do
           [
@@ -190,9 +197,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
               content: fixture("python", "conf_files", "custom_index")
             )
           ]
-        end
-        let(:pypi_url) do
-          "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -207,8 +211,18 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
             )
           ]
         end
-        let(:pypi_url) do
-          "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
+
+      context "set in credentials" do
+        let(:credentials) do
+          [
+            {
+              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+              "replaces-base" => "true"
+            }
+          ]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -247,6 +261,19 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
               name: "requirements.txt",
               content: fixture("python", "requirements", "extra_index.txt")
             )
+          ]
+        end
+
+        its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+      end
+
+      context "set in credentials" do
+        let(:credentials) do
+          [
+            {
+              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+              "replaces-base" => "false"
+            }
           ]
         end
 
