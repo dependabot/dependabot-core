@@ -1,3 +1,7 @@
+## v0.40.21, 27 December 2017
+
+- Python: Look for index URLs in credentials
+
 ## v0.40.20, 27 December 2017
 
 - JS: Handle yarn.lock files with multiple entries for the same dependency
