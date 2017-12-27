@@ -1,3 +1,7 @@
+## v0.40.20, 27 December 2017
+
+- JS: Handle yarn.lock files with multiple entries for the same dependency
+
 ## v0.40.19, 26 December 2017
 
 - PHP: Handle wildcard versions better in requirement updater
