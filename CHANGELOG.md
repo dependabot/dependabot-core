@@ -1,3 +1,7 @@
+## v0.40.25, 28 December 2017
+
+- Ruby: Ignore Bundler version if specified in Gemfile
+
 ## v0.40.24, 28 December 2017
 
 - Handle removed directories better (by raising a DependencyFileNotFound error)
