@@ -1,3 +1,8 @@
+## v0.40.22, 28 December 2017
+
+- JS: Fix false-positive result of wanting pre-release when a .x version was
+  requested
+
 ## v0.40.21, 27 December 2017
 
 - Python: Look for index URLs in credentials
