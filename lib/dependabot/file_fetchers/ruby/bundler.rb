@@ -65,6 +65,8 @@ module Dependabot
           gemspec = repo_contents.find { |f| f.name.end_with?(".gemspec") }
           return unless gemspec
           @gemspec ||= fetch_file_from_github(gemspec.name)
+        rescue Octokit::NotFound
+          nil
         end
 
         def ruby_version_file

@@ -23,6 +23,65 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
+  context "with a directory" do
+    let(:file_fetcher_instance) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        directory: "/test"
+      )
+    end
+    let(:url) { "https://api.github.com/repos/gocardless/bump/contents/test" }
+
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Gemfile?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Gemfile.lock?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the files as normal" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Gemfile Gemfile.lock))
+    end
+
+    context "that can't be found" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+  end
+
   context "with a .ruby-version file" do
     before do
       stub_request(:get, url + "?ref=sha").

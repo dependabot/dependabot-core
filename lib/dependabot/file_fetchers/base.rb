@@ -52,6 +52,9 @@ module Dependabot
         basename = File.basename(filename)
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
         fetch_file_from_github(filename)
+      rescue Octokit::NotFound
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        raise Dependabot::DependencyFileNotFound, path
       end
 
       def fetch_file_from_github(filename)
