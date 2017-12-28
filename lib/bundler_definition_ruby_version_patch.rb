@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BundlerDefinitionVersionPatch
+module BundlerDefinitionRubyVersionPatch
   def index
     @index ||= super.tap do
       if ruby_version
@@ -11,4 +11,4 @@ module BundlerDefinitionVersionPatch
     end
   end
 end
-Bundler::Definition.prepend(BundlerDefinitionVersionPatch)
+Bundler::Definition.prepend(BundlerDefinitionRubyVersionPatch)

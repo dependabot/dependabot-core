@@ -600,6 +600,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         it { is_expected.to eq(Gem::Version.new("1.4.6")) }
       end
 
+      context "with a Bundler version specified" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "bundler_specified") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "bundler_specified.lock")
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
+
       context "with no version specified" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "version_not_specified")

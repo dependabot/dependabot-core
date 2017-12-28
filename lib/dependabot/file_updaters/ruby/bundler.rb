@@ -2,7 +2,8 @@
 
 require "bundler"
 
-require "bundler_definition_version_patch"
+require "bundler_definition_ruby_version_patch"
+require "bundler_definition_bundler_version_patch"
 require "bundler_git_source_patch"
 
 require "dependabot/shared_helpers"
