@@ -1,3 +1,7 @@
+## v0.40.24, 28 December 2017
+
+- Handle removed directories better (by raising a DependencyFileNotFound error)
+
 ## v0.40.23, 28 December 2017
 
 - JS: Workaround for Yarn bug that means lockfile doesn't always change
