@@ -88,15 +88,7 @@ module Dependabot
           if package_lock && parsed_package_lock_json.dig("dependencies", name)
             parsed_package_lock_json.dig("dependencies", name)
           elsif yarn_lock && parsed_yarn_lock.find { |dep| dep["name"] == name }
-            parsed_yarn_lock.
-              select { |dep| dep["name"] == name }.
-              max_by do |dep|
-                begin
-                  Gem::Version.new(dep["version"])
-                rescue ArgumentError
-                  Gem::Version.new(0)
-                end
-              end
+            parsed_yarn_lock.find { |dep| dep["name"] == name }
           end
         end
 
