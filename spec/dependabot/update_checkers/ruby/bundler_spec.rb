@@ -1311,7 +1311,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             package_manager: "bundler"
           )
         end
-        it { is_expected.to eq(Gem::Version.new("2.0.1")) }
+        it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
         context "that is private" do
           let(:gemfile_body) do
@@ -1371,7 +1371,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             fixture("ruby", "lockfiles", "bad_branch.lock")
           end
 
-          it { is_expected.to eq(Gem::Version.new("2.0.1")) }
+          it { is_expected.to eq(Gem::Version.new("3.2.0")) }
         end
       end
     end
@@ -1392,7 +1392,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "given a Gemfile that specifies a Ruby version" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
-      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      let(:dependency_name) { "statesman" }
+
+      it { is_expected.to eq(Gem::Version.new("3.2.0")) }
+
+      context "that is old" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby_old") }
+
+        it { is_expected.to eq(Gem::Version.new("2.0.1")) }
+      end
     end
 
     context "with a gemspec and a Gemfile" do
@@ -1414,6 +1422,21 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("1.8.0"))
+      end
+
+      context "when an old required ruby is specified in the gemspec" do
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemspecs", "old_required_ruby"),
+            name: "example.gemspec"
+          )
+        end
+        let(:dependency_name) { "statesman" }
+
+        it "takes the minimum ruby version into account" do
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("2.0.1"))
+        end
       end
 
       context "when the Gemfile doesn't import the gemspec" do
