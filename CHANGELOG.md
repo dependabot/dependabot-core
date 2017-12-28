@@ -1,3 +1,7 @@
+## v0.40.23, 28 December 2017
+
+- JS: Workaround for Yarn bug that means lockfile doesn't always change
+
 ## v0.40.22, 28 December 2017
 
 - JS: Fix false-positive result of wanting pre-release when a .x version was
