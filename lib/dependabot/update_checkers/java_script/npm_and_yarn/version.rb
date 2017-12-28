@@ -5,6 +5,8 @@ require "dependabot/update_checkers/java_script/npm_and_yarn"
 # JavaScript pre-release versions user 1.0.1-rc1 syntax, which Gem::Version
 # converts into 1.0.1.pre.rc1. We override the `to_s` method to stop that
 # alteration.
+#
+# See https://semver.org/ for details of node's version syntax.
 
 module Dependabot
   module UpdateCheckers
