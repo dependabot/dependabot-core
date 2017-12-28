@@ -102,6 +102,44 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    context "when the lockfile doesn't update (due to a Yarn bug)" do
+      let(:files) { [package_json, yarn_lock] }
+      let(:package_json_body) do
+        fixture("javascript", "package_files", "no_lockfile_change.json")
+      end
+      let(:yarn_lock_body) do
+        fixture("javascript", "yarn_lockfiles", "no_lockfile_change.lock")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "babel-register",
+          version: "6.26.0",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^6.26.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "package.json",
+              requirement: "^6.24.1",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      # This occurs because a Yarn bug prevents Yarn from cleaning up the
+      # lockfile properly. If the bug is ever fixed then the below will equal
+      # two. In the meantime, this spec ensures we don't raise errors.
+      its(:length) { is_expected.to eq(1) }
+    end
+
     describe "the updated package_json_file" do
       subject(:updated_package_json_file) do
         updated_files.find { |f| f.name == "package.json" }

@@ -19,7 +19,7 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          if yarn_lock
+          if yarn_lock && yarn_lock_changed?
             updated_files <<
               updated_file(file: yarn_lock, content: updated_yarn_lock_content)
           end
@@ -61,6 +61,10 @@ module Dependabot
 
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
+        end
+
+        def yarn_lock_changed?
+          yarn_lock.content != updated_yarn_lock_content
         end
 
         def updated_package_files
