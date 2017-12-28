@@ -46,6 +46,30 @@ module Dependabot
   class DependencyFileNotEvaluatable < DependabotError; end
   class DependencyFileNotResolvable < DependabotError; end
 
+  #######################
+  # Source level errors #
+  #######################
+
+  class PrivateSourceNotReachable < DependabotError
+    attr_reader :source
+
+    def initialize(source)
+      @source = source
+      msg = "The following source could not be reached as it requires "\
+            "authentication (and any provided details were invalid): #{source}"
+      super(msg)
+    end
+  end
+
+  class PrivateSourceCertificateFailure < DependabotError
+    attr_reader :source
+
+    def initialize(source)
+      @source = source
+      super("Could not verify the SSL certificate for #{source}")
+    end
+  end
+
   ###########################
   # Dependency level errors #
   ###########################
@@ -83,26 +107,6 @@ module Dependabot
       msg = "The following path based dependencies could not be retrieved: "\
             "#{dependencies.join(', ')}"
       super(msg)
-    end
-  end
-
-  class PrivateSourceNotReachable < DependabotError
-    attr_reader :source
-
-    def initialize(source)
-      @source = source
-      msg = "The following source could not be reached as it requires "\
-            "authentication (and any provided details were invalid): #{source}"
-      super(msg)
-    end
-  end
-
-  class PrivateSourceCertificateFailure < DependabotError
-    attr_reader :source
-
-    def initialize(source)
-      @source = source
-      super("Could not verify the SSL certificate for #{source}")
     end
   end
 end
