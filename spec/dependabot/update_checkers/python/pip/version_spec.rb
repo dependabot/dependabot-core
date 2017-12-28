@@ -7,6 +7,30 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
+  describe ".correct?" do
+    subject { described_class.correct?(version_string) }
+
+    context "with a valid version" do
+      let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(true) }
+
+      context "that includes a local version" do
+        let(:version_string) { "1.0.0+abc.1" }
+        it { is_expected.to eq(true) }
+      end
+    end
+
+    context "with nil" do
+      let(:version_string) { nil }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an invalid version" do
+      let(:version_string) { "bad" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
   describe "#to_s" do
     subject { version.to_s }
 

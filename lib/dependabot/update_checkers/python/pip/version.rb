@@ -16,6 +16,10 @@ module Dependabot
           VERSION_PATTERN = Gem::Version::VERSION_PATTERN +
                             '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
 
+          def self.correct?(version)
+            super(version.to_s.split("+").first)
+          end
+
           def initialize(version)
             @version_string = version.to_s
             version, @local_version = version.split("+")

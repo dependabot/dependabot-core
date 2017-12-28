@@ -85,11 +85,8 @@ module Dependabot
                   gsub(/#{name_regex}-/i, "").
                   split(/-|(\.tar\.gz)/).
                   first
-                begin
-                  Pip::Version.new(version)
-                rescue ArgumentError
-                  nil
-                end
+                next unless Pip::Version.correct?(version)
+                Pip::Version.new(version)
               end.compact
           end
         end
