@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ################################################################################
-# For more details on Composer version constraints, see:                       #
+# For more details on NPM version constraints, see:                            #
 # https://docs.npmjs.com/misc/semver                                           #
 ################################################################################
 
