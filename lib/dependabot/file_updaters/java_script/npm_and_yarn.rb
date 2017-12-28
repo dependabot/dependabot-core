@@ -31,13 +31,10 @@ module Dependabot
             )
           end
 
-          package_files.each do |file|
-            next unless file_changed?(file)
-            updated_files <<
-              updated_file(
-                file: file,
-                content: updated_package_json_content(file)
-              )
+          updated_files += updated_package_files
+
+          if updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+            raise "No files have changed!"
           end
 
           updated_files
@@ -66,6 +63,14 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("package.json") }
         end
 
+        def updated_package_files
+          package_files.
+            select { |f| file_changed?(f) }.
+            map do |f|
+              updated_file(file: f, content: updated_package_json_content(f))
+            end
+        end
+
         def updated_yarn_lock_content
           @updated_yarn_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
@@ -74,7 +79,7 @@ module Dependabot
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
 
-              updated_files = SharedHelpers.run_helper_subprocess(
+              updated_content = SharedHelpers.run_helper_subprocess(
                 command: "node #{helper_path}",
                 function: "update",
                 args: [
@@ -83,12 +88,14 @@ module Dependabot
                   dependency.version,
                   dependency.requirements
                 ]
-              )
+              ).fetch("yarn.lock")
 
-              updated_content = updated_files.fetch("yarn.lock")
-              if yarn_lock.content == updated_content
-                raise "Expected content to change!"
+              dependency.requirements.each do |req|
+                req_string = "#{dependency.name}@#{req.fetch(:requirement)}"
+                next if updated_content.include?(req_string)
+                raise "Expected updated lockfile to include #{req_string}"
               end
+
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
