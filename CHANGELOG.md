@@ -1,3 +1,8 @@
+## v0.41.2, 29 December 2017
+
+- Include git protocol URIs in metadata finder regex
+- PHP: Slightly raise Composer memory limit
+
 ## v0.41.1, 29 December 2017
 
 - PHP: Use http-basic for GitHub credentials
