@@ -43,6 +43,35 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     )
   end
 
+  describe "SOURCE_REGEX" do
+    subject { described_class::SOURCE_REGEX.match(url)&.named_captures }
+
+    context "with a GitHub URL" do
+      let(:url) { "https://github.com/org/abc" }
+      it { is_expected.to eq("host" => "github", "repo" => "org/abc") }
+
+      context "with a git protocol" do
+        let(:url) { "git@github.com:org/abc" }
+        it { is_expected.to eq("host" => "github", "repo" => "org/abc") }
+      end
+
+      context "with a trailing .git" do
+        let(:url) { "https://github.com/org/abc.git" }
+        it { is_expected.to eq("host" => "github", "repo" => "org/abc") }
+      end
+    end
+
+    context "with a Bitbucket URL" do
+      let(:url) { "https://bitbucket.org/org/abc" }
+      it { is_expected.to eq("host" => "bitbucket", "repo" => "org/abc") }
+    end
+
+    context "with a GitLab URL" do
+      let(:url) { "https://gitlab.com/org/abc" }
+      it { is_expected.to eq("host" => "gitlab", "repo" => "org/abc") }
+    end
+  end
+
   describe "#source_url" do
     subject { finder.source_url }
 
