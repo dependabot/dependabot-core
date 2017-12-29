@@ -1,3 +1,7 @@
+## v0.41.1, 29 December 2017
+
+- PHP: Use http-basic for GitHub credentials
+
 ## v0.41.0, 29 December 2017
 
 - Ruby: Treat minimum possible Ruby requirement as the specified Ruby version,
