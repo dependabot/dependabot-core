@@ -1,3 +1,8 @@
+## v0.41.0, 29 December 2017
+
+- Ruby: Treat minimum possible Ruby requirement as the specified Ruby version,
+  when set in gemspec
+
 ## v0.40.25, 28 December 2017
 
 - Ruby: Ignore Bundler version if specified in Gemfile
