@@ -5,6 +5,7 @@ require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
 require "dependabot/file_updaters/ruby/bundler/git_source_remover"
 require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
+require "dependabot/update_checkers/ruby/bundler/ruby_requirement_setter"
 
 module Dependabot
   module UpdateCheckers
@@ -17,7 +18,11 @@ module Dependabot
         # - Sanitizes any provided gemspecs to remove file imports etc. (since
         #   Dependabot doesn't pull down the entire repo). This process is
         #   imperfect - an alternative would be to clone the repo
+        # - Sets the ruby version in the Gemfile to be the lowest possible
+        #   version allowed by the gemspec, if the gemspec has a required ruby
+        #   version range
         class FilePreparer
+          REQUIRED_RUBY_VERSION = /required_ruby_version/
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
                          replacement_git_pin: nil)
@@ -115,6 +120,7 @@ module Dependabot
             content = replace_gemfile_version_requirement(file.content)
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
+            content = update_ruby_version(content) if file == gemfile
             content
           end
 
@@ -164,6 +170,11 @@ module Dependabot
               dependency: dependency,
               new_pin: replacement_git_pin
             ).rewrite(content)
+          end
+
+          def update_ruby_version(content)
+            return content unless gemspec
+            RubyRequirementSetter.new(gemspec: gemspec).rewrite(content)
           end
         end
       end
