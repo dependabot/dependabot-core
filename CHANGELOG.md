@@ -1,3 +1,7 @@
+## v0.41.3, 29 December 2017
+
+- JS: Handle versions specified with a dist tag
+
 ## v0.41.2, 29 December 2017
 
 - Include git protocol URIs in metadata finder regex
