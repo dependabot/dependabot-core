@@ -19,7 +19,18 @@ class UpdateChecker
         $config = $composer->getConfig();
 
         if ($githubToken) {
-            $config->merge(['config' => ['github-oauth' => ['github.com' => $githubToken]]]);
+            $config->merge(
+                [
+                    'config' => [
+                        'http-basic' => [
+                            'github.com' => [
+                                'username' => 'x-access-token',
+                                'password' => $githubToken,
+                            ],
+                        ],
+                    ],
+                ]
+            );
             $io->loadConfiguration($config);
         }
 
