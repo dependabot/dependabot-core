@@ -17,7 +17,8 @@
     ],
     "description": "Create simple ETags",
     "dist-tags": {
-        "latest": "1.7.0"
+        "latest": "1.7.0",
+        "stable": "1.5.1"
     },
     "homepage": "https://github.com/jshttp/etag",
     "keywords": [

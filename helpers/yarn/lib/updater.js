@@ -15,6 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
+const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
@@ -47,6 +48,13 @@ class LightweightAdd extends Add {
     await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
 
     // Skip over the unnecessary steps - fetching and linking packages, etc.
+    return true;
+  }
+}
+
+class LightweightInstall extends Install {
+  async bailout(patterns, workspaceLayout) {
+    await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
     return true;
   }
 }
@@ -114,6 +122,7 @@ async function updateDependencyFile(
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
+  const originalPackageJson = readFile("package.json");
 
   const flags = {
     ignoreScripts: true,
@@ -150,6 +159,12 @@ async function updateDependencyFile(
   const args2 = [`${depName}@${currentPattern}`];
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
+
+  // Do a normal install to ensure the lockfile doesn't change when we do
+  fs.writeFileSync(path.join(directory, "package.json"), originalPackageJson);
+  const lockfile3 = await Lockfile.fromDirectory(directory, reporter);
+  const install = new LightweightInstall(flags, config, reporter, lockfile3);
+  await install.init();
 
   const updatedYarnLock = readFile("yarn.lock");
 

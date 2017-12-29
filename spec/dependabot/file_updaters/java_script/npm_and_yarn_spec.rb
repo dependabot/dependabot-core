@@ -605,6 +605,44 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           to include("fetch-factory@^0.0.2")
       end
 
+      context "when a dist-tag is specified" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "bootstrap",
+            version: "4.0.0-beta.3",
+            package_manager: "yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "next",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "3.3.7",
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "next",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "dist_tag.json")
+        end
+        let(:yarn_lock_body) do
+          fixture("javascript", "yarn_lockfiles", "dist_tag.lock")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock_file.content).
+            to include("bootstrap@next:\n  version \"4.0.0-beta.3\"")
+        end
+      end
+
       context "with a path-based dependency" do
         let(:files) { [package_json, yarn_lock, path_dep] }
         let(:package_json_body) do

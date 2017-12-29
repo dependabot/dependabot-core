@@ -43,7 +43,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       requirements: [
         { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
       ],
-      package_manager: "yarn"
+      package_manager: "npm_and_yarn"
     )
   end
 
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               source: nil
             }
           ],
-          package_manager: "yarn"
+          package_manager: "npm_and_yarn"
         )
       end
       it { is_expected.to be_truthy }
@@ -163,6 +163,29 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     it "only hits the registry once" do
       checker.latest_version
       expect(WebMock).to have_requested(:get, registry_listing_url).once
+    end
+
+    context "when the user wants a dist tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "stable",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      before do
+        stub_request(:get, registry_listing_url + "/1.5.1").
+          to_return(status: 200)
+      end
+      it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
     context "when the latest version is a prerelease" do

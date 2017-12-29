@@ -48,9 +48,8 @@ module Dependabot
 
         def fetch_latest_version
           return nil unless npm_details&.fetch("dist-tags", nil)
-          latest_dist_tag = npm_details["dist-tags"]["latest"]
-          latest_dist_tag = version_class.new(latest_dist_tag)
-          return latest_dist_tag if use_latest_dist_tag?(latest_dist_tag)
+          dist_tag_version = version_from_dist_tags(npm_details)
+          return dist_tag_version if dist_tag_version
 
           latest_release =
             npm_details["versions"].
@@ -63,6 +62,26 @@ module Dependabot
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def version_from_dist_tags(npm_details)
+          dist_tags = npm_details["dist-tags"].keys
+
+          # Check if a dist tag was specified as a requirement. If it was, and
+          # it exists, use it.
+          dist_tag_req = dependency.requirements.find do |req|
+            dist_tags.include?(req[:requirement])
+          end&.fetch(:requirement)
+          if dist_tag_req
+            tag_vers = version_class.new(npm_details["dist-tags"][dist_tag_req])
+            return tag_vers unless yanked?(tag_vers)
+          end
+
+          # Use the latest dist tag  unless there's a reason not to
+          latest = version_class.new(npm_details["dist-tags"]["latest"])
+
+          return if wants_prerelease? || latest.prerelease? || yanked?(latest)
+          latest
         end
 
         def use_latest_dist_tag?(version)
