@@ -152,6 +152,31 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
     end
 
+    context "with a replaced dependency" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "replaced_dependency")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "replaced_dependency")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "illuminate/console",
+          version: nil,
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "5.5.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+      it { is_expected.to be_nil }
+    end
+
     context "with a PEAR dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(

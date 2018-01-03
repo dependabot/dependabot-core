@@ -66,6 +66,21 @@ class UpdateChecker
             return $package->getName() == $dependencyName;
         }));
 
-        return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
+        // We found the package in the list of updated packages. Return its version.
+        if ($updatedPackage) {
+            return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
+        }
+
+        // We didn't find the package in the list of updated packages. Check if
+        // it was replaced by another package (in which case we can ignore).
+        foreach ($installedPackages as $package) {
+            foreach ($package->getReplaces() as $link) {
+                if ($link->getTarget() == $dependencyName) {
+                    return null;
+                }
+            }
+        }
+
+        throw new \RuntimeException('Package not found in updated packages!');
     }
 }
