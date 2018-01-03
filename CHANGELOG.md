@@ -1,3 +1,7 @@
+## v0.41.4, 3 January 2018
+
+- PHP: Handle replaced dependencies
+
 ## v0.41.3, 29 December 2017
 
 - JS: Handle versions specified with a dist tag
