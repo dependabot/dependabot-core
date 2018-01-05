@@ -8,12 +8,16 @@ module Dependabot
     module Java
       class Maven < Dependabot::UpdateCheckers::Base
         def latest_version
-          # TODO: Hit the registry and get the latest possible version
+          Gem::Version.new(maven_central_latest_version)
         end
 
         def latest_resolvable_version
           # TODO: Resolve the pom.xml to find the latest version we could update
           # to without updating any other dependencies at the same time
+          #
+          # The above is hard. Currently we just return the latest version and
+          # hope (hence this package manager is in beta!)
+          latest_version
         end
 
         def updated_requirements
@@ -30,6 +34,27 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def maven_central_latest_version
+          maven_central_dependency_metadata.at_css("release")&.content
+        end
+
+        def maven_central_dependency_metadata
+          @maven_central_dependency_metadata ||=
+            begin
+              response = Excon.get(
+                "#{maven_central_dependency_url}maven-metadata.xml",
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+              Nokogiri::XML(response.body)
+            end
+        end
+
+        def maven_central_dependency_url
+          "https://search.maven.org/remotecontent?filepath="\
+          "#{dependency.name.gsub(/[:.]/, '/')}/"
         end
       end
     end

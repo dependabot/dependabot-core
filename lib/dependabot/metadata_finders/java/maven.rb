@@ -40,7 +40,7 @@ module Dependabot
 
         def maven_central_dependency_url
           "https://search.maven.org/remotecontent?filepath="\
-          "#{dependency.name.tr('.', '/').tr(':', '/')}/"
+          "#{dependency.name.gsub(/[:.]/, '/')}/"
         end
       end
     end
