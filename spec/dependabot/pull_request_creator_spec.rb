@@ -8,12 +8,14 @@ require "dependabot/pull_request_creator"
 
 RSpec.describe Dependabot::PullRequestCreator do
   subject(:creator) do
-    Dependabot::PullRequestCreator.new(repo: repo,
-                                       base_commit: base_commit,
-                                       dependencies: [dependency],
-                                       files: files,
-                                       github_client: github_client,
-                                       custom_label: custom_label)
+    described_class.new(
+      repo: repo,
+      base_commit: base_commit,
+      dependencies: [dependency],
+      files: files,
+      github_client: github_client,
+      custom_label: custom_label
+    )
   end
 
   let(:dependency) do
@@ -218,7 +220,7 @@ RSpec.describe Dependabot::PullRequestCreator do
 
     context "with author details" do
       subject(:creator) do
-        Dependabot::PullRequestCreator.new(
+        described_class.new(
           repo: repo,
           base_commit: base_commit,
           dependencies: [dependency],
@@ -293,12 +295,14 @@ RSpec.describe Dependabot::PullRequestCreator do
 
     context "with a target branch" do
       subject(:creator) do
-        Dependabot::PullRequestCreator.new(repo: repo,
-                                           base_commit: base_commit,
-                                           target_branch: "my_branch",
-                                           dependencies: [dependency],
-                                           files: files,
-                                           github_client: github_client)
+        described_class.new(
+          repo: repo,
+          base_commit: base_commit,
+          target_branch: "my_branch",
+          dependencies: [dependency],
+          files: files,
+          github_client: github_client
+        )
       end
 
       it "creates a PR with the right details" do
@@ -326,7 +330,7 @@ RSpec.describe Dependabot::PullRequestCreator do
 
     context "with multiple dependencies" do
       subject(:creator) do
-        Dependabot::PullRequestCreator.new(
+        described_class.new(
           repo: repo,
           base_commit: base_commit,
           dependencies: [dependency, dependency2],
@@ -961,12 +965,14 @@ RSpec.describe Dependabot::PullRequestCreator do
 
     context "with a custom footer" do
       subject(:creator) do
-        Dependabot::PullRequestCreator.new(repo: repo,
-                                           base_commit: base_commit,
-                                           dependencies: [dependency],
-                                           files: files,
-                                           github_client: github_client,
-                                           pr_message_footer: "Example text")
+        described_class.new(
+          repo: repo,
+          base_commit: base_commit,
+          dependencies: [dependency],
+          files: files,
+          github_client: github_client,
+          pr_message_footer: "Example text"
+        )
       end
 
       it "includes the custom text in the PR message" do

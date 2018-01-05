@@ -22,13 +22,19 @@ module Dependabot
         path = path.compact
 
         if dependencies.count > 1
-          File.join(*path, dependencies.map(&:name).join("-and-"))
+          File.join(*path, dependencies.map(&:name).join("-and-")).tr(":", "-")
         elsif library?
           dep = dependencies.first
-          File.join(*path, "#{dep.name}-#{sanitized_requirement(dep)}")
+          File.join(
+            *path,
+            "#{dep.name.tr(':', '-')}-#{sanitized_requirement(dep)}"
+          )
         else
           dep = dependencies.first
-          File.join(*path, "#{dep.name}-#{new_version(dep)}")
+          File.join(
+            *path,
+            "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
+          )
         end
       end
 
