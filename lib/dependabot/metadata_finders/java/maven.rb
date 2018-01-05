@@ -26,16 +26,21 @@ module Dependabot
         def pom_file
           return @pom_file unless @pom_file.nil?
 
-          artifact_id = dependency.name.split("/").last
+          artifact_id = dependency.name.split(":").last
           response = Excon.get(
-            "https://search.maven.org/remotecontent?filepath="\
-            "#{dependency.name.tr('.', '/')}/#{dependency.version}/"\
+            "#{maven_central_dependency_url}"\
+            "#{dependency.version}/"\
             "#{artifact_id}-#{dependency.version}.pom",
             idempotent: true,
             middlewares: SharedHelpers.excon_middleware
           )
 
           @pom_file = Nokogiri::XML(response.body)
+        end
+
+        def maven_central_dependency_url
+          "https://search.maven.org/remotecontent?filepath="\
+          "#{dependency.name.tr('.', '/').tr(':', '/')}/"
         end
       end
     end

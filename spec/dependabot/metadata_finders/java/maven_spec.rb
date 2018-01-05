@@ -35,7 +35,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
       }
     ]
   end
-  let(:dependency_name) { "com.google.guava/guava" }
+  let(:dependency_name) { "com.google.guava:guava" }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
