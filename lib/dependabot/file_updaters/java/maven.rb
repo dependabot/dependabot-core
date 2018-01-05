@@ -31,6 +31,10 @@ module Dependabot
         end
 
         def updated_pom_content
+          # TODO: Don't parse and re-create the pom.xml (or spec that
+          # formatting isn't affected if we do)
+          # TODO: Update to new *requirement* not latest version (and spec that
+          # specifications like `<version>[1.0]</version> are persisted)
           doc = Nokogiri::XML(pom.content)
           original_node = doc.css(DEPENDENCY_SELECTOR).find do |node|
             node_name = [
