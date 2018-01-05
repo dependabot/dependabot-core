@@ -1,3 +1,7 @@
+## v0.41.5, 5 January 2018
+
+- PHP: Use Composer 1.6.0
+
 ## v0.41.4, 3 January 2018
 
 - PHP: Handle replaced dependencies
