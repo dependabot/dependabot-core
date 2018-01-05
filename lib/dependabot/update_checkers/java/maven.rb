@@ -7,8 +7,11 @@ module Dependabot
   module UpdateCheckers
     module Java
       class Maven < Dependabot::UpdateCheckers::Base
+        require_relative "maven/requirements_updater"
+        require_relative "maven/version"
+
         def latest_version
-          Gem::Version.new(maven_central_latest_version)
+          version_class.new(maven_central_latest_version)
         end
 
         def latest_resolvable_version
@@ -21,8 +24,14 @@ module Dependabot
         end
 
         def updated_requirements
-          # TODO: Update the original requirement (from the pom.xml)
-          # to accommodate the latest version
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version&.to_s
+          ).updated_requirements
+        end
+
+        def version_class
+          Maven::Version
         end
 
         private
