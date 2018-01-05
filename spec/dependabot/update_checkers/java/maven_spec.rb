@@ -17,7 +17,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     stub_request(:get, maven_central_metadata_url).
       to_return(
         status: 200,
-        body: fixture("java", "maven_central_metadata.xml")
+        body: fixture("java", "maven_central_metadata", "with_release.xml")
       )
   end
 
@@ -48,6 +48,18 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+
+    context "when Maven Central doesn't return a release tag" do
+      before do
+        stub_request(:get, maven_central_metadata_url).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "no_release.xml")
+          )
+      end
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#latest_resolvable_version" do

@@ -57,7 +57,7 @@ module Dependabot
             reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
             find { |version| !yanked?(version) }
 
-          version_class.new(latest_release)
+          latest_release.nil? ? nil : version_class.new(latest_release)
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that

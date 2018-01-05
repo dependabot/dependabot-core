@@ -11,6 +11,7 @@ module Dependabot
         require_relative "maven/version"
 
         def latest_version
+          return nil if maven_central_latest_version.nil?
           version_class.new(maven_central_latest_version)
         end
 
