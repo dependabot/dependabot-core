@@ -51,13 +51,7 @@ module Dependabot
           dist_tag_version = version_from_dist_tags(npm_details)
           return dist_tag_version if dist_tag_version
 
-          latest_release =
-            npm_details["versions"].
-            keys.map { |v| version_class.new(v) }.
-            reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
-            find { |version| !yanked?(version) }
-
-          version_class.new(latest_release)
+          version_from_versions_array(npm_details)
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
@@ -82,6 +76,17 @@ module Dependabot
 
           return if wants_prerelease? || latest.prerelease? || yanked?(latest)
           latest
+        end
+
+        def version_from_versions_array(npm_details)
+          latest_release =
+            npm_details["versions"].
+            keys.map { |v| version_class.new(v) }.
+            reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
+            find { |version| !yanked?(version) }
+
+          return unless latest_release
+          version_class.new(latest_release)
         end
 
         def use_latest_dist_tag?(version)
