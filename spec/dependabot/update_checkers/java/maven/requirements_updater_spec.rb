@@ -38,6 +38,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("23.6-jre") }
 
+      context "and no requirement was previously specified" do
+        let(:pom_req_string) { nil }
+        it { is_expected.to eq(pom_req) }
+      end
+
       context "and a soft requirement was previously specified" do
         let(:pom_req_string) { "23.3-jre" }
         its([:requirement]) { is_expected.to eq("23.6-jre") }
