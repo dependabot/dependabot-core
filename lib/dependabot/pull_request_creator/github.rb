@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "octokit"
+require "securerandom"
 require "dependabot/pull_request_creator"
 
 module Dependabot
@@ -98,7 +99,13 @@ module Dependabot
       rescue Octokit::UnprocessableEntity => error
         # Return quietly in the case of a race
         return nil if error.message.match?(/Reference already exists/i)
-        raise
+        raise if @retrying_branch_creation
+        @retrying_branch_creation = true
+
+        # Branch creation will fail if a branch called `dependabot` already
+        # exists, since git won't be able to create a folder with the same name
+        @branch_name = SecureRandom.hex[0..3] + @branch_name
+        retry
       end
 
       def dependencies_label_exists?
