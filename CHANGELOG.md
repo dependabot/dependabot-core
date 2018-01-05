@@ -1,3 +1,7 @@
+## v0.42.2, 5 January 2018
+
+- Sanitize colons out of git branch names
+
 ## v0.42.1, 5 January 2018
 
 - Java: Handle dependency declarations without a version requirement
