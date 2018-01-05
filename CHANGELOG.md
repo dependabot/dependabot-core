@@ -1,3 +1,7 @@
+## v0.42.1, 5 January 2018
+
+- Java: Handle dependency declarations without a version requirement
+
 ## v0.42.0, 5 January 2018
 
 - Java: Add support for Maven
