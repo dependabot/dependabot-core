@@ -1,3 +1,7 @@
+## v0.42.0, 5 January 2018
+
+- Java: Add support for Maven
+
 ## v0.41.5, 5 January 2018
 
 - PHP: Use Composer 1.6.0
