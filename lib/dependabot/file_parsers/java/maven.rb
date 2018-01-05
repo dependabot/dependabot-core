@@ -25,7 +25,7 @@ module Dependabot
                 source: nil
               }]
             )
-          end
+          end.compact
         end
 
         private
@@ -39,13 +39,17 @@ module Dependabot
 
         def dependency_version(dependency_node)
           requirement = dependency_requirement(dependency_node)
+          return nil unless requirement
+
           # If a range is specified then we can't tell the exact version
           return nil if requirement.include?(",")
+
           # Remove brackets if present (and not denoting a range)
           requirement.gsub(/[\(\)\[\]]/, "")
         end
 
         def dependency_requirement(dependency_node)
+          return unless dependency_node.at_css("version")
           version_content = dependency_node.at_css("version").content
 
           return version_content unless version_content.start_with?("${")
