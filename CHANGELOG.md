@@ -1,3 +1,7 @@
+## v0.42.3, 5 January 2018
+
+- Handle PR creation when a branch called `dependabot` already exists
+
 ## v0.42.2, 5 January 2018
 
 - Sanitize colons out of git branch names
