@@ -1,3 +1,7 @@
+## v0.42.4, 6 January 2018
+
+- Java: Stricter dependency selector in FileParser
+
 ## v0.42.3, 5 January 2018
 
 - Handle PR creation when a branch called `dependabot` already exists
