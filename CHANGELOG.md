@@ -1,3 +1,7 @@
+## v0.42.5, 6 January 2018
+
+- Java: Use dependency selector from FileParser in FileUpdater
+
 ## v0.42.4, 6 January 2018
 
 - Java: Stricter dependency selector in FileParser
