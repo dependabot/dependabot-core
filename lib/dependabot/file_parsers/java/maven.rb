@@ -9,7 +9,7 @@ module Dependabot
   module FileParsers
     module Java
       class Maven < Dependabot::FileParsers::Base
-        DEPENDENCY_SELECTOR = "dependencies > dependency, plugins plugin"
+        DEPENDENCY_SELECTOR = "dependencies > dependency, plugins > plugin"
 
         def parse
           doc = Nokogiri::XML(pom.content)

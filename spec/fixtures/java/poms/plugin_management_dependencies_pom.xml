@@ -10,8 +10,8 @@
   <packaging>pom</packaging>
 
   <build>
-    <plugins>
-      <pluginManagement>
+    <pluginManagement>
+      <plugins>
         <!-- Spring Boot integration -->
         <plugin>
           <groupId>org.springframework.boot</groupId>
@@ -31,7 +31,7 @@
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.7.9</version>
         </plugin>
-      </pluginManagement>
-    </plugins>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>
