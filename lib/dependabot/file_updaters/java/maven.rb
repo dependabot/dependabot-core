@@ -2,13 +2,12 @@
 
 require "nokogiri"
 require "dependabot/file_updaters/base"
+require "dependabot/file_parsers/java/maven"
 
 module Dependabot
   module FileUpdaters
     module Java
       class Maven < Dependabot::FileUpdaters::Base
-        DEPENDENCY_SELECTOR = "dependencies > dependency, plugins plugin"
-
         def self.updated_files_regex
           [/^pom\.xml$/]
         end
@@ -36,7 +35,7 @@ module Dependabot
           # TODO: Update to new *requirement* not latest version (and spec that
           # specifications like `<version>[1.0]</version> are persisted)
           doc = Nokogiri::XML(pom.content)
-          original_node = doc.css(DEPENDENCY_SELECTOR).find do |node|
+          original_node = doc.css(dependency_selector).find do |node|
             node_name = [
               node.at_css("groupId").content,
               node.at_css("artifactId").content
@@ -70,6 +69,10 @@ module Dependabot
             end
 
           property_node.content = dependency.version
+        end
+
+        def dependency_selector
+          Dependabot::FileParsers::Java::Maven::DEPENDENCY_SELECTOR
         end
 
         def pom

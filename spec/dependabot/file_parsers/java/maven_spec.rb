@@ -229,5 +229,31 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
         end
       end
     end
+
+    context "for a dependency with compiler plugins" do
+      let(:pom_body) { fixture("java", "poms", "compiler_plugins.xml") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.google.guava:guava")
+          expect(dependency.version).to eq("23.3-jre")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "23.3-jre",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
   end
 end
