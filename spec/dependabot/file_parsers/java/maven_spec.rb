@@ -152,6 +152,34 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
+    context "for version inherited from a parent pom" do
+      let(:pom_body) { fixture("java", "poms", "pom_with_parent.xml") }
+
+      its(:length) { is_expected.to eq(8) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq(
+            "org.springframework.boot:spring-boot-starter-parent"
+          )
+          expect(dependency.version).to eq("1.5.9.RELEASE")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "1.5.9.RELEASE",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "for a version range" do
       let(:pom_body) { fixture("java", "poms", "range_pom.xml") }
 
