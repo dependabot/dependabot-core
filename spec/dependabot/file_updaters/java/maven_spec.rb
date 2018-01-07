@@ -23,14 +23,9 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
     )
   end
   let(:pom) do
-    Dependabot::DependencyFile.new(
-      content: pom_body,
-      name: "pom.xml"
-    )
+    Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
   end
-  let(:pom_body) do
-    fixture("java", "poms", "basic_pom.xml")
-  end
+  let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "org.apache.httpcomponents:httpclient",
@@ -72,7 +67,13 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       its(:content) { is_expected.to include "<version>4.6.1</version>" }
       its(:content) { is_expected.to include "<version>23.3-jre</version>" }
 
-      context "when the updated requirement is a hard requirement" do
+      it "doesn't update the formatting of the POM" do
+        expect(updated_pom_file.content).
+          to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+      end
+
+      context "when the requirement is a hard requirement" do
+        let(:pom_body) { fixture("java", "poms", "hard_requirement_pom.xml") }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "org.apache.httpcomponents:httpclient",
@@ -98,7 +99,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         end
 
         its(:content) { is_expected.to include "<version>[4.6.1]</version>" }
-        its(:content) { is_expected.to include "<version>23.3-jre</version>" }
+        its(:content) { is_expected.to include "<version>[23.3-jre]</version>" }
       end
     end
   end

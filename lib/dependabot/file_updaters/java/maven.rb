@@ -8,6 +8,9 @@ module Dependabot
   module FileUpdaters
     module Java
       class Maven < Dependabot::FileUpdaters::Base
+        DECLARATION_REGEX =
+          %r{<dependency>.*?</dependency>|<plugin>.*?</plugin>}m
+
         def self.updated_files_regex
           [/^pom\.xml$/]
         end
@@ -30,8 +33,6 @@ module Dependabot
         end
 
         def updated_pom_content
-          # TODO: Don't parse and re-create the pom.xml (or spec that
-          # formatting isn't affected if we do)
           doc = Nokogiri::XML(pom.content)
           original_node = doc.css(dependency_selector).find do |node|
             node_name = [
@@ -43,12 +44,13 @@ module Dependabot
 
           version_content = original_node.at_css("version").content
 
-          if version_content.start_with?("${")
-            update_property_node(doc: doc, version_content: version_content)
-          else
-            original_node.at_css("version").content = updated_pom_requirement
+          unless version_content.start_with?("${")
+            return pom.content.gsub(original_declaration, updated_declaration)
           end
 
+          # TODO: Don't parse and re-create the pom.xml in this case (and spec
+          # that formatting isn't affected)
+          update_property_node(doc: doc, version_content: version_content)
           doc.to_xml
         end
 
@@ -69,9 +71,34 @@ module Dependabot
           property_node.content = updated_pom_requirement
         end
 
+        def original_declaration
+          pom.content.scan(DECLARATION_REGEX).find do |node|
+            node = Nokogiri::XML(node)
+            node_name = [
+              node.at_css("groupId").content,
+              node.at_css("artifactId").content
+            ].join(":")
+            node_name == dependency.name
+          end
+        end
+
+        def updated_declaration
+          original_declaration.gsub(
+            "<version>#{original_pom_requirement}</version>",
+            "<version>#{updated_pom_requirement}</version>"
+          )
+        end
+
         def updated_pom_requirement
           dependency.
             requirements.
+            find { |f| f.fetch(:file) == "pom.xml" }.
+            fetch(:requirement)
+        end
+
+        def original_pom_requirement
+          dependency.
+            previous_requirements.
             find { |f| f.fetch(:file) == "pom.xml" }.
             fetch(:requirement)
         end
