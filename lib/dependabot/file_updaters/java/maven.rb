@@ -32,8 +32,6 @@ module Dependabot
         def updated_pom_content
           # TODO: Don't parse and re-create the pom.xml (or spec that
           # formatting isn't affected if we do)
-          # TODO: Update to new *requirement* not latest version (and spec that
-          # specifications like `<version>[1.0]</version> are persisted)
           doc = Nokogiri::XML(pom.content)
           original_node = doc.css(dependency_selector).find do |node|
             node_name = [
@@ -48,7 +46,7 @@ module Dependabot
           if version_content.start_with?("${")
             update_property_node(doc: doc, version_content: version_content)
           else
-            original_node.at_css("version").content = dependency.version
+            original_node.at_css("version").content = updated_pom_requirement
           end
 
           doc.to_xml
@@ -68,7 +66,14 @@ module Dependabot
               doc.at_xpath("//properties/#{property_name}")
             end
 
-          property_node.content = dependency.version
+          property_node.content = updated_pom_requirement
+        end
+
+        def updated_pom_requirement
+          dependency.
+            requirements.
+            find { |f| f.fetch(:file) == "pom.xml" }.
+            fetch(:requirement)
         end
 
         def dependency_selector

@@ -71,6 +71,35 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
       its(:content) { is_expected.to include "<version>4.6.1</version>" }
       its(:content) { is_expected.to include "<version>23.3-jre</version>" }
+
+      context "when the updated requirement is a hard requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.httpcomponents:httpclient",
+            version: "4.6.1",
+            requirements: [
+              {
+                file: "pom.xml",
+                requirement: "[4.6.1]",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "pom.xml",
+                requirement: "[4.5.3]",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) { is_expected.to include "<version>[4.6.1]</version>" }
+        its(:content) { is_expected.to include "<version>23.3-jre</version>" }
+      end
     end
   end
 
