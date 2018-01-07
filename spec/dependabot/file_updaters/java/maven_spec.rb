@@ -261,9 +261,16 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         updated_files.find { |f| f.name == "pom.xml" }
       end
 
-      its(:content) do
-        is_expected.to include "<springframework.version>"\
-        "5.0.0.RELEASE</springframework.version>"
+      it "updates the version in the POM" do
+        expect(updated_pom_file.content).
+          to include(
+            "<springframework.version>5.0.0.RELEASE</springframework.version>"
+          )
+      end
+
+      it "doesn't update the formatting of the POM" do
+        expect(updated_pom_file.content).
+          to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
     end
   end

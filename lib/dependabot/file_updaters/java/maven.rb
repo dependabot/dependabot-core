@@ -33,45 +33,25 @@ module Dependabot
         end
 
         def updated_pom_content
-          doc = Nokogiri::XML(pom.content)
-          original_node = doc.css(dependency_selector).find do |node|
-            node_name = [
-              node.at_css("groupId").content,
-              node.at_css("artifactId").content
-            ].join(":")
-            node_name == dependency.name
+          if original_pom_version_content.start_with?("${")
+            prop_name = original_pom_version_content.strip[2..-2]
+            pom.content.gsub(
+              "<#{prop_name}>#{original_pom_requirement}</#{prop_name}>",
+              "<#{prop_name}>#{updated_pom_requirement}</#{prop_name}>"
+            )
+          else
+            pom.content.gsub(
+              original_pom_declaration,
+              updated_pom_declaration
+            )
           end
-
-          version_content = original_node.at_css("version").content
-
-          unless version_content.start_with?("${")
-            return pom.content.gsub(original_declaration, updated_declaration)
-          end
-
-          # TODO: Don't parse and re-create the pom.xml in this case (and spec
-          # that formatting isn't affected)
-          update_property_node(doc: doc, version_content: version_content)
-          doc.to_xml
         end
 
-        def update_property_node(doc:, version_content:)
-          property_name = version_content.strip[2..-2]
-          namespace = doc.namespaces["xmlns"]
-
-          property_node =
-            if namespace
-              doc.at_xpath(
-                "//ns:properties/ns:#{property_name}",
-                "ns" => namespace
-              )
-            else
-              doc.at_xpath("//properties/#{property_name}")
-            end
-
-          property_node.content = updated_pom_requirement
+        def original_pom_version_content
+          Nokogiri::XML(original_pom_declaration).at_css("version").content
         end
 
-        def original_declaration
+        def original_pom_declaration
           pom.content.scan(DECLARATION_REGEX).find do |node|
             node = Nokogiri::XML(node)
             node_name = [
@@ -82,8 +62,8 @@ module Dependabot
           end
         end
 
-        def updated_declaration
-          original_declaration.gsub(
+        def updated_pom_declaration
+          original_pom_declaration.gsub(
             "<version>#{original_pom_requirement}</version>",
             "<version>#{updated_pom_requirement}</version>"
           )
