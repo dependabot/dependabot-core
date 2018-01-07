@@ -33,18 +33,22 @@ module Dependabot
         end
 
         def updated_pom_content
-          if original_pom_version_content.start_with?("${")
-            prop_name = original_pom_version_content.strip[2..-2]
-            pom.content.gsub(
-              "<#{prop_name}>#{original_pom_requirement}</#{prop_name}>",
-              "<#{prop_name}>#{updated_pom_requirement}</#{prop_name}>"
-            )
-          else
-            pom.content.gsub(
-              original_pom_declaration,
-              updated_pom_declaration
-            )
-          end
+          updated_content =
+            if original_pom_version_content.start_with?("${")
+              prop_name = original_pom_version_content.strip[2..-2]
+              pom.content.gsub(
+                "<#{prop_name}>#{original_pom_requirement}</#{prop_name}>",
+                "<#{prop_name}>#{updated_pom_requirement}</#{prop_name}>"
+              )
+            else
+              pom.content.gsub(
+                original_pom_declaration,
+                updated_pom_declaration
+              )
+            end
+
+          raise "Expected content to change!" if updated_content == pom.content
+          updated_content
         end
 
         def original_pom_version_content
