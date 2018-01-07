@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version      = Dependabot::VERSION
   spec.summary      = "Automated dependency management"
   spec.description  = "Automated dependency management for Ruby, JavaScript, "\
-                      "Python and PHP"
+                      "Python, PHP and Java"
 
   spec.author       = "Dependabot"
   spec.email        = "support@dependabot.com"
