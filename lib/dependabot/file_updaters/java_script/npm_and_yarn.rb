@@ -93,14 +93,6 @@ module Dependabot
                   dependency.requirements
                 ]
               ).fetch("yarn.lock")
-
-              dependency.requirements.each do |req|
-                req_string = "#{dependency.name}@#{req.fetch(:requirement)}"
-                next if updated_content.include?(req_string)
-                raise "Expected updated lockfile to include #{req_string}"
-              end
-
-              updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("Couldn't find any versions")
