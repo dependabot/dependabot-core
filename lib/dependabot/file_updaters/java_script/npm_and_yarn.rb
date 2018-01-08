@@ -83,7 +83,7 @@ module Dependabot
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
 
-              updated_content = SharedHelpers.run_helper_subprocess(
+              SharedHelpers.run_helper_subprocess(
                 command: "node #{helper_path}",
                 function: "update",
                 args: [
