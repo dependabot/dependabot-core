@@ -1,3 +1,8 @@
+## v0.42.8, 8 January 2018
+
+- PHP: Check for pre-release versions to update to if using a pre-release
+  version
+
 ## v0.42.7, 8 January 2018
 
 - JS: Remove imperfect check that yarn.lock was updating
