@@ -34,12 +34,13 @@ module Dependabot
             packagist_listing["packages"][dependency.name.downcase].
             select { |version, _| Gem::Version.correct?(version) }.
             sort_by { |version, _| Gem::Version.new(version) }.
+            map { |_, listing| listing }.
             reverse
 
           potential_source_urls =
-            version_listings.flat_map do |_, listing|
-              [listing["homepage"], listing.dig("source", "url")]
-            end.compact
+            version_listings.
+            flat_map { |info| [info["homepage"], info.dig("source", "url")] }.
+            compact
 
           source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
 
