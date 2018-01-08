@@ -1,3 +1,7 @@
+## v0.42.7, 8 January 2018
+
+- JS: Remove imperfect check that yarn.lock was updating
+
 ## v0.42.6, 7 January 2018
 
 - Java: Maintain original formatting of pom.xml
