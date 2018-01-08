@@ -9,7 +9,8 @@ module Dependabot
     module Java
       class Maven < Dependabot::FileUpdaters::Base
         DECLARATION_REGEX =
-          %r{<dependency>.*?</dependency>|<plugin>.*?</plugin>}m
+          %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
+             <plugin>.*?</plugin>}mx
 
         def self.updated_files_regex
           [/^pom\.xml$/]

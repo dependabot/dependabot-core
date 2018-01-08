@@ -125,6 +125,52 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
     end
   end
 
+  context "pom with parent pom" do
+    let(:pom_body) { fixture("java", "poms", "pom_with_parent.xml") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "org.springframework.boot:spring-boot-starter-parent",
+        version: "1.5.10.RELEASE",
+        requirements: [
+          {
+            file: "pom.xml",
+            requirement: "1.5.10.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ],
+        previous_requirements: [
+          {
+            file: "pom.xml",
+            requirement: "1.5.9.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ],
+        package_manager: "maven"
+      )
+    end
+
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    it "returns DependencyFile objects" do
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    end
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the updated pom file" do
+      subject(:updated_pom_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
+      its(:content) { is_expected.to include "<parent>" }
+      its(:content) do
+        is_expected.to include "<version>1.5.10.RELEASE</version>"
+      end
+    end
+  end
+
   context "pom with plugins" do
     let(:pom_body) { fixture("java", "poms", "plugin_dependencies_pom.xml") }
     let(:dependency) do
