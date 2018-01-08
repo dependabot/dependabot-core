@@ -32,13 +32,8 @@ module Dependabot
 
           version_listings =
             packagist_listing["packages"][dependency.name.downcase].
-            sort_by do |version, _|
-              begin
-                Gem::Version.new(version)
-              rescue ArgumentError
-                Gem::Version.new(0)
-              end
-            end.
+            select { |version, _| Gem::Version.correct?(version) }.
+            sort_by { |version, _| Gem::Version.new(version) }.
             reverse
 
           potential_source_urls =

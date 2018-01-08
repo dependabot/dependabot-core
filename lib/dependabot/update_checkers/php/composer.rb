@@ -22,14 +22,9 @@ module Dependabot
           end
 
           versions =
-            packagist_listing["packages"][dependency.name.downcase].
-            keys.map do |version|
-              begin
-                Gem::Version.new(version.gsub(/^v/, ""))
-              rescue ArgumentError
-                nil
-              end
-            end.compact
+            packagist_listing["packages"][dependency.name.downcase].keys.
+            select { |version| Gem::Version.correct?(version.gsub(/^v/, "")) }.
+            map { |version| Gem::Version.new(version.gsub(/^v/, "")) }
 
           versions.reject!(&:prerelease?) unless wants_prerelease?
           versions.sort.last
