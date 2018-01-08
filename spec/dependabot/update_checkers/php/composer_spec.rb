@@ -67,9 +67,47 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     it { is_expected.to eq(Gem::Version.new("1.22.1")) }
 
+    context "when using a pre-release" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/monolog",
+          version: "1.0.0-RC1",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "1.0.0-RC1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+      it { is_expected.to eq(Gem::Version.new("1.23.0-rc1")) }
+    end
+
     context "without a lockfile" do
       let(:files) { [composer_file] }
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+
+      context "when using a pre-release" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "monolog/monolog",
+            version: nil,
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.0-RC1",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+        it { is_expected.to eq(Gem::Version.new("1.23.0-rc1")) }
+      end
     end
 
     context "when packagist 404s" do

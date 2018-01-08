@@ -31,7 +31,8 @@ module Dependabot
               end
             end.compact
 
-          versions.reject(&:prerelease?).sort.last
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.sort.last
         end
 
         def latest_resolvable_version
@@ -48,6 +49,17 @@ module Dependabot
         end
 
         private
+
+        def wants_prerelease?
+          current_version = dependency.version
+          if current_version && version_class.new(current_version).prerelease?
+            return true
+          end
+
+          dependency.requirements.any? do |req|
+            req[:requirement].match?(/\d-[A-Za-z]/)
+          end
+        end
 
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for Composer (yet)
@@ -81,9 +93,12 @@ module Dependabot
         end
 
         def prepared_composer_json_content
+          new_requirement =
+            dependency.version.nil? ? "*" : ">= #{dependency.version}"
+
           composer_file.content.gsub(
             /"#{Regexp.escape(dependency.name)}":\s*".*"/,
-            %("#{dependency.name}": "*")
+            %("#{dependency.name}": "#{new_requirement}")
           )
         end
 
