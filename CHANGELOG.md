@@ -1,3 +1,7 @@
+## v0.42.9, 8 January 2018
+
+- Java: Add support for projects that inherit from parent POM (thanks @evenh!)
+
 ## v0.42.8, 8 January 2018
 
 - PHP: Check for pre-release versions to update to if using a pre-release
