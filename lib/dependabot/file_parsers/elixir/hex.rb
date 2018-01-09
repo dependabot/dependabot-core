@@ -51,27 +51,22 @@ module Dependabot
         end
 
         def elixir_helper_mix_exs_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/mix.exs")
         end
 
         def elixir_helper_mix_deps_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/deps")
         end
 
         def elixir_helper_mix_lock_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/mix.lock")
         end
 
         def elixir_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/bin/run.exs")
         end
 
         def elixir_helper_load_deps_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/bin/load_deps.exs")
         end
 
@@ -82,6 +77,10 @@ module Dependabot
         def check_required_files
           # TODO
           nil
+        end
+
+        def project_root
+          File.join(File.dirname(__FILE__), "../../../..")
         end
 
         def mixfile
