@@ -8,6 +8,7 @@ require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/git/submodules"
 require "dependabot/metadata_finders/docker/docker"
 require "dependabot/metadata_finders/elixir/hex"
+require "dependabot/metadata_finders/rust/cargo"
 
 module Dependabot
   module MetadataFinders
@@ -22,6 +23,7 @@ module Dependabot
       when "submodules" then MetadataFinders::Git::Submodules
       when "docker" then MetadataFinders::Docker::Docker
       when "hex" then MetadataFinders::Elixir::Hex
+      when "cargo" then MetadataFinders::Rust::Cargo
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

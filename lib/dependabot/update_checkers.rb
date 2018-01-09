@@ -8,6 +8,7 @@ require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/git/submodules"
 require "dependabot/update_checkers/docker/docker"
 require "dependabot/update_checkers/elixir/hex"
+require "dependabot/update_checkers/rust/cargo"
 
 module Dependabot
   module UpdateCheckers
@@ -22,6 +23,7 @@ module Dependabot
       when "submodules" then UpdateCheckers::Git::Submodules
       when "docker" then UpdateCheckers::Docker::Docker
       when "hex" then UpdateCheckers::Elixir::Hex
+      when "cargo" then UpdateCheckers::Rust::Cargo
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

@@ -8,6 +8,7 @@ require "dependabot/file_updaters/php/composer"
 require "dependabot/file_updaters/git/submodules"
 require "dependabot/file_updaters/docker/docker"
 require "dependabot/file_updaters/elixir/hex"
+require "dependabot/file_updaters/rust/cargo"
 
 module Dependabot
   module FileUpdaters
@@ -22,6 +23,7 @@ module Dependabot
       when "submodules" then FileUpdaters::Git::Submodules
       when "docker" then FileUpdaters::Docker::Docker
       when "hex" then FileUpdaters::Elixir::Hex
+      when "cargo" then FileUpdaters::Rust::Cargo
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
