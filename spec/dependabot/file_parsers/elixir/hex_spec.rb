@@ -16,25 +16,25 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     Dependabot::DependencyFile.new(name: "mix.lock", content: lockfile_body)
   end
   let(:mixfile_body) do
-    fixture("elixir", "mixfiles", "minor_version_specified")
+    fixture("elixir", "mixfiles", "minor_version")
   end
   let(:lockfile_body) do
-    fixture("elixir", "lockfiles", "minor_version_specified")
+    fixture("elixir", "lockfiles", "minor_version")
   end
   let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(6) }
+    its(:length) { is_expected.to eq(2) }
 
     context "with a version specified" do
       describe "the first dependency" do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("phoenix_live_reload") }
-        its(:version) { is_expected.to eq("1.0.8") }
+        its(:name) { is_expected.to eq("plug") }
+        its(:version) { is_expected.to eq("1.3.5") }
       end
     end
   end
