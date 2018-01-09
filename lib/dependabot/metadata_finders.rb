@@ -9,6 +9,7 @@ require "dependabot/metadata_finders/git/submodules"
 require "dependabot/metadata_finders/docker/docker"
 require "dependabot/metadata_finders/elixir/hex"
 require "dependabot/metadata_finders/rust/cargo"
+require "dependabot/metadata_finders/dotnet/nuget"
 
 module Dependabot
   module MetadataFinders
@@ -24,6 +25,7 @@ module Dependabot
       when "docker" then MetadataFinders::Docker::Docker
       when "hex" then MetadataFinders::Elixir::Hex
       when "cargo" then MetadataFinders::Rust::Cargo
+      when "nuget" then MetadataFinders::Dotnet::Nuget
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
