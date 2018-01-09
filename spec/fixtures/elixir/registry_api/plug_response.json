@@ -1,0 +1,297 @@
+{
+    "downloads": {
+        "all": 4004085,
+        "day": 8813,
+        "recent": 603763,
+        "week": 46166
+    },
+    "html_url": "https://hex.pm/packages/plug",
+    "inserted_at": "2014-04-23T18:58:52.000000Z",
+    "meta": {
+        "description": "A specification and conveniences for composable modules between web applications",
+        "licenses": [
+            "Apache 2"
+        ],
+        "links": {
+            "GitHub": "https://github.com/elixir-plug/plug"
+        },
+        "maintainers": [
+            "José Valim"
+        ]
+    },
+    "name": "plug",
+    "owners": [
+        {
+            "email": "eric.meadows.jonsson@gmail.com",
+            "url": "https://hex.pm/api/users/ericmj",
+            "username": "ericmj"
+        },
+        {
+            "email": "jose.valim@gmail.com",
+            "url": "https://hex.pm/api/users/josevalim",
+            "username": "josevalim"
+        },
+        {
+            "email": "gazler@gmail.com",
+            "url": "https://hex.pm/api/users/gazler",
+            "username": "gazler"
+        }
+    ],
+    "releases": [
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.5.0-rc.0",
+            "version": "1.5.0-rc.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.4.3",
+            "version": "1.4.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.4.2",
+            "version": "1.4.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.4.1",
+            "version": "1.4.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.4.0",
+            "version": "1.4.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.4.0-rc.0",
+            "version": "1.4.0-rc.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.5",
+            "version": "1.3.5"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.4",
+            "version": "1.3.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.3",
+            "version": "1.3.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.2",
+            "version": "1.3.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.1",
+            "version": "1.3.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.3.0",
+            "version": "1.3.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.5",
+            "version": "1.2.5"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.4",
+            "version": "1.2.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.3",
+            "version": "1.2.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.2",
+            "version": "1.2.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.1",
+            "version": "1.2.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.0",
+            "version": "1.2.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.2.0-rc.0",
+            "version": "1.2.0-rc.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.9",
+            "version": "1.1.9"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.8",
+            "version": "1.1.8"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.7",
+            "version": "1.1.7"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.6",
+            "version": "1.1.6"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.5",
+            "version": "1.1.5"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.4",
+            "version": "1.1.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.3",
+            "version": "1.1.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.2",
+            "version": "1.1.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.1",
+            "version": "1.1.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.1.0",
+            "version": "1.1.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.6",
+            "version": "1.0.6"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.5",
+            "version": "1.0.5"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.4",
+            "version": "1.0.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.3",
+            "version": "1.0.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.2",
+            "version": "1.0.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.1",
+            "version": "1.0.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/1.0.0",
+            "version": "1.0.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.14.0",
+            "version": "0.14.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.13.1",
+            "version": "0.13.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.13.0",
+            "version": "0.13.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.12.2",
+            "version": "0.12.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.12.1",
+            "version": "0.12.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.12.0",
+            "version": "0.12.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.11.3",
+            "version": "0.11.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.11.2",
+            "version": "0.11.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.11.1",
+            "version": "0.11.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.11.0",
+            "version": "0.11.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.10.0",
+            "version": "0.10.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.9.0",
+            "version": "0.9.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.8.4",
+            "version": "0.8.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.8.3",
+            "version": "0.8.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.8.2",
+            "version": "0.8.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.8.1",
+            "version": "0.8.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.8.0",
+            "version": "0.8.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.7.0",
+            "version": "0.7.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.6.0",
+            "version": "0.6.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.5.3",
+            "version": "0.5.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.5.2",
+            "version": "0.5.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.5.1",
+            "version": "0.5.1"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.5.0",
+            "version": "0.5.0"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.4.4",
+            "version": "0.4.4"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.4.3",
+            "version": "0.4.3"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.4.2",
+            "version": "0.4.2"
+        },
+        {
+            "url": "https://hex.pm/api/packages/plug/releases/0.4.1",
+            "version": "0.4.1"
+        }
+    ],
+    "repository": "hexpm",
+    "updated_at": "2017-12-09T10:30:05.028610Z",
+    "url": "https://hex.pm/api/packages/plug"
+}

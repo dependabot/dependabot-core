@@ -1,5 +1,5 @@
-defmodule DependencyLoader do
-  def load(path) do
+defmodule DependencyUtils do
+  def load_deps(path) do
     {output, 0} = System.cmd(
       "mix",
       ["run", "--no-deps-check", "--no-start", "--no-compile", "load_deps.exs"],
@@ -14,15 +14,29 @@ defmodule DependencyLoader do
     )
     :erlang.binary_to_term(output)
   end
-end
 
-defmodule DependencyParser do
   def parse_lock_name({_, name, _, _, _, _, _}), do: name
   def parse_lock_version({_, _, version, _, _, _, _}), do: version
   def parse_lock_checksum({_, _, _, checksum, _, _, _}), do: checksum
   def parse_lock_repo({_, _, _, _, _, _, repo}), do: repo
 
   def parse_requirement(%{requirement: requirement}), do: requirement
+
+  def get_latest_resolvable_version(path, dependency_name) do
+    {output, 0} = System.cmd(
+      "mix",
+      ["run", "--no-deps-check", "--no-start", "--no-compile", "check_update.exs", dependency_name],
+      [
+        cd: path,
+        env: %{
+          "MIX_EXS" => nil,
+          "MIX_LOCK" => nil,
+          "MIX_DEPS" => nil
+        }
+      ]
+    )
+    :erlang.binary_to_term(output)
+  end
 end
 
 # %Mix.Dep{
@@ -55,11 +69,13 @@ end
 # } = dep
 
 input = IO.read(:stdio, :all)
-%{"function" => function, "args" => [dir]} = Jason.decode!(input)
+%{"function" => function, "args" => args} = Jason.decode!(input)
 
 case function do
   "parse" ->
-    %{deps: deps, lock: _lock} = DependencyLoader.load(dir)
+    [dir] = args
+
+    %{deps: deps, lock: _lock} = DependencyUtils.load_deps(dir)
 
     dependencies =
       deps
@@ -68,15 +84,22 @@ case function do
         lock = dep.opts[:lock]
 
         %{
-          name: DependencyParser.parse_lock_name(lock),
-          version: DependencyParser.parse_lock_version(lock),
-          checksum: DependencyParser.parse_lock_checksum(lock),
-          repo: DependencyParser.parse_lock_repo(lock),
-          requirement: DependencyParser.parse_requirement(dep)
+          name: DependencyUtils.parse_lock_name(lock),
+          version: DependencyUtils.parse_lock_version(lock),
+          checksum: DependencyUtils.parse_lock_checksum(lock),
+          repo: DependencyUtils.parse_lock_repo(lock),
+          requirement: DependencyUtils.parse_requirement(dep)
         }
       end)
 
     Jason.encode!(%{"result" => dependencies})
+    |> IO.write()
+  "get_latest_resolvable_version" ->
+    [dir, dependency_name] = args
+
+    {:ok, version} = DependencyUtils.get_latest_resolvable_version(dir, dependency_name)
+
+    Jason.encode!(%{"result" => version})
     |> IO.write()
 end
 
