@@ -1,3 +1,7 @@
+## v0.42.11, 9 January 2018
+
+- Docker: Handle private registries without a port
+
 ## v0.42.10, 9 January 2018
 
 - Ruby: Don't try to update the Ruby version when updating multiple dependencies
