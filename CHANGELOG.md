@@ -1,3 +1,7 @@
+## v0.42.12, 9 January 2018
+
+- Java: Handle versions with capitals in them
+
 ## v0.42.11, 9 January 2018
 
 - Docker: Handle private registries without a port
