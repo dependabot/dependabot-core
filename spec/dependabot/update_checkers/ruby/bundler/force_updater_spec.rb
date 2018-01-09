@@ -297,5 +297,29 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "when the ruby version would need to change" do
+      before do
+        stub_request(:get, "https://index.rubygems.org/info/public_suffix").
+          to_return(
+            status: 200,
+            body: fixture("ruby", "rubygems-info-public_suffix")
+          )
+      end
+
+      let(:gemfile_body) do
+        fixture("ruby", "gemfiles", "legacy_ruby")
+      end
+      let(:lockfile_body) do
+        fixture("ruby", "lockfiles", "legacy_ruby.lock")
+      end
+      let(:target_version) { "2.0.5" }
+      let(:dependency_name) { "public_suffix" }
+
+      it "raises a resolvability error" do
+        expect { updater.updated_dependencies }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end

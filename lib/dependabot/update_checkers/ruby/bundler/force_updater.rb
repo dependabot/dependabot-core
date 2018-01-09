@@ -97,7 +97,7 @@ module Dependabot
 
             potentials_deps.
               reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
-              reject { |dep| dep.name == dependency.name }.
+              reject { |dep| [dependency.name, "ruby\0"].include?(dep.name) }.
               uniq
           end
 
