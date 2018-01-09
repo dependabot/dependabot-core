@@ -55,7 +55,7 @@ end
 # } = dep
 
 input = IO.read(:stdio, :all)
-%{"function" => function, "args" => [dir]} = Poison.decode!(input)
+%{"function" => function, "args" => [dir]} = Jason.decode!(input)
 
 case function do
   "parse" ->
@@ -76,7 +76,7 @@ case function do
         }
       end)
 
-    Poison.encode!(%{"result" => dependencies})
+    Jason.encode!(%{"result" => dependencies})
     |> IO.write()
 end
 

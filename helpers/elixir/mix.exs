@@ -16,6 +16,6 @@ defmodule DependabotCore.Mixfile do
   end
 
   defp deps do
-    [{:poison, "~> 3.1"}]
+    [{:jason, "~> 1.0-rc"}]
   end
 end
