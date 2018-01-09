@@ -12,7 +12,7 @@ module Dependabot
     module Java
       class Maven
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9]+(?:\.[a-z0-9\-]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9\-]+)*/
 
           def initialize(requirements:, latest_version:)
             @requirements = requirements

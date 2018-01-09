@@ -48,6 +48,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("23.6-jre") }
       end
 
+      context "and the version included capitals" do
+        let(:pom_req_string) { "23.3.RELEASE" }
+        its([:requirement]) { is_expected.to eq("23.6-jre") }
+      end
+
       context "and a hard requirement was previously specified" do
         let(:pom_req_string) { "[23.3-jre]" }
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
