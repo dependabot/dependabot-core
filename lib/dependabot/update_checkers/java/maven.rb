@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
-require "dependabot/git_commit_checker"
 
 module Dependabot
   module UpdateCheckers
@@ -38,7 +37,7 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for Yarn (yet)
+          # Full unlock checks aren't implemented for Java (yet)
           false
         end
 
