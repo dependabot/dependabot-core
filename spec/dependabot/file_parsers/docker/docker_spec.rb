@@ -92,7 +92,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("my_fork/ubuntu")
+          expect(dependency.name).to eq("my-fork/ubuntu")
           expect(dependency.version).to eq("17.04")
           expect(dependency.requirements).to eq(expected_requirements)
         end
@@ -351,6 +351,38 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           expect(dependency.name).to eq("myreg/ubuntu")
           expect(dependency.version).to eq("17.04")
           expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      context "when the registry has no port" do
+        let(:dockerfile_body) do
+          fixture("docker", "dockerfiles", "private_no_port")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  type: "tag",
+                  registry: "aws-account-id.dkr.ecr.region.amazonaws.com"
+                }
+              }
+            ]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("myreg/ubuntu")
+            expect(dependency.version).to eq("17.04")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
         end
       end
     end

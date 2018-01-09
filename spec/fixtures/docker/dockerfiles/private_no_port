@@ -1,4 +1,4 @@
-FROM my-fork/ubuntu:17.04
+FROM aws-account-id.dkr.ecr.region.amazonaws.com/myreg/ubuntu:17.04
 
 ### SYSTEM DEPENDENCIES
 

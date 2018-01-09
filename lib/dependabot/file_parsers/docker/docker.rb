@@ -14,7 +14,7 @@ module Dependabot
         # https://github.com/docker/distribution/blob/master/reference/regexp.go
         DOMAIN_COMPONENT = /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/
         DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/
-        REGISTRY = /(?<registry>#{DOMAIN}(?::[0-9]+))/
+        REGISTRY = /(?<registry>#{DOMAIN}(?::[0-9]+)?)/
 
         NAME_COMPONENT = /(?:[a-z0-9]+(?:(?:[._]|__|[-]*)[a-z0-9]+)*)/
         IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}

@@ -81,7 +81,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "my_fork/ubuntu",
+          name: "my-fork/ubuntu",
           version: "17.10",
           previous_version: "17.04",
           requirements: [
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
           updated_files.find { |f| f.name == "Dockerfile" }
         end
 
-        its(:content) { is_expected.to include "FROM my_fork/ubuntu:17.10\n" }
+        its(:content) { is_expected.to include "FROM my-fork/ubuntu:17.10\n" }
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
     end
