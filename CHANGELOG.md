@@ -1,3 +1,7 @@
+## v0.42.10, 9 January 2018
+
+- Ruby: Don't try to update the Ruby version when updating multiple dependencies
+
 ## v0.42.9, 8 January 2018
 
 - Java: Add support for projects that inherit from parent POM (thanks @evenh!)
