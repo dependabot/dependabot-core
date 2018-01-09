@@ -11,6 +11,7 @@ require "dependabot/file_parsers/docker/docker"
 require "dependabot/file_parsers/elixir/hex"
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/file_parsers/dotnet/nuget"
+require "dependabot/file_parsers/go/dep"
 
 module Dependabot
   module FileParsers
@@ -28,6 +29,7 @@ module Dependabot
       when "hex" then FileParsers::Elixir::Hex
       when "cargo" then FileParsers::Rust::Cargo
       when "nuget" then FileParsers::Dotnet::Nuget
+      when "dep" then FileParsers::Go::Dep
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
