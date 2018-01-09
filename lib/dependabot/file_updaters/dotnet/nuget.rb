@@ -4,7 +4,7 @@ require "dependabot/file_updaters/base"
 
 module Dependabot
   module FileUpdaters
-    module CSharp
+    module Dotnet
       class Nuget < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
           [

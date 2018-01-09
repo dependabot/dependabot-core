@@ -4,7 +4,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module UpdateCheckers
-    module CSharp
+    module Dotnet
       class Nuget < Dependabot::UpdateCheckers::Base
         def latest_version
           # Hit the registry for this dependency and get its latest version

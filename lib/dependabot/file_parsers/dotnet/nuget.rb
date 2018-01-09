@@ -5,7 +5,7 @@ require "dependabot/file_parsers/base"
 
 module Dependabot
   module FileParsers
-    module CSharp
+    module Dotnet
       class Nuget < Dependabot::FileParsers::Base
         def parse
           # Parse the dependency file and return a Dependabot::Dependency

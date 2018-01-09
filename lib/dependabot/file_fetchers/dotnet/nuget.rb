@@ -4,7 +4,7 @@ require "dependabot/file_fetchers/base"
 
 module Dependabot
   module FileFetchers
-    module CSharp
+    module Dotnet
       class Nuget < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
           (%w(paket.dependencies paket.lock) - filenames).empty?

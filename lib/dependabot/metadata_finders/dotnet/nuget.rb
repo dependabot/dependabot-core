@@ -4,7 +4,7 @@ require "dependabot/metadata_finders/base"
 
 module Dependabot
   module MetadataFinders
-    module CSharp
+    module Dotnet
       class Nuget < Dependabot::MetadataFinders::Base
         private
 
