@@ -1,0 +1,34 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: ruby:2.4
+      - image: elixir:1.5
+      - image: circleci/node:8.9
+        environment:
+          PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
+      - image: python:3.6
+    working_directory: ~/dependabot-core
+    steps:
+      - checkout
+
+      # Update the Rubygems and Bundler versions
+      - run: gem update --system
+      - run: gem install bundler -v 1.16.1
+
+      # Install dependencies
+      - run: cd helpers/yarn && yarn install
+      - run: cd helpers/npm && yarn install
+      - run: cd helpers/php && composer install
+      - run: cd helpers/python && pip install -r requirements.txt
+
+      # Run code formatting linters
+      - run: bundle exec rubocop
+      - run: cd helpers/yarn && node_modules/.bin/eslint lib test bin
+      - run: cd helpers/npm && node_modules/.bin/eslint lib test bin
+      - run: cd helpers/php && vendor/bin/php-cs-fixer fix --dry-run
+
+      # Run tests
+      - run: bundle exec rspec spec
+      - run: cd helpers/yarn && node_modules/.bin/jest
+      - run: cd helpers/npm && node_modules/.bin/jest
