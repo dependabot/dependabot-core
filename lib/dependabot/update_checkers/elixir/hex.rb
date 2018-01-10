@@ -10,7 +10,6 @@ module Dependabot
   module UpdateCheckers
     module Elixir
       class Hex < Dependabot::UpdateCheckers::Base
-
         def latest_version
           return latest_resolvable_version unless hex_package
 
@@ -23,7 +22,7 @@ module Dependabot
               end
             end.compact
 
-            versions.reject(&:prerelease?).sort.last
+          versions.reject(&:prerelease?).sort.last
         end
 
         def latest_resolvable_version
@@ -31,6 +30,7 @@ module Dependabot
         end
 
         def updated_requirements
+          # TODO
         end
 
         private
@@ -46,53 +46,34 @@ module Dependabot
               )
 
               SharedHelpers.run_helper_subprocess(
-                env: {
-                  "MIX_EXS" => elixir_helper_mix_exs_path,
-                  "MIX_LOCK" => elixir_helper_mix_lock_path,
-                  "MIX_DEPS" => elixir_helper_mix_deps_path,
-                  "MIX_QUIET" => "1"
-                },
+                env: mix_env,
                 command: "mix run #{elixir_helper_path}",
                 function: "get_latest_resolvable_version",
                 args: [dir, dependency.name]
               )
             end
 
-            puts "latest resolvable: #{latest_resolvable_version}"
-
           if latest_resolvable_version.nil?
             nil
           else
             Gem::Version.new(latest_resolvable_version)
           end
-        #rescue SharedHelpers::HelperSubprocessFailed
-          # TODO: We shouldn't be suppressing these errors but they're caused
-          # by memory issues that we don't currently have a solution to.
-         # nil
         end
 
-        def elixir_helper_mix_exs_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/elixir/mix.exs")
-        end
-
-        def elixir_helper_mix_deps_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/elixir/deps")
-        end
-
-        def elixir_helper_mix_lock_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/elixir/mix.lock")
+        def mix_env
+          {
+            "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
+            "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
+            "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
+            "MIX_QUIET" => "1"
+          }
         end
 
         def elixir_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/bin/run.exs")
         end
 
         def elixir_helper_load_deps_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/elixir/bin/check_update.exs")
         end
 
@@ -106,6 +87,10 @@ module Dependabot
           lockfile = dependency_files.find { |f| f.name == "mix.lock" }
           raise "No mix.lock!" unless lockfile
           lockfile
+        end
+
+        def project_root
+          File.join(File.dirname(__FILE__), "../../../..")
         end
 
         def hex_package

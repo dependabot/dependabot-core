@@ -62,7 +62,9 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     subject { checker.latest_version }
 
     let(:hex_url) { "https://hex.pm/api/packages/plug" }
-    let(:hex_response) { fixture("elixir", "registry_api", "plug_response.json") }
+    let(:hex_response) do
+      fixture("elixir", "registry_api", "plug_response.json")
+    end
 
     before do
       stub_request(:get, hex_url).
