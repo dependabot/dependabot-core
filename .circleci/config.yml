@@ -1,0 +1,34 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: dependabot/dependabot-core:0.0.2
+    working_directory: ~/dependabot-core
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: dependabot-core
+
+      # Install dependencies
+      - run: bundle install --path vendor/bundle
+      - run: cd helpers/yarn && yarn install
+      - run: cd helpers/npm && yarn install
+      - run: cd helpers/php && composer install
+      - run: cd helpers/python && pip install -r requirements.txt
+
+      - save_cache:
+          key: dependabot-core
+          paths:
+            - ~/dependabot-core/vendor/bundle
+
+      # Run code formatting linters
+      - run: bundle exec rubocop
+      - run: cd helpers/yarn && node_modules/.bin/eslint lib test bin
+      - run: cd helpers/npm && node_modules/.bin/eslint lib test bin
+      - run: cd helpers/php && vendor/bin/php-cs-fixer fix --dry-run
+
+      # Run tests
+      - run: bundle exec rspec spec
+      - run: cd helpers/yarn && node_modules/.bin/jest
+      - run: cd helpers/npm && node_modules/.bin/jest

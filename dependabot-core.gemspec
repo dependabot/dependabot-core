@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
                           "lib/**/*", "helpers/**/*"]
 
   spec.required_ruby_version = ">= 2.4.0"
-  spec.required_rubygems_version = ">= 2.6.13"
+  spec.required_rubygems_version = ">= 2.7.3"
 
   spec.add_dependency "bundler", "~> 1.16"
   spec.add_dependency "docker_registry2", "~> 1.3", ">= 1.3.3"

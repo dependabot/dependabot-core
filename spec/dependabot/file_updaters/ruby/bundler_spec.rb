@@ -996,7 +996,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
 
         context "that we've downloaded" do
-          let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+          let(:gemspec_body) { fixture("ruby", "gemspecs", "no_overlap") }
           let(:gemspec) do
             Dependabot::DependencyFile.new(
               content: gemspec_body,
@@ -1005,19 +1005,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           end
 
           let(:dependency_files) { [gemfile, lockfile, gemspec] }
-
-          before do
-            stub_request(:get, "https://index.rubygems.org/info/i18n").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-i18n")
-              )
-            stub_request(:get, "https://index.rubygems.org/info/public_suffix").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-public_suffix")
-              )
-          end
 
           it "updates the gem just fine" do
             expect(file.content).to include "business (1.5.0)"
@@ -1032,7 +1019,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           end
 
           context "that requires other files" do
-            let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
+            let(:gemspec_body) do
+              fixture("ruby", "gemspecs", "no_overlap_with_require")
+            end
 
             it "updates the gem just fine" do
               expect(file.content).to include "business (1.5.0)"
