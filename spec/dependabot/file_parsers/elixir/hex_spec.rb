@@ -30,11 +30,23 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
     context "with a version specified" do
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("plug") }
-        its(:version) { is_expected.to eq("1.3.5") }
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("plug")
+          expect(dependency.version).to eq("1.3.5")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "~> 1.3.0",
+                file: "mix.exs",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
       end
     end
   end
