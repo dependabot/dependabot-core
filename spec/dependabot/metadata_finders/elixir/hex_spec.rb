@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/metadata_finders/elixir/hex"
@@ -25,9 +24,17 @@ RSpec.describe Dependabot::MetadataFinders::Elixir::Hex do
     )
   end
   subject(:finder) do
-    described_class.new(dependency: dependency, github_client: github_client)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:dependency_name) { "phoenix" }
 
   describe "#source_url" do
