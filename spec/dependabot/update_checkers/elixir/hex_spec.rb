@@ -50,13 +50,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     )
   end
 
-  let(:mixfile_body) do
-    fixture("elixir", "mixfiles", "minor_version")
-  end
-
-  let(:lockfile_body) do
-    fixture("elixir", "lockfiles", "minor_version")
-  end
+  let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
+  let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -89,147 +84,37 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       expect(subject.segments.count).to eq(3)
     end
 
-    it { is_expected.to be Gem::Version.new("1.3.5") }
+    it { is_expected.to eq(Gem::Version.new("1.3.5")) }
 
     context "with a version conflict at the latest version" do
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "doctrine/dbal",
-          version: "2.1.5",
+          name: "phoenix",
+          version: "1.2.1",
           requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
+            { file: "mix.exs", requirement: "1.2.1", groups: [], source: nil }
           ],
           package_manager: "composer"
         )
       end
 
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "version_conflict")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "version_conflict")
-      end
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "exact_version") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
 
-      it "is between 2.0.0 and 3.0.0" do
-        expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
-        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
-      end
+      it { is_expected.to eq(Gem::Version.new("1.2.2")) }
     end
 
     context "with a dependency with a git source" do
-      let(:lockfile_content) { fixture("php", "lockfiles", "git_source") }
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "git_source")
-      end
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
 
-      context "that is the gem we're checking" do
-        it { is_expected.to be_nil }
+      context "that is not the dependency we're checking" do
+        it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
-
-      context "that is not the gem we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "symfony/polyfill-mbstring",
-            version: "1.0.1",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "composer"
-          )
-        end
-
-        it { is_expected.to be >= Gem::Version.new("1.3.0") }
-      end
-    end
-
-    context "when an alternative source is specified" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "alternative_source")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "alternative_source")
-      end
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "wpackagist-plugin/acf-to-rest-api",
-          version: "2.2.1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "*",
-              groups: ["runtime"],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
-      end
-
-      it { is_expected.to be >= Gem::Version.new("2.2.1") }
     end
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements.first }
-
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "monolog/monolog",
-        version: "1.0.1",
-        requirements: [
-          {
-            file: "composer.json",
-            requirement: old_requirement,
-            groups: [],
-            source: nil
-          }
-        ],
-        package_manager: "composer"
-      )
-    end
-
-    let(:old_requirement) { "1.0.*" }
-    let(:latest_resolvable_version) { nil }
-
-    before do
-      allow(checker).
-        to receive(:latest_resolvable_version).
-        and_return(latest_resolvable_version)
-    end
-
-    context "when there is no resolvable version" do
-      let(:latest_resolvable_version) { nil }
-      its([:requirement]) { is_expected.to eq(old_requirement) }
-    end
-
-    context "when there is a resolvable version" do
-      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
-
-      context "and a full version was previously specified" do
-        let(:old_requirement) { "1.4.0" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and a pre-release was previously specified" do
-        let(:old_requirement) { "1.5.0beta" }
-        its([:requirement]) { is_expected.to eq("1.5.0") }
-      end
-
-      context "and a minor version was previously specified" do
-        let(:old_requirement) { "1.4.*" }
-        its([:requirement]) { is_expected.to eq("1.5.*") }
-      end
-    end
+    # TODO
   end
 end
