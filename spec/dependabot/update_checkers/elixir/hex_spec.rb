@@ -109,6 +109,21 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
 
       context "that is not the dependency we're checking" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.2.0",
+            requirements: [
+              {
+                file: "mix.exs",
+                requirement: "1.2.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
     end

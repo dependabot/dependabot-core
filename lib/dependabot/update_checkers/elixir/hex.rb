@@ -41,9 +41,9 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          latest_resolvable_version =
+          @latest_resolvable_version ||=
             SharedHelpers.in_a_temporary_directory do |dir|
-              File.write("mix.exs", mixfile.content)
+              File.write("mix.exs", prepared_mixfile_content)
               File.write("mix.lock", lockfile.content)
               FileUtils.cp(
                 elixir_helper_load_deps_path,
@@ -58,10 +58,28 @@ module Dependabot
               )
             end
 
-          if latest_resolvable_version.nil?
-            nil
-          else
-            Gem::Version.new(latest_resolvable_version)
+          return if @latest_resolvable_version.nil?
+          Gem::Version.new(latest_resolvable_version)
+        end
+
+        def prepared_mixfile_content
+          old_requirement =
+            dependency.requirements.find { |r| r.fetch(:file) == "mix.exs" }.
+            fetch(:requirement)
+
+          return mixfile.content unless old_requirement
+
+          new_requirement =
+            dependency.version.nil? ? ">= 0" : ">= #{dependency.version}"
+
+          requirement_line_regex =
+            /
+              #{Regexp.escape(dependency.name)}.*
+              #{Regexp.escape(old_requirement)}
+            /x
+
+          mixfile.content.gsub(requirement_line_regex) do |requirement_line|
+            requirement_line.gsub(old_requirement, new_requirement)
           end
         end
 
