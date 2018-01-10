@@ -37,12 +37,7 @@ module Dependabot
             )
 
             SharedHelpers.run_helper_subprocess(
-              env: {
-                "MIX_EXS" => elixir_helper_mix_exs_path,
-                "MIX_LOCK" => elixir_helper_mix_lock_path,
-                "MIX_DEPS" => elixir_helper_mix_deps_path,
-                "MIX_QUIET" => "1"
-              },
+              env: mix_env,
               command: "mix run #{elixir_helper_path}",
               function: "parse",
               args: [dir]
@@ -50,16 +45,13 @@ module Dependabot
           end
         end
 
-        def elixir_helper_mix_exs_path
-          File.join(project_root, "helpers/elixir/mix.exs")
-        end
-
-        def elixir_helper_mix_deps_path
-          File.join(project_root, "helpers/elixir/deps")
-        end
-
-        def elixir_helper_mix_lock_path
-          File.join(project_root, "helpers/elixir/mix.lock")
+        def mix_env
+          {
+            "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
+            "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
+            "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
+            "MIX_QUIET" => "1"
+          }
         end
 
         def elixir_helper_path
@@ -75,8 +67,9 @@ module Dependabot
         end
 
         def check_required_files
-          # TODO
-          nil
+          %w(mix.exs mix.lock).each do |filename|
+            raise "No #{filename}!" unless get_original_file(filename)
+          end
         end
 
         def project_root
