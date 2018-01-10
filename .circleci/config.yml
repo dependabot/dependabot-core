@@ -2,17 +2,25 @@ version: 2
 jobs:
   build:
     docker:
-      - image: dependabot/dependabot-core:0.0.1
+      - image: dependabot/dependabot-core:0.0.2
     working_directory: ~/dependabot-core
     steps:
       - checkout
 
+      - restore_cache:
+          key: dependabot-core
+
       # Install dependencies
-      - run: bundle install
+      - run: bundle install --path vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
       - run: cd helpers/python && pip install -r requirements.txt
+
+      - save_cache:
+          key: dependabot-core
+          paths:
+            - ~/dependabot-core/vendor/bundle
 
       # Run code formatting linters
       - run: bundle exec rubocop
