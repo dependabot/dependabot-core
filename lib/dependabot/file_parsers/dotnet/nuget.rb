@@ -8,8 +8,9 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::FileParsers::Base
         def parse
-          # Parse the dependency file and return a Dependabot::Dependency
-          # object for each dependency.
+          # Parse the dependency files and return an array of
+          # Dependabot::Dependency objects for each dependency.
+          #
           # If possible, this should be done in Ruby (since it's easier to
           # maintain). However, if we need to parse a lockfile that has a
           # non-standard format we can shell out to a helper in a language of
@@ -32,7 +33,8 @@ module Dependabot
         private
 
         def check_required_files
-          %w(paket.dependencies paket.lock).each do |filename|
+          # Check that the files required are present
+          %w(example1.file example2.file).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)
           end
         end

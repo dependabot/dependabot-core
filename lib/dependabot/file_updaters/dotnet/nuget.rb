@@ -7,6 +7,8 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
+          # An array of regexes that will help Dependabot determine when it
+          # might need to rebase PRs.
           [
             /^paket\.dependencies$/,
             /^paket\.lock$/
@@ -14,6 +16,8 @@ module Dependabot
         end
 
         def updated_dependency_files
+          # Returns an array of updated files. Only files that have been updated
+          # should be returned.
           updated_files = []
 
           if file_changed?(dependencies_file)

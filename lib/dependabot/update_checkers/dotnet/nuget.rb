@@ -7,7 +7,10 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::UpdateCheckers::Base
         def latest_version
-          # Hit the registry for this dependency and get its latest version
+          # Hit the registry for this dependency and get its latest version.
+          #
+          # This needs to be implemented as part of v1 - we can't do updating
+          # without it!
         end
 
         def latest_resolvable_version
@@ -23,14 +26,18 @@ module Dependabot
 
         def updated_requirements
           # If the dependency file needs to be updated we store the updated
-          # requirements on the dependency.
+          # requirements on the dependency. Figuring our the changes that need
+          # to be made to the requirements often gets complicated, so most
+          # languages split this out into a RequirementsUpdater class.
+          #
+          # Java is probably the simplest example to copy here.
           dependency.requirements
         end
 
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for C# (yet)
+          # Full unlock checks aren't implemented for Dotnet (yet)
           false
         end
 
