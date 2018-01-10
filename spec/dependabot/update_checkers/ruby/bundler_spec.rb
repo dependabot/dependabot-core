@@ -670,7 +670,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
 
       context "with a downloaded gemspec" do
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "no_overlap") }
         let(:gemspec) do
           Dependabot::DependencyFile.new(
             content: gemspec_body,
@@ -691,19 +691,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-          stub_request(:get, "https://index.rubygems.org/info/public_suffix").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-public_suffix")
-            )
-        end
-
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
 
         it "doesn't persist any temporary changes to Bundler's root" do
@@ -712,7 +699,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         context "that requires other files" do
-          let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
+          let(:gemspec_body) do
+            fixture("ruby", "gemspecs", "no_overlap_with_require")
+          end
 
           it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
