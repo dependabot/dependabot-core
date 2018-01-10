@@ -60,3 +60,11 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
     && apt-get install -y php7.1 php7.1-xml php7.1-zip \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
+
+
+### Elixir
+
+RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && dpkg -i erlang-solutions_1.0_all.deb \
+    && apt-get update \
+    && apt-get install -y esl-erlang \
+    && apt-get install -y elixir
