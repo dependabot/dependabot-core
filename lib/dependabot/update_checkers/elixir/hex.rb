@@ -14,13 +14,9 @@ module Dependabot
           return latest_resolvable_version unless hex_package
 
           versions =
-            hex_package["releases"].map do |release|
-              begin
-                Gem::Version.new(release["version"])
-              rescue ArgumentError
-                nil
-              end
-            end.compact
+            hex_package["releases"].
+            select { |release| Gem::Version.correct?(release["version"]) }.
+            map { |release| Gem::Version.new(release["version"]) }
 
           versions.reject(&:prerelease?).sort.last
         end
