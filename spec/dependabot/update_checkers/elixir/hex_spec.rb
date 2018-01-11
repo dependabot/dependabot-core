@@ -27,11 +27,13 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     Dependabot::Dependency.new(
       name: "plug",
       version: "1.3.0",
-      requirements: [
-        { file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }
-      ],
+      requirements: dependency_requirements,
       package_manager: "hex"
     )
+  end
+
+  let(:dependency_requirements) do
+    [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
   end
 
   let(:files) { [mixfile, lockfile] }
@@ -130,6 +132,33 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   end
 
   describe "#updated_requirements" do
-    # TODO
+    subject { checker.updated_requirements.first }
+
+    before do
+      allow(checker).
+        to receive(:latest_resolvable_version).
+        and_return(Gem::Version.new("1.6.0"))
+    end
+
+    it "delegates to the RequirementsUpdater" do
+      expect(described_class::RequirementsUpdater).
+        to receive(:new).
+        with(
+          requirements: dependency_requirements,
+          latest_resolvable_version: "1.6.0"
+        ).
+        and_call_original
+      expect(checker.updated_requirements).
+        to eq(
+          [
+            {
+              file: "mix.exs",
+              requirement: "~> 1.6.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+    end
   end
 end

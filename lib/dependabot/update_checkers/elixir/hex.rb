@@ -10,6 +10,8 @@ module Dependabot
   module UpdateCheckers
     module Elixir
       class Hex < Dependabot::UpdateCheckers::Base
+        require_relative "hex/requirements_updater"
+
         def latest_version
           return latest_resolvable_version unless hex_package
 
@@ -26,7 +28,10 @@ module Dependabot
         end
 
         def updated_requirements
-          # TODO
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_resolvable_version: latest_resolvable_version&.to_s
+          ).updated_requirements
         end
 
         private
