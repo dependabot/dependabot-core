@@ -8,7 +8,9 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: dependabot-core
+          keys:
+            - v1-dependencies-{{ .Branch }}
+            - v1-dependencies-master
 
       # Install dependencies
       - run: bundle install --path vendor/bundle
@@ -18,9 +20,12 @@ jobs:
       - run: cd helpers/python && pip install -r requirements.txt
 
       - save_cache:
-          key: dependabot-core
+          key: v1-dependencies-{{ .Branch }}-{{ epoch }}
           paths:
             - ~/dependabot-core/vendor/bundle
+            - ~/dependabot-core/helpers/yarn/node_modules
+            - ~/dependabot-core/helpers/npm/node_modules
+            - ~/dependabot-core/helpers/php/vendor
 
       # Run code formatting linters
       - run: bundle exec rubocop
