@@ -593,6 +593,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             to eq("1.3.1")
         end
       end
+
+      context "with a .npmrc that precludes updates to the lockfile" do
+        let(:files) { [package_json, package_lock, npmrc] }
+
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "no_lockfile")
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     describe "the updated yarn_lock" do

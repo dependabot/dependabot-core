@@ -24,7 +24,7 @@ module Dependabot
               updated_file(file: yarn_lock, content: updated_yarn_lock_content)
           end
 
-          if package_lock
+          if package_lock && package_lock_changed?
             updated_files << updated_file(
               file: package_lock,
               content: updated_package_lock_content
@@ -65,6 +65,10 @@ module Dependabot
 
         def yarn_lock_changed?
           yarn_lock.content != updated_yarn_lock_content
+        end
+
+        def package_lock_changed?
+          package_lock.content != updated_package_lock_content
         end
 
         def updated_package_files
@@ -119,7 +123,8 @@ module Dependabot
               )
 
               updated_content = updated_files.fetch("package-lock.json")
-              if package_lock.content == updated_content
+              if package_lock.content == updated_content &&
+                 !npmrc_disables_lockfile?
                 raise "Expected content to change!"
               end
               updated_content
@@ -184,6 +189,10 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def npmrc_disables_lockfile?
+          npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
         def sanitized_package_json_content(content)
