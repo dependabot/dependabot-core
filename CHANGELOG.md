@@ -1,3 +1,8 @@
+## v0.42.14, 11 January 2018
+
+- JS: Handle setups where a lockfile is present by the .npmrc says not to update
+  it
+
 ## v0.42.13, 11 January 2018
 
 - Collapse paths with a ".." in them when creating PRs
