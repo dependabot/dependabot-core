@@ -1,3 +1,7 @@
+## v0.42.13, 11 January 2018
+
+- Collapse paths with a ".." in them when creating PRs
+
 ## v0.42.12, 9 January 2018
 
 - Java: Handle versions with capitals in them
