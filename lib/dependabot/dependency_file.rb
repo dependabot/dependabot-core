@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pathname"
+
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type
@@ -21,7 +23,7 @@ module Dependabot
     end
 
     def path
-      File.join(directory, name)
+      Pathname.new(File.join(directory, name)).cleanpath.to_path
     end
 
     def ==(other)

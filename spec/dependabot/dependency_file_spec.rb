@@ -27,6 +27,18 @@ RSpec.describe Dependabot::DependencyFile do
         let(:directory) { "path/to/files" }
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
+
+      context "when the filename includes a '..'" do
+        let(:directory) { "path/to/files" }
+        let(:file) do
+          described_class.new(
+            name: "../Gemfile",
+            content: "a",
+            directory: directory
+          )
+        end
+        it { is_expected.to eq("/path/to/Gemfile") }
+      end
     end
   end
 
