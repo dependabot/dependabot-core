@@ -63,16 +63,41 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
           let(:mixfile_req_string) { "~> 0.2" }
           its([:requirement]) { is_expected.to eq("~> 1.5") }
         end
+
+        context "that is already satisfied" do
+          let(:mixfile_req_string) { "~> 1.2" }
+          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+        end
       end
 
       context "and a < was previously specified" do
         let(:mixfile_req_string) { "< 1.2.3" }
         its([:requirement]) { is_expected.to eq("< 1.5.1") }
+
+        context "that is already satisfied" do
+          let(:mixfile_req_string) { "< 2.0.0" }
+          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+        end
       end
 
       context "and there were multiple specifications" do
-        let(:mixfile_req_string) { "1.5.0" }
-        its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+        let(:mixfile_req_string) { "> 1.0.0 and < 1.2.0" }
+        its([:requirement]) { is_expected.to eq("> 1.0.0 and < 1.6.0") }
+
+        context "that are already satisfied" do
+          let(:mixfile_req_string) { "> 1.0.0 and < 2.0.0" }
+          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+        end
+
+        context "specified with an or" do
+          let(:mixfile_req_string) { "~> 0.2 or < 1.2.0" }
+          its([:requirement]) { is_expected.to eq("~> 1.5") }
+
+          context "one of which is already satisfied" do
+            let(:mixfile_req_string) { "~> 0.2 or < 2.0.0" }
+            its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+          end
+        end
       end
     end
   end

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/elixir/hex/version"
 require "dependabot/update_checkers/elixir/hex"
+require "dependabot/update_checkers/elixir/hex/version"
+require "dependabot/update_checkers/elixir/hex/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -9,6 +10,9 @@ module Dependabot
       class Hex
         class RequirementsUpdater
           OPERATORS = />=|<=|>|<|==|~>/
+          AND_SEPARATOR = /\s+and\s+/
+          OR_SEPARATOR = /\s+or\s+/
+          SEPARATOR = /#{AND_SEPARATOR}|#{OR_SEPARATOR}/
 
           def initialize(requirements:, latest_resolvable_version:)
             @requirements = requirements
@@ -19,40 +23,85 @@ module Dependabot
           end
 
           def updated_requirements
-            requirements.map { |req| updated_mixfile_requirement(req) }
+            return requirements unless latest_resolvable_version
+
+            requirements.map do |req|
+              next req if req_satisfied_by_latest_resolvable?(req[:requirement])
+              updated_mixfile_requirement(req)
+            end
           end
 
           private
 
           attr_reader :requirements, :latest_resolvable_version
 
+          def req_satisfied_by_latest_resolvable?(requirement_string)
+            ruby_requirements(requirement_string).
+              any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          end
+
+          def ruby_requirements(requirement_string)
+            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+              ruby_requirements =
+                req_string.strip.split(AND_SEPARATOR).map do |r_string|
+                  Gem::Requirement.new(r_string)
+                end
+
+              Gem::Requirement.new(ruby_requirements.map(&:to_s))
+            end
+          end
+
           def updated_mixfile_requirement(req)
             return req unless latest_resolvable_version
 
-            requirements = req[:requirement].split(",")
+            string_reqs = req[:requirement].split(SEPARATOR).map(&:strip)
 
             new_requirement =
-              if requirements.count > 1
-                # TODO: This is bad, and I should feel bad
-                latest_resolvable_version.to_s
-              elsif requirements.first.include?("<")
-                update_greatest_version(
-                  Gem::Requirement.new(requirements.first),
-                  latest_resolvable_version
-                ).to_s
+              if string_reqs.any? { |r| r.match(/^(?:\d|=)/) }
+                exact_req = string_reqs.find { |r| r.match(/^(?:\d|=)/) }
+                update_exact_version(exact_req, latest_resolvable_version).to_s
+              elsif string_reqs.any? { |r| r.start_with?("~>") }
+                tw_req = string_reqs.find { |r| r.start_with?("~>") }
+                update_twiddle_version(tw_req, latest_resolvable_version).to_s
               else
-                # TODO: This is wrong for > and >= specifiers
-                requirement = requirements.first
-                op = requirement.match(OPERATORS).to_s
-                version = Hex::Version.new(requirement.gsub(OPERATORS, ""))
-                updated_version = at_same_precision(
-                  latest_resolvable_version,
-                  version
-                )
-                "#{op} #{updated_version}".strip
+                update_mixfile_range(string_reqs).map(&:to_s).join(" and ")
               end
 
             req.merge(requirement: new_requirement)
+          end
+
+          def update_exact_version(previous_req, new_version)
+            op = previous_req.match(OPERATORS).to_s
+            old_version = Hex::Version.new(previous_req.gsub(OPERATORS, ""))
+            updated_version = at_same_precision(new_version, old_version)
+            "#{op} #{updated_version}".strip
+          end
+
+          def update_twiddle_version(previous_req, new_version)
+            previous_req = Gem::Requirement.new(previous_req)
+            old_version = previous_req.requirements.first.last
+            updated_version = at_same_precision(new_version, old_version)
+            Gem::Requirement.new("~> #{updated_version}")
+          end
+
+          def update_mixfile_range(requirements)
+            requirements = requirements.map { |r| Gem::Requirement.new(r) }
+            updated_requirements =
+              requirements.flat_map do |r|
+                next r if r.satisfied_by?(latest_resolvable_version)
+
+                case op = r.requirements.first.first
+                when "<", "<="
+                  [update_greatest_version(r, latest_resolvable_version)]
+                when "!="
+                  []
+                else
+                  raise "Unexpected operation for unsatisfied Gemfile "\
+                        "requirement: #{op}"
+                end
+              end
+
+            binding_requirements(updated_requirements)
           end
 
           def at_same_precision(new_version, old_version)
@@ -82,7 +131,25 @@ module Dependabot
               end
             end
 
-            Gem::Requirement.new("#{op} #{new_segments.join('.')}")
+            Hex::Requirement.new("#{op} #{new_segments.join('.')}")
+          end
+
+          def binding_requirements(requirements)
+            grouped_by_operator =
+              requirements.group_by { |r| r.requirements.first.first }
+
+            binding_reqs = grouped_by_operator.flat_map do |operator, reqs|
+              case operator
+              when "<", "<="
+                reqs.sort_by { |r| r.requirements.first.last }.first
+              when ">", ">="
+                reqs.sort_by { |r| r.requirements.first.last }.last
+              else requirements
+              end
+            end.uniq
+
+            binding_reqs << Hex::Requirement.new if binding_reqs.empty?
+            binding_reqs.sort_by { |r| r.requirements.first.last }
           end
         end
       end
