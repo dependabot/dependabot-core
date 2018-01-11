@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/update_checkers/elixir/hex/version"
 require "dependabot/update_checkers/elixir/hex"
 
 module Dependabot
@@ -14,7 +15,7 @@ module Dependabot
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Gem::Version.new(latest_resolvable_version)
+              Hex::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -43,7 +44,7 @@ module Dependabot
                 # TODO: This is wrong for > and >= specifiers
                 requirement = requirements.first
                 op = requirement.match(OPERATORS).to_s
-                version = Gem::Version.new(requirement.gsub(OPERATORS, ""))
+                version = Hex::Version.new(requirement.gsub(OPERATORS, ""))
                 updated_version = at_same_precision(
                   latest_resolvable_version,
                   version
@@ -64,7 +65,7 @@ module Dependabot
           def update_greatest_version(requirement, version_to_be_permitted)
             if version_to_be_permitted.is_a?(String)
               version_to_be_permitted =
-                Gem::Version.new(version_to_be_permitted)
+                Hex::Version.new(version_to_be_permitted)
             end
             op, version = requirement.requirements.first
             version = version.release if version.prerelease?

@@ -10,6 +10,7 @@ module Dependabot
   module UpdateCheckers
     module Elixir
       class Hex < Dependabot::UpdateCheckers::Base
+        require_relative "hex/version"
         require_relative "hex/requirements_updater"
 
         def latest_version
@@ -17,8 +18,8 @@ module Dependabot
 
           versions =
             hex_package["releases"].
-            select { |release| Gem::Version.correct?(release["version"]) }.
-            map { |release| Gem::Version.new(release["version"]) }
+            select { |release| version_class.correct?(release["version"]) }.
+            map { |release| version_class.new(release["version"]) }
 
           versions.reject(&:prerelease?).sort.last
         end
@@ -32,6 +33,10 @@ module Dependabot
             requirements: dependency.requirements,
             latest_resolvable_version: latest_resolvable_version&.to_s
           ).updated_requirements
+        end
+
+        def version_class
+          Hex::Version
         end
 
         private
@@ -64,7 +69,7 @@ module Dependabot
             end
 
           return if @latest_resolvable_version.nil?
-          Gem::Version.new(latest_resolvable_version)
+          version_class.new(latest_resolvable_version)
         end
 
         def prepared_mixfile_content
