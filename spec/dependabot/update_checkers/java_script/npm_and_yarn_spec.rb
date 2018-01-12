@@ -165,6 +165,31 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       expect(WebMock).to have_requested(:get, registry_listing_url).once
     end
 
+    context "with a git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          requirements: [
+            {
+              requirement: "jonschlinkert/is-number#2.0.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "2.0.0"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the user wants a dist tag" do
       let(:dependency) do
         Dependabot::Dependency.new(

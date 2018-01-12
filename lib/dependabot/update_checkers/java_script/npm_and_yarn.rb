@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -47,6 +48,7 @@ module Dependabot
         end
 
         def fetch_latest_version
+          return latest_git_version if git_dependency?
           return nil unless npm_details&.fetch("dist-tags", nil)
           dist_tag_version = version_from_dist_tags(npm_details)
           return dist_tag_version if dist_tag_version
@@ -56,6 +58,17 @@ module Dependabot
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def git_dependency?
+          git_commit_checker.git_dependency?
+        end
+
+        def latest_git_version
+          # For now, return nil so the update gets killed at this step.
+          # TODO: return latest commit_sha here, and figure out how to do
+          # requirement updating (the harder bit)
+          nil
         end
 
         def version_from_dist_tags(npm_details)
@@ -212,6 +225,20 @@ module Dependabot
 
         def npmrc
           @npmrc ||= dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end
