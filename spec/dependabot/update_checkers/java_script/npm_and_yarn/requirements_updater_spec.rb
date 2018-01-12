@@ -43,6 +43,25 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       its([:requirement]) { is_expected.to eq(package_json_req_string) }
     end
 
+    context "with a git dependency with no requirement" do
+      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+      let(:package_json_req) do
+        {
+          file: "package.json",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/jonschlinkert/is-number",
+            branch: nil,
+            ref: "2.0.0"
+          }
+        }
+      end
+
+      it { is_expected.to eq(package_json_req) }
+    end
+
     context "for an app requirement" do
       let(:library) { false }
 

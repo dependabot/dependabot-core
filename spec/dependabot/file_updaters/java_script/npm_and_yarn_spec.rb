@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     Dependabot::Dependency.new(
       name: "fetch-factory",
       version: "0.0.2",
-      package_manager: "npm",
+      package_manager: "npm_and_yarn",
       requirements: [
         { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
       ],
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.8.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -270,7 +270,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -376,7 +376,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "chalk",
               version: "0.4.0",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "etag",
               version: "1.8.1",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",
@@ -522,7 +522,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.0.2",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -567,7 +567,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -623,7 +623,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "bootstrap",
             version: "4.0.0-beta.3",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -674,7 +674,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -705,7 +705,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -765,7 +765,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -821,7 +821,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "chalk",
               version: "0.4.0",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",

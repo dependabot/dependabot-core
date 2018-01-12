@@ -56,9 +56,9 @@ module Dependabot
           Dependency.new(
             name: name,
             version: version_for(name, requirement),
-            package_manager: yarn_lock ? "yarn" : "npm",
+            package_manager: "npm_and_yarn",
             requirements: [{
-              requirement: requirement,
+              requirement: requirement_for(requirement),
               file: file.name,
               groups: [type],
               source: source_for(name, requirement)
@@ -103,6 +103,12 @@ module Dependabot
             end
 
           { type: "private_registry", url: url }
+        end
+
+        def requirement_for(requirement)
+          return requirement unless github_url?(requirement)
+          details = requirement.match(GITHUB_URL_REGEX).named_captures
+          details["semver"]
         end
 
         def git_source_for(requirement)

@@ -35,6 +35,7 @@ module Dependabot
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
+              next req unless req[:requirement]
               if library?
                 updated_library_requirement(req)
               else

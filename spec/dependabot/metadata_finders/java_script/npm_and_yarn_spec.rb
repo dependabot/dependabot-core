@@ -16,7 +16,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
-      package_manager: "yarn"
+      package_manager: "npm_and_yarn"
     )
   end
   subject(:finder) do
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
                 }
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 

@@ -247,7 +247,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             is_expected.to eq(
               [
                 {
-                  requirement: "jonschlinkert/is-number#2.0.0",
+                  requirement: nil,
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               is_expected.to eq(
                 [
                   {
-                    requirement: "jonschlinkert/is-number#semver:^2.0.0",
+                    requirement: "^2.0.0",
                     file: "package.json",
                     groups: ["devDependencies"],
                     source: {
@@ -340,7 +340,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               is_expected.to eq(
                 [
                   {
-                    requirement: "jonschlinkert/is-number",
+                    requirement: nil,
                     file: "package.json",
                     groups: ["devDependencies"],
                     source: {

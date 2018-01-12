@@ -66,7 +66,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               source: nil
             }
           ],
-          package_manager: "yarn"
+          package_manager: "npm_and_yarn"
         )
       end
 
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
           requirements: [
             {
-              requirement: "jonschlinkert/is-number#2.0.0",
+              requirement: nil,
               file: "package.json",
               groups: ["devDependencies"],
               source: {
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                   source: nil
                 }
               ],
-              package_manager: "yarn"
+              package_manager: "npm_and_yarn"
             )
           end
           let(:requirement) { "^2.0.0-pre" }
@@ -315,7 +315,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               source: nil
             }
           ],
-          package_manager: "yarn"
+          package_manager: "npm_and_yarn"
         )
       end
 
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               }
             }
           ],
-          package_manager: "yarn"
+          package_manager: "npm_and_yarn"
         )
       end
 
@@ -434,7 +434,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                   }
                 }
               ],
-              package_manager: "yarn"
+              package_manager: "npm_and_yarn"
             )
           end
 
@@ -567,7 +567,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 
@@ -599,7 +599,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         name: "etag",
         version: "1.0.0",
         requirements: dependency_requirements,
-        package_manager: "yarn"
+        package_manager: "npm_and_yarn"
       )
     end
     let(:dependency_requirements) do
