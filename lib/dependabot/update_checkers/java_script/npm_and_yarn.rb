@@ -65,10 +65,27 @@ module Dependabot
         end
 
         def latest_git_version
-          # For now, return nil so the update gets killed at this step.
-          # TODO: return latest commit_sha here, and figure out how to do
-          # requirement updating (the harder bit)
-          nil
+          semver_req =
+            dependency.requirements.
+            find { |req| req.dig(:source, :type) == "git" }&.
+            fetch(:requirement)
+
+          # If there was a semver requirement provided or the dependency was
+          # pinned to a version, look for the latest tag
+          if semver_req || git_commit_checker.pinned_ref_looks_like_version?
+            latest_tag = git_commit_checker.local_tag_for_latest_version
+            return latest_tag&.fetch(:tag_sha) || dependency.version
+          end
+
+          # Otherwise, if the gem isn't pinned, the latest version is just the
+          # latest commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return git_commit_checker.head_commit_for_current_branch
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
         end
 
         def version_from_dist_tags(npm_details)

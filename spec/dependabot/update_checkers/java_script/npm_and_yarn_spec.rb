@@ -169,25 +169,138 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "is-number",
-          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          version: current_version,
           requirements: [
             {
-              requirement: nil,
+              requirement: req,
               file: "package.json",
               groups: ["devDependencies"],
               source: {
                 type: "git",
                 url: "https://github.com/jonschlinkert/is-number",
                 branch: nil,
-                ref: "2.0.0"
+                ref: ref
               }
             }
           ],
           package_manager: "npm_and_yarn"
         )
       end
+      let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+      before do
+        git_url = "https://github.com/jonschlinkert/is-number.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "is-number"),
+            headers: git_header
+          )
+      end
 
-      it { is_expected.to be_nil }
+      context "with a branch" do
+        let(:ref) { "master" }
+        let(:req) { nil }
+
+        it "fetches the latest SHA-1 hash of the head of the branch" do
+          expect(checker.latest_version).
+            to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+
+        context "that doesn't exist" do
+          let(:ref) { "non-existant" }
+          let(:req) { nil }
+
+          it "fetches the latest SHA-1 hash of the head of the branch" do
+            expect(checker.latest_version).to eq(current_version)
+          end
+        end
+      end
+
+      context "with a ref that looks like a version" do
+        let(:ref) { "2.0.0" }
+        let(:req) { nil }
+        before do
+          repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+          stub_request(:get, repo_url + "/tags?per_page=100").
+            to_return(
+              status: 200,
+              body: fixture("github", "is_number_tags.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
+            to_return(
+              status: 200,
+              body: fixture("github", "ref.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "fetches the latest SHA-1 hash of the latest version tag" do
+          expect(checker.latest_version).
+            to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+        end
+
+        context "but there are no tags" do
+          before do
+            repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+            stub_request(:get, repo_url + "/tags?per_page=100").
+              to_return(
+                status: 200,
+                body: [].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "returns the current version" do
+            expect(checker.latest_version).to eq(current_version)
+          end
+        end
+      end
+
+      context "with a requirement" do
+        let(:ref) { nil }
+        let(:req) { "^2.0.0" }
+        before do
+          repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+          stub_request(:get, repo_url + "/tags?per_page=100").
+            to_return(
+              status: 200,
+              body: fixture("github", "is_number_tags.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
+            to_return(
+              status: 200,
+              body: fixture("github", "ref.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "fetches the latest SHA-1 hash of the latest version tag" do
+          expect(checker.latest_version).
+            to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+        end
+
+        context "but there are no tags" do
+          before do
+            repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+            stub_request(:get, repo_url + "/tags?per_page=100").
+              to_return(
+                status: 200,
+                body: [].to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "returns the current version" do
+            expect(checker.latest_version).to eq(current_version)
+          end
+        end
+      end
     end
 
     context "when the user wants a dist tag" do
