@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# See https://docs.npmjs.com/files/package.json for package.json format docs.
+
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
