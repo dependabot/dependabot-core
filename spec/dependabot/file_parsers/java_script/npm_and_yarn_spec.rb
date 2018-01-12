@@ -209,24 +209,57 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
-      context "with a git-based dependency" do
-        let(:files) { [package_json, lockfile, path_dep] }
+      context "with a git-url dependency" do
+        let(:files) { [package_json, lockfile] }
         let(:package_json_body) do
           fixture("javascript", "package_files", "git_dependency.json")
         end
         let(:lockfile_body) do
           fixture("javascript", "npm_lockfiles", "git_dependency.json")
         end
-        let(:path_dep) do
-          Dependabot::DependencyFile.new(
-            name: "deps/etag/package.json",
-            content: fixture("javascript", "package_files", "etag.json")
-          )
-        end
 
-        it "doesn't include the path-based dependency" do
+        it "doesn't include the git-url dependency" do
           expect(dependencies.length).to eq(3)
           expect(dependencies.map(&:name)).to_not include("etag")
+        end
+      end
+
+      context "with a github dependency" do
+        let(:files) { [package_json, lockfile] }
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "github_dependency.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "npm_lockfiles", "github_dependency.json")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the github dependency" do
+          subject { dependencies.last }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("is-number") }
+          its(:version) do
+            is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+          end
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: "jonschlinkert/is-number#2.0.2",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "2.0.2"
+                  }
+                }
+              ]
+            )
+          end
         end
       end
 

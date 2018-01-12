@@ -17,6 +17,14 @@ module Dependabot
           https://registry.npmjs.org
           https://registry.yarnpkg.com
         ).freeze
+        GITHUB_URL_REGEX = %r{
+          ^(?<username>[a-z0-9-]+)/
+          (?<repo>[a-z0-9_.-]+)
+          (
+            (?:\#semver:(?<semver>.+))|
+            (?:\#(?<ref>.+))
+          )?
+        }ix
 
         def parse
           dependency_set = DependencySet.new
@@ -38,49 +46,70 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         def build_dependency(file:, type:, name:, requirement:)
           lockfile_details = lockfile_details(name)
           return if lockfile? && !lockfile_details
-          return if lockfile? && !lockfile_details["resolved"]
-          return if requirement.include?("/")
+          return if local_path?(requirement) || url?(requirement)
 
           Dependency.new(
             name: name,
-            version: lockfile_details&.fetch("version", nil),
+            version: version_for(name, requirement),
             package_manager: yarn_lock ? "yarn" : "npm",
             requirements: [{
               requirement: requirement,
               file: file.name,
               groups: [type],
-              source: source_for(name)
+              source: source_for(name, requirement)
             }]
           )
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def check_required_files
           raise "No package.json!" unless get_original_file("package.json")
         end
 
-        def source_for(name)
-          details = lockfile_details(name)
-          return unless details
+        def local_path?(requirement)
+          requirement.start_with?("file:")
+        end
 
-          if CENTRAL_REGISTRIES.any? { |u| details["resolved"].start_with?(u) }
-            return
-          end
+        def url?(requirement)
+          requirement.include?("://")
+        end
+
+        def github_url?(requirement)
+          requirement.match?(GITHUB_URL_REGEX)
+        end
+
+        def version_for(name, requirement)
+          lockfile_version = lockfile_details(name)&.fetch("version", nil)
+          return unless lockfile_version
+          return lockfile_version unless github_url?(requirement)
+          lockfile_version.split("#").last
+        end
+
+        def source_for(name, requirement)
+          return git_source_for(requirement) if github_url?(requirement)
+
+          resolved_url = lockfile_details(name)&.fetch("resolved", nil)
+
+          return unless resolved_url
+          return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
 
           url =
-            if details["resolved"].include?("/~/")
-              details["resolved"].split("/~/").first
-            else
-              details["resolved"].split("/")[0..2].join("/")
+            if resolved_url.include?("/~/") then resolved_url.split("/~/").first
+            else resolved_url.split("/")[0..2].join("/")
             end
 
+          { type: "private_registry", url: url }
+        end
+
+        def git_source_for(requirement)
+          details = requirement.match(GITHUB_URL_REGEX).named_captures
           {
-            type: "private_registry",
-            url: url
+            type: "git",
+            url: "https://github.com/#{details['username']}/#{details['repo']}",
+            branch: nil,
+            ref: details["ref"]
           }
         end
 
