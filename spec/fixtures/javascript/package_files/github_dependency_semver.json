@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/gocardless/bump-test#readme",
   "devDependencies": {
-    "is-number": "jonschlinkert/is-number#2.0.0"
+    "is-number": "jonschlinkert/is-number#semver:^2.0.0"
   }
 }

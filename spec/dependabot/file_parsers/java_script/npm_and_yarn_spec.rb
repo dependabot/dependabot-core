@@ -241,24 +241,118 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("is-number") }
           its(:version) do
-            is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+            is_expected.to eq("d5ac0584ee9ae7bd9288220a39780f155b9ad4c8")
           end
           its(:requirements) do
             is_expected.to eq(
               [
                 {
-                  requirement: "jonschlinkert/is-number#2.0.2",
+                  requirement: "jonschlinkert/is-number#2.0.0",
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
                     type: "git",
                     url: "https://github.com/jonschlinkert/is-number",
                     branch: nil,
-                    ref: "2.0.2"
+                    ref: "2.0.0"
                   }
                 }
               ]
             )
+          end
+        end
+
+        context "that specifies a semver requirement" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_body) do
+            fixture(
+              "javascript",
+              "package_files",
+              "github_dependency_semver.json"
+            )
+          end
+          let(:lockfile_body) do
+            fixture(
+              "javascript",
+              "npm_lockfiles",
+              "github_dependency_semver.json"
+            )
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the github dependency" do
+            subject { dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("is-number") }
+            its(:version) do
+              is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+            end
+            its(:requirements) do
+              is_expected.to eq(
+                [
+                  {
+                    requirement: "jonschlinkert/is-number#semver:^2.0.0",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }
+                ]
+              )
+            end
+          end
+        end
+
+        context "that doesn't specify a reference" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_body) do
+            fixture(
+              "javascript",
+              "package_files",
+              "github_dependency_no_ref.json"
+            )
+          end
+          let(:lockfile_body) do
+            fixture(
+              "javascript",
+              "npm_lockfiles",
+              "github_dependency_no_ref.json"
+            )
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the github dependency" do
+            subject { dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("is-number") }
+            its(:version) do
+              is_expected.to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+            its(:requirements) do
+              is_expected.to eq(
+                [
+                  {
+                    requirement: "jonschlinkert/is-number",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }
+                ]
+              )
+            end
           end
         end
       end

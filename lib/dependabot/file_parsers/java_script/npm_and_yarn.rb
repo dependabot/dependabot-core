@@ -25,7 +25,7 @@ module Dependabot
           (
             (?:\#semver:(?<semver>.+))|
             (?:\#(?<ref>.+))
-          )?
+          )?$
         }ix
 
         def parse
@@ -111,7 +111,7 @@ module Dependabot
             type: "git",
             url: "https://github.com/#{details['username']}/#{details['repo']}",
             branch: nil,
-            ref: details["ref"]
+            ref: details["ref"] || "master"
           }
         end
 

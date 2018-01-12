@@ -5,7 +5,7 @@
     "requires": true,
     "dependencies": {
         "is-number": {
-            "version": "github:jonschlinkert/is-number#d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+            "version": "github:jonschlinkert/is-number#0c6b15a88bc10cd47f67a09506399dfc9ddc075d",
             "dev": true
         }
     }
