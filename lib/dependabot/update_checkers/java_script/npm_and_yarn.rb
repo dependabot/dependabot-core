@@ -26,6 +26,7 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
+            updated_source: updated_source,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
             library: library?
@@ -86,6 +87,30 @@ module Dependabot
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
           dependency.version
+        end
+
+        def updated_source
+          # Never need to update source, unless a git_dependency
+          return dependency_source_details unless git_dependency?
+
+          # Update the git tag if updating a pinned version
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             !git_commit_checker.local_tag_for_latest_version.nil?
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          end
+
+          # Otherwise return the original source
+          dependency_source_details
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def version_from_dist_tags(npm_details)
@@ -192,12 +217,9 @@ module Dependabot
         end
 
         def dependency_url
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
-
           registry_url =
-            if source.nil? then "https://registry.npmjs.org"
-            else source.fetch(:url)
+            if dependency_source_details.nil? then "https://registry.npmjs.org"
+            else dependency_source_details.fetch(:url)
             end
 
           # npm registries expect slashes to be escaped
@@ -206,8 +228,7 @@ module Dependabot
         end
 
         def dependency_registry
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
+          source = dependency_source_details
 
           if source.nil? then "registry.npmjs.org"
           else source.fetch(:url).gsub("https://", "").gsub("http://", "")

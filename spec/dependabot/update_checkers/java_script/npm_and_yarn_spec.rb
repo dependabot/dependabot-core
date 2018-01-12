@@ -731,6 +731,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         to receive(:new).
         with(
           requirements: dependency_requirements,
+          updated_source: nil,
           latest_version: "1.7.0",
           latest_resolvable_version: "1.7.0",
           library: false

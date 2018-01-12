@@ -9,6 +9,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
+      updated_source: updated_source,
       library: library,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
@@ -16,6 +17,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
   end
 
   let(:requirements) { [package_json_req] }
+  let(:updated_source) { nil }
   let(:package_json_req) do
     {
       file: "package.json",
