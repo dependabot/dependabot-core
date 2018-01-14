@@ -14,7 +14,8 @@ module Dependabot
         require_relative "npm_and_yarn/version"
 
         def latest_version
-          @latest_version ||= fetch_latest_version
+          return latest_version_for_git_dependency if git_dependency?
+          @latest_version ||= fetch_latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
@@ -27,8 +28,10 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             updated_source: updated_source,
-            latest_version: latest_version&.to_s,
-            latest_resolvable_version: latest_resolvable_version&.to_s,
+            latest_version:
+              fetch_latest_version_details&.fetch(:version, nil)&.to_s,
+            latest_resolvable_version:
+              fetch_latest_version_details&.fetch(:version, nil)&.to_s,
             library: library?
           ).updated_requirements
         end
@@ -48,13 +51,17 @@ module Dependabot
           raise NotImplementedError
         end
 
-        def fetch_latest_version
-          return latest_git_version if git_dependency?
+        def latest_version_for_git_dependency
+          latest_git_version_details[:sha]
+        end
+
+        def fetch_latest_version_details
+          return latest_git_version_details if git_dependency?
           return nil unless npm_details&.fetch("dist-tags", nil)
           dist_tag_version = version_from_dist_tags(npm_details)
-          return dist_tag_version if dist_tag_version
+          return { version: dist_tag_version } if dist_tag_version
 
-          version_from_versions_array(npm_details)
+          { version: version_from_versions_array(npm_details) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
@@ -65,7 +72,7 @@ module Dependabot
           git_commit_checker.git_dependency?
         end
 
-        def latest_git_version
+        def latest_git_version_details
           semver_req =
             dependency.requirements.
             find { |req| req.dig(:source, :type) == "git" }&.
@@ -75,18 +82,21 @@ module Dependabot
           # pinned to a version, look for the latest tag
           if semver_req || git_commit_checker.pinned_ref_looks_like_version?
             latest_tag = git_commit_checker.local_tag_for_latest_version
-            return latest_tag&.fetch(:tag_sha) || dependency.version
+            return {
+              sha: latest_tag&.fetch(:tag_sha) || dependency.version,
+              version: latest_tag&.fetch(:tag)
+            }
           end
 
           # Otherwise, if the gem isn't pinned, the latest version is just the
           # latest commit for the specified branch.
           unless git_commit_checker.pinned?
-            return git_commit_checker.head_commit_for_current_branch
+            return { sha: git_commit_checker.head_commit_for_current_branch }
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
-          dependency.version
+          { sha: dependency.version }
         end
 
         def updated_source

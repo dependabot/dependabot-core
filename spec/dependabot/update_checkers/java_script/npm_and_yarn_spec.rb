@@ -749,5 +749,92 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           ]
         )
     end
+
+    context "with a git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          requirements: dependency_requirements,
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            requirement: "^2.0.0",
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: nil
+            }
+          }
+        ]
+      end
+
+      before do
+        git_url = "https://github.com/jonschlinkert/is-number.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "is-number"),
+            headers: git_header
+          )
+        repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+        stub_request(:get, repo_url + "/tags?per_page=100").
+          to_return(
+            status: 200,
+            body: fixture("github", "is_number_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
+          to_return(
+            status: 200,
+            body: fixture("github", "ref.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: nil
+            },
+            latest_version: "4.0.0",
+            latest_resolvable_version: "4.0.0",
+            library: false
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [
+              {
+                file: "package.json",
+                requirement: "^4.0.0",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: nil
+                }
+              }
+            ]
+          )
+      end
+    end
   end
 end
