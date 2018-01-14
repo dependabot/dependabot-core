@@ -45,6 +45,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       its([:requirement]) { is_expected.to eq(package_json_req_string) }
     end
 
+    context "with a dist tag" do
+      let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+      let(:package_json_req_string) { "latest" }
+      its([:requirement]) { is_expected.to eq(package_json_req_string) }
+    end
+
     context "with a git dependency with no requirement" do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
       let(:package_json_req) do

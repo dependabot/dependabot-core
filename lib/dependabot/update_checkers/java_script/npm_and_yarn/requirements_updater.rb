@@ -37,6 +37,7 @@ module Dependabot
 
             requirements.map do |req|
               next req unless req[:requirement]
+              next req if req[:requirement].match?(/^[a-z]/i)
               if library?
                 updated_library_requirement(req)
               else
