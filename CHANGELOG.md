@@ -1,3 +1,7 @@
+## v0.42.18, 14 January 2018
+
+- JS: Update git URL dependencies
+
 ## v0.42.17, 14 January 2018
 
 - JS: Strip prefixes from JS versions before checking for updated requirements
