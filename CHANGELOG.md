@@ -1,3 +1,8 @@
+## v0.42.17, 14 January 2018
+
+- JS: Strip prefixes from JS versions before checking for updated requirements
+  in requirement updater
+
 ## v0.42.16, 14 January 2018
 
 - JS: Pass requirement update version strings, not hashes
