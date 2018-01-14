@@ -20,7 +20,7 @@ module Dependabot
           https://registry.yarnpkg.com
         ).freeze
         GITHUB_URL_REGEX = %r{
-          ^(?<username>[a-z0-9-]+)/
+          (?:^|github\.com.*?)(?<username>[a-z0-9-]+)/
           (?<repo>[a-z0-9_.-]+)
           (
             (?:\#semver:(?<semver>.+))|
@@ -51,7 +51,7 @@ module Dependabot
         def build_dependency(file:, type:, name:, requirement:)
           lockfile_details = lockfile_details(name)
           return if lockfile? && !lockfile_details
-          return if local_path?(requirement) || url?(requirement)
+          return if local_path?(requirement) || non_github_url?(requirement)
 
           Dependency.new(
             name: name,
@@ -74,8 +74,8 @@ module Dependabot
           requirement.start_with?("file:")
         end
 
-        def url?(requirement)
-          requirement.include?("://")
+        def non_github_url?(requirement)
+          requirement.include?("://") && !github_url?(requirement)
         end
 
         def github_url?(requirement)

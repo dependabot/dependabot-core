@@ -180,9 +180,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
       context "without a requirement or reference" do
         let(:req) { nil }
-        let(:ref) { nil }
+        let(:ref) { "master" }
         let(:old_req) { nil }
-        let(:old_ref) { nil }
+        let(:old_ref) { "master" }
 
         let(:package_json_body) do
           fixture "javascript", "package_files", "github_dependency_no_ref.json"
@@ -214,9 +214,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       context "with a requirement" do
         let(:files) { [package_json, package_lock] }
         let(:req) { "^4.0.0" }
-        let(:ref) { nil }
+        let(:ref) { "master" }
         let(:old_req) { "^2.0.0" }
-        let(:old_ref) { nil }
+        let(:old_ref) { "master" }
 
         let(:package_json_body) do
           fixture "javascript", "package_files", "github_dependency_semver.json"

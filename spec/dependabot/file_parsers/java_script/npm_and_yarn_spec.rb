@@ -218,9 +218,33 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           fixture("javascript", "npm_lockfiles", "git_dependency.json")
         end
 
-        it "doesn't include the git-url dependency" do
-          expect(dependencies.length).to eq(3)
-          expect(dependencies.map(&:name)).to_not include("etag")
+        its(:length) { is_expected.to eq(4) }
+
+        describe "the git dependency" do
+          subject { dependencies.last }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("is-number") }
+          its(:version) do
+            is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
+          end
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: nil,
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number.git",
+                    branch: nil,
+                    ref: "master"
+                  }
+                }
+              ]
+            )
+          end
         end
       end
 
@@ -386,10 +410,31 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:package_json_body) do
             fixture("javascript", "package_files", "git_dependency.json")
           end
-          its(:length) { is_expected.to eq(3) }
+          its(:length) { is_expected.to eq(4) }
 
-          it "excludes the git dependency" do
-            expect { dependencies.map(&:name).to_not include?("is-number") }
+          describe "the git dependency" do
+            subject { dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("is-number") }
+            its(:version) { is_expected.to be_nil }
+            its(:requirements) do
+              is_expected.to eq(
+                [
+                  {
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number.git",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }
+                ]
+              )
+            end
           end
         end
       end

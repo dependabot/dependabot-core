@@ -262,7 +262,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       end
 
       context "with a requirement" do
-        let(:ref) { nil }
+        let(:ref) { "master" }
         let(:req) { "^2.0.0" }
         before do
           repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
@@ -769,7 +769,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               type: "git",
               url: "https://github.com/jonschlinkert/is-number",
               branch: nil,
-              ref: nil
+              ref: "master"
             }
           }
         ]
@@ -811,7 +811,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               type: "git",
               url: "https://github.com/jonschlinkert/is-number",
               branch: nil,
-              ref: nil
+              ref: "master"
             },
             latest_version: "4.0.0",
             latest_resolvable_version: "4.0.0",
@@ -829,7 +829,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
                   type: "git",
                   url: "https://github.com/jonschlinkert/is-number",
                   branch: nil,
-                  ref: nil
+                  ref: "master"
                 }
               }
             ]
