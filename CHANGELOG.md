@@ -1,3 +1,7 @@
+## v0.42.20, 14 January 2018
+
+- JS: Handle multiple declarations for the same dependency
+
 ## v0.42.19, 14 January 2018
 
 - JS: Handle dist tags in requirements updater
