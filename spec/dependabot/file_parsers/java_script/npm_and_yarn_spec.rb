@@ -334,7 +334,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
             its(:version) do
-              is_expected.to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              is_expected.to eq("d5ac0584ee9ae7bd9288220a39780f155b9ad4c8")
             end
             its(:requirements) do
               is_expected.to eq(

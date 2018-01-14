@@ -3,5 +3,5 @@
 
 
 is-number@jonschlinkert/is-number:
-  version "4.0.0"
-  resolved "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+  version "2.0.0"
+  resolved "https://codeload.github.com/jonschlinkert/is-number/tar.gz/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8"
