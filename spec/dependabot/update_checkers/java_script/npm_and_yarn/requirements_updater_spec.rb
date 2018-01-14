@@ -380,6 +380,44 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
               ]
             )
           end
+
+          context "for the same file" do
+            let(:requirements) do
+              [
+                {
+                  requirement: "0.1.x",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "^0.1.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }
+              ]
+            end
+
+            it "updates both requirements" do
+              expect(updater.updated_requirements).to match_array(
+                [
+                  {
+                    requirement: "1.5.x",
+                    file: "package.json",
+                    groups: ["dependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^1.5.0",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  }
+                ]
+              )
+            end
+          end
         end
       end
     end

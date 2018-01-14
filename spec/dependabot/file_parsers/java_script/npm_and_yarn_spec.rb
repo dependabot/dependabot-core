@@ -100,6 +100,41 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "when the dependency is specified as both dev and runtime" do
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "duplicate.json")
+        end
+        let(:files) { [package_json] }
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("fetch-factory") }
+          its(:version) { is_expected.to be_nil }
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: "0.1.x",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "^0.1.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
+
       context "with a private-source dependency" do
         let(:package_json_body) do
           fixture("javascript", "package_files", "private_source.json")

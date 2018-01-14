@@ -173,33 +173,47 @@ module Dependabot
           dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
-              updated_req =
-                dep.requirements.find { |r| r[:file] == file.name }
+              updated_reqs =
+                dep.requirements.
+                select { |r| r[:file] == file.name }.
+                reject { |r| dep.previous_requirements.include?(r) }
 
-              old_req =
-                dep.previous_requirements.find { |r| r[:file] == file.name }
+              updated_reqs.each do |new_req|
+                old_req =
+                  dep.previous_requirements.
+                  select { |r| r[:file] == file.name }.
+                  find { |r| r[:groups] == new_req[:groups] }
 
-              original_line = declaration_line(
-                dependency_name: dep.name,
-                dependency_req: old_req,
-                content: content
-              )
+                new_content = update_package_json_declaration(
+                  package_json_content: content,
+                  dependency_name: dep.name,
+                  old_req: old_req,
+                  new_req: new_req
+                )
 
-              replacement_line = replacement_declaration_line(
-                original_line: original_line,
-                old_req: old_req,
-                new_req: updated_req
-              )
+                raise "Expected content to change!" if content == new_content
+                content = new_content
+              end
 
-              updated_content = content.gsub(
-                original_line,
-                replacement_line
-              )
-
-              raise "Expected content to change!" if content == updated_content
-
-              updated_content
+              content
             end
+        end
+
+        def update_package_json_declaration(package_json_content:, new_req:,
+                                            dependency_name:, old_req:)
+          original_line = declaration_line(
+            dependency_name: dependency_name,
+            dependency_req: old_req,
+            content: package_json_content
+          )
+
+          replacement_line = replacement_declaration_line(
+            original_line: original_line,
+            old_req: old_req,
+            new_req: new_req
+          )
+
+          package_json_content.gsub(original_line, replacement_line)
         end
 
         def declaration_line(dependency_name:, dependency_req:, content:)
