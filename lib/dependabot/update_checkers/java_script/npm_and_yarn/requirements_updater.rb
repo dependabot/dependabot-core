@@ -18,9 +18,10 @@ module Dependabot
           OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
 
-          def initialize(requirements:, library:,
+          def initialize(requirements:, updated_source:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
+            @updated_source = updated_source
             @library = library
             if latest_version
               @latest_version = version_class.new(latest_version)
@@ -35,6 +36,7 @@ module Dependabot
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
+              next req unless req[:requirement]
               if library?
                 updated_library_requirement(req)
               else
@@ -45,7 +47,8 @@ module Dependabot
 
           private
 
-          attr_reader :requirements, :latest_version, :latest_resolvable_version
+          attr_reader :requirements, :updated_source,
+                      :latest_version, :latest_resolvable_version
 
           def library?
             @library
@@ -58,7 +61,7 @@ module Dependabot
               ruby_req = ruby_requirements(current_requirement).first
               return req if ruby_req.satisfied_by?(latest_resolvable_version)
               updated_req = update_range_requirement(current_requirement)
-              return req.merge(requirement: updated_req)
+              return req.merge(requirement: updated_req, source: updated_source)
             end
 
             req.merge(requirement: update_version_string(current_requirement))
@@ -83,7 +86,7 @@ module Dependabot
                 current_requirement
               end
 
-            req.merge(requirement: updated_requirement)
+            req.merge(requirement: updated_requirement, source: updated_source)
           end
 
           def ruby_requirements(requirement_string)

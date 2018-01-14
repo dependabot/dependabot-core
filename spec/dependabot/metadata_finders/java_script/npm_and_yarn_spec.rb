@@ -16,7 +16,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
-      package_manager: "yarn"
+      package_manager: "npm_and_yarn"
     )
   end
   subject(:finder) do
@@ -39,6 +39,37 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     before do
       stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
+    end
+
+    context "for a git dependency" do
+      let(:npm_response) { nil }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/jshttp/etag",
+                branch: nil,
+                ref: "master"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it { is_expected.to eq("https://github.com/jshttp/etag") }
+
+      it "doesn't hit npm" do
+        source_url
+        expect(WebMock).to_not have_requested(:get, npm_url)
+      end
     end
 
     context "when there is a github link in the npm response" do
@@ -192,7 +223,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
                 }
               }
             ],
-            package_manager: "yarn"
+            package_manager: "npm_and_yarn"
           )
         end
 

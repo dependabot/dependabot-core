@@ -1,0 +1,65 @@
+[
+  {
+    "name": "4.0.0",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/4.0.0",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/4.0.0",
+    "commit": {
+      "sha": "0c6b15a88bc10cd47f67a09506399dfc9ddc075d",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+    }
+  },
+  {
+    "name": "3.0.0",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/3.0.0",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/3.0.0",
+    "commit": {
+      "sha": "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/af885e2e890b9ef0875edd2b117305119ee5bdc5"
+    }
+  },
+  {
+    "name": "2.0.2",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/2.0.2",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/2.0.2",
+    "commit": {
+      "sha": "63d5b26c793194bf7f341a7203e0e5568c753539",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/63d5b26c793194bf7f341a7203e0e5568c753539"
+    }
+  },
+  {
+    "name": "2.0.1",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/2.0.1",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/2.0.1",
+    "commit": {
+      "sha": "bb9b2e19a9aa2ed4b1e7a5d27e43417c8c9570c0",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/bb9b2e19a9aa2ed4b1e7a5d27e43417c8c9570c0"
+    }
+  },
+  {
+    "name": "2.0.0",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/2.0.0",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/2.0.0",
+    "commit": {
+      "sha": "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/d5ac0584ee9ae7bd9288220a39780f155b9ad4c8"
+    }
+  },
+  {
+    "name": "1.1.0",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/1.1.0",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/1.1.0",
+    "commit": {
+      "sha": "5184d76c622b97d45486340a85147c6d59d14e25",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/5184d76c622b97d45486340a85147c6d59d14e25"
+    }
+  },
+  {
+    "name": "1.0.0",
+    "zipball_url": "https://api.github.com/repos/jonschlinkert/is-number/zipball/1.0.0",
+    "tarball_url": "https://api.github.com/repos/jonschlinkert/is-number/tarball/1.0.0",
+    "commit": {
+      "sha": "3183207ab31bb09c65ad8999c39090a3c0530526",
+      "url": "https://api.github.com/repos/jonschlinkert/is-number/commits/3183207ab31bb09c65ad8999c39090a3c0530526"
+    }
+  }
+]

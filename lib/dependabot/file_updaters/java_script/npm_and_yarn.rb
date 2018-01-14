@@ -173,22 +173,73 @@ module Dependabot
           dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
-              updated_requirement =
-                dep.requirements.find { |r| r[:file] == file.name }.
-                fetch(:requirement)
+              updated_req =
+                dep.requirements.find { |r| r[:file] == file.name }
 
               old_req =
-                dep.previous_requirements.find { |r| r[:file] == file.name }.
-                fetch(:requirement)
+                dep.previous_requirements.find { |r| r[:file] == file.name }
+
+              original_line = declaration_line(
+                dependency_name: dep.name,
+                dependency_req: old_req,
+                content: content
+              )
+
+              replacement_line = replacement_declaration_line(
+                original_line: original_line,
+                old_req: old_req,
+                new_req: updated_req
+              )
 
               updated_content = content.gsub(
-                /"#{Regexp.escape(dep.name)}":\s*"#{Regexp.escape(old_req)}"/,
-                %("#{dep.name}": "#{updated_requirement}")
+                original_line,
+                replacement_line
               )
 
               raise "Expected content to change!" if content == updated_content
+
               updated_content
             end
+        end
+
+        def declaration_line(dependency_name:, dependency_req:, content:)
+          git_dependency = dependency_req.dig(:source, :type) == "git"
+
+          unless git_dependency
+            requirement = dependency_req.fetch(:requirement)
+            return content.match(/"#{Regexp.escape(dependency_name)}":\s*
+                                  "#{Regexp.escape(requirement)}"/x).to_s
+          end
+
+          username, repo = dependency_req.dig(:source, :url).split("/").last(2)
+
+          content.match(
+            %r{"#{Regexp.escape(dependency_name)}":\s*
+               "#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
+          ).to_s
+        end
+
+        def replacement_declaration_line(original_line:, old_req:, new_req:)
+          git_dependency = new_req.dig(:source, :type) == "git"
+
+          unless git_dependency
+            return original_line.gsub(
+              %("#{old_req.fetch(:requirement)}"),
+              %("#{new_req.fetch(:requirement)}")
+            )
+          end
+
+          if git_dependency && original_line.include?("semver:")
+            return original_line.gsub(
+              %(semver:#{old_req.fetch(:requirement)}"),
+              %(semver:#{new_req.fetch(:requirement)}")
+            )
+          end
+
+          original_line.gsub(
+            %(\##{old_req.dig(:source, :ref)}"),
+            %(\##{new_req.dig(:source, :ref)}")
+          )
         end
 
         def npmrc_disables_lockfile?

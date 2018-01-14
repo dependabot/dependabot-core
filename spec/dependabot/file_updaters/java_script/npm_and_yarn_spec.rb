@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     Dependabot::Dependency.new(
       name: "fetch-factory",
       version: "0.0.2",
-      package_manager: "npm",
+      package_manager: "npm_and_yarn",
       requirements: [
         { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
       ],
@@ -140,6 +140,153 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       its(:length) { is_expected.to eq(1) }
     end
 
+    context "with a git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: version,
+          previous_version: previous_version,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: req,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: ref
+              }
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: old_req,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: old_ref
+              }
+            }
+          ]
+        )
+      end
+      let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+      let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
+
+      context "without a requirement or reference" do
+        let(:req) { nil }
+        let(:ref) { nil }
+        let(:old_req) { nil }
+        let(:old_ref) { nil }
+
+        let(:package_json_body) do
+          fixture "javascript", "package_files", "github_dependency_no_ref.json"
+        end
+        let(:package_lock_body) do
+          fixture "javascript", "npm_lockfiles", "github_dependency_no_ref.json"
+        end
+        let(:yarn_lock_body) do
+          fixture(
+            "javascript",
+            "yarn_lockfiles",
+            "github_dependency_no_ref.lock"
+          )
+        end
+
+        it "only updates the lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package-lock.json yarn.lock))
+
+          package_lock =
+            updated_files.find { |f| f.name == "package-lock.json" }
+          parsed_package_lock = JSON.parse(package_lock.content)
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("github:jonschlinkert/is-number#"\
+                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+      end
+
+      context "with a requirement" do
+        let(:files) { [package_json, package_lock] }
+        let(:req) { "^4.0.0" }
+        let(:ref) { nil }
+        let(:old_req) { "^2.0.0" }
+        let(:old_ref) { nil }
+
+        let(:package_json_body) do
+          fixture "javascript", "package_files", "github_dependency_semver.json"
+        end
+        let(:package_lock_body) do
+          fixture "javascript", "npm_lockfiles", "github_dependency_semver.json"
+        end
+
+        it "updates the package.json and the lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+
+          package_json =
+            updated_files.find { |f| f.name == "package.json" }
+          package_lock =
+            updated_files.find { |f| f.name == "package-lock.json" }
+
+          parsed_package_json = JSON.parse(package_json.content)
+          expect(parsed_package_json["devDependencies"]["is-number"]).
+            to eq("jonschlinkert/is-number#semver:^4.0.0")
+
+          parsed_package_lock = JSON.parse(package_lock.content)
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("github:jonschlinkert/is-number#"\
+                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+      end
+
+      context "with a reference" do
+        let(:req) { nil }
+        let(:ref) { "4.0.0" }
+        let(:old_req) { nil }
+        let(:old_ref) { "2.0.0" }
+
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "github_dependency.json")
+        end
+        let(:package_lock_body) do
+          fixture("javascript", "npm_lockfiles", "github_dependency.json")
+        end
+        let(:yarn_lock_body) do
+          fixture("javascript", "yarn_lockfiles", "github_dependency.lock")
+        end
+
+        it "updates the package.json and the lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json yarn.lock))
+
+          package_json =
+            updated_files.find { |f| f.name == "package.json" }
+          package_lock =
+            updated_files.find { |f| f.name == "package-lock.json" }
+          yarn_lock =
+            updated_files.find { |f| f.name == "yarn.lock" }
+
+          parsed_package_json = JSON.parse(package_json.content)
+          expect(parsed_package_json["devDependencies"]["is-number"]).
+            to eq("jonschlinkert/is-number#4.0.0")
+
+          parsed_package_lock = JSON.parse(package_lock.content)
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("github:jonschlinkert/is-number#"\
+                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+          expect(yarn_lock.content).
+            to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+      end
+    end
+
     describe "the updated package_json_file" do
       subject(:updated_package_json_file) do
         updated_files.find { |f| f.name == "package.json" }
@@ -154,7 +301,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -185,7 +332,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -222,7 +369,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.8.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -270,7 +417,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -376,7 +523,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -438,7 +585,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "chalk",
               version: "0.4.0",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",
@@ -469,7 +616,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "etag",
               version: "1.8.1",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",
@@ -522,7 +669,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.0.2",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -567,7 +714,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "npm",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -623,7 +770,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "bootstrap",
             version: "4.0.0-beta.3",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -674,7 +821,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -705,7 +852,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "fetch-factory",
             version: "0.2.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -765,7 +912,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "lodash",
             version: "1.3.1",
-            package_manager: "yarn",
+            package_manager: "npm_and_yarn",
             requirements: [
               {
                 file: "package.json",
@@ -821,7 +968,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "chalk",
               version: "0.4.0",
-              package_manager: "yarn",
+              package_manager: "npm_and_yarn",
               requirements: [
                 {
                   file: "packages/package1/package.json",

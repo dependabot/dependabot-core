@@ -1,0 +1,21 @@
+{
+    "name": "bump-test",
+    "version": "0.0.1",
+    "lockfileVersion": 1,
+    "requires": true,
+    "dependencies": {
+        "is-number": {
+            "version": "github:jonschlinkert/is-number#63d5b26c793194bf7f341a7203e0e5568c753539",
+            "dev": true,
+            "requires": {
+                "kind-of": "1.1.0"
+            }
+        },
+        "kind-of": {
+            "version": "1.1.0",
+            "resolved": "https://registry.npmjs.org/kind-of/-/kind-of-1.1.0.tgz",
+            "integrity": "sha1-FAo9LUGjbS78+pN3tiwk+ElaXEQ=",
+            "dev": true
+        }
+    }
+}

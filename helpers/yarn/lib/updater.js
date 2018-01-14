@@ -97,6 +97,26 @@ function optionalRequirement(requirements) {
   );
 }
 
+function install_args_with_version(depName, desiredVersion, requirements) {
+  const source = requirements.source;
+
+  if (source && source.type === "git") {
+    return [`${source.url}#${desiredVersion}`];
+  } else {
+    return [`${depName}@${desiredVersion}`];
+  }
+}
+
+function install_args_with_req(depName, currentPattern, requirements) {
+  const source = requirements.source;
+
+  if (source && source.type === "git") {
+    return [`${currentPattern}`];
+  } else {
+    return [`${depName}@${currentPattern}`];
+  }
+}
+
 async function updateDependencyFiles(
   directory,
   depName,
@@ -147,7 +167,7 @@ async function updateDependencyFile(
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
-  const args = [`${depName}@${desiredVersion}`];
+  const args = install_args_with_version(depName, desiredVersion, requirements);
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
 
   // Despite the innocent-sounding name, this actually does all the hard work
@@ -156,7 +176,7 @@ async function updateDependencyFile(
   // Repeat the process to set the right pattern in the lockfile
   // TODO: REFACTOR ME!
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const args2 = [`${depName}@${currentPattern}`];
+  const args2 = install_args_with_req(depName, currentPattern, requirements);
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
 

@@ -1,0 +1,12 @@
+{
+    "name": "bump-test",
+    "version": "0.0.1",
+    "lockfileVersion": 1,
+    "requires": true,
+    "dependencies": {
+        "is-number": {
+            "version": "github:jonschlinkert/is-number#d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+            "dev": true
+        }
+    }
+}

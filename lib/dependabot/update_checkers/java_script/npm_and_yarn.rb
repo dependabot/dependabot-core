@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -25,6 +26,7 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
+            updated_source: updated_source,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
             library: library?
@@ -47,6 +49,7 @@ module Dependabot
         end
 
         def fetch_latest_version
+          return latest_git_version if git_dependency?
           return nil unless npm_details&.fetch("dist-tags", nil)
           dist_tag_version = version_from_dist_tags(npm_details)
           return dist_tag_version if dist_tag_version
@@ -56,6 +59,58 @@ module Dependabot
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def git_dependency?
+          git_commit_checker.git_dependency?
+        end
+
+        def latest_git_version
+          semver_req =
+            dependency.requirements.
+            find { |req| req.dig(:source, :type) == "git" }&.
+            fetch(:requirement)
+
+          # If there was a semver requirement provided or the dependency was
+          # pinned to a version, look for the latest tag
+          if semver_req || git_commit_checker.pinned_ref_looks_like_version?
+            latest_tag = git_commit_checker.local_tag_for_latest_version
+            return latest_tag&.fetch(:tag_sha) || dependency.version
+          end
+
+          # Otherwise, if the gem isn't pinned, the latest version is just the
+          # latest commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return git_commit_checker.head_commit_for_current_branch
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
+        end
+
+        def updated_source
+          # Never need to update source, unless a git_dependency
+          return dependency_source_details unless git_dependency?
+
+          # Update the git tag if updating a pinned version
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             !git_commit_checker.local_tag_for_latest_version.nil?
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          end
+
+          # Otherwise return the original source
+          dependency_source_details
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def version_from_dist_tags(npm_details)
@@ -162,12 +217,9 @@ module Dependabot
         end
 
         def dependency_url
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
-
           registry_url =
-            if source.nil? then "https://registry.npmjs.org"
-            else source.fetch(:url)
+            if dependency_source_details.nil? then "https://registry.npmjs.org"
+            else dependency_source_details.fetch(:url)
             end
 
           # npm registries expect slashes to be escaped
@@ -176,8 +228,7 @@ module Dependabot
         end
 
         def dependency_registry
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
+          source = dependency_source_details
 
           if source.nil? then "registry.npmjs.org"
           else source.fetch(:url).gsub("https://", "").gsub("http://", "")
@@ -212,6 +263,20 @@ module Dependabot
 
         def npmrc
           @npmrc ||= dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end

@@ -16,6 +16,18 @@ module Dependabot
         private
 
         def look_up_source
+          return find_source_from_registry if new_source.nil?
+
+          source_type = new_source[:type] || new_source.fetch("type")
+
+          case source_type
+          when "git" then find_source_from_git_url
+          when "private_registry" then find_source_from_registry
+          else raise "Unexpected source type: #{source_type}"
+          end
+        end
+
+        def find_source_from_registry
           potential_source_urls =
             version_listings.flat_map do |_, listing|
               [
@@ -32,11 +44,26 @@ module Dependabot
           Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
+        def new_source
+          sources = dependency.requirements.
+                    map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          sources.first
+        end
+
         def get_url(details)
           case details
           when String then details
           when Hash then details.fetch("url", nil)
           end
+        end
+
+        def find_source_from_git_url
+          url = new_source[:url] || new_source.fetch("url")
+          return nil unless url.match?(SOURCE_REGEX)
+          captures = url.match(SOURCE_REGEX).named_captures
+          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
         end
 
         def version_listings
@@ -73,12 +100,9 @@ module Dependabot
         end
 
         def dependency_url
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
-
           registry_url =
-            if source.nil? then "https://registry.npmjs.org"
-            else source.fetch(:url)
+            if new_source.nil? then "https://registry.npmjs.org"
+            else new_source.fetch(:url)
             end
 
           # NPM registries expect slashes to be escaped
@@ -87,11 +111,8 @@ module Dependabot
         end
 
         def dependency_registry
-          source =
-            dependency.requirements.map { |r| r.fetch(:source) }.compact.first
-
-          if source.nil? then "registry.npmjs.org"
-          else source.fetch(:url).gsub("https://", "").gsub("http://", "")
+          if new_source.nil? then "registry.npmjs.org"
+          else new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
           end
         end
 
