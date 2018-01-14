@@ -58,8 +58,10 @@ module Dependabot
         def fetch_latest_version_details
           return latest_git_version_details if git_dependency?
           return nil unless npm_details&.fetch("dist-tags", nil)
+
           dist_tag_version = version_from_dist_tags(npm_details)
           return { version: dist_tag_version } if dist_tag_version
+          return nil if specified_dist_tag_requirement?
 
           { version: version_from_versions_array(npm_details) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
@@ -219,6 +221,12 @@ module Dependabot
 
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)
+          end
+        end
+
+        def specified_dist_tag_requirement?
+          dependency.requirements.any? do |req|
+            req[:requirement].match?(/^[A-Za-z]/)
           end
         end
 
