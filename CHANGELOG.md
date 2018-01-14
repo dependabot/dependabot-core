@@ -1,3 +1,7 @@
+## v0.42.16, 14 January 2018
+
+- JS: Pass requirement update version strings, not hashes
+
 ## v0.42.15, 14 January 2018
 
 - JS: Update git dependencies specifed with a GitHub format
