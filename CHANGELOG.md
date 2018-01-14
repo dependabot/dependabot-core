@@ -1,3 +1,7 @@
+## v0.42.19, 14 January 2018
+
+- JS: Handle dist tags in requirements updater
+
 ## v0.42.18, 14 January 2018
 
 - JS: Update git URL dependencies
