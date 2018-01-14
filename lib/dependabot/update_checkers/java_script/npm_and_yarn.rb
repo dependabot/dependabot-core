@@ -84,7 +84,7 @@ module Dependabot
             latest_tag = git_commit_checker.local_tag_for_latest_version
             return {
               sha: latest_tag&.fetch(:tag_sha) || dependency.version,
-              version: latest_tag&.fetch(:tag)
+              version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
             }
           end
 
