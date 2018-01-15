@@ -71,7 +71,7 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       it { is_expected.to include %({:plug, "1.4.3"},) }
-      it { is_expected.to include %({:phoenix, "1.2.1"}) }
+      it { is_expected.to include %({:phoenix, "== 1.2.1"}) }
     end
 
     describe "the updated lockfile" do

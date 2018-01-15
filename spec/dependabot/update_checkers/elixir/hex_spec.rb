@@ -94,7 +94,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           name: "phoenix",
           version: "1.2.1",
           requirements: [
-            { file: "mix.exs", requirement: "1.2.1", groups: [], source: nil }
+            {
+              file: "mix.exs",
+              requirement: "== 1.2.1",
+              groups: [],
+              source: nil
+            }
           ],
           package_manager: "composer"
         )
