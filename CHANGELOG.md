@@ -1,3 +1,7 @@
+## v0.42.25, 15 January 2018
+
+- JS: Handle duplicate requirements that are identical
+
 ## v0.42.24, 15 January 2018
 
 - PHP: Handle bad git references
