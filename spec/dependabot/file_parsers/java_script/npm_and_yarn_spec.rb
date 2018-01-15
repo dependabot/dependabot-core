@@ -443,6 +443,45 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
           end
         end
+
+        context "that is specified with its shortname" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_body) do
+            fixture("javascript", "package_files", "github_shortname.json")
+          end
+          let(:lockfile_body) do
+            fixture("javascript", "npm_lockfiles", "github_shortname.json")
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the github dependency" do
+            subject { dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("is-number") }
+            its(:version) do
+              is_expected.to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+            its(:requirements) do
+              is_expected.to eq(
+                [
+                  {
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }
+                ]
+              )
+            end
+          end
+        end
       end
 
       context "with only a package.json" do

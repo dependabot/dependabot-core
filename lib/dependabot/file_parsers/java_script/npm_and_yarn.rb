@@ -19,8 +19,9 @@ module Dependabot
           https://registry.npmjs.org
           https://registry.yarnpkg.com
         ).freeze
-        GITHUB_URL_REGEX = %r{
-          (?:^|github\.com.*?)(?<username>[a-z0-9-]+)/
+        GIT_URL_REGEX = %r{
+          (?:^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com.*?)
+          (?<username>[a-z0-9-]+)/
           (?<repo>[a-z0-9_.-]+)
           (
             (?:\#semver:(?<semver>.+))|
@@ -50,7 +51,7 @@ module Dependabot
 
         def build_dependency(file:, type:, name:, requirement:)
           return if lockfile? && !version_for(name, requirement)
-          return if local_path?(requirement) || non_github_url?(requirement)
+          return if local_path?(requirement) || non_git_url?(requirement)
 
           Dependency.new(
             name: name,
@@ -73,24 +74,24 @@ module Dependabot
           requirement.start_with?("file:")
         end
 
-        def non_github_url?(requirement)
-          requirement.include?("://") && !github_url?(requirement)
+        def non_git_url?(requirement)
+          requirement.include?("://") && !git_url?(requirement)
         end
 
-        def github_url?(requirement)
-          requirement.match?(GITHUB_URL_REGEX)
+        def git_url?(requirement)
+          requirement.match?(GIT_URL_REGEX)
         end
 
         def version_for(name, requirement)
           lockfile_version = lockfile_details(name)&.fetch("version", nil)
           return unless lockfile_version
-          return lockfile_version.split("#").last if github_url?(requirement)
+          return lockfile_version.split("#").last if git_url?(requirement)
           return if lockfile_version.include?("://")
           lockfile_version
         end
 
         def source_for(name, requirement)
-          return git_source_for(requirement) if github_url?(requirement)
+          return git_source_for(requirement) if git_url?(requirement)
 
           resolved_url = lockfile_details(name)&.fetch("resolved", nil)
 
@@ -106,13 +107,13 @@ module Dependabot
         end
 
         def requirement_for(requirement)
-          return requirement unless github_url?(requirement)
-          details = requirement.match(GITHUB_URL_REGEX).named_captures
+          return requirement unless git_url?(requirement)
+          details = requirement.match(GIT_URL_REGEX).named_captures
           details["semver"]
         end
 
         def git_source_for(requirement)
-          details = requirement.match(GITHUB_URL_REGEX).named_captures
+          details = requirement.match(GIT_URL_REGEX).named_captures
           {
             type: "git",
             url: "https://github.com/#{details['username']}/#{details['repo']}",
