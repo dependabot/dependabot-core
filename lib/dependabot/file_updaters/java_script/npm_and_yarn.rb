@@ -213,7 +213,7 @@ module Dependabot
             new_req: new_req
           )
 
-          package_json_content.gsub(original_line, replacement_line)
+          package_json_content.sub(original_line, replacement_line)
         end
 
         def declaration_line(dependency_name:, dependency_req:, content:)
