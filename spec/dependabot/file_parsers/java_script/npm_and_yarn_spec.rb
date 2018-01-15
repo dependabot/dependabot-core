@@ -540,6 +540,13 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
           end
         end
+
+        context "that does flat resolution" do
+          let(:package_json_body) do
+            fixture("javascript", "package_files", "flat.json")
+          end
+          its(:length) { is_expected.to eq(0) }
+        end
       end
     end
 

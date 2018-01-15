@@ -33,6 +33,11 @@ module Dependabot
           dependency_set = DependencySet.new
 
           package_files.each do |file|
+            # TODO: Currently, Dependabot can't handle flat dependency files
+            # (and will error at the FileUpdater stage, because the
+            # UpdateChecker doesn't take account of flat resolution).
+            next if JSON.parse(file.content)["flat"]
+
             DEPENDENCY_TYPES.each do |type|
               deps = JSON.parse(file.content)[type] || {}
               deps.each do |name, requirement|
