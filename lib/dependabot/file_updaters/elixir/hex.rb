@@ -50,7 +50,8 @@ module Dependabot
         end
 
         def updated_lockfile_content
-          # TODO: Write this
+          # TODO: Write this!
+          lockfile.content
         end
 
         def updated_mixfile_content

@@ -111,6 +111,29 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       it { is_expected.to eq(Gem::Version.new("1.2.2")) }
     end
 
+    context "when a subdependency needs updating" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "1.2.5",
+          requirements: [
+            {
+              file: "mix.exs",
+              requirement: "~> 1.2.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
+
     context "with a dependency with a git source" do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }

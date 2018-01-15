@@ -70,12 +70,55 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         updated_files.find { |f| f.name == "mix.exs" }.content
       end
 
-      it { is_expected.to include %({:plug, "1.4.3"},) }
-      it { is_expected.to include %({:phoenix, "== 1.2.1"}) }
+      it { is_expected.to include(%({:plug, "1.4.3"},)) }
+      it { is_expected.to include(%({:phoenix, "== 1.2.1"})) }
     end
 
     describe "the updated lockfile" do
-      # TODO
+      subject(:updated_lockfile_content) do
+        updated_files.find { |f| f.name == "mix.lock" }.content
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+        expect(updated_lockfile_content).to include(
+          "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+        )
+      end
+
+      context "when the subdependencies should have changed" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phoenix",
+            version: "1.3.0",
+            requirements: [
+              {
+                file: "mix.exs",
+                requirement: "~> 1.3.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.2.5",
+            previous_requirements: [
+              {
+                file: "mix.exs",
+                requirement: "~> 1.2.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
+          expect(updated_lockfile_content).to include %({:hex, :poison, "3)
+        end
+      end
     end
   end
 end
