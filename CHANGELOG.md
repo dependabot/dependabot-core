@@ -1,3 +1,7 @@
+## v0.42.21, 15 January 2018
+
+- JS: Filter out dependencies with a URL version at parse time
+
 ## v0.42.20, 14 January 2018
 
 - JS: Handle multiple declarations for the same dependency
