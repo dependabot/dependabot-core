@@ -59,15 +59,44 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
       end
 
       context "that contains bad JSON" do
-        let(:lockfile_body) do
-          '{ "bad": "json" "no": "comma" }'
-        end
+        let(:lockfile_body) { '{ "bad": "json" "no": "comma" }' }
 
         it "raises a DependencyFileNotParseable error" do
           expect { parser.parse }.
             to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("package-lock.json")
             end
+        end
+      end
+
+      context "that has URL versions (i.e., is from a bad version of npm)" do
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "url_versions.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "npm_lockfiles", "url_versions.json")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("hashids") }
+          its(:version) { is_expected.to eq("1.1.4") }
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: "^1.1.4",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
         end
       end
 

@@ -49,8 +49,7 @@ module Dependabot
         private
 
         def build_dependency(file:, type:, name:, requirement:)
-          lockfile_details = lockfile_details(name)
-          return if lockfile? && !lockfile_details
+          return if lockfile? && !version_for(name, requirement)
           return if local_path?(requirement) || non_github_url?(requirement)
 
           Dependency.new(
@@ -85,8 +84,9 @@ module Dependabot
         def version_for(name, requirement)
           lockfile_version = lockfile_details(name)&.fetch("version", nil)
           return unless lockfile_version
-          return lockfile_version unless github_url?(requirement)
-          lockfile_version.split("#").last
+          return lockfile_version.split("#").last if github_url?(requirement)
+          return if lockfile_version.include?("://")
+          lockfile_version
         end
 
         def source_for(name, requirement)
