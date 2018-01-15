@@ -1,3 +1,7 @@
+## v0.42.22, 15 January 2018
+
+- JS: Handle host shortnames in package.json
+
 ## v0.42.21, 15 January 2018
 
 - JS: Filter out dependencies with a URL version at parse time
