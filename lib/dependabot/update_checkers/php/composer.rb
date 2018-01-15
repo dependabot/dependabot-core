@@ -78,11 +78,8 @@ module Dependabot
               )
             end
 
-          if latest_resolvable_version.nil?
-            nil
-          else
-            Gem::Version.new(latest_resolvable_version)
-          end
+          return if latest_resolvable_version.nil?
+          Gem::Version.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_composer_errors(error)
         end

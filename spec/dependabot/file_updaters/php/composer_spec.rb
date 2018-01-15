@@ -257,6 +257,47 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
       end
 
+      context "when another dependency has git source with a bad reference" do
+        let(:lockfile_body) do
+          fixture("php", "lockfiles", "git_source_bad_ref")
+        end
+        let(:composer_body) do
+          fixture("php", "composer_files", "git_source_bad_ref")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "symfony/polyfill-mbstring",
+            version: "1.6.0",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.6.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.0.1",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.1",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "raises a helpful errors" do
+          expect { updated_files }.to raise_error do |error|
+            expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
+            expect(error.dependency).to eq("monolog/monolog")
+          end
+        end
+      end
+
       context "regression spec for media-organizer" do
         let(:composer_body) do
           fixture("php", "composer_files", "media_organizer")

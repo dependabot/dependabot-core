@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module FileUpdaters
@@ -73,6 +74,8 @@ module Dependabot
               end
               updated_content
             end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          handle_composer_errors(error)
         end
 
         def updated_composer_json_content
@@ -97,6 +100,23 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def handle_composer_errors(error)
+          unless error.message.start_with?("Failed to execute git checkout")
+            raise error
+          end
+
+          ref = error.message.match(/checkout '(?<ref>.*?)'/).
+                named_captures.fetch("ref")
+          dependency_name =
+            JSON.parse(lockfile.content).
+            values_at("packages", "packages-dev").flatten(1).
+            find { |dep| dep.dig("source", "reference") == ref }&.
+            fetch("name")
+
+          raise unless dependency_name
+          raise Dependabot::GitDependencyReferenceNotFound, dependency_name
         end
 
         def php_helper_path
