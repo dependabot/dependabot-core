@@ -18,11 +18,13 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          updated_files <<
-            updated_file(
-              file: composer_json,
-              content: updated_composer_json_content
-            )
+          if file_changed?(composer_json)
+            updated_files <<
+              updated_file(
+                file: composer_json,
+                content: updated_composer_json_content
+              )
+          end
 
           if lockfile
             updated_files <<
