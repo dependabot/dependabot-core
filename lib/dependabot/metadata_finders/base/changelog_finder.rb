@@ -47,13 +47,21 @@ module Dependabot
 
         def fetch_dependency_file_list
           case source.host
-          when "github" then github_client.contents(source.repo)
+          when "github" then fetch_github_file_list
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
           else raise "Unexpected repo host '#{source.host}'"
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound
           []
+        end
+
+        def fetch_github_file_list
+          files = github_client.contents(source.repo)
+          if files.any? { |f| f.name == "docs" && f.type == "dir" }
+            files = github_client.contents(source.repo, path: "/docs") + files
+          end
+          files
         end
 
         def fetch_bitbucket_file_list

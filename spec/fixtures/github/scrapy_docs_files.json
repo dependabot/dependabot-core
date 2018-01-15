@@ -1,0 +1,242 @@
+[
+  {
+    "name": "Makefile",
+    "path": "docs/Makefile",
+    "sha": "187f03c4cfd523ec1c1ba8b0eb76ad1142440a38",
+    "size": 2758,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/Makefile?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/Makefile",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/187f03c4cfd523ec1c1ba8b0eb76ad1142440a38",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/Makefile?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/187f03c4cfd523ec1c1ba8b0eb76ad1142440a38",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/Makefile"
+    }
+  },
+  {
+    "name": "README.rst",
+    "path": "docs/README.rst",
+    "sha": "0a343cd1966ecabcb8e69f129f685612422b04aa",
+    "size": 1349,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/README.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/README.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/0a343cd1966ecabcb8e69f129f685612422b04aa",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/README.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/README.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/0a343cd1966ecabcb8e69f129f685612422b04aa",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/README.rst"
+    }
+  },
+  {
+    "name": "_ext",
+    "path": "docs/_ext",
+    "sha": "9faff978464f4b8d7eb9ef5db3eed64b731b6e33",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_ext?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/_ext",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/9faff978464f4b8d7eb9ef5db3eed64b731b6e33",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_ext?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/9faff978464f4b8d7eb9ef5db3eed64b731b6e33",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/_ext"
+    }
+  },
+  {
+    "name": "_static",
+    "path": "docs/_static",
+    "sha": "2f0109c94bcd18a79c7e16a5cabef109ad045908",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_static?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/_static",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/2f0109c94bcd18a79c7e16a5cabef109ad045908",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_static?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/2f0109c94bcd18a79c7e16a5cabef109ad045908",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/_static"
+    }
+  },
+  {
+    "name": "_templates",
+    "path": "docs/_templates",
+    "sha": "42c433ce403c15ade4433ecda59cb4c556285f01",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_templates?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/_templates",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/42c433ce403c15ade4433ecda59cb4c556285f01",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/_templates?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/42c433ce403c15ade4433ecda59cb4c556285f01",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/_templates"
+    }
+  },
+  {
+    "name": "conf.py",
+    "path": "docs/conf.py",
+    "sha": "007dc2788b34d59018b83d8d47b5ec76816a9394",
+    "size": 7027,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/conf.py?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/conf.py",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/007dc2788b34d59018b83d8d47b5ec76816a9394",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/conf.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/conf.py?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/007dc2788b34d59018b83d8d47b5ec76816a9394",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/conf.py"
+    }
+  },
+  {
+    "name": "contributing.rst",
+    "path": "docs/contributing.rst",
+    "sha": "9a02634cb63481ff906cac8d08a5112fb3af9aa9",
+    "size": 9453,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/contributing.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/contributing.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/9a02634cb63481ff906cac8d08a5112fb3af9aa9",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/contributing.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/contributing.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/9a02634cb63481ff906cac8d08a5112fb3af9aa9",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/contributing.rst"
+    }
+  },
+  {
+    "name": "faq.rst",
+    "path": "docs/faq.rst",
+    "sha": "7a0628f88c8966b635028dd3397bd071b3d9a2b0",
+    "size": 12012,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/faq.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/faq.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/7a0628f88c8966b635028dd3397bd071b3d9a2b0",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/faq.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/faq.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/7a0628f88c8966b635028dd3397bd071b3d9a2b0",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/faq.rst"
+    }
+  },
+  {
+    "name": "index.rst",
+    "path": "docs/index.rst",
+    "sha": "7e8c979c47f8c2762e05c0005a2bf73cf35df4ae",
+    "size": 6029,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/index.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/index.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/7e8c979c47f8c2762e05c0005a2bf73cf35df4ae",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/index.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/index.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/7e8c979c47f8c2762e05c0005a2bf73cf35df4ae",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/index.rst"
+    }
+  },
+  {
+    "name": "intro",
+    "path": "docs/intro",
+    "sha": "e7a259293098bb9f98da4300873e1c1777f5ccfe",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/intro?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/intro",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/e7a259293098bb9f98da4300873e1c1777f5ccfe",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/intro?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/e7a259293098bb9f98da4300873e1c1777f5ccfe",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/intro"
+    }
+  },
+  {
+    "name": "news.rst",
+    "path": "docs/news.rst",
+    "sha": "1629510b22a36536fb2129f91102801a7ced7f82",
+    "size": 111190,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/news.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/news.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/1629510b22a36536fb2129f91102801a7ced7f82",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/news.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/news.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/1629510b22a36536fb2129f91102801a7ced7f82",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/news.rst"
+    }
+  },
+  {
+    "name": "requirements.txt",
+    "path": "docs/requirements.txt",
+    "sha": "d3dcb97be2a567a94d42ba970b748e4b18860f25",
+    "size": 28,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/requirements.txt?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/requirements.txt",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/d3dcb97be2a567a94d42ba970b748e4b18860f25",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/requirements.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/requirements.txt?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/d3dcb97be2a567a94d42ba970b748e4b18860f25",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/requirements.txt"
+    }
+  },
+  {
+    "name": "topics",
+    "path": "docs/topics",
+    "sha": "a601b3108eb365639ac62bf8c29f605923b62b2b",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/topics?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/topics",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/a601b3108eb365639ac62bf8c29f605923b62b2b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/topics?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/a601b3108eb365639ac62bf8c29f605923b62b2b",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/topics"
+    }
+  },
+  {
+    "name": "utils",
+    "path": "docs/utils",
+    "sha": "8e3ee367964605649329f1fb77e90f171310fe5a",
+    "size": 0,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/utils?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/tree/master/docs/utils",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/trees/8e3ee367964605649329f1fb77e90f171310fe5a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/utils?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/trees/8e3ee367964605649329f1fb77e90f171310fe5a",
+      "html": "https://github.com/scrapy/scrapy/tree/master/docs/utils"
+    }
+  },
+  {
+    "name": "versioning.rst",
+    "path": "docs/versioning.rst",
+    "sha": "0421ba544ca94cdedd3b6a0770fe5701fc4b5dce",
+    "size": 1636,
+    "url": "https://api.github.com/repos/scrapy/scrapy/contents/docs/versioning.rst?ref=master",
+    "html_url": "https://github.com/scrapy/scrapy/blob/master/docs/versioning.rst",
+    "git_url": "https://api.github.com/repos/scrapy/scrapy/git/blobs/0421ba544ca94cdedd3b6a0770fe5701fc4b5dce",
+    "download_url": "https://raw.githubusercontent.com/scrapy/scrapy/master/docs/versioning.rst",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/scrapy/scrapy/contents/docs/versioning.rst?ref=master",
+      "git": "https://api.github.com/repos/scrapy/scrapy/git/blobs/0421ba544ca94cdedd3b6a0770fe5701fc4b5dce",
+      "html": "https://github.com/scrapy/scrapy/blob/master/docs/versioning.rst"
+    }
+  }
+]

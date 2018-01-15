@@ -93,6 +93,28 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         it { is_expected.to be_nil }
       end
 
+      context "with a docs folder" do
+        let(:github_response) { fixture("github", "scrapy_files.json") }
+        before do
+          stub_request(:get, github_url + "docs").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: fixture("github", "scrapy_docs_files.json"),
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "gets the right URL" do
+          expect(subject).
+            to eq("https://github.com/scrapy/scrapy/blob/master/docs/news.rst")
+        end
+
+        it "caches the call to GitHub" do
+          finder.changelog_url
+          finder.changelog_url
+          expect(WebMock).to have_requested(:get, github_url).once
+        end
+      end
+
       context "when the github_repo doesn't exists" do
         let(:github_response) { fixture("github", "not_found.json") }
         let(:github_status) { 404 }
