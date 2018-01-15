@@ -44,10 +44,10 @@ module Dependabot
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  Gem::Requirement.new(r_string)
+                  Hex::Requirement.new(r_string)
                 end
 
-              Gem::Requirement.new(ruby_requirements.map(&:to_s))
+              Hex::Requirement.new(ruby_requirements.map(&:to_s))
             end
           end
 
@@ -78,14 +78,14 @@ module Dependabot
           end
 
           def update_twiddle_version(previous_req, new_version)
-            previous_req = Gem::Requirement.new(previous_req)
+            previous_req = Hex::Requirement.new(previous_req)
             old_version = previous_req.requirements.first.last
             updated_version = at_same_precision(new_version, old_version)
-            Gem::Requirement.new("~> #{updated_version}")
+            Hex::Requirement.new("~> #{updated_version}")
           end
 
           def update_mixfile_range(requirements)
-            requirements = requirements.map { |r| Gem::Requirement.new(r) }
+            requirements = requirements.map { |r| Hex::Requirement.new(r) }
             updated_requirements =
               requirements.flat_map do |r|
                 next r if r.satisfied_by?(latest_resolvable_version)

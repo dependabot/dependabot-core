@@ -8,8 +8,10 @@ module Dependabot
     module Elixir
       class Hex
         class Requirement < Gem::Requirement
+          OPS["=="] = lambda { |v, r| v == r }
+
           # Override the version pattern to allow local versions
-          quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
+          quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
           PATTERN_RAW =
             "\\s*(#{quoted})?\\s*(#{Hex::Version::VERSION_PATTERN})\\s*"
           PATTERN = /\A#{PATTERN_RAW}\z/

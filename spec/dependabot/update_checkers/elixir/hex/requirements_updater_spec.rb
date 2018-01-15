@@ -43,6 +43,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
       context "and a full version was previously specified" do
         let(:mixfile_req_string) { "1.2.3" }
         its([:requirement]) { is_expected.to eq("1.5.0") }
+
+        context "with an == operator" do
+          let(:mixfile_req_string) { "== 1.2.3" }
+          its([:requirement]) { is_expected.to eq("== 1.5.0") }
+        end
       end
 
       context "and a partial version was previously specified" do
