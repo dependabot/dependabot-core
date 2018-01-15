@@ -1,3 +1,7 @@
+## v0.42.24, 15 January 2018
+
+- PHP: Handle bad git references
+
 ## v0.42.23, 15 January 2018
 
 - JS: Explicitly ignore flat resolution dependency files
