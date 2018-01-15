@@ -1,3 +1,7 @@
+## v0.42.23, 15 January 2018
+
+- JS: Explicitly ignore flat resolution dependency files
+
 ## v0.42.22, 15 January 2018
 
 - JS: Handle host shortnames in package.json
