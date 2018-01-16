@@ -1,3 +1,7 @@
+## v0.43.0, 16 January 2018
+
+- Add support for Elixir
+
 ## v0.42.28, 16 January 2018
 
 - JS: Tighter formula for git dependencies
