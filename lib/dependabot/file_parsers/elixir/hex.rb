@@ -32,8 +32,8 @@ module Dependabot
             File.write(File.join(dir, "mix.exs"), mixfile.content)
             File.write(File.join(dir, "mix.lock"), lockfile.content)
             FileUtils.cp(
-              elixir_helper_load_deps_path,
-              File.join(dir, "load_deps.exs")
+              elixir_helper_parse_deps_path,
+              File.join(dir, "parse_deps.exs")
             )
 
             SharedHelpers.run_helper_subprocess(
@@ -58,8 +58,8 @@ module Dependabot
           File.join(project_root, "helpers/elixir/bin/run.exs")
         end
 
-        def elixir_helper_load_deps_path
-          File.join(project_root, "helpers/elixir/bin/load_deps.exs")
+        def elixir_helper_parse_deps_path
+          File.join(project_root, "helpers/elixir/bin/parse_deps.exs")
         end
 
         def required_files

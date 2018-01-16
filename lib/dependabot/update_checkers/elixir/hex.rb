@@ -56,7 +56,7 @@ module Dependabot
               File.write("mix.exs", prepared_mixfile_content)
               File.write("mix.lock", lockfile.content)
               FileUtils.cp(
-                elixir_helper_load_deps_path,
+                elixir_helper_check_update_path,
                 File.join(dir, "check_update.exs")
               )
 
@@ -106,7 +106,7 @@ module Dependabot
           File.join(project_root, "helpers/elixir/bin/run.exs")
         end
 
-        def elixir_helper_load_deps_path
+        def elixir_helper_check_update_path
           File.join(project_root, "helpers/elixir/bin/check_update.exs")
         end
 
