@@ -30,11 +30,11 @@ async function updateDependencyFiles(
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
-  const packageJson = JSON.parse(readFile("package.json"));
+  const oldLockfile = JSON.parse(readFile("package-lock.json"));
 
   // dryRun mode prevents the actual install
   const dryRun = true;
-  const args = install_args(depName, desiredVersion, requirements, packageJson);
+  const args = install_args(depName, desiredVersion, requirements, oldLockfile);
   const installer = new Installer(directory, dryRun, args);
 
   // Skip printing the success message
@@ -56,7 +56,7 @@ async function updateDependencyFiles(
   return { "package-lock.json": updatedLockfile };
 }
 
-function install_args(depName, desiredVersion, requirements, packageJson) {
+function install_args(depName, desiredVersion, requirements, oldLockfile) {
   const source = (
     requirements.find(req => {
       return req.source;
@@ -64,21 +64,11 @@ function install_args(depName, desiredVersion, requirements, packageJson) {
   ).source;
 
   if (source && source.type === "git") {
-    const originalDeclaration = allDependencyPatterns(packageJson)[depName];
-    return [`${originalDeclaration.replace(/#.*/, "")}#${desiredVersion}`];
+    const originalVersion = oldLockfile["dependencies"][depName]["version"];
+    return [`${originalVersion.replace(/#.*/, "")}#${desiredVersion}`];
   } else {
     return [`${depName}@${desiredVersion}`];
   }
-}
-
-function allDependencyPatterns(packageJson) {
-  return Object.assign(
-    {},
-    packageJson.peerDependencies,
-    packageJson.optionalDependencies,
-    packageJson.devDependencies,
-    packageJson.dependencies
-  );
 }
 
 function runAsync(obj, method, args) {
