@@ -37,6 +37,22 @@ defmodule DependencyUtils do
     )
     :erlang.binary_to_term(output)
   end
+
+  def get_updated_lockfile(path, dependency_name) do
+    {output, 0} = System.cmd(
+      "mix",
+      ["run", "--no-deps-check", "--no-start", "--no-compile", "do_update.exs", dependency_name],
+      [
+        cd: path,
+        env: %{
+          "MIX_EXS" => nil,
+          "MIX_LOCK" => nil,
+          "MIX_DEPS" => nil
+        }
+      ]
+    )
+    :erlang.binary_to_term(output)
+  end
 end
 
 # %Mix.Dep{
@@ -100,6 +116,13 @@ case function do
     {:ok, version} = DependencyUtils.get_latest_resolvable_version(dir, dependency_name)
 
     Jason.encode!(%{"result" => version})
+    |> IO.write()
+  "get_updated_lockfile" ->
+    [dir, dependency_name] = args
+
+    {:ok, lockfile_content} = DependencyUtils.get_updated_lockfile(dir, dependency_name)
+
+    Jason.encode!(%{"result" => lockfile_content})
     |> IO.write()
 end
 

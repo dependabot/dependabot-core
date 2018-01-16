@@ -50,8 +50,22 @@ module Dependabot
         end
 
         def updated_lockfile_content
-          # TODO: Write this!
-          lockfile.content
+          @latest_resolvable_version ||=
+            SharedHelpers.in_a_temporary_directory do |dir|
+              File.write("mix.exs", updated_mixfile_content)
+              File.write("mix.lock", lockfile.content)
+              FileUtils.cp(
+                elixir_helper_do_update_path,
+                File.join(dir, "do_update.exs")
+              )
+
+              SharedHelpers.run_helper_subprocess(
+                env: mix_env,
+                command: "mix run #{elixir_helper_path}",
+                function: "get_updated_lockfile",
+                args: [dir, dependency.name]
+              )
+            end
         end
 
         def updated_mixfile_content
@@ -77,6 +91,27 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def mix_env
+          {
+            "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
+            "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
+            "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
+            "MIX_QUIET" => "1"
+          }
+        end
+
+        def elixir_helper_path
+          File.join(project_root, "helpers/elixir/bin/run.exs")
+        end
+
+        def elixir_helper_do_update_path
+          File.join(project_root, "helpers/elixir/bin/do_update.exs")
+        end
+
+        def project_root
+          File.join(File.dirname(__FILE__), "../../../..")
         end
       end
     end
