@@ -20,7 +20,7 @@ module Dependabot
           https://registry.yarnpkg.com
         ).freeze
         GIT_URL_REGEX = %r{
-          (?:^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com.*?)
+          (?:^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
           (?<username>[a-z0-9-]+)/
           (?<repo>[a-z0-9_.-]+)
           (
