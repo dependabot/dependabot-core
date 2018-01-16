@@ -54,6 +54,7 @@ RSpec.describe Dependabot::SharedHelpers do
   describe ".run_helper_subprocess" do
     let(:function) { "example" }
     let(:args) { ["foo"] }
+    let(:env) { nil }
 
     subject(:run_subprocess) do
       project_root = File.join(File.dirname(__FILE__), "../..")
@@ -62,13 +63,22 @@ RSpec.describe Dependabot::SharedHelpers do
       Dependabot::SharedHelpers.run_helper_subprocess(
         command: command,
         function: function,
-        args: args
+        args: args,
+        env: env
       )
     end
 
     context "when the subprocess is successful" do
       it "returns the result" do
         expect(run_subprocess).to eq("function" => function, "args" => args)
+      end
+
+      context "with an env" do
+        let(:env) { { "MIX_EXS" => "something" } }
+
+        it "runs the function passed, as expected" do
+          expect(run_subprocess).to eq("function" => function, "args" => args)
+        end
       end
     end
 
