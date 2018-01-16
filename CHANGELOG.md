@@ -1,3 +1,7 @@
+## v0.42.28, 16 January 2018
+
+- JS: Tighter formula for git dependencies
+
 ## v0.42.27, 16 January 2018
 
 - JS: Get package declaration string from package-lock.json, not from
