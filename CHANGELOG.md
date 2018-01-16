@@ -1,3 +1,8 @@
+## v0.42.27, 16 January 2018
+
+- JS: Get package declaration string from package-lock.json, not from
+  package.json
+
 ## v0.42.26, 15 January 2018
 
 - Find changelogs in a `docs` folder
