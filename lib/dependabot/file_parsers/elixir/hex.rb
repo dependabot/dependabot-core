@@ -39,8 +39,8 @@ module Dependabot
             # This shouldn't be required, but for some reason it sometimes is...
             SharedHelpers.run_helper_subprocess(
               env: mix_env,
-              command: "mix local.hex --force --if-missing &> /dev/null "\
-                       "&& echo '{\"result\": null }'",
+              command: "mix local.hex --force --if-missing &> /dev/null; "\
+                       "echo '{\"result\": null }'",
               function: "null",
               args: [dir]
             )
