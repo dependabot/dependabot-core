@@ -1,3 +1,7 @@
+## v0.43.1, 16 January 2018
+
+- Elixir: Install hex before FileParser, if required
+
 ## v0.43.0, 16 January 2018
 
 - Add support for Elixir
