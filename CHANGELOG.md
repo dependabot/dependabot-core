@@ -1,3 +1,7 @@
+## v0.43.3, 17 January 2018
+
+- Elixir: Don't do language version checks
+
 ## v0.43.2, 17 January 2018
 
 - Java: More robust POM parsing in File Updater
