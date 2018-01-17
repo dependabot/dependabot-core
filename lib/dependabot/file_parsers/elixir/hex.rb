@@ -36,6 +36,15 @@ module Dependabot
               File.join(dir, "parse_deps.exs")
             )
 
+            # This shouldn't be required, but for some reason it sometimes is...
+            SharedHelpers.run_helper_subprocess(
+              env: mix_env,
+              command: "mix local.hex --force --if-missing &> /dev/null "\
+                       "&& echo '{\"result\": null }'",
+              function: "null",
+              args: [dir]
+            )
+
             SharedHelpers.run_helper_subprocess(
               env: mix_env,
               command: "mix run #{elixir_helper_path}",
