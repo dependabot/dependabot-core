@@ -2,7 +2,7 @@ defmodule DependencyUtils do
   def parse_deps(path) do
     {output, 0} = System.cmd(
       "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "parse_deps.exs"],
+      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "parse_deps.exs"],
       [
         cd: path,
         env: %{
@@ -18,7 +18,7 @@ defmodule DependencyUtils do
   def get_latest_resolvable_version(path, dependency_name) do
     {output, 0} = System.cmd(
       "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "check_update.exs", dependency_name],
+      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "check_update.exs", dependency_name],
       [
         cd: path,
         env: %{
@@ -34,7 +34,7 @@ defmodule DependencyUtils do
   def get_updated_lockfile(path, dependency_name) do
     {output, 0} = System.cmd(
       "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "do_update.exs", dependency_name],
+      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "do_update.exs", dependency_name],
       [
         cd: path,
         env: %{
