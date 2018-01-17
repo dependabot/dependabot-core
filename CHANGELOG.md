@@ -1,3 +1,7 @@
+## v0.43.2, 17 January 2018
+
+- Java: More robust POM parsing in File Updater
+
 ## v0.43.1, 16 January 2018
 
 - Elixir: Install hex before FileParser, if required
