@@ -60,9 +60,9 @@ module Dependabot
           pom.content.scan(DECLARATION_REGEX).find do |node|
             node = Nokogiri::XML(node)
             node_name = [
-              node.at_css("groupId").content,
-              node.at_css("artifactId").content
-            ].join(":")
+              node.at_css("groupId")&.content,
+              node.at_css("artifactId")&.content
+            ].compact.join(":")
             node_name == dependency.name
           end
         end
