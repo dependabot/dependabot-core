@@ -119,5 +119,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
         end
       end
     end
+
+    context "with an old elixir version" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "old_elixir") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "old_elixir") }
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end
