@@ -1,3 +1,7 @@
+## v0.43.5, 17 January 2018
+
+- Elixir: Handle `or` requirements betters (by adding another `or` at the end)
+
 ## v0.43.4, 17 January 2018
 
 - Elixir: Handle dependency names which are substrings of other dependencies
