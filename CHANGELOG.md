@@ -1,3 +1,7 @@
+## v0.43.6, 17 January 2018
+
+- JS: Raise resolvability error if using workspaces but not private
+
 ## v0.43.5, 17 January 2018
 
 - Elixir: Handle `or` requirements betters (by adding another `or` at the end)
