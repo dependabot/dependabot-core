@@ -1,3 +1,8 @@
+## v0.43.4, 17 January 2018
+
+- Elixir: Handle dependency names which are substrings of other dependencies
+  names
+
 ## v0.43.3, 17 January 2018
 
 - Elixir: Don't do language version checks
