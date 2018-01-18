@@ -70,8 +70,48 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         updated_files.find { |f| f.name == "mix.exs" }.content
       end
 
-      it { is_expected.to include(%({:plug, "1.4.3"},)) }
-      it { is_expected.to include(%({:phoenix, "== 1.2.1"})) }
+      it "updates the right dependency" do
+        expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
+        expect(updated_mixfile_content).to include(%({:phoenix, "== 1.2.1"}))
+      end
+
+      context "with similarly names packages" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "similar_names") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "similar_names") }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.4.3",
+            requirements: [
+              {
+                file: "mix.exs",
+                requirement: "~> 1.4",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.3.5",
+            previous_requirements: [
+              {
+                file: "mix.exs",
+                requirement: "~> 1.3",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the right dependency" do
+          expect(updated_mixfile_content).to include(%({:plug, "~> 1.4"},))
+          expect(updated_mixfile_content).
+            to include(%({:absinthe_plug, "~> 1.3"},))
+          expect(updated_mixfile_content).
+            to include(%({:plug_cloudflare, "~> 1.3"}))
+        end
+      end
     end
 
     describe "the updated lockfile" do
