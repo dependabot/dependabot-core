@@ -54,18 +54,24 @@ module Dependabot
           def updated_mixfile_requirement(req)
             return req unless latest_resolvable_version
 
-            string_reqs = req[:requirement].split(SEPARATOR).map(&:strip)
+            or_string_reqs = req[:requirement].split(OR_SEPARATOR)
+            last_string_reqs = or_string_reqs.last.split(AND_SEPARATOR).
+                               map(&:strip)
 
             new_requirement =
-              if string_reqs.any? { |r| r.match(/^(?:\d|=)/) }
-                exact_req = string_reqs.find { |r| r.match(/^(?:\d|=)/) }
+              if last_string_reqs.any? { |r| r.match(/^(?:\d|=)/) }
+                exact_req = last_string_reqs.find { |r| r.match(/^(?:\d|=)/) }
                 update_exact_version(exact_req, latest_resolvable_version).to_s
-              elsif string_reqs.any? { |r| r.start_with?("~>") }
-                tw_req = string_reqs.find { |r| r.start_with?("~>") }
+              elsif last_string_reqs.any? { |r| r.start_with?("~>") }
+                tw_req = last_string_reqs.find { |r| r.start_with?("~>") }
                 update_twiddle_version(tw_req, latest_resolvable_version).to_s
               else
-                update_mixfile_range(string_reqs).map(&:to_s).join(" and ")
+                update_mixfile_range(last_string_reqs).map(&:to_s).join(" and ")
               end
+
+            if or_string_reqs.count > 1
+              new_requirement = req[:requirement] + " or " + new_requirement
+            end
 
             req.merge(requirement: new_requirement)
           end

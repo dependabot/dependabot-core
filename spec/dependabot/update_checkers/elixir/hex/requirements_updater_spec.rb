@@ -95,11 +95,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
         end
 
         context "specified with an or" do
-          let(:mixfile_req_string) { "~> 0.2 or < 1.2.0" }
-          its([:requirement]) { is_expected.to eq("~> 1.5") }
+          let(:latest_resolvable_version) { "2.5.0" }
+
+          let(:mixfile_req_string) { "~> 0.2 or ~> 1.0" }
+
+          its([:requirement]) do
+            is_expected.to eq("~> 0.2 or ~> 1.0 or ~> 2.5")
+          end
 
           context "one of which is already satisfied" do
-            let(:mixfile_req_string) { "~> 0.2 or < 2.0.0" }
+            let(:mixfile_req_string) { "~> 0.2 or < 3.0.0" }
             its([:requirement]) { is_expected.to eq(mixfile_req_string) }
           end
         end
