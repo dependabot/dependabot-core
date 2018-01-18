@@ -84,7 +84,7 @@ module Dependabot
 
           requirement_line_regex =
             /
-              #{Regexp.escape(dependency.name)}.*
+              :#{Regexp.escape(dependency.name)},.*
               #{Regexp.escape(old_requirement)}
             /x
 

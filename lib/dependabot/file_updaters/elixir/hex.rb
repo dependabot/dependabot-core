@@ -83,7 +83,7 @@ module Dependabot
                 fetch(:requirement)
 
               declaration_regex =
-                /:#{Regexp.escape(dep.name)}.*#{Regexp.escape(old_req)}/
+                /:#{Regexp.escape(dep.name)},.*#{Regexp.escape(old_req)}/
               updated_content = content.gsub(declaration_regex) do |declaration|
                 declaration.gsub(old_req, updated_requirement)
               end
