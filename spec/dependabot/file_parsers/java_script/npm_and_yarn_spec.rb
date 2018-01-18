@@ -772,6 +772,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             )
           end
         end
+
+        context "when the package.json doesn't specify that it's private" do
+          let(:package_json_body) do
+            fixture("javascript", "package_files", "workspaces_bad.json")
+          end
+
+          it "raises a helpful error" do
+            expect { parser.parse }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
       end
     end
   end

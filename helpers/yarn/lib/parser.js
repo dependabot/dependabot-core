@@ -22,6 +22,12 @@ const {
 const { getExoticResolver } = require("@dependabot/yarn-lib/lib/resolvers");
 const semver = require("semver");
 
+class DependabotReporter extends NoopReporter {
+  lang(key, ...args) {
+    return key;
+  }
+}
+
 function isNotExotic(request) {
   const { range } = normalizePattern(request.pattern);
   return !getExoticResolver(range);
@@ -37,7 +43,7 @@ function source_file(dep, directory) {
 
 async function parse(directory) {
   const flags = { ignoreScripts: true, includeWorkspaceDeps: true };
-  const reporter = new NoopReporter();
+  const reporter = new DependabotReporter();
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
   const config = new Config(reporter);
