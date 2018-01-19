@@ -24,6 +24,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::Version do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end
+
+    context "with an underscore-specified prerelease" do
+      let(:version_string) { "1.0.0_pre1" }
+      it { is_expected.to eq "1.0.0_pre1" }
+    end
   end
 
   describe "compatibility with Gem::Requirement" do
