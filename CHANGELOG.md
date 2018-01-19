@@ -1,3 +1,7 @@
+## v0.43.7, 17 January 2018
+
+- JS: Raise evaluatability error when parsing, not resolvability error
+
 ## v0.43.6, 17 January 2018
 
 - JS: Raise resolvability error if using workspaces but not private
