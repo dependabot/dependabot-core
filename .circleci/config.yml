@@ -35,6 +35,6 @@ jobs:
       - run: cd helpers/php && vendor/bin/php-cs-fixer fix --dry-run
 
       # Run tests
-      - run: bundle exec rspec spec
       - run: cd helpers/yarn && node_modules/.bin/jest
       - run: cd helpers/npm && node_modules/.bin/jest
+      - run: bundle exec rspec spec
