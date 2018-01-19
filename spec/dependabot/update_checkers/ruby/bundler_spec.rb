@@ -742,7 +742,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        it "raises a Dependabot::SharedHelpers::ChildProcessFailed error" do
+        it "raises a Dependabot::DependencyFileNotResolvable error" do
           expect { checker.latest_resolvable_version }.
             to raise_error(Dependabot::DependencyFileNotResolvable)
         end
