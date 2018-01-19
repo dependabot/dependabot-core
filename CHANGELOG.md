@@ -1,3 +1,7 @@
+## v0.43.10, 19 January 2018
+
+- Java: Fix version parsing (oops!)
+
 ## v0.43.9, 19 January 2018
 
 - Java: Handle underscores in versions
