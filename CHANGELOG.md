@@ -1,3 +1,7 @@
+## v0.43.8, 18 January 2018
+
+- PHP: Handle pre-release version with a '-' properly
+
 ## v0.43.7, 17 January 2018
 
 - JS: Raise evaluatability error when parsing, not resolvability error
