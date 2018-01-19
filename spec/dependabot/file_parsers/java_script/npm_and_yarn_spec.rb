@@ -780,7 +780,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
 
           it "raises a helpful error" do
             expect { parser.parse }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+              to raise_error(Dependabot::DependencyFileNotEvaluatable)
           end
         end
       end

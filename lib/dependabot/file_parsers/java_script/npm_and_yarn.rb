@@ -164,7 +164,7 @@ module Dependabot
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message == "workspacesRequirePrivateProjects"
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
 
         def package_files
