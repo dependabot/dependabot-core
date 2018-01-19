@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "nokogiri"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers/base"
 
 module Dependabot

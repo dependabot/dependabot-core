@@ -14,7 +14,7 @@ module Dependabot
         class Version < Gem::Version
           def initialize(version)
             @version_string = version.to_s
-            super(version.tr("_", "-"))
+            super(version.to_s.tr("_", "-"))
           end
 
           def to_s
