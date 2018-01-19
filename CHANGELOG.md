@@ -1,3 +1,7 @@
+## v0.43.9, 19 January 2018
+
+- Java: Handle underscores in versions
+
 ## v0.43.8, 18 January 2018
 
 - PHP: Handle pre-release version with a '-' properly
