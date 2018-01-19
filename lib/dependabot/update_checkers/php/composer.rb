@@ -12,6 +12,7 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         require_relative "composer/requirements_updater"
+        require_relative "composer/version"
 
         def latest_version
           # Fall back to latest_resolvable_version if no listing on main
@@ -23,8 +24,8 @@ module Dependabot
 
           versions =
             packagist_listing["packages"][dependency.name.downcase].keys.
-            select { |version| Gem::Version.correct?(version.gsub(/^v/, "")) }.
-            map { |version| Gem::Version.new(version.gsub(/^v/, "")) }
+            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
+            map { |version| version_class.new(version.gsub(/^v/, "")) }
 
           versions.reject!(&:prerelease?) unless wants_prerelease?
           versions.sort.last
@@ -41,6 +42,10 @@ module Dependabot
             latest_resolvable_version: latest_resolvable_version&.to_s,
             library: library?
           ).updated_requirements
+        end
+
+        def version_class
+          Composer::Version
         end
 
         private
@@ -79,7 +84,7 @@ module Dependabot
             end
 
           return if latest_resolvable_version.nil?
-          Gem::Version.new(latest_resolvable_version)
+          version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_composer_errors(error)
         end

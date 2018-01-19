@@ -6,13 +6,14 @@
 ################################################################################
 
 require "dependabot/update_checkers/php/composer"
+require "dependabot/update_checkers/php/composer/version"
 
 module Dependabot
   module UpdateCheckers
     module Php
       class Composer
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
           AND_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]+(?![\s,]*[|-])/
           OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|+/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+(?![\s,|-])/
@@ -20,12 +21,15 @@ module Dependabot
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-            @latest_version = Gem::Version.new(latest_version) if latest_version
             @library = library
+
+            if latest_version
+              @latest_version = version_class.new(latest_version)
+            end
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Gem::Version.new(latest_resolvable_version)
+              version_class.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -226,7 +230,7 @@ module Dependabot
             if range_requirements.count == 1
               range_requirement = range_requirements.first
               versions = range_requirement.scan(VERSION_REGEX)
-              upper_bound = versions.map { |v| Gem::Version.new(v) }.max
+              upper_bound = versions.map { |v| version_class.new(v) }.max
               new_upper_bound = update_greatest_version(
                 upper_bound,
                 latest_resolvable_version
@@ -239,7 +243,7 @@ module Dependabot
           end
 
           def update_greatest_version(old_version, version_to_be_permitted)
-            version = Gem::Version.new(old_version)
+            version = version_class.new(old_version)
             version = version.release if version.prerelease?
 
             index_to_update =
@@ -253,6 +257,10 @@ module Dependabot
               else 0
               end
             end.join(".")
+          end
+
+          def version_class
+            Composer::Version
           end
         end
       end
