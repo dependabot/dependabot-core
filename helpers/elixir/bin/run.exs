@@ -1,42 +1,62 @@
-defmodule DependencyUtils do
-  def parse_deps(path) do
-    {output, 0} = System.cmd(
-      "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "parse_deps.exs"],
-      [
-        cd: path,
-        env: %{
-          "MIX_EXS" => nil,
-          "MIX_LOCK" => nil,
-          "MIX_DEPS" => nil
-        }
-      ]
-    )
-    :erlang.binary_to_term(output)
+defmodule DependencyHelper do
+  def main() do
+    IO.read(:stdio, :all)
+    |> Jason.decode!()
+    |> run()
+    |> case do
+      {output, 0} -> {:ok, :erlang.binary_to_term(output)}
+      {error, 1} -> {:error, error}
+    end
+    |> handle_result()
   end
 
-  def get_latest_resolvable_version(path, dependency_name) do
-    {output, 0} = System.cmd(
-      "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "check_update.exs", dependency_name],
-      [
-        cd: path,
-        env: %{
-          "MIX_EXS" => nil,
-          "MIX_LOCK" => nil,
-          "MIX_DEPS" => nil
-        }
-      ]
-    )
-    :erlang.binary_to_term(output)
+  defp handle_result({:ok, {:ok, result}}) do
+    encode_and_write(%{"result" => result})
   end
 
-  def get_updated_lockfile(path, dependency_name) do
-    {output, 0} = System.cmd(
+  defp handle_result({:ok, {:error, reason}}) do
+    encode_and_write(%{"error" => reason})
+    System.halt(1)
+  end
+
+  defp handle_result({:error, reason}) do
+    encode_and_write(%{"error" => reason})
+    System.halt(1)
+  end
+
+  defp encode_and_write(content) do
+    content
+    |> Jason.encode!()
+    |> IO.write()
+  end
+
+  defp run(%{"function" => "parse", "args" => [dir]}) do
+    run_script("parse_deps.exs", dir)
+  end
+
+  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name]}) do
+    run_script("check_update.exs", dir, [dependency_name])
+  end
+
+  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name]}) do
+    run_script("do_update.exs", dir, [dependency_name])
+  end
+
+  defp run_script(script, dir, args \\ []) do
+    args = [
+      "run",
+      "--no-deps-check",
+      "--no-start",
+      "--no-compile",
+      "--no-elixir-version-check",
+      script
+    ] ++ args
+
+    System.cmd(
       "mix",
-      ["run", "--no-deps-check", "--no-start", "--no-compile", "--no-elixir-version-check", "do_update.exs", dependency_name],
+      args,
       [
-        cd: path,
+        cd: dir,
         env: %{
           "MIX_EXS" => nil,
           "MIX_LOCK" => nil,
@@ -44,34 +64,7 @@ defmodule DependencyUtils do
         }
       ]
     )
-    :erlang.binary_to_term(output)
   end
 end
 
-input = IO.read(:stdio, :all)
-%{"function" => function, "args" => args} = Jason.decode!(input)
-
-case function do
-  "parse" ->
-    [dir] = args
-
-    dependencies = DependencyUtils.parse_deps(dir)
-
-    Jason.encode!(%{"result" => dependencies})
-    |> IO.write()
-  "get_latest_resolvable_version" ->
-    [dir, dependency_name] = args
-
-    {:ok, version} = DependencyUtils.get_latest_resolvable_version(dir, dependency_name)
-
-    Jason.encode!(%{"result" => version})
-    |> IO.write()
-  "get_updated_lockfile" ->
-    [dir, dependency_name] = args
-
-    {:ok, lockfile_content} = DependencyUtils.get_updated_lockfile(dir, dependency_name)
-
-    Jason.encode!(%{"result" => lockfile_content})
-    |> IO.write()
-end
-
+DependencyHelper.main()
