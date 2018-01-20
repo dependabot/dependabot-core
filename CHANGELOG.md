@@ -1,3 +1,8 @@
+## v0.43.11, 20 January 2018
+
+- Elixir: Raise a DependencyFileNotResolvable error if mix.exs contains bad
+  requirements
+
 ## v0.43.10, 19 January 2018
 
 - Java: Fix version parsing (oops!)
