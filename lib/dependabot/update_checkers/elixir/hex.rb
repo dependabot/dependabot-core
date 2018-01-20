@@ -70,6 +70,13 @@ module Dependabot
 
           return if @latest_resolvable_version.nil?
           version_class.new(latest_resolvable_version)
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          handle_hex_errors(error)
+        end
+
+        def handle_hex_errors(error)
+          raise error unless error.message.start_with?("Invalid requirement")
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
         def prepared_mixfile_content

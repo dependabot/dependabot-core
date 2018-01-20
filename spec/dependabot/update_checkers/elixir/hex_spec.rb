@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/elixir/hex"
+require "dependabot/errors"
 require_relative "../shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
@@ -155,6 +156,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           )
         end
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
+      end
+    end
+
+    context "with a dependency with a bad specification" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "bad_spec") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { checker.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end

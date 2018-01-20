@@ -1,4 +1,4 @@
-deps = Mix.Dep.loaded([]) |> Enum.filter(& &1.scm == Hex.SCM)
+deps = Mix.Dep.loaded([]) |> Enum.filter(&(&1.scm == Hex.SCM))
 
 dependencies =
   deps
@@ -14,6 +14,6 @@ dependencies =
     }
   end)
 
-dependencies = :erlang.term_to_binary(dependencies)
+dependencies = :erlang.term_to_binary({:ok, dependencies})
 
 IO.write(:stdio, dependencies)
