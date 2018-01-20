@@ -1,3 +1,7 @@
+## v0.44.0, 20 January 2018
+
+- Pass an array of custom labels to PullRequestCreator
+
 ## v0.43.11, 20 January 2018
 
 - Elixir: Raise a DependencyFileNotResolvable error if mix.exs contains bad
