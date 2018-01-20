@@ -9,11 +9,11 @@ module Dependabot
     class Github
       attr_reader :repo_name, :branch_name, :base_commit, :github_client,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :custom_label
+                  :target_branch, :author_details, :custom_labels
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, custom_label:)
+                     target_branch:, author_details:, custom_labels:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -24,7 +24,7 @@ module Dependabot
         @pr_description = pr_description
         @pr_name        = pr_name
         @author_details = author_details
-        @custom_label   = custom_label
+        @custom_labels  = custom_labels
       end
 
       def create
@@ -33,7 +33,7 @@ module Dependabot
         commit = create_commit
         return unless create_branch(commit)
 
-        create_label unless custom_label || dependencies_label_exists?
+        create_label unless custom_labels || dependencies_label_exists?
 
         pull_request = create_pull_request
 
@@ -109,7 +109,7 @@ module Dependabot
       end
 
       def dependencies_label_exists?
-        return labels.include?(custom_label) if custom_label
+        return (custom_labels - labels).empty? if custom_labels
 
         labels.any? { |l| l.match?(/dependenc/i) }
       end
@@ -129,17 +129,17 @@ module Dependabot
 
       def add_label_to_pull_request(pull_request)
         # If a custom label is desired but doesn't exist, don't label the PR
-        return if custom_label && !dependencies_label_exists?
+        return if custom_labels && !dependencies_label_exists?
 
-        label_name =
-          custom_label ||
-          labels.find { |l| l.match?(/dependenc/i) } ||
-          "dependencies"
+        label_names =
+          custom_labels ||
+          [labels.find { |l| l.match?(/dependenc/i) }] ||
+          ["dependencies"]
 
         github_client.add_labels_to_an_issue(
           repo_name,
           pull_request.number,
-          [label_name]
+          label_names
         )
       end
 

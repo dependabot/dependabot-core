@@ -14,7 +14,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       dependencies: [dependency],
       files: files,
       github_client: github_client,
-      custom_label: custom_label
+      custom_labels: custom_labels
     )
   end
 
@@ -32,7 +32,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       ]
     )
   end
-  let(:custom_label) { nil }
+  let(:custom_labels) { nil }
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
@@ -668,7 +668,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "when a custom dependencies label has been requested" do
-      let(:custom_label) { "wontfix" }
+      let(:custom_labels) { ["wontfix"] }
 
       it "does not create a 'dependencies' label" do
         creator.create
@@ -686,7 +686,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
 
       context "that doesn't exist" do
-        let(:custom_label) { "non-existent" }
+        let(:custom_labels) { ["non-existent"] }
 
         # Alternatively we could create the label (current choise isn't fixed)
         it "does not create any labels" do

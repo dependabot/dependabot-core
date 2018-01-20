@@ -10,11 +10,11 @@ module Dependabot
 
     attr_reader :repo_name, :dependencies, :files, :base_commit,
                 :github_client, :pr_message_footer, :target_branch,
-                :author_details, :custom_label
+                :author_details, :custom_labels
 
     def initialize(repo:, base_commit:, dependencies:, files:, github_client:,
                    pr_message_footer: nil, target_branch: nil,
-                   author_details: nil, custom_label: nil)
+                   author_details: nil, custom_labels: nil)
       @dependencies      = dependencies
       @repo_name         = repo
       @base_commit       = base_commit
@@ -23,7 +23,7 @@ module Dependabot
       @pr_message_footer = pr_message_footer
       @target_branch     = target_branch
       @author_details    = author_details
-      @custom_label      = custom_label
+      @custom_labels     = custom_labels
 
       check_dependencies_have_previous_version
     end
@@ -48,7 +48,7 @@ module Dependabot
         pr_description: message_builder.pr_message,
         pr_name: message_builder.pr_name,
         author_details: author_details,
-        custom_label: custom_label
+        custom_labels: custom_labels
       ).create
     end
 
