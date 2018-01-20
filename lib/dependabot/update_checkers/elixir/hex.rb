@@ -75,11 +75,8 @@ module Dependabot
         end
 
         def handle_hex_errors(error)
-          if error.message.start_with?("Invalid requirement")
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          else
-            raise error
-          end
+          raise error unless error.message.start_with?("Invalid requirement")
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
         def prepared_mixfile_content
