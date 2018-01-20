@@ -1,8 +1,8 @@
 # Dependabot Core
 
 Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python, PHP and Java. It can also update git
-submodules and Docker files. Highlights include:
+updating in Ruby, JavaScript, Python, PHP, Elixir and Java. It can also update
+git submodules and Docker files. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
   a project's other dependencies*. That means tapping into the package manager's
@@ -14,9 +14,9 @@ Dependabot Core is used by [Dependabot][dependabot].
 
 ## Setup
 
-To run Dependabot Core, you'll need Ruby, Python, PHP and Node installed. The
-main library is written in Ruby, while JavaScript, Python and PHP are required
-for dealing with updates for their respective languages.
+To run Dependabot Core, you'll need Ruby, Python, PHP, Elixir and Node
+installed. The main library is written in Ruby, while JavaScript, Python, Elixir
+and PHP are required for dealing with updates for their respective languages.
 
 Before running Dependabot Core, install dependencies for the core library and
 the helpers:
@@ -64,14 +64,6 @@ Dependabot and Dependabot Core started life as [Bump][bump] and
 [GoCardless][gocardless]. We remain grateful for the help and support of
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
-
-## Contributing
-
-We'd love to see the following improvements to Dependabot Core:
-
-- Support for Elixir. We have a PR that is in a semi-abandoned state
-  [here][elixir-pr] that we'd love to be able to merge. The Dependabot team
-  would be very happy to work on it with you!
 
 [dependabot]: https://dependabot.com
 [bump]: https://github.com/gocardless/bump
