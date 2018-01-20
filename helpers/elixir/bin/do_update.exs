@@ -4,10 +4,12 @@
 dependency = String.to_atom(dependency_name)
 
 # Fetch dependencies that needs updating
-{dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read, [dependency])
+{dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read(), [dependency])
 Mix.Dep.Fetcher.by_name([dependency_name], dependency_lock, rest_lock, [])
 
-lockfile_content = :file.read_file("mix.lock")
-lockfile_content = :erlang.term_to_binary(lockfile_content)
+lockfile_content =
+  "mix.lock"
+  |> File.read()
+  |> :erlang.term_to_binary()
 
 IO.write(:stdio, lockfile_content)
