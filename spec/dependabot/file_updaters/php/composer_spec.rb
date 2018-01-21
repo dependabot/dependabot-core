@@ -208,10 +208,10 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
 
         context "that hasn't been provided" do
-          it "raises a PrivateSourceNotReachable error" do
+          it "raises a MissingEnvironmentVariable error" do
             expect { updated_files }.to raise_error do |error|
-              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
-              expect(error.source).to eq("ACF_PRO_KEY")
+              expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+              expect(error.environment_variable).to eq("ACF_PRO_KEY")
             end
           end
         end

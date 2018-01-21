@@ -110,7 +110,7 @@ module Dependabot
             raise git_dependency_error(error)
           end
           if error.message.start_with?("Could not find a key for ACF PRO")
-            raise Dependabot::PrivateSourceNotReachable, "ACF_PRO_KEY"
+            raise Dependabot::MissingEnvironmentVariable, "ACF_PRO_KEY"
           end
           raise error
         end
