@@ -132,9 +132,11 @@ module Dependabot
         return if custom_labels && !dependencies_label_exists?
 
         label_names =
-          custom_labels ||
-          [labels.find { |l| l.match?(/dependenc/i) }] ||
-          ["dependencies"]
+          if custom_labels then custom_labels
+          elsif labels.any? { |l| l.match?(/dependenc/i) }
+            [labels.find { |l| l.match?(/dependenc/i) }]
+          else ["dependencies"]
+          end
 
         github_client.add_labels_to_an_issue(
           repo_name,
