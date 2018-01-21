@@ -1,3 +1,7 @@
+## v0.44.3, 21 January 2018
+
+- PHP: Raise MissingEnvironmentVariable instead of PrivateSourceNotReachable
+
 ## v0.44.2, 21 January 2018
 
 - PHP: Allow environment variables to be passed (to support ACF PRO)
