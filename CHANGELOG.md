@@ -1,3 +1,7 @@
+## v0.44.4, 21 January 2018
+
+- PHP: Use env-key instead for env_key (for consistency with Python)
+
 ## v0.44.3, 21 January 2018
 
 - PHP: Raise MissingEnvironmentVariable instead of PrivateSourceNotReachable
