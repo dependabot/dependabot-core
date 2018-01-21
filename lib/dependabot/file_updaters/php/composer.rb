@@ -135,8 +135,8 @@ module Dependabot
 
         def credentials_env
           credentials.
-            select { |cred| cred.key?("env_key") }.
-            map { |cred| [cred["env_key"], cred["env_value"]] }.
+            select { |cred| cred.key?("env-key") }.
+            map { |cred| [cred["env-key"], cred["env-value"]] }.
             to_h
         end
 
