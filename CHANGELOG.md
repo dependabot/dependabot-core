@@ -1,3 +1,7 @@
+## v0.44.2, 21 January 2018
+
+- PHP: Allow environment variables to be passed (to support ACF PRO)
+
 ## v0.44.1, 20 January 2018
 
 - Fix PullRequestCreator behaviour when no dependencies tag exists
