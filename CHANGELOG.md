@@ -1,3 +1,7 @@
+## v0.44.1, 20 January 2018
+
+- Fix PullRequestCreator behaviour when no dependencies tag exists
+
 ## v0.44.0, 20 January 2018
 
 - Pass an array of custom labels to PullRequestCreator
