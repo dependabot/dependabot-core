@@ -63,6 +63,7 @@ module Dependabot
                 SharedHelpers.run_helper_subprocess(
                   command: "php #{php_helper_path}",
                   function: "update",
+                  env: credentials_env,
                   args: [
                     Dir.pwd,
                     dependency.name,
@@ -105,10 +106,16 @@ module Dependabot
         end
 
         def handle_composer_errors(error)
-          unless error.message.start_with?("Failed to execute git checkout")
-            raise error
+          if error.message.start_with?("Failed to execute git checkout")
+            raise git_dependency_error(error)
           end
+          if error.message.start_with?("Could not find a key for ACF PRO")
+            raise Dependabot::PrivateSourceNotReachable, "ACF_PRO_KEY"
+          end
+          raise error
+        end
 
+        def git_dependency_error(error)
           ref = error.message.match(/checkout '(?<ref>.*?)'/).
                 named_captures.fetch("ref")
           dependency_name =
@@ -124,6 +131,13 @@ module Dependabot
         def php_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/php/bin/run.php")
+        end
+
+        def credentials_env
+          credentials.
+            select { |cred| cred.key?("env_key") }.
+            map { |cred| [cred["env_key"], cred["env_value"]] }.
+            to_h
         end
 
         def github_access_token

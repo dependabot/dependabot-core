@@ -202,6 +202,49 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
       it { is_expected.to include "\"prefer-stable\":false" }
 
+      context "that requires an environment variable" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "env_variable")
+        end
+
+        context "that hasn't been provided" do
+          it "raises a PrivateSourceNotReachable error" do
+            expect { updated_files }.to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).to eq("ACF_PRO_KEY")
+            end
+          end
+        end
+
+        context "that has been provided" do
+          let(:updater) do
+            described_class.new(
+              dependency_files: files,
+              dependencies: [dependency],
+              credentials: [
+                {
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                },
+                {
+                  "env_key" => "ACF_PRO_KEY",
+                  "env_value" => "example_key"
+                }
+              ]
+            )
+          end
+
+          it "runs just fine (we get a 400 here because our key is wrong)" do
+            expect { updated_files }.to raise_error do |error|
+              expect(error).
+                to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+              expect(error.message).to include("400 Bad Request")
+            end
+          end
+        end
+      end
+
       context "when the new version is covered by the old requirements" do
         let(:composer_body) do
           fixture("php", "composer_files", "minor_version")

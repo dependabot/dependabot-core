@@ -1,0 +1,28 @@
+{
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "advanced-custom-fields/advanced-custom-fields-pro",
+        "version": "5.5.14",
+        "type": "wordpress-plugin",
+        "dist": {
+          "type": "zip",
+          "url": "https://connect.advancedcustomfields.com/index.php?p=pro&a=download"
+        },
+        "require": {
+          "philippbaschke/acf-pro-installer": "^1.0",
+          "composer/installers": "^1.0"
+        }
+      }
+    }
+  ],
+  "require": {
+    "advanced-custom-fields/advanced-custom-fields-pro": "5.5.14",
+    "monolog/monolog": "1.0.1"
+  }
+}
