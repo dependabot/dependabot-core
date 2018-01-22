@@ -1,3 +1,7 @@
+## v0.44.7, 22 January 2018
+
+- PHP: Retry 404s which appear to be happening randomly
+
 ## v0.44.6, 22 January 2018
 
 - Silence errors when trying to update a PR that has been merged
