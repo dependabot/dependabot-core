@@ -1,4 +1,8 @@
-## v0.44.5, 21 January 2018
+## v0.44.6, 22 January 2018
+
+- Silence errors when trying to update a PR that has been merged
+
+## v0.44.5, 22 January 2018
 
 - Elixir: Wait for input (should fix Errno::EPIPE errors)
 
