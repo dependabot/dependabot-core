@@ -1,3 +1,7 @@
+## v0.44.5, 21 January 2018
+
+- Elixir: Wait for input (should fix Errno::EPIPE errors)
+
 ## v0.44.4, 21 January 2018
 
 - PHP: Use env-key instead for env_key (for consistency with Python)
