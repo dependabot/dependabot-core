@@ -86,6 +86,9 @@ module Dependabot
           return if latest_resolvable_version.nil?
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
+          @retry_count ||= 0
+          @retry_count += 1
+          retry if @retry_count < 2 && error.message.include?("404 Not Found")
           handle_composer_errors(error)
         end
 
