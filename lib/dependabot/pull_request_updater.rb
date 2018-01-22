@@ -88,6 +88,9 @@ module Dependabot
     rescue Octokit::UnprocessableEntity => error
       # Return quietly if the branch has been deleted
       return nil if error.message.match?(/Reference does not exist/)
+
+      # Return quietly if the branch has been merged
+      return nil if error.message.match?(/Reference cannot be updated/)
       raise
     end
 
