@@ -1008,7 +1008,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             body: {
               base: "master",
               head: "dependabot/bundler/business-1.5.0",
-              title: "chore(dependencies): Bump business from 1.4.0 to 1.5.0",
+              title: "build: Bump business from 1.4.0 to 1.5.0",
               body: "Bumps [business](https://github.com/gocardless/business) "\
                     "from 1.4.0 to 1.5.0.\n- [Release notes]"\
                     "(https://github.com/gocardless/business/releases?after="\
@@ -1025,7 +1025,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(body: {
                  parents: ["basecommitsha"],
                  tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-                 message: /\Achore\(dependencies\): Bump/
+                 message: /\Abuild: Bump/
                })
       end
     end

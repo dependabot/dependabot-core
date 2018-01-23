@@ -6,7 +6,8 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      SEMANTIC_PREFIXES = %w(chore docs feat fix refactor style test).freeze
+      SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
+                             test).freeze
       attr_reader :repo_name, :dependencies, :files, :github_client,
                   :pr_message_footer
 
@@ -27,7 +28,7 @@ module Dependabot
         return library_pr_name if library?
 
         pr_name = ""
-        pr_name += "chore(dependencies): " if using_semantic_commit_messages?
+        pr_name += "build: " if using_semantic_commit_messages?
 
         pr_name +=
           if dependencies.count == 1
@@ -76,7 +77,7 @@ module Dependabot
 
       def library_pr_name
         pr_name = ""
-        pr_name += "chore(dependencies): " if using_semantic_commit_messages?
+        pr_name += "build: " if using_semantic_commit_messages?
 
         pr_name +=
           if dependencies.count == 1
