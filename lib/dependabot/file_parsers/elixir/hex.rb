@@ -28,13 +28,10 @@ module Dependabot
         private
 
         def dependency_versions
-          SharedHelpers.in_a_temporary_directory do |dir|
-            File.write(File.join(dir, "mix.exs"), mixfile.content)
-            File.write(File.join(dir, "mix.lock"), lockfile.content)
-            FileUtils.cp(
-              elixir_helper_parse_deps_path,
-              File.join(dir, "parse_deps.exs")
-            )
+          SharedHelpers.in_a_temporary_directory do
+            File.write("mix.exs", mixfile.content)
+            File.write("mix.lock", lockfile.content)
+            FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
             # This shouldn't be required, but for some reason it sometimes is...
             SharedHelpers.run_helper_subprocess(
@@ -42,14 +39,14 @@ module Dependabot
               command: "mix local.hex --force --if-missing &> /dev/null; "\
                        "echo '{\"result\": null }'",
               function: "null",
-              args: [dir]
+              args: [Dir.pwd]
             )
 
             SharedHelpers.run_helper_subprocess(
               env: mix_env,
               command: "mix run #{elixir_helper_path}",
               function: "parse",
-              args: [dir]
+              args: [Dir.pwd]
             )
           end
         end

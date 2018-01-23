@@ -52,24 +52,21 @@ module Dependabot
 
         def fetch_latest_resolvable_version
           @latest_resolvable_version ||=
-            SharedHelpers.in_a_temporary_directory do |dir|
+            SharedHelpers.in_a_temporary_directory do
               File.write("mix.exs", prepared_mixfile_content)
               File.write("mix.lock", lockfile.content)
-              FileUtils.cp(
-                elixir_helper_check_update_path,
-                File.join(dir, "check_update.exs")
-              )
+              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
               SharedHelpers.run_helper_subprocess(
                 env: mix_env,
                 command: "mix run #{elixir_helper_path}",
                 function: "get_latest_resolvable_version",
-                args: [dir, dependency.name]
+                args: [Dir.pwd, dependency.name]
               )
             end
 
           return if @latest_resolvable_version.nil?
-          version_class.new(latest_resolvable_version)
+          version_class.new(@latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_hex_errors(error)
         end

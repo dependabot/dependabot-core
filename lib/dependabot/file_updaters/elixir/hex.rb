@@ -51,19 +51,16 @@ module Dependabot
 
         def updated_lockfile_content
           @latest_resolvable_version ||=
-            SharedHelpers.in_a_temporary_directory do |dir|
+            SharedHelpers.in_a_temporary_directory do
               File.write("mix.exs", updated_mixfile_content)
               File.write("mix.lock", lockfile.content)
-              FileUtils.cp(
-                elixir_helper_do_update_path,
-                File.join(dir, "do_update.exs")
-              )
+              FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
               SharedHelpers.run_helper_subprocess(
                 env: mix_env,
                 command: "mix run #{elixir_helper_path}",
                 function: "get_updated_lockfile",
-                args: [dir, dependency.name]
+                args: [Dir.pwd, dependency.name]
               )
             end
         end
