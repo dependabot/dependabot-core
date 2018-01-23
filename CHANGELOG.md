@@ -1,3 +1,7 @@
+## v0.44.9, 23 January 2018
+
+- Handle timeouts in GitCommitChecker
+
 ## v0.44.8, 23 January 2018
 
 - Ruby: Handle timeouts when checking whether git dependencies are reachable
