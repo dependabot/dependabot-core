@@ -1,3 +1,7 @@
+## v0.44.12, 23 January 2018
+
+- Java: Ignore plugins without a groupId
+
 ## v0.44.11, 23 January 2018
 
 - Use `build` prefix if semantic commits are in use
