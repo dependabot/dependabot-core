@@ -1,3 +1,7 @@
+## v0.44.10, 23 January 2018
+
+- Elixir: Clean up Ruby code that calls Elixir subprocesses
+
 ## v0.44.9, 23 January 2018
 
 - Handle timeouts in GitCommitChecker
