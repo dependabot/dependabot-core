@@ -15,6 +15,7 @@ module Dependabot
         def parse
           doc = Nokogiri::XML(pom.content)
           doc.css(DEPENDENCY_SELECTOR).map do |dependency_node|
+            next unless dependency_name(dependency_node)
             Dependency.new(
               name: dependency_name(dependency_node),
               version: dependency_version(dependency_node),
@@ -32,6 +33,9 @@ module Dependabot
         private
 
         def dependency_name(dependency_node)
+          return unless dependency_node.at_css("groupId")
+          return unless dependency_node.at_css("artifactId")
+
           [
             dependency_node.at_css("groupId").content,
             dependency_node.at_css("artifactId").content

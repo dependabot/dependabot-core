@@ -88,10 +88,6 @@ module Dependabot
             fetch(:requirement)
         end
 
-        def dependency_selector
-          Dependabot::FileParsers::Java::Maven::DEPENDENCY_SELECTOR
-        end
-
         def pom
           @pom ||= get_original_file("pom.xml")
         end

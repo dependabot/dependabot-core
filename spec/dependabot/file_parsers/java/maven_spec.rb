@@ -95,6 +95,14 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           )
         end
       end
+
+      context "missing a groupId" do
+        let(:pom_body) do
+          fixture("java", "poms", "plugin_dependencies_missing_group_id.xml")
+        end
+
+        its(:length) { is_expected.to eq(0) }
+      end
     end
 
     context "for pluginManagement dependencies" do
