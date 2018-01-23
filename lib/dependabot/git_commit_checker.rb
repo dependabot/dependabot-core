@@ -133,6 +133,8 @@ module Dependabot
 
       return response.body if response.status == 200
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
+    rescue Excon::Error::Socket, Excon::Error::Timeout
+      raise Dependabot::GitDependenciesNotReachable, [original_uri]
     end
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)

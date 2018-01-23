@@ -255,6 +255,20 @@ RSpec.describe Dependabot::GitCommitChecker do
               to raise_error(Dependabot::GitDependenciesNotReachable)
           end
         end
+
+        context "when the source returns a timeout" do
+          before do
+            git_url = "https://github.com/gocardless/business.git"
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              to_raise(Excon::Error::Timeout)
+          end
+          let(:ref) { "my_ref" }
+
+          it "raises a helpful error" do
+            expect { checker.head_commit_for_current_branch }.
+              to raise_error(Dependabot::GitDependenciesNotReachable)
+          end
+        end
       end
     end
   end
