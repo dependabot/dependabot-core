@@ -1,3 +1,7 @@
+## v0.44.8, 23 January 2018
+
+- Ruby: Handle timeouts when checking whether git dependencies are reachable
+
 ## v0.44.7, 22 January 2018
 
 - PHP: Retry 404s which appear to be happening randomly
