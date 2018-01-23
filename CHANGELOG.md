@@ -1,3 +1,7 @@
+## v0.44.11, 23 January 2018
+
+- Use `build` prefix if semantic commits are in use
+
 ## v0.44.10, 23 January 2018
 
 - Elixir: Clean up Ruby code that calls Elixir subprocesses
