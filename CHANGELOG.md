@@ -1,4 +1,8 @@
-## v0.44.13, 23 January 2018
+## v0.44.14, 25 January 2018
+
+- Java: Handle nested dependency declarations in pom.xml
+
+## v0.44.13, 24 January 2018
 
 - Ruby: Use Lockfile to find path dependencies if present
 
