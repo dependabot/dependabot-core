@@ -57,13 +57,19 @@ module Dependabot
         end
 
         def original_pom_declaration
-          pom.content.scan(DECLARATION_REGEX).find do |node|
+          deep_find_declarations(pom.content).find do |node|
             node = Nokogiri::XML(node)
             node_name = [
               node.at_css("groupId")&.content,
               node.at_css("artifactId")&.content
             ].compact.join(":")
             node_name == dependency.name
+          end
+        end
+
+        def deep_find_declarations(string)
+          string.scan(DECLARATION_REGEX).flat_map do |matching_node|
+            [matching_node, *deep_find_declarations(matching_node[0..-2])]
           end
         end
 
