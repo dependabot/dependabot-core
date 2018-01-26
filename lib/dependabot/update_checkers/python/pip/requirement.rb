@@ -2,31 +2,27 @@
 
 require "dependabot/update_checkers/python/pip/version"
 
-# rubocop:disable all
 module Dependabot
   module UpdateCheckers
     module Python
       class Pip
         class Requirement < Gem::Requirement
-          # Override the version pattern to allow local versions
-          quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
-          PATTERN_RAW =
-            "\\s*(#{quoted})?\\s*(#{Pip::Version::VERSION_PATTERN})\\s*"
+          quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+          version_pattern = Pip::Version::VERSION_PATTERN
+
+          PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
           PATTERN = /\A#{PATTERN_RAW}\z/
 
-          # Override the parser to create Pip::Versions
-          def self.parse obj
-            return ["=", obj] if Gem::Version === obj
+          def self.parse(obj)
+            return ["=", Pip::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
-            unless PATTERN =~ obj.to_s
-              raise BadRequirementError, "Illformed requirement [#{obj.inspect}]"
+            unless (matches = PATTERN.match(obj.to_s))
+              msg = "Illformed requirement [#{obj.inspect}]"
+              raise BadRequirementError, msg
             end
 
-            if $1 == ">=" && $2 == "0"
-              DefaultRequirement
-            else
-              [$1 || "=", Pip::Version.new($2)]
-            end
+            return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+            [matches[1] || "=", Pip::Version.new(matches[2])]
           end
 
           def satisfied_by?(version)
@@ -38,4 +34,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable all
