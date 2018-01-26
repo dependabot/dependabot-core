@@ -1,3 +1,7 @@
+## v0.44.15, 26 January 2018
+
+- PHP: Handle alias version constraints
+
 ## v0.44.14, 25 January 2018
 
 - Java: Handle nested dependency declarations in pom.xml
