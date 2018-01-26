@@ -1,3 +1,7 @@
+## v0.44.16, 26 January 2018
+
+- PHP: Handle repos where the only version is non-numeric
+
 ## v0.44.15, 26 January 2018
 
 - PHP: Handle alias version constraints
