@@ -7,16 +7,18 @@
 
 require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/php/composer/version"
+require "dependabot/update_checkers/php/composer/requirement"
 
 module Dependabot
   module UpdateCheckers
     module Php
       class Composer
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
-          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]+(?![\s,]*[|-])/
-          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|+/
-          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,|]+(?![\s,|-])/
+          ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/
+          VERSION_REGEX = /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
+          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
+          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
+          SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
 
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)
@@ -118,7 +120,7 @@ module Dependabot
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
                   if r_string.start_with?("*")
-                    Gem::Requirement.new(">= 0")
+                    Composer::Requirement.new(">= 0")
                   elsif r_string.include?("*")
                     ruby_wildcard_range(r_string)
                   elsif r_string.start_with?("~")
@@ -128,41 +130,44 @@ module Dependabot
                   elsif r_string.match?(/\s+-\s+/)
                     ruby_hyphen_range(r_string)
                   else
-                    Gem::Requirement.new(r_string.gsub(/@\w+/, ""))
+                    Composer::Requirement.new(r_string)
                   end
                 end
 
-              Gem::Requirement.new(ruby_requirements.join(",").split(","))
+              Composer::Requirement.new(ruby_requirements.join(",").split(","))
             end
           end
 
           def ruby_wildcard_range(req_string)
             version =
-              req_string.gsub(/^~/, "").gsub(/@\w+/, "").gsub(/(?:\.|^)\*/, "")
-            Gem::Requirement.new("~> #{version}.0")
+              req_string.gsub(/^~/, "").gsub(/(?:\.|^)\*/, "")
+            Composer::Requirement.new("~> #{version}.0")
           end
 
           def ruby_tilde_range(req_string)
-            version = req_string.gsub(/^~/, "").gsub(/@\w+/, "")
-            Gem::Requirement.new("~> #{version}")
+            version = req_string.gsub(/^~/, "")
+            Composer::Requirement.new("~> #{version}")
           end
 
           def ruby_hyphen_range(req_string)
-            req_string = req_string.gsub(/@\w+/, "")
+            req_string = req_string
             lower_bound, upper_bound = req_string.split(/\s+-\s+/)
             if upper_bound.split(".").count < 3
               upper_bound_parts = upper_bound.split(".")
               upper_bound_parts[-1] = (upper_bound_parts[-1].to_i + 1).to_s
               upper_bound = upper_bound_parts.join(".")
 
-              Gem::Requirement.new(">= #{lower_bound}", "< #{upper_bound}")
+              Composer::Requirement.new(">= #{lower_bound}", "< #{upper_bound}")
             else
-              Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
+              Composer::Requirement.new(
+                ">= #{lower_bound}",
+                "<= #{upper_bound}"
+              )
             end
           end
 
           def ruby_caret_range(req_string)
-            version = req_string.gsub(/^\^/, "").gsub(/@\w+/, "")
+            version = req_string.gsub(/^\^/, "")
             parts = version.split(".")
             first_non_zero = parts.find { |d| d != "0" }
             first_non_zero_index =
@@ -174,7 +179,7 @@ module Dependabot
               end
             end.join(".")
 
-            Gem::Requirement.new(">= #{version}", "< #{upper_bound}")
+            Composer::Requirement.new(">= #{version}", "< #{upper_bound}")
           end
 
           def update_caret_requirement(req_string)

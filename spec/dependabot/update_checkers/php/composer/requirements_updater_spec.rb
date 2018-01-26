@@ -67,6 +67,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("1.5.0@dev") }
         end
 
+        context "and an alias was specified" do
+          let(:composer_json_req_string) { "mybranch as 1.2.*" }
+          its([:requirement]) { is_expected.to eq("1.5.*") }
+
+          context "that is satisfied" do
+            let(:composer_json_req_string) { "mybranch as 1.*.*" }
+            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
+        end
+
         context "and a partial version was previously specified" do
           let(:composer_json_req_string) { "0.1" }
           its([:requirement]) { is_expected.to eq("1.5.0") }
