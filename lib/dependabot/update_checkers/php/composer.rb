@@ -85,6 +85,7 @@ module Dependabot
             end
 
           return if latest_resolvable_version.nil?
+          return unless latest_resolvable_version.match?(/^\d/)
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           @retry_count ||= 0
