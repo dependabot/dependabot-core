@@ -72,21 +72,23 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          latest_resolvable_version =
-            SharedHelpers.in_a_temporary_directory do
-              File.write("composer.json", prepared_composer_json_content)
-              File.write("composer.lock", lockfile.content) if lockfile
+          version = fetch_latest_resolvable_version_string
 
-              SharedHelpers.run_helper_subprocess(
-                command: "php -d memory_limit=-1 #{php_helper_path}",
-                function: "get_latest_resolvable_version",
-                args: [Dir.pwd, dependency.name.downcase, github_access_token]
-              )
-            end
+          return if version.nil? || !version.match?(/^\d/)
+          version_class.new(version)
+        end
 
-          return if latest_resolvable_version.nil?
-          return unless latest_resolvable_version.match?(/^\d/)
-          version_class.new(latest_resolvable_version)
+        def fetch_latest_resolvable_version_string
+          SharedHelpers.in_a_temporary_directory do
+            File.write("composer.json", prepared_composer_json_content)
+            File.write("composer.lock", lockfile.content) if lockfile
+
+            SharedHelpers.run_helper_subprocess(
+              command: "php -d memory_limit=-1 #{php_helper_path}",
+              function: "get_latest_resolvable_version",
+              args: [Dir.pwd, dependency.name.downcase, github_access_token]
+            )
+          end
         rescue SharedHelpers::HelperSubprocessFailed => error
           @retry_count ||= 0
           @retry_count += 1
