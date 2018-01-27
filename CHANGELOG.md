@@ -1,3 +1,8 @@
+## v0.44.17, 27 January 2018
+
+- Java: Handle dependencies that use the project version as their requirement
+- Ruby: Raise error for merge conflicts in Gemfile.lock
+
 ## v0.44.16, 26 January 2018
 
 - PHP: Handle repos where the only version is non-numeric
