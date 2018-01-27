@@ -158,6 +158,32 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           )
         end
       end
+
+      context "where the property is the project version" do
+        let(:pom_body) { fixture("java", "poms", "project_version_pom.xml") }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("org.springframework:spring-beans")
+            expect(dependency.version).to eq("0.0.2-RELEASE")
+            expect(dependency.requirements).to eq(
+              [
+                {
+                  requirement: "0.0.2-RELEASE",
+                  file: "pom.xml",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
     end
 
     context "for version inherited from a parent pom" do

@@ -62,7 +62,13 @@ module Dependabot
           property_name = version_content.strip[2..-2]
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
-          doc.at_xpath("//properties/#{property_name}").content
+          if property_name.start_with?("project.")
+            path = "//project/#{property_name.gsub(/^project\./, '')}"
+            doc.at_xpath(path)&.content ||
+              doc.at_xpath("//properties/#{property_name}").content
+          else
+            doc.at_xpath("//properties/#{property_name}").content
+          end
         end
 
         def pom
