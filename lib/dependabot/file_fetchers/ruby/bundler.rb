@@ -79,18 +79,7 @@ module Dependabot
           gemspec_files = []
           unfetchable_gems = []
 
-          gemspec_paths =
-            if lockfile
-              parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
-              parsed_lockfile.specs.
-                select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
-                map { |s| "#{s.source.path}/#{s.name}.gemspec" }
-            else
-              gemfiles = ([gemfile] + child_gemfiles).compact
-              gemfiles.flat_map do |file|
-                PathGemspecFinder.new(gemfile: file).path_gemspec_paths
-              end
-            end
+          gemspec_paths = fetch_gemspec_paths
 
           gemspec_paths.each do |path|
             begin
@@ -105,6 +94,22 @@ module Dependabot
           end
 
           gemspec_files
+        end
+
+        def fetch_gemspec_paths
+          if lockfile
+            parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+            parsed_lockfile.specs.
+              select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
+              map { |s| "#{s.source.path}/#{s.name}.gemspec" }
+          else
+            gemfiles = ([gemfile] + child_gemfiles).compact
+            gemfiles.flat_map do |file|
+              PathGemspecFinder.new(gemfile: file).path_gemspec_paths
+            end
+          end
+        rescue ::Bundler::LockfileError
+          raise raise Dependabot::DependencyFileNotParseable, lockfile.path
         end
 
         def child_gemfiles
