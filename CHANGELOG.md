@@ -1,3 +1,7 @@
+## v0.44.18, 28 January 2018
+
+- PHP: Filter out special packages
+
 ## v0.44.17, 27 January 2018
 
 - Java: Handle dependencies that use the project version as their requirement
