@@ -29,7 +29,7 @@ module Dependabot
               next unless version.match?(/^\d/)
             end
 
-            next if php_or_extension?(name)
+            next unless package?(name)
 
             Dependency.new(
               name: name,
@@ -59,7 +59,7 @@ module Dependabot
               next unless version.match?(/^\d/)
             end
 
-            next if php_or_extension?(name)
+            next unless package?(name)
 
             Dependency.new(
               name: name,
@@ -101,9 +101,10 @@ module Dependabot
           end
         end
 
-        def php_or_extension?(name)
-          return true if name.start_with?("ext-")
-          %w(php php-64bit hhvm).include?(name)
+        def package?(name)
+          # Filter out php, ext-, composer-plugin-api, and other special
+          # packages which don't behave as normal
+          name.split("/").count == 2
         end
 
         def check_required_files
