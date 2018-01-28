@@ -87,7 +87,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       expect(subject.segments.count).to eq(3)
     end
 
-    it { is_expected.to eq(Gem::Version.new("1.3.5")) }
+    it "respects the resolvability of the mix.exs" do
+      expect(latest_resolvable_version).
+        to be > Gem::Version.new("1.3.5")
+      expect(latest_resolvable_version).
+        to be < Gem::Version.new("1.4.0")
+    end
 
     context "with a version conflict at the latest version" do
       let(:dependency) do
