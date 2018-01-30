@@ -1,3 +1,7 @@
+## v0.44.19, 30 January 2018
+
+- Elixir: Perform hex install in pwd
+
 ## v0.44.18, 28 January 2018
 
 - PHP: Filter out special packages
