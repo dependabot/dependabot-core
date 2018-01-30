@@ -232,7 +232,27 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      let(:expected_requirements) do
+        [{
+          requirement: ">= 0",
+          file: "Gemfile",
+          source: { type: "path" },
+          groups: [:default]
+        }]
+      end
+
+      its(:length) { is_expected.to eq(5) }
+
+      it "includes the path dependency" do
+        path_dep = dependencies.find { |dep| dep.name == "example" }
+        expect(path_dep.requirements).to eq(expected_requirements)
+      end
+
+      it "includes the path dependency's sub-dependency" do
+        sub_dep = dependencies.find { |dep| dep.name == "i18n" }
+        expect(sub_dep.requirements).to eq([])
+        expect(sub_dep.top_level?).to eq(false)
+      end
     end
 
     context "with a gem from a private gem source" do
@@ -344,7 +364,9 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
       let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
 
-      its(:length) { is_expected.to eq(2) }
+      it "doesn't include the gemspec dependency (i.e., itself)" do
+        expect(dependencies.map(&:name)).to match_array(%w(business statesman))
+      end
 
       context "with a large gemspec" do
         let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
@@ -352,7 +374,13 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           fixture("ruby", "lockfiles", "imports_gemspec_large.lock")
         end
 
-        its(:length) { is_expected.to eq(13) }
+        it "includes details of each declaration" do
+          expect(dependencies.select(&:top_level?).count).to eq(13)
+        end
+
+        it "includes details of each sub-dependency" do
+          expect(dependencies.reject(&:top_level?).count).to eq(23)
+        end
 
         describe "a runtime gemspec dependency" do
           subject { dependencies.find { |dep| dep.name == "gitlab" } }
@@ -390,7 +418,9 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         context "that needs to be sanitized" do
           let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
-          its(:length) { is_expected.to eq(13) }
+          it "includes details of each declaration" do
+            expect(dependencies.select(&:top_level?).count).to eq(13)
+          end
         end
 
         context "that can't be evaluated" do

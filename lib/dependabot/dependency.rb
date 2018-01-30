@@ -18,6 +18,10 @@ module Dependabot
       check_values
     end
 
+    def top_level?
+      requirements.any?
+    end
+
     def to_h
       {
         "name" => name,

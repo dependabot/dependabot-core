@@ -26,6 +26,7 @@ module Dependabot
           dependency_set = DependencySet.new
           dependency_set += gemfile_dependencies
           dependency_set += gemspec_dependencies
+          dependency_set += lockfile_dependencies
           dependency_set.dependencies
         end
 
@@ -74,6 +75,28 @@ module Dependabot
                   source: nil,
                   file: gemspec.name
                 }],
+                package_manager: "bundler"
+              )
+          end
+
+          dependencies
+        end
+
+        def lockfile_dependencies
+          dependencies = DependencySet.new
+
+          return dependencies unless lockfile
+
+          # Create a DependencySet where each element has no requirement. Any
+          # requirements will be added when combining the DependencySet with
+          # other DependencySets.
+          parsed_lockfile.specs.each do |dependency|
+            next if dependency.source.is_a?(::Bundler::Source::Path)
+            dependencies <<
+              Dependency.new(
+                name: dependency.name,
+                version: dependency_version(dependency.name)&.to_s,
+                requirements: [],
                 package_manager: "bundler"
               )
           end
@@ -167,13 +190,12 @@ module Dependabot
 
         def dependency_version(dependency_name)
           return unless lockfile
-          @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
 
           if dependency_name == "bundler"
             return Gem::Version.new(::Bundler::VERSION)
           end
 
-          spec = @parsed_lockfile.specs.find { |s| s.name == dependency_name }
+          spec = parsed_lockfile.specs.find { |s| s.name == dependency_name }
 
           # Not all files in the Gemfile will appear in the Gemfile.lock. For
           # instance, if a gem specifies `platform: [:windows]`, and the
@@ -210,6 +232,10 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Gemfile.lock")
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
         end
 
         def gemspec
