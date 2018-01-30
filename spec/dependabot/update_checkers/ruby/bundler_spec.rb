@@ -1035,6 +1035,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 onfido_url = "https://rubygems.org/api/v1/gems/onfido.json"
                 stub_request(:get, onfido_url).
                   to_return(status: 200, body: rubygems_response)
+
+                info_url = "https://index.rubygems.org/info/"
+                stub_request(:get, info_url + "rspec-mocks").
+                  to_return(
+                    status: 200,
+                    body: fixture("ruby", "rubygems-info-rspec-mocks")
+                  )
+                stub_request(:get, info_url + "rspec-support").
+                  to_return(
+                    status: 200,
+                    body: fixture("ruby", "rubygems-info-rspec-support")
+                  )
+
                 allow_any_instance_of(Dependabot::GitCommitChecker).
                   to receive(:branch_or_ref_in_release?).
                   and_return(false)
@@ -1239,6 +1252,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             rubygems_response = fixture("ruby", "rubygems_response.json")
             stub_request(:get, "https://rubygems.org/api/v1/gems/onfido.json").
               to_return(status: 200, body: rubygems_response)
+
+            info_url = "https://index.rubygems.org/info/"
+            stub_request(:get, info_url + "rspec-mocks").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-info-rspec-mocks")
+              )
+            stub_request(:get, info_url + "rspec-support").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-info-rspec-support")
+              )
+
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
