@@ -127,6 +127,13 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "with a call to read a version file" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with a bad specification" do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "bad_spec") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }

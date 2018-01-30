@@ -173,6 +173,29 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with a mix.exs that opens another file" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "1.2.1",
+          requirements: [
+            {
+              file: "mix.exs",
+              requirement: "== 1.2.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+    end
   end
 
   describe "#updated_requirements" do

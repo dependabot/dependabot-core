@@ -112,6 +112,16 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
             to include(%({:plug_cloudflare, "~> 1.3"}))
         end
       end
+
+      context "with a mix.exs that opens another file" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+
+        it "doesn't leave the temporary edits present" do
+          expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
+          expect(updated_mixfile_content).to include(%(File.read!("VERSION")))
+        end
+      end
     end
 
     describe "the updated lockfile" do
@@ -157,6 +167,18 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
           expect(updated_lockfile_content).to include %({:hex, :poison, "3)
+        end
+      end
+
+      context "with a mix.exs that opens another file" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+          expect(updated_lockfile_content).to include(
+            "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+          )
         end
       end
     end

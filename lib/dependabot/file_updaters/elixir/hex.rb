@@ -52,7 +52,7 @@ module Dependabot
         def updated_lockfile_content
           @latest_resolvable_version ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("mix.exs", updated_mixfile_content)
+              File.write("mix.exs", sanitize_mixfile(updated_mixfile_content))
               File.write("mix.lock", lockfile.content)
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
@@ -88,6 +88,12 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def sanitize_mixfile(content)
+          content.
+            gsub(/File\.read!\(.*?\)/, '"0.0.1"').
+            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
         end
 
         def mix_env

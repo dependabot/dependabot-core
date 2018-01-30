@@ -77,11 +77,16 @@ module Dependabot
         end
 
         def prepared_mixfile_content
+          content = relax_version(mixfile.content)
+          sanitize_mixfile(content)
+        end
+
+        def relax_version(content)
           old_requirement =
             dependency.requirements.find { |r| r.fetch(:file) == "mix.exs" }.
             fetch(:requirement)
 
-          return mixfile.content unless old_requirement
+          return content unless old_requirement
 
           new_requirement =
             dependency.version.nil? ? ">= 0" : ">= #{dependency.version}"
@@ -92,9 +97,15 @@ module Dependabot
               #{Regexp.escape(old_requirement)}
             /x
 
-          mixfile.content.gsub(requirement_line_regex) do |requirement_line|
+          content.gsub(requirement_line_regex) do |requirement_line|
             requirement_line.gsub(old_requirement, new_requirement)
           end
+        end
+
+        def sanitize_mixfile(content)
+          content.
+            gsub(/File\.read!\(.*?\)/, '"0.0.1"').
+            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
         end
 
         def mix_env
