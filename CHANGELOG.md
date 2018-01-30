@@ -1,3 +1,7 @@
+## v0.45.1, 30 January 2018
+
+- Elixir: Handle mix.exs files that load in a version file
+
 ## v0.45.0, 30 January 2018
 
 - Ruby: Include sub-dependencies in FileParser#parse result
