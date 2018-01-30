@@ -1,3 +1,7 @@
+## v0.44.20, 30 January 2018
+
+- PHP: Handle aliased requirements in UpdateChecker (update the real version)
+
 ## v0.44.19, 30 January 2018
 
 - Elixir: Perform hex install in pwd
