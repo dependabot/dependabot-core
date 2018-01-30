@@ -1,3 +1,7 @@
+## v0.45.0, 30 January 2018
+
+- Ruby: Include sub-dependencies in FileParser#parse result
+
 ## v0.44.20, 30 January 2018
 
 - PHP: Handle aliased requirements in UpdateChecker (update the real version)
