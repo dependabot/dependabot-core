@@ -1,8 +1,5 @@
 defmodule DependencyHelper do
   def main() do
-    # Give the calling process time to write to stdio
-    :timer.sleep(:timer.seconds(1))
-
     IO.read(:stdio, :all)
     |> Jason.decode!()
     |> run()
