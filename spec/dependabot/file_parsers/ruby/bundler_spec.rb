@@ -207,6 +207,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a dependency that only appears in the lockfile" do
+      let(:gemfile_content) { fixture("ruby", "gemfiles", "subdependency") }
+      let(:lockfile_content) do
+        fixture("ruby", "lockfiles", "subdependency.lock")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+      it "is included" do
+        expect(dependencies.map(&:name)).to include("i18n")
+      end
+    end
+
     context "with a dependency that doesn't appear in the lockfile" do
       let(:gemfile_content) { fixture("ruby", "gemfiles", "platform_windows") }
       let(:lockfile_content) do

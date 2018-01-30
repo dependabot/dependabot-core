@@ -43,6 +43,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   describe "#updated_requirements" do
     subject(:updated_requirements) { updater.updated_requirements }
 
+    context "when there were no requirements" do
+      let(:requirements) { [] }
+      it { is_expected.to eq([]) }
+    end
+
     context "for a Gemfile dependency" do
       subject { updated_requirements.find { |r| r[:file] == "Gemfile" } }
 

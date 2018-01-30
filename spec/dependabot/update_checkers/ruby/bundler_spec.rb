@@ -71,6 +71,24 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
+      context "that only appears in the lockfile" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "subdependency") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "subdependency.lock")
+        end
+        let(:requirements) { [] }
+        let(:dependency_name) { "i18n" }
+        let(:current_version) { "0.7.0.beta1" }
+
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response.json")
+          stub_request(:get, "https://rubygems.org/api/v1/gems/i18n.json").
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
+
       context "when the gem isn't on Rubygems" do
         before do
           stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
@@ -539,6 +557,35 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+
+      context "that only appears in the lockfile" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "subdependency") }
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "subdependency.lock")
+        end
+        let(:requirements) { [] }
+        let(:dependency_name) { "i18n" }
+        let(:current_version) { "0.7.0.beta1" }
+
+        before do
+          stub_request(:get, "https://index.rubygems.org/versions").
+            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+
+          stub_request(:get, "https://index.rubygems.org/info/ibandit").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-ibandit")
+            )
+
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-i18n")
+            )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("0.7.0")) }
+      end
 
       context "with a version conflict at the latest version" do
         let(:gemfile_body) do
