@@ -39,6 +39,7 @@ module Dependabot
 
             requirements.map do |req|
               next req unless req[:requirement].match?(/\d/)
+              next updated_alias(req) if req[:requirement].match?(ALIAS_REGEX)
               next req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
               if library?
@@ -52,6 +53,19 @@ module Dependabot
           private
 
           attr_reader :requirements, :latest_version, :latest_resolvable_version
+
+          def updated_alias(req)
+            req_string = req[:requirement]
+            real_version = req_string.split(/\sas\s/).first.strip
+
+            # If the version we're aliasing isn't a version then we don't know
+            # how to update it, so we just return the existing requirement.
+            return req unless version_class.correct?(real_version)
+
+            new_version_string = latest_resolvable_version.to_s
+            new_req = req_string.sub(real_version, new_version_string)
+            req.merge(requirement: new_req)
+          end
 
           def library?
             @library

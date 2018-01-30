@@ -68,12 +68,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         end
 
         context "and an alias was specified" do
-          let(:composer_json_req_string) { "mybranch as 1.2.*" }
-          its([:requirement]) { is_expected.to eq("1.5.*") }
+          let(:composer_json_req_string) { "mybranch as 1.2.x" }
+          its([:requirement]) { is_expected.to eq(composer_json_req_string) }
 
-          context "that is satisfied" do
-            let(:composer_json_req_string) { "mybranch as 1.*.*" }
-            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          context "that specifies a numeric version" do
+            let(:composer_json_req_string) { "1.2.0 as 1.0.0" }
+            its([:requirement]) { is_expected.to eq("1.5.0 as 1.0.0") }
           end
         end
 
