@@ -130,8 +130,20 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          raise unless error.message.start_with?("No matching version found")
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          handle_updater_error(error)
+        end
+
+        def handle_updater_error(error)
+          if error.message.start_with?("No matching version found")
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+          if error.message.include?("make sure you have the correct access")
+            dependency_url =
+              error.message.match(/ls-remote -h -t (?<url>.*?)/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          end
+          raise
         end
 
         def write_temporary_dependency_files
