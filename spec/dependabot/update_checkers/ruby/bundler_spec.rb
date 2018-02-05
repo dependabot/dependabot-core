@@ -81,12 +81,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:current_version) { "0.7.0.beta1" }
 
         before do
-          rubygems_response = fixture("ruby", "rubygems_response.json")
-          stub_request(:get, "https://rubygems.org/api/v1/gems/i18n.json").
+          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(:get, "https://rubygems.org/api/v1/versions/i18n.json").
             to_return(status: 200, body: rubygems_response)
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
       end
 
       context "when the gem isn't on Rubygems" do

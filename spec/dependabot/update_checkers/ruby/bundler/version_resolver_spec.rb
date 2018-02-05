@@ -80,6 +80,30 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         it { is_expected.to be_nil }
       end
 
+      context "with a prerelease version specified" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "prerelease_specified")
+        end
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0.rc1",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(
+            :get,
+            "https://rubygems.org/api/v1/versions/business.json"
+          ).to_return(status: 200, body: rubygems_response)
+        end
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
+      end
+
       context "with a Ruby version specified" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }

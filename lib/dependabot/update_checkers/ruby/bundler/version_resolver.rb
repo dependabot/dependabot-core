@@ -15,6 +15,7 @@ module Dependabot
     module Ruby
       class Bundler
         class VersionResolver
+          RUBYGEMS_API = "https://rubygems.org/api/v1/"
           GIT_REF_REGEX =
             /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
 
@@ -47,6 +48,10 @@ module Dependabot
           end
 
           def latest_rubygems_version_details
+            return latest_rubygems_version_details_with_pre if wants_prerelease?
+
+            # Rubygems excludes pre-releases from the `Gems.info` response,
+            # so no need to filter them out.
             response =
               Excon.get(
                 "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
@@ -55,13 +60,30 @@ module Dependabot
               )
 
             latest_info = JSON.parse(response.body)
-
             return nil if latest_info["version"].nil?
 
-            # Rubygems excludes pre-releases from the `Gems.info` response,
-            # so no need to filter them out.
             {
               version: Gem::Version.new(latest_info["version"]),
+              sha: latest_info["sha"]
+            }
+          rescue JSON::ParserError
+            nil
+          end
+
+          def latest_rubygems_version_details_with_pre
+            response =
+              Excon.get(
+                RUBYGEMS_API + "versions/#{dependency.name}.json",
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+            latest_info =
+              JSON.parse(response.body).
+              sort_by { |d| Gem::Version.new(d["number"]) }.
+              last
+
+            {
+              version: Gem::Version.new(latest_info["number"]),
               sha: latest_info["sha"]
             }
           rescue JSON::ParserError
@@ -76,7 +98,7 @@ module Dependabot
                   fetcher.
                     specs_with_retry([dependency.name], dependency_source).
                     search_all(dependency.name).
-                    reject { |s| s.version.prerelease? }
+                    reject { |s| s.version.prerelease? && !wants_prerelease? }
                 end.
                 sort_by(&:version).last
               return nil if spec.nil?
@@ -114,6 +136,18 @@ module Dependabot
             end
           rescue SharedHelpers::ChildProcessFailed => error
             handle_bundler_errors(error)
+          end
+
+          def wants_prerelease?
+            current_version = dependency.version
+            if current_version && Gem::Version.correct?(current_version) &&
+               Gem::Version.new(current_version).prerelease?
+              return true
+            end
+
+            dependency.requirements.any? do |req|
+              req[:requirement].match?(/[a-z]/i)
+            end
           end
 
           def fetch_latest_resolvable_version_details
