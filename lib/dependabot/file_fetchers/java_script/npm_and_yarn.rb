@@ -23,8 +23,8 @@ module Dependabot
           fetched_files << package_lock if package_lock
           fetched_files << yarn_lock if yarn_lock
           fetched_files << npmrc if npmrc
-          fetched_files += path_dependencies
           fetched_files += workspace_package_jsons
+          fetched_files += path_dependencies
           fetched_files
         end
 
@@ -57,7 +57,8 @@ module Dependabot
               file = File.join(path, "package.json")
 
               begin
-                package_json_files << fetch_file_from_github(file)
+                package_json_files <<
+                  fetch_file_from_github(file, type: "path_dependency")
               rescue Dependabot::DependencyFileNotFound
                 unfetchable_deps << name
               end

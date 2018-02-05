@@ -95,6 +95,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
 
     it "fetches the package.json" do
       expect(file_fetcher_instance.files.map(&:name)).to eq(["package.json"])
+      expect(file_fetcher_instance.files.first.type).to eq("file")
     end
   end
 
@@ -228,6 +229,9 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
           to include("deps/etag/package.json")
+        path_file = file_fetcher_instance.files.
+                    find { |f| f.name == "deps/etag/package.json" }
+        expect(path_file.type).to eq("path_dependency")
       end
     end
 
