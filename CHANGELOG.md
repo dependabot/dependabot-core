@@ -1,3 +1,9 @@
+## v0.45.2, 5 February 2018
+
+- Ruby: Update to newer pre-release versions
+- JS: Raise GitDependenciesNotReachable error for git dependencies we don't
+  have access to
+
 ## v0.45.1, 30 January 2018
 
 - Elixir: Handle mix.exs files that load in a version file
