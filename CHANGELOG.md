@@ -1,3 +1,7 @@
+## v0.45.4, 6 February 2018
+
+- JS: Handle unreachable git dependencies better (and spec it!)
+
 ## v0.45.3, 5 February 2018
 
 - JS: Ignore path dependency package.json files when parsing
