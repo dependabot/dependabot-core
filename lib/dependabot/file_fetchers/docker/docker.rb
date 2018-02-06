@@ -23,7 +23,7 @@ module Dependabot
         end
 
         def dockerfile
-          @dockerfile ||= fetch_file_from_github("Dockerfile")
+          @dockerfile ||= fetch_file_from_host("Dockerfile")
         end
       end
     end

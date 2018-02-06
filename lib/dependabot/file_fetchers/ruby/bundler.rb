@@ -53,7 +53,7 @@ module Dependabot
             else
               # This will raise if there is no Gemfile, which is what we want
               # (since there is no gemspec)
-              fetch_file_from_github("Gemfile")
+              fetch_file_from_host("Gemfile")
             end
         end
 
@@ -64,7 +64,7 @@ module Dependabot
         def gemspec
           gemspec = repo_contents.find { |f| f.name.end_with?(".gemspec") }
           return unless gemspec
-          @gemspec ||= fetch_file_from_github(gemspec.name)
+          @gemspec ||= fetch_file_from_host(gemspec.name)
         rescue Octokit::NotFound
           nil
         end
@@ -83,7 +83,7 @@ module Dependabot
 
           gemspec_paths.each do |path|
             begin
-              gemspec_files << fetch_file_from_github(path)
+              gemspec_files << fetch_file_from_host(path)
             rescue Dependabot::DependencyFileNotFound
               unfetchable_gems << path.split("/").last.gsub(".gemspec", "")
             end
@@ -125,7 +125,7 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_github(path)
+            fetched_file = fetch_file_from_host(path)
             grandchild_gemfiles = fetch_child_gemfiles(
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]

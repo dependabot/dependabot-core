@@ -23,7 +23,7 @@ module Dependabot
         end
 
         def pom
-          @pom ||= fetch_file_from_github("pom.xml")
+          @pom ||= fetch_file_from_host("pom.xml")
         end
       end
     end

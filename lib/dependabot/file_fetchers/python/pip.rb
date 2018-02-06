@@ -55,7 +55,7 @@ module Dependabot
             select { |f| f.type == "file" }.
             select { |f| f.name.match?(/requirements/x) }.
             select { |f| f.name.end_with?(".txt") }.
-            each { |f| @requirement_files << fetch_file_from_github(f.name) }
+            each { |f| @requirement_files << fetch_file_from_host(f.name) }
 
           @requirement_files += requirements_directory_files
 
@@ -76,11 +76,14 @@ module Dependabot
 
           return [] unless requirements_directory
 
-          github_client.
-            contents(repo, path: requirements_directory.path, ref: commit).
+          dir = directory.gsub(%r{(^/|/$)}, "")
+          relative_requirements_directory =
+            requirements_directory.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
+
+          repo_contents(dir: relative_requirements_directory).
             select { |f| f.type == "file" }.
             select { |f| f.name.end_with?(".txt") }.
-            map { |f| fetch_file_from_github("requirements/#{f.name}") }
+            map { |f| fetch_file_from_host("requirements/#{f.name}") }
         end
 
         def child_requirement_files
@@ -104,7 +107,7 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_github(path)
+            fetched_file = fetch_file_from_host(path)
             grandchild_requirement_files = fetch_child_requirement_files(
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]
@@ -120,7 +123,7 @@ module Dependabot
             req_file.content.scan(/^-c\s?(?<path>\..*)/).flatten
           end.flatten.uniq
 
-          constraints_paths.map { |path| fetch_file_from_github(path) }
+          constraints_paths.map { |path| fetch_file_from_host(path) }
         end
 
         def path_setup_files
@@ -131,7 +134,7 @@ module Dependabot
             begin
               path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
               next if path == "setup.py" && setup_file
-              path_setup_files << fetch_file_from_github(path)
+              path_setup_files << fetch_file_from_host(path)
             rescue Dependabot::DependencyFileNotFound
               unfetchable_files << path
             end

@@ -49,7 +49,7 @@ implement the following methods:
 |----------------------------------|-----------------------------------------------------------------------------------------------|
 | `.required_files_in?`            | See Public API section. |
 | `.required_files_message`        | See Public API section. |
-| `#fetch_files`                   | Private method to fetch the required files from GitHub. For each required file, you can use the `fetch_file_from_github(filename)` method from `Dependabot::FileFetchers::Base` to do the fetching. |
+| `#fetch_files`                   | Private method to fetch the required files from GitHub. For each required file, you can use the `fetch_file_from_host(filename)` method from `Dependabot::FileFetchers::Base` to do the fetching. |
 
 To ensure the above are implemented, you should include
 `it_behaves_like "a dependency file fetcher"` in your specs for the new file

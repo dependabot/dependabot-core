@@ -37,33 +37,52 @@ module Dependabot
       end
 
       def commit
+        branch = target_branch || default_branch_for_repo
+
         @commit ||=
-          begin
-            branch = target_branch ||
-                     github_client.repository(repo).default_branch
+          case host
+          when "github"
             github_client.ref(repo, "heads/#{branch}").object.sha
+          else raise "Unsupported host '#{host}'."
           end
       end
 
       private
 
+      def default_branch_for_repo
+        @default_branch ||=
+          case host
+          when "github" then github_client.repository(repo).default_branch
+          else raise "Unsupported host '#{host}'."
+          end
+      end
+
       def fetch_file_if_present(filename)
         dir = File.dirname(filename)
         basename = File.basename(filename)
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
-        fetch_file_from_github(filename)
+        fetch_file_from_host(filename)
       rescue Octokit::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      def fetch_file_from_github(filename, type: "file")
+      def fetch_file_from_host(filename, type: "file")
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
-        content = github_client.contents(repo, path: path, ref: commit).content
+
+        # Currently only GitHub is supported. In future, supporting other
+        # hosting providers would be straightforward.
+        content =
+          case host
+          when "github"
+            tmp = github_client.contents(repo, path: path, ref: commit).content
+            Base64.decode64(tmp).force_encoding("UTF-8").encode
+          else raise "Unsupported host '#{host}'."
+          end
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
-          content: Base64.decode64(content).force_encoding("UTF-8").encode,
+          content: content,
           directory: directory,
           type: type
         )
@@ -72,12 +91,15 @@ module Dependabot
       end
 
       def repo_contents(dir: ".")
+        path = Pathname.new(File.join(directory, dir)).cleanpath.to_path
+
         @repo_contents ||= {}
-        @repo_contents[dir] ||= github_client.contents(
-          repo,
-          path: Pathname.new(File.join(directory, dir)).cleanpath.to_path,
-          ref: commit
-        )
+        @repo_contents[dir] ||=
+          case host
+          when "github"
+            github_client.contents(repo, path: path, ref: commit)
+          else raise "Unsupported host '#{host}'."
+          end
       end
 
       # One day this class, and all others, will be provider agnostic. For

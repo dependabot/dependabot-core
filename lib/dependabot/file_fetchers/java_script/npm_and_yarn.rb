@@ -29,7 +29,7 @@ module Dependabot
         end
 
         def package_json
-          @package_json ||= fetch_file_from_github("package.json")
+          @package_json ||= fetch_file_from_host("package.json")
         end
 
         def package_lock
@@ -58,7 +58,7 @@ module Dependabot
 
               begin
                 package_json_files <<
-                  fetch_file_from_github(file, type: "path_dependency")
+                  fetch_file_from_host(file, type: "path_dependency")
               rescue Dependabot::DependencyFileNotFound
                 unfetchable_deps << name
               end
@@ -87,7 +87,7 @@ module Dependabot
               file = File.join(workspace, "package.json")
 
               begin
-                package_json_files << fetch_file_from_github(file)
+                package_json_files << fetch_file_from_host(file)
               rescue Dependabot::DependencyFileNotFound
                 unfetchable_deps << file
               end
@@ -103,9 +103,7 @@ module Dependabot
 
         def expand_workspaces(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
-          path = File.join(dir, path.gsub(/\*$/, ""))
-          path = Pathname.new(path).cleanpath.to_path
-          github_client.contents(repo, path: path, ref: commit).
+          repo_contents(dir: path.gsub(/\*$/, "")).
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
         end

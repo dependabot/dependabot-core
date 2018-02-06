@@ -30,7 +30,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       private
 
       def fetch_files
-        [fetch_file_from_github("requirements.txt")]
+        [fetch_file_from_host("requirements.txt")]
       end
     end
   end
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:child_class) do
           Class.new(described_class) do
             def fetch_files
-              [fetch_file_from_github("./some/file")]
+              [fetch_file_from_host("./some/file")]
             end
           end
         end
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:child_class) do
           Class.new(described_class) do
             def fetch_files
-              [fetch_file_from_github("../some/file")]
+              [fetch_file_from_host("../some/file")]
             end
           end
         end

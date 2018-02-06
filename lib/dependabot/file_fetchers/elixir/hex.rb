@@ -24,11 +24,11 @@ module Dependabot
         end
 
         def mixfile
-          @mixfile ||= fetch_file_from_github("mix.exs")
+          @mixfile ||= fetch_file_from_host("mix.exs")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_from_github("mix.lock")
+          @lockfile ||= fetch_file_from_host("mix.lock")
         end
       end
     end

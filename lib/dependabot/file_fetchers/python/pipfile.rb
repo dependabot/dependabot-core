@@ -24,11 +24,11 @@ module Dependabot
         end
 
         def pipfile
-          @pipfile ||= fetch_file_from_github("Pipfile")
+          @pipfile ||= fetch_file_from_host("Pipfile")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_from_github("Pipfile.lock")
+          @lockfile ||= fetch_file_from_host("Pipfile.lock")
         end
       end
     end

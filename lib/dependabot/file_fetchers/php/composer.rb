@@ -24,11 +24,11 @@ module Dependabot
         end
 
         def composer_json
-          @composer_json ||= fetch_file_from_github("composer.json")
+          @composer_json ||= fetch_file_from_host("composer.json")
         end
 
         def composer_lock
-          @composer_lock ||= fetch_file_from_github("composer.lock")
+          @composer_lock ||= fetch_file_from_host("composer.lock")
         rescue Dependabot::DependencyFileNotFound
           nil
         end

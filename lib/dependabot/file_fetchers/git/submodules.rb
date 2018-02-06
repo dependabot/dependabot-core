@@ -26,11 +26,11 @@ module Dependabot
         end
 
         def gitmodules_file
-          @gitmodules_file ||= fetch_file_from_github(".gitmodules")
+          @gitmodules_file ||= fetch_file_from_host(".gitmodules")
         end
 
         def submodule_refs
-          submodule_paths.map { |path| fetch_submodule_ref_from_github(path) }
+          submodule_paths.map { |path| fetch_submodule_ref_from_host(path) }
         end
 
         def submodule_paths
@@ -40,10 +40,15 @@ module Dependabot
           end
         end
 
-        def fetch_submodule_ref_from_github(submodule_path)
+        def fetch_submodule_ref_from_host(submodule_path)
           path = Pathname.new(File.join(directory, submodule_path)).
                  cleanpath.to_path
-          sha = github_client.contents(repo, path: path, ref: commit).sha
+          sha =
+            case host
+            when "github"
+              github_client.contents(repo, path: path, ref: commit).sha
+            else raise "Unsupported host '#{host}'."
+            end
 
           DependencyFile.new(
             name: Pathname.new(submodule_path).cleanpath.to_path,
