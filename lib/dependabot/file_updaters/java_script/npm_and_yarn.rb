@@ -42,6 +42,8 @@ module Dependabot
 
         private
 
+        UNREACHABLE_GIT = /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/
+
         def dependency
           # For now, we'll only ever be updating a single dependency for JS
           dependencies.first
@@ -139,7 +141,7 @@ module Dependabot
           end
           if error.message.include?("make sure you have the correct access")
             dependency_url =
-              error.message.match(/ls-remote -h -t (?<url>.*?)/).
+              error.message.match(UNREACHABLE_GIT).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end

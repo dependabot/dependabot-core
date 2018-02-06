@@ -102,6 +102,59 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    context "with a git dependency that can't be cloned" do
+      let(:package_json_body) do
+        fixture(
+          "javascript",
+          "package_files",
+          "git_dependency_unreachable.json"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "1.3.1",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.3.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.2.1",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      context "with a package-json.lock" do
+        let(:files) { [package_json, package_lock] }
+        let(:package_lock_body) do
+          fixture(
+            "javascript",
+            "npm_lockfiles",
+            "git_dependency_unreachable.json"
+          )
+        end
+
+        it "raises a helpful error" do
+          expect { updated_files }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+              expect(error.dependency_urls).
+                to eq(["https://github.com/greysteil/is-number.git"])
+            end
+        end
+      end
+    end
+
     context "when the lockfile doesn't update (due to a Yarn bug)" do
       let(:files) { [package_json, yarn_lock] }
       let(:package_json_body) do
