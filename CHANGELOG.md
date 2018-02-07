@@ -1,3 +1,9 @@
+## v0.45.5, 7 February 2018
+
+- Add GitLab support to FileFetcher base methods
+- Support GitLab in submodules FileFetcher. All FileFetchers therefor now
+  support GitLab
+
 ## v0.45.4, 6 February 2018
 
 - JS: Handle unreachable git dependencies better (and spec it!)
