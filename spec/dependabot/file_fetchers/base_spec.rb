@@ -126,17 +126,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
-    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
-    before do
-      stub_request(:get, url + "requirements.txt?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 200,
-                  body: fixture("github", "gemfile_content.json"),
-                  headers: { "content-type" => "application/json" })
-    end
 
     context "with a GitHub source" do
       its(:length) { is_expected.to eq(1) }
+
+      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: fixture("github", "gemfile_content.json"),
+                    headers: { "content-type" => "application/json" })
+      end
 
       describe "the file" do
         subject { files.find { |file| file.name == "requirements.txt" } }
@@ -156,6 +157,64 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           its(:content) { is_expected.to eq("öäöä") }
+        end
+      end
+
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(
+            source: source,
+            credentials: credentials,
+            directory: directory
+          )
+        end
+
+        context "that ends in a slash" do
+          let(:directory) { "app/" }
+          let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
+        end
+
+        context "that begins with a slash" do
+          let(:directory) { "/app" }
+          let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
+        end
+
+        context "that includes a slash" do
+          let(:directory) { "a/pp" }
+          let(:url) { "https://api.github.com/repos/#{repo}/contents/a/pp/" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
+        end
+      end
+
+      context "when a dependency file can't be found" do
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+        end
+
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_name).to eq("requirements.txt")
+            end
         end
       end
     end
@@ -195,47 +254,65 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to eq("öäöä") }
         end
       end
-    end
 
-    context "with a directory specified" do
-      let(:file_fetcher_instance) do
-        child_class.new(
-          source: source,
-          credentials: credentials,
-          directory: directory
-        )
-      end
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(
+            source: source,
+            credentials: credentials,
+            directory: directory
+          )
+        end
 
-      context "that ends in a slash" do
-        let(:directory) { "app/" }
-        let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+        context "that ends in a slash" do
+          let(:directory) { "app/" }
+          let(:url) { project_url + "/repository/files/app%2F" }
 
-        it "hits the right GitHub URL" do
-          files
-          expect(WebMock).
-            to have_requested(:get, url + "requirements.txt?ref=sha")
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
+        end
+
+        context "that begins with a slash" do
+          let(:directory) { "/app" }
+          let(:url) { project_url + "/repository/files/app%2F" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
+        end
+
+        context "that includes a slash" do
+          let(:directory) { "a/pp" }
+          let(:url) { project_url + "/repository/files/a%2Fpp%2F" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
         end
       end
 
-      context "that begins with a slash" do
-        let(:directory) { "/app" }
-        let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
-
-        it "hits the right GitHub URL" do
-          files
-          expect(WebMock).
-            to have_requested(:get, url + "requirements.txt?ref=sha")
+      context "when a dependency file can't be found" do
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha").
+            to_return(
+              status: 404,
+              body: fixture("gitlab", "not_found.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
-      end
 
-      context "that includes a slash" do
-        let(:directory) { "a/pp" }
-        let(:url) { "https://api.github.com/repos/#{repo}/contents/a/pp/" }
-
-        it "hits the right GitHub URL" do
-          files
-          expect(WebMock).
-            to have_requested(:get, url + "requirements.txt?ref=sha")
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_name).to eq("requirements.txt")
+            end
         end
       end
     end
@@ -295,21 +372,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
           files
           expect(WebMock).to have_requested(:get, file_url)
         end
-      end
-    end
-
-    context "when a dependency file can't be found" do
-      before do
-        stub_request(:get, url + "requirements.txt?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-      end
-
-      it "raises a custom error" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_name).to eq("requirements.txt")
-          end
       end
     end
   end
