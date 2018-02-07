@@ -40,50 +40,94 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#commit" do
     subject(:commit) { file_fetcher_instance.commit }
-    let(:url) { "https://api.github.com/repos/#{repo}" }
 
-    before do
-      stub_request(:get, url).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 200,
-                  body: fixture("github", "bump_repo.json"),
-                  headers: { "content-type" => "application/json" })
-      stub_request(:get, url + "/git/refs/heads/master").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 200,
-                  body: fixture("github", "ref.json"),
-                  headers: { "content-type" => "application/json" })
-    end
-
-    it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
-
-    context "with a target branch" do
-      let(:file_fetcher_instance) do
-        child_class.new(
-          source: source,
-          credentials: credentials,
-          target_branch: "my_branch"
-        )
-      end
+    context "with a GitHub source" do
+      let(:url) { "https://api.github.com/repos/#{repo}" }
 
       before do
-        stub_request(:get, url + "/git/refs/heads/my_branch").
+        stub_request(:get, url).
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
-                    body: fixture("github", "ref_my_branch.json"),
+                    body: fixture("github", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, url + "/git/refs/heads/master").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: fixture("github", "ref.json"),
                     headers: { "content-type" => "application/json" })
       end
 
-      it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
+      it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+
+      context "with a target branch" do
+        let(:file_fetcher_instance) do
+          child_class.new(
+            source: source,
+            credentials: credentials,
+            target_branch: "my_branch"
+          )
+        end
+
+        before do
+          stub_request(:get, url + "/git/refs/heads/my_branch").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 200,
+                      body: fixture("github", "ref_my_branch.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
+      end
+    end
+
+    context "with a GitLab source" do
+      let(:source) { { host: "gitlab", repo: repo } }
+      let(:base_url) { "https://gitlab.com/api/v4" }
+      let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
+      let(:branch_url) { project_url + "/repository/branches/master" }
+
+      before do
+        stub_request(:get, project_url).
+          to_return(status: 200,
+                    body: fixture("gitlab", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url).
+          to_return(status: 200,
+                    body: fixture("gitlab", "master_branch.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      it { is_expected.to eq("f7dd067490fe57505f7226c3b54d3127d2f7fd46") }
+
+      context "with a target branch" do
+        let(:file_fetcher_instance) do
+          child_class.new(
+            source: source,
+            credentials: credentials,
+            target_branch: "my_branch"
+          )
+        end
+        let(:branch_url) { project_url + "/repository/branches/my_branch" }
+
+        before do
+          stub_request(:get, branch_url).
+            to_return(status: 200,
+                      body: fixture("gitlab", "my_branch.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to eq("b7dd067490fe57505f7226c3b54d3127d2f7fd41") }
+      end
     end
   end
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
-    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    end
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    before do
       stub_request(:get, url + "requirements.txt?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 200,
@@ -91,24 +135,65 @@ RSpec.describe Dependabot::FileFetchers::Base do
                   headers: { "content-type" => "application/json" })
     end
 
-    its(:length) { is_expected.to eq(1) }
+    context "with a GitHub source" do
+      its(:length) { is_expected.to eq(1) }
 
-    describe "the file" do
-      subject { files.find { |file| file.name == "requirements.txt" } }
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
 
-      it { is_expected.to be_a(Dependabot::DependencyFile) }
-      its(:content) { is_expected.to include("octokit") }
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("octokit") }
 
-      context "when there are non-ASCII characters" do
-        before do
-          stub_request(:get, url + "requirements.txt?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 200,
-                      body: fixture("github", "gemfile_content_non_ascii.json"),
-                      headers: { "content-type" => "application/json" })
+        context "when there are non-ASCII characters" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "gemfile_content_non_ascii.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          its(:content) { is_expected.to eq("öäöä") }
         end
+      end
+    end
 
-        its(:content) { is_expected.to eq("öäöä") }
+    context "with a GitLab source" do
+      let(:source) { { host: "gitlab", repo: repo } }
+      let(:base_url) { "https://gitlab.com/api/v4" }
+      let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
+
+      let(:url) { project_url + "/repository/files/" }
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha").
+          to_return(status: 200,
+                    body: fixture("gitlab", "gemfile_content.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
+
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("octokit") }
+
+        context "when there are non-ASCII characters" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              to_return(
+                status: 200,
+                body: fixture("gitlab", "gemfile_content_non_ascii.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          its(:content) { is_expected.to eq("öäöä") }
+        end
       end
     end
 
@@ -132,7 +217,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
-      context "that begins in a slash" do
+      context "that begins with a slash" do
         let(:directory) { "/app" }
         let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
 

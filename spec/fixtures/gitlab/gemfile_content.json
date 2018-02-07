@@ -1,0 +1,10 @@
+{
+    "blob_id": "0eba9dff767611060181e0423a1de2941d27efc8",
+    "commit_id": "eb38397cb6ae669219e6bc18ad19981fff18ea29",
+    "content": "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCmdlbSAic2hvcnl1a2Vu\nIiwgIn4+IDIuMC4wIgpnZW0gImdlbW5hc2l1bS1wYXJzZXIiLCAifj4gMC4x\nLjkiCgpncm91cCA6ZGV2ZWxvcG1lbnQgZG8KICBnZW0gInJzcGVjIiwgIn4+\nIDMuMy4wIgogIGdlbSAicnNwZWMtaXRzIiwgIn4+IDEuMi4wIgogIGdlbSAi\nd2VibW9jayIsICJ+PiAxLjIxLjAiCiAgZ2VtICJvY3Rva2l0IiwgIn4+IDQu\nMS4xIgogIGdlbSAicHJpdXMiLCAifj4gMS4wLjAiCiAgZ2VtICJkb3RlbnYi\nLCByZXF1aXJlOiBmYWxzZQplbmQK\n",
+    "encoding": "base64",
+    "file_name": "Gemfile",
+    "file_path": "Gemfile",
+    "ref": "master",
+    "size": "19"
+}

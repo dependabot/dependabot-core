@@ -3,6 +3,7 @@
 require "dependabot/dependency_file"
 require "dependabot/errors"
 require "octokit"
+require "gitlab"
 
 module Dependabot
   module FileFetchers
@@ -43,6 +44,8 @@ module Dependabot
           case host
           when "github"
             github_client.ref(repo, "heads/#{branch}").object.sha
+          when "gitlab"
+            gitlab_client.branch(repo, branch).commit.id
           else raise "Unsupported host '#{host}'."
           end
       end
@@ -53,6 +56,7 @@ module Dependabot
         @default_branch ||=
           case host
           when "github" then github_client.repository(repo).default_branch
+          when "gitlab" then gitlab_client.project(repo).default_branch
           else raise "Unsupported host '#{host}'."
           end
       end
@@ -62,7 +66,7 @@ module Dependabot
         basename = File.basename(filename)
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
         fetch_file_from_host(filename)
-      rescue Octokit::NotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -70,23 +74,13 @@ module Dependabot
       def fetch_file_from_host(filename, type: "file")
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
 
-        # Currently only GitHub is supported. In future, supporting other
-        # hosting providers would be straightforward.
-        content =
-          case host
-          when "github"
-            tmp = github_client.contents(repo, path: path, ref: commit).content
-            Base64.decode64(tmp).force_encoding("UTF-8").encode
-          else raise "Unsupported host '#{host}'."
-          end
-
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
-          content: content,
+          content: fetch_file_content(path),
           directory: directory,
           type: type
         )
-      rescue Octokit::NotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -97,13 +91,38 @@ module Dependabot
         @repo_contents[dir] ||=
           case host
           when "github"
-            github_client.contents(repo, path: path, ref: commit)
+            github_client.contents(repo, path: path, ref: commit).map do |file|
+              OpenStruct.new(name: file.name, path: file.path, type: file.type)
+            end
+          when "gitlab"
+            gitlab_client.repo_tree(
+              repo,
+              path: path,
+              ref_name: commit
+            ).map do |file|
+              OpenStruct.new(
+                name: file.name,
+                path: file.path,
+                type: file.type == "blob" ? "file" : file.type
+              )
+            end
           else raise "Unsupported host '#{host}'."
           end
       end
 
-      # One day this class, and all others, will be provider agnostic. For
-      # now it's fine that it only supports GitHub.
+      def fetch_file_content(path)
+        case host
+        when "github"
+          tmp = github_client.contents(repo, path: path, ref: commit).content
+          Base64.decode64(tmp).force_encoding("UTF-8").encode
+        when "gitlab"
+          path = path.gsub(%r{^/*}, "")
+          tmp = gitlab_client.get_file(repo, path, commit).content
+          Base64.decode64(tmp).force_encoding("UTF-8").encode
+        else raise "Unsupported host '#{host}'."
+        end
+      end
+
       def github_client
         access_token =
           credentials.
@@ -111,6 +130,19 @@ module Dependabot
           fetch("password")
 
         @github_client ||= Octokit::Client.new(access_token: access_token)
+      end
+
+      def gitlab_client
+        access_token =
+          credentials.
+          find { |cred| cred["host"] == "gitlab.com" }&.
+          fetch("password")
+
+        @gitlab_client ||=
+          Gitlab.client(
+            endpoint: "https://gitlab.com/api/v4",
+            private_token: access_token || ""
+          )
       end
     end
   end
