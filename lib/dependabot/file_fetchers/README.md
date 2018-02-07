@@ -35,7 +35,7 @@ unless fetcher_class.required_files_in?(filenames)
   raise fetcher_class.required_files_message
 end
 
-fetcher = fetcher_class.new(repo: target_repo_name, github_client: client)
+fetcher = fetcher_class.new(repo: target_repo_name, credentials: [])
 
 puts "Fetched #{fetcher.files.map(&:name)}, at commit SHA-1 '#{fetcher.commit}'"
 ```

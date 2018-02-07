@@ -47,6 +47,9 @@ module Dependabot
             case host
             when "github"
               github_client.contents(repo, path: path, ref: commit).sha
+            when "gitlab"
+              tmp_path = path.gsub(%r{^/*}, "")
+              gitlab_client.get_file(repo, tmp_path, commit).blob_id
             else raise "Unsupported host '#{host}'."
             end
 
@@ -56,7 +59,7 @@ module Dependabot
             directory: directory,
             type: "submodule"
           )
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound, Gitlab::Error::NotFound
           raise Dependabot::DependencyFileNotFound, path
         end
       end
