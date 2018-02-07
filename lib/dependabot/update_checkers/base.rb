@@ -21,21 +21,22 @@ module Dependabot
         end
       end
 
-      def can_update?(full_unlock: false)
+      def can_update?(unlock_level: :own_requirement)
         if dependency.appears_in_lockfile?
-          version_can_update?(full_unlock: full_unlock)
+          version_can_update?(unlock_level: unlock_level)
         else
           # TODO: Handle full unlock updates for requirement files
           requirements_can_update?
         end
       end
 
-      def updated_dependencies(full_unlock: false)
-        return [] unless can_update?(full_unlock: full_unlock)
+      def updated_dependencies(unlock_level: :own_requirement)
+        return [] unless can_update?(unlock_level: unlock_level)
 
-        if full_unlock
+        case unlock_level
+        when :all_requirements
           updated_dependencies_after_full_unlock
-        else
+        when :own_requirement
           [
             Dependency.new(
               name: dependency.name,
@@ -82,16 +83,15 @@ module Dependabot
         numeric_version_up_to_date?
       end
 
-      def version_can_update?(full_unlock: false)
+      def version_can_update?(unlock_level: :own_requirement)
         if existing_version_is_sha1?
-          return sha1_version_can_update?(full_unlock: full_unlock)
+          return sha1_version_can_update?(unlock_level: unlock_level)
         end
 
-        numeric_version_can_update?(full_unlock: full_unlock)
+        numeric_version_can_update?(unlock_level: unlock_level)
       end
 
       def existing_version_is_sha1?
-        # 40 characters in the set [0123456789abcdef]
         dependency.version.match?(/^[0-9a-f]{40}$/)
       end
 
@@ -99,13 +99,17 @@ module Dependabot
         latest_version && latest_version == dependency.version
       end
 
-      def sha1_version_can_update?(full_unlock: false)
-        # All we can do with SHA-1 hashes is check for presence and equality
+      def sha1_version_can_update?(unlock_level: :own_requirement)
         return false if sha1_version_up_to_date?
 
-        return latest_version_resolvable_with_full_unlock? if full_unlock
-        return false if latest_resolvable_version.nil?
-        latest_resolvable_version != dependency.version
+        case unlock_level
+        when :all_requirements
+          latest_version_resolvable_with_full_unlock?
+        when :own_requirement
+          # All we can do with SHA-1 hashes is check for presence and equality
+          return false if latest_resolvable_version.nil?
+          latest_resolvable_version != dependency.version
+        end
       end
 
       def numeric_version_up_to_date?
@@ -113,14 +117,16 @@ module Dependabot
         latest_version <= version_class.new(dependency.version)
       end
 
-      def numeric_version_can_update?(full_unlock: false)
-        # Check if we're up-to-date with the latest version.
-        # Saves doing resolution if so.
+      def numeric_version_can_update?(unlock_level: :own_requirement)
         return false if numeric_version_up_to_date?
 
-        return latest_version_resolvable_with_full_unlock? if full_unlock
-        return false if latest_resolvable_version.nil?
-        latest_resolvable_version > version_class.new(dependency.version)
+        case unlock_level
+        when :all_requirements
+          latest_version_resolvable_with_full_unlock?
+        when :own_requirement
+          return false if latest_resolvable_version.nil?
+          latest_resolvable_version > version_class.new(dependency.version)
+        end
       end
 
       def requirements_up_to_date?

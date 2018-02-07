@@ -165,7 +165,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     subject(:can_update) { updater_instance.can_update? }
 
     context "with full_unlock" do
-      subject(:can_update) { updater_instance.can_update?(full_unlock: true) }
+      subject(:can_update) do
+        updater_instance.can_update?(unlock_level: :all_requirements)
+      end
 
       context "when the dependency is up-to-date" do
         let(:latest_version) { Gem::Version.new("1.5.0") }
