@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ################################################################################
-# For more details on NPM version constraints, see:                            #
+# For more details on npm version constraints, see:                            #
 # https://docs.npmjs.com/misc/semver                                           #
 ################################################################################
 

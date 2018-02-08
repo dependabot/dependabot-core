@@ -129,71 +129,14 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            requirement_string = requirement_string.gsub(/v(?=\d)/, "")
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  if r_string.start_with?("*")
-                    Composer::Requirement.new(">= 0")
-                  elsif r_string.include?("*")
-                    ruby_wildcard_range(r_string)
-                  elsif r_string.start_with?("~")
-                    ruby_tilde_range(r_string)
-                  elsif r_string.start_with?("^")
-                    ruby_caret_range(r_string)
-                  elsif r_string.match?(/\s+-\s+/)
-                    ruby_hyphen_range(r_string)
-                  else
-                    Composer::Requirement.new(r_string)
-                  end
+                  Composer::Requirement.new(r_string)
                 end
 
               Composer::Requirement.new(ruby_requirements.join(",").split(","))
             end
-          end
-
-          def ruby_wildcard_range(req_string)
-            version =
-              req_string.gsub(/^~/, "").gsub(/(?:\.|^)\*/, "")
-            Composer::Requirement.new("~> #{version}.0")
-          end
-
-          def ruby_tilde_range(req_string)
-            version = req_string.gsub(/^~/, "")
-            Composer::Requirement.new("~> #{version}")
-          end
-
-          def ruby_hyphen_range(req_string)
-            req_string = req_string
-            lower_bound, upper_bound = req_string.split(/\s+-\s+/)
-            if upper_bound.split(".").count < 3
-              upper_bound_parts = upper_bound.split(".")
-              upper_bound_parts[-1] = (upper_bound_parts[-1].to_i + 1).to_s
-              upper_bound = upper_bound_parts.join(".")
-
-              Composer::Requirement.new(">= #{lower_bound}", "< #{upper_bound}")
-            else
-              Composer::Requirement.new(
-                ">= #{lower_bound}",
-                "<= #{upper_bound}"
-              )
-            end
-          end
-
-          def ruby_caret_range(req_string)
-            version = req_string.gsub(/^\^/, "")
-            parts = version.split(".")
-            first_non_zero = parts.find { |d| d != "0" }
-            first_non_zero_index =
-              first_non_zero ? parts.index(first_non_zero) : parts.count - 1
-            upper_bound = parts.map.with_index do |part, i|
-              if i < first_non_zero_index then part
-              elsif i == first_non_zero_index then (part.to_i + 1).to_s
-              else 0
-              end
-            end.join(".")
-
-            Composer::Requirement.new(">= #{version}", "< #{upper_bound}")
           end
 
           def update_caret_requirement(req_string)
