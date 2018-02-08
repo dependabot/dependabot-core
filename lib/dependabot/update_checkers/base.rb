@@ -58,6 +58,10 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def latest_resolvable_version_with_no_unlock
+        raise NotImplementedError
+      end
+
       def updated_requirements
         raise NotImplementedError
       end

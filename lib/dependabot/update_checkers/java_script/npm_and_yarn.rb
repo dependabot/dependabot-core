@@ -24,6 +24,11 @@ module Dependabot
           latest_version
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # TODO
+          nil
+        end
+
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,

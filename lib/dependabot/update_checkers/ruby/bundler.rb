@@ -22,19 +22,6 @@ module Dependabot
           latest_resolvable_version_details&.fetch(:version)
         end
 
-        def updated_requirements
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            library: library?,
-            updated_source: updated_source,
-            latest_version: latest_version_details&.fetch(:version)&.to_s,
-            latest_resolvable_version:
-              latest_resolvable_version_details&.fetch(:version)&.to_s
-          ).updated_requirements
-        end
-
-        private
-
         def latest_resolvable_version_with_no_unlock
           @latest_resolvable_version_with_no_unlock ||=
             begin
@@ -49,6 +36,19 @@ module Dependabot
               ).latest_resolvable_version_details&.fetch(:version)
             end
         end
+
+        def updated_requirements
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            library: library?,
+            updated_source: updated_source,
+            latest_version: latest_version_details&.fetch(:version)&.to_s,
+            latest_resolvable_version:
+              latest_resolvable_version_details&.fetch(:version)&.to_s
+          ).updated_requirements
+        end
+
+        private
 
         def latest_version_resolvable_with_full_unlock?
           return false unless latest_version

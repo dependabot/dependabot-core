@@ -25,6 +25,17 @@ module Dependabot
           latest_version
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # Irrelevant, since Maven has a single dependency file (the pom.xml).
+          #
+          # For completeness we ought to resolve the pom.xml and return the
+          # latest version that satisfies the current constraint AND any
+          # constraints placed on it by other dependencies. Seeing as we're
+          # never going to take any action as a result, though, we just return
+          # nil.
+          nil
+        end
+
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,

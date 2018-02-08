@@ -16,6 +16,11 @@ module Dependabot
           latest_version
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # No concept of "unlocking" for submodules
+          latest_version
+        end
+
         def updated_requirements
           # Submodule requirements are the URL and branch to use for the
           # submodule. We never want to update either.

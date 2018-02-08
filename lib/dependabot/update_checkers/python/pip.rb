@@ -24,6 +24,23 @@ module Dependabot
           latest_version
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # Note: when pip has a resolver the logic here will need to change.
+          # Currently it gets the latest version that satisfies the existing
+          # constraint. In future, it will need to check resolvability, too.
+          @latest_resolvable_version_with_no_unlock ||=
+            begin
+              versions = available_versions
+              reqs = dependency.requirements.map do |r|
+                Pip::Requirement.new(r.fetch(:requirement).split(","))
+              end
+              versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.sort.reverse.find do |v|
+                reqs.all? { |r| r.satisfied_by?(v) }
+              end
+            end
+        end
+
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
@@ -37,20 +54,6 @@ module Dependabot
         end
 
         private
-
-        def latest_resolvable_version_with_no_unlock
-          @latest_resolvable_version_with_no_unlock ||=
-            begin
-              versions = available_versions
-              reqs = dependency.requirements.map do |r|
-                Pip::Requirement.new(r.fetch(:requirement).split(","))
-              end
-              versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.sort.reverse.find do |v|
-                reqs.all? { |r| r.satisfied_by?(v) }
-              end
-            end
-        end
 
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for pip because they're not

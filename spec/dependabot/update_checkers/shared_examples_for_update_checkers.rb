@@ -45,6 +45,11 @@ RSpec.shared_examples "an update checker" do
         to include(:latest_resolvable_version)
     end
 
+    it "implements latest_resolvable_version_with_no_unlock" do
+      expect(own_public_methods(false)).
+        to include(:latest_resolvable_version_with_no_unlock)
+    end
+
     it "implements latest_version_resolvable_with_full_unlock?" do
       expect(own_private_methods(false)).
         to include(:latest_version_resolvable_with_full_unlock?)

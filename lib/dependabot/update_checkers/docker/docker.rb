@@ -23,6 +23,11 @@ module Dependabot
           latest_version
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # No concept of "unlocking" for Docker containers
+          dependency.version
+        end
+
         def updated_requirements
           dependency.requirements
         end
@@ -30,7 +35,7 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't relevant for submodules
+          # Full unlock checks aren't relevant for Dockerfiles
           false
         end
 

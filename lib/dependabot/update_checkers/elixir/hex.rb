@@ -29,6 +29,11 @@ module Dependabot
             fetch_latest_resolvable_version(unlock_requirement: true)
         end
 
+        def latest_resolvable_version_with_no_unlock
+          @latest_resolvable_version_with_no_unlock ||=
+            fetch_latest_resolvable_version(unlock_requirement: false)
+        end
+
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
@@ -41,16 +46,6 @@ module Dependabot
         end
 
         private
-
-        def latest_resolvable_version_with_no_unlock
-          @latest_resolvable_version_with_no_unlock ||=
-            fetch_latest_resolvable_version(unlock_requirement: false)
-
-          version = @latest_resolvable_version_with_no_unlock
-          return if version.nil?
-          return unless version_class.correct?(version)
-          version_class.new(version)
-        end
 
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for Elixir (yet)
