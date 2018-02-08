@@ -25,9 +25,35 @@ module Dependabot
             [matches[1] || "=", Pip::Version.new(matches[2])]
           end
 
+          def initialize(*requirements)
+            requirements = requirements.flatten.map do |req_string|
+              convert_python_constraint_to_ruby_constraint(req_string)
+            end
+
+            super(requirements)
+          end
+
           def satisfied_by?(version)
             version = Pip::Version.new(version.to_s)
             super
+          end
+
+          private
+
+          def convert_python_constraint_to_ruby_constraint(req_string)
+            return nil if req_string.nil?
+            return nil if req_string == "*"
+            req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
+            return req_string unless req_string.include?(".*")
+
+            # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
+            # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
+            req_string.
+              split(".").
+              first(req_string.split(".").index("*") + 1).
+              join(".").
+              tr("*", "0").
+              gsub(/^(?<!!)=/, "~>")
           end
         end
       end

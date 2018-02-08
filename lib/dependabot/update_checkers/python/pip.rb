@@ -38,6 +38,20 @@ module Dependabot
 
         private
 
+        def latest_resolvable_version_with_no_unlock
+          @latest_resolvable_version_with_no_unlock ||=
+            begin
+              versions = available_versions
+              reqs = dependency.requirements.map do |r|
+                Pip::Requirement.new(r.fetch(:requirement).split(","))
+              end
+              versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.sort.reverse.find do |v|
+                reqs.all? { |r| r.satisfied_by?(v) }
+              end
+            end
+        end
+
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for pip because they're not
           # relevant (pip doesn't have a resolver). This method always returns

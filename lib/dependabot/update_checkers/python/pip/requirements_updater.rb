@@ -42,12 +42,12 @@ module Dependabot
             req_strings = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
-              if req_strings.any? { |r| ruby_requirement(r).exact? }
+              if req_strings.any? { |r| Pip::Requirement.new(r).exact? }
                 find_and_update_equality_match(req_strings)
               elsif req_strings.any? { |r| r.start_with?("~=", "==") }
                 tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
                 convert_twidle_to_range(
-                  ruby_requirement(tw_req),
+                  Pip::Requirement.new(tw_req),
                   latest_resolvable_version
                 )
               else
@@ -79,12 +79,12 @@ module Dependabot
           end
 
           def new_version_satisfies?(req)
-            ruby_requirement(req.fetch(:requirement)).
+            Pip::Requirement.new(req.fetch(:requirement).split(",")).
               satisfied_by?(latest_resolvable_version)
           end
 
           def find_and_update_equality_match(requirement_strings)
-            if requirement_strings.any? { |r| ruby_requirement(r).exact? }
+            if requirement_strings.any? { |r| Pip::Requirement.new(r).exact? }
               # True equality match
               "==#{latest_resolvable_version}"
             else
@@ -94,26 +94,6 @@ module Dependabot
                   at_same_precision(latest_resolvable_version.to_s, v)
                 end
             end
-          end
-
-          def ruby_requirement(requirement_string)
-            requirement_array =
-              requirement_string.split(",").map do |req_string|
-                req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
-                next nil if req_string == "*"
-                next req_string unless req_string.include?(".*")
-
-                # Note: This isn't perfect. It replaces the "!= 1.0.x"
-                # case with "!= 1.0.0". There's no way to model this correctly
-                # in Ruby :'(
-                req_string.
-                  split(".").
-                  first(req_string.split(".").index("*") + 1).
-                  join(".").
-                  tr("*", "0").
-                  gsub(/^(?<!!)=/, "~>")
-              end
-            Pip::Requirement.new(requirement_array)
           end
 
           def at_same_precision(new_version, old_version)
@@ -131,7 +111,7 @@ module Dependabot
 
           def update_requirements_range(requirement_strings)
             ruby_requirements =
-              requirement_strings.map { |r| ruby_requirement(r) }
+              requirement_strings.map { |r| Pip::Requirement.new(r) }
 
             updated_requirement_strings = ruby_requirements.flat_map do |r|
               next r.to_s if r.satisfied_by?(latest_resolvable_version)

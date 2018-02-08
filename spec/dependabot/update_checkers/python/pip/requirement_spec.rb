@@ -8,6 +8,41 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 
+  describe ".new" do
+    subject { described_class.new(requirement_string) }
+
+    context "with nil" do
+      let(:requirement_string) { nil }
+      it { is_expected.to eq(described_class.new(">= 0")) }
+      it { is_expected.to be_a(described_class) }
+    end
+
+    context "with only an *" do
+      let(:requirement_string) { "*" }
+      it { is_expected.to eq(described_class.new(">= 0")) }
+    end
+
+    context "with a ~=" do
+      let(:requirement_string) { "~= 1.3.0" }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
+    end
+
+    context "with a ==" do
+      let(:requirement_string) { "== 1.3.0" }
+      it { is_expected.to eq(Gem::Requirement.new("= 1.3.0")) }
+    end
+
+    context "with an *" do
+      let(:requirement_string) { "== 1.3.*" }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
+    end
+
+    context "with an array" do
+      let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
+      it { is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0"])) }
+    end
+  end
+
   describe "#satisfied_by?" do
     subject { requirement.satisfied_by?(version) }
 
