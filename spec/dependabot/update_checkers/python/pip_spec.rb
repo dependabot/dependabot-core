@@ -287,6 +287,53 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
   end
 
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "luigi",
+        version: "2.0.0",
+        requirements: requirements,
+        package_manager: "pip"
+      )
+    end
+    let(:requirements) do
+      [{ file: "req.txt", requirement: req_string, groups: [], source: nil }]
+    end
+
+    context "with an equality string" do
+      let(:req_string) { "==2.0.0" }
+      it { is_expected.to eq(Gem::Version.new("2.0.0")) }
+    end
+
+    context "with a >= string" do
+      let(:req_string) { ">=2.0.0" }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "with a full range string" do
+      let(:req_string) { ">=2.0.0,<2.5.0" }
+      it { is_expected.to eq(Gem::Version.new("2.4.0")) }
+    end
+
+    context "with a ~= string" do
+      let(:req_string) { "~=2.0.0" }
+      it { is_expected.to eq(Gem::Version.new("2.0.1")) }
+    end
+
+    context "with multiple requirements" do
+      let(:requirements) do
+        [
+          { file: "req.txt", requirement: req1, groups: [], source: nil },
+          { file: "req2.txt", requirement: req2, groups: [], source: nil }
+        ]
+      end
+      let(:req1) { "~=2.0" }
+      let(:req2) { "<=2.5.0" }
+      it { is_expected.to eq(Gem::Version.new("2.5.0")) }
+    end
+  end
+
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
     its([:requirement]) { is_expected.to eq("==2.6.0") }
