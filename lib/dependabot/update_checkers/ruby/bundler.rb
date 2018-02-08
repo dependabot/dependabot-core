@@ -35,8 +35,19 @@ module Dependabot
 
         private
 
-        def library?
-          dependency.version.nil?
+        def latest_resolvable_version_with_no_unlock
+          @latest_resolvable_version_with_no_unlock ||=
+            begin
+              if git_dependency?
+                return dependency.version if git_commit_checker.pinned?
+                return latest_resolvable_commit_with_unchanged_git_source
+              end
+
+              version_resolver(
+                remove_git_source: false,
+                unlock_requirement: false
+              ).latest_resolvable_version_details&.fetch(:version)
+            end
         end
 
         def latest_version_resolvable_with_full_unlock?
@@ -45,6 +56,10 @@ module Dependabot
           true
         rescue Dependabot::DependencyFileNotResolvable
           false
+        end
+
+        def library?
+          dependency.version.nil?
         end
 
         def updated_dependencies_after_full_unlock
@@ -218,12 +233,15 @@ module Dependabot
             )
         end
 
-        def version_resolver(remove_git_source:)
+        def version_resolver(remove_git_source:, unlock_requirement: true)
           @version_resolver ||= {}
-          @version_resolver[remove_git_source] ||=
+          @version_resolver[remove_git_source] ||= {}
+          @version_resolver[remove_git_source][unlock_requirement] ||=
             begin
-              prepared_dependency_files =
-                prepared_dependency_files(remove_git_source: remove_git_source)
+              prepared_dependency_files = prepared_dependency_files(
+                remove_git_source: remove_git_source,
+                unlock_requirement: true
+              )
 
               VersionResolver.new(
                 dependency: dependency,
@@ -233,11 +251,12 @@ module Dependabot
             end
         end
 
-        def prepared_dependency_files(remove_git_source:)
+        def prepared_dependency_files(remove_git_source:, unlock_requirement:)
           FilePreparer.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            remove_git_source: remove_git_source
+            remove_git_source: remove_git_source,
+            unlock_requirement: unlock_requirement
           ).prepared_dependency_files
         end
 

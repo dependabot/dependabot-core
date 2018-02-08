@@ -51,6 +51,21 @@ module Dependabot
 
         private
 
+        def latest_resolvable_version_with_no_unlock
+          @latest_resolvable_version_with_no_unlock ||=
+            fetch_latest_resolvable_version_string(unlock_requirement: false)
+
+          version = @latest_resolvable_version_with_no_unlock
+          return if version.nil?
+          return unless version_class.correct?(version)
+          version_class.new(version)
+        end
+
+        def latest_version_resolvable_with_full_unlock?
+          # Full unlock checks aren't implemented for Composer (yet)
+          false
+        end
+
         def wants_prerelease?
           current_version = dependency.version
           if current_version && version_class.new(current_version).prerelease?
@@ -62,25 +77,25 @@ module Dependabot
           end
         end
 
-        def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for Composer (yet)
-          false
-        end
-
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
         end
 
         def fetch_latest_resolvable_version
-          version = fetch_latest_resolvable_version_string
+          version =
+            fetch_latest_resolvable_version_string(unlock_requirement: true)
 
-          return if version.nil? || !version.match?(/^\d/)
+          return if version.nil?
+          return unless version_class.correct?(version)
           version_class.new(version)
         end
 
-        def fetch_latest_resolvable_version_string
+        def fetch_latest_resolvable_version_string(unlock_requirement:)
           SharedHelpers.in_a_temporary_directory do
-            File.write("composer.json", prepared_composer_json_content)
+            File.write(
+              "composer.json",
+              prepared_composer_json_content(unlock_requirement)
+            )
             File.write("composer.lock", lockfile.content) if lockfile
 
             SharedHelpers.run_helper_subprocess(
@@ -96,7 +111,9 @@ module Dependabot
           handle_composer_errors(error)
         end
 
-        def prepared_composer_json_content
+        def prepared_composer_json_content(unlock_requirement)
+          return composer_file.content unless unlock_requirement
+
           new_requirement =
             dependency.version.nil? ? "*" : ">= #{dependency.version}"
 

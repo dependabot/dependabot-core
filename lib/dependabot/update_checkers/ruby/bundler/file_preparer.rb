@@ -25,10 +25,12 @@ module Dependabot
           REQUIRED_RUBY_VERSION = /required_ruby_version/
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
+                         unlock_requirement: true,
                          replacement_git_pin: nil)
             @dependency_files = dependency_files
             @dependency = dependency
             @remove_git_source = remove_git_source
+            @unlock_requirement = unlock_requirement
             @replacement_git_pin = replacement_git_pin
           end
 
@@ -83,6 +85,10 @@ module Dependabot
             @remove_git_source
           end
 
+          def unlock_requirement?
+            @unlock_requirement
+          end
+
           def replace_git_pin?
             !replacement_git_pin.nil?
           end
@@ -117,7 +123,8 @@ module Dependabot
           end
 
           def gemfile_content_for_update_check(file)
-            content = replace_gemfile_version_requirement(file.content)
+            content = file.content
+            content = replace_gemfile_constraint(content) if unlock_requirement?
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
             content = update_ruby_version(content) if file == gemfile
@@ -125,11 +132,12 @@ module Dependabot
           end
 
           def gemspec_content_for_update_check
-            content = replace_gemspec_version_requirement(gemspec.content)
+            content = gemspec.content
+            content = replace_gemspec_constraint(content) if unlock_requirement?
             sanitize_gemspec_content(content)
           end
 
-          def replace_gemfile_version_requirement(content)
+          def replace_gemfile_constraint(content)
             updated_version =
               if dependency.version&.match?(/^[0-9a-f]{40}$/) then 0
               elsif dependency.version then dependency.version
@@ -143,7 +151,7 @@ module Dependabot
             ).rewrite(content)
           end
 
-          def replace_gemspec_version_requirement(content)
+          def replace_gemspec_constraint(content)
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemspec,

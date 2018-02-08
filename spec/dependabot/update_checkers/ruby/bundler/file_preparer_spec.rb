@@ -10,6 +10,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
       dependency_files: dependency_files,
       dependency: dependency,
       remove_git_source: remove_git_source,
+      unlock_requirement: unlock_requirement,
       replacement_git_pin: replacement_git_pin
     )
   end
@@ -28,6 +29,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:dependency_name) { "business" }
   let(:remove_git_source) { false }
+  let(:unlock_requirement) { true }
   let(:replacement_git_pin) { nil }
 
   let(:gemfile) do
@@ -51,6 +53,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
         its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
         its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }
+
+        context "when asked not to unlock the requirement" do
+          let(:unlock_requirement) { false }
+          its(:content) { is_expected.to include(%("business", "~> 1.4.0")) }
+        end
       end
 
       context "within a source block" do
