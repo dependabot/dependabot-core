@@ -25,7 +25,8 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+          @latest_resolvable_version ||=
+            fetch_latest_resolvable_version(unlock_requirement: true)
         end
 
         def updated_requirements
@@ -41,6 +42,16 @@ module Dependabot
 
         private
 
+        def latest_resolvable_version_with_no_unlock
+          @latest_resolvable_version_with_no_unlock ||=
+            fetch_latest_resolvable_version(unlock_requirement: false)
+
+          version = @latest_resolvable_version_with_no_unlock
+          return if version.nil?
+          return unless version_class.correct?(version)
+          version_class.new(version)
+        end
+
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for Elixir (yet)
           false
@@ -50,10 +61,13 @@ module Dependabot
           raise NotImplementedError
         end
 
-        def fetch_latest_resolvable_version
-          @latest_resolvable_version ||=
+        def fetch_latest_resolvable_version(unlock_requirement:)
+          latest_resolvable_version ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("mix.exs", prepared_mixfile_content)
+              File.write(
+                "mix.exs",
+                prepared_mixfile_content(unlock_requirement)
+              )
               File.write("mix.lock", lockfile.content)
               FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
@@ -65,8 +79,8 @@ module Dependabot
               )
             end
 
-          return if @latest_resolvable_version.nil?
-          version_class.new(@latest_resolvable_version)
+          return if latest_resolvable_version.nil?
+          version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_hex_errors(error)
         end
@@ -76,8 +90,9 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        def prepared_mixfile_content
-          content = relax_version(mixfile.content)
+        def prepared_mixfile_content(unlock_requirement)
+          content = mixfile.content
+          content = relax_version(mixfile.content) if unlock_requirement
           sanitize_mixfile(content)
         end
 
