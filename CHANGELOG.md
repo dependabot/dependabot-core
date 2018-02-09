@@ -1,3 +1,10 @@
+## v0.46.0, 9 February 2018
+
+- BREAKING: Pass `unlock_level` to UpdateCheckers#can_update? and
+  UpdateCheckers#updated_dependencies
+- Add a latest_resolvable_version_with_no_unlock method to the UpdateChecker
+  for each language
+
 ## v0.45.5, 7 February 2018
 
 - Add GitLab support to FileFetcher base methods
