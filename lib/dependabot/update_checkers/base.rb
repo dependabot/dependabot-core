@@ -34,8 +34,17 @@ module Dependabot
         return [] unless can_update?(unlock_level: unlock_level)
 
         case unlock_level
-        when :all_requirements
-          updated_dependencies_after_full_unlock
+        when :no_requirements
+          [
+            Dependency.new(
+              name: dependency.name,
+              version: latest_resolvable_version_with_no_unlock.to_s,
+              requirements: dependency.requirements,
+              previous_version: dependency.version,
+              previous_requirements: dependency.requirements,
+              package_manager: dependency.package_manager
+            )
+          ]
         when :own_requirement
           [
             Dependency.new(
@@ -47,6 +56,9 @@ module Dependabot
               package_manager: dependency.package_manager
             )
           ]
+        when :all_requirements
+          updated_dependencies_after_full_unlock
+        else raise "Unknown unlock level #{unlock_level}"
         end
       end
 
@@ -87,7 +99,7 @@ module Dependabot
         numeric_version_up_to_date?
       end
 
-      def version_can_update?(unlock_level: :own_requirement)
+      def version_can_update?(unlock_level:)
         if existing_version_is_sha1?
           return sha1_version_can_update?(unlock_level: unlock_level)
         end
@@ -103,16 +115,20 @@ module Dependabot
         latest_version && latest_version == dependency.version
       end
 
-      def sha1_version_can_update?(unlock_level: :own_requirement)
+      def sha1_version_can_update?(unlock_level:)
         return false if sha1_version_up_to_date?
 
         case unlock_level
-        when :all_requirements
-          latest_version_resolvable_with_full_unlock?
+        when :no_requirements
+          return false if latest_resolvable_version_with_no_unlock.nil?
+          latest_resolvable_version_with_no_unlock != dependency.version
         when :own_requirement
           # All we can do with SHA-1 hashes is check for presence and equality
           return false if latest_resolvable_version.nil?
           latest_resolvable_version != dependency.version
+        when :all_requirements
+          latest_version_resolvable_with_full_unlock?
+        else raise "Unknown unlock level #{unlock_level}"
         end
       end
 
@@ -121,15 +137,20 @@ module Dependabot
         latest_version <= version_class.new(dependency.version)
       end
 
-      def numeric_version_can_update?(unlock_level: :own_requirement)
+      def numeric_version_can_update?(unlock_level:)
         return false if numeric_version_up_to_date?
 
         case unlock_level
-        when :all_requirements
-          latest_version_resolvable_with_full_unlock?
+        when :no_requirements
+          new_version = latest_resolvable_version_with_no_unlock
+          return false if new_version.nil?
+          new_version > version_class.new(dependency.version)
         when :own_requirement
           return false if latest_resolvable_version.nil?
           latest_resolvable_version > version_class.new(dependency.version)
+        when :all_requirements
+          latest_version_resolvable_with_full_unlock?
+        else raise "Unknown unlock level #{unlock_level}"
         end
       end
 

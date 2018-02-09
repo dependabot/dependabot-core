@@ -22,13 +22,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      requirements: [
-        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-      ],
+      requirements: original_requirements,
       package_manager: "bundler"
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }
+  let(:original_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
   let(:updated_requirements) do
     [
       {
@@ -41,6 +42,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   end
   let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
+  let(:latest_resolvable_version_with_no_unlock) { latest_version }
   before do
     allow(updater_instance).
       to receive(:latest_version).
@@ -49,6 +51,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     allow(updater_instance).
       to receive(:latest_resolvable_version).
       and_return(latest_resolvable_version)
+
+    allow(updater_instance).
+      to receive(:latest_resolvable_version_with_no_unlock).
+      and_return(latest_resolvable_version_with_no_unlock)
 
     allow(updater_instance).
       to receive(:updated_requirements).
@@ -164,7 +170,47 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   describe "#can_update?" do
     subject(:can_update) { updater_instance.can_update? }
 
-    context "with full_unlock" do
+    context "with no requirements unlocked" do
+      subject(:can_update) do
+        updater_instance.can_update?(unlock_level: :no_requirements)
+      end
+
+      context "when the dependency is up-to-date" do
+        let(:latest_version) { Gem::Version.new("1.5.0") }
+        it { is_expected.to be_falsey }
+
+        it "doesn't attempt to resolve the dependency" do
+          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).
+            to_not receive(:latest_resolvable_version_with_no_unlock)
+          can_update
+        end
+      end
+
+      context "when the dependency is outdated" do
+        let(:latest_version) { Gem::Version.new("1.6.0") }
+
+        context "and can't resolve to the new version without an unlock" do
+          let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
+          let(:latest_resolvable_version_with_no_unlock) do
+            Gem::Version.new("1.5.0")
+          end
+
+          it { is_expected.to be_falsey }
+        end
+
+        context "and can resolve to the new version without an unlock" do
+          let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
+          let(:latest_resolvable_version_with_no_unlock) do
+            Gem::Version.new("1.6.0")
+          end
+
+          it { is_expected.to be_truthy }
+        end
+      end
+    end
+
+    context "with all requirements unlocked" do
       subject(:can_update) do
         updater_instance.can_update?(unlock_level: :all_requirements)
       end
@@ -314,15 +360,35 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   describe "#updated_dependencies" do
     subject(:updated_dependencies) { updater_instance.updated_dependencies }
     let(:latest_version) { Gem::Version.new("1.9.0") }
+    let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
+    let(:latest_resolvable_version_with_no_unlock) { Gem::Version.new("1.7.0") }
 
     its(:count) { is_expected.to eq(1) }
 
     describe "the dependency" do
       subject { updated_dependencies.first }
-      its(:version) { is_expected.to eq("1.9.0") }
+      its(:version) { is_expected.to eq("1.8.0") }
       its(:previous_version) { is_expected.to eq("1.5.0") }
       its(:package_manager) { is_expected.to eq(dependency.package_manager) }
       its(:name) { is_expected.to eq(dependency.name) }
+      its(:requirements) { is_expected.to eq(updated_requirements) }
+    end
+
+    context "with no_requirements as the unlock level" do
+      subject(:updated_dependencies) do
+        updater_instance.updated_dependencies(unlock_level: :no_requirements)
+      end
+
+      its(:count) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject { updated_dependencies.first }
+        its(:version) { is_expected.to eq("1.7.0") }
+        its(:previous_version) { is_expected.to eq("1.5.0") }
+        its(:package_manager) { is_expected.to eq(dependency.package_manager) }
+        its(:name) { is_expected.to eq(dependency.name) }
+        its(:requirements) { is_expected.to eq(original_requirements) }
+      end
     end
   end
 end
