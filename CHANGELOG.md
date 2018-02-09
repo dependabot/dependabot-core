@@ -1,4 +1,8 @@
-## v0.46.1, 10 February 2018
+## v0.46.2, 9 February 2018
+
+- PHP: Handle packagist returning empty arrays
+
+## v0.46.1, 9 February 2018
 
 - Allow `no_requirements` to be passed to UpdateCheckers#can_update? and
   UpdateCheckers#updated_dependencies as an unlock level
