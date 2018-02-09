@@ -26,19 +26,25 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          reqs = dependency.requirements.map { |r| r.fetch(:requirement) }
-
           if git_dependency?
-            return dependency.version if git_commit_checker.pinned?
-
-            # TODO: Really we should get a tag that satisfies the semver req
-            return dependency.version if reqs.any?
-
-            return git_commit_checker.head_commit_for_current_branch
+            return latest_resolvable_version_with_no_unlock_for_git_dependency
           end
 
-          # TODO: Handle non-git dependencies
-          nil
+          reqs = dependency.requirements.map do |r|
+            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+          end.compact
+
+          npm_details["versions"].
+            keys.map { |v| version_class.new(v) }.
+            reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
+            find do |version|
+              reqs.all? { |r| r.any? { |opt| opt.satisfied_by?(version) } } &&
+                !yanked?(version)
+            end
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          raise if dependency_registry == "registry.npmjs.org"
+          # Sometimes custom registries are flaky. We don't want to make that
+          # our problem, so we quietly return `nil` here.
         end
 
         def updated_requirements
@@ -66,6 +72,19 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def latest_resolvable_version_with_no_unlock_for_git_dependency
+          reqs = dependency.requirements.map do |r|
+            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+          end.compact
+
+          return dependency.version if git_commit_checker.pinned?
+
+          # TODO: Really we should get a tag that satisfies the semver req
+          return dependency.version if reqs.any?
+
+          git_commit_checker.head_commit_for_current_branch
         end
 
         def latest_version_for_git_dependency
@@ -165,14 +184,10 @@ module Dependabot
         end
 
         def version_from_versions_array(npm_details)
-          latest_release =
-            npm_details["versions"].
+          npm_details["versions"].
             keys.map { |v| version_class.new(v) }.
             reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
             find { |version| !yanked?(version) }
-
-          return unless latest_release
-          version_class.new(latest_release)
         end
 
         def use_latest_dist_tag?(version)

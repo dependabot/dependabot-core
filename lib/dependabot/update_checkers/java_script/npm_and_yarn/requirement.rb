@@ -7,6 +7,19 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class Requirement < Gem::Requirement
+          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
+          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+
+          # Returns an array of requirements. At least one requirement from the
+          # returned array must be satisfied for a version to be valid.
+          def self.requirements_array(requirement_string)
+            return if requirement_string.nil?
+            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+              requirements = req_string.strip.split(AND_SEPARATOR)
+              new(requirements)
+            end
+          end
+
           def initialize(*requirements)
             requirements = requirements.flatten.flat_map do |req_string|
               convert_js_constraint_to_ruby_constraint(req_string)

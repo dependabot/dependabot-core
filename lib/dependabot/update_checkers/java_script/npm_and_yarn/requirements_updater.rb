@@ -15,8 +15,6 @@ module Dependabot
       class NpmAndYarn
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
-          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
 
           def initialize(requirements:, updated_source:, library:,
@@ -92,16 +90,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              ruby_requirements =
-                req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  NpmAndYarn::Requirement.new(r_string)
-                end
-
-              NpmAndYarn::Requirement.new(
-                ruby_requirements.join(",").split(",")
-              )
-            end
+            NpmAndYarn::Requirement.requirements_array(requirement_string)
           end
 
           def update_range_requirement(req_string)

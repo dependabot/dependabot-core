@@ -709,6 +709,59 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
+    context "with a non-git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: requirements,
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: req_string,
+            groups: [],
+            source: nil
+          }
+        ]
+      end
+      let(:req_string) { "^1.0.0" }
+
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+      context "when constrained" do
+        let(:req_string) { "<= 1.5.0" }
+        before do
+          stub_request(:get, registry_listing_url + "/1.5.0").
+            to_return(status: 200)
+        end
+        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+        context "by multiple requirements" do
+          let(:requirements) do
+            [
+              {
+                file: "package.json",
+                requirement: "<= 1.5.0",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "package2.json",
+                requirement: "^1.5.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+          it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+        end
+      end
+    end
+
     context "with a git dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
