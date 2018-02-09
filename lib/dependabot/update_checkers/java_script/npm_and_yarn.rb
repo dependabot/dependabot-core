@@ -91,7 +91,6 @@ module Dependabot
           latest_git_version_details[:sha]
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         def fetch_latest_version_details
           return latest_git_version_details if git_dependency?
           return nil unless npm_details&.fetch("dist-tags", nil)
@@ -106,7 +105,6 @@ module Dependabot
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def git_dependency?
           git_commit_checker.git_dependency?

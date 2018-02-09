@@ -34,30 +34,9 @@ module Dependabot
         return [] unless can_update?(unlock_level: unlock_level)
 
         case unlock_level
-        when :no_requirements
-          [
-            Dependency.new(
-              name: dependency.name,
-              version: latest_resolvable_version_with_no_unlock.to_s,
-              requirements: dependency.requirements,
-              previous_version: dependency.version,
-              previous_requirements: dependency.requirements,
-              package_manager: dependency.package_manager
-            )
-          ]
-        when :own_requirement
-          [
-            Dependency.new(
-              name: dependency.name,
-              version: latest_resolvable_version.to_s,
-              requirements: updated_requirements,
-              previous_version: dependency.version,
-              previous_requirements: dependency.requirements,
-              package_manager: dependency.package_manager
-            )
-          ]
-        when :all_requirements
-          updated_dependencies_after_full_unlock
+        when :no_requirements then [updated_dependency_without_unlock]
+        when :own_requirement then [updated_dependency_with_own_req_unlock]
+        when :all_requirements then updated_dependencies_after_full_unlock
         else raise "Unknown unlock level #{unlock_level}"
         end
       end
@@ -90,6 +69,28 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def updated_dependency_without_unlock
+        Dependency.new(
+          name: dependency.name,
+          version: latest_resolvable_version_with_no_unlock.to_s,
+          requirements: dependency.requirements,
+          previous_version: dependency.version,
+          previous_requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
+      end
+
+      def updated_dependency_with_own_req_unlock
+        Dependency.new(
+          name: dependency.name,
+          version: latest_resolvable_version.to_s,
+          requirements: updated_requirements,
+          previous_version: dependency.version,
+          previous_requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
+      end
+
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
       end
@@ -118,14 +119,14 @@ module Dependabot
       def sha1_version_can_update?(unlock_level:)
         return false if sha1_version_up_to_date?
 
+        # All we can do with SHA-1 hashes is check for presence and equality
         case unlock_level
         when :no_requirements
-          return false if latest_resolvable_version_with_no_unlock.nil?
-          latest_resolvable_version_with_no_unlock != dependency.version
+          new_version = latest_resolvable_version_with_no_unlock
+          new_version && new_version != dependency.version
         when :own_requirement
-          # All we can do with SHA-1 hashes is check for presence and equality
-          return false if latest_resolvable_version.nil?
-          latest_resolvable_version != dependency.version
+          new_version = latest_resolvable_version
+          new_version && new_version != dependency.version
         when :all_requirements
           latest_version_resolvable_with_full_unlock?
         else raise "Unknown unlock level #{unlock_level}"
@@ -143,11 +144,10 @@ module Dependabot
         case unlock_level
         when :no_requirements
           new_version = latest_resolvable_version_with_no_unlock
-          return false if new_version.nil?
-          new_version > version_class.new(dependency.version)
+          new_version && new_version > version_class.new(dependency.version)
         when :own_requirement
-          return false if latest_resolvable_version.nil?
-          latest_resolvable_version > version_class.new(dependency.version)
+          new_version = latest_resolvable_version
+          new_version && new_version > version_class.new(dependency.version)
         when :all_requirements
           latest_version_resolvable_with_full_unlock?
         else raise "Unknown unlock level #{unlock_level}"
