@@ -19,6 +19,9 @@ module Dependabot
           # Fall back to latest_resolvable_version if no listing on main
           # registry.
           # TODO: Check against all repositories, if alternatives are specified
+          if packagist_listing&.fetch("packages", nil) == []
+            return latest_resolvable_version
+          end
           unless packagist_listing&.dig("packages", dependency.name.downcase)
             return latest_resolvable_version
           end

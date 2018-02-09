@@ -112,6 +112,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     context "when packagist 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
+      it { is_expected.to eq(Gem::Version.new("1.17.0")) }
+    end
+
+    context "when packagist returns an empty array" do
+      before do
+        stub_request(:get, packagist_url).
+          to_return(status: 200, body: '{"packages":[]}')
+        allow(checker).to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("1.17.0"))
+      end
 
       it { is_expected.to eq(Gem::Version.new("1.17.0")) }
     end
