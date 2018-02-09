@@ -1,3 +1,8 @@
+## v0.46.3, 9 February 2018
+
+- Exclude bot commits when considering recent commit messages. Should ensure
+  switchover to semantic commit messages happens faster
+
 ## v0.46.2, 9 February 2018
 
 - PHP: Handle packagist returning empty arrays
