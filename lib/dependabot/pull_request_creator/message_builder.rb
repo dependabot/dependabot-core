@@ -33,11 +33,11 @@ module Dependabot
         pr_name +=
           if dependencies.count == 1
             dependency = dependencies.first
-            "Bump #{dependency.name} from #{previous_version(dependency)} "\
+            "bump #{dependency.name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
-            "Bump #{names[0..-2].join(', ')} and #{names[-1]}"
+            "bump #{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
         return pr_name if files.first.directory == "/"
