@@ -12,6 +12,7 @@ module Dependabot
       class NpmAndYarn < Dependabot::UpdateCheckers::Base
         require_relative "npm_and_yarn/requirements_updater"
         require_relative "npm_and_yarn/version"
+        require_relative "npm_and_yarn/requirement"
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?

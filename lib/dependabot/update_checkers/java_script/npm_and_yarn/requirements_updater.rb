@@ -7,6 +7,7 @@
 
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/update_checkers/java_script/npm_and_yarn/version"
+require "dependabot/update_checkers/java_script/npm_and_yarn/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -92,59 +93,15 @@ module Dependabot
 
           def ruby_requirements(requirement_string)
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")
-
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  if r_string.start_with?("~")
-                    ruby_tilde_range(r_string)
-                  elsif r_string.start_with?("^")
-                    ruby_caret_range(r_string)
-                  elsif r_string.include?(" - ")
-                    ruby_hyphen_range(r_string)
-                  elsif r_string.include?("<") || r_string.include?(">")
-                    Gem::Requirement.new(r_string)
-                  else
-                    ruby_range(r_string)
-                  end
+                  NpmAndYarn::Requirement.new(r_string)
                 end
 
-              Gem::Requirement.new(ruby_requirements.join(",").split(","))
+              NpmAndYarn::Requirement.new(
+                ruby_requirements.join(",").split(",")
+              )
             end
-          end
-
-          def ruby_hyphen_range(req_string)
-            lower_bound, upper_bound = req_string.split(/\s+-\s+/)
-            Gem::Requirement.new(">= #{lower_bound}", "<= #{upper_bound}")
-          end
-
-          def ruby_tilde_range(req_string)
-            version = req_string.gsub(/^~/, "")
-            parts = version.split(".")
-            parts << "0" if parts.count < 3
-            Gem::Requirement.new("~> #{parts.join('.')}")
-          end
-
-          def ruby_range(req_string)
-            parts = req_string.split(".")
-            parts << "0" if parts.count < 3
-            Gem::Requirement.new("~> #{parts.join('.')}")
-          end
-
-          def ruby_caret_range(req_string)
-            version = req_string.gsub(/^\^/, "")
-            parts = version.split(".")
-            first_non_zero = parts.find { |d| d != "0" }
-            first_non_zero_index =
-              first_non_zero ? parts.index(first_non_zero) : parts.count - 1
-            upper_bound = parts.map.with_index do |part, i|
-              if i < first_non_zero_index then part
-              elsif i == first_non_zero_index then (part.to_i + 1).to_s
-              else 0
-              end
-            end.join(".")
-
-            Gem::Requirement.new(">= #{version}", "< #{upper_bound}")
           end
 
           def update_range_requirement(req_string)
