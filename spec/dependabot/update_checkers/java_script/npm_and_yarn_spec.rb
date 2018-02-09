@@ -706,6 +706,77 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     end
   end
 
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.latest_resolvable_version_with_no_unlock }
+
+    context "with a git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: current_version,
+          requirements: [
+            {
+              requirement: req,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: ref
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+      before do
+        git_url = "https://github.com/jonschlinkert/is-number.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "is-number"),
+            headers: git_header
+          )
+      end
+
+      context "with a branch" do
+        let(:ref) { "master" }
+        let(:req) { nil }
+
+        it "fetches the latest SHA-1 hash of the head of the branch" do
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+      end
+
+      context "with a ref that looks like a version" do
+        let(:ref) { "2.0.0" }
+        let(:req) { nil }
+
+        it "fetches the latest SHA-1 hash of the latest version tag" do
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq(current_version)
+        end
+      end
+
+      context "with a requirement" do
+        let(:ref) { "master" }
+        let(:req) { "^2.0.0" }
+
+        it "fetches the latest SHA-1 hash of the latest version tag" do
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq(current_version)
+        end
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     let(:dependency) do
       Dependabot::Dependency.new(

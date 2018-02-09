@@ -26,7 +26,18 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          # TODO
+          reqs = dependency.requirements.map { |r| r.fetch(:requirement) }
+
+          if git_dependency?
+            return dependency.version if git_commit_checker.pinned?
+
+            # TODO: Really we should get a tag that satisfies the semver req
+            return dependency.version if reqs.any?
+
+            return git_commit_checker.head_commit_for_current_branch
+          end
+
+          # TODO: Handle non-git dependencies
           nil
         end
 
