@@ -65,6 +65,7 @@ module Dependabot
       def recent_commit_messages
         @recent_messages ||=
           github_client.commits(repo_name).
+          reject { |c| c.author&.type == "Bot" }.
           map(&:commit).
           map(&:message).
           compact
