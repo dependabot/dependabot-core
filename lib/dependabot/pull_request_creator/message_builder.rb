@@ -27,17 +27,16 @@ module Dependabot
       def pr_name
         return library_pr_name if library?
 
-        pr_name = ""
-        pr_name += "build: " if using_semantic_commit_messages?
+        pr_name = using_semantic_commit_messages? ? "build: bump " : "Bump "
 
         pr_name +=
           if dependencies.count == 1
             dependency = dependencies.first
-            "Bump #{dependency.name} from #{previous_version(dependency)} "\
+            "#{dependency.name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
-            "Bump #{names[0..-2].join(', ')} and #{names[-1]}"
+            "#{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
         return pr_name if files.first.directory == "/"
