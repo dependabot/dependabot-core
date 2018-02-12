@@ -29,6 +29,7 @@ module Dependabot
               normalised_name(dep_name),
               "version"
             )
+            next unless version
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),
@@ -53,6 +54,7 @@ module Dependabot
               normalised_name(dep_name),
               "version"
             )
+            next unless version
             Dependency.new(
               name: dep_name,
               version: version.gsub(/^==/, ""),

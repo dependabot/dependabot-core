@@ -98,6 +98,32 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       end
     end
 
+    context "with no entry in the Pipfile.lock" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "not_in_lockfile") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "only_dev.lock") }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("pytest") }
+        its(:version) { is_expected.to eq("3.3.1") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
     context "with a git source" do
       let(:pipfile_body) { fixture("python", "pipfiles", "git_source") }
       let(:lockfile_body) { fixture("python", "lockfiles", "git_source.lock") }
