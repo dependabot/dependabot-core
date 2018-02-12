@@ -58,6 +58,35 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a blank requirement" do
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "blank_requirement.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "npm_lockfiles", "blank_requirement.json")
+        end
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("fetch-factory") }
+          its(:version) { is_expected.to eq("0.2.1") }
+          its(:requirements) do
+            is_expected.to eq(
+              [
+                {
+                  requirement: "*",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
+
       context "that contains bad JSON" do
         let(:lockfile_body) { '{ "bad": "json" "no": "comma" }' }
 
