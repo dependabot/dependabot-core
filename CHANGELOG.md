@@ -1,3 +1,7 @@
+## v0.46.4, 12 February 2018
+
+- Use Angular style sentence case if using semantic commits
+
 ## v0.46.3, 9 February 2018
 
 - Exclude bot commits when considering recent commit messages. Should ensure
