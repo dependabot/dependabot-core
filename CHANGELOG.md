@@ -1,3 +1,7 @@
+## v0.46.5, 12 February 2018
+
+- Python: Ignore Pipfile dependencies missing from the lockfile
+
 ## v0.46.4, 12 February 2018
 
 - Use Angular style sentence case if using semantic commits
