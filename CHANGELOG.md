@@ -1,3 +1,7 @@
+## v0.46.6, 12 February 2018
+
+- JS: Handle blank requirements
+
 ## v0.46.5, 12 February 2018
 
 - Python: Ignore Pipfile dependencies missing from the lockfile
