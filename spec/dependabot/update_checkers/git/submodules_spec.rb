@@ -42,7 +42,7 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
   let(:branch) { "master" }
 
   describe "#can_update?" do
-    subject { checker.can_update? }
+    subject { checker.can_update?(requirements_to_unlock: :own) }
 
     context "given an outdated dependency" do
       before { allow(checker).to receive(:latest_version).and_return("sha2") }

@@ -33,7 +33,8 @@ update_checker = update_checker_class.new(
   credentials: [{ "host" => "github.com", "token" => "token" }]
 )
 
-puts "Update needed for #{dependency.name}? #{update_checker.can_update?}"
+puts "Update needed for #{dependency.name}? "\
+     "#{update_checker.can_update?(requirements_to_update: :own)}"
 ```
 
 ## Writing an update checker for a new language
@@ -45,6 +46,7 @@ implement the following methods:
 |------------------------------|-----------------------------------------------------------------------------------------------|
 | `#latest_version`            | The latest version of the dependency, ignoring resolvability. This is used to short-circuit update checking when the dependency is already at the latest version (since checking resolvability is typically slow). |
 | `#latest_resolvable_version` | The latest version of the dependency that will still allow the full dependency set to resolve. |
+| `#latest_resolvable_version_with_no_unlock` | The latest version of the dependency that satisfies the dependency's current version constraints and will still allow the full dependency set to resolve. |
 | `#updated_requirements`      | An updated set of requirements for the dependency that should replace the existing requirements in the manifest file. Use by the file updater class when updating the manifest file. |
 | `#latest_version_resolvable_with_full_unlock?` | A boolean for whether the latest version can be resolved if all other dependencies are unlocked in the manifest file. Can be set to always return `false` if multi-dependency updates aren't yet supported. |
 | `#updated_dependencies_after_full_unlock` | And updated set of dependencies after a full unlock and update has taken place. Not required if `latest_version_resolvable_with_full_unlock?` always returns false. |

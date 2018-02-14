@@ -21,23 +21,25 @@ module Dependabot
         end
       end
 
-      def can_update?(unlock_level: :own_requirement)
+      def can_update?(requirements_to_unlock:)
         if dependency.appears_in_lockfile?
-          version_can_update?(unlock_level: unlock_level)
+          version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else
           # TODO: Handle full unlock updates for requirement files
           requirements_can_update?
         end
       end
 
-      def updated_dependencies(unlock_level: :own_requirement)
-        return [] unless can_update?(unlock_level: unlock_level)
+      def updated_dependencies(requirements_to_unlock:)
+        unless can_update?(requirements_to_unlock: requirements_to_unlock)
+          return []
+        end
 
-        case unlock_level
-        when :no_requirements then [updated_dependency_without_unlock]
-        when :own_requirement then [updated_dependency_with_own_req_unlock]
-        when :all_requirements then updated_dependencies_after_full_unlock
-        else raise "Unknown unlock level #{unlock_level}"
+        case requirements_to_unlock&.to_sym
+        when :none then [updated_dependency_without_unlock]
+        when :own then [updated_dependency_with_own_req_unlock]
+        when :all then updated_dependencies_after_full_unlock
+        else raise "Unknown unlock level '#{requirements_to_unlock}'"
         end
       end
 
@@ -100,12 +102,16 @@ module Dependabot
         numeric_version_up_to_date?
       end
 
-      def version_can_update?(unlock_level:)
+      def version_can_update?(requirements_to_unlock:)
         if existing_version_is_sha1?
-          return sha1_version_can_update?(unlock_level: unlock_level)
+          return sha1_version_can_update?(
+            requirements_to_unlock: requirements_to_unlock
+          )
         end
 
-        numeric_version_can_update?(unlock_level: unlock_level)
+        numeric_version_can_update?(
+          requirements_to_unlock: requirements_to_unlock
+        )
       end
 
       def existing_version_is_sha1?
@@ -116,20 +122,20 @@ module Dependabot
         latest_version && latest_version == dependency.version
       end
 
-      def sha1_version_can_update?(unlock_level:)
+      def sha1_version_can_update?(requirements_to_unlock:)
         return false if sha1_version_up_to_date?
 
         # All we can do with SHA-1 hashes is check for presence and equality
-        case unlock_level
-        when :no_requirements
+        case requirements_to_unlock&.to_sym
+        when :none
           new_version = latest_resolvable_version_with_no_unlock
           new_version && new_version != dependency.version
-        when :own_requirement
+        when :own
           new_version = latest_resolvable_version
           new_version && new_version != dependency.version
-        when :all_requirements
+        when :all
           latest_version_resolvable_with_full_unlock?
-        else raise "Unknown unlock level #{unlock_level}"
+        else raise "Unknown unlock level '#{requirements_to_unlock}'"
         end
       end
 
@@ -138,19 +144,19 @@ module Dependabot
         latest_version <= version_class.new(dependency.version)
       end
 
-      def numeric_version_can_update?(unlock_level:)
+      def numeric_version_can_update?(requirements_to_unlock:)
         return false if numeric_version_up_to_date?
 
-        case unlock_level
-        when :no_requirements
+        case requirements_to_unlock&.to_sym
+        when :none
           new_version = latest_resolvable_version_with_no_unlock
           new_version && new_version > version_class.new(dependency.version)
-        when :own_requirement
+        when :own
           new_version = latest_resolvable_version
           new_version && new_version > version_class.new(dependency.version)
-        when :all_requirements
+        when :all
           latest_version_resolvable_with_full_unlock?
-        else raise "Unknown unlock level #{unlock_level}"
+        else raise "Unknown unlock level '#{requirements_to_unlock}'"
         end
       end
 

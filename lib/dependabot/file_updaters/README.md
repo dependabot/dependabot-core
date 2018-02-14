@@ -20,8 +20,10 @@ An integration might look as follows:
 ```ruby
 require 'dependabot/file_updaters'
 
-raise "Dependency doesn't need update!" unless update_checker.can_update?
-dependencies = update_checker.updated_dependencies
+unless update_checker.can_update?(requirements_to_update: :own)
+  raise "Dependency doesn't need update!"
+end
+dependencies = update_checker.updated_dependencies(requirements_to_update: :own)
 
 file_updater_class = Dependabot::FileUpdaters::Ruby::Bundler
 file_updater = file_updater_class.new(

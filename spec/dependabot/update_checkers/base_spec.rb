@@ -168,11 +168,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   end
 
   describe "#can_update?" do
-    subject(:can_update) { updater_instance.can_update? }
+    subject(:can_update) do
+      updater_instance.can_update?(requirements_to_unlock: :own)
+    end
 
     context "with no requirements unlocked" do
       subject(:can_update) do
-        updater_instance.can_update?(unlock_level: :no_requirements)
+        updater_instance.can_update?(requirements_to_unlock: :none)
       end
 
       context "when the dependency is up-to-date" do
@@ -212,7 +214,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     context "with all requirements unlocked" do
       subject(:can_update) do
-        updater_instance.can_update?(unlock_level: :all_requirements)
+        updater_instance.can_update?(requirements_to_unlock: :all)
       end
 
       context "when the dependency is up-to-date" do
@@ -358,7 +360,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   end
 
   describe "#updated_dependencies" do
-    subject(:updated_dependencies) { updater_instance.updated_dependencies }
+    subject(:updated_dependencies) do
+      updater_instance.updated_dependencies(requirements_to_unlock: :own)
+    end
     let(:latest_version) { Gem::Version.new("1.9.0") }
     let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
     let(:latest_resolvable_version_with_no_unlock) { Gem::Version.new("1.7.0") }
@@ -374,9 +378,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       its(:requirements) { is_expected.to eq(updated_requirements) }
     end
 
-    context "with no_requirements as the unlock level" do
+    context "when not updating requirements" do
       subject(:updated_dependencies) do
-        updater_instance.updated_dependencies(unlock_level: :no_requirements)
+        updater_instance.updated_dependencies(requirements_to_unlock: :none)
       end
 
       its(:count) { is_expected.to eq(1) }

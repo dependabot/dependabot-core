@@ -57,7 +57,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   end
 
   describe "#can_update?" do
-    subject { checker.can_update? }
+    subject { checker.can_update?(requirements_to_unlock: :own) }
 
     context "given an outdated dependency" do
       it { is_expected.to be_truthy }

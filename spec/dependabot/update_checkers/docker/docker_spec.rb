@@ -55,7 +55,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
   end
 
   describe "#can_update?" do
-    subject { checker.can_update? }
+    subject { checker.can_update?(requirements_to_unlock: :own) }
 
     context "given an outdated dependency" do
       let(:version) { "17.04" }
