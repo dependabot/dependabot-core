@@ -76,17 +76,15 @@ module Dependabot
       end
 
       def library_pr_name
-        pr_name = ""
-        pr_name += "build: " if using_semantic_commit_messages?
+        pr_name = using_semantic_commit_messages? ? "build: update " : "Update "
 
         pr_name +=
           if dependencies.count == 1
-            "Update #{dependencies.first.name} requirement to "\
+            "#{dependencies.first.name} requirement to "\
             "#{new_library_requirement(dependencies.first)}"
           else
             names = dependencies.map(&:name)
-            "Update requirements for #{names[0..-2].join(', ')} and "\
-            "#{names[-1]}"
+            "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
         pr_name
