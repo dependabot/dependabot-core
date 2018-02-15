@@ -1,3 +1,8 @@
+## v0.47.0, 15 February 2018
+
+- BREAKING: Pass `requirements_to_unlock` to UpdateCheckers#can_update? and
+  UpdateCheckers#updated_dependencies instead of `unlock_level`
+
 ## v0.46.6, 12 February 2018
 
 - JS: Handle blank requirements
