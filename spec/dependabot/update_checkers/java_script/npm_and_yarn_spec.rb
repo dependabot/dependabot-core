@@ -653,6 +653,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
+    context "when the npm link resolves to a 403" do
+      before do
+        stub_request(:get, registry_listing_url).
+          to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
+      end
+
+      it "raises an error" do
+        expect { checker.latest_version }.to raise_error(RuntimeError)
+      end
+    end
+
     context "when the npm link resolves to a 404" do
       before do
         stub_request(:get, registry_listing_url).
@@ -661,6 +672,28 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
       it "raises an error" do
         expect { checker.latest_version }.to raise_error(RuntimeError)
+      end
+
+      context "for a library dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it "does not raise an error" do
+          expect { checker.latest_version }.to_not raise_error
+        end
       end
 
       context "for a namespaced dependency" do

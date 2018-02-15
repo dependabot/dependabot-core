@@ -34,7 +34,7 @@ module Dependabot
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
           end.compact
 
-          npm_details["versions"].
+          (npm_details || {}).fetch("versions", {}).
             keys.map { |v| version_class.new(v) }.
             reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
             find do |version|
@@ -230,7 +230,13 @@ module Dependabot
             raise PrivateSourceNotReachable, dependency_registry
           end
 
-          return unless [401, 403, 404].include?(npm_response.status)
+          return if npm_response.status.to_s.start_with?("2")
+
+          # Ignore 404s from the registry for libraries. These can be caused by
+          # monorepos using Lerna that haven't pushed all of their packages, and
+          # since no lockfile needs to be generated they won't cause problems
+          # later.
+          return if npm_response.status == 404 && library?
           raise "Got #{npm_response.status} response with body "\
                 "#{npm_response.body}"
         end
@@ -264,6 +270,10 @@ module Dependabot
 
         def library?
           dependency.version.nil?
+        end
+
+        def development_dependency?
+          dependency.requirements.all? { |r| r[:groups] == ["devDependencies"] }
         end
 
         def dependency_url
