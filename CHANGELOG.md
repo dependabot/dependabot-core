@@ -1,3 +1,9 @@
+## v0.47.1, 15 February 2018
+
+- Correct semantic commit casing for library updates
+- Include directory details in library PRs
+- JS: Ignore 404s from the registry for library dependencies
+
 ## v0.47.0, 15 February 2018
 
 - BREAKING: Pass `requirements_to_unlock` to UpdateCheckers#can_update? and
