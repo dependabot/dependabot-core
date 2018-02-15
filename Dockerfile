@@ -23,11 +23,11 @@ ENV LC_ALL en_US.UTF-8
 
 ### RUBY
 
-# Install Ruby 2.4, update RubyGems, and install Bundler
+# Install Ruby 2.5, update RubyGems, and install Bundler
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu artful main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
-    && apt-get install -y ruby2.4 ruby2.4-dev \
+    && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.4 \
     && gem install --no-ri --no-rdoc bundler -v 1.16.1
 

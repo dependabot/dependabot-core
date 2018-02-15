@@ -28,6 +28,7 @@ module Dependabot
       end
 
       def create
+        # TODO: Only return if a previous PR exists (should match target branch)
         return if branch_exists?
 
         commit = create_commit
