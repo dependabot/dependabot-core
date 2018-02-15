@@ -87,7 +87,9 @@ module Dependabot
             "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
-        pr_name
+        return pr_name if files.first.directory == "/"
+
+        pr_name + " in #{files.first.directory}"
       end
 
       def requirement_pr_message

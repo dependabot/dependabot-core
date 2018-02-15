@@ -32,7 +32,7 @@ module Dependabot
             version_listings.flat_map do |_, listing|
               [
                 get_url(listing["repository"]),
-                listing["homepage"],
+                get_url(listing["homepage"]),
                 get_url(listing["bugs"])
               ]
             end.compact
