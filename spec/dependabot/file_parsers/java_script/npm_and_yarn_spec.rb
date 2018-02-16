@@ -671,6 +671,38 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a resolution" do
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "resolutions.json")
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", "resolutions.lock")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("lodash")
+            expect(dependency.version).to eq("0.1.0")
+            expect(dependency.requirements).
+              to eq(
+              [
+                {
+                  requirement: "^0.1.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
+
       context "with a private-source dependency" do
         let(:package_json_body) do
           fixture("javascript", "package_files", "private_source.json")

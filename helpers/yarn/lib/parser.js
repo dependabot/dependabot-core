@@ -33,6 +33,10 @@ function isNotExotic(request) {
   return !getExoticResolver(range);
 }
 
+function isNotResolution(request) {
+  return request.hint !== "resolution";
+}
+
 function source_file(dep, directory) {
   if (dep.request.workspaceLoc) {
     return path.relative(directory, dep.request.workspaceLoc);
@@ -53,6 +57,7 @@ async function parse(directory) {
   const { requests, patterns } = await install.fetchRequestFromCwd();
   const deps = requests
     .filter(isNotExotic)
+    .filter(isNotResolution)
     .map(request => ({
       request: request,
       resolved: lockfile.getLocked(request.pattern)
