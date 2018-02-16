@@ -684,6 +684,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
 
+          # Resolutions affect sub-dependencies, *not* top-level dependencies.
+          # The parsed version should therefore be 0.1.0, *not* 1.0.0.
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("lodash")

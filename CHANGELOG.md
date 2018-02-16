@@ -1,3 +1,7 @@
+## v0.47.4, 16 February 2018
+
+- JS: Fix parser for dependencies with a resolutions entry
+
 ## v0.47.3, 16 February 2018
 
 - JS: Handle authentication errors from npm5 (not just Yarn)
