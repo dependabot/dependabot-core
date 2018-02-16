@@ -20,16 +20,20 @@ module Dependabot
           end
 
           def declaration_string
-            original_pom_declaration
+            @declaration_string ||= find_pom_declaration_string
           end
 
           def declaration_node
             Nokogiri::XML(declaration_string)
           end
 
+          def version_comes_from_property?
+            declaration_node.at_css("version").content.start_with?("${")
+          end
+
           private
 
-          def original_pom_declaration
+          def find_pom_declaration_string
             deep_find_declarations(pom_content).find do |node|
               node = Nokogiri::XML(node)
               node_name = [

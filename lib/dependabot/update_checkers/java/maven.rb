@@ -74,7 +74,7 @@ module Dependabot
         end
 
         def version_comes_from_property?
-          original_pom_version_content.start_with?("${")
+          declaration_finder.version_comes_from_property?
         end
 
         def multiple_dependencies_use_property?(property)
@@ -83,13 +83,14 @@ module Dependabot
         end
 
         def original_pom_version_content
-          @declaration_node ||=
-            FileUpdaters::Java::Maven::DeclarationFinder.new(
-              dependency_name: dependency.name,
-              pom_content: pom.content
-            ).declaration_node
+          declaration_finder.declaration_node.at_css("version").content
+        end
 
-          @declaration_node.at_css("version").content
+        def declaration_finder
+          @finder ||= FileUpdaters::Java::Maven::DeclarationFinder.new(
+            dependency_name: dependency.name,
+            pom_content: pom.content
+          )
         end
 
         def pom

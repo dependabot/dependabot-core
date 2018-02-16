@@ -107,4 +107,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
     end
   end
+
+  describe "version_comes_from_property?" do
+    subject { finder.version_comes_from_property? }
+
+    let(:pom_content) { fixture("java", "poms", "property_pom.xml") }
+
+    context "with a non-property dependency" do
+      let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a property dependency" do
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      it { is_expected.to eq(true) }
+    end
+  end
 end
