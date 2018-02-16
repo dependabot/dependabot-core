@@ -139,7 +139,8 @@ module Dependabot
           if error.message.start_with?("No matching version found")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
-          if error.message.include?("make sure you have the correct access")
+          if error.message.include?("make sure you have the correct access") ||
+             error.message.include?("Authentication failed")
             dependency_url =
               error.message.match(UNREACHABLE_GIT).
               named_captures.fetch("url")
