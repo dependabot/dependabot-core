@@ -82,11 +82,9 @@ module Dependabot
           gemspec_paths = fetch_gemspec_paths
 
           gemspec_paths.each do |path|
-            begin
-              gemspec_files << fetch_file_from_host(path)
-            rescue Dependabot::DependencyFileNotFound
-              unfetchable_gems << path.split("/").last.gsub(".gemspec", "")
-            end
+            gemspec_files << fetch_file_from_host(path)
+          rescue Dependabot::DependencyFileNotFound
+            unfetchable_gems << path.split("/").last.gsub(".gemspec", "")
           end
 
           if unfetchable_gems.any?

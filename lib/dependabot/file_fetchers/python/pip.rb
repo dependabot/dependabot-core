@@ -131,13 +131,11 @@ module Dependabot
           unfetchable_files = []
 
           path_setup_file_paths.each do |path|
-            begin
-              path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
-              next if path == "setup.py" && setup_file
-              path_setup_files << fetch_file_from_host(path)
-            rescue Dependabot::DependencyFileNotFound
-              unfetchable_files << path
-            end
+            path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
+            next if path == "setup.py" && setup_file
+            path_setup_files << fetch_file_from_host(path)
+          rescue Dependabot::DependencyFileNotFound
+            unfetchable_files << path
           end
 
           if unfetchable_files.any?

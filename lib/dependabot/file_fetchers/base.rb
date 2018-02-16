@@ -96,18 +96,20 @@ module Dependabot
               OpenStruct.new(name: file.name, path: file.path, type: file.type)
             end
           when "gitlab"
-            gitlab_client.repo_tree(
-              repo,
-              path: path,
-              ref_name: commit
-            ).map do |file|
-              OpenStruct.new(
-                name: file.name,
-                path: file.path,
-                type: file.type == "blob" ? "file" : file.type
-              )
-            end
+            gitlab_repo_contents(path)
           else raise "Unsupported host '#{host}'."
+          end
+      end
+
+      def gitlab_repo_contents(path)
+        gitlab_client.
+          repo_tree(repo, path: path, ref_name: commit).
+          map do |file|
+            OpenStruct.new(
+              name: file.name,
+              path: file.path,
+              type: file.type == "blob" ? "file" : file.type
+            )
           end
       end
 

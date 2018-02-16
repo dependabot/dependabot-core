@@ -84,14 +84,12 @@ module Dependabot
 
           registry = docker_registry_client(private_registry)
           registry.tags(repo).fetch("tags").find do |tag|
-            begin
-              head = registry.dohead "/v2/#{repo}/manifests/#{tag}"
-              head.headers[:docker_content_digest] == digest
-            rescue DockerRegistry2::NotFound
-              # Shouldn't happen, but it does. Example of existing tag with
-              # no manifest is "library/python", "2-windowsservercore".
-              false
-            end
+            head = registry.dohead "/v2/#{repo}/manifests/#{tag}"
+            head.headers[:docker_content_digest] == digest
+          rescue DockerRegistry2::NotFound
+            # Shouldn't happen, but it does. Example of existing tag with
+            # no manifest is "library/python", "2-windowsservercore".
+            false
           end
         end
 
