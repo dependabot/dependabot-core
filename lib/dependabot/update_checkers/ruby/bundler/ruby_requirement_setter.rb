@@ -77,7 +77,7 @@ module Dependabot
             node.children[1] == :required_ruby_version=
           end
 
-          class GemfileRewriter < Parser::Rewriter
+          class GemfileRewriter < Parser::TreeRewriter
             def initialize(ruby_version:)
               @ruby_version = ruby_version
             end

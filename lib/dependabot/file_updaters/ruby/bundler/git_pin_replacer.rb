@@ -25,7 +25,7 @@ module Dependabot
               rewrite(buffer, ast)
           end
 
-          class Rewriter < Parser::Rewriter
+          class Rewriter < Parser::TreeRewriter
             PIN_KEYS = %i(ref tag).freeze
             attr_reader :dependency, :new_pin
 

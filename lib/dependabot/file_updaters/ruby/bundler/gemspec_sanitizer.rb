@@ -24,7 +24,7 @@ module Dependabot
               rewrite(buffer, ast)
           end
 
-          class Rewriter < Parser::Rewriter
+          class Rewriter < Parser::TreeRewriter
             def initialize(replacement_version:)
               @replacement_version = replacement_version
             end

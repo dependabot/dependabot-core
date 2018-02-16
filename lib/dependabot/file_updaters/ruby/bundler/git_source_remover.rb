@@ -22,7 +22,7 @@ module Dependabot
             Rewriter.new(dependency: dependency).rewrite(buffer, ast)
           end
 
-          class Rewriter < Parser::Rewriter
+          class Rewriter < Parser::TreeRewriter
             # TODO: Hack until Bundler 1.16.0 is available on Heroku
             GOOD_KEYS = %i(
               group groups path glob name require platform platforms type

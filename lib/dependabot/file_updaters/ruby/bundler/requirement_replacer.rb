@@ -28,7 +28,7 @@ module Dependabot
             ).rewrite(buffer, ast)
           end
 
-          class Rewriter < Parser::Rewriter
+          class Rewriter < Parser::TreeRewriter
             SKIPPED_TYPES = %i(send lvar dstr).freeze
 
             def initialize(dependency:, file_type:, updated_requirement:)
