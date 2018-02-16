@@ -26,6 +26,7 @@ require 'octokit'
 require 'dependabot/file_fetchers'
 
 target_repo_name = 'dependabot/dependabot-core'
+source = { host: 'github', repo: target_repo_name }
 
 client = Octokit::Client.new
 fetcher_class = Dependabot::FileFetchers::Ruby::Bundler
@@ -35,7 +36,7 @@ unless fetcher_class.required_files_in?(filenames)
   raise fetcher_class.required_files_message
 end
 
-fetcher = fetcher_class.new(repo: target_repo_name, credentials: [])
+fetcher = fetcher_class.new(source: source, credentials: [])
 
 puts "Fetched #{fetcher.files.map(&:name)}, at commit SHA-1 '#{fetcher.commit}'"
 ```
