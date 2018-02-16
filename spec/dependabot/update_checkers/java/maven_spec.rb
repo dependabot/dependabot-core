@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/update_checkers/java/maven"
 require_relative "../shared_examples_for_update_checkers"
 
@@ -28,8 +29,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       credentials: credentials
     )
   end
-  let(:dependency_files) { [] }
+  let(:dependency_files) { [pom] }
   let(:credentials) { [] }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
+  end
+  let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -60,11 +65,65 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
       it { is_expected.to be_nil }
     end
+
+    context "when the version comes from a property" do
+      let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
+      let(:maven_central_metadata_url) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-beans/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ]
+      end
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:dependency_version) { "4.3.12.RELEASE" }
+
+      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+
+      context "that affects multiple dependencies" do
+        let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
     it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+
+    context "when the version comes from a property" do
+      let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
+      let(:maven_central_metadata_url) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-beans/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ]
+      end
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:dependency_version) { "4.3.12.RELEASE" }
+
+      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+
+      context "that affects multiple dependencies" do
+        let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        it { is_expected.to be_nil }
+      end
+    end
   end
 
   describe "#updated_requirements" do

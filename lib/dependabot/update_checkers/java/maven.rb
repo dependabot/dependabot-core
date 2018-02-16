@@ -3,6 +3,7 @@
 require "nokogiri"
 require "dependabot/shared_helpers"
 require "dependabot/update_checkers/base"
+require "dependabot/file_updaters/java/maven/declaration_finder"
 
 module Dependabot
   module UpdateCheckers
@@ -22,6 +23,7 @@ module Dependabot
           #
           # The above is hard. Currently we just return the latest version and
           # hope (hence this package manager is in beta!)
+          return nil if version_comes_from_multi_dependency_property?
           latest_version
         end
 
@@ -58,6 +60,30 @@ module Dependabot
           raise NotImplementedError
         end
 
+        def version_comes_from_multi_dependency_property?
+          return false unless version_comes_from_property?
+          multiple_dependencies_use_property?(original_pom_version_content)
+        end
+
+        def version_comes_from_property?
+          original_pom_version_content.start_with?("${")
+        end
+
+        def multiple_dependencies_use_property?(property)
+          property_regex = /#{Regexp.escape(property)}/
+          pom.content.scan(property_regex).count > 1
+        end
+
+        def original_pom_version_content
+          @declaration_node ||=
+            FileUpdaters::Java::Maven::DeclarationFinder.new(
+              dependency_name: dependency.name,
+              pom_content: pom.content
+            ).declaration_node
+
+          @declaration_node.at_css("version").content
+        end
+
         def maven_central_latest_version
           maven_central_dependency_metadata.at_css("release")&.content
         end
@@ -77,6 +103,10 @@ module Dependabot
         def maven_central_dependency_url
           "https://search.maven.org/remotecontent?filepath="\
           "#{dependency.name.gsub(/[:.]/, '/')}/"
+        end
+
+        def pom
+          @pom ||= dependency_files.find { |f| f.name == "pom.xml" }
         end
       end
     end

@@ -8,9 +8,7 @@ module Dependabot
   module FileUpdaters
     module Java
       class Maven < Dependabot::FileUpdaters::Base
-        DECLARATION_REGEX =
-          %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-             <plugin>.*?</plugin>}mx
+        require "dependabot/file_updaters/java/maven/declaration_finder"
 
         def self.updated_files_regex
           [/^pom\.xml$/]
@@ -57,20 +55,10 @@ module Dependabot
         end
 
         def original_pom_declaration
-          deep_find_declarations(pom.content).find do |node|
-            node = Nokogiri::XML(node)
-            node_name = [
-              node.at_css("groupId")&.content,
-              node.at_css("artifactId")&.content
-            ].compact.join(":")
-            node_name == dependency.name
-          end
-        end
-
-        def deep_find_declarations(string)
-          string.scan(DECLARATION_REGEX).flat_map do |matching_node|
-            [matching_node, *deep_find_declarations(matching_node[0..-2])]
-          end
+          DeclarationFinder.new(
+            dependency_name: dependency.name,
+            pom_content: pom.content
+          ).declaration_string
         end
 
         def updated_pom_declaration
