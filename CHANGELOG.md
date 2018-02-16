@@ -1,3 +1,7 @@
+## v0.47.3, 16 February 2018
+
+- JS: Handle authentication errors from npm5 (not just Yarn)
+
 ## v0.47.2, 16 February 2018
 
 - Require Ruby 2.5
