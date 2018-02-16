@@ -188,10 +188,6 @@ module Dependabot
             find { |version| !yanked?(version) }
         end
 
-        def use_latest_dist_tag?(version)
-          !wants_prerelease? && !version.prerelease? && !yanked?(version)
-        end
-
         def yanked?(version)
           Excon.get(
             dependency_url + "/#{version}",
