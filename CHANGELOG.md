@@ -1,3 +1,7 @@
+## v0.47.5, 16 February 2018
+
+- Java: Handle property updates in a single PR (rather than creating several)
+
 ## v0.47.4, 16 February 2018
 
 - JS: Fix parser for dependencies with a resolutions entry
