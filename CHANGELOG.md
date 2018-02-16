@@ -1,3 +1,7 @@
+## v0.47.2, 16 February 2018
+
+- Require Ruby 2.5
+
 ## v0.47.1, 15 February 2018
 
 - Correct semantic commit casing for library updates
