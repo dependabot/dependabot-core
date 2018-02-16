@@ -20,10 +20,6 @@ module Dependabot
         @pr_message_footer = pr_message_footer
       end
 
-      def commit_message
-        pr_name + "\n\n" + pr_message_without_footer
-      end
-
       def pr_name
         return library_pr_name if library?
 
@@ -47,6 +43,10 @@ module Dependabot
       def pr_message
         return pr_message_without_footer unless pr_message_footer
         pr_message_without_footer + "\n\n#{pr_message_footer}"
+      end
+
+      def commit_message
+        pr_name + "\n\n" + pr_message_without_footer
       end
 
       private

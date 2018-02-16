@@ -122,7 +122,58 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it "replaces the colon with a hyphen" do
-        is_expected.to eq("dependabot/java/com.google.guava-guava-23.6-jre")
+        expect(new_branch_name).
+          to eq("dependabot/java/com.google.guava-guava-23.6-jre")
+      end
+    end
+
+    context "with SHA-1 versions" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
+          previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+          package_manager: "bundler",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: new_ref
+              }
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: old_ref
+              }
+            }
+          ]
+        )
+      end
+      let(:new_ref) { nil }
+      let(:old_ref) { nil }
+
+      it "truncates the version" do
+        expect(new_branch_name).to eq("dependabot/bundler/business-cff701")
+      end
+
+      context "due to a ref change" do
+        let(:new_ref) { "v1.1.0" }
+        let(:old_ref) { "v1.0.0" }
+
+        it "includes the ref rather than the commit" do
+          expect(new_branch_name).to eq("dependabot/bundler/business-v1.1.0")
+        end
       end
     end
   end
