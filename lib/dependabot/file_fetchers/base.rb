@@ -85,7 +85,8 @@ module Dependabot
       end
 
       def repo_contents(dir: ".")
-        path = Pathname.new(File.join(directory, dir)).cleanpath.to_path
+        path = Pathname.new(File.join(directory, dir)).
+               cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
         @repo_contents[dir] ||=
@@ -111,12 +112,13 @@ module Dependabot
       end
 
       def fetch_file_content(path)
+        path = path.gsub(%r{^/*}, "")
+
         case host
         when "github"
           tmp = github_client.contents(repo, path: path, ref: commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         when "gitlab"
-          path = path.gsub(%r{^/*}, "")
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         else raise "Unsupported host '#{host}'."

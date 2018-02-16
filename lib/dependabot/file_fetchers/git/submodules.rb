@@ -42,7 +42,7 @@ module Dependabot
 
         def fetch_submodule_ref_from_host(submodule_path)
           path = Pathname.new(File.join(directory, submodule_path)).
-                 cleanpath.to_path
+                 cleanpath.to_path.gsub(%r{^/*}, "")
           sha =
             case host
             when "github"

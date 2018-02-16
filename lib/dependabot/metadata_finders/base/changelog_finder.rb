@@ -59,7 +59,7 @@ module Dependabot
         def fetch_github_file_list
           files = github_client.contents(source.repo)
           if files.any? { |f| f.name == "docs" && f.type == "dir" }
-            files = github_client.contents(source.repo, path: "/docs") + files
+            files = github_client.contents(source.repo, path: "docs") + files
           end
           files
         end
