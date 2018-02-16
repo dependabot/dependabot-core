@@ -690,8 +690,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("lodash")
             expect(dependency.version).to eq("0.1.0")
-            expect(dependency.requirements).
-              to eq(
+            expect(dependency.requirements).to eq(
               [
                 {
                   requirement: "^0.1.0",
