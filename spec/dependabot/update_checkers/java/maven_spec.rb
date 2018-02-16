@@ -156,4 +156,151 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         )
     end
   end
+
+  describe "#latest_version_resolvable_with_full_unlock?" do
+    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+
+    context "with no latest version" do
+      before { allow(checker).to receive(:latest_version).and_return(nil) }
+      it { is_expected.to be_falsey }
+    end
+
+    context "with a non-property pom" do
+      let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+      it { is_expected.to be_falsey }
+    end
+
+    context "with a property pom" do
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:maven_central_metadata_url_beans) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-beans/maven-metadata.xml"
+      end
+      let(:maven_central_metadata_url_context) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-context/maven-metadata.xml"
+      end
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(described_class::Version.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_beans).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_context).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "delegates to the PropertyUpdater" do
+        expect(described_class::PropertyUpdater).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version: described_class::Version.new("23.6-jre")
+          ).
+          and_call_original
+        expect(subject).to eq(true)
+      end
+    end
+  end
+
+  describe "#updated_dependencies_after_full_unlock" do
+    subject { checker.send(:updated_dependencies_after_full_unlock) }
+
+    context "with a property pom" do
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:maven_central_metadata_url_beans) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-beans/maven-metadata.xml"
+      end
+      let(:maven_central_metadata_url_context) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/springframework/spring-context/maven-metadata.xml"
+      end
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(described_class::Version.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_beans).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_context).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "delegates to the PropertyUpdater" do
+        expect(described_class::PropertyUpdater).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version: described_class::Version.new("23.6-jre")
+          ).
+          and_call_original
+        expect(subject).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-beans",
+              version: "23.6-jre",
+              previous_version: "4.3.12.RELEASE",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "maven"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-context",
+              version: "23.6-jre",
+              previous_version: "4.3.12.RELEASE",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "maven"
+            )
+          ]
+        )
+      end
+    end
+  end
 end

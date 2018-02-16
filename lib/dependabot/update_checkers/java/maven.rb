@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "nokogiri"
-require "dependabot/shared_helpers"
 require "dependabot/update_checkers/base"
 require "dependabot/file_updaters/java/maven/declaration_finder"
 
@@ -11,10 +9,11 @@ module Dependabot
       class Maven < Dependabot::UpdateCheckers::Base
         require_relative "maven/requirements_updater"
         require_relative "maven/version"
+        require_relative "maven/version_finder"
+        require_relative "maven/property_updater"
 
         def latest_version
-          return nil if maven_central_latest_version.nil?
-          version_class.new(maven_central_latest_version)
+          VersionFinder.new(dependency: dependency).latest_release
         end
 
         def latest_resolvable_version
@@ -52,12 +51,21 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for Java (yet)
-          false
+          return false unless version_comes_from_multi_dependency_property?
+          property_updater.update_possible?
         end
 
         def updated_dependencies_after_full_unlock
-          raise NotImplementedError
+          property_updater.updated_dependencies
+        end
+
+        def property_updater
+          @property_updater ||=
+            PropertyUpdater.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              target_version: latest_version
+            )
         end
 
         def version_comes_from_multi_dependency_property?
@@ -82,27 +90,6 @@ module Dependabot
             ).declaration_node
 
           @declaration_node.at_css("version").content
-        end
-
-        def maven_central_latest_version
-          maven_central_dependency_metadata.at_css("release")&.content
-        end
-
-        def maven_central_dependency_metadata
-          @maven_central_dependency_metadata ||=
-            begin
-              response = Excon.get(
-                "#{maven_central_dependency_url}maven-metadata.xml",
-                idempotent: true,
-                middlewares: SharedHelpers.excon_middleware
-              )
-              Nokogiri::XML(response.body)
-            end
-        end
-
-        def maven_central_dependency_url
-          "https://search.maven.org/remotecontent?filepath="\
-          "#{dependency.name.gsub(/[:.]/, '/')}/"
         end
 
         def pom

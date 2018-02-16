@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "nokogiri"
 require "dependabot/file_updaters/java/maven"
 
 module Dependabot
