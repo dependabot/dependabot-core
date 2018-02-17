@@ -14,31 +14,29 @@ module Dependabot
       end
 
       def new_branch_name
-        path = [
-          "dependabot",
-          dependencies.first.package_manager,
-          files.first.directory
-        ]
-        path = path.compact
-
-        if dependencies.count > 1
-          File.join(*path, dependencies.map(&:name).join("-and-")).tr(":", "-")
-        elsif library?
-          dep = dependencies.first
-          File.join(
-            *path,
+        name =
+          if dependencies.count > 1
+            dependencies.map(&:name).join("-and-").tr(":", "-")
+          elsif library?
+            dep = dependencies.first
             "#{dep.name.tr(':', '-')}-#{sanitized_requirement(dep)}"
-          )
-        else
-          dep = dependencies.first
-          File.join(
-            *path,
+          else
+            dep = dependencies.first
             "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
-          )
-        end
+          end
+
+        File.join(prefix_array, name)
       end
 
       private
+
+      def prefix_array
+        [
+          "dependabot",
+          dependencies.first.package_manager,
+          files.first.directory
+        ].compact
+      end
 
       def sanitized_requirement(dependency)
         new_library_requirement(dependency).
