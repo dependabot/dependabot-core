@@ -1,3 +1,7 @@
+## v0.47.6, 17 February 2018
+
+- Java: Handle versionless declaration nodes in PropertyUpdater
+
 ## v0.47.5, 16 February 2018
 
 - Java: Handle property updates in a single PR (rather than creating several)
