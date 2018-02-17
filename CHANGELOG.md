@@ -1,3 +1,7 @@
+## v0.47.7, 17 February 2018
+
+- Java: Shorter branch names when updating multiple dependencies
+
 ## v0.47.6, 17 February 2018
 
 - Java: Handle versionless declaration nodes in PropertyUpdater
