@@ -8,9 +8,10 @@ require "dependabot/pull_request_creator/branch_namer"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do
-    described_class.new(dependencies: [dependency], files: files)
+    described_class.new(dependencies: dependencies, files: files)
   end
 
+  let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "business",
@@ -64,9 +65,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     end
 
     context "with multiple dependencies" do
-      let(:namer) do
-        described_class.new(dependencies: [dependency, dep2], files: files)
-      end
+      let(:dependencies) { [dependency, dep2] }
       let(:dep2) do
         Dependabot::Dependency.new(
           name: "statesman",
@@ -93,6 +92,66 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it { is_expected.to eq("dependabot/bundler/business-and-statesman") }
+
+      context "for a java update" do
+        let(:files) { [pom] }
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("java", "poms", "property_pom.xml")
+          )
+        end
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-beans",
+              version: "23.6-jre",
+              previous_version: "4.3.12.RELEASE",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "maven"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-context",
+              version: "23.6-jre",
+              previous_version: "4.3.12.RELEASE",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        it { is_expected.to eq("dependabot/maven/springframework.version") }
+      end
     end
 
     context "with a : in the name" do

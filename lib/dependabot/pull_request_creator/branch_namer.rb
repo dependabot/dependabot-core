@@ -14,8 +14,10 @@ module Dependabot
       end
 
       def new_branch_name
-        name =
-          if dependencies.count > 1
+        @name ||=
+          if dependencies.count > 1 && package_manager == "maven"
+            java_property_name
+          elsif dependencies.count > 1
             dependencies.map(&:name).join("-and-").tr(":", "-")
           elsif library?
             dep = dependencies.first
@@ -25,17 +27,30 @@ module Dependabot
             "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
           end
 
-        File.join(prefix_array, name)
+        File.join(prefixes, @name)
       end
 
       private
 
-      def prefix_array
+      def prefixes
         [
           "dependabot",
-          dependencies.first.package_manager,
+          package_manager,
           files.first.directory
         ].compact
+      end
+
+      def package_manager
+        dependencies.first.package_manager
+      end
+
+      def java_property_name
+        require "dependabot/file_updaters/java/maven/declaration_finder"
+
+        FileUpdaters::Java::Maven::DeclarationFinder.new(
+          dependency_name: dependencies.first.name,
+          pom_content: files.find { |f| f.name == "pom.xml" }.content
+        ).declaration_node.at_css("version").content.strip[2..-2]
       end
 
       def sanitized_requirement(dependency)
