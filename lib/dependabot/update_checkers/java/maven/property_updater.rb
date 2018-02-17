@@ -67,7 +67,7 @@ module Dependabot
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency_name: dep.name,
               pom_content: pom.content
-            ).declaration_node.at_css("version").content
+            ).declaration_node.at_css("version")&.content
           end
 
           def pom
