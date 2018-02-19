@@ -57,7 +57,7 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version(unlock_requirement:)
-          latest_resolvable_version ||=
+          latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               File.write(
                 "mix.exs",

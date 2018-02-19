@@ -198,6 +198,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
   end
 
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.latest_resolvable_version_with_no_unlock }
+    it { is_expected.to eq(Gem::Version.new("1.3.6")) }
+  end
+
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
 
