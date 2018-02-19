@@ -1,3 +1,9 @@
+## v0.47.8, 19 February 2018
+
+- Ruby Add specs for UpdateCheckers#latest_resolvable_version_with_no_unlock
+  and fix implementation
+- Elixir: Spec UpdateCheckers#latest_resolvable_version_with_no_unlock
+
 ## v0.47.7, 17 February 2018
 
 - Java: Shorter branch names when updating multiple dependencies
