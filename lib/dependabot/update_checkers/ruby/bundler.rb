@@ -23,18 +23,21 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          @latest_resolvable_version_with_no_unlock ||=
-            begin
-              if git_dependency?
-                return dependency.version if git_commit_checker.pinned?
-                return latest_resolvable_commit_with_unchanged_git_source
-              end
+          if git_dependency? && git_commit_checker.pinned?
+            return dependency.version
+          end
 
-              version_resolver(
-                remove_git_source: false,
-                unlock_requirement: false
-              ).latest_resolvable_version_details&.fetch(:version)
-            end
+          @latest_resolvable_version_detail_with_no_unlock ||=
+            version_resolver(
+              remove_git_source: false,
+              unlock_requirement: false
+            ).latest_resolvable_version_details
+
+          if git_dependency?
+            @latest_resolvable_version_detail_with_no_unlock&.fetch(:commit_sha)
+          else
+            @latest_resolvable_version_detail_with_no_unlock&.fetch(:version)
+          end
         end
 
         def updated_requirements
@@ -240,7 +243,7 @@ module Dependabot
             begin
               prepared_dependency_files = prepared_dependency_files(
                 remove_git_source: remove_git_source,
-                unlock_requirement: true
+                unlock_requirement: unlock_requirement
               )
 
               VersionResolver.new(

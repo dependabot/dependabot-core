@@ -1637,6 +1637,66 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     end
   end
 
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.latest_resolvable_version_with_no_unlock }
+
+    before do
+      stub_request(:get, "https://index.rubygems.org/versions").
+        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
+
+      stub_request(:get, "https://index.rubygems.org/info/business").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-business")
+        )
+
+      stub_request(:get, "https://index.rubygems.org/info/statesman").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems-info-statesman")
+        )
+    end
+
+    context "given a gem from rubygems" do
+      it { is_expected.to eq(Gem::Version.new("1.4.0")) }
+
+      context "with a version conflict at the latest version" do
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "version_conflict_no_req_change")
+        end
+        let(:lockfile_body) do
+          fixture("ruby", "lockfiles", "version_conflict_no_req_change.lock")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "ibandit",
+            version: "0.1.0",
+            requirements: requirements,
+            package_manager: "bundler"
+          )
+        end
+
+        before do
+          stub_request(:get, "https://index.rubygems.org/info/i18n").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-i18n")
+            )
+
+          stub_request(:get, "https://index.rubygems.org/info/ibandit").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems-info-ibandit")
+            )
+        end
+
+        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
+        # version compatible with the version of i18n in the Gemfile.
+        it { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
     let(:requirements_updater) do
