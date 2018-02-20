@@ -67,7 +67,11 @@ module Dependabot
 
     def branch_namer
       @branch_namer ||=
-        BranchNamer.new(dependencies: dependencies, files: files)
+        BranchNamer.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch
+        )
     end
 
     def library?

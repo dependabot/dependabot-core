@@ -279,6 +279,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           github_client: github_client
         )
       end
+      let(:branch_name) { "dependabot/bundler/my_branch/business-1.5.0" }
 
       it "creates a PR with the right details" do
         creator.create
@@ -288,7 +289,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           with(
             body: {
               base: "my_branch",
-              head: "dependabot/bundler/business-1.5.0",
+              head: "dependabot/bundler/my_branch/business-1.5.0",
               title: "PR name",
               body: "PR msg"
             }

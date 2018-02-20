@@ -6,11 +6,12 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files
+      attr_reader :dependencies, :files, :target_branch
 
-      def initialize(dependencies:, files:)
+      def initialize(dependencies:, files:, target_branch:)
         @dependencies = dependencies
         @files = files
+        @target_branch = target_branch
       end
 
       def new_branch_name
@@ -36,7 +37,8 @@ module Dependabot
         [
           "dependabot",
           package_manager,
-          files.first.directory
+          files.first.directory,
+          target_branch
         ].compact
       end
 

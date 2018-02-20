@@ -8,7 +8,11 @@ require "dependabot/pull_request_creator/branch_namer"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do
-    described_class.new(dependencies: dependencies, files: files)
+    described_class.new(
+      dependencies: dependencies,
+      files: files,
+      target_branch: target_branch
+    )
   end
 
   let(:dependencies) { [dependency] }
@@ -27,6 +31,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
+  let(:target_branch) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -62,6 +67,12 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it { is_expected.to eq("dependabot/bundler/directory/business-1.5.0") }
+    end
+
+    context "with a target branch" do
+      let(:target_branch) { "my-branch" }
+
+      it { is_expected.to eq("dependabot/bundler/my-branch/business-1.5.0") }
     end
 
     context "with multiple dependencies" do
