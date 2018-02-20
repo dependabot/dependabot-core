@@ -1,6 +1,11 @@
+## v0.47.9, 20 February 2018
+
+- Check for existing PRs before assuming the presence of a branch means there's
+  no need to create one
+
 ## v0.47.8, 19 February 2018
 
-- Ruby Add specs for UpdateCheckers#latest_resolvable_version_with_no_unlock
+- Ruby: Add specs for UpdateCheckers#latest_resolvable_version_with_no_unlock
   and fix implementation
 - Elixir: Spec UpdateCheckers#latest_resolvable_version_with_no_unlock
 
