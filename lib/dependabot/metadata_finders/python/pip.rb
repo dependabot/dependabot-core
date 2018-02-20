@@ -22,12 +22,10 @@ module Dependabot
             pypi_listing.dig("info", "docs_url")
           ].compact
 
-          source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
+          source_url = potential_source_urls.find { |url| Source.from_url(url) }
           source_url ||= source_from_description
 
-          return nil unless source_url
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(source_url)
         end
 
         def source_from_description
@@ -35,10 +33,12 @@ module Dependabot
           desc = pypi_listing.dig("info", "description")
           return unless desc
 
-          desc.scan(SOURCE_REGEX) { github_urls << Regexp.last_match.to_s }
+          desc.scan(Source::SOURCE_REGEX) do
+            github_urls << Regexp.last_match.to_s
+          end
 
           github_urls.find do |url|
-            repo = url.match(SOURCE_REGEX).named_captures["repo"]
+            repo = Source.from_url(url).repo
             repo.end_with?(dependency.name)
           end
         end

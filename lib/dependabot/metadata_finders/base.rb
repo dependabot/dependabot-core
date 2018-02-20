@@ -7,18 +7,27 @@ module Dependabot
       require "dependabot/metadata_finders/base/release_finder"
       require "dependabot/metadata_finders/base/commits_url_finder"
 
-      SOURCE_REGEX = %r{
-        (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
-        (?:\.com|\.org)[/:]
-        (?<repo>[^/\s]+/(?:(?!\.git)[^/\s#])+)[\./]?
-      }x
-
       class Source
+        SOURCE_REGEX = %r{
+          (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
+          (?:\.com|\.org)[/:]
+          (?<repo>[^/\s]+/(?:(?!\.git)[^/\s#])+)[\./]?
+        }x
+
         attr_reader :host, :repo
 
-        def initialize(host:, repo:)
+        def self.from_url(url_string)
+          return unless url_string&.match(SOURCE_REGEX)
+
+          captures = url_string.match(SOURCE_REGEX).named_captures
+
+          new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+        end
+
+        def initialize(host:, repo:, directory: nil)
           @host = host
           @repo = repo
+          @directory = directory
         end
 
         def url

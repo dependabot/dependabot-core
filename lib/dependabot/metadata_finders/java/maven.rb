@@ -16,11 +16,8 @@ module Dependabot
             pom_file.at_css("project scm issueManagement")&.content
           ].compact
 
-          source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
-
-          return nil unless source_url
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          source_url = potential_source_urls.find { |url| Source.from_url(url) }
+          Source.from_url(source_url)
         end
 
         def pom_file

@@ -12,9 +12,7 @@ module Dependabot
           url = dependency.requirements.first.fetch(:source)[:url] ||
                 dependency.requirements.first.fetch(:source).fetch("url")
 
-          return nil unless url.match?(SOURCE_REGEX)
-          captures = url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(url)
         end
       end
     end

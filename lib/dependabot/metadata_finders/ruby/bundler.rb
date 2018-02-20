@@ -57,20 +57,16 @@ module Dependabot
           source_url = rubygems_listing.
                        values_at(*SOURCE_KEYS).
                        compact.
-                       find { |url| url =~ SOURCE_REGEX }
+                       find { |url| Source.from_url(url) }
 
-          return nil unless source_url
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(source_url)
         end
 
         def find_source_from_git_url
           info = dependency.requirements.map { |r| r[:source] }.compact.first
 
           url = info[:url] || info.fetch("url")
-          return nil unless url.match?(SOURCE_REGEX)
-          captures = url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(url)
         end
 
         def rubygems_listing

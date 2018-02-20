@@ -37,11 +37,8 @@ module Dependabot
               ]
             end.compact
 
-          source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
-
-          return nil unless source_url
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          source_url = potential_source_urls.find { |url| Source.from_url(url) }
+          Source.from_url(source_url)
         end
 
         def new_source
@@ -61,9 +58,7 @@ module Dependabot
 
         def find_source_from_git_url
           url = new_source[:url] || new_source.fetch("url")
-          return nil unless url.match?(SOURCE_REGEX)
-          captures = url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(url)
         end
 
         def version_listings

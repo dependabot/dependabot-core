@@ -20,9 +20,7 @@ module Dependabot
             map { |r| r.fetch(:source) }.compact.
             first&.fetch(:url, nil)
 
-          return unless source_url&.match?(SOURCE_REGEX)
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(source_url)
         end
 
         def look_up_source_from_packagist
@@ -42,11 +40,9 @@ module Dependabot
             flat_map { |info| [info["homepage"], info.dig("source", "url")] }.
             compact
 
-          source_url = potential_source_urls.find { |url| url =~ SOURCE_REGEX }
+          source_url = potential_source_urls.find { |url| Source.from_url(url) }
 
-          return nil unless source_url
-          captures = source_url.match(SOURCE_REGEX).named_captures
-          Source.new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          Source.from_url(source_url)
         end
 
         def packagist_listing
