@@ -12,16 +12,21 @@ module Dependabot
           (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
           (?:\.com|\.org)[/:]
           (?<repo>[^/\s]+/(?:(?!\.git)[^/\s#])+)[\./]?
+          (?:(?:tree|blob|src)/master/(?<directory>.*)[\#|/])?
         }x
 
-        attr_reader :host, :repo
+        attr_reader :host, :repo, :directory
 
         def self.from_url(url_string)
-          return unless url_string&.match(SOURCE_REGEX)
+          return unless url_string&.match?(SOURCE_REGEX)
 
           captures = url_string.match(SOURCE_REGEX).named_captures
 
-          new(host: captures.fetch("host"), repo: captures.fetch("repo"))
+          new(
+            host: captures.fetch("host"),
+            repo: captures.fetch("repo"),
+            directory: captures.fetch("directory")
+          )
         end
 
         def initialize(host:, repo:, directory: nil)
