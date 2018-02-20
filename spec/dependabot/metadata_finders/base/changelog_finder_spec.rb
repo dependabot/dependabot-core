@@ -115,6 +115,36 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
+      context "with a directory" do
+        let(:github_response) { fixture("github", "business_files.json") }
+        let(:source) do
+          Dependabot::MetadataFinders::Base::Source.new(
+            host: "github",
+            repo: "gocardless/#{dependency_name}",
+            directory: "packages/stryker"
+          )
+        end
+        before do
+          stub_request(:get, github_url + "packages/stryker").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: fixture("github", "business_module_files.json"),
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "gets the right URL" do
+          expect(subject).
+            to eq("https://github.com/gocardless/business/blob/master/module"\
+                  "/CHANGELOG.md")
+        end
+
+        it "caches the call to GitHub" do
+          finder.changelog_url
+          finder.changelog_url
+          expect(WebMock).to have_requested(:get, github_url).once
+        end
+      end
+
       context "when the github_repo doesn't exists" do
         let(:github_response) { fixture("github", "not_found.json") }
         let(:github_status) { 404 }
