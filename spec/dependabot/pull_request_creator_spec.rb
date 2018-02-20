@@ -268,6 +268,68 @@ RSpec.describe Dependabot::PullRequestCreator do
       expect(creator.create.number).to eq(1347)
     end
 
+    context "when the branch already exists" do
+      before do
+        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+          to_return(status: 200,
+                    body: fixture("github", "ref.json"),
+                    headers: json_header)
+      end
+
+      context "but a PR to this target branch doesn't" do
+        before do
+          url = "#{watched_repo_url}/pulls?base=master&"\
+                "head=gocardless:#{branch_name}&state=all"
+          stub_request(:get, url).
+            to_return(status: 200, body: "[]", headers: json_header)
+        end
+
+        it "creates a PR with the right details" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/pulls").
+            with(
+              body: {
+                base: "master",
+                head: "dependabot/bundler/business-1.5.0",
+                title: "PR name",
+                body: "PR msg"
+              }
+            )
+        end
+
+        it "labels the PR" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+            with(body: '["dependencies"]')
+        end
+
+        it "returns details of the created pull request" do
+          expect(creator.create.title).to eq("new-feature")
+          expect(creator.create.number).to eq(1347)
+        end
+      end
+
+      context "and a PR to this target branch already exists" do
+        before do
+          url = "#{watched_repo_url}/pulls?base=master&"\
+                "head=gocardless:#{branch_name}&state=all"
+          stub_request(:get, url).
+            to_return(status: 200, body: "[{}]", headers: json_header)
+        end
+
+        it "returns nil" do
+          expect(creator.create).to be_nil
+
+          expect(WebMock).
+            to_not have_requested(:post, "#{watched_repo_url}/pulls")
+        end
+      end
+    end
+
     context "with a target branch" do
       subject(:creator) do
         described_class.new(
