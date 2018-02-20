@@ -1,3 +1,7 @@
+## v0.47.11, 20 February 2018
+
+- Look for changelog in the directory we have for a repo
+
 ## v0.47.10, 20 February 2018
 
 - Include target branch in branch name if present
