@@ -28,12 +28,11 @@ module Dependabot
       end
 
       def create
-        if branch_exists?
-          return if pull_request_exists?
-        else
-          commit = create_commit
-          return unless create_branch(commit)
-        end
+        # TODO: Only return if a previous PR exists (should match target branch)
+        return if branch_exists?
+
+        commit = create_commit
+        return unless create_branch(commit)
 
         create_label unless custom_labels || dependencies_label_exists?
 
@@ -51,15 +50,6 @@ module Dependabot
         true
       rescue Octokit::NotFound
         false
-      end
-
-      def pull_request_exists?
-        github_client.pull_requests(
-          repo_name,
-          head: "#{repo_name.split('/').first}:#{branch_name}",
-          base: target_branch || default_branch,
-          state: "all"
-        ).any?
       end
 
       def create_commit
