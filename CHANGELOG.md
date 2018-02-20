@@ -1,3 +1,7 @@
+## v0.47.10, 20 February 2018
+
+- Include target branch in branch name if present
+
 ## v0.47.9, 20 February 2018
 
 - Check for existing PRs before assuming the presence of a branch means there's
