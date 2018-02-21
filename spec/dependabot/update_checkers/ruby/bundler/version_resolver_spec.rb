@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/bundler/version_resolver"
@@ -43,14 +44,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:lockfile) do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-  let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
-
-  before do
-    allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-      to receive(:etag_for).
-      and_return("")
-  end
+  let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
+  let(:gemfile_fixture_name) { "Gemfile" }
+  let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
+  let(:lockfile_fixture_name) { "Gemfile.lock" }
 
   describe "#latest_version_details" do
     subject { resolver.latest_version_details }
@@ -519,6 +516,56 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
           it { is_expected.to be_nil }
         end
+      end
+    end
+  end
+
+  describe "#latest_resolvable_version_details" do
+    subject { resolver.latest_resolvable_version_details }
+
+    include_context "stub rubygems"
+
+    context "with a rubygems source" do
+      context "with a ~> version specified constraining the update" do
+        let(:gemfile_fixture_name) { "Gemfile" }
+        let(:lockfile_fixture_name) { "Gemfile.lock" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+      end
+
+      context "with a minor version specified that can update" do
+        let(:gemfile_fixture_name) { "minor_version_specified" }
+        let(:lockfile_fixture_name) { "Gemfile.lock" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
+
+      context "that only appears in the lockfile" do
+        let(:gemfile_fixture_name) { "subdependency" }
+        let(:lockfile_fixture_name) { "subdependency.lock" }
+        let(:dependency_name) { "i18n" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
+      end
+
+      context "with a version conflict at the latest version" do
+        let(:gemfile_fixture_name) { "version_conflict_no_req_change" }
+        let(:lockfile_fixture_name) { "version_conflict_no_req_change.lock" }
+        let(:dependency_name) { "ibandit" }
+
+        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
+        # version compatible with the version of i18n in the Gemfile.
+        its([:version]) { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      end
+
+      context "with a legacy Ruby which disallows the latest version" do
+        let(:gemfile_fixture_name) { "legacy_ruby" }
+        let(:lockfile_fixture_name) { "legacy_ruby.lock" }
+        let(:dependency_name) { "public_suffix" }
+
+        # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0
+        # or greater.
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
       end
     end
   end

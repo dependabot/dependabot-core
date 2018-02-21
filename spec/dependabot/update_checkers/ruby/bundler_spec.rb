@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "shared_contexts"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
@@ -366,6 +367,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   describe "#latest_version_resolvable_with_full_unlock?" do
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
+    include_context "stub rubygems"
+
     context "with no latest version" do
       before do
         stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
@@ -383,20 +386,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "when the force updater raises" do
-        before do
-          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-            to receive(:etag_for).and_return("")
-          stub_request(:get, "https://index.rubygems.org/versions").
-            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(status: 200, body: fixture("ruby", "rubygems-info-i18n"))
-          stub_request(:get, "https://index.rubygems.org/info/ibandit").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-ibandit")
-            )
-        end
-
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "version_conflict_requires_downgrade")
         end
@@ -414,28 +403,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "when the force updater succeeds" do
-        before do
-          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-            to receive(:etag_for).and_return("")
-          stub_request(:get, "https://index.rubygems.org/versions").
-            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-          info_url = "https://index.rubygems.org/info/"
-          stub_request(:get, info_url + "diff-lcs").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-diff-lcs")
-            )
-          stub_request(:get, info_url + "rspec-mocks").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-mocks")
-            )
-          stub_request(:get, info_url + "rspec-support").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-support")
-            )
-        end
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
         let(:lockfile_body) do
           fixture("ruby", "lockfiles", "version_conflict.lock")
@@ -453,36 +420,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       checker.send(:updated_dependencies_after_full_unlock)
     end
 
+    include_context "stub rubygems"
+
     context "with a latest version" do
       before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(target_version)
+        allow(checker).to receive(:latest_version).and_return(target_version)
       end
 
       context "when the force updater succeeds" do
-        before do
-          allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-            to receive(:etag_for).and_return("")
-          stub_request(:get, "https://index.rubygems.org/versions").
-            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-          info_url = "https://index.rubygems.org/info/"
-          stub_request(:get, info_url + "diff-lcs").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-diff-lcs")
-            )
-          stub_request(:get, info_url + "rspec-mocks").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-mocks")
-            )
-          stub_request(:get, info_url + "rspec-support").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-support")
-            )
-        end
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
         let(:lockfile_body) do
           fixture("ruby", "lockfiles", "version_conflict.lock")
@@ -539,22 +484,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    before do
-      stub_request(:get, "https://index.rubygems.org/versions").
-        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-      stub_request(:get, "https://index.rubygems.org/info/business").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-business")
-        )
-
-      stub_request(:get, "https://index.rubygems.org/info/statesman").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-statesman")
-        )
-    end
+    include_context "stub rubygems"
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -567,23 +497,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:requirements) { [] }
         let(:dependency_name) { "i18n" }
         let(:current_version) { "0.7.0.beta1" }
-
-        before do
-          stub_request(:get, "https://index.rubygems.org/versions").
-            to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-          stub_request(:get, "https://index.rubygems.org/info/ibandit").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-ibandit")
-            )
-
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-        end
 
         it { is_expected.to eq(Gem::Version.new("0.7.0")) }
       end
@@ -604,20 +517,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-
-          stub_request(:get, "https://index.rubygems.org/info/ibandit").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-ibandit")
-            )
-        end
-
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.
         it { is_expected.to eq(Gem::Version.new("0.3.4")) }
@@ -633,14 +532,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             requirements: requirements,
             package_manager: "bundler"
           )
-        end
-
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/public_suffix").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-public_suffix")
-            )
         end
 
         # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0
@@ -1066,36 +957,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
 
               before do
-                stub_request(:get, "https://index.rubygems.org/info/i18n").
-                  to_return(
-                    status: 200,
-                    body: fixture("ruby", "rubygems-info-i18n")
-                  )
-                rubygems_url = "https://index.rubygems.org/info/rest-client"
-                stub_request(:get, rubygems_url).
-                  to_return(
-                    status: 200,
-                    body: fixture("ruby", "rubygems-info-rest-client")
-                  )
-              end
-
-              before do
                 rubygems_response = fixture("ruby", "rubygems_response.json")
                 onfido_url = "https://rubygems.org/api/v1/gems/onfido.json"
                 stub_request(:get, onfido_url).
                   to_return(status: 200, body: rubygems_response)
-
-                info_url = "https://index.rubygems.org/info/"
-                stub_request(:get, info_url + "rspec-mocks").
-                  to_return(
-                    status: 200,
-                    body: fixture("ruby", "rubygems-info-rspec-mocks")
-                  )
-                stub_request(:get, info_url + "rspec-support").
-                  to_return(
-                    status: 200,
-                    body: fixture("ruby", "rubygems-info-rspec-support")
-                  )
 
                 allow_any_instance_of(Dependabot::GitCommitChecker).
                   to receive(:branch_or_ref_in_release?).
@@ -1285,34 +1150,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           around { |example| capture_stderr { example.run } }
 
           before do
-            stub_request(:get, "https://index.rubygems.org/info/i18n").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-i18n")
-              )
-            stub_request(:get, "https://index.rubygems.org/info/rest-client").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-rest-client")
-              )
-          end
-
-          before do
             rubygems_response = fixture("ruby", "rubygems_response.json")
             stub_request(:get, "https://rubygems.org/api/v1/gems/onfido.json").
               to_return(status: 200, body: rubygems_response)
-
-            info_url = "https://index.rubygems.org/info/"
-            stub_request(:get, info_url + "rspec-mocks").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-rspec-mocks")
-              )
-            stub_request(:get, info_url + "rspec-support").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-rspec-support")
-              )
 
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
@@ -1640,22 +1480,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
-    before do
-      stub_request(:get, "https://index.rubygems.org/versions").
-        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-      stub_request(:get, "https://index.rubygems.org/info/business").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-business")
-        )
-
-      stub_request(:get, "https://index.rubygems.org/info/statesman").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-statesman")
-        )
-    end
+    include_context "stub rubygems"
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.4.0")) }
@@ -1676,20 +1501,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           )
         end
 
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-
-          stub_request(:get, "https://index.rubygems.org/info/ibandit").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-ibandit")
-            )
-        end
-
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.
         it { is_expected.to eq(Gem::Version.new("0.3.4")) }
@@ -1699,6 +1510,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
+
+    include_context "stub rubygems"
+
     let(:requirements_updater) do
       Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater
     end
@@ -1713,22 +1527,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     before do
       stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
         to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
-    end
-    before do
-      stub_request(:get, "https://index.rubygems.org/versions").
-        to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-      stub_request(:get, "https://index.rubygems.org/info/business").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-business")
-        )
-
-      stub_request(:get, "https://index.rubygems.org/info/statesman").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems-info-statesman")
-        )
     end
 
     context "with a Gemfile and a Gemfile.lock" do
