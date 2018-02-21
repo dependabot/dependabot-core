@@ -326,14 +326,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_files) { [gemfile, lockfile, gemspec] }
 
         context "that is the gem we're checking" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "example",
-              version: "0.9.3",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "example" }
+          let(:current_version) { "0.9.3" }
           let(:requirements) do
             [
               {
@@ -515,20 +509,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         context "that requires other files" do
           let(:gemspec_fixture_name) { "no_overlap_with_require" }
-
           it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
 
         context "that is the gem we're checking" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "example",
-              version: "0.9.3",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
-
+          let(:dependency_name) { "example" }
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
       end
@@ -539,14 +524,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "git_source_no_ref" }
 
       context "that is the gem we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "business",
-            version: current_version,
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
+        let(:dependency_name) { "business" }
         let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
         let(:requirements) do
           [
@@ -607,14 +585,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         context "when the dependency has never been released" do
           let(:lockfile_fixture_name) { "git_source.lock" }
           let(:gemfile_fixture_name) { "git_source" }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "prius",
-              version: current_version,
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "prius" }
           let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
           let(:requirements) do
             [
@@ -662,14 +633,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         context "when the gem's tag is pinned" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "business",
-              version: current_version,
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "business" }
           let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
           let(:lockfile_fixture_name) { "git_source.lock" }
           let(:gemfile_fixture_name) { "git_source" }
@@ -820,14 +784,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   )
               end
 
-              let(:dependency) do
-                Dependabot::Dependency.new(
-                  name: "onfido",
-                  version: "7b36eac82a7e42049052a58af0a7943fe0363714",
-                  requirements: requirements,
-                  package_manager: "bundler"
-                )
+              let(:dependency_name) { "onfido" }
+              let(:current_version) do
+                "7b36eac82a7e42049052a58af0a7943fe0363714"
               end
+
               let(:requirements) do
                 [
                   {
@@ -867,14 +828,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               }
             ]
           end
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "business",
-              version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "business" }
+          let(:current_version) { "c5bf1bd47935504072ac0eba1006cf4d67af6a7a" }
 
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
@@ -904,14 +859,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:lockfile_fixture_name) { "bad_branch.lock" }
           around { |example| capture_stderr { example.run } }
 
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "prius",
-              version: "2.0.0",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "prius" }
+          let(:current_version) { "2.0.0" }
           let(:requirements) do
             [
               {
@@ -995,14 +944,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               and_return(version: Gem::Version.new("2.0.0"))
           end
 
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "onfido",
-              version: "1.8.0",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
+          let(:dependency_name) { "onfido" }
+          let(:current_version) { "1.8.0" }
           let(:requirements) do
             [
               {
@@ -1026,14 +969,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "that is not the gem we're checking" do
         let(:lockfile_fixture_name) { "git_source.lock" }
         let(:gemfile_fixture_name) { "git_source" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "statesman",
-            version: "1.2",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
+        let(:dependency_name) { "statesman" }
+        let(:current_version) { "1.2" }
+
         it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
         context "that is private" do
@@ -1262,14 +1200,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "with a version conflict at the latest version" do
         let(:gemfile_fixture_name) { "version_conflict_no_req_change" }
         let(:lockfile_fixture_name) { "version_conflict_no_req_change.lock" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "ibandit",
-            version: "0.1.0",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
+        let(:dependency_name) { "ibandit" }
+        let(:current_version) { "0.1.0" }
 
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.
@@ -1293,14 +1225,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "with a Gemfile and a Gemfile.lock" do
       let(:dependency_files) { [gemfile, lockfile] }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "business",
-          version: "1.4.0",
-          requirements: requirements,
-          package_manager: "bundler"
-        )
-      end
+      let(:dependency_name) { "business" }
+      let(:current_version) { "1.4.0" }
 
       let(:requirements) do
         [
@@ -1331,15 +1257,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:gemfile_fixture_name) { "git_source_with_version" }
         let(:lockfile_fixture_name) { "git_source_with_version.lock" }
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "business",
-            version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-
+        let(:dependency_name) { "business" }
+        let(:current_version) { "c5bf1bd47935504072ac0eba1006cf4d67af6a7a" }
         let(:requirements) do
           [
             {
@@ -1390,15 +1309,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_fixture_name) { "git_source" }
           let(:lockfile_fixture_name) { "git_source.lock" }
 
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "business",
-              version: "a1b78a929dac93a52f08db4f2847d76d6cfe39bd",
-              requirements: requirements,
-              package_manager: "bundler"
-            )
-          end
-
+          let(:dependency_name) { "business" }
+          let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
           let(:requirements) do
             [
               {
@@ -1549,14 +1461,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:lockfile_fixture_name) { "imports_gemspec.lock" }
       let(:gemspec_fixture_name) { "small_example" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "business",
-          version: "1.4.0",
-          requirements: requirements,
-          package_manager: "bundler"
-        )
-      end
+      let(:dependency_name) { "business" }
+      let(:current_version) { "1.4.0" }
 
       let(:requirements) do
         [
@@ -1595,13 +1501,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency_files) { [gemfile, gemspec] }
       let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:gemspec_fixture_name) { "small_example" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "business",
-          requirements: requirements,
-          package_manager: "bundler"
-        )
-      end
+      let(:dependency_name) { "business" }
+      let(:current_version) { nil }
 
       let(:requirements) do
         [
@@ -1638,14 +1539,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "with a Gemfile only" do
       let(:dependency_files) { [gemfile] }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "business",
-          requirements: requirements,
-          package_manager: "bundler"
-        )
-      end
-
+      let(:dependency_name) { "business" }
+      let(:current_version) { nil }
       let(:requirements) do
         [
           {
@@ -1675,14 +1570,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "with a gemspec only" do
       let(:dependency_files) { [gemspec] }
       let(:gemspec_fixture_name) { "small_example" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "business",
-          requirements: requirements,
-          package_manager: "bundler"
-        )
-      end
-
+      let(:dependency_name) { "business" }
+      let(:current_version) { nil }
       let(:requirements) do
         [
           {
