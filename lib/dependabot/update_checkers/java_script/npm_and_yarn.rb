@@ -286,6 +286,7 @@ module Dependabot
         def npm_response_matches_package_json?
           project_name = JSON.parse(package_json.content)["name"]
           project_description = JSON.parse(package_json.content)["description"]
+          return false unless project_description
 
           # Check if the project is listed on npm. If it is, treat as a library
           @project_npm_response ||= Excon.get(
