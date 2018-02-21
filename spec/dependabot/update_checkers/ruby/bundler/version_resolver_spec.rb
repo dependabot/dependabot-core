@@ -178,7 +178,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         stub_request(:get, registry_url + "api/v1/dependencies").
           with(basic_auth: ["SECRET_CODES", ""]).
           to_return(status: 200)
-        # Note: returns details of three versions: 1.5.0, 1.9.0, and 1.10.0.beta
         stub_request(:get, gemfury_business_url).
           with(basic_auth: ["SECRET_CODES", ""]).
           to_return(status: 200, body: fixture("ruby", "gemfury_response"))
@@ -394,6 +393,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "with a downloaded gemspec" do
         let(:dependency_files) { [gemfile, lockfile, gemspec] }
         let(:gemspec_fixture_name) { "example" }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemspecs", gemspec_fixture_name),
+            name: "plugins/example/example.gemspec"
+          )
+        end
 
         context "that is not the gem we're checking" do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -401,16 +406,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
         context "that is the gem we're checking" do
           let(:dependency_name) { "example" }
-          let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: { type: "path" }
-              }
-            ]
-          end
+          let(:source) { { type: "path" } }
 
           it { is_expected.to be_nil }
         end
@@ -521,6 +517,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       it "raises a DependencyFileNotResolvable error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "given an unreadable Gemfile" do
+      let(:gemfile_fixture_name) { "includes_requires" }
+
+      it "raises a useful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
   end
