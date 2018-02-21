@@ -35,8 +35,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:dependency_name) { "business" }
   let(:current_version) { "1.3" }
   let(:requirements) do
-    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+    [
+      {
+        file: "Gemfile",
+        requirement: requirement_string,
+        groups: [],
+        source: source
+      }
+    ]
   end
+  let(:source) { nil }
+  let(:requirement_string) { ">= 0" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
@@ -79,16 +88,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
       context "with a prerelease version specified" do
         let(:gemfile_fixture_name) { "prerelease_specified" }
-        let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0.rc1",
-              groups: [],
-              source: nil
-            }
-          ]
-        end
+        let(:requirement_string) { "~> 1.4.0.rc1" }
+
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
           stub_request(
@@ -165,16 +166,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     context "with a private rubygems source" do
       let(:gemfile_fixture_name) { "specified_source" }
       let(:lockfile_fixture_name) { "specified_source.lock" }
-      let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: { type: "rubygems" }
-          }
-        ]
-      end
+      let(:source) { { type: "rubygems" } }
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
@@ -328,20 +320,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "that is the gem we're checking for" do
         let(:dependency_name) { "business" }
         let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
-        let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                branch: "master",
-                ref: "a1b78a9" # Pinned, to ensure we unpin
-              }
-            }
-          ]
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "a1b78a9" # Pinned, to ensure we unpin
+          }
         end
 
         it "fetches the latest SHA-1 hash" do
@@ -353,20 +338,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         context "when the gem has a bad branch" do
           let(:gemfile_fixture_name) { "bad_branch_business" }
           let(:lockfile_fixture_name) { "bad_branch_business.lock" }
-          let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "bad_branch",
-                  ref: "bad_branch"
-                }
-              }
-            ]
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "bad_branch",
+              ref: "bad_branch"
+            }
           end
           around { |example| capture_stderr { example.run } }
 
