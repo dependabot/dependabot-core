@@ -48,15 +48,26 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:requirement_string) { ">= 0" }
 
   let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
+    Dependabot::DependencyFile.new(
+      content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+      name: "Gemfile"
+    )
   end
   let(:lockfile) do
-    Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
+    Dependabot::DependencyFile.new(
+      content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+      name: "Gemfile.lock"
+    )
   end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
+  let(:gemspec) do
+    Dependabot::DependencyFile.new(
+      content: fixture("ruby", "gemspecs", gemspec_fixture_name),
+      name: "example.gemspec"
+    )
+  end
   let(:gemfile_fixture_name) { "Gemfile" }
-  let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
   let(:lockfile_fixture_name) { "Gemfile.lock" }
+  let(:gemspec_fixture_name) { "example" }
 
   describe "#latest_version_details" do
     subject { resolver.latest_version_details }
@@ -117,19 +128,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
       context "with a gemspec and a Gemfile" do
         let(:dependency_files) { [gemfile, gemspec] }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: gemspec_body,
-            name: "example.gemspec"
-          )
-        end
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+        let(:gemspec_fixture_name) { "small_example" }
         let(:gemfile_fixture_name) { "imports_gemspec" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "with a dependency that only appears in the gemspec" do
-          let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
+          let(:gemspec_fixture_name) { "example" }
           let(:dependency_name) { "octokit" }
 
           before do
@@ -144,13 +149,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
       context "with only a gemspec" do
         let(:dependency_files) { [gemspec] }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: gemspec_body,
-            name: "example.gemspec"
-          )
-        end
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
+        let(:gemspec_fixture_name) { "small_example" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
@@ -393,14 +392,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       end
 
       context "with a downloaded gemspec" do
-        let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: gemspec_body,
-            name: "plugins/example/example.gemspec"
-          )
-        end
         let(:dependency_files) { [gemfile, lockfile, gemspec] }
+        let(:gemspec_fixture_name) { "example" }
 
         context "that is not the gem we're checking" do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
