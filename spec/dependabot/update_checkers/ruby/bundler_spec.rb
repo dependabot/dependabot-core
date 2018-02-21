@@ -365,9 +365,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
-
     include_context "stub rubygems"
+    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
       before do
@@ -416,11 +415,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
+    include_context "stub rubygems"
     subject(:updated_dependencies_after_full_unlock) do
       checker.send(:updated_dependencies_after_full_unlock)
     end
-
-    include_context "stub rubygems"
 
     context "with a latest version" do
       before do
@@ -482,9 +480,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
-
     include_context "stub rubygems"
+    subject { checker.latest_resolvable_version }
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -1478,9 +1475,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    subject { checker.latest_resolvable_version_with_no_unlock }
-
     include_context "stub rubygems"
+    subject { checker.latest_resolvable_version_with_no_unlock }
 
     context "given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.4.0")) }
@@ -1509,9 +1505,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#updated_requirements" do
-    subject(:updated_requirements) { checker.updated_requirements }
-
     include_context "stub rubygems"
+    subject(:updated_requirements) { checker.updated_requirements }
 
     let(:requirements_updater) do
       Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater

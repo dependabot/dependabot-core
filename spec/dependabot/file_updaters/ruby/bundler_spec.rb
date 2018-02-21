@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "shared_contexts"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
@@ -9,30 +10,9 @@ require "dependabot/file_updaters/ruby/bundler"
 require_relative "../shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
+  include_context "stub rubygems"
+
   it_behaves_like "a dependency file updater"
-
-  before do
-    allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-      to receive(:etag_for).
-      and_return("")
-  end
-
-  before do
-    stub_request(:get, "https://index.rubygems.org/versions").
-      to_return(status: 200, body: fixture("ruby", "rubygems-index"))
-
-    stub_request(:get, "https://index.rubygems.org/info/business").
-      to_return(
-        status: 200,
-        body: fixture("ruby", "rubygems-info-business")
-      )
-
-    stub_request(:get, "https://index.rubygems.org/info/statesman").
-      to_return(
-        status: 200,
-        body: fixture("ruby", "rubygems-info-statesman")
-      )
-  end
 
   let(:updater) do
     described_class.new(
@@ -203,13 +183,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             package_manager: "bundler"
           )
         end
-        before do
-          stub_request(:get, "https://index.rubygems.org/info/i18n").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-i18n")
-            )
-        end
         its(:content) { is_expected.to include "\"i18n\", \"~> 0.5.0\"" }
       end
 
@@ -233,24 +206,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with multiple dependencies" do
-        before do
-          info_url = "https://index.rubygems.org/info/"
-          stub_request(:get, info_url + "diff-lcs").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-diff-lcs")
-            )
-          stub_request(:get, info_url + "rspec-mocks").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-mocks")
-            )
-          stub_request(:get, info_url + "rspec-support").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-support")
-            )
-        end
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
         let(:lockfile_body) do
           fixture("ruby", "lockfiles", "version_conflict.lock")
@@ -681,14 +636,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             )
           end
 
-          before do
-            stub_request(:get, "https://index.rubygems.org/info/public_suffix").
-              to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems-info-public_suffix")
-              )
-          end
-
           it "locks the updated gem to the latest version" do
             expect(file.content).to include "public_suffix (1.4.6)"
           end
@@ -748,24 +695,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with multiple dependencies" do
-        before do
-          info_url = "https://index.rubygems.org/info/"
-          stub_request(:get, info_url + "diff-lcs").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-diff-lcs")
-            )
-          stub_request(:get, info_url + "rspec-mocks").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-mocks")
-            )
-          stub_request(:get, info_url + "rspec-support").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "rubygems-info-rspec-support")
-            )
-        end
         let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
         let(:lockfile_body) do
           fixture("ruby", "lockfiles", "version_conflict.lock")
@@ -1179,14 +1108,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 ],
                 package_manager: "bundler"
               )
-            end
-
-            before do
-              stub_request(:get, "https://index.rubygems.org/info/json").
-                to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems-info-json")
-                )
             end
 
             it "returns an updated gemspec and Gemfile.lock" do
