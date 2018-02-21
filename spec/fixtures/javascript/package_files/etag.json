@@ -1,6 +1,6 @@
 {
   "name": "etag",
-  "description": "Create simple HTTP ETags",
+  "description": "Create simple ETags",
   "version": "1.8.0",
   "contributors": [
     "Douglas Christopher Wilson <doug@somethingdoug.com>",

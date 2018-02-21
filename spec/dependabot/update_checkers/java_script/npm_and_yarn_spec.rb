@@ -24,7 +24,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       credentials: credentials
     )
   end
-  let(:dependency_files) { [] }
+  let(:dependency_files) { [package_json] }
+  let(:package_json) do
+    Dependabot::DependencyFile.new(
+      name: "package.json",
+      content: fixture("javascript", "package_files", "package.json")
+    )
+  end
 
   let(:credentials) do
     [
@@ -905,6 +911,41 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             }
           ]
         )
+    end
+
+    context "with a library (that has a lockfile)" do
+      let(:package_json) do
+        # We've already stubbed hitting the registry for etag (since it's also
+        # the dependency we're checking in this spec)
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: fixture("javascript", "package_files", "etag.json")
+        )
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: nil,
+            latest_version: "1.7.0",
+            latest_resolvable_version: "1.7.0",
+            library: true
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [
+              {
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+      end
     end
 
     context "with a git dependency" do

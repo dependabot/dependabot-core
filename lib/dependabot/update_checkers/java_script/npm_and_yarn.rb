@@ -265,7 +265,39 @@ module Dependabot
         end
 
         def library?
-          dependency.version.nil?
+          return true if dependency.version.nil?
+
+          return false unless package_json_may_be_for_library?
+
+          npm_response_matches_package_json?
+        end
+
+        def package_json_may_be_for_library?
+          parsed_package_json = JSON.parse(package_json.content)
+
+          project_name = parsed_package_json&.fetch("name", nil)
+          return false unless project_name
+          return false if project_name.match?(/\{\{.*\}\}/)
+          return false unless parsed_package_json["version"]
+          return false if parsed_package_json["private"]
+          true
+        end
+
+        def npm_response_matches_package_json?
+          project_name = JSON.parse(package_json.content)["name"]
+          project_description = JSON.parse(package_json.content)["description"]
+
+          # Check if the project is listed on npm. If it is, treat as a library
+          @project_npm_response ||= Excon.get(
+            "https://registry.npmjs.org/#{project_name.gsub('/', '%2F')}",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+
+          return false unless @project_npm_response.status == 200
+          @project_npm_response.body.include?(project_description)
+        rescue Excon::Error::Socket, Excon::Error::Timeout, JSON::ParserError
+          false
         end
 
         def development_dependency?
@@ -319,6 +351,11 @@ module Dependabot
 
         def npmrc
           @npmrc ||= dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def package_json
+          @package_json ||=
+            dependency_files.find { |f| f.name == "package.json" }
         end
 
         def git_commit_checker
