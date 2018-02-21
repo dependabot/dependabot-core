@@ -484,8 +484,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     subject { checker.latest_resolvable_version }
 
     context "given a gem from rubygems" do
-      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
-
       context "that only appears in the lockfile" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "subdependency") }
         let(:lockfile_body) do
@@ -496,53 +494,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:current_version) { "0.7.0.beta1" }
 
         it { is_expected.to eq(Gem::Version.new("0.7.0")) }
-      end
-
-      context "with a version conflict at the latest version" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "version_conflict_partial")
-        end
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "version_conflict_partial.lock")
-        end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "ibandit",
-            version: "0.1.0",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-
-        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
-        # version compatible with the version of i18n in the Gemfile.
-        it { is_expected.to eq(Gem::Version.new("0.3.4")) }
-      end
-
-      context "with a legacy Ruby which disallows the latest version" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "legacy_ruby") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "legacy_ruby.lock") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "public_suffix",
-            version: "1.0.1",
-            requirements: requirements,
-            package_manager: "bundler"
-          )
-        end
-
-        # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0
-        # or greater.
-        it { is_expected.to eq(Gem::Version.new("1.4.6")) }
-      end
-
-      context "with a Bundler version specified" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "bundler_specified") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "bundler_specified.lock")
-        end
-
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
 
       context "with no version specified" do
@@ -570,35 +521,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
-    end
-
-    context "given a gem from a private gem source" do
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "specified_source.lock")
-      end
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "specified_source") }
-      let(:gemfury_url) { "https://repo.fury.io/greysteil/" }
-      before do
-        stub_request(:get, gemfury_url + "versions").
-          to_return(status: 200, body: fixture("ruby", "gemfury-index"))
-
-        stub_request(:get, gemfury_url + "info/business").
-          to_return(status: 404)
-
-        stub_request(:get, gemfury_url + "api/v1/dependencies").
-          to_return(status: 200)
-
-        stub_request(
-          :get,
-          gemfury_url + "api/v1/dependencies?gems=business,statesman"
-        ).to_return(status: 200, body: fixture("ruby", "gemfury_response"))
-        stub_request(:get, gemfury_url + "api/v1/dependencies?gems=business").
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
-        stub_request(:get, gemfury_url + "api/v1/dependencies?gems=statesman").
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
-      end
-
-      it { is_expected.to eq(Gem::Version.new("1.9.0")) }
     end
 
     context "given a gem with a path source" do
@@ -654,43 +576,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
-      end
-    end
-
-    context "when a gem has been yanked" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-      let(:lockfile_body) { fixture("ruby", "lockfiles", "yanked_gem.lock") }
-
-      context "and it's that gem that we're attempting to bump" do
-        it "finds an updated version just fine" do
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.8.0"))
-        end
-      end
-
-      context "and it's another gem that we're attempting to bump" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "statesman",
-            version: "1.2",
-            requirements: requirements,
-            package_manager: "ruby"
-          )
-        end
-
-        it "raises a Dependabot::DependencyFileNotResolvable error" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
-      end
-    end
-
-    context "when the Gem can't be found" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "unavailable_gem") }
-
-      it "raises a DependencyFileNotResolvable error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
