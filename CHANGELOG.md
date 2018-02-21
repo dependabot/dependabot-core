@@ -1,3 +1,7 @@
+## v0.47.12, 21 February 2018
+
+- Bump pipenv from 9.0.3 to 9.1.0 in /helpers/python
+
 ## v0.47.11, 20 February 2018
 
 - Look for changelog in the directory we have for a repo
