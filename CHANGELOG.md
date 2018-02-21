@@ -1,3 +1,7 @@
+## v0.47.13, 21 February 2018
+
+- JS: Better detection of whether a project is an app or a library
+
 ## v0.47.12, 21 February 2018
 
 - Bump pipenv from 9.0.3 to 9.1.0 in /helpers/python
