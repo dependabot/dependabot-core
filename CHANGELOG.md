@@ -1,3 +1,7 @@
+## v0.47.14, 21 February 2018
+
+- JS: Don't check npm for package.json files with no description
+
 ## v0.47.13, 21 February 2018
 
 - JS: Better detection of whether a project is an app or a library
