@@ -1,3 +1,7 @@
+## v0.47.15, 22 February 2018
+
+- JS: Fix encoding bug
+
 ## v0.47.14, 21 February 2018
 
 - JS: Don't check npm for package.json files with no description
