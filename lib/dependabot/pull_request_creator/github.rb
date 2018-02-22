@@ -61,6 +61,7 @@ module Dependabot
         options = author_details&.any? ? { author: author_details } : {}
 
         if options[:author]&.any? && signature_key
+          timestamp = Time.now.utc
           options[:signature] = commit_signature(tree, timestamp)
           options[:author][:date] = timestamp.iso8601
         end
@@ -171,7 +172,8 @@ module Dependabot
 
       def commit_signature(tree, timestamp)
         time_str = timestamp.strftime("%s %z")
-        name, email = author_details[:name], author_details[:email]
+        name = author_details[:name]
+        email = author_details[:email]
         commit_object = [
           "commit #{commit_message.length}\0tree #{tree.sha}",
           "parent #{base_commit}",

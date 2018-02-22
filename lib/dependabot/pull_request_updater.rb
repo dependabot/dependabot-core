@@ -5,16 +5,18 @@ require "octokit"
 module Dependabot
   class PullRequestUpdater
     attr_reader :watched_repo, :files, :base_commit, :github_client,
-                :pull_request_number, :author_details
+                :pull_request_number, :author_details, :signature_key
 
     def initialize(repo:, base_commit:, files:, github_client:,
-                   pull_request_number:, author_details: nil)
+                   pull_request_number:, author_details: nil,
+                   signature_key: nil)
       @watched_repo = repo
       @base_commit = base_commit
       @files = files
       @github_client = github_client
       @pull_request_number = pull_request_number
       @author_details = author_details
+      @signature_key = signature_key
     end
 
     def update
@@ -41,6 +43,13 @@ module Dependabot
       tree = create_tree
 
       options = author_details&.any? ? { author: author_details } : {}
+
+      if options[:author]&.any? && signature_key
+        timestamp = Time.now.utc
+        options[:signature] = commit_signature(tree, timestamp)
+        options[:author][:date] = timestamp.iso8601
+      end
+
       github_client.create_commit(
         watched_repo,
         commit_message,
@@ -87,15 +96,39 @@ module Dependabot
       )
     rescue Octokit::UnprocessableEntity => error
       # Return quietly if the branch has been deleted
-      return nil if error.message.match?(/Reference does not exist/)
+      return nil if error.message.match?(/Reference does not exist/i)
 
       # Return quietly if the branch has been merged
-      return nil if error.message.match?(/Reference cannot be updated/)
+      return nil if error.message.match?(/Reference cannot be updated/i)
       raise
     end
 
     def commit_message
       github_client.git_commit(watched_repo, pull_request.head.sha).message
+    end
+
+    def commit_signature(tree, timestamp)
+      time_str = timestamp.strftime("%s %z")
+      name = author_details[:name]
+      email = author_details[:email]
+      commit_object = [
+        "commit #{commit_message.length}\0tree #{tree.sha}",
+        "parent #{base_commit}",
+        "author #{name} <#{email}> #{time_str}",
+        "committer #{name} <#{email}> #{time_str}",
+        "",
+        commit_message
+      ]
+      data = commit_object.join("\n")
+
+      Dir.mktmpdir do |dir|
+        GPGME::Engine.home_dir = dir
+        GPGME::Key.import(signature_key)
+
+        crypto = GPGME::Crypto.new(armor: true)
+        opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
+        return crypto.sign(data, opts)
+      end
     end
   end
 end
