@@ -9,11 +9,13 @@ module Dependabot
     class Github
       attr_reader :repo_name, :branch_name, :base_commit, :github_client,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :custom_labels
+                  :target_branch, :author_details, :signature_key,
+                  :custom_labels
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, custom_labels:)
+                     target_branch:, author_details:, signature_key:,
+                     custom_labels:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -24,6 +26,7 @@ module Dependabot
         @pr_description = pr_description
         @pr_name        = pr_name
         @author_details = author_details
+        @signature_key  = signature_key
         @custom_labels  = custom_labels
       end
 
@@ -56,6 +59,12 @@ module Dependabot
         tree = create_tree
 
         options = author_details&.any? ? { author: author_details } : {}
+
+        if options[:author]&.any? && signature_key
+          options[:signature] = commit_signature(tree, timestamp)
+          options[:author][:date] = timestamp.iso8601
+        end
+
         github_client.create_commit(
           repo_name,
           commit_message,
@@ -158,6 +167,29 @@ module Dependabot
 
       def default_branch
         @default_branch ||= github_client.repository(repo_name).default_branch
+      end
+
+      def commit_signature(tree, timestamp)
+        time_str = timestamp.strftime("%s %z")
+        name, email = author_details[:name], author_details[:email]
+        commit_object = [
+          "commit #{commit_message.length}\0tree #{tree.sha}",
+          "parent #{base_commit}",
+          "author #{name} <#{email}> #{time_str}",
+          "committer #{name} <#{email}> #{time_str}",
+          "",
+          commit_message
+        ]
+        data = commit_object.join("\n")
+
+        Dir.mktmpdir do |dir|
+          GPGME::Engine.home_dir = dir
+          GPGME::Key.import(signature_key)
+
+          crypto = GPGME::Crypto.new(armor: true)
+          opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
+          return crypto.sign(data, opts)
+        end
       end
     end
   end
