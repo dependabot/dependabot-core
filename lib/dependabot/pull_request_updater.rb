@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "octokit"
+require "gpgme"
+require "tmpdir"
 
 module Dependabot
   class PullRequestUpdater
@@ -112,7 +114,7 @@ module Dependabot
       name = author_details[:name]
       email = author_details[:email]
       commit_object = [
-        "commit #{commit_message.length}\0tree #{tree.sha}",
+        "tree #{tree.sha}",
         "parent #{base_commit}",
         "author #{name} <#{email}> #{time_str}",
         "committer #{name} <#{email}> #{time_str}",

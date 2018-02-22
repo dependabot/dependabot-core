@@ -192,6 +192,85 @@ RSpec.describe Dependabot::PullRequestUpdater do
                  author: { email: "support@dependabot.com", name: "dependabot" }
                })
       end
+
+      context "with a signature key" do
+        subject(:updater) do
+          described_class.new(
+            repo: repo,
+            base_commit: base_commit,
+            files: files,
+            github_client: github_client,
+            pull_request_number: pull_request_number,
+            author_details: {
+              email: "support@dependabot.com",
+              name: "dependabot"
+            },
+            signature_key: signature_key
+          )
+        end
+        let(:signature_key) { fixture("keys", "pgp.key") }
+        let(:public_key) { fixture("keys", "pgp.pub") }
+        let(:text_to_sign) do
+          "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n"\
+          "parent basecommitsha\n"\
+          "author dependabot <support@dependabot.com> 978307200 +0000\n"\
+          "committer dependabot <support@dependabot.com> 978307200 +0000\n"\
+          "\n"\
+          "Bump business from 1.4.0 to 1.5.0\n"\
+          "\n"\
+          "Bumps [business](https://github.com/gocardless/business) from "\
+          "1.4.0 to 1.5.0.\n"\
+          "- [Changelog](https://github.com/gocardless/business/blob/"\
+          "master/CHANGELOG.md)\n"\
+          "- [Commits](https://github.com/gocardless/business/compare/"\
+          "v3.0.0...v1.5.0)"
+        end
+        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
+
+        it "passes the author details and signature to GitHub" do
+          updater.update
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            with(
+              body: {
+                parents: anything,
+                tree: anything,
+                message: anything,
+                author: {
+                  email: "support@dependabot.com",
+                  name: "dependabot",
+                  date: "2001-01-01T00:00:00Z"
+                },
+                signature: instance_of(String)
+              }
+            )
+        end
+
+        it "signs the correct text, correctly" do
+          updater.update
+
+          expect(WebMock).to(
+            have_requested(:post, "#{watched_repo_url}/git/commits").
+              with do |req|
+                signature = JSON.parse(req.body)["signature"]
+                valid_sig = false
+
+                Dir.mktmpdir do |dir|
+                  GPGME::Engine.home_dir = dir
+                  GPGME::Key.import(public_key)
+
+                  crypto = GPGME::Crypto.new(armor: true)
+                  crypto.verify(signature, signed_text: text_to_sign) do |sig|
+                    valid_sig = sig.valid?
+                  end
+                end
+
+                valid_sig
+              end
+          )
+        end
+      end
     end
 
     it "updates the PR's branch to point to that commit" do

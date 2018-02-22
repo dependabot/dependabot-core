@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "octokit"
+require "gpgme"
 require "securerandom"
+require "tmpdir"
 require "dependabot/pull_request_creator"
 
 module Dependabot
@@ -175,7 +177,7 @@ module Dependabot
         name = author_details[:name]
         email = author_details[:email]
         commit_object = [
-          "commit #{commit_message.length}\0tree #{tree.sha}",
+          "tree #{tree.sha}",
           "parent #{base_commit}",
           "author #{name} <#{email}> #{time_str}",
           "committer #{name} <#{email}> #{time_str}",
