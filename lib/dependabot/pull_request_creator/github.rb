@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 require "octokit"
-require "gpgme"
 require "securerandom"
-require "tmpdir"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestCreator
@@ -63,9 +62,8 @@ module Dependabot
         options = author_details&.any? ? { author: author_details } : {}
 
         if options[:author]&.any? && signature_key
-          timestamp = Time.now.utc
-          options[:signature] = commit_signature(tree, timestamp)
-          options[:author][:date] = timestamp.iso8601
+          options[:author][:date] = Time.now.utc.iso8601
+          options[:signature] = commit_signature(tree, options[:author])
         end
 
         github_client.create_commit(
@@ -172,28 +170,14 @@ module Dependabot
         @default_branch ||= github_client.repository(repo_name).default_branch
       end
 
-      def commit_signature(tree, timestamp)
-        time_str = timestamp.strftime("%s %z")
-        name = author_details[:name]
-        email = author_details[:email]
-        commit_object = [
-          "tree #{tree.sha}",
-          "parent #{base_commit}",
-          "author #{name} <#{email}> #{time_str}",
-          "committer #{name} <#{email}> #{time_str}",
-          "",
-          commit_message
-        ]
-        data = commit_object.join("\n")
-
-        Dir.mktmpdir do |dir|
-          GPGME::Engine.home_dir = dir
-          GPGME::Key.import(signature_key)
-
-          crypto = GPGME::Crypto.new(armor: true)
-          opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
-          return crypto.sign(data, opts)
-        end
+      def commit_signature(tree, author_details_with_date)
+        CommitSigner.new(
+          author_details: author_details_with_date,
+          commit_message: commit_message,
+          tree_sha: tree.sha,
+          parent_sha: base_commit,
+          signature_key: signature_key
+        ).signature
       end
     end
   end
