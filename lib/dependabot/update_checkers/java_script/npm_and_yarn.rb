@@ -296,7 +296,8 @@ module Dependabot
           )
 
           return false unless @project_npm_response.status == 200
-          @project_npm_response.body.include?(project_description)
+          @project_npm_response.body.force_encoding("UTF-8").encode.
+            include?(project_description)
         rescue Excon::Error::Socket, Excon::Error::Timeout, JSON::ParserError
           false
         end
