@@ -3,17 +3,20 @@
 require "octokit"
 require "securerandom"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestCreator
     class Github
       attr_reader :repo_name, :branch_name, :base_commit, :github_client,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :custom_labels
+                  :target_branch, :author_details, :signature_key,
+                  :custom_labels
 
       def initialize(repo_name:, branch_name:, base_commit:, github_client:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, custom_labels:)
+                     target_branch:, author_details:, signature_key:,
+                     custom_labels:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -24,6 +27,7 @@ module Dependabot
         @pr_description = pr_description
         @pr_name        = pr_name
         @author_details = author_details
+        @signature_key  = signature_key
         @custom_labels  = custom_labels
       end
 
@@ -56,6 +60,12 @@ module Dependabot
         tree = create_tree
 
         options = author_details&.any? ? { author: author_details } : {}
+
+        if options[:author]&.any? && signature_key
+          options[:author][:date] = Time.now.utc.iso8601
+          options[:signature] = commit_signature(tree, options[:author])
+        end
+
         github_client.create_commit(
           repo_name,
           commit_message,
@@ -158,6 +168,16 @@ module Dependabot
 
       def default_branch
         @default_branch ||= github_client.repository(repo_name).default_branch
+      end
+
+      def commit_signature(tree, author_details_with_date)
+        CommitSigner.new(
+          author_details: author_details_with_date,
+          commit_message: commit_message,
+          tree_sha: tree.sha,
+          parent_sha: base_commit,
+          signature_key: signature_key
+        ).signature
       end
     end
   end
