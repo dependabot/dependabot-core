@@ -1,3 +1,7 @@
+## v0.48.0, 23 February 2018
+
+- Add option to sign commits
+
 ## v0.47.15, 22 February 2018
 
 - JS: Fix encoding bug
