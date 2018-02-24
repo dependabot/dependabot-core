@@ -29,15 +29,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       name: "Pipfile"
     )
   end
-  let(:pipfile_body) do
-    fixture("python", "pipfiles", "version_not_specified")
-  end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       content: lockfile_body,
       name: "Pipfile.lock"
     )
   end
+  let(:pipfile_body) { fixture("python", "pipfiles", "version_not_specified") }
   let(:lockfile_body) do
     fixture("python", "lockfiles", "version_not_specified.lock")
   end
@@ -71,14 +69,17 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    its(:length) { is_expected.to eq(2) }
-
-    describe "the updated Pipfile" do
-      subject(:updated_pipfile) do
-        updated_files.find { |f| f.name == "Pipfile" }
+    context "when the Pipfile hasn't changed" do
+      let(:pipfile_body) do
+        fixture("python", "pipfiles", "version_not_specified")
+      end
+      let(:lockfile_body) do
+        fixture("python", "lockfiles", "version_not_specified.lock")
       end
 
-      its(:content) { is_expected.to eq(pipfile_body) }
+      it "only returns the lockfile" do
+        expect(updated_files.map(&:name)).to eq(["Pipfile.lock"])
+      end
     end
 
     describe "the updated Pipfile.lock" do

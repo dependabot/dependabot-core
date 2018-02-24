@@ -18,16 +18,19 @@ module Dependabot
         end
 
         def updated_dependency_files
-          [
-            updated_file(
-              file: pipfile,
-              content: updated_pipfile_content
-            ),
-            updated_file(
-              file: lockfile,
-              content: updated_lockfile_content
-            )
-          ]
+          updated_files = []
+
+          if file_changed?(pipfile)
+            updated_files <<
+              updated_file(file: pipfile, content: updated_pipfile_content)
+          end
+
+          if lockfile
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
+
+          updated_files
         end
 
         private
