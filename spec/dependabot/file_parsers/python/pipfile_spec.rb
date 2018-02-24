@@ -46,13 +46,41 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       its(:requirements) { is_expected.to eq(expected_requirements) }
     end
 
+    context "with a version specified" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "exact_version") }
+      let(:lockfile_body) do
+        fixture("python", "lockfiles", "exact_version.lock")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the dependency" do
+        subject { dependencies.last }
+        let(:expected_requirements) do
+          [
+            {
+              requirement: "==3.4.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("pytest") }
+        its(:version) { is_expected.to eq("3.4.0") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
     context "with only dev dependencies" do
       let(:pipfile_body) { fixture("python", "pipfiles", "only_dev") }
       let(:lockfile_body) { fixture("python", "lockfiles", "only_dev.lock") }
 
       its(:length) { is_expected.to eq(1) }
 
-      describe "the dependency" do
+      describe "the last dependency" do
         subject { dependencies.first }
         let(:expected_requirements) do
           [
