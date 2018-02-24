@@ -188,9 +188,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
 
       # This occurs because a Yarn bug prevents Yarn from cleaning up the
-      # lockfile properly. If the bug is ever fixed then the below will equal
-      # two. In the meantime, this spec ensures we don't raise errors.
-      its(:length) { is_expected.to eq(1) }
+      # lockfile properly.
+      it "(incorrectly) does not remove details of the old version" do
+        expect(updated_files.find { |f| f.name == "yarn.lock" }.content).
+          to include("babel-register@^6.24.1:")
+      end
     end
 
     context "with a git dependency" do
@@ -1033,6 +1035,50 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "has details of the updated item" do
           expect(updated_yarn_lock_file.content).
             to include("fetch-factory@*:\n  version \"0.2.1\"")
+        end
+      end
+
+      context "when updating only the lockfile" do
+        let(:files) { [package_json, yarn_lock] }
+        let(:package_json_body) do
+          fixture("javascript", "package_files", "lockfile_only_change.json")
+        end
+        let(:yarn_lock_body) do
+          fixture("javascript", "yarn_lockfiles", "lockfile_only_change.lock")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "babel-jest",
+            version: "22.4.1",
+            previous_version: "22.0.4",
+            package_manager: "npm_and_yarn",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^22.0.4",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "package.json",
+                requirement: "^22.0.4",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        it "has details of the updated item, but doesn't update everything" do
+          # Updates the desired dependency
+          expect(updated_yarn_lock_file.content).
+            to include("babel-jest@^22.0.4:\n  version \"22.4.1\"")
+
+          # Doesn't update unrelated dependencies
+          expect(updated_yarn_lock_file.content).
+            to include("eslint@^4.14.0:\n  version \"4.14.0\"")
         end
       end
 

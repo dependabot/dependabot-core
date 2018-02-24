@@ -16,6 +16,9 @@ const fs = require("fs");
 const path = require("path");
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
+const {
+  cleanLockfile
+} = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
@@ -59,7 +62,7 @@ class LightweightInstall extends Install {
   }
 }
 
-async function allDependencyPatterns(config) {
+async function allDependencyRanges(config) {
   const manifest = await config.readRootManifest();
   return Object.assign(
     {},
@@ -107,13 +110,13 @@ function install_args_with_version(depName, desiredVersion, requirements) {
   }
 }
 
-function install_args_with_req(depName, currentPattern, requirements) {
+function install_args_with_req(depName, currentRange, requirements) {
   const source = requirements.source;
 
   if (source && source.type === "git") {
-    return [`${currentPattern}`];
+    return [`${currentRange}`];
   } else {
-    return [`${depName}@${currentPattern}`];
+    return [`${depName}@${currentRange}`];
   }
 }
 
@@ -159,9 +162,10 @@ async function updateDependencyFile(
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
-  // Find the old dependency pattern from the package.json, so we can construct
-  // a new pattern that contains the new version but maintains the old format
-  const currentPattern = (await allDependencyPatterns(config))[depName];
+  // Find the old dependency range from the package.json, so we can construct
+  // a new range that contains the new version but maintains the old format
+  const currentRange = (await allDependencyRanges(config))[depName];
+  const currentPattern = `${depName}@${currentRange}`;
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -173,18 +177,33 @@ async function updateDependencyFile(
   // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
 
-  // Repeat the process to set the right pattern in the lockfile
+  // Repeat the process to set the right range in the lockfile
   // TODO: REFACTOR ME!
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const args2 = install_args_with_req(depName, currentPattern, requirements);
+  const args2 = install_args_with_req(depName, currentRange, requirements);
+  const dep = {
+    name: depName,
+    wanted: "",
+    latest: "",
+    url: "",
+    hint: "",
+    range: "",
+    current: "",
+    upgradeTo: currentPattern,
+    workspaceName: "",
+    workspaceLoc: ""
+  };
+  const install = new LightweightInstall(flags, config, reporter, lockfile2);
+  const { requests: packagePatterns } = await install.fetchRequestFromCwd();
+  cleanLockfile(lockfile2, [dep], packagePatterns, reporter);
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
 
   // Do a normal install to ensure the lockfile doesn't change when we do
   fs.writeFileSync(path.join(directory, "package.json"), originalPackageJson);
   const lockfile3 = await Lockfile.fromDirectory(directory, reporter);
-  const install = new LightweightInstall(flags, config, reporter, lockfile3);
-  await install.init();
+  const install2 = new LightweightInstall(flags, config, reporter, lockfile3);
+  await install2.init();
 
   const updatedYarnLock = readFile("yarn.lock");
 
