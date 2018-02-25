@@ -1,3 +1,7 @@
+## v0.48.4, 25 February 2018
+
+- JS: Handle lockfiles without a header in fix-duplicates
+
 ## v0.48.3, 25 February 2018
 
 - Elixir: Remove hex install in Elixir file parser
