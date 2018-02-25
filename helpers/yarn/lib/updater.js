@@ -22,6 +22,7 @@ const {
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
+const fixDuplicates = require('yarn-tools/modules/fix-duplicates');
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
@@ -198,8 +199,10 @@ async function updateDependencyFile(
   cleanLockfile(lockfile2, [dep], packagePatterns, reporter);
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
+  const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"));
 
   // Do a normal install to ensure the lockfile doesn't change when we do
+  fs.writeFileSync(path.join(directory, "yarn.lock"), dedupedYarnLock);
   fs.writeFileSync(path.join(directory, "package.json"), originalPackageJson);
   const lockfile3 = await Lockfile.fromDirectory(directory, reporter);
   const install2 = new LightweightInstall(flags, config, reporter, lockfile3);
