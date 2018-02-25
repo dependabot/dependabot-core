@@ -33,16 +33,6 @@ module Dependabot
             File.write("mix.lock", lockfile.content)
             FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
-            # This shouldn't be required, but for some reason it sometimes is...
-            SharedHelpers.run_helper_subprocess(
-              env: mix_env,
-              command: "cd #{Dir.pwd} && "\
-                       "mix local.hex --force --if-missing &> /dev/null; "\
-                       "echo '{\"result\": null }'",
-              function: "null",
-              args: [Dir.pwd]
-            )
-
             SharedHelpers.run_helper_subprocess(
               env: mix_env,
               command: "mix run #{elixir_helper_path}",
