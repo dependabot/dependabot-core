@@ -1,6 +1,8 @@
 ## v0.48.3, 25 February 2018
 
-- JS: Vendor relevant yarn-tools code
+- Elixir: Remove hex install in Elixir file parser
+- JS: Vendor relevant yarn-tools code (so they can be edited)
+- JS: Don't lose Yarn version info during de-duping
 
 ## v0.48.2, 25 February 2018
 
