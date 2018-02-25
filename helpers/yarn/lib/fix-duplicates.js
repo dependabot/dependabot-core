@@ -7,6 +7,7 @@ const semver = require("semver");
 // Credit: https://bitbucket.org/atlassian/yarn-tools
 module.exports = (data, includePackages = []) => {
   const json = parse(data).object;
+  const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
 
   const packages = {};
   const result = [];
@@ -60,5 +61,5 @@ module.exports = (data, includePackages = []) => {
       }
     });
 
-  return stringify(json);
+  return stringify(json, false, enableLockfileVersions);
 };
