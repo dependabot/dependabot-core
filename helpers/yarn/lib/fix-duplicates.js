@@ -8,6 +8,7 @@ const semver = require("semver");
 module.exports = (data, includePackages = []) => {
   const json = parse(data).object;
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
+  const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
   const packages = {};
   const result = [];
@@ -44,7 +45,7 @@ module.exports = (data, includePackages = []) => {
           json[`${name}@${p.requestedVersion}`] = dedupedPackage.pkg;
         });
       } else {
-        // otherwise dedupe each package to its maxSatisfying version
+        // otherwise dedup each package to its maxSatisfying version
         packages.forEach(p => {
           const targetVersion = semver.maxSatisfying(
             versions,
@@ -61,5 +62,5 @@ module.exports = (data, includePackages = []) => {
       }
     });
 
-  return stringify(json, false, enableLockfileVersions);
+  return stringify(json, noHeader, enableLockfileVersions);
 };
