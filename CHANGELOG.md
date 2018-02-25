@@ -1,3 +1,7 @@
+## v0.48.2, 25 February 2018
+
+- JS: Use yarn-tools to clean up yarn.lock after updates
+
 ## v0.48.1, 25 February 2018
 
 - Python: Only include Pipfile in updated files if it has changed
