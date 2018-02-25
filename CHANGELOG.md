@@ -1,3 +1,8 @@
+## v0.48.1, 25 February 2018
+
+- Python: Only include Pipfile in updated files if it has changed
+- JS: Handle updates that don't change the package.json better
+
 ## v0.48.0, 23 February 2018
 
 - Add option to sign commits
