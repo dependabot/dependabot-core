@@ -22,7 +22,7 @@ const {
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const fixDuplicates = require('yarn-tools/modules/fix-duplicates');
+const fixDuplicates = require("yarn-tools/modules/fix-duplicates");
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
