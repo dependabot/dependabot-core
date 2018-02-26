@@ -386,7 +386,13 @@ RSpec.describe Dependabot::PullRequestCreator do
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/labels").
-          with(body: { name: "dependencies", color: "0025ff" })
+          with(
+            body: {
+              name: "dependencies",
+              color: "0025ff",
+              description: "Pull requests that update a dependency file"
+            }
+          )
       end
 
       context "when there's a race and we lose" do

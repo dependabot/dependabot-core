@@ -133,7 +133,10 @@ module Dependabot
       end
 
       def create_label
-        github_client.add_label(repo_name, "dependencies", "0025ff")
+        github_client.add_label(
+          repo_name, "dependencies", "0025ff",
+          description: "Pull requests that update a dependency file"
+        )
       rescue Octokit::UnprocessableEntity => error
         raise unless error.errors.first.fetch(:code) == "already_exists"
       end
