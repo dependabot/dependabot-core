@@ -108,6 +108,7 @@ module Dependabot
           @retry_count ||= 0
           @retry_count += 1
           retry if @retry_count < 2 && error.message.include?("404 Not Found")
+          retry if @retry_count < 2 && error.message.include?("timed out")
           handle_composer_errors(error)
         end
 
