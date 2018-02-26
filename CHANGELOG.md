@@ -1,6 +1,11 @@
+## v0.48.7, 26 February 2018
+
+- PHP: Retry timeouts in UpdateChecker
+- PHP: Handle array errors in ExceptionIO
+
 ## v0.48.6, 26 February 2018
 
-- Handle yarn lockfiles that are missing a requirement in their declaration
+- JS: Handle yarn lockfiles that are missing a requirement in their declaration
   lines
 
 ## v0.48.5, 26 February 2018
