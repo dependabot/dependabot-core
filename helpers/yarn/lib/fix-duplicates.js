@@ -15,11 +15,13 @@ module.exports = (data, includePackages = []) => {
   const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(json).forEach(([name, pkg]) => {
-    const [_, packageName, requestedVersion] = name.match(re);
-    packages[packageName] = packages[packageName] || [];
-    packages[packageName].push(
-      Object.assign({}, { name, pkg, packageName, requestedVersion })
-    );
+    if (name.match(re)) {
+      const [_, packageName, requestedVersion] = name.match(re);
+      packages[packageName] = packages[packageName] || [];
+      packages[packageName].push(
+        Object.assign({}, { name, pkg, packageName, requestedVersion })
+      );
+    }
   });
 
   Object.entries(packages)

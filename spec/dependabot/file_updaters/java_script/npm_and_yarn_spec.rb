@@ -955,6 +955,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "when the version is missing from the lockfile" do
+        let(:yarn_lock_body) do
+          fixture("javascript", "yarn_lockfiles", "missing_requirement.lock")
+        end
+
+        it "has details of the updated item (doesn't error)" do
+          expect(updated_yarn_lock_file.content).
+            to include("fetch-factory@^0.0.2")
+        end
+      end
+
       context "with a path-based dependency" do
         let(:files) { [package_json, yarn_lock, path_dep] }
         let(:package_json_body) do
