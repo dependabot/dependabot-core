@@ -62,9 +62,9 @@ module Dependabot
         end
 
         def wants_prerelease?
-            return false unless dependency.version
-            Maven::Version.new(dependency.version).prerelease?
-          end
+          return false unless dependency.version
+          Maven::Version.new(dependency.version).prerelease?
+        end
 
         def property_updater
           @property_updater ||=
