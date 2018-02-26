@@ -1,3 +1,7 @@
+## v0.48.8, 26 February 2018
+
+- Java: Don't propose updates to a prerelease unless desired
+
 ## v0.48.7, 26 February 2018
 
 - PHP: Retry timeouts in UpdateChecker
