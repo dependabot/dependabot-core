@@ -112,6 +112,22 @@
         }
     },
     {
+        "name": "release.sh",
+        "path": "release.sh",
+        "sha": "f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+        "size": 4187,
+        "url": "https://api.github.com/repos/gocardless/business/contents/release.sh?ref=master",
+        "html_url": "https://github.com/gocardless/business/blob/master/release.sh",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+        "download_url": "https://raw.githubusercontent.com/gocardless/business/master/release.sh",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/release.sh?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/blobs/f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+            "html": "https://github.com/gocardless/business/blob/master/release.sh"
+        }
+    },
+    {
         "name": "spec",
         "path": "spec",
         "sha": "ddaa472673172f2407888ec366282a08b23f681c",

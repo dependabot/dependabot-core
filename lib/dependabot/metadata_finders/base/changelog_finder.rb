@@ -29,7 +29,10 @@ module Dependabot
           # Changelog won't be relevant for a git commit bump
           return if git_source?(dependency.requirements) && !ref_changed?
 
-          files = dependency_file_list.select { |f| f.type == "file" }
+          files =
+            dependency_file_list.
+            select { |f| f.type == "file" }.
+            reject { |f| f.name.end_with?(".sh") }
 
           CHANGELOG_NAMES.each do |name|
             file = files.find { |f| f.name =~ /#{name}/i }
