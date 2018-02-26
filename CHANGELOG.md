@@ -1,3 +1,7 @@
+## v0.48.9, 26 February 2018
+
+- Add label description if creating a new dependencies label
+
 ## v0.48.8, 26 February 2018
 
 - Java: Don't propose updates to a prerelease unless desired
