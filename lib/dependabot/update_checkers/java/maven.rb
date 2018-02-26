@@ -13,7 +13,9 @@ module Dependabot
         require_relative "maven/property_updater"
 
         def latest_version
-          VersionFinder.new(dependency: dependency).latest_release
+          versions = VersionFinder.new(dependency: dependency).versions
+          versions = versions.reject(&:prerelease?) unless wants_prerelease?
+          versions.last
         end
 
         def latest_resolvable_version
@@ -58,6 +60,11 @@ module Dependabot
         def updated_dependencies_after_full_unlock
           property_updater.updated_dependencies
         end
+
+        def wants_prerelease?
+            return false unless dependency.version
+            Maven::Version.new(dependency.version).prerelease?
+          end
 
         def property_updater
           @property_updater ||=

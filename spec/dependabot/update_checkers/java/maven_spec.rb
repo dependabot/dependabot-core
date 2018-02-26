@@ -63,7 +63,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           )
       end
 
-      it { is_expected.to be_nil }
+      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+    end
+
+    context "when the user doesn't want a pre-release" do
+      let(:dependency_version) { "18.0" }
+
+      it { is_expected.to eq(described_class::Version.new("23.0")) }
     end
 
     context "when the version comes from a property" do
