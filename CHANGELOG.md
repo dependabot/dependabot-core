@@ -1,3 +1,8 @@
+## v0.48.6, 26 February 2018
+
+- Handle yarn lockfiles that are missing a requirement in their declaration
+  lines
+
 ## v0.48.5, 26 February 2018
 
 - Ignore bash scripts when looking for changelog
