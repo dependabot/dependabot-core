@@ -1,3 +1,7 @@
+## v0.48.5, 26 February 2018
+
+- Ignore bash scripts when looking for changelog
+
 ## v0.48.4, 25 February 2018
 
 - JS: Handle lockfiles without a header in fix-duplicates
