@@ -1,3 +1,7 @@
+## v0.48.10, 27 February 2018
+
+- Pipfile: include dependencies specified using a requirements hash
+
 ## v0.48.9, 26 February 2018
 
 - Add label description if creating a new dependencies label
