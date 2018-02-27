@@ -1,3 +1,7 @@
+## v0.48.12, 27 February 2018
+
+- Python: Pipfile file parser now include subdependencies in results
+
 ## v0.48.11, 27 February 2018
 
 - JS: Use Yarn v1.5.0
