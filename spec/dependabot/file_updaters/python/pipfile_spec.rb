@@ -133,7 +133,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
         it "updates only what it needs to" do
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
-          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.5.0")
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
         end
       end
     end
