@@ -138,7 +138,7 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/
+          /(?:^|["'])#{Regexp.escape(dep.name).gsub("-", "[-_.]")}["']?\s*=.*$/i
         end
 
         def python_helper_path

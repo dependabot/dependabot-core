@@ -48,7 +48,7 @@ module Dependabot
 
               dependencies <<
                 Dependency.new(
-                  name: dep_name,
+                  name: normalised_name(dep_name),
                   version: dependency_version(dep_name, keys[:lockfile]),
                   requirements: [
                     {

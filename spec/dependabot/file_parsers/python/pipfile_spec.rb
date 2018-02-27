@@ -109,7 +109,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
         let(:expected_requirements) do
           [
             {
-              requirement: "*",
+              requirement: "==2.18.0",
               file: "Pipfile",
               source: nil,
               groups: ["default"]
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("Requests") }
+        its(:name) { is_expected.to eq("requests") }
         its(:version) { is_expected.to eq("2.18.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end

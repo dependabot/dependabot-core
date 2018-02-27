@@ -210,5 +210,36 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       it { is_expected.to include(%(\npytest-extension = "==3.2.3"\n)) }
       it { is_expected.to include(%(\nextension-pytest = "==3.2.3"\n)) }
     end
+
+    context "with a capital letter" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+      let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "hard_names.lock") }
+
+      it { is_expected.to include('Requests = "==2.18.4"') }
+    end
   end
 end
