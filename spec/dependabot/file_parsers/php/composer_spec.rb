@@ -21,12 +21,8 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       content: lockfile_body
     )
   end
-  let(:composer_json_body) do
-    fixture("php", "composer_files", "minor_version")
-  end
-  let(:lockfile_body) do
-    fixture("php", "lockfiles", "minor_version")
-  end
+  let(:composer_json_body) { fixture("php", "composer_files", "minor_version") }
+  let(:lockfile_body) { fixture("php", "lockfiles", "minor_version") }
   let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
@@ -101,7 +97,12 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       end
       let(:lockfile_body) { fixture("php", "lockfiles", "php_specified") }
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(5) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+        its(:length) { is_expected.to eq(2) }
+      end
     end
 
     context "with a version with a 'v' prefix" do

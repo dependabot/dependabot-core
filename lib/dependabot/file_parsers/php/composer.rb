@@ -27,6 +27,7 @@ module Dependabot
         def parse
           dependency_set = DependencySet.new
           dependency_set += manifest_dependencies
+          dependency_set += lockfile_dependencies
           dependency_set.dependencies
         end
 
@@ -62,6 +63,35 @@ module Dependabot
                     source: dependency_source(name: name, type: keys[:group]),
                     groups: [keys[:group]]
                   }],
+                  package_manager: "composer"
+                )
+            end
+          end
+
+          dependencies
+        end
+
+        def lockfile_dependencies
+          dependencies = DependencySet.new
+
+          return dependencies unless lockfile
+
+          DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
+            next unless parsed_lockfile[key]
+
+            parsed_lockfile[key].each do |details|
+              name = details["name"]
+              next unless package?(name)
+
+              version = details["version"]&.sub(/^v?/, "")
+              next if version.nil?
+              next unless version.match?(/^\d/)
+
+              dependencies <<
+                Dependency.new(
+                  name: name,
+                  version: version,
+                  requirements: [],
                   package_manager: "composer"
                 )
             end
