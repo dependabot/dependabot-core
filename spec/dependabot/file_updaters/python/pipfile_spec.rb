@@ -101,7 +101,30 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       end
 
       describe "with dependency names that need to be normalised" do
-        let(:dependency_name) { "Requests" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Requests",
+            version: "2.18.4",
+            previous_version: "2.18.0",
+            package_manager: "pipfile",
+            requirements: [
+              {
+                requirement: "==2.18.4",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ],
+            previous_requirements: [
+              {
+                requirement: "==2.18.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ]
+          )
+        end
         let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
         let(:lockfile_body) do
           fixture("python", "lockfiles", "hard_names.lock")
@@ -110,7 +133,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
         it "updates only what it needs to" do
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
-          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.5.0")
         end
       end
     end

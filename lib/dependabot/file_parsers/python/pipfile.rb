@@ -25,6 +25,7 @@ module Dependabot
         def parse
           dependency_set = DependencySet.new
           dependency_set += pipfile_dependencies
+          dependency_set += lockfile_dependencies
           dependency_set.dependencies
         end
 
@@ -58,6 +59,31 @@ module Dependabot
                       groups: [keys[:lockfile]]
                     }
                   ],
+                  package_manager: "pipfile"
+                )
+            end
+          end
+
+          dependencies
+        end
+
+        # Create a DependencySet where each element has no requirement. Any
+        # requirements will be added when combining the DependencySet with
+        # other DependencySets.
+        def lockfile_dependencies
+          dependencies = DependencySet.new
+
+          DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
+            next unless parsed_lockfile[key]
+
+            parsed_lockfile[key].each do |dep_name, details|
+              next unless details["version"]
+
+              dependencies <<
+                Dependency.new(
+                  name: dep_name,
+                  version: details["version"]&.gsub(/^==/, ""),
+                  requirements: [],
                   package_manager: "pipfile"
                 )
             end

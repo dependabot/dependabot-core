@@ -25,60 +25,13 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(2) }
+    its(:length) { is_expected.to eq(7) }
 
-    describe "the first dependency" do
-      subject { dependencies.first }
-      let(:expected_requirements) do
-        [
-          {
-            requirement: "*",
-            file: "Pipfile",
-            source: nil,
-            groups: ["default"]
-          }
-        ]
-      end
-
-      it { is_expected.to be_a(Dependabot::Dependency) }
-      its(:name) { is_expected.to eq("requests") }
-      its(:version) { is_expected.to eq("2.18.0") }
-      its(:requirements) { is_expected.to eq(expected_requirements) }
-    end
-
-    context "with a version specified" do
-      let(:pipfile_fixture_name) { "exact_version" }
-      let(:lockfile_fixture_name) { "exact_version.lock" }
-
+    describe "top level dependencies" do
+      subject(:dependencies) { parser.parse.select(&:top_level?) }
       its(:length) { is_expected.to eq(2) }
 
-      describe "the dependency" do
-        subject { dependencies.last }
-        let(:expected_requirements) do
-          [
-            {
-              requirement: "==3.4.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["develop"]
-            }
-          ]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("pytest") }
-        its(:version) { is_expected.to eq("3.4.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-      end
-    end
-
-    context "with only dev dependencies" do
-      let(:pipfile_fixture_name) { "only_dev" }
-      let(:lockfile_fixture_name) { "only_dev.lock" }
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the last dependency" do
+      describe "the first dependency" do
         subject { dependencies.first }
         let(:expected_requirements) do
           [
@@ -86,15 +39,93 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
               requirement: "*",
               file: "Pipfile",
               source: nil,
-              groups: ["develop"]
+              groups: ["default"]
             }
           ]
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("pytest") }
-        its(:version) { is_expected.to eq("3.3.1") }
+        its(:name) { is_expected.to eq("requests") }
+        its(:version) { is_expected.to eq("2.18.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    describe "sub-dependencies" do
+      subject(:dependencies) { parser.parse.reject(&:top_level?) }
+      its(:length) { is_expected.to eq(5) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("certifi") }
+        its(:version) { is_expected.to eq("2017.11.5") }
+        its(:requirements) { is_expected.to eq([]) }
+      end
+    end
+
+    context "with a version specified" do
+      let(:pipfile_fixture_name) { "exact_version" }
+      let(:lockfile_fixture_name) { "exact_version.lock" }
+
+      its(:length) { is_expected.to eq(10) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the last dependency" do
+          subject { dependencies.last }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: "==3.4.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["develop"]
+              }
+            ]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("pytest") }
+          its(:version) { is_expected.to eq("3.4.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+      end
+    end
+
+    context "with only dev dependencies" do
+      let(:pipfile_fixture_name) { "only_dev" }
+      let(:lockfile_fixture_name) { "only_dev.lock" }
+
+      its(:length) { is_expected.to eq(5) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the last dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: "*",
+                file: "Pipfile",
+                source: nil,
+                groups: ["develop"]
+              }
+            ]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("pytest") }
+          its(:version) { is_expected.to eq("3.3.1") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
       end
     end
 
@@ -102,25 +133,29 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       let(:pipfile_fixture_name) { "hard_names" }
       let(:lockfile_fixture_name) { "hard_names.lock" }
 
-      its(:length) { is_expected.to eq(3) }
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-      describe "the first dependency" do
-        subject { dependencies.first }
-        let(:expected_requirements) do
-          [
-            {
-              requirement: "==2.18.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+        its(:length) { is_expected.to eq(3) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: "==2.18.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("requests") }
+          its(:version) { is_expected.to eq("2.18.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
         end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("requests") }
-        its(:version) { is_expected.to eq("2.18.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -128,25 +163,29 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       let(:pipfile_fixture_name) { "version_hash" }
       let(:lockfile_fixture_name) { "version_hash.lock" }
 
-      its(:length) { is_expected.to eq(2) }
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-      describe "the first dependency" do
-        subject { dependencies.first }
-        let(:expected_requirements) do
-          [
-            {
-              requirement: "==2.18.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [
+              {
+                requirement: "==2.18.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("requests") }
+          its(:version) { is_expected.to eq("2.18.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
         end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("requests") }
-        its(:version) { is_expected.to eq("2.18.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 
@@ -155,11 +194,11 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       let(:lockfile_fixture_name) { "only_dev.lock" }
 
       it "excludes the missing dependency" do
-        expect(dependencies.map(&:name)).to eq(["pytest"])
+        expect(dependencies.map(&:name)).to_not include("missing")
       end
 
       describe "the dependency" do
-        subject { dependencies.first }
+        subject { dependencies.find { |d| d.name == "pytest" } }
         let(:expected_requirements) do
           [
             {
@@ -183,11 +222,11 @@ RSpec.describe Dependabot::FileParsers::Python::Pipfile do
       let(:lockfile_fixture_name) { "git_source.lock" }
 
       it "excludes the git dependency" do
-        expect(dependencies.map(&:name)).to eq(["requests"])
+        expect(dependencies.map(&:name)).to_not include("django")
       end
 
       describe "the dependency" do
-        subject { dependencies.first }
+        subject { dependencies.find { |d| d.name == "requests" } }
         let(:expected_requirements) do
           [
             {
