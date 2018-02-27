@@ -9,8 +9,23 @@ module Dependabot
   module FileParsers
     module Python
       class Pipfile < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
+        DEPENDENCY_GROUP_KEYS = [
+          {
+            pipfile: "packages",
+            lockfile: "default"
+          },
+          {
+            pipfile: "dev-packages",
+            lockfile: "develop"
+          }
+        ].freeze
+
         def parse
-          runtime_dependencies + development_dependencies
+          dependency_set = DependencySet.new
+          dependency_set += pipfile_dependencies
+          dependency_set.dependencies
         end
 
         private
@@ -21,54 +36,40 @@ module Dependabot
           end
         end
 
-        def runtime_dependencies
-          parsed_pipfile.fetch("packages", {}).map do |dep_name, req|
-            next unless req.is_a?(String) || req["version"]
-            version = parsed_lockfile.dig(
-              "default",
-              normalised_name(dep_name),
-              "version"
-            )
-            next unless version
-            Dependency.new(
-              name: dep_name,
-              version: version.gsub(/^==/, ""),
-              requirements: [
-                {
-                  requirement: req.is_a?(String) ? req : req["version"],
-                  file: pipfile.name,
-                  source: nil,
-                  groups: ["default"]
-                }
-              ],
-              package_manager: "pipfile"
-            )
-          end.compact
+        def pipfile_dependencies
+          dependencies = DependencySet.new
+
+          DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless parsed_pipfile[keys[:pipfile]]
+
+            parsed_pipfile[keys[:pipfile]].map do |dep_name, req|
+              next unless req.is_a?(String) || req["version"]
+              next unless dependency_version(dep_name, keys[:lockfile])
+
+              dependencies <<
+                Dependency.new(
+                  name: dep_name,
+                  version: dependency_version(dep_name, keys[:lockfile]),
+                  requirements: [
+                    {
+                      requirement: req.is_a?(String) ? req : req["version"],
+                      file: pipfile.name,
+                      source: nil,
+                      groups: [keys[:lockfile]]
+                    }
+                  ],
+                  package_manager: "pipfile"
+                )
+            end
+          end
+
+          dependencies
         end
 
-        def development_dependencies
-          parsed_pipfile.fetch("dev-packages", {}).map do |dep_name, req|
-            next unless req.is_a?(String) || req["version"]
-            version = parsed_lockfile.dig(
-              "develop",
-              normalised_name(dep_name),
-              "version"
-            )
-            next unless version
-            Dependency.new(
-              name: dep_name,
-              version: version.gsub(/^==/, ""),
-              requirements: [
-                {
-                  requirement: req.is_a?(String) ? req : req["version"],
-                  file: pipfile.name,
-                  source: nil,
-                  groups: ["develop"]
-                }
-              ],
-              package_manager: "pipfile"
-            )
-          end.compact
+        def dependency_version(dep_name, group)
+          parsed_lockfile.
+            dig(group, normalised_name(dep_name), "version")&.
+            gsub(/^==/, "")
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
