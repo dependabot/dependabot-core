@@ -1,3 +1,7 @@
+## v0.48.11, 27 February 2018
+
+- JS: Use Yarn v1.5.0
+
 ## v0.48.10, 27 February 2018
 
 - Pipfile: include dependencies specified using a requirements hash
