@@ -9,70 +9,65 @@ module Dependabot
   module FileParsers
     module Php
       class Composer < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
+        DEPENDENCY_GROUP_KEYS = [
+          {
+            manifest: "require",
+            lockfile: "packages",
+            group: "runtime"
+          },
+          {
+            manifest: "require-dev",
+            lockfile: "packages-dev",
+            group: "development"
+          }
+        ].freeze
+
         def parse
-          runtime_dependencies + development_dependencies
+          dependency_set = DependencySet.new
+          dependency_set += manifest_dependencies
+          dependency_set.dependencies
         end
 
         private
 
-        def runtime_dependencies
-          parsed_composer_json.fetch("require", {}).map do |name, req|
-            if lockfile
-              version = dependency_version(name: name, type: "runtime")
+        def manifest_dependencies
+          dependencies = DependencySet.new
 
-              # Ignore dependencies which appear in the composer.json but not
-              # the composer.lock.
-              next if version.nil?
+          DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless parsed_composer_json[keys[:manifest]]
+            parsed_composer_json[keys[:manifest]].each do |name, req|
+              next unless package?(name)
 
-              # Ignore dependency versions which are non-numeric, since they
-              # can't be compared later in the process.
-              next unless version.match?(/^\d/)
+              if lockfile
+                version = dependency_version(name: name, type: keys[:group])
+
+                # Ignore dependencies which appear in the composer.json but not
+                # the composer.lock.
+                next if version.nil?
+
+                # Ignore dependency versions which are non-numeric, since they
+                # can't be compared later in the process.
+                next unless version.match?(/^\d/)
+              end
+
+              dependencies <<
+                Dependency.new(
+                  name: name,
+                  version: dependency_version(name: name, type: keys[:group]),
+                  requirements: [{
+                    requirement: req,
+                    file: "composer.json",
+                    source: dependency_source(name: name, type: keys[:group]),
+                    groups: [keys[:group]]
+                  }],
+                  package_manager: "composer"
+                )
             end
+          end
 
-            next unless package?(name)
-
-            Dependency.new(
-              name: name,
-              version: dependency_version(name: name, type: "runtime"),
-              requirements: [{
-                requirement: req,
-                file: "composer.json",
-                source: dependency_source(name: name, type: "runtime"),
-                groups: ["runtime"]
-              }],
-              package_manager: "composer"
-            )
-          end.compact
-        end
-
-        def development_dependencies
-          parsed_composer_json.fetch("require-dev", {}).map do |name, req|
-            if lockfile
-              version = dependency_version(name: name, type: "development")
-
-              # Ignore dependencies which appear in the composer.json but not
-              # the composer.lock.
-              next if version.nil?
-
-              # Ignore dependency versions which are non-numeric, since they
-              # can't be compared later in the process.
-              next unless version.match?(/^\d/)
-            end
-
-            next unless package?(name)
-
-            Dependency.new(
-              name: name,
-              version: dependency_version(name: name, type: "development"),
-              requirements: [{
-                requirement: req,
-                file: "composer.json",
-                source: dependency_source(name: name, type: "development"),
-                groups: ["development"]
-              }],
-              package_manager: "composer"
-            )
-          end.compact
+          dependencies
         end
 
         def dependency_version(name:, type:)
