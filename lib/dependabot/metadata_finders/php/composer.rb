@@ -24,9 +24,7 @@ module Dependabot
         end
 
         def look_up_source_from_packagist
-          if packagist_listing&.fetch("packages", nil) == []
-            return nil
-          end
+          return nil if packagist_listing&.fetch("packages", nil) == []
           unless packagist_listing&.dig("packages", dependency.name.downcase)
             return nil
           end
