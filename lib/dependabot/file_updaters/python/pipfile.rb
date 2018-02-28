@@ -90,19 +90,15 @@ module Dependabot
 
         def frozen_pipfile_content
           frozen_pipfile_json = TomlRB.parse(updated_pipfile_content)
-          parsed_lockfile = JSON.parse(lockfile.content)
 
-          frozen_pipfile_json.dup.fetch("packages", {}).each_key do |nm|
-            next if dependencies.map(&:name).include?(nm)
-            version =
-              parsed_lockfile.dig("default", normalised_name(nm), "version")
-            frozen_pipfile_json["packages"][nm] = version
-          end
-          frozen_pipfile_json.dup.fetch("dev-packages", {}).each_key do |nm|
-            next if dependencies.map(&:name).include?(nm)
-            version =
-              parsed_lockfile.dig("develop", normalised_name(nm), "version")
-            frozen_pipfile_json["dev-packages"][nm] = version
+          dependencies.each do |dep|
+            name = dep.name
+            if frozen_pipfile_json.dig("packages", name)
+              frozen_pipfile_json["packages"][name] = "==#{dep.version}"
+            end
+            if frozen_pipfile_json.dig("dev-packages", name)
+              frozen_pipfile_json.dig["dev-packages"][name] = "==#{dep.version}"
+            end
           end
 
           TomlRB.dump(frozen_pipfile_json)

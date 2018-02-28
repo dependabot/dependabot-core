@@ -103,7 +103,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
       describe "with dependency names that need to be normalised" do
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "Requests",
+            name: "requests",
             version: "2.18.4",
             previous_version: "2.18.0",
             package_manager: "pipfile",
