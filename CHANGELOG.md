@@ -1,3 +1,8 @@
+## v0.48.13, 28 February 2018
+
+- PHP: Include subdependencies in parser output
+- Python: Use Pipenv's new --keep-outdated option insted of freezing Pipfile
+
 ## v0.48.12, 27 February 2018
 
 - Python: Pipfile file parser now include subdependencies in results
