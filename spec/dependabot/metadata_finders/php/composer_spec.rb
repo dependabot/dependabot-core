@@ -123,6 +123,12 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
       end
     end
 
+    context "when packagist returns an empty array" do
+      let(:packagist_response) { '{"packages":[]}' }
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the packagist link resolves to a redirect" do
       let(:redirect_url) { "https://packagist.org/p/monolog/Monolog.json" }
       let(:packagist_response) { fixture("php", "packagist_response.json") }
