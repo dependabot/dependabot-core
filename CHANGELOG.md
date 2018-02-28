@@ -1,3 +1,7 @@
+## v0.48.14, 28 February 2018
+
+- PHP: Handle empty array returned from packagist in MetadataFinder
+
 ## v0.48.13, 28 February 2018
 
 - PHP: Include subdependencies in parser output
