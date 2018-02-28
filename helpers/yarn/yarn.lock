@@ -10,9 +10,9 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
-"@dependabot/yarn-lib@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.5.0.tgz#a4209af9396511f51319efaec5db9f48d92742f8"
+"@dependabot/yarn-lib@^1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.5.1.tgz#488462373ffe7649eaac3913735cf1be42bb1f60"
   dependencies:
     babel-runtime "^6.26.0"
     bytes "^2.4.0"
