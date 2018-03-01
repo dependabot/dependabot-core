@@ -13,7 +13,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       dependencies: dependencies,
       files: files,
       github_client: github_client,
-      pr_message_footer: pr_message_footer
+      pr_message_footer: pr_message_footer,
+      author_details: author_details
     )
   end
 
@@ -36,6 +37,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:files) { [gemfile, gemfile_lock] }
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:pr_message_footer) { nil }
+  let(:author_details) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -569,6 +571,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       it { is_expected.to end_with("\n\nI'm a footer!") }
     end
+
+    context "with author details" do
+      let(:author_details) do
+        {
+          email: "support@dependabot.com",
+          name: "dependabot"
+        }
+      end
+
+      it "doesn't include a signoff line" do
+        expect(pr_message).to_not include("Signed-off-by")
+      end
+    end
   end
 
   describe "#commit_message" do
@@ -580,5 +595,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     it { is_expected.to eq("PR name\n\nMessage") }
+
+    context "with author details" do
+      let(:author_details) do
+        {
+          email: "support@dependabot.com",
+          name: "dependabot"
+        }
+      end
+
+      it "includes a signoff line" do
+        expect(commit_message).
+          to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>")
+      end
+    end
   end
 end

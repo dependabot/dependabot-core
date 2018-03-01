@@ -63,6 +63,7 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           github_client: github_client,
+          author_details: author_details,
           pr_message_footer: pr_message_footer
         )
     end

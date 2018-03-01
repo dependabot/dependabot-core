@@ -9,15 +9,16 @@ module Dependabot
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
       attr_reader :repo_name, :dependencies, :files, :github_client,
-                  :pr_message_footer
+                  :pr_message_footer, :author_details
 
       def initialize(repo_name:, dependencies:, files:, github_client:,
-                     pr_message_footer: nil)
+                     pr_message_footer: nil, author_details: nil)
         @dependencies = dependencies
         @files = files
         @repo_name = repo_name
         @github_client = github_client
         @pr_message_footer = pr_message_footer
+        @author_details = author_details
       end
 
       def pr_name
@@ -46,7 +47,9 @@ module Dependabot
       end
 
       def commit_message
-        pr_name + "\n\n" + pr_message_without_footer
+        message = pr_name + "\n\n" + pr_message_without_footer
+        message += "\n\n" + signoff_message if signoff_message
+        message
       end
 
       private
@@ -59,6 +62,12 @@ module Dependabot
         end
 
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
+      def signoff_message
+        return unless author_details && author_details.is_a?(Hash)
+        return unless author_details[:name] && author_details[:email]
+        "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
       end
 
       def recent_commit_messages
