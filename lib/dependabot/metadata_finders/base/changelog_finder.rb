@@ -35,7 +35,7 @@ module Dependabot
             reject { |f| f.name.end_with?(".sh") }
 
           CHANGELOG_NAMES.each do |name|
-            file = files.find { |f| f.name =~ /#{name}/i }
+            file = files.select { |f| f.name =~ /#{name}/i }.max_by(&:size)
             return file.html_url if file
           end
 
@@ -69,7 +69,7 @@ module Dependabot
           files += github_client.contents(source.repo)
 
           if files.any? { |f| f.name == "docs" && f.type == "dir" }
-            files = github_client.contents(source.repo, path: "docs") + files
+            files += github_client.contents(source.repo, path: "docs")
           end
 
           files
@@ -89,6 +89,7 @@ module Dependabot
             OpenStruct.new(
               name: file.fetch("path").split("/").last,
               type: file.fetch("type") == "commit_file" ? "file" : file["type"],
+              size: file.fetch("size", 0),
               html_url: "#{source.url}/src/master/#{file['path']}"
             )
           end
@@ -99,6 +100,7 @@ module Dependabot
             OpenStruct.new(
               name: file.name,
               type: file.type == "blob" ? "file" : file.type,
+              size: 0, # GitLab doesn't return file size
               html_url: "#{source.url}/blob/master/#{file.path}"
             )
           end
