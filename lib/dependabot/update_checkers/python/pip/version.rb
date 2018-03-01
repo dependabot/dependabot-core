@@ -23,6 +23,10 @@ module Dependabot
           def initialize(version)
             @version_string = version.to_s
             version, @local_version = version.split("+")
+            version = normalise_prerelease(version)
+            if @local_version
+              @local_version = normalise_prerelease(@local_version)
+            end
             super
           end
 
@@ -55,6 +59,17 @@ module Dependabot
             return local_comparison unless local_comparison.zero?
 
             lhsegments.count <=> rhsegments.count
+          end
+
+          private
+
+          def normalise_prerelease(version)
+            version.
+              gsub("alpha", "a").
+              gsub("beta", "b").
+              gsub("preview", "rc").
+              gsub("pre", "rc").
+              gsub(/([\d.\-_])c([\d.\-_])?/, '\1rc\2')
           end
         end
       end

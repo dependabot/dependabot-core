@@ -43,6 +43,7 @@ module Dependabot
           def convert_python_constraint_to_ruby_constraint(req_string)
             return nil if req_string.nil?
             return nil if req_string == "*"
+            req_string = normalise_prerelease(req_string)
             req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
             return req_string unless req_string.include?(".*")
 
@@ -54,6 +55,15 @@ module Dependabot
               join(".").
               tr("*", "0").
               gsub(/^(?<!!)=/, "~>")
+          end
+
+          def normalise_prerelease(req_string)
+            req_string.
+              gsub("alpha", "a").
+              gsub("beta", "b").
+              gsub("preview", "rc").
+              gsub("pre", "rc").
+              gsub(/([\d.\-_])c([\d.\-_])?/, '\1rc\2')
           end
         end
       end

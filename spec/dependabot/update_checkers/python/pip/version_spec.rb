@@ -85,6 +85,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
           it { is_expected.to eq(1) }
         end
 
+        context "with a prerelease specifier that needs normalising" do
+          let(:version_string) { "1.0.0c1" }
+          let(:other_version) { described_class.new("1.0.0rc1") }
+          it { is_expected.to eq(0) }
+        end
+
         context "but the other version has a local version" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
           it { is_expected.to eq(-1) }
