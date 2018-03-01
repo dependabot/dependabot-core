@@ -97,7 +97,7 @@ module Dependabot
               frozen_pipfile_json["packages"][name] = "==#{dep.version}"
             end
             if frozen_pipfile_json.dig("dev-packages", name)
-              frozen_pipfile_json.dig["dev-packages"][name] = "==#{dep.version}"
+              frozen_pipfile_json["dev-packages"][name] = "==#{dep.version}"
             end
           end
 
