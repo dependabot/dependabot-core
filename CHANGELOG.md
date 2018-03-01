@@ -1,3 +1,7 @@
+## v0.48.16, 1 March 2018
+
+- JS: Handle exact matches for libraries
+
 ## v0.48.15, 1 March 2018
 
 - Python: Fix typo that prevented dev package updates
