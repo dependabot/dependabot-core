@@ -1,3 +1,7 @@
+## v0.48.18, 1 March 2018
+
+- Python: Normalise pre-release versions correctly
+
 ## v0.48.17, 1 March 2018
 
 - Include signoff line in commit messages
