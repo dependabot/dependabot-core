@@ -1,3 +1,7 @@
+## v0.48.19, 1 March 2018
+
+- Better changelog finding (order by file size if multiple with same name)
+
 ## v0.48.18, 1 March 2018
 
 - Python: Normalise pre-release versions correctly
