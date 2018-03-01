@@ -1,3 +1,7 @@
+## v0.48.17, 1 March 2018
+
+- Include signoff line in commit messages
+
 ## v0.48.16, 1 March 2018
 
 - JS: Handle exact matches for libraries
