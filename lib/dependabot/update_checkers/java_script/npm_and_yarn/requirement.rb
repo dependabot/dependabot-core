@@ -55,7 +55,11 @@ module Dependabot
 
           def ruby_range(req_string)
             parts = req_string.split(".")
-            parts << "0" if parts.count < 3
+            # If we have three or more parts then this is an exact match
+            return req_string if parts.count >= 3
+
+            # If we have fewer than three parts we do a partial match
+            parts << "0"
             "~> #{parts.join('.')}"
           end
 

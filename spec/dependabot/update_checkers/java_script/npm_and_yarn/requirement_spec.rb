@@ -12,6 +12,11 @@ RSpec.describe namespace::NpmAndYarn::Requirement do
   describe ".new" do
     it { is_expected.to be_a(described_class) }
 
+    context "with an exact version specified" do
+      let(:requirement_string) { "1.0.0" }
+      it { is_expected.to eq(described_class.new("1.0.0")) }
+    end
+
     context "with a caret version specified" do
       let(:requirement_string) { "^1.0.0" }
       it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0")) }
