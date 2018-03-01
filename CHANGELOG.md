@@ -1,3 +1,8 @@
+## v0.48.15, 1 March 2018
+
+- Python: Fix typo that prevented dev package updates
+- JS: Handle lockfiles with bad version (wrong source)
+
 ## v0.48.14, 28 February 2018
 
 - PHP: Handle empty array returned from packagist in MetadataFinder
