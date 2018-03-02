@@ -15,15 +15,16 @@ module Dependabot
           dependency_set = DependencySet.new
 
           dependency_details.each do |dep|
-            next unless dep["source"].nil?
+            git_dependency = dep["source"]&.fetch("type") == "git"
+
             dependency_set <<
               Dependency.new(
                 name: dep["name"],
-                version: dep["version"],
+                version: git_dependency ? dep["checksum"] : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
                   groups: [],
-                  source: dep["source"],
+                  source: dep["source"] && symbolize_keys(dep["source"]),
                   file: dep["from"]
                 }],
                 package_manager: "hex"
@@ -93,6 +94,10 @@ module Dependabot
 
         def project_root
           File.join(File.dirname(__FILE__), "../../../..")
+        end
+
+        def symbolize_keys(hash)
+          Hash[hash.keys.map { |k| [k.to_sym, hash[k]] }]
         end
 
         def mixfiles

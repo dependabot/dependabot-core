@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 
@@ -14,10 +15,11 @@ module Dependabot
         require_relative "hex/requirements_updater"
 
         def latest_version
-          return latest_resolvable_version unless hex_package
+          return nil if git_dependency?
+          return latest_resolvable_version unless hex_registry_response
 
           versions =
-            hex_package["releases"].
+            hex_registry_response["releases"].
             select { |release| version_class.correct?(release["version"]) }.
             map { |release| version_class.new(release["version"]) }
 
@@ -25,11 +27,13 @@ module Dependabot
         end
 
         def latest_resolvable_version
+          return nil if git_dependency?
           @latest_resolvable_version ||=
             fetch_latest_resolvable_version(unlock_requirement: true)
         end
 
         def latest_resolvable_version_with_no_unlock
+          return nil if git_dependency?
           @latest_resolvable_version_with_no_unlock ||=
             fetch_latest_resolvable_version(unlock_requirement: false)
         end
@@ -54,6 +58,10 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def git_dependency?
+          git_commit_checker.git_dependency?
         end
 
         def fetch_latest_resolvable_version(unlock_requirement:)
@@ -167,8 +175,8 @@ module Dependabot
           dependency.requirements.any? { |r| r[:file] == file_name }
         end
 
-        def hex_package
-          return @hex_package unless @hex_package.nil?
+        def hex_registry_response
+          return @hex_registry_response unless @hex_registry_response.nil?
 
           response = Excon.get(
             dependency_url,
@@ -178,11 +186,25 @@ module Dependabot
 
           return nil unless response.status == 200
 
-          @hex_package = JSON.parse(response.body)
+          @hex_registry_response = JSON.parse(response.body)
         end
 
         def dependency_url
           "https://hex.pm/api/packages/#{dependency.name}"
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end

@@ -70,10 +70,10 @@ defmodule Parser do
 
   def git_source(repo_url, opts) do
     %{
+      type: "git",
       url: repo_url,
-      branch: opts[:branch],
-      tag: opts[:tag],
-      ref: opts[:ref]
+      branch: opts[:branch] || "master",
+      ref: opts[:ref] || opts[:tag]
     }
   end
 end
