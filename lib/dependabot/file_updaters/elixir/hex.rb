@@ -17,9 +17,11 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          if file_changed?(mixfile)
-            updated_files <<
-              updated_file(file: mixfile, content: updated_mixfile_content)
+          mixfiles.each do |file|
+            if file_changed?(file)
+              updated_files <<
+                updated_file(file: file, content: updated_mixfile_content(file))
+            end
           end
 
           if lockfile
@@ -41,8 +43,8 @@ module Dependabot
           raise "No mix.exs!" unless get_original_file("mix.exs")
         end
 
-        def mixfile
-          @mixfile ||= get_original_file("mix.exs")
+        def mixfiles
+          dependency_files.select { |f| f.name.end_with?("mix.exs") }
         end
 
         def lockfile
@@ -52,8 +54,7 @@ module Dependabot
         def updated_lockfile_content
           @latest_resolvable_version ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("mix.exs", sanitize_mixfile(updated_mixfile_content))
-              File.write("mix.lock", lockfile.content)
+              write_temporary_dependency_files
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
               SharedHelpers.run_helper_subprocess(
@@ -65,9 +66,19 @@ module Dependabot
             end
         end
 
-        def updated_mixfile_content
-          file = mixfile
+        def write_temporary_dependency_files
+          mixfiles.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(
+              path,
+              sanitize_mixfile(updated_mixfile_content(file))
+            )
+          end
+          File.write("mix.lock", lockfile.content)
+        end
 
+        def updated_mixfile_content(file)
           dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|

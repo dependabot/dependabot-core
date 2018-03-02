@@ -75,7 +75,7 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         expect(updated_mixfile_content).to include(%({:phoenix, "== 1.2.1"}))
       end
 
-      context "with similarly names packages" do
+      context "with similarly named packages" do
         let(:mixfile_body) { fixture("elixir", "mixfiles", "similar_names") }
         let(:lockfile_body) { fixture("elixir", "lockfiles", "similar_names") }
 
@@ -120,6 +120,80 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         it "doesn't leave the temporary edits present" do
           expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
           expect(updated_mixfile_content).to include(%(File.read!("VERSION")))
+        end
+      end
+
+      context "with an umbrella app" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+        let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+        let(:sub_mixfile1) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_business/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_business")
+          )
+        end
+        let(:sub_mixfile2) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_web/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_web")
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.4.5",
+            requirements: [
+              {
+                requirement: "~> 1.4.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.4.5",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.3.6",
+            previous_requirements: [
+              {
+                requirement: "~> 1.3.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.3.6",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the right files" do
+          expect(updated_files.map(&:name)).
+            to match_array(
+              %w(mix.lock
+                 apps/dependabot_business/mix.exs
+                 apps/dependabot_web/mix.exs)
+            )
+
+          updated_web_content = updated_files.find do |f|
+            f.name == "apps/dependabot_web/mix.exs"
+          end.content
+          expect(updated_web_content).to include(%({:plug, "1.4.5"},))
+
+          updated_business_content = updated_files.find do |f|
+            f.name == "apps/dependabot_business/mix.exs"
+          end.content
+          expect(updated_business_content).to include(%({:plug, "~> 1.4.0"},))
         end
       end
     end
@@ -178,6 +252,68 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
           expect(updated_lockfile_content).to include(
             "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+          )
+        end
+      end
+
+      context "with an umbrella app" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+        let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+        let(:sub_mixfile1) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_business/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_business")
+          )
+        end
+        let(:sub_mixfile2) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_web/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_web")
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.4.5",
+            requirements: [
+              {
+                requirement: "~> 1.4.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.4.5",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.3.6",
+            previous_requirements: [
+              {
+                requirement: "~> 1.3.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.3.6",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.5")
+          expect(updated_lockfile_content).to include(
+            "7b13869283fff6b8b21b84b8735326cc012c5eef8607095dc6ee24bd0a273d8e"
           )
         end
       end
