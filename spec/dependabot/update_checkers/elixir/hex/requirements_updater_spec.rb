@@ -14,7 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
   let(:requirements) { [mixfile_req] }
   let(:mixfile_req) do
     {
-      file: "composer.json",
+      file: "mix.exs",
       requirement: mixfile_req_string,
       groups: [],
       source: nil
@@ -107,6 +107,47 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
             let(:mixfile_req_string) { "~> 0.2 or < 3.0.0" }
             its([:requirement]) { is_expected.to eq(mixfile_req_string) }
           end
+        end
+      end
+
+      context "and multiple mix.exs files specified the dependency" do
+        subject(:updated_requirements) { updater.updated_requirements }
+
+        let(:requirements) do
+          [
+            {
+              file: "apps/dependabot_business/mix.exs",
+              requirement: "~> 1.3.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "apps/dependabot_web/mix.exs",
+              requirement: "1.3.6",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+
+        it "updates both requirements" do
+          expect(updated_requirements).
+            to match_array(
+              [
+                {
+                  file: "apps/dependabot_business/mix.exs",
+                  requirement: "~> 1.5.0",
+                  groups: [],
+                  source: nil
+                },
+                {
+                  file: "apps/dependabot_web/mix.exs",
+                  requirement: "1.5.0",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
         end
       end
     end
