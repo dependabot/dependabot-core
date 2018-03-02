@@ -1,3 +1,7 @@
+## v0.49.0, 2 March 2018
+
+- Elixir: Full support for umbrella apps 🎉
+
 ## v0.48.20, 2 March 2018
 
 - Python: Better pre-release handling
