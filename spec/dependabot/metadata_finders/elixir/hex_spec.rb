@@ -17,7 +17,7 @@ RSpec.describe Dependabot::MetadataFinders::Elixir::Hex do
           file: "mix.exs",
           requirement: "~> 1.2",
           groups: [],
-          source: nil
+          source: dependency_source
         }
       ],
       package_manager: "hex"
@@ -36,6 +36,7 @@ RSpec.describe Dependabot::MetadataFinders::Elixir::Hex do
     ]
   end
   let(:dependency_name) { "phoenix" }
+  let(:dependency_source) { nil }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -85,6 +86,23 @@ RSpec.describe Dependabot::MetadataFinders::Elixir::Hex do
       end
 
       it { is_expected.to eq("https://github.com/phoenixframework/phoenix") }
+    end
+
+    context "for a git source" do
+      let(:hex_response) { nil }
+      let(:dependency_source) do
+        { type: "git", url: "https://github.com/my_fork/phoenix" }
+      end
+
+      it { is_expected.to eq("https://github.com/my_fork/phoenix") }
+
+      context "that doesn't match a supported source" do
+        let(:dependency_source) do
+          { type: "git", url: "https://example.com/my_fork/phoenix" }
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
   end
 end
