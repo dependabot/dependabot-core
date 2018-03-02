@@ -40,17 +40,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   let(:files) { [mixfile, lockfile] }
 
   let(:mixfile) do
-    Dependabot::DependencyFile.new(
-      content: mixfile_body,
-      name: "mix.exs"
-    )
+    Dependabot::DependencyFile.new(content: mixfile_body, name: "mix.exs")
   end
-
   let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      content: lockfile_body,
-      name: "mix.lock"
-    )
+    Dependabot::DependencyFile.new(content: lockfile_body, name: "mix.lock")
   end
 
   let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
@@ -195,6 +188,48 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+    end
+
+    context "with an umbrella application" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+      let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+      let(:sub_mixfile1) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_business/mix.exs",
+          content: fixture("elixir", "mixfiles", "dependabot_business")
+        )
+      end
+      let(:sub_mixfile2) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_web/mix.exs",
+          content: fixture("elixir", "mixfiles", "dependabot_web")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "plug",
+          version: "1.3.6",
+          requirements: [
+            {
+              requirement: "~> 1.3.0",
+              file: "apps/dependabot_business/mix.exs",
+              groups: [],
+              source: nil
+            },
+            {
+              requirement: "1.3.6",
+              file: "apps/dependabot_web/mix.exs",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "hex"
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.4.5")) }
     end
   end
 

@@ -98,14 +98,14 @@ module Dependabot
         def prepare_mixfile(file, unlock_requirement:)
           content = file.content
           if unlock_requirement && dependency_appears_in_file?(file.name)
-            content = relax_version(file.content)
+            content = relax_version(content, filename: file.name)
           end
           sanitize_mixfile(content)
         end
 
-        def relax_version(content)
+        def relax_version(content, filename:)
           old_requirement =
-            dependency.requirements.find { |r| r.fetch(:file) == "mix.exs" }.
+            dependency.requirements.find { |r| r.fetch(:file) == filename }.
             fetch(:requirement)
 
           return content unless old_requirement

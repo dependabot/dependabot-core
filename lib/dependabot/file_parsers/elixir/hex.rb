@@ -9,25 +9,32 @@ module Dependabot
   module FileParsers
     module Elixir
       class Hex < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
         def parse
-          dependency_versions.map do |dep|
-            Dependency.new(
-              name: dep["name"],
-              version: dep["version"],
-              requirements: [{
-                requirement: dep["requirement"],
-                groups: [],
-                source: nil,
-                file: "mix.exs"
-              }],
-              package_manager: "hex"
-            )
+          dependency_set = DependencySet.new
+
+          dependency_details.each do |dep|
+            dependency_set <<
+              Dependency.new(
+                name: dep["name"],
+                version: dep["version"],
+                requirements: [{
+                  requirement: dep["requirement"],
+                  groups: [],
+                  source: nil,
+                  file: dep["from"]
+                }],
+                package_manager: "hex"
+              )
           end
+
+          dependency_set.dependencies
         end
 
         private
 
-        def dependency_versions
+        def dependency_details
           SharedHelpers.in_a_temporary_directory do
             write_sanitized_mixfiles
             File.write("mix.lock", lockfile.content)
