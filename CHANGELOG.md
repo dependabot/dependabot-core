@@ -1,3 +1,7 @@
+## v0.49.2, 2 March 2018
+
+- Elixir: Support for git dependencies in FileParser and MetadataFinder.
+
 ## v0.49.1, 2 March 2018
 
 - Elixir: Handle very old lockfiles
