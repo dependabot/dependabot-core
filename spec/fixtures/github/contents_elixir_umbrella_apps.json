@@ -1,0 +1,34 @@
+[
+  {
+    "name": "bank",
+    "path": "apps/bank",
+    "sha": "cc293499d8eee2f7a449393f2329431ec5038873",
+    "size": 0,
+    "url": "https://api.github.com/repos/wojtekmach/acme_bank/contents/apps/bank?ref=master",
+    "html_url": "https://github.com/wojtekmach/acme_bank/tree/master/apps/bank",
+    "git_url": "https://api.github.com/repos/wojtekmach/acme_bank/git/trees/cc293499d8eee2f7a449393f2329431ec5038873",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/wojtekmach/acme_bank/contents/apps/bank?ref=master",
+      "git": "https://api.github.com/repos/wojtekmach/acme_bank/git/trees/cc293499d8eee2f7a449393f2329431ec5038873",
+      "html": "https://github.com/wojtekmach/acme_bank/tree/master/apps/bank"
+    }
+  },
+  {
+    "name": "bank_web",
+    "path": "apps/bank_web",
+    "sha": "8b2cf883ca44d5b3f817199a793d4796b2142146",
+    "size": 0,
+    "url": "https://api.github.com/repos/wojtekmach/acme_bank/contents/apps/bank_web?ref=master",
+    "html_url": "https://github.com/wojtekmach/acme_bank/tree/master/apps/bank_web",
+    "git_url": "https://api.github.com/repos/wojtekmach/acme_bank/git/trees/8b2cf883ca44d5b3f817199a793d4796b2142146",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/wojtekmach/acme_bank/contents/apps/bank_web?ref=master",
+      "git": "https://api.github.com/repos/wojtekmach/acme_bank/git/trees/8b2cf883ca44d5b3f817199a793d4796b2142146",
+      "html": "https://github.com/wojtekmach/acme_bank/tree/master/apps/bank_web"
+    }
+  }
+]
