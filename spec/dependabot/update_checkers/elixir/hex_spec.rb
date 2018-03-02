@@ -58,18 +58,58 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     before do
-      stub_request(:get, hex_url).
-        to_return(status: 200, body: hex_response)
+      stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
       allow(checker).to receive(:latest_resolvable_version).
         and_return(Gem::Version.new("1.3.5"))
     end
 
     it { is_expected.to eq(Gem::Version.new("1.4.3")) }
 
-    context "when packagist 404s" do
+    context "when the registry 404s" do
       before { stub_request(:get, hex_url).to_return(status: 404) }
-
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }
+    end
+
+    context "with a dependency with a git source" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "178ce1a2344515e9145599970313fcc190d4b881",
+          requirements: [
+            {
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.2.0"
+              }
+            }
+          ],
+          package_manager: "hex"
+        )
+      end
+      before do
+        repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
+        stub_request(:get, repo_url + "/tags?per_page=100").
+          to_return(
+            status: 200,
+            body: fixture("github", "phoenix_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
+          to_return(
+            status: 200,
+            body: fixture("github", "ref.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
     end
   end
 
@@ -154,6 +194,31 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           )
         end
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
+      end
+
+      context "that is the dependency we're checking" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phoenix",
+            version: "178ce1a2344515e9145599970313fcc190d4b881",
+            requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: "v1.2.0"
+                }
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it { is_expected.to be_nil }
       end
     end
 

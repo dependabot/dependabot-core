@@ -15,7 +15,7 @@ module Dependabot
         require_relative "hex/requirements_updater"
 
         def latest_version
-          return nil if git_dependency?
+          return latest_version_for_git_dependency if git_dependency?
           return latest_resolvable_version unless hex_registry_response
 
           versions =
@@ -27,15 +27,21 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          return nil if git_dependency?
           @latest_resolvable_version ||=
-            fetch_latest_resolvable_version(unlock_requirement: true)
+            if git_dependency?
+              nil # TODO: Implement this!
+            else
+              fetch_latest_resolvable_version(unlock_requirement: true)
+            end
         end
 
         def latest_resolvable_version_with_no_unlock
-          return nil if git_dependency?
           @latest_resolvable_version_with_no_unlock ||=
-            fetch_latest_resolvable_version(unlock_requirement: false)
+            if git_dependency?
+              nil # TODO: Implement this!
+            else
+              fetch_latest_resolvable_version(unlock_requirement: false)
+            end
         end
 
         def updated_requirements
@@ -60,8 +66,32 @@ module Dependabot
           raise NotImplementedError
         end
 
+        def latest_version_for_git_dependency
+          latest_git_version_sha
+        end
+
         def git_dependency?
           git_commit_checker.git_dependency?
+        end
+
+        def latest_git_version_sha
+          # If the gem isn't pinned, the latest version is just the latest
+          # commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return git_commit_checker.head_commit_for_current_branch
+          end
+
+          # If the dependency is pinned to a tag that looks like a version then
+          # we want to update that tag. The latest version will then be the SHA
+          # of the latest tag that looks like a version.
+          if git_commit_checker.pinned_ref_looks_like_version?
+            latest_tag = git_commit_checker.local_tag_for_latest_version
+            return latest_tag&.fetch(:tag_sha) || dependency.version
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
         end
 
         def fetch_latest_resolvable_version(unlock_requirement:)
