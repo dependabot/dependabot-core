@@ -29,7 +29,7 @@ module Dependabot
 
         def dependency_versions
           SharedHelpers.in_a_temporary_directory do
-            File.write("mix.exs", sanitized_mixfile)
+            write_sanitized_mixfiles
             File.write("mix.lock", lockfile.content)
             FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
@@ -42,8 +42,16 @@ module Dependabot
           end
         end
 
-        def sanitized_mixfile
-          mixfile.content.
+        def write_sanitized_mixfiles
+          mixfiles.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, sanitize_mixfile(file.content))
+          end
+        end
+
+        def sanitize_mixfile(content)
+          content.
             gsub(/File\.read!\(.*?\)/, '"0.0.1"').
             gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
         end
@@ -77,6 +85,10 @@ module Dependabot
 
         def project_root
           File.join(File.dirname(__FILE__), "../../../..")
+        end
+
+        def mixfiles
+          dependency_files.select { |f| f.name.end_with?("mix.exs") }
         end
 
         def mixfile
