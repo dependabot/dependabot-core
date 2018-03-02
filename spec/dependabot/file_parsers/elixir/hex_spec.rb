@@ -127,6 +127,15 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "with a really old elixir version" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "really_old_elixir") }
+      let(:lockfile_body) do
+        fixture("elixir", "lockfiles", "really_old_elixir")
+      end
+
+      its(:length) { is_expected.to eq(7) }
+    end
+
     context "with a call to read a version file" do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }

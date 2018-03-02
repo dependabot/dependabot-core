@@ -65,6 +65,9 @@ defmodule Parser do
   defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies, _source}),
     do: {version, checksum, nil}
 
+  defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies}),
+    do: {version, checksum, nil}
+
   def git_source(repo_url, opts) do
     %{
       url: repo_url,
