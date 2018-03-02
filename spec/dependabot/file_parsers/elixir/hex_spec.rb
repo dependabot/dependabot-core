@@ -25,8 +25,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     context "with a ~> version specified" do
       its(:length) { is_expected.to eq(2) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -181,14 +181,14 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
             version: "1.3.6",
             requirements: [
               {
-                requirement: "~> 1.3.0",
-                file: "apps/dependabot_business/mix.exs",
+                requirement: "1.3.6",
+                file: "apps/dependabot_web/mix.exs",
                 groups: [],
                 source: nil
               },
               {
-                requirement: "1.3.6",
-                file: "apps/dependabot_web/mix.exs",
+                requirement: "~> 1.3.0",
+                file: "apps/dependabot_business/mix.exs",
                 groups: [],
                 source: nil
               }

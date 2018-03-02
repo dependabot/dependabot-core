@@ -2,24 +2,30 @@ defmodule Parser do
   def run do
     Mix.Dep.loaded([])
     |> Enum.flat_map(&parse_dep/1)
-    |> Enum.group_by(&group_deps/1)
-    |> Enum.map(fn {app, deps} ->
-      dep = find_dep_with_lock(deps)
-      lock = dep.opts[:lock]
+    |> Enum.map(&build_dependency(&1.opts[:lock], &1))
+  end
 
-      from = parse_from(deps)
-      {version, checksum, source} = parse_lock(lock)
+  defp build_dependency(nil, dep) do
+    %{
+      name: dep.app,
+      from: Path.relative_to_cwd(dep.from),
+      requirement: dep.requirement,
+      top_level: dep.top_level || umbrella_top_level_dep?(dep)
+    }
+  end
 
-      %{
-        name: app,
-        from: from,
-        version: version,
-        checksum: checksum,
-        requirement: dep.requirement,
-        source: source,
-        top_level: dep.top_level || umbrella_top_level_dep?(dep)
-      }
-    end)
+  defp build_dependency(lock, dep) do
+    {version, checksum, source} = parse_lock(lock)
+
+    %{
+      name: dep.app,
+      from: Path.relative_to_cwd(dep.from),
+      version: version,
+      checksum: checksum,
+      requirement: dep.requirement,
+      source: source,
+      top_level: dep.top_level || umbrella_top_level_dep?(dep)
+    }
   end
 
   # path dependency
@@ -44,18 +50,6 @@ defmodule Parser do
   # unsupported
   defp parse_dep(_dep), do: []
 
-  defp group_deps(dep), do: dep.app
-
-  defp find_dep_with_lock([]), do: nil
-
-  defp find_dep_with_lock([head | rest]) do
-    if head.opts[:lock] do
-      head
-    else
-      find_dep_with_lock(rest)
-    end
-  end
-
   defp umbrella_top_level_dep?(dep) do
     if Mix.Project.umbrella?() do
       apps_paths = Path.expand(Mix.Project.config()[:apps_path], File.cwd!())
@@ -63,12 +57,6 @@ defmodule Parser do
     else
       false
     end
-  end
-
-  defp parse_from(deps) do
-    deps
-    |> Enum.map(&Path.relative_to_cwd(&1.from))
-    |> Enum.uniq()
   end
 
   defp parse_lock({:git, repo_url, checksum, opts}),

@@ -33,7 +33,7 @@ module Dependabot
                 name: existing_dependency.name,
                 version: existing_dependency.version || dep.version,
                 requirements:
-                  existing_dependency.requirements + dep.requirements,
+                  (existing_dependency.requirements + dep.requirements).uniq,
                 package_manager: existing_dependency.package_manager
               )
           else
