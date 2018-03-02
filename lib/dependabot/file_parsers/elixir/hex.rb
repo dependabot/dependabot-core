@@ -15,6 +15,7 @@ module Dependabot
           dependency_set = DependencySet.new
 
           dependency_details.each do |dep|
+            next unless dep["source"].nil?
             dependency_set <<
               Dependency.new(
                 name: dep["name"],
@@ -22,14 +23,14 @@ module Dependabot
                 requirements: [{
                   requirement: dep["requirement"],
                   groups: [],
-                  source: nil,
+                  source: dep["source"],
                   file: dep["from"]
                 }],
                 package_manager: "hex"
               )
           end
 
-          dependency_set.dependencies
+          dependency_set.dependencies.sort_by(&:name)
         end
 
         private

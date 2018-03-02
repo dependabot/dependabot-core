@@ -25,8 +25,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     context "with a ~> version specified" do
       its(:length) { is_expected.to eq(2) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
@@ -57,12 +57,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("plug")
-          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.name).to eq("phoenix")
+          expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "1.3.0",
+                requirement: "== 1.2.1",
                 file: "mix.exs",
                 groups: [],
                 source: nil
@@ -77,12 +77,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("phoenix")
-          expect(dependency.version).to eq("1.2.1")
+          expect(dependency.name).to eq("plug")
+          expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "== 1.2.1",
+                requirement: "1.3.0",
                 file: "mix.exs",
                 groups: [],
                 source: nil
@@ -139,6 +139,79 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
 
       its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with an umbrella app" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+      let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+      let(:sub_mixfile1) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_business/mix.exs",
+          content: fixture("elixir", "mixfiles", "dependabot_business")
+        )
+      end
+      let(:sub_mixfile2) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_web/mix.exs",
+          content: fixture("elixir", "mixfiles", "dependabot_web")
+        )
+      end
+
+      it "parses the dependencies correctly" do
+        expect(dependencies.length).to eq(3)
+        expect(dependencies).to include(
+          Dependabot::Dependency.new(
+            name: "jason",
+            version: "1.0.0",
+            requirements: [
+              {
+                requirement: "~> 1.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        )
+        expect(dependencies).to include(
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.3.6",
+            requirements: [
+              {
+                requirement: "1.3.6",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "~> 1.3.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        )
+        expect(dependencies).to include(
+          Dependabot::Dependency.new(
+            name: "distillery",
+            version: "1.5.2",
+            requirements: [
+              {
+                requirement: "~> 1.5",
+                file: "mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        )
+      end
     end
   end
 end
