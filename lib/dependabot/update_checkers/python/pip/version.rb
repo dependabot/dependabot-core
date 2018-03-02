@@ -64,12 +64,19 @@ module Dependabot
           private
 
           def normalise_prerelease(version)
+            # Python has reserved words for release states, which are treated
+            # as equal (e.g., preview, pre and rc).
+            # Further, Python treats dashes as a separator between version
+            # parts and treats the alphabetical characters in strings as the
+            # start of a new version part (so 1.1a2 == 1.1.alpha.2).
             version.
               gsub("alpha", "a").
               gsub("beta", "b").
               gsub("preview", "rc").
               gsub("pre", "rc").
-              gsub(/([\d.\-_])c([\d.\-_])?/, '\1rc\2')
+              gsub(/([\d.\-_])c([\d.\-_])?/, '\1rc\2').
+              tr("-", ".").
+              gsub(/(\d)([a-z])/i, '\1.\2')
           end
         end
       end

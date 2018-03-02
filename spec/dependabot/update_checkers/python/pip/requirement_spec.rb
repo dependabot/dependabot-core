@@ -44,12 +44,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Requirement do
 
     context "with a pre-release version" do
       let(:requirement_string) { "== 1.3.alpha" }
-      it { is_expected.to eq(Gem::Requirement.new("= 1.3.a")) }
-
-      context "that is tricky" do
-        let(:requirement_string) { "== 1.3c2" }
-        it { is_expected.to eq(Gem::Requirement.new("= 1.3rc2")) }
-      end
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.a")) }
     end
   end
 

@@ -89,6 +89,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
           let(:version_string) { "1.0.0c1" }
           let(:other_version) { described_class.new("1.0.0rc1") }
           it { is_expected.to eq(0) }
+
+          context "with a dash that needs sanitizing" do
+            let(:version_string) { "0.5.4-alpha" }
+            let(:other_version) { described_class.new("0.5.4a0") }
+            it { is_expected.to eq(0) }
+          end
         end
 
         context "but the other version has a local version" do
@@ -124,6 +130,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       context "that is greater" do
         let(:other_version) { described_class.new("1.1.0") }
         it { is_expected.to eq(-1) }
+
+        context "with a dash that needs sanitizing" do
+          let(:version_string) { "0.5.4-alpha" }
+          let(:other_version) { described_class.new("0.5.4a1") }
+          it { is_expected.to eq(-1) }
+        end
       end
     end
   end
