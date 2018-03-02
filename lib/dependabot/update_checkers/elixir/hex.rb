@@ -59,11 +59,9 @@ module Dependabot
         def fetch_latest_resolvable_version(unlock_requirement:)
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
-              File.write(
-                "mix.exs",
-                prepared_mixfile_content(unlock_requirement)
+              write_temporary_dependency_files(
+                unlock_requirement: unlock_requirement
               )
-              File.write("mix.lock", lockfile.content)
               FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
               SharedHelpers.run_helper_subprocess(
@@ -85,9 +83,23 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        def prepared_mixfile_content(unlock_requirement)
-          content = mixfile.content
-          content = relax_version(mixfile.content) if unlock_requirement
+        def write_temporary_dependency_files(unlock_requirement:)
+          mixfiles.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(
+              path,
+              prepare_mixfile(file, unlock_requirement: unlock_requirement)
+            )
+          end
+          File.write("mix.lock", lockfile.content)
+        end
+
+        def prepare_mixfile(file, unlock_requirement:)
+          content = file.content
+          if unlock_requirement && dependency_appears_in_file?(file.name)
+            content = relax_version(file.content)
+          end
           sanitize_mixfile(content)
         end
 
@@ -135,10 +147,10 @@ module Dependabot
           File.join(project_root, "helpers/elixir/bin/check_update.exs")
         end
 
-        def mixfile
-          mixfile = dependency_files.find { |f| f.name == "mix.exs" }
-          raise "No mix.exs!" unless mixfile
-          mixfile
+        def mixfiles
+          mixfiles = dependency_files.select { |f| f.name.end_with?("mix.exs") }
+          raise "No mix.exs!" unless mixfiles.any?
+          mixfiles
         end
 
         def lockfile
@@ -149,6 +161,10 @@ module Dependabot
 
         def project_root
           File.join(File.dirname(__FILE__), "../../../..")
+        end
+
+        def dependency_appears_in_file?(file_name)
+          dependency.requirements.any? { |r| r[:file] == file_name }
         end
 
         def hex_package

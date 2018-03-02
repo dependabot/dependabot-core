@@ -91,10 +91,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("mix.exs") }
         end
 
-        def mixfile
-          @mixfile ||= get_original_file("mix.exs")
-        end
-
         def lockfile
           @lockfile ||= get_original_file("mix.lock")
         end
