@@ -1,3 +1,8 @@
+## v0.48.20, 2 March 2018
+
+- Python: Better pre-release handling
+- Elixir: Lots of prep for umbrella apps (but not full support yet)
+
 ## v0.48.19, 1 March 2018
 
 - Better changelog finding (order by file size if multiple with same name)
