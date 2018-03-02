@@ -1,3 +1,7 @@
+## v0.49.1, 2 March 2018
+
+- Elixir: Handle very old lockfiles
+
 ## v0.49.0, 2 March 2018
 
 - Elixir: Full support for umbrella apps 🎉
