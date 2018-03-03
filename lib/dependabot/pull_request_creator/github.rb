@@ -32,28 +32,34 @@ module Dependabot
       end
 
       def create
-        # TODO: Only return if a previous PR exists (should match target branch)
-        return if branch_exists?
+        return if branch_exists? && pull_request_exists?
 
         commit = create_commit
-        return unless create_branch(commit)
+        branch = create_or_update_branch(commit)
+        return unless branch
 
         create_label unless custom_labels || dependencies_label_exists?
 
         pull_request = create_pull_request
-
         add_label_to_pull_request(pull_request)
-
         pull_request
       end
 
       private
 
       def branch_exists?
-        github_client.ref(repo_name, "heads/#{branch_name}")
+        @branch_ref ||= github_client.ref(repo_name, "heads/#{branch_name}")
         true
       rescue Octokit::NotFound
         false
+      end
+
+      def pull_request_exists?
+        github_client.pull_requests(
+          repo_name,
+          head: "#{repo_name.split('/').first}:#{branch_name}",
+          state: "all"
+        ).any?
       end
 
       def create_commit
@@ -101,6 +107,10 @@ module Dependabot
         )
       end
 
+      def create_or_update_branch(commit)
+        branch_exists? ? update_branch(commit) : create_branch(commit)
+      end
+
       def create_branch(commit)
         github_client.create_ref(
           repo_name,
@@ -117,6 +127,15 @@ module Dependabot
         # exists, since git won't be able to create a folder with the same name
         @branch_name = SecureRandom.hex[0..3] + @branch_name
         retry
+      end
+
+      def update_branch(commit)
+        github_client.update_ref(
+          repo_name,
+          "heads/#{branch_name}",
+          commit.sha,
+          true
+        )
       end
 
       def dependencies_label_exists?

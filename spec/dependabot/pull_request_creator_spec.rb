@@ -200,6 +200,63 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "when the branch already exists" do
+      before do
+        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+          to_return(status: 200,
+                    body: fixture("github", "ref.json"),
+                    headers: json_header)
+      end
+
+      context "but a PR to this branch doesn't" do
+        before do
+          url = "#{watched_repo_url}/pulls?head=gocardless:#{branch_name}"\
+                "&state=all"
+          stub_request(:get, url).
+            to_return(status: 200, body: "[]", headers: json_header)
+          stub_request(
+            :patch,
+            "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "update_ref.json"),
+            headers: json_header
+          )
+        end
+
+        it "creates a PR with the right details" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/pulls").
+            with(
+              body: {
+                base: "master",
+                head: "dependabot/bundler/business-1.5.0",
+                title: "PR name",
+                body: "PR msg"
+              }
+            )
+        end
+      end
+
+      context "and a PR to this branch already exists" do
+        before do
+          url = "#{watched_repo_url}/pulls?head=gocardless:#{branch_name}"\
+                "&state=all"
+          stub_request(:get, url).
+            to_return(status: 200, body: "[{}]", headers: json_header)
+        end
+
+        it "returns nil" do
+          expect(creator.create).to be_nil
+
+          expect(WebMock).
+            to_not have_requested(:post, "#{watched_repo_url}/pulls")
+        end
+      end
+    end
+
     context "with author details" do
       subject(:creator) do
         described_class.new(
