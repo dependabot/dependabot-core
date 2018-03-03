@@ -1,3 +1,7 @@
+## v0.49.3, 3 March 2018
+
+- Handle PR creation when a branch exists but a PR doesn't
+
 ## v0.49.2, 2 March 2018
 
 - Elixir: Support for git dependencies in FileParser and MetadataFinder.
