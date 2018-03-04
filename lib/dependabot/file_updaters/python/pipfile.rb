@@ -77,14 +77,11 @@ module Dependabot
               pipfile_hash = pipfile_hash_for(updated_pipfile_content)
               updated_lockfile =
                 updated_lockfile_content_for(frozen_pipfile_content)
-              original_env_markers =
-                lockfile.content.match(/environment-markers.*pipfile-spec/m).
-                to_s
 
               updated_lockfile.sub(
                 /"sha256": ".*?"/,
                 %("sha256": "#{pipfile_hash}")
-              ).sub(/environment-markers.*pipfile-spec/m, original_env_markers)
+              )
             end
         end
 
