@@ -49,7 +49,7 @@ module Dependabot
 
       def branch_exists?
         @branch_ref ||= github_client.ref(repo_name, "heads/#{branch_name}")
-        true
+        @branch_ref.any? { |r| r.ref == "refs/heads/#{branch_name}" }
       rescue Octokit::NotFound
         false
       end

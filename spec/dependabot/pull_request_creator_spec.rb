@@ -204,7 +204,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       before do
         stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
           to_return(status: 200,
-                    body: fixture("github", "ref.json"),
+                    body: [{ ref: "refs/heads/#{branch_name}" }].to_json,
                     headers: json_header)
       end
 
@@ -254,6 +254,30 @@ RSpec.describe Dependabot::PullRequestCreator do
           expect(WebMock).
             to_not have_requested(:post, "#{watched_repo_url}/pulls")
         end
+      end
+    end
+
+    context "when a branch with a name that is a superstring exists" do
+      before do
+        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+          to_return(status: 200,
+                    body: [{ ref: "refs/heads/#{branch_name}.beta3" }].to_json,
+                    headers: json_header)
+      end
+
+      it "creates a PR with the right details" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/pulls").
+          with(
+            body: {
+              base: "master",
+              head: "dependabot/bundler/business-1.5.0",
+              title: "PR name",
+              body: "PR msg"
+            }
+          )
       end
     end
 
