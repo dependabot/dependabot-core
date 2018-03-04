@@ -95,9 +95,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pipfile do
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
         expect(json_lockfile["_meta"]["hash"]).
           to eq(JSON.parse(lockfile_body)["_meta"]["hash"])
-        expect(
-          json_lockfile["_meta"]["host-environment-markers"]["python_version"]
-        ).to eq("2.7")
       end
 
       describe "with dependency names that need to be normalised" do
