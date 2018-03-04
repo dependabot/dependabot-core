@@ -1,3 +1,7 @@
+## v0.49.4, 4 March 2018
+
+- Handle superstring branches when creating PRs
+
 ## v0.49.3, 3 March 2018
 
 - Handle PR creation when a branch exists but a PR doesn't
