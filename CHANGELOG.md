@@ -1,3 +1,7 @@
+## v0.49.6, 5 March 2018
+
+- Elixir: Handle references specified as a charlist
+
 ## v0.49.5, 4 March 2018
 
 - Handle inconsistent responses from github whengetting a ref
