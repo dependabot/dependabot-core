@@ -10,7 +10,7 @@ module Dependabot
     class Base
       attr_reader :source, :credentials, :directory, :target_branch
 
-      def self.required_files_in?(_)
+      def self.required_files_in?(_filename_array)
         raise NotImplementedError
       end
 
@@ -53,7 +53,7 @@ module Dependabot
       private
 
       def default_branch_for_repo
-        @default_branch ||=
+        @default_branch_for_repo ||=
           case host
           when "github" then github_client.repository(repo).default_branch
           when "gitlab" then gitlab_client.project(repo).default_branch

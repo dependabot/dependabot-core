@@ -37,7 +37,7 @@ module Dependabot
         private
 
         def all_releases
-          @releases ||= fetch_dependency_releases
+          @all_releases ||= fetch_dependency_releases
         end
 
         def updated_release

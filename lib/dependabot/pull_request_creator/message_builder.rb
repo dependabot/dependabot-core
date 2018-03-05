@@ -65,13 +65,13 @@ module Dependabot
       end
 
       def signoff_message
-        return unless author_details && author_details.is_a?(Hash)
+        return unless author_details.is_a?(Hash)
         return unless author_details[:name] && author_details[:email]
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
       end
 
       def recent_commit_messages
-        @recent_messages ||=
+        @recent_commit_messages ||=
           github_client.commits(repo_name).
           reject { |c| c.author&.type == "Bot" }.
           map(&:commit).
