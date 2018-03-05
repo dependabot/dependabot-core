@@ -35,6 +35,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
+        it { is_expected.to be_production }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.2") }
         its(:requirements) do
@@ -71,6 +72,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
+        it { is_expected.to_not be_production }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.1") }
         its(:requirements) do

@@ -57,6 +57,7 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.production?).to eq(true)
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(
@@ -108,6 +109,7 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.production?).to eq(false)
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(

@@ -70,6 +70,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           subject { dependencies.first }
 
           it { is_expected.to be_a(Dependabot::Dependency) }
+          it { is_expected.to be_production }
           its(:name) { is_expected.to eq("fetch-factory") }
           its(:version) { is_expected.to eq("0.2.1") }
           its(:requirements) do
@@ -141,6 +142,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           subject { dependencies.first }
 
           it { is_expected.to be_a(Dependabot::Dependency) }
+          it { is_expected.to_not be_production }
           its(:name) { is_expected.to eq("etag") }
           its(:version) { is_expected.to eq("1.8.1") }
           its(:requirements) do

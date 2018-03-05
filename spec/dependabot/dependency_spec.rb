@@ -53,4 +53,36 @@ RSpec.describe Dependabot::Dependency do
       specify { expect(dependency1).to_not eq(dependency2) }
     end
   end
+
+  describe "#production?" do
+    subject(:dependency) { described_class.new(dependency_args).production? }
+
+    let(:dependency_args) do
+      {
+        name: "dep",
+        requirements: [
+          { file: "a.rb", requirement: "1", groups: groups, source: nil }
+        ],
+        package_manager: package_manager
+      }
+    end
+    let(:groups) { [] }
+    let(:package_manager) { "bundler" }
+
+    context "for a requirement that isn't top-level" do
+      let(:dependency_args) do
+        { name: "dep", requirements: [], package_manager: package_manager }
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    %w(submodules docker maven pip).each do |manager|
+      context "for a #{manager} dependency" do
+        let(:package_manager) { "manager" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
+  end
 end
