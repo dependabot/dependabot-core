@@ -1,3 +1,7 @@
+## v0.49.7, 5 March 2018
+
+- PHP: Handle dependency reachability errors in FileUpdater
+
 ## v0.49.6, 5 March 2018
 
 - Elixir: Handle references specified as a charlist
