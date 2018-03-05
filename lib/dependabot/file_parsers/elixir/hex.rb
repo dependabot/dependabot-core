@@ -23,7 +23,7 @@ module Dependabot
                 version: git_dependency ? dep["checksum"] : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
-                  groups: [],
+                  groups: dep["groups"],
                   source: dep["source"] && symbolize_keys(dep["source"]),
                   file: dep["from"]
                 }],

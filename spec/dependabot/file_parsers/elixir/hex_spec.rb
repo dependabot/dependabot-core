@@ -93,6 +93,57 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       end
     end
 
+    context "with a development dependency" do
+      let(:mixfile_body) do
+        fixture("elixir", "mixfiles", "development_dependency")
+      end
+      let(:lockfile_body) do
+        fixture("elixir", "lockfiles", "development_dependency")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("phoenix")
+          expect(dependency.version).to eq("1.2.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "== 1.2.1",
+                file: "mix.exs",
+                groups: ["dev"],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("plug")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "1.3.0",
+                file: "mix.exs",
+                groups: %w(dev test),
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with a git source" do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }

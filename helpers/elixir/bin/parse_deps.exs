@@ -9,6 +9,7 @@ defmodule Parser do
     %{
       name: dep.app,
       from: Path.relative_to_cwd(dep.from),
+      groups: [],
       requirement: dep.requirement,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
@@ -16,17 +17,23 @@ defmodule Parser do
 
   defp build_dependency(lock, dep) do
     {version, checksum, source} = parse_lock(lock)
+    groups = parse_groups(dep.opts[:only])
 
     %{
       name: dep.app,
       from: Path.relative_to_cwd(dep.from),
       version: version,
+      groups: groups,
       checksum: checksum,
       requirement: dep.requirement,
       source: source,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
   end
+
+  defp parse_groups(nil), do: []
+  defp parse_groups(only) when is_list(only), do: only
+  defp parse_groups(only), do: [only]
 
   # path dependency
   defp parse_dep(%{scm: Mix.SCM.Path, opts: opts} = dep) do
