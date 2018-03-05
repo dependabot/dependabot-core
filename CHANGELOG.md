@@ -1,3 +1,7 @@
+## v0.49.5, 4 March 2018
+
+- Handle inconsistent responses from github whengetting a ref
+
 ## v0.49.4, 4 March 2018
 
 - Handle superstring branches when creating PRs
