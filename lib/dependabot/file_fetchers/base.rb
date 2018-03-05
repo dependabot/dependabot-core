@@ -91,14 +91,16 @@ module Dependabot
         @repo_contents ||= {}
         @repo_contents[dir] ||=
           case host
-          when "github"
-            github_client.contents(repo, path: path, ref: commit).map do |file|
-              OpenStruct.new(name: file.name, path: file.path, type: file.type)
-            end
-          when "gitlab"
-            gitlab_repo_contents(path)
+          when "github" then github_repo_contents(path)
+          when "gitlab" then gitlab_repo_contents(path)
           else raise "Unsupported host '#{host}'."
           end
+      end
+
+      def github_repo_contents(path)
+        github_client.contents(repo, path: path, ref: commit).map do |file|
+          OpenStruct.new(name: file.name, path: file.path, type: file.type)
+        end
       end
 
       def gitlab_repo_contents(path)
@@ -133,7 +135,10 @@ module Dependabot
           find { |cred| cred["host"] == "github.com" }&.
           fetch("password")
 
-        @github_client ||= Octokit::Client.new(access_token: access_token)
+        @github_client ||= Octokit::Client.new(
+          access_token: access_token,
+          connection_options: { request: { open_timeout: 2, timeout: 5 } }
+        )
       end
 
       def gitlab_client
