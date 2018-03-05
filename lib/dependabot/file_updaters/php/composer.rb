@@ -111,7 +111,7 @@ module Dependabot
           end
           if error.message.start_with?("Failed to execute git clone")
             dependency_url =
-              error.message.match(/--mirror '(?<url>.*?)'/).
+              error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
