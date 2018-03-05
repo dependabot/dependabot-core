@@ -1,3 +1,7 @@
+## v0.49.8, 5 March 2018
+
+- PHP: Better regex for git clone problems
+
 ## v0.49.7, 5 March 2018
 
 - PHP: Handle dependency reachability errors in FileUpdater
