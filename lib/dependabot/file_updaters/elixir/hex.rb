@@ -52,7 +52,7 @@ module Dependabot
         end
 
         def updated_lockfile_content
-          @latest_resolvable_version ||=
+          @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")

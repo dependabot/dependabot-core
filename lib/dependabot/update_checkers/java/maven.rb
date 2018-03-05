@@ -94,10 +94,11 @@ module Dependabot
         end
 
         def declaration_finder
-          @finder ||= FileUpdaters::Java::Maven::DeclarationFinder.new(
-            dependency_name: dependency.name,
-            pom_content: pom.content
-          )
+          @declaration_finder ||=
+            FileUpdaters::Java::Maven::DeclarationFinder.new(
+              dependency_name: dependency.name,
+              pom_content: pom.content
+            )
         end
 
         def pom

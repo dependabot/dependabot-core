@@ -119,11 +119,11 @@ module Dependabot
             req.merge(requirement: :unfixable)
           end
 
-          def requirement_satisfied?(r, groups)
+          def requirement_satisfied?(req, groups)
             if groups == ["development"]
-              r.satisfied_by?(latest_resolvable_version)
+              req.satisfied_by?(latest_resolvable_version)
             else
-              r.satisfied_by?(latest_version)
+              req.satisfied_by?(latest_version)
             end
           end
 
@@ -145,35 +145,31 @@ module Dependabot
             binding_reqs.sort_by { |r| r.requirements.first.last }
           end
 
-          def fixed_requirements(r)
-            op, version = r.requirements.first
+          def fixed_requirements(req)
+            op, version = req.requirements.first
 
             case op
             when "=", nil then [Gem::Requirement.new(">= #{version}")]
-            when "<", "<=" then [update_greatest_version(r, latest_version)]
-            when "~>" then convert_twidle_to_range(r, latest_version)
+            when "<", "<=" then [update_greatest_version(req, latest_version)]
+            when "~>" then convert_twidle_to_range(req, latest_version)
             when "!=" then []
             when ">", ">=" then raise UnfixableRequirement
             else raise "Unexpected operation for requirement: #{op}"
             end
           end
 
-          def fixed_development_requirements(r)
-            op = r.requirements.first.first
+          def fixed_development_requirements(req)
+            op = req.requirements.first.first
 
             case op
             when "=", nil
               [Gem::Requirement.new("#{op} #{latest_resolvable_version}")]
-            when "<", "<="
-              [update_greatest_version(r, latest_version)]
             when "~>"
-              [update_twiddle_version(r, latest_resolvable_version)]
-            when "!="
-              []
-            when ">", ">="
-              raise UnfixableRequirement
-            else
-              raise "Unexpected operation for requirement: #{op}"
+              [update_twiddle_version(req, latest_resolvable_version)]
+            when "<", "<=" then [update_greatest_version(req, latest_version)]
+            when "!=" then []
+            when ">", ">=" then raise UnfixableRequirement
+            else raise "Unexpected operation for requirement: #{op}"
             end
           end
 
