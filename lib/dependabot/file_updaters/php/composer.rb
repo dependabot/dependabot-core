@@ -107,7 +107,19 @@ module Dependabot
 
         def handle_composer_errors(error)
           if error.message.start_with?("Failed to execute git checkout")
-            raise git_dependency_error(error)
+            raise git_dependency_reference_error(error)
+          end
+          if error.message.start_with?("Failed to execute git clone")
+            dependency_url =
+              error.message.match(/--mirror '(?<url>.*?)'/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
+          end
+          if error.message.start_with?("Failed to clone")
+            dependency_url =
+              error.message.match(/Failed to clone (?<url>.*?) via/).
+              named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
           if error.message.start_with?("Could not find a key for ACF PRO")
             raise Dependabot::MissingEnvironmentVariable, "ACF_PRO_KEY"
@@ -115,7 +127,7 @@ module Dependabot
           raise error
         end
 
-        def git_dependency_error(error)
+        def git_dependency_reference_error(error)
           ref = error.message.match(/checkout '(?<ref>.*?)'/).
                 named_captures.fetch("ref")
           dependency_name =
