@@ -120,6 +120,39 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           )
         )
       end
+
+      context "with a tag (rather than a ref)" do
+        let(:mixfile_body) do
+          fixture("elixir", "mixfiles", "git_source_with_charlist")
+        end
+        let(:lockfile_body) do
+          fixture("elixir", "lockfiles", "git_source_with_charlist")
+        end
+
+        it "includes the git dependency" do
+          expect(dependencies.length).to eq(2)
+          expect(dependencies).to include(
+            Dependabot::Dependency.new(
+              name: "phoenix",
+              version: "178ce1a2344515e9145599970313fcc190d4b881",
+              requirements: [
+                {
+                  requirement: nil,
+                  file: "mix.exs",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/phoenixframework/phoenix.git",
+                    branch: "master",
+                    ref: "v1.2.0"
+                  }
+                }
+              ],
+              package_manager: "hex"
+            )
+          )
+        end
+      end
     end
 
     context "with an old elixir version" do

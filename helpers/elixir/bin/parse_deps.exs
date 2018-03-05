@@ -69,11 +69,14 @@ defmodule Parser do
     do: {version, checksum, nil}
 
   def git_source(repo_url, opts) do
+    ref = opts[:ref] || opts[:tag]
+    ref = if is_list(ref), do: to_string(ref), else: ref
+
     %{
       type: "git",
       url: repo_url,
       branch: opts[:branch] || "master",
-      ref: opts[:ref] || opts[:tag]
+      ref: ref
     }
   end
 end
