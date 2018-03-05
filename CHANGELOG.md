@@ -1,3 +1,7 @@
+## v0.49.9, 5 March 2018
+
+- Add #production? method to Dependabot::Dependency instances
+
 ## v0.49.8, 5 March 2018
 
 - PHP: Better regex for git clone problems
