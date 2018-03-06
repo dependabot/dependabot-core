@@ -31,6 +31,11 @@ module Dependabot
           opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
           crypto.sign(commit_object, opts).to_s
         end
+      rescue Errno::ENOTEMPTY
+        # This appears to be a Ruby bug which occurs very rarely
+        raise if @retrying
+        @retrying = true
+        retry
       end
 
       private
