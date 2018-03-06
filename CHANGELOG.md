@@ -1,3 +1,8 @@
+## v0.49.10, 6 March 2018
+
+- Don't mistake commit messages that just start with Fix for semantic commit
+  messages
+
 ## v0.49.9, 5 March 2018
 
 - Add #production? method to Dependabot::Dependency instances
