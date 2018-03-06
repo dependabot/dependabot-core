@@ -1,3 +1,7 @@
+## v0.49.12, 6 March 2018
+
+- JS: Less aggressive yarn.lock deduping
+
 ## v0.49.11, 6 March 2018
 
 - Retry rare Ruby bug in commit signer
