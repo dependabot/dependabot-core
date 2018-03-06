@@ -1,10 +1,10 @@
-const fs = require("fs");
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
   .default;
 const semver = require("semver");
 
-// Credit: https://bitbucket.org/atlassian/yarn-tools
+// Inspired by yarn-tools. Altered to ensure the latest version is always used
+// for version ranges which allow it.
 module.exports = (data, includePackages = []) => {
   const json = parse(data).object;
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
@@ -30,11 +30,11 @@ module.exports = (data, includePackages = []) => {
       return includePackages.includes(name);
     })
     .forEach(([name, packages]) => {
-      // reverse sort, so we'll find the maximum satisfying version first
+      // Reverse sort, so we'll find the maximum satisfying version first
       const versions = packages.map(p => p.pkg.version).sort(semver.rcompare);
       const ranges = packages.map(p => p.requestedVersion);
 
-      // dedup each package to its maxSatisfying version
+      // Dedup each package to its maxSatisfying version
       packages.forEach(p => {
         const targetVersion = semver.maxSatisfying(
           versions,
