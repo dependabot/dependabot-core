@@ -58,7 +58,9 @@ module Dependabot
         return false if recent_commit_messages.none?
 
         semantic_messages = recent_commit_messages.select do |message|
-          SEMANTIC_PREFIXES.any? { |pre| message.downcase.start_with?(pre) }
+          SEMANTIC_PREFIXES.any? do |pre|
+            message.downcase.match?(/#{pre}[:(]/)
+          end
         end
 
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
