@@ -1,3 +1,7 @@
+## v0.49.11, 6 March 2018
+
+- Retry rare Ruby bug in commit signer
+
 ## v0.49.10, 6 March 2018
 
 - Don't mistake commit messages that just start with Fix for semantic commit
