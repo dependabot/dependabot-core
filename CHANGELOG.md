@@ -1,3 +1,7 @@
+## v0.49.15, 7 March 2018
+
+- Ruby: Handle ~> ranges with major precision
+
 ## v0.49.14, 7 March 2018
 
 - Fix dependency file uniqueness checking (fixes a rare bug in Ruby updates)
