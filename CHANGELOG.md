@@ -1,3 +1,8 @@
+## v0.49.14, 7 March 2018
+
+- Fix dependency file uniqueness checking (fixes a rare bug in Ruby updates)
+- Use GithubClientWithRetries everywhere
+
 ## v0.49.13, 7 March 2018
 
 - Automatically retry GitHub timeouts during file fetching
