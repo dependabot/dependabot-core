@@ -178,7 +178,7 @@ module Dependabot
             version = requirement.requirements.first.last
             version = version.release if version.prerelease?
 
-            index_to_update = version.segments.count - 2
+            index_to_update = [version.segments.count - 2, 0].max
 
             ub_segments = version_to_be_permitted.segments
             ub_segments << 0 while ub_segments.count <= index_to_update
@@ -186,7 +186,11 @@ module Dependabot
             ub_segments[index_to_update] += 1
 
             lb_segments = version.segments
-            lb_segments.pop while lb_segments.last.zero?
+            lb_segments.pop while lb_segments.any? && lb_segments.last.zero?
+
+            if lb_segments.none?
+              return [Gem::Requirement.new("< #{ub_segments.join('.')}")]
+            end
 
             # Ensure versions have the same length as each other (cosmetic)
             length = [lb_segments.count, ub_segments.count].max

@@ -257,6 +257,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
             let(:gemspec_requirement_string) { "~> 0.1" }
             its([:requirement]) { is_expected.to eq(">= 0.1, < 2.0") }
           end
+
+          context "with major precision" do
+            let(:latest_version) { "2.8.0" }
+            let(:gemspec_requirement_string) { "~> 1" }
+            its([:requirement]) { is_expected.to eq(">= 1, < 3") }
+
+            context "and a 0 version" do
+              let(:gemspec_requirement_string) { "~> 0" }
+              its([:requirement]) { is_expected.to eq("< 3") }
+            end
+          end
         end
 
         context "when there are multiple requirements" do
