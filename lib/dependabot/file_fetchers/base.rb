@@ -2,7 +2,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/errors"
-require "octokit"
+require "dependabot/github_client_with_retries"
 require "gitlab"
 
 module Dependabot
@@ -135,10 +135,8 @@ module Dependabot
           find { |cred| cred["host"] == "github.com" }&.
           fetch("password")
 
-        @github_client ||= Octokit::Client.new(
-          access_token: access_token,
-          connection_options: { request: { open_timeout: 2, timeout: 5 } }
-        )
+        @github_client ||=
+          Dependabot::GithubClientWithRetries.new(access_token: access_token)
       end
 
       def gitlab_client
