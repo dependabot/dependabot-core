@@ -1,3 +1,7 @@
+## v0.49.13, 7 March 2018
+
+- Automatically retry GitHub timeouts during file fetching
+
 ## v0.49.12, 6 March 2018
 
 - JS: Less aggressive yarn.lock deduping
