@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "gitlab"
-require "octokit"
 
+require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
@@ -123,7 +123,8 @@ module Dependabot
             find { |cred| cred["host"] == "github.com" }&.
             fetch("password")
 
-          @github_client ||= Octokit::Client.new(access_token: access_token)
+          @github_client ||=
+            Dependabot::GithubClientWithRetries.new(access_token: access_token)
         end
       end
     end

@@ -2,9 +2,9 @@
 
 require "json"
 require "gitlab"
-require "octokit"
 require "excon"
 
+require "dependabot/github_client_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
@@ -160,7 +160,8 @@ module Dependabot
             find { |cred| cred["host"] == "github.com" }&.
             fetch("password")
 
-          @github_client ||= Octokit::Client.new(access_token: access_token)
+          @github_client ||=
+            Dependabot::GithubClientWithRetries.new(access_token: access_token)
         end
       end
     end
