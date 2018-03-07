@@ -363,7 +363,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "gemfile_lock_content.json"),
+          body: fixture("github", "gemfile_lock_with_gemspec_content.json"),
           headers: { "content-type" => "application/json" }
         )
 

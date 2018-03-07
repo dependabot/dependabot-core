@@ -30,6 +30,14 @@ module Dependabot
       other.instance_of?(self.class) && to_h == other.to_h
     end
 
+    def hash
+      to_h.hash
+    end
+
+    def eql?(other)
+      self.==(other)
+    end
+
     private
 
     def clean_directory(directory)
