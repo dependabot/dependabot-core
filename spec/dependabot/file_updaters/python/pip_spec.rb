@@ -26,13 +26,11 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
   let(:dependency_files) { [requirements] }
   let(:requirements) do
     Dependabot::DependencyFile.new(
-      content: requirements_body,
+      content: fixture("python", "requirements", requirements_fixture_name),
       name: "requirements.txt"
     )
   end
-  let(:requirements_body) do
-    fixture("python", "requirements", "version_specified.txt")
-  end
+  let(:requirements_fixture_name) { "version_specified.txt" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "psycopg2",
@@ -82,32 +80,22 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       its(:content) { is_expected.to include "luigi==2.2.0\n" }
 
       context "when only the minor version is specified" do
-        let(:requirements_body) do
-          fixture("python", "requirements", "minor_version_specified.txt")
-        end
-
+        let(:requirements_fixture_name) { "minor_version_specified.txt" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when a local version is specified" do
-        let(:requirements_body) do
-          fixture("python", "requirements", "local_version.txt")
-        end
-
+        let(:requirements_fixture_name) { "local_version.txt" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when there is a comment" do
-        let(:requirements_body) do
-          fixture("python", "requirements", "comments.txt")
-        end
+        let(:requirements_fixture_name) { "comments.txt" }
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
       context "when there are hashes" do
-        let(:requirements_body) do
-          fixture("python", "requirements", "hashes.txt")
-        end
+        let(:requirements_fixture_name) { "hashes.txt" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "pytest",
@@ -144,9 +132,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         end
 
         context "using a sha512 algorithm" do
-          let(:requirements_body) do
-            fixture("python", "requirements", "hashes_512.txt")
-          end
+          let(:requirements_fixture_name) { "hashes_512.txt" }
 
           its(:content) do
             is_expected.to include(
@@ -162,9 +148,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         end
 
         context "with linebreaks" do
-          let(:requirements_body) do
-            fixture("python", "requirements", "hashes_multiline.txt")
-          end
+          let(:requirements_fixture_name) { "hashes_multiline.txt" }
 
           its(:content) do
             is_expected.to eq(
@@ -178,9 +162,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         end
 
         context "with a single hash" do
-          let(:requirements_body) do
-            fixture("python", "requirements", "hashes_single.txt")
-          end
+          let(:requirements_fixture_name) { "hashes_single.txt" }
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "flask-featureflags",
@@ -217,15 +199,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
 
       context "when there are unused lines" do
-        let(:requirements_body) do
-          fixture("python", "requirements", "invalid_lines.txt")
-        end
+        let(:requirements_fixture_name) { "invalid_lines.txt" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
         its(:content) { is_expected.to include "# This is just a comment" }
       end
 
       context "when the dependency is in a child requirement file" do
         let(:dependency_files) { [requirements, more_requirements] }
+        let(:requirements_fixture_name) { "cascading.txt" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -249,10 +230,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             ],
             package_manager: "pip"
           )
-        end
-
-        let(:requirements_body) do
-          fixture("python", "requirements", "cascading.txt")
         end
 
         let(:more_requirements) do
@@ -396,6 +373,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
 
     context "when the dependency is in constraints.txt and requirement.txt" do
       let(:dependency_files) { [requirements, constraints] }
+      let(:requirements_fixture_name) { "specific_with_constraints.txt" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "requests",
@@ -432,10 +410,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         )
       end
 
-      let(:requirements_body) do
-        fixture("python", "requirements", "specific_with_constraints.txt")
-      end
-
       let(:constraints) do
         Dependabot::DependencyFile.new(
           content: fixture("python", "constraints", "specific.txt"),
@@ -449,6 +423,295 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         expect(updated_files.first.content).to include("requests==2.8.1\n")
         expect(updated_files.last.content).to include("requests==2.8.1\n")
       end
+    end
+
+    context "with a Pipfile and Pipfile.lock" do
+      let(:dependency_files) { [pipfile, lockfile] }
+
+      let(:pipfile) do
+        Dependabot::DependencyFile.new(content: pipfile_body, name: "Pipfile")
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          content: lockfile_body,
+          name: "Pipfile.lock"
+        )
+      end
+      let(:pipfile_body) do
+        fixture("python", "pipfiles", "version_not_specified")
+      end
+      let(:lockfile_body) do
+        fixture("python", "lockfiles", "version_not_specified.lock")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+      let(:dependency_name) { "requests" }
+
+      it "doesn't store the files permanently" do
+        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      end
+
+      it "returns DependencyFile objects" do
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+
+      context "when the Pipfile hasn't changed" do
+        let(:pipfile_body) do
+          fixture("python", "pipfiles", "version_not_specified")
+        end
+        let(:lockfile_body) do
+          fixture("python", "lockfiles", "version_not_specified.lock")
+        end
+
+        it "only returns the lockfile" do
+          expect(updated_files.map(&:name)).to eq(["Pipfile.lock"])
+        end
+      end
+
+      describe "the updated Pipfile.lock" do
+        let(:updated_lockfile) do
+          updated_files.find { |f| f.name == "Pipfile.lock" }
+        end
+
+        let(:json_lockfile) { JSON.parse(updated_lockfile.content) }
+
+        it "updates only what it needs to" do
+          expect(json_lockfile["default"]["requests"]["version"]).
+            to eq("==2.18.4")
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.2.3")
+          expect(json_lockfile["_meta"]["hash"]).
+            to eq(JSON.parse(lockfile_body)["_meta"]["hash"])
+        end
+
+        describe "with dependency names that need to be normalised" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.18.4",
+              previous_version: "2.18.0",
+              package_manager: "pipfile",
+              requirements: [
+                {
+                  requirement: "==2.18.4",
+                  file: "Pipfile",
+                  source: nil,
+                  groups: ["default"]
+                }
+              ],
+              previous_requirements: [
+                {
+                  requirement: "==2.18.0",
+                  file: "Pipfile",
+                  source: nil,
+                  groups: ["default"]
+                }
+              ]
+            )
+          end
+          let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+          let(:lockfile_body) do
+            fixture("python", "lockfiles", "hard_names.lock")
+          end
+
+          it "updates only what it needs to" do
+            expect(json_lockfile["default"]["requests"]["version"]).
+              to eq("==2.18.4")
+            expect(json_lockfile["develop"]["pytest"]["version"]).
+              to eq("==3.4.0")
+          end
+        end
+      end
+    end
+  end
+
+  describe "#updated_pipfile_content" do
+    subject(:updated_pipfile_content) { updater.send(:updated_pipfile_content) }
+
+    let(:dependency_files) { [pipfile, lockfile] }
+    let(:pipfile) do
+      Dependabot::DependencyFile.new(content: pipfile_body, name: "Pipfile")
+    end
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        content: lockfile_body,
+        name: "Pipfile.lock"
+      )
+    end
+    let(:pipfile_body) do
+      fixture("python", "pipfiles", "version_not_specified")
+    end
+    let(:lockfile_body) do
+      fixture("python", "lockfiles", "version_not_specified.lock")
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "2.18.4",
+        previous_version: "2.18.0",
+        package_manager: "pipfile",
+        requirements: [
+          {
+            requirement: "*",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }
+        ],
+        previous_requirements: [
+          {
+            requirement: "*",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }
+        ]
+      )
+    end
+    let(:dependency_name) { "requests" }
+
+    context "with single quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python_decouple",
+          version: "3.2",
+          previous_version: "3.1",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==3.2",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==3.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include(%q('python_decouple' = "==3.2")) }
+    end
+
+    context "with double quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include('"requests" = "==2.18.4"') }
+    end
+
+    context "without quotes" do
+      let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "3.3.1",
+          previous_version: "3.2.3",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==3.3.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==3.2.3",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }
+          ]
+        )
+      end
+
+      it { is_expected.to include(%(\npytest = "==3.3.1"\n)) }
+      it { is_expected.to include(%(\npytest-extension = "==3.2.3"\n)) }
+      it { is_expected.to include(%(\nextension-pytest = "==3.2.3"\n)) }
+    end
+
+    context "with a capital letter" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pipfile",
+          requirements: [
+            {
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+      let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "hard_names.lock") }
+
+      it { is_expected.to include('Requests = "==2.18.4"') }
     end
   end
 end

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
 require "python_requirement_parser"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
@@ -10,6 +12,8 @@ module Dependabot
       class Pip < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
           [
+            /^Pipfile$/,
+            /^Pipfile\.lock$/,
             /requirements.*\.txt$/,
             /^constraints\.txt$/,
             /^setup\.py$/
@@ -17,18 +21,44 @@ module Dependabot
         end
 
         def updated_dependency_files
+          updated_files = []
+
+          # If the Pipfile has changed, update both it and the lockfile
+          if pipfile && file_changed?(pipfile)
+            updated_files <<
+              updated_file(file: pipfile, content: updated_pipfile_content)
+          end
+
+          if pipfile && lockfile.content != updated_lockfile_content
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
+
           changed_requirements =
             dependency.requirements - dependency.previous_requirements
 
-          changed_requirements.map do |req|
-            updated_file(
+          changed_requirements.each do |req|
+            # Don't double-update Pipfile
+            next if req.fetch(:file) == "Pipfile"
+
+            updated_files << updated_file(
               file: original_file(req.fetch(:file)),
-              content: updated_file_content(req)
+              content: updated_requirement_of_setup_file_content(req)
             )
           end
+
+          updated_files
         end
 
         private
+
+        def pipfile
+          @pipfile ||= get_original_file("Pipfile")
+        end
+
+        def lockfile
+          @lockfile ||= get_original_file("Pipfile.lock")
+        end
 
         def dependency
           # For now, we'll only ever be updating a single dependency for Python
@@ -36,7 +66,9 @@ module Dependabot
         end
 
         def check_required_files
-          return if dependency_files.any? { |f| f.name.match?(/requirements/x) }
+          filenames = dependency_files.map(&:name)
+          return if filenames.any? { |name| name.match?(/requirements/x) }
+          return if (%w(Pipfile Pipfile.lock) - filenames).empty?
           return if get_original_file("setup.py")
           raise "No requirements.txt or setup.py!"
         end
@@ -45,7 +77,7 @@ module Dependabot
           get_original_file(filename)
         end
 
-        def updated_file_content(requirement)
+        def updated_requirement_of_setup_file_content(requirement)
           content = original_file(requirement.fetch(:file)).content
 
           updated_content =
@@ -120,6 +152,86 @@ module Dependabot
         def python_helper_path
           project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/python/run.py")
+        end
+
+        def updated_pipfile_content
+          dependencies.
+            select { |dep| requirement_changed?(pipfile, dep) }.
+            reduce(pipfile.content.dup) do |content, dep|
+              updated_requirement =
+                dep.requirements.find { |r| r[:file] == pipfile.name }.
+                fetch(:requirement)
+
+              old_req =
+                dep.previous_requirements.find { |r| r[:file] == pipfile.name }.
+                fetch(:requirement)
+
+              updated_content =
+                content.gsub(declaration_regex(dep)) do |line|
+                  line.gsub(old_req, updated_requirement)
+                end
+
+              raise "Expected content to change!" if content == updated_content
+              updated_content
+            end
+        end
+
+        def updated_lockfile_content
+          @updated_lockfile_content ||=
+            begin
+              pipfile_hash = pipfile_hash_for(updated_pipfile_content)
+              updated_lockfile =
+                updated_lockfile_content_for(frozen_pipfile_content)
+
+              updated_lockfile.sub(
+                /"sha256": ".*?"/,
+                %("sha256": "#{pipfile_hash}")
+              )
+            end
+        end
+
+        def frozen_pipfile_content
+          frozen_pipfile_json = TomlRB.parse(updated_pipfile_content)
+
+          dependencies.each do |dep|
+            name = dep.name
+            if frozen_pipfile_json.dig("packages", name)
+              frozen_pipfile_json["packages"][name] = "==#{dep.version}"
+            end
+            if frozen_pipfile_json.dig("dev-packages", name)
+              frozen_pipfile_json["dev-packages"][name] = "==#{dep.version}"
+            end
+          end
+
+          TomlRB.dump(frozen_pipfile_json)
+        end
+
+        def updated_lockfile_content_for(pipfile_content)
+          SharedHelpers.in_a_temporary_directory do |dir|
+            File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
+            File.write(File.join(dir, "Pipfile"), pipfile_content)
+
+            SharedHelpers.run_helper_subprocess(
+              command: "python #{python_helper_path}",
+              function: "update_pipfile",
+              args: [dir]
+            )
+          end.fetch("Pipfile.lock")
+        end
+
+        def pipfile_hash_for(pipfile_content)
+          SharedHelpers.in_a_temporary_directory do |dir|
+            File.write(File.join(dir, "Pipfile"), pipfile_content)
+            SharedHelpers.run_helper_subprocess(
+              command: "python #{python_helper_path}",
+              function: "get_pipfile_hash",
+              args: [dir]
+            )
+          end
+        end
+
+        def declaration_regex(dep)
+          /(?:^|["'])#{Regexp.escape(dep.name).gsub("-", "[-_.]")}["']?\s*=.*$/i
         end
       end
     end
