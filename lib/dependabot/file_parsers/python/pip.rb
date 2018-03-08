@@ -26,17 +26,44 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += requirement_and_setup_file_dependencies
-          dependency_set += pipfile_dependencies if pipfile && lockfile
-          dependency_set += lockfile_dependencies if pipfile && lockfile
+          if pipfile
+            dependency_set += pipfile_dependencies
+            dependency_set += lockfile_dependencies
+          else
+            dependency_set += requirement_file_dependencies
+          end
+          dependency_set += setup_file_dependencies if setup_file
           dependency_set.dependencies
         end
 
         private
 
-        def requirement_and_setup_file_dependencies
+        def requirement_file_dependencies
           dependencies = DependencySet.new
-          parsed_requirement_and_setup_files.each do |dep|
+          parsed_requirement_files.each do |dep|
+            dependencies <<
+              Dependency.new(
+                name: dep["name"],
+                version: dep["version"]&.include?("*") ? nil : dep["version"],
+                requirements: [
+                  {
+                    requirement: dep["requirement"],
+                    file: Pathname.new(dep["file"]).cleanpath.to_path,
+                    source: nil,
+                    groups: []
+                  }
+                ],
+                package_manager: "pip"
+              )
+          end
+          dependencies
+        end
+
+        def setup_file_dependencies
+          dependencies = DependencySet.new
+          return dependencies unless setup_file
+
+          parsed_setup_file.each do |dep|
             dependencies <<
               Dependency.new(
                 name: dep["name"],
@@ -110,13 +137,28 @@ module Dependabot
           dependencies
         end
 
-        def parsed_requirement_and_setup_files
+        def parsed_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(
               command: "python3.6 #{python_helper_path}",
-              function: "parse",
+              function: "parse_requirements",
+              args: [Dir.pwd]
+            )
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.start_with?("InstallationError")
+          raise Dependabot::DependencyFileNotEvaluatable, error.message
+        end
+
+        def parsed_setup_file
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
+
+            SharedHelpers.run_helper_subprocess(
+              command: "python3.6 #{python_helper_path}",
+              function: "parse_setup",
               args: [Dir.pwd]
             )
           end
@@ -171,6 +213,10 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Pipfile.lock")
+        end
+
+        def setup_file
+          @setup_file ||= get_original_file("setup.py")
         end
       end
     end
