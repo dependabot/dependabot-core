@@ -151,7 +151,9 @@ module Dependabot
             # Special case Phoenix path dependency error. It happens because
             # Phoenix gives a path-based dependency in its lockfile but not
             # its package.json
-            raise Dependabot::PathDependenciesNotReachable, ["phoenix"]
+            path = error.message.match(/from "(?<source>.*?)"/)[:source]
+            dep_name = path.split("/").last
+            raise Dependabot::PathDependenciesNotReachable, [dep_name]
           end
           raise
         end
