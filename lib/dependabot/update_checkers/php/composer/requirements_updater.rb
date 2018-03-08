@@ -34,11 +34,13 @@ module Dependabot
               version_class.new(latest_resolvable_version)
           end
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirements
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
               next req unless req[:requirement].match?(/\d/)
+              next req if req[:requirement].include?("#")
               next updated_alias(req) if req[:requirement].match?(ALIAS_REGEX)
               next req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
@@ -49,6 +51,7 @@ module Dependabot
               end
             end
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           private
 

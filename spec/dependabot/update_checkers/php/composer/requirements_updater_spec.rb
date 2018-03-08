@@ -62,6 +62,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("@stable") }
         end
 
+        context "and a commit sha was previously specified" do
+          let(:composer_json_req_string) { "dev-master#c87d856" }
+          its([:requirement]) { is_expected.to eq("dev-master#c87d856") }
+        end
+
         context "and a stability flag was specified" do
           let(:composer_json_req_string) { "1.2.3@dev" }
           its([:requirement]) { is_expected.to eq("1.5.0@dev") }
