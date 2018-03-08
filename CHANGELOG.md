@@ -1,3 +1,7 @@
+## v0.50.5, 8 March 2018
+
+- PHP: Handle version requirements with a commit SHA in them
+
 ## v0.50.4, 8 March 2018
 
 - Python: Fix declaration regex in FileUpdater for dependencies with a hyphen
