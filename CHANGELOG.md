@@ -1,3 +1,7 @@
+## v0.50.3, 8 March 2018
+
+- Add upgrade guide link to PRs, if present and upgrading by a major version
+
 ## v0.50.2, 8 March 2018
 
 - JS: Check for path dependencies in lockfile as well as package.json
