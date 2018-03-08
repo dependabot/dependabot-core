@@ -49,7 +49,7 @@ module Dependabot
         groups.include?("optionalDependencies") ||
           groups.include?("dependencies")
       when "composer" then groups.include?("runtime")
-      when "pipfile" then groups.include?("default")
+      when "pip" then groups.empty? || groups.include?("default")
       when "bundler"
         groups.empty? ||
           groups.include?("runtime") ||

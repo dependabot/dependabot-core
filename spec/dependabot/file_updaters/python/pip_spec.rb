@@ -448,7 +448,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           name: dependency_name,
           version: "2.18.4",
           previous_version: "2.18.0",
-          package_manager: "pipfile",
+          package_manager: "pip",
           requirements: [
             {
               requirement: "*",
@@ -511,7 +511,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               name: "requests",
               version: "2.18.4",
               previous_version: "2.18.0",
-              package_manager: "pipfile",
+              package_manager: "pip",
               requirements: [
                 {
                   requirement: "==2.18.4",
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         name: dependency_name,
         version: "2.18.4",
         previous_version: "2.18.0",
-        package_manager: "pipfile",
+        package_manager: "pip",
         requirements: [
           {
             requirement: "*",
@@ -598,7 +598,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           name: "python_decouple",
           version: "3.2",
           previous_version: "3.1",
-          package_manager: "pipfile",
+          package_manager: "pip",
           requirements: [
             {
               requirement: "==3.2",
@@ -628,7 +628,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           name: "requests",
           version: "2.18.4",
           previous_version: "2.18.0",
-          package_manager: "pipfile",
+          package_manager: "pip",
           requirements: [
             {
               requirement: "==2.18.4",
@@ -658,7 +658,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           name: "pytest",
           version: "3.3.1",
           previous_version: "3.2.3",
-          package_manager: "pipfile",
+          package_manager: "pip",
           requirements: [
             {
               requirement: "==3.3.1",
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           name: "requests",
           version: "2.18.4",
           previous_version: "2.18.0",
-          package_manager: "pipfile",
+          package_manager: "pip",
           requirements: [
             {
               requirement: "==2.18.4",

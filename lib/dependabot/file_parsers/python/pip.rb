@@ -104,7 +104,7 @@ module Dependabot
                       groups: [keys[:lockfile]]
                     }
                   ],
-                  package_manager: "pipfile"
+                  package_manager: "pip"
                 )
             end
           end
@@ -129,7 +129,7 @@ module Dependabot
                   name: dep_name,
                   version: details["version"]&.gsub(/^==/, ""),
                   requirements: [],
-                  package_manager: "pipfile"
+                  package_manager: "pip"
                 )
             end
           end

@@ -17,7 +17,7 @@ module Dependabot
       when "bundler" then FileFetchers::Ruby::Bundler
       when "npm_and_yarn" then FileFetchers::JavaScript::NpmAndYarn
       when "maven" then FileFetchers::Java::Maven
-      when "pip", "pipfile" then FileFetchers::Python::Pip
+      when "pip" then FileFetchers::Python::Pip
       when "composer" then FileFetchers::Php::Composer
       when "submodules" then FileFetchers::Git::Submodules
       when "docker" then FileFetchers::Docker::Docker
