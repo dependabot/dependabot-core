@@ -595,7 +595,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       let(:pipfile_body) { fixture("python", "pipfiles", "with_quotes") }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "python_decouple",
+          name: "python-decouple",
           version: "3.2",
           previous_version: "3.1",
           package_manager: "pip",

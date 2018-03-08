@@ -230,7 +230,8 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          /(?:^|["'])#{Regexp.escape(dep.name).gsub("-", "[-_.]")}["']?\s*=.*$/i
+          escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
+          /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
         end
 
         def pipfile
