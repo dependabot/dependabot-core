@@ -155,12 +155,16 @@ module Dependabot
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       def metadata_links
         msg = ""
         if dependencies.count == 1
           dep = dependencies.first
           msg += "\n- [Release notes](#{release_url(dep)})" if release_url(dep)
           msg += "\n- [Changelog](#{changelog_url(dep)})" if changelog_url(dep)
+          if upgrade_guide_url(dep)
+            msg += "\n- [Upgrade guide](#{upgrade_guide_url(dep)})"
+          end
           msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         else
           dependencies.each do |d|
@@ -168,6 +172,9 @@ module Dependabot
                    "to #{new_version(d)}"
             msg += "\n- [Release notes](#{release_url(d)})" if release_url(d)
             msg += "\n- [Changelog](#{changelog_url(d)})" if changelog_url(d)
+            if upgrade_guide_url(d)
+              msg += "\n- [Upgrade guide](#{upgrade_guide_url(d)})"
+            end
             msg += "\n- [Commits](#{commits_url(d)})" if commits_url(d)
           end
         end
@@ -175,6 +182,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
 
       def release_url(dependency)
         metadata_finder(dependency).release_url
@@ -182,6 +190,10 @@ module Dependabot
 
       def changelog_url(dependency)
         metadata_finder(dependency).changelog_url
+      end
+
+      def upgrade_guide_url(dependency)
+        metadata_finder(dependency).upgrade_guide_url
       end
 
       def commits_url(dependency)

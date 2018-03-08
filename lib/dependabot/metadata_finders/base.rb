@@ -69,6 +69,15 @@ module Dependabot
         @changelog_finder.changelog_url
       end
 
+      def upgrade_guide_url
+        @changelog_finder ||= ChangelogFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials
+        )
+        @changelog_finder.upgrade_guide_url
+      end
+
       def release_url
         @release_finder ||= ReleaseFinder.new(
           dependency: dependency,

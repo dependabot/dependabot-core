@@ -171,6 +171,28 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
   end
 
+  describe "#update_guide_url" do
+    subject { finder.update_guide_url }
+    let(:dummy_changelog_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
+    end
+
+    it "delegates to ChangelogFinder (and caches the instance)" do
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
+        to receive(:new).
+        with(
+          credentials: credentials,
+          source: source,
+          dependency: dependency
+        ).once.and_return(dummy_changelog_finder)
+      expect(dummy_changelog_finder).
+        to receive(:upgrade_guide_url).twice.
+        and_return("https://example.com/CHANGELOG.md")
+      expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
+      expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
+    end
+  end
+
   describe "#release_url" do
     subject { finder.release_url }
     let(:dummy_release_finder) do

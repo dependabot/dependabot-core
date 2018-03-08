@@ -42,6 +42,19 @@ module Dependabot
           nil
         end
 
+        def upgrade_guide_url
+          return unless source
+
+          # Upgrade guide usually won't be relevant for bumping anything other
+          # than the major version
+          return unless major_version_upgrade?
+
+          dependency_file_list.
+            select { |f| f.type == "file" }.
+            select { |f| f.name.casecmp("upgrade.md").zero? }.
+            max_by(&:size)&.html_url
+        end
+
         private
 
         def dependency_file_list
@@ -133,6 +146,14 @@ module Dependabot
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
           source_type = sources.first[:type] || sources.first.fetch("type")
           source_type == "git"
+        end
+
+        def major_version_upgrade?
+          return false unless dependency.version&.match?(/^\d/)
+          return false unless dependency.previous_version&.match?(/^\d/)
+
+          dependency.version.split(".").first.to_i -
+            dependency.previous_version.split(".").first.to_i >= 1
         end
 
         def gitlab_client

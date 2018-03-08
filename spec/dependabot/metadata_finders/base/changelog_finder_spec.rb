@@ -283,4 +283,63 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "#upgrade_guide_url" do
+    subject { finder.upgrade_guide_url }
+
+    context "with a github repo" do
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/business/contents/"
+      end
+
+      let(:github_status) { 200 }
+
+      before do
+        stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: github_status,
+                    body: github_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      context "with a upgrade guide" do
+        let(:github_response) do
+          fixture("github", "business_files_with_upgrade_guide.json")
+        end
+
+        context "for a minor update" do
+          let(:dependency_version) { "1.4.0" }
+          let(:dependency_previous_version) { "1.3.0" }
+
+          it { is_expected.to be_nil }
+        end
+
+        context "for a major update" do
+          let(:dependency_version) { "1.4.0" }
+          let(:dependency_previous_version) { "0.9.0" }
+
+          it "gets the right URL" do
+            expect(subject).
+              to eq(
+                "https://github.com/gocardless/business/blob/master/UPGRADE.md"
+              )
+          end
+
+          it "caches the call to GitHub" do
+            finder.changelog_url
+            finder.changelog_url
+            expect(WebMock).to have_requested(:get, github_url).once
+          end
+        end
+      end
+
+      context "without an upgrade guide" do
+        let(:github_response) do
+          fixture("github", "business_files.json")
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
+  end
 end
