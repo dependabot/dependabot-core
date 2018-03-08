@@ -21,26 +21,19 @@ module Dependabot
         end
 
         def updated_dependency_files
+          return updated_pipfile_based_files if pipfile
+          updated_requirement_based_files
+        end
+
+        private
+
+        def updated_requirement_based_files
           updated_files = []
-
-          # If the Pipfile has changed, update both it and the lockfile
-          if pipfile && file_changed?(pipfile)
-            updated_files <<
-              updated_file(file: pipfile, content: updated_pipfile_content)
-          end
-
-          if pipfile && lockfile.content != updated_lockfile_content
-            updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
-          end
 
           changed_requirements =
             dependency.requirements - dependency.previous_requirements
 
           changed_requirements.each do |req|
-            # Don't double-update Pipfile
-            next if req.fetch(:file) == "Pipfile"
-
             updated_files << updated_file(
               file: original_file(req.fetch(:file)),
               content: updated_requirement_of_setup_file_content(req)
@@ -50,14 +43,20 @@ module Dependabot
           updated_files
         end
 
-        private
+        def updated_pipfile_based_files
+          updated_files = []
 
-        def pipfile
-          @pipfile ||= get_original_file("Pipfile")
-        end
+          if file_changed?(pipfile)
+            updated_files <<
+              updated_file(file: pipfile, content: updated_pipfile_content)
+          end
 
-        def lockfile
-          @lockfile ||= get_original_file("Pipfile.lock")
+          if lockfile.content != updated_lockfile_content
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
+
+          updated_files
         end
 
         def dependency
@@ -232,6 +231,14 @@ module Dependabot
 
         def declaration_regex(dep)
           /(?:^|["'])#{Regexp.escape(dep.name).gsub("-", "[-_.]")}["']?\s*=.*$/i
+        end
+
+        def pipfile
+          @pipfile ||= get_original_file("Pipfile")
+        end
+
+        def lockfile
+          @lockfile ||= get_original_file("Pipfile.lock")
         end
       end
     end
