@@ -93,6 +93,7 @@ module Dependabot
           return unless lockfile_version
           return lockfile_version.split("#").last if git_url?(requirement)
           return if lockfile_version.include?("://")
+          return if lockfile_version.include?("file:")
           return if lockfile_version.include?("#") && !git_url?(requirement)
           lockfile_version
         end
