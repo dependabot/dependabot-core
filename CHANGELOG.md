@@ -1,3 +1,7 @@
+## v0.50.4, 8 March 2018
+
+- Python: Fix declaration regex in FileUpdater for dependencies with a hyphen
+
 ## v0.50.3, 8 March 2018
 
 - Add upgrade guide link to PRs, if present and upgrading by a major version
