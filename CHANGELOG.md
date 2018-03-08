@@ -1,3 +1,8 @@
+## v0.50.1, 8 March 2018
+
+- JS: Exclude file based dependencies where the file details are in the version
+  (not the requirement)
+
 ## v0.50.0, 8 March 2018
 
 - BREAKING: Remove "pipfile" package manager entirely. It is now bundler under
