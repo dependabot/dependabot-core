@@ -1,4 +1,9 @@
-## v0.49.16, 7 March 2018
+## v0.50.0, 8 March 2018
+
+- BREAKING: Remove "pipfile" package manager entirely. It is now bundler under
+  "pip", which will autodetect whether a Pipfile is being used.
+
+## v0.49.16, 8 March 2018
 
 - Python: Combine python strategies. Non-breaking, as long as you weren't
   accessing the Pipfile classes directly.
