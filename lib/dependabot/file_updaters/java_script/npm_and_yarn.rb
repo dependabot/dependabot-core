@@ -146,15 +146,6 @@ module Dependabot
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
-          if error.message.include?("does not contain a package.json file") &&
-             error.message.include?("../deps/phoenix")
-            # Special case Phoenix path dependency error. It happens because
-            # Phoenix gives a path-based dependency in its lockfile but not
-            # its package.json
-            path = error.message.match(/from "(?<source>.*?)"/)[:source]
-            dep_name = path.split("/").last
-            raise Dependabot::PathDependenciesNotReachable, [dep_name]
-          end
           raise
         end
 

@@ -49,19 +49,27 @@ module Dependabot
           unfetchable_deps = []
 
           types = FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES
-          parsed_package_json.values_at(*types).compact.each do |deps|
-            deps.map do |name, version|
-              next unless version.start_with?("file:")
 
-              path = version.sub(/^file:/, "")
-              file = File.join(path, "package.json")
+          package_json_path_deps =
+            parsed_package_json.values_at(*types).compact.flat_map(&:to_a).
+            select { |_, v| v.start_with?("file:") }
 
-              begin
-                package_json_files <<
-                  fetch_file_from_host(file, type: "path_dependency")
-              rescue Dependabot::DependencyFileNotFound
-                unfetchable_deps << name
-              end
+          package_lock_path_deps =
+            parsed_package_lock.values_at(*types).compact.flat_map(&:to_a).
+            select { |_, v| v.fetch("version", "").start_with?("file:") }.
+            map { |k, v| [k, v.fetch("version")] }
+
+          path_deps = (package_json_path_deps + package_lock_path_deps).uniq
+
+          path_deps.map do |name, path|
+            path = path.sub(/^file:/, "")
+            file = File.join(path, "package.json")
+
+            begin
+              package_json_files <<
+                fetch_file_from_host(file, type: "path_dependency")
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_deps << name
             end
           end
 
@@ -112,6 +120,13 @@ module Dependabot
           JSON.parse(package_json.content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, package_json.path
+        end
+
+        def parsed_package_lock
+          return {} unless package_lock
+          JSON.parse(package_lock.content)
+        rescue JSON::ParserError
+          {}
         end
       end
     end

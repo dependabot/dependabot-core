@@ -250,6 +250,41 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             "etag"
           )
       end
+
+      context "that only appears in the lockfile" do
+        before do
+          stub_request(:get, url + "?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_js_npm.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, File.join(url, "package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_lock_with_path_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a PathDependenciesNotReachable error with details" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(
+              Dependabot::PathDependenciesNotReachable,
+              "The following path based dependencies could not be retrieved: " \
+              "etag"
+            )
+        end
+      end
     end
   end
 
