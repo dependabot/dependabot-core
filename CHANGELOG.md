@@ -1,3 +1,7 @@
+## v0.50.2, 8 March 2018
+
+- JS: Check for path dependencies in lockfile as well as package.json
+
 ## v0.50.1, 8 March 2018
 
 - JS: Exclude file based dependencies where the file details are in the version
