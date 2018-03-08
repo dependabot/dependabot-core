@@ -10,7 +10,7 @@ import pip.req.req_file
 from pip.download import PipSession
 from pip.req.req_install import InstallRequirement
 
-def parse(directory):
+def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []
 
@@ -44,7 +44,9 @@ def parse(directory):
             print(json.dumps({ "error": repr(e) }))
             exit(1)
 
+    return json.dumps({ "result": requirement_packages })
 
+def parse_setup(directory):
     # Parse the setup.py
     setup_packages = []
     if os.path.isfile(directory + '/setup.py'):
@@ -115,4 +117,4 @@ def parse(directory):
         except:
             pass
 
-    return json.dumps({ "result": requirement_packages + setup_packages })
+    return json.dumps({ "result": setup_packages })

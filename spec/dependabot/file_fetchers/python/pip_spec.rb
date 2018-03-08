@@ -29,6 +29,16 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       it { is_expected.to eq(true) }
     end
 
+    context "with only a Pipfile and Pipfile.lock" do
+      let(:filenames) { %w(Pipfile Pipfile.lock) }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with only a Pipfile" do
+      let(:filenames) { %w(Pipfile) }
+      it { is_expected.to eq(false) }
+    end
+
     context "with no requirements" do
       let(:filenames) { %w(requirements-dev.md) }
       it { is_expected.to eq(false) }
@@ -107,7 +117,37 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       end
     end
 
-    context "with neither a setup.py file not a requirements.txt" do
+    context "with only a Pipfile and Pipfile.lock" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_pipfile_and_lockfile.json")
+      end
+      before do
+        stub_request(:get, url + "Pipfile?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+      before do
+        stub_request(:get, url + "Pipfile.lock?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the Pipfile and lockfile" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Pipfile Pipfile.lock))
+      end
+    end
+
+    context "with no setup.py, requirements.txt or Pipfile" do
       let(:repo_contents) do
         fixture("github", "business_files.json")
       end

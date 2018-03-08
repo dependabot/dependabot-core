@@ -11,14 +11,18 @@ module Dependabot
             return true
           end
 
-          # If there is a directory of requirements we want to return true
+          # If there is a directory of requirements return true
           return true if filenames.include?("requirements")
+
+          # If this repo is using a Pipfile return true
+          return true if (%w(Pipfile Pipfile.lock) - filenames).empty?
 
           filenames.include?("setup.py")
         end
 
         def self.required_files_message
-          "Repo must contain a requirements.txt or setup.py."
+          "Repo must contain a requirements.txt, setup.py or a Pipfile and " \
+          "Pipfile.lock."
         end
 
         private
@@ -28,6 +32,8 @@ module Dependabot
 
           fetched_files << setup_file unless setup_file.nil?
           fetched_files << pip_conf unless pip_conf.nil?
+          fetched_files << pipfile unless pipfile.nil?
+          fetched_files << lockfile unless lockfile.nil?
 
           if requirement_files.any?
             fetched_files += requirement_files
@@ -47,6 +53,14 @@ module Dependabot
           @pip_conf ||= fetch_file_if_present("pip.conf")
         end
 
+        def pipfile
+          @pipfile ||= fetch_file_if_present("Pipfile")
+        end
+
+        def lockfile
+          @lockfile ||= fetch_file_if_present("Pipfile.lock")
+        end
+
         def requirement_files
           return @requirement_files if @requirement_files
           @requirement_files = []
@@ -59,7 +73,9 @@ module Dependabot
 
           @requirement_files += requirements_directory_files
 
-          return @requirement_files if @requirement_files.any? || setup_file
+          if @requirement_files.any? || setup_file || (pipfile && lockfile)
+            return @requirement_files
+          end
 
           # No setup.py and no requirements files, so we raise
           path = Pathname.new(
