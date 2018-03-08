@@ -1,3 +1,8 @@
+## v0.49.16, 7 March 2018
+
+- Python: Combine python strategies. Non-breaking, as long as you weren't
+  accessing the Pipfile classes directly.
+
 ## v0.49.15, 7 March 2018
 
 - Ruby: Handle ~> ranges with major precision
