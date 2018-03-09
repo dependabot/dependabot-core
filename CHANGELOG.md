@@ -1,3 +1,7 @@
+## v0.50.7, 9 March 2018
+
+- Python: Parse requirements.txt if a Pipfile with no Pipfile.lock is present
+
 ## v0.50.6, 9 March 2018
 
 - Submodules: Use default branch, not master, if no branch is specified
