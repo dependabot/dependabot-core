@@ -1,3 +1,7 @@
+## v0.50.10, 9 March 2018
+
+- Java: Handle multiple declarations of same dependency in pom.xml
+
 ## v0.50.9, 9 March 2018
 
 - Java: Handle source URLs which use a property
