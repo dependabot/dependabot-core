@@ -1,3 +1,7 @@
+## v0.50.8, 9 March 2018
+
+- Don't try to create branches with spaces in them
+
 ## v0.50.7, 9 March 2018
 
 - Python: Parse requirements.txt if a Pipfile with no Pipfile.lock is present
