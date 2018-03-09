@@ -60,6 +60,11 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
       end
     end
 
+    context "when the github link includes a property" do
+      let(:maven_response) { fixture("java", "poms", "property_url_pom.xml") }
+      it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
+    end
+
     context "when there is a github link in the maven response" do
       let(:maven_response) do
         fixture("java", "poms", "mockito-core-2.11.0.xml")
