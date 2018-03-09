@@ -1,3 +1,7 @@
+## v0.50.6, 9 March 2018
+
+- Submodules: Use default branch, not master, if no branch is specified
+
 ## v0.50.5, 8 March 2018
 
 - PHP: Handle version requirements with a commit SHA in them
