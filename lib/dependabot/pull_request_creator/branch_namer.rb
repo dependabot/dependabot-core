@@ -37,7 +37,7 @@ module Dependabot
         [
           "dependabot",
           package_manager,
-          files.first.directory,
+          files.first.directory.tr(" ", "-"),
           target_branch
         ].compact
       end
