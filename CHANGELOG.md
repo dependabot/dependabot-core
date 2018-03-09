@@ -1,3 +1,7 @@
+## v0.50.9, 9 March 2018
+
+- Java: Handle source URLs which use a property
+
 ## v0.50.8, 9 March 2018
 
 - Don't try to create branches with spaces in them
