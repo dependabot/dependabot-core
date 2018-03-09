@@ -50,7 +50,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         {
           type: "git",
           url: "https://github.com/gocardless/business",
-          branch: "master",
+          branch: nil,
           ref: nil
         }
       end
@@ -154,16 +154,25 @@ RSpec.describe Dependabot::GitCommitChecker do
               {
                 type: "git",
                 url: "https://github.com/gocardless/business",
-                branch: "master",
+                branch: branch,
                 ref: nil
               }
             end
+            let(:branch) { "master" }
             let(:comparison_url) { repo_url + "/compare/v1.5.0...master" }
             let(:comparison_response) do
               fixture("github", "commit_compare_behind.json")
             end
 
             it { is_expected.to eq(true) }
+
+            context "that has no branch specified" do
+              let(:branch) { nil }
+              let(:comparison_url) { "unused" }
+              let(:comparison_response) { "unused" }
+
+              it { is_expected.to eq(false) }
+            end
           end
         end
       end
@@ -319,6 +328,19 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+
+        context "with no branch specified" do
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: nil,
+              ref: nil
+            }
+          end
+
+          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+        end
 
         context "specified with an SSH URL" do
           before { source.merge!(url: "git@github.com:gocardless/business") }

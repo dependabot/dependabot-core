@@ -76,8 +76,8 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
               source: {
                 type: "git",
                 url: "https://github.com/example/manifesto.git",
-                branch: "master",
-                ref: "master"
+                branch: nil,
+                ref: nil
               },
               groups: []
             }
@@ -101,8 +101,8 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
               source: {
                 type: "git",
                 url: "https://github.com/org/such-relative.git",
-                branch: "master",
-                ref: "master"
+                branch: nil,
+                ref: nil
               },
               groups: []
             }

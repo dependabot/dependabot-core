@@ -14,8 +14,7 @@ module Dependabot
             File.write(".gitmodules", gitmodules_file.content)
 
             ParseConfig.new(".gitmodules").params.map do |_, params|
-              # Branch defaults to master - https://git-scm.com/docs/gitmodules
-              branch = params["branch"] || "master"
+              branch = params["branch"]
 
               Dependency.new(
                 name: params["path"],

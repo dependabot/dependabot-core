@@ -46,7 +46,7 @@ module Dependabot
     def head_commit_for_current_branch
       return dependency.version if pinned?
 
-      branch_ref = "refs/heads/#{ref_or_branch}"
+      branch_ref = ref_or_branch ? "refs/heads/#{ref_or_branch}" : "HEAD"
       line = local_upload_pack.lines.find { |l| l.include?(branch_ref) }
 
       return line.split(" ").first.chars.last(40).join if line
@@ -94,6 +94,7 @@ module Dependabot
     def branch_behind_release?(version)
       raise "Not a git dependency!" unless git_dependency?
 
+      return false if ref_or_branch.nil?
       return false if listing_source_url.nil?
       return false unless listing_source_hosted_on_github?
 
