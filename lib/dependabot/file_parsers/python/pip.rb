@@ -26,7 +26,7 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          if pipfile
+          if pipfile && lockfile
             dependency_set += pipfile_dependencies
             dependency_set += lockfile_dependencies
           else

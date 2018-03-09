@@ -899,5 +899,37 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
       end
     end
+
+    context "with a Pipfile but no Pipfile.lock" do
+      let(:files) { [pipfile, requirements] }
+      let(:pipfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile",
+          content: fixture("python", "pipfiles", "version_not_specified")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to eq("2.6.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
   end
 end
