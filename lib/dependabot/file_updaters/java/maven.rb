@@ -46,6 +46,9 @@ module Dependabot
         def update_property_version
           prop_name = DeclarationFinder.new(
             dependency_name: dependencies.first.name,
+            dependency_requirement:
+              dependencies.first.previous_requirements.first.
+              fetch(:requirement),
             pom_content: pom.content
           ).declaration_node.at_css("version").content.strip[2..-2]
 
@@ -65,6 +68,9 @@ module Dependabot
         def updating_a_property?
           DeclarationFinder.new(
             dependency_name: dependencies.first.name,
+            dependency_requirement:
+              dependencies.first.previous_requirements.first.
+              fetch(:requirement),
             pom_content: pom.content
           ).version_comes_from_property?
         end
@@ -72,6 +78,8 @@ module Dependabot
         def original_pom_declaration(dependency)
           DeclarationFinder.new(
             dependency_name: dependency.name,
+            dependency_requirement:
+              dependency.previous_requirements.first.fetch(:requirement),
             pom_content: pom.content
           ).declaration_string
         end

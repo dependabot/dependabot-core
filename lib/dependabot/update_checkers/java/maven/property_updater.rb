@@ -66,6 +66,7 @@ module Dependabot
           def version_string(dep)
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency_name: dep.name,
+              dependency_requirement: dep.requirements.first[:requirement],
               pom_content: pom.content
             ).declaration_node.at_css("version")&.content
           end

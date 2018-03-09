@@ -187,6 +187,16 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "https://search.maven.org/remotecontent?filepath="\
         "org/springframework/spring-context/maven-metadata.xml"
       end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ]
+      end
 
       before do
         allow(checker).
@@ -231,6 +241,16 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:maven_central_metadata_url_context) do
         "https://search.maven.org/remotecontent?filepath="\
         "org/springframework/spring-context/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "4.3.12.RELEASE",
+            groups: [],
+            source: nil
+          }
+        ]
       end
 
       before do

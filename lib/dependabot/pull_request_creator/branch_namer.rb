@@ -51,6 +51,8 @@ module Dependabot
 
         FileUpdaters::Java::Maven::DeclarationFinder.new(
           dependency_name: dependencies.first.name,
+          dependency_requirement:
+            dependencies.first.previous_requirements.first.fetch(:requirement),
           pom_content: files.find { |f| f.name == "pom.xml" }.content
         ).declaration_node.at_css("version").content.strip[2..-2]
       end

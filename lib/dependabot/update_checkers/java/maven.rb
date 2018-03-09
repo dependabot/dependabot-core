@@ -97,6 +97,8 @@ module Dependabot
           @declaration_finder ||=
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency_name: dependency.name,
+              dependency_requirement:
+                dependency.requirements.first.fetch(:requirement),
               pom_content: pom.content
             )
         end
