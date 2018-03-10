@@ -89,11 +89,21 @@ module Dependabot
           end
 
           def replace_git_pin(content, filename:)
-            old_requirement_details =
-              dependency.requirements.find { |r| r.fetch(:file) == filename }
+            old_pin =
+              dependency.requirements.find { |r| r.fetch(:file) == filename }&.
+              dig(:source, :ref)
 
-            return content unless old_requirement_details
-            content
+            return content unless old_pin
+
+            requirement_line_regex =
+              /
+                :#{Regexp.escape(dependency.name)},.*
+                (?:ref|tag):\s+["']#{Regexp.escape(old_pin)}["']
+              /x
+
+            content.gsub(requirement_line_regex) do |requirement_line|
+              requirement_line.gsub(old_pin, replacement_git_pin)
+            end
           end
 
           def sanitize_mixfile(content)

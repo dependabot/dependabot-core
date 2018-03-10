@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
     described_class.new(
       dependency_files: dependency_files,
       dependency: dependency,
-      unlock_requirement: unlock_requirement
+      unlock_requirement: unlock_requirement,
+      replacement_git_pin: replacement_git_pin
     )
   end
 
@@ -30,6 +31,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
   end
   let(:dependency_name) { "plug" }
   let(:unlock_requirement) { true }
+  let(:replacement_git_pin) { nil }
 
   let(:mixfile) do
     Dependabot::DependencyFile.new(
@@ -112,6 +114,43 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
               expect(prepared_mixfile.content).
                 to include('{:phoenix, ">= 0.0.1-rc1"}')
             end
+          end
+        end
+      end
+
+      context "with a git pin to replace" do
+        let(:replacement_git_pin) { "v1.2.1" }
+        let(:mixfile_fixture_name) { "git_source" }
+        let(:dependency_name) { "phoenix" }
+        let(:requirements) do
+          [
+            {
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.2.0"
+              }
+            }
+          ]
+        end
+
+        it "updates the pin" do
+          expect(prepared_mixfile.content).to include(
+            '{:phoenix, github: "phoenixframework/phoenix", ref: "v1.2.1"}'
+          )
+        end
+
+        context "that uses single quoates" do
+          let(:mixfile_fixture_name) { "git_source_with_charlist" }
+
+          it "updates the pin" do
+            expect(prepared_mixfile.content).to include(
+              '{:phoenix, github: "phoenixframework/phoenix", ref: \'v1.2.1\'}'
+            )
           end
         end
       end
