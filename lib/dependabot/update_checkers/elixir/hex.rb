@@ -29,16 +29,17 @@ module Dependabot
         def latest_resolvable_version
           @latest_resolvable_version ||=
             if git_dependency?
-              # TODO: we should be updating the ref here if pinned to a
-              # version-like ref. For now, this setup means we at least get
-              # branch updates, though.
-              fetch_latest_resolvable_version(unlock_requirement: false)
+              latest_resolvable_version_for_git_dependency
             else
               fetch_latest_resolvable_version(unlock_requirement: true)
             end
         end
 
         def latest_resolvable_version_with_no_unlock
+          if git_dependency? && git_commit_checker.pinned?
+            return dependency.version
+          end
+
           @latest_resolvable_version_with_no_unlock ||=
             fetch_latest_resolvable_version(unlock_requirement: false)
         end
@@ -67,6 +68,13 @@ module Dependabot
 
         def latest_version_for_git_dependency
           latest_git_version_sha
+        end
+
+        def latest_resolvable_version_for_git_dependency
+          # TODO: we should be updating the ref here if pinned to a
+          # version-like ref. For now, this setup means we at least get
+          # branch updates, though.
+          fetch_latest_resolvable_version(unlock_requirement: false)
         end
 
         def git_dependency?
