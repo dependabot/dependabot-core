@@ -18,12 +18,7 @@ module Dependabot
           return latest_version_for_git_dependency if git_dependency?
           return latest_resolvable_version unless hex_registry_response
 
-          versions =
-            hex_registry_response["releases"].
-            select { |release| version_class.correct?(release["version"]) }.
-            map { |release| version_class.new(release["version"]) }
-
-          versions.reject(&:prerelease?).sort.last
+          latest_release_on_hex_registry
         end
 
         def latest_resolvable_version
@@ -164,7 +159,13 @@ module Dependabot
           return content unless old_requirement
 
           new_requirement =
-            dependency.version.nil? ? ">= 0" : ">= #{dependency.version}"
+            if dependency.version
+              ">= #{dependency.version}"
+            elsif wants_prerelease?
+              ">= 0.0.1-rc1"
+            else
+              ">= 0"
+            end
 
           requirement_line_regex =
             /
@@ -220,6 +221,16 @@ module Dependabot
           dependency.requirements.any? { |r| r[:file] == file_name }
         end
 
+        def latest_release_on_hex_registry
+          versions =
+            hex_registry_response["releases"].
+            select { |release| version_class.correct?(release["version"]) }.
+            map { |release| version_class.new(release["version"]) }
+
+          versions = versions.reject(&:prerelease?) unless wants_prerelease?
+          versions.sort.last
+        end
+
         def hex_registry_response
           return @hex_registry_response unless @hex_registry_response.nil?
 
@@ -232,6 +243,19 @@ module Dependabot
           return nil unless response.status == 200
 
           @hex_registry_response = JSON.parse(response.body)
+        end
+
+        def wants_prerelease?
+          current_version = dependency.version
+          if current_version &&
+             version_class.correct?(current_version) &&
+             version_class.new(current_version).prerelease?
+            return true
+          end
+
+          dependency.requirements.any? do |req|
+            req[:requirement].match?(/\d-[A-Za-z0-9]/)
+          end
         end
 
         def dependency_url

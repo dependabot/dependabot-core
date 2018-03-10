@@ -27,12 +27,13 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
-      version: "1.3.0",
+      version: version,
       requirements: dependency_requirements,
       package_manager: "hex"
     )
   end
 
+  let(:version) { "1.3.0" }
   let(:dependency_requirements) do
     [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
   end
@@ -64,6 +65,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+
+    context "when the user wants pre-releases" do
+      let(:version) { "1.4.0-rc.0" }
+      it { is_expected.to eq(Gem::Version.new("1.5.0-rc.0")) }
+    end
 
     context "when the registry 404s" do
       before { stub_request(:get, hex_url).to_return(status: 404) }
