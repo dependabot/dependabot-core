@@ -11,10 +11,12 @@ module Dependabot
         # in UpdateCheckers::Elixir::Hex.
         class FilePreparer
           def initialize(dependency_files:, dependency:,
-                         unlock_requirement: true)
+                         unlock_requirement: true,
+                         replacement_git_pin: nil)
             @dependency_files = dependency_files
             @dependency = dependency
             @unlock_requirement = unlock_requirement
+            @replacement_git_pin = replacement_git_pin
           end
 
           def prepared_dependency_files
@@ -22,7 +24,7 @@ module Dependabot
             files += mixfiles.map do |file|
               DependencyFile.new(
                 name: file.name,
-                content: prepare_mixfile(file),
+                content: mixfile_content_for_update_check(file),
                 directory: file.directory
               )
             end
@@ -32,17 +34,30 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files, :dependency
+          attr_reader :dependency_files, :dependency, :replacement_git_pin
 
           def unlock_requirement?
             @unlock_requirement
           end
 
-          def prepare_mixfile(file)
+          def replace_git_pin?
+            !replacement_git_pin.nil?
+          end
+
+          def mixfile_content_for_update_check(file)
             content = file.content
-            if unlock_requirement? && dependency_appears_in_file?(file.name)
+
+            unless dependency_appears_in_file?(file.name)
+              return sanitize_mixfile(content)
+            end
+
+            if unlock_requirement?
               content = relax_version(content, filename: file.name)
             end
+            if replace_git_pin?
+              content = replace_git_pin(content, filename: file.name)
+            end
+
             sanitize_mixfile(content)
           end
 
@@ -73,6 +88,14 @@ module Dependabot
             end
           end
 
+          def replace_git_pin(content, filename:)
+            old_requirement_details =
+              dependency.requirements.find { |r| r.fetch(:file) == filename }
+
+            return content unless old_requirement_details
+            content
+          end
+
           def sanitize_mixfile(content)
             content.
               gsub(/File\.read!\(.*?\)/, '"0.0.1"').
@@ -91,6 +114,23 @@ module Dependabot
             lockfile = dependency_files.find { |f| f.name == "mix.lock" }
             raise "No mix.lock!" unless lockfile
             lockfile
+          end
+
+          def wants_prerelease?
+            current_version = dependency.version
+            if current_version &&
+               version_class.correct?(current_version) &&
+               version_class.new(current_version).prerelease?
+              return true
+            end
+
+            dependency.requirements.any? do |req|
+              req[:requirement].match?(/\d-[A-Za-z0-9]/)
+            end
+          end
+
+          def version_class
+            Hex::Version
           end
 
           def dependency_appears_in_file?(file_name)
