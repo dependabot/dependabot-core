@@ -1,3 +1,8 @@
+## v0.50.13, 10 March 2018
+
+- Downgrade Pipenv to 11.1.11
+- Refactor Elixir UpdateChecker (should be no noticeable change to ens-users)
+
 ## v0.50.12, 10 March 2018
 
 - Elixir: Update to pre-release versions if the user is already on one (or has
