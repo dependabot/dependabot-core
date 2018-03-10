@@ -317,6 +317,55 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           )
         end
       end
+
+      context "with a git dependency" do
+        let(:mixfile_body) do
+          fixture("elixir", "mixfiles", "git_source_no_tag")
+        end
+        let(:lockfile_body) do
+          fixture("elixir", "lockfiles", "git_source_no_tag")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phoenix",
+            version: "463e9d282e999fff1737cc6ca09074cf3dbca4ff",
+            previous_version: "178ce1a2344515e9145599970313fcc190d4b881",
+            requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: nil
+                }
+              }
+            ],
+            previous_requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: nil
+                }
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).to include("phoenix.git")
+          expect(updated_lockfile_content).
+            to_not include("178ce1a2344515e9145599970313fcc190d4b881")
+        end
+      end
     end
   end
 end

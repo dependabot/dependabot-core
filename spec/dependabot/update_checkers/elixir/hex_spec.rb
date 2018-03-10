@@ -210,7 +210,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
                   type: "git",
                   url: "https://github.com/phoenixframework/phoenix.git",
                   branch: "master",
-                  ref: "v1.2.0"
+                  ref: ref
                 }
               }
             ],
@@ -218,7 +218,37 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           )
         end
 
-        it { is_expected.to be_nil }
+        context "and has a tag" do
+          let(:ref) { "v1.2.0" }
+          it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
+        end
+
+        context "and has no tag and can update" do
+          let(:mixfile_body) do
+            fixture("elixir", "mixfiles", "git_source_no_tag")
+          end
+          let(:lockfile_body) do
+            fixture("elixir", "lockfiles", "git_source_no_tag")
+          end
+          let(:ref) { nil }
+          it "updates the dependency" do
+            expect(latest_resolvable_version).to_not be_nil
+            expect(latest_resolvable_version).
+              to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+            expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
+          end
+        end
+
+        context "and is blocked from updating" do
+          let(:mixfile_body) do
+            fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+          end
+          let(:lockfile_body) do
+            fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
+          end
+          let(:ref) { nil }
+          it { is_expected.to be_nil }
+        end
       end
     end
 
@@ -299,8 +329,68 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    subject { checker.latest_resolvable_version_with_no_unlock }
+    subject(:new_version) { checker.latest_resolvable_version_with_no_unlock }
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
+
+    context "with a dependency with a git source" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+
+      context "that is the dependency we're checking" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phoenix",
+            version: "178ce1a2344515e9145599970313fcc190d4b881",
+            requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: ref
+                }
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        context "and has a tag" do
+          let(:ref) { "v1.2.0" }
+          it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
+        end
+
+        context "and has no tag and can update" do
+          let(:mixfile_body) do
+            fixture("elixir", "mixfiles", "git_source_no_tag")
+          end
+          let(:lockfile_body) do
+            fixture("elixir", "lockfiles", "git_source_no_tag")
+          end
+          let(:ref) { nil }
+          it "updates the dependency" do
+            expect(new_version).to_not be_nil
+            expect(new_version).
+              to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+            expect(new_version).to match(/^[0-9a-f]{40}$/)
+          end
+        end
+
+        context "and is blocked from updating" do
+          let(:mixfile_body) do
+            fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+          end
+          let(:lockfile_body) do
+            fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
+          end
+          let(:ref) { nil }
+          it { is_expected.to be_nil }
+        end
+      end
+    end
   end
 
   describe "#updated_requirements" do

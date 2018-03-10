@@ -4,13 +4,13 @@
 dependency = String.to_atom(dependency_name)
 
 # Fetch dependencies that needs updating
-{dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read, [dependency])
+{dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read(), [dependency])
 
 try do
   Mix.Dep.Fetcher.by_name([dependency_name], dependency_lock, rest_lock, [])
 
   # Check the dependency version in the new lock
-  {updated_lock, _updated_rest_lock} = Map.split(Mix.Dep.Lock.read, [dependency])
+  {updated_lock, _updated_rest_lock} = Map.split(Mix.Dep.Lock.read(), [dependency])
 
   version =
     updated_lock
@@ -24,5 +24,8 @@ rescue
   error in Hex.Version.InvalidRequirementError ->
     result = :erlang.term_to_binary({:error, "Invalid requirement: #{error.requirement}"})
     IO.write(:stdio, result)
-end
 
+  error in Mix.Error ->
+    result = :erlang.term_to_binary({:error, "Dependency resolution failed: #{error.message}"})
+    IO.write(:stdio, result)
+end
