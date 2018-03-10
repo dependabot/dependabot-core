@@ -1,3 +1,8 @@
+## v0.50.12, 10 March 2018
+
+- Elixir: Update to pre-release versions if the user is already on one (or has
+  specified a pre-release in their requirements)
+
 ## v0.50.11, 10 March 2018
 
 - Elixir: Add support for git-source dependencies
