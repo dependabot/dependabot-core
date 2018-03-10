@@ -29,7 +29,10 @@ module Dependabot
         def latest_resolvable_version
           @latest_resolvable_version ||=
             if git_dependency?
-              nil # TODO: Implement this!
+              # TODO: we should be updating the ref here if pinned to a
+              # version-like ref. For now, this setup means we at least get
+              # branch updates, though.
+              fetch_latest_resolvable_version(unlock_requirement: false)
             else
               fetch_latest_resolvable_version(unlock_requirement: true)
             end
@@ -37,11 +40,7 @@ module Dependabot
 
         def latest_resolvable_version_with_no_unlock
           @latest_resolvable_version_with_no_unlock ||=
-            if git_dependency?
-              nil # TODO: Implement this!
-            else
-              fetch_latest_resolvable_version(unlock_requirement: false)
-            end
+            fetch_latest_resolvable_version(unlock_requirement: false)
         end
 
         def updated_requirements
@@ -111,6 +110,9 @@ module Dependabot
             end
 
           return if latest_resolvable_version.nil?
+          if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
+            return latest_resolvable_version
+          end
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_hex_errors(error)
