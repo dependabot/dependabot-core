@@ -158,8 +158,12 @@ module Dependabot
         end
 
         def latest_git_tag_is_resolvable?
+          return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+          @latest_git_tag_is_resolvable_checked = true
+
           return false if git_commit_checker.local_tag_for_latest_version.nil?
           replacement_tag = git_commit_checker.local_tag_for_latest_version
+
           prepared_files = FilePreparer.new(
             dependency: dependency,
             dependency_files: dependency_files,
@@ -171,9 +175,10 @@ module Dependabot
             dependency_files: prepared_files,
             credentials: credentials
           ).latest_resolvable_version_details
-          true
+
+          @git_tag_resolvable = true
         rescue Dependabot::DependencyFileNotResolvable
-          false
+          @git_tag_resolvable = false
         end
 
         def git_branch_or_ref_in_release?(release)

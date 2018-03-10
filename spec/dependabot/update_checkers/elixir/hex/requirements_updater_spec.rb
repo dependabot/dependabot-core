@@ -7,11 +7,13 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      latest_resolvable_version: latest_resolvable_version
+      latest_resolvable_version: latest_resolvable_version,
+      updated_source: updated_source
     )
   end
 
   let(:requirements) { [mixfile_req] }
+  let(:updated_source) { nil }
   let(:mixfile_req) do
     {
       file: "mix.exs",
@@ -35,6 +37,40 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
       its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+    end
+
+    context "with a git dependency" do
+      let(:latest_resolvable_version) do
+        "aa218f56b14c9653891f9e74264a383fa43fefbd"
+      end
+      let(:mixfile_req) do
+        {
+          file: "mix.exs",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/phoenixframework/phoenix.git",
+            branch: "master",
+            ref: nil
+          }
+        }
+      end
+      let(:updated_source) do
+        {
+          type: "git",
+          url: "https://github.com/phoenixframework/phoenix.git",
+          branch: "master",
+          ref: nil
+        }
+      end
+      it { is_expected.to eq(mixfile_req) }
+
+      context "when asked to update the source" do
+        let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+        before { mixfile_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
+        its([:source]) { is_expected.to eq(updated_source) }
+      end
     end
 
     context "when there is a resolvable version" do

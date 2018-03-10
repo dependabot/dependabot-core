@@ -226,34 +226,74 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
         context "and has a tag" do
           let(:ref) { "v1.2.0" }
-          it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
+
+          before do
+            repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
+            stub_request(:get, repo_url + "/tags?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "phoenix_tags.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+            stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
+              to_return(
+                status: 200,
+                body: fixture("github", "ref.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          context "that can update" do
+            let(:mixfile_body) do
+              fixture("elixir", "mixfiles", "git_source_tag_can_update")
+            end
+            let(:lockfile_body) do
+              fixture("elixir", "lockfiles", "git_source_tag_can_update")
+            end
+
+            it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+          end
+
+          context "that can't update (because of resolvability)" do
+            let(:mixfile_body) do
+              fixture("elixir", "mixfiles", "git_source")
+            end
+            let(:lockfile_body) do
+              fixture("elixir", "lockfiles", "git_source")
+            end
+
+            it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
+          end
         end
 
-        context "and has no tag and can update" do
-          let(:mixfile_body) do
-            fixture("elixir", "mixfiles", "git_source_no_tag")
-          end
-          let(:lockfile_body) do
-            fixture("elixir", "lockfiles", "git_source_no_tag")
-          end
+        context "and has no tag" do
           let(:ref) { nil }
-          it "updates the dependency" do
-            expect(latest_resolvable_version).to_not be_nil
-            expect(latest_resolvable_version).
-              to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
-            expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
+          context "and can update" do
+            let(:mixfile_body) do
+              fixture("elixir", "mixfiles", "git_source_no_tag")
+            end
+            let(:lockfile_body) do
+              fixture("elixir", "lockfiles", "git_source_no_tag")
+            end
+            let(:ref) { nil }
+            it "updates the dependency" do
+              expect(latest_resolvable_version).to_not be_nil
+              expect(latest_resolvable_version).
+                to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+              expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
+            end
           end
-        end
 
-        context "and is blocked from updating" do
-          let(:mixfile_body) do
-            fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+          context "and is blocked from updating" do
+            let(:mixfile_body) do
+              fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+            end
+            let(:lockfile_body) do
+              fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
+            end
+            let(:ref) { nil }
+            it { is_expected.to be_nil }
           end
-          let(:lockfile_body) do
-            fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
-          end
-          let(:ref) { nil }
-          it { is_expected.to be_nil }
         end
       end
     end
@@ -413,6 +453,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         to receive(:new).
         with(
           requirements: dependency_requirements,
+          updated_source: nil,
           latest_resolvable_version: "1.6.0"
         ).
         and_call_original
@@ -427,6 +468,86 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
             }
           ]
         )
+    end
+
+    context "updating a git source" do
+      let(:mixfile_body) do
+        fixture("elixir", "mixfiles", "git_source_tag_can_update")
+      end
+      let(:lockfile_body) do
+        fixture("elixir", "lockfiles", "git_source_tag_can_update")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "178ce1a2344515e9145599970313fcc190d4b881",
+          requirements: dependency_requirements,
+          package_manager: "hex"
+        )
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            requirement: nil,
+            file: "mix.exs",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/phoenixframework/phoenix.git",
+              branch: "master",
+              ref: "v1.2.0"
+            }
+          }
+        ]
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
+        stub_request(:get, repo_url + "/tags?per_page=100").
+          to_return(
+            status: 200,
+            body: fixture("github", "phoenix_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
+          to_return(
+            status: 200,
+            body: fixture("github", "ref.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: {
+              type: "git",
+              url: "https://github.com/phoenixframework/phoenix.git",
+              branch: "master",
+              ref: "v1.3.0"
+            },
+            latest_resolvable_version: "1.6.0"
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: "v1.3.0"
+                }
+              }
+            ]
+          )
+      end
     end
   end
 end

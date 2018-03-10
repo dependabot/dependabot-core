@@ -45,6 +45,7 @@ module Dependabot
           end
 
           def updated_gemfile_requirement(req)
+            req = req.merge(source: updated_source)
             return req unless latest_resolvable_version
             return req if library? && new_version_satisfies?(req)
 
@@ -60,7 +61,7 @@ module Dependabot
                 update_gemfile_range(requirements).map(&:to_s).join(", ")
               end
 
-            req.merge(requirement: new_requirement, source: updated_source)
+            req.merge(requirement: new_requirement)
           end
 
           def new_version_satisfies?(req)

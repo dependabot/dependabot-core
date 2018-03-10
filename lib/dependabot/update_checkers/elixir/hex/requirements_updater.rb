@@ -14,45 +14,31 @@ module Dependabot
           OR_SEPARATOR = /\s+or\s+/
           SEPARATOR = /#{AND_SEPARATOR}|#{OR_SEPARATOR}/
 
-          def initialize(requirements:, latest_resolvable_version:)
+          def initialize(requirements:, latest_resolvable_version:,
+                         updated_source:)
             @requirements = requirements
+            @updated_source = updated_source
 
             return unless latest_resolvable_version
+            return unless Hex::Version.correct?(latest_resolvable_version)
             @latest_resolvable_version =
               Hex::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
-            return requirements unless latest_resolvable_version
-
-            requirements.map do |req|
-              next req if req_satisfied_by_latest_resolvable?(req[:requirement])
-              updated_mixfile_requirement(req)
-            end
+            requirements.map { |req| updated_mixfile_requirement(req) }
           end
 
           private
 
-          attr_reader :requirements, :latest_resolvable_version
+          attr_reader :requirements, :latest_resolvable_version, :updated_source
 
-          def req_satisfied_by_latest_resolvable?(requirement_string)
-            ruby_requirements(requirement_string).
-              any? { |r| r.satisfied_by?(latest_resolvable_version) }
-          end
-
-          def ruby_requirements(requirement_string)
-            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              ruby_requirements =
-                req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  Hex::Requirement.new(r_string)
-                end
-
-              Hex::Requirement.new(ruby_requirements.map(&:to_s))
-            end
-          end
-
+          # rubocop:disable Metrics/AbcSize
+          # rubocop:disable PerceivedComplexity
           def updated_mixfile_requirement(req)
-            return req unless latest_resolvable_version
+            req = req.merge(source: updated_source)
+            return req unless latest_resolvable_version && req[:requirement]
+            return req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
             or_string_reqs = req[:requirement].split(OR_SEPARATOR)
             last_string_reqs = or_string_reqs.last.split(AND_SEPARATOR).
@@ -74,6 +60,24 @@ module Dependabot
             end
 
             req.merge(requirement: new_requirement)
+          end
+          # rubocop:enable Metrics/AbcSize
+          # rubocop:enable PerceivedComplexity
+
+          def req_satisfied_by_latest_resolvable?(requirement_string)
+            ruby_requirements(requirement_string).
+              any? { |r| r.satisfied_by?(latest_resolvable_version) }
+          end
+
+          def ruby_requirements(requirement_string)
+            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+              ruby_requirements =
+                req_string.strip.split(AND_SEPARATOR).map do |r_string|
+                  Hex::Requirement.new(r_string)
+                end
+
+              Hex::Requirement.new(ruby_requirements.map(&:to_s))
+            end
           end
 
           def update_exact_version(previous_req, new_version)

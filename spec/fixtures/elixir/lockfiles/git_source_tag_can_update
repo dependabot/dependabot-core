@@ -1,0 +1,6 @@
+%{"cors_plug": {:hex, :cors_plug, "1.2.1", "bbe1381a52e4a16e609cf3c4cbfde6884726a58b9a1a205db104dbdfc542f447", [:mix], [{:plug, "> 0.8.0", [hex: :plug, repo: "hexpm", optional: false]}], "hexpm"},
+  "mime": {:hex, :mime, "1.2.0", "78adaa84832b3680de06f88f0997e3ead3b451a440d183d688085be2d709b534", [], [], "hexpm"},
+  "phoenix": {:git, "https://github.com/phoenixframework/phoenix.git", "178ce1a2344515e9145599970313fcc190d4b881", [ref: "v1.2.0"]},
+  "phoenix_pubsub": {:hex, :phoenix_pubsub, "1.0.2", "bfa7fd52788b5eaa09cb51ff9fcad1d9edfeb68251add458523f839392f034c1", [], [], "hexpm"},
+  "plug": {:hex, :plug, "1.3.3", "d9be189924379b4e9d470caef87380d09549aea1ceafe6a0d41292c8c317c923", [:mix], [{:cowboy, "~> 1.0.1 or ~> 1.1", [hex: :cowboy, repo: "hexpm", optional: true]}, {:mime, "~> 1.0", [hex: :mime, repo: "hexpm", optional: false]}], "hexpm"},
+  "poison": {:hex, :poison, "2.2.0", "4763b69a8a77bd77d26f477d196428b741261a761257ff1cf92753a0d4d24a63", [], [], "hexpm"}}
