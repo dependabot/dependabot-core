@@ -294,7 +294,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         )
       end
 
-      it { is_expected.to eq(Gem::Version.new("1.4.5")) }
+      it { is_expected.to be >= Gem::Version.new("1.5.0") }
     end
   end
 
