@@ -119,8 +119,13 @@ module Dependabot
         end
 
         def handle_hex_errors(error)
-          raise error unless error.message.start_with?("Invalid requirement")
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          if git_dependency? && error.message.include?("resolution failed")
+            return nil
+          end
+          if error.message.start_with?("Invalid requirement")
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+          raise error
         end
 
         def write_temporary_dependency_files(unlock_requirement:)

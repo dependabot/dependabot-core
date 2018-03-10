@@ -26,6 +26,6 @@ rescue
     IO.write(:stdio, result)
 
   error in Mix.Error ->
-    result = :erlang.term_to_binary({:error, "Dependency resolution failed"})
+    result = :erlang.term_to_binary({:error, "Dependency resolution failed: #{error.message}"})
     IO.write(:stdio, result)
 end
