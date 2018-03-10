@@ -11,6 +11,7 @@ module Dependabot
   module UpdateCheckers
     module Elixir
       class Hex < Dependabot::UpdateCheckers::Base
+        require_relative "hex/file_preparer"
         require_relative "hex/version"
         require_relative "hex/requirements_updater"
         require_relative "hex/version_resolver"
@@ -129,74 +130,11 @@ module Dependabot
         end
 
         def prepared_dependency_files(unlock_requirement:)
-          files = []
-          files += mixfiles.map do |file|
-            DependencyFile.new(
-              name: file.name,
-              content:
-                prepare_mixfile(file, unlock_requirement: unlock_requirement),
-              directory: file.directory
-            )
-          end
-          files << lockfile
-          files
-        end
-
-        def prepare_mixfile(file, unlock_requirement:)
-          content = file.content
-          if unlock_requirement && dependency_appears_in_file?(file.name)
-            content = relax_version(content, filename: file.name)
-          end
-          sanitize_mixfile(content)
-        end
-
-        def relax_version(content, filename:)
-          old_requirement =
-            dependency.requirements.find { |r| r.fetch(:file) == filename }.
-            fetch(:requirement)
-
-          return content unless old_requirement
-
-          new_requirement =
-            if dependency.version
-              ">= #{dependency.version}"
-            elsif wants_prerelease?
-              ">= 0.0.1-rc1"
-            else
-              ">= 0"
-            end
-
-          requirement_line_regex =
-            /
-              :#{Regexp.escape(dependency.name)},.*
-              #{Regexp.escape(old_requirement)}
-            /x
-
-          content.gsub(requirement_line_regex) do |requirement_line|
-            requirement_line.gsub(old_requirement, new_requirement)
-          end
-        end
-
-        def sanitize_mixfile(content)
-          content.
-            gsub(/File\.read!\(.*?\)/, '"0.0.1"').
-            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
-        end
-
-        def mixfiles
-          mixfiles = dependency_files.select { |f| f.name.end_with?("mix.exs") }
-          raise "No mix.exs!" unless mixfiles.any?
-          mixfiles
-        end
-
-        def lockfile
-          lockfile = dependency_files.find { |f| f.name == "mix.lock" }
-          raise "No mix.lock!" unless lockfile
-          lockfile
-        end
-
-        def dependency_appears_in_file?(file_name)
-          dependency.requirements.any? { |r| r[:file] == file_name }
+          FilePreparer.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            unlock_requirement: unlock_requirement
+          ).prepared_dependency_files
         end
 
         def latest_release_on_hex_registry
