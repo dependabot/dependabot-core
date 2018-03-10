@@ -1,3 +1,7 @@
+## v0.50.11, 10 March 2018
+
+- Elixir: Add support for git-source dependencies
+
 ## v0.50.10, 9 March 2018
 
 - Java: Handle multiple declarations of same dependency in pom.xml
