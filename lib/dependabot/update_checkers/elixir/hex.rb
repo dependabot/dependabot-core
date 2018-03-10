@@ -33,17 +33,12 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          if git_dependency? && git_commit_checker.pinned?
-            return dependency.version
-          end
-
           @latest_resolvable_version_with_no_unlock ||=
-            fetch_latest_resolvable_version(unlock_requirement: false)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          if error.message.include?("resolution failed") && git_dependency?
-            return
-          end
-          raise error
+            if git_dependency?
+              latest_resolvable_commit_with_unchanged_git_source
+            else
+              fetch_latest_resolvable_version(unlock_requirement: false)
+            end
         end
 
         def updated_requirements
@@ -73,11 +68,21 @@ module Dependabot
         end
 
         def latest_resolvable_version_for_git_dependency
-          # TODO: we should be updating the ref here if pinned to a
-          # version-like ref. For now, this setup means we at least get
-          # branch updates, though.
+          # If the gem isn't pinned, the latest version is just the latest
+          # commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return latest_resolvable_commit_with_unchanged_git_source
+          end
+
+          # If the dependency is pinned then there's nothing we can do.
+          dependency.version
+        end
+
+        def latest_resolvable_commit_with_unchanged_git_source
           fetch_latest_resolvable_version(unlock_requirement: false)
         rescue SharedHelpers::HelperSubprocessFailed => error
+          # Resolution may fail, as Elixir updates straight to the tip of the
+          # branch. Just return `nil` if it does (so no update).
           return if error.message.include?("resolution failed")
           raise error
         end
