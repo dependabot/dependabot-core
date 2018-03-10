@@ -1,3 +1,7 @@
+## v0.50.14, 10 March 2018
+
+- Add specs for Elixir FilePreparer (and fix a bug)
+
 ## v0.50.13, 10 March 2018
 
 - Downgrade Pipenv to 11.1.11
