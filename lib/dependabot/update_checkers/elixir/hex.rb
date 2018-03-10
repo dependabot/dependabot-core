@@ -13,6 +13,7 @@ module Dependabot
       class Hex < Dependabot::UpdateCheckers::Base
         require_relative "hex/version"
         require_relative "hex/requirements_updater"
+        require_relative "hex/version_resolver"
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
@@ -37,6 +38,11 @@ module Dependabot
 
           @latest_resolvable_version_with_no_unlock ||=
             fetch_latest_resolvable_version(unlock_requirement: false)
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          if error.message.include?("resolution failed") && git_dependency?
+            return
+          end
+          raise error
         end
 
         def updated_requirements
@@ -70,6 +76,9 @@ module Dependabot
           # version-like ref. For now, this setup means we at least get
           # branch updates, though.
           fetch_latest_resolvable_version(unlock_requirement: false)
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          return if error.message.include?("resolution failed")
+          raise error
         end
 
         def git_dependency?
@@ -97,50 +106,40 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version(unlock_requirement:)
-          latest_resolvable_version =
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files(
+          @latest_resolvable_version ||= {}
+          @latest_resolvable_version[unlock_requirement] ||=
+            version_resolver(unlock_requirement: unlock_requirement).
+            latest_resolvable_version
+        end
+
+        def version_resolver(unlock_requirement:)
+          @version_resolver ||= {}
+          @version_resolver[unlock_requirement] ||=
+            begin
+              prepared_dependency_files = prepared_dependency_files(
                 unlock_requirement: unlock_requirement
               )
-              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
-              SharedHelpers.run_helper_subprocess(
-                env: mix_env,
-                command: "mix run #{elixir_helper_path}",
-                function: "get_latest_resolvable_version",
-                args: [Dir.pwd, dependency.name]
+              VersionResolver.new(
+                dependency: dependency,
+                dependency_files: prepared_dependency_files,
+                credentials: credentials
               )
             end
-
-          return if latest_resolvable_version.nil?
-          if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
-            return latest_resolvable_version
-          end
-          version_class.new(latest_resolvable_version)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_hex_errors(error)
         end
 
-        def handle_hex_errors(error)
-          if git_dependency? && error.message.include?("resolution failed")
-            return nil
-          end
-          if error.message.start_with?("Invalid requirement")
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-          raise error
-        end
-
-        def write_temporary_dependency_files(unlock_requirement:)
-          mixfiles.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(
-              path,
-              prepare_mixfile(file, unlock_requirement: unlock_requirement)
+        def prepared_dependency_files(unlock_requirement:)
+          files = []
+          files += mixfiles.map do |file|
+            DependencyFile.new(
+              name: file.name,
+              content:
+                prepare_mixfile(file, unlock_requirement: unlock_requirement),
+              directory: file.directory
             )
           end
-          File.write("mix.lock", lockfile.content)
+          files << lockfile
+          files
         end
 
         def prepare_mixfile(file, unlock_requirement:)
@@ -184,23 +183,6 @@ module Dependabot
             gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
         end
 
-        def mix_env
-          {
-            "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
-            "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
-            "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
-            "MIX_QUIET" => "1"
-          }
-        end
-
-        def elixir_helper_path
-          File.join(project_root, "helpers/elixir/bin/run.exs")
-        end
-
-        def elixir_helper_check_update_path
-          File.join(project_root, "helpers/elixir/bin/check_update.exs")
-        end
-
         def mixfiles
           mixfiles = dependency_files.select { |f| f.name.end_with?("mix.exs") }
           raise "No mix.exs!" unless mixfiles.any?
@@ -211,10 +193,6 @@ module Dependabot
           lockfile = dependency_files.find { |f| f.name == "mix.lock" }
           raise "No mix.lock!" unless lockfile
           lockfile
-        end
-
-        def project_root
-          File.join(File.dirname(__FILE__), "../../../..")
         end
 
         def dependency_appears_in_file?(file_name)
