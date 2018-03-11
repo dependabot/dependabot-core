@@ -82,23 +82,62 @@ module Dependabot
           dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
-              updated_requirement =
-                dep.requirements.find { |r| r[:file] == file.name }.
-                fetch(:requirement)
-
-              old_req =
-                dep.previous_requirements.find { |r| r[:file] == file.name }.
-                fetch(:requirement)
-
-              declaration_regex =
-                /:#{Regexp.escape(dep.name)},.*#{Regexp.escape(old_req)}/
-              updated_content = content.gsub(declaration_regex) do |declaration|
-                declaration.gsub(old_req, updated_requirement)
-              end
+              updated_content = content
+              updated_content = update_requirement(
+                content: updated_content,
+                filename: file.name,
+                dependency: dep
+              )
+              updated_content = update_git_pin(
+                content: updated_content,
+                filename: file.name,
+                dependency: dep
+              )
 
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def update_requirement(content:, filename:, dependency:)
+          updated_req =
+            dependency.requirements.find { |r| r[:file] == filename }.
+            fetch(:requirement)
+
+          old_req =
+            dependency.previous_requirements.find { |r| r[:file] == filename }.
+            fetch(:requirement)
+
+          return content unless old_req
+
+          declaration_regex =
+            /:#{Regexp.escape(dependency.name)},.*#{Regexp.escape(old_req)}/
+
+          content.gsub(declaration_regex) do |declaration|
+            declaration.gsub(old_req, updated_req)
+          end
+        end
+
+        def update_git_pin(content:, filename:, dependency:)
+          updated_pin =
+            dependency.requirements.find { |r| r[:file] == filename }&.
+            dig(:source, :ref)
+
+          old_pin =
+            dependency.previous_requirements.find { |r| r[:file] == filename }&.
+            dig(:source, :ref)
+
+          return content unless old_pin
+
+          requirement_line_regex =
+            /
+              :#{Regexp.escape(dependency.name)},.*
+              (?:ref|tag):\s+["']#{Regexp.escape(old_pin)}["']
+            /x
+
+          content.gsub(requirement_line_regex) do |requirement_line|
+            requirement_line.gsub(old_pin, updated_pin)
+          end
         end
 
         def sanitize_mixfile(content)

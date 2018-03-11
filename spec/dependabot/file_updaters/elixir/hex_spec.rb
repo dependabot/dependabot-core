@@ -75,6 +75,56 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         expect(updated_mixfile_content).to include(%({:phoenix, "== 1.2.1"}))
       end
 
+      context "with a git dependency having its reference updated" do
+        let(:mixfile_body) do
+          fixture("elixir", "mixfiles", "git_source_tag_can_update")
+        end
+        let(:lockfile_body) do
+          fixture("elixir", "lockfiles", "git_source_tag_can_update")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phoenix",
+            version: "aa218f56b14c9653891f9e74264a383fa43fefbd",
+            requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: "v1.3.0"
+                }
+              }
+            ],
+            previous_version: "178ce1a2344515e9145599970313fcc190d4b881",
+            previous_requirements: [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: "v1.2.0"
+                }
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the right dependency" do
+          expect(updated_mixfile_content).to include(%({:plug, "1.3.3"},))
+          expect(updated_mixfile_content).to include(
+            %({:phoenix, github: "phoenixframework/phoenix", ref: "v1.3.0"})
+          )
+        end
+      end
+
       context "with similarly named packages" do
         let(:mixfile_body) { fixture("elixir", "mixfiles", "similar_names") }
         let(:lockfile_body) { fixture("elixir", "lockfiles", "similar_names") }
