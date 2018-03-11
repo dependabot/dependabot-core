@@ -292,6 +292,17 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
           expect(updated_lockfile_content).to include %({:hex, :poison, "3)
         end
+
+        context "with an old-format lockfile" do
+          let(:mixfile_body) { fixture("elixir", "mixfiles", "old_elixir") }
+          let(:lockfile_body) { fixture("elixir", "lockfiles", "old_elixir") }
+
+          it "updates the dependency version in the lockfile" do
+            expect(updated_lockfile_content).to start_with('%{"mime"')
+            expect(updated_lockfile_content).to end_with("}}\n")
+            expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
+          end
+        end
       end
 
       context "with a mix.exs that opens another file" do

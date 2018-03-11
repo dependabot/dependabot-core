@@ -64,6 +64,16 @@ module Dependabot
                 args: [Dir.pwd, dependency.name]
               )
             end
+
+          post_process_lockfile(@updated_lockfile_content)
+        end
+
+        def post_process_lockfile(content)
+          return content unless lockfile.content.start_with?("%{\"")
+          return content if content.start_with?("%{\"")
+
+          # Substitute back old file beginning and ending
+          content.sub(/\A%\{\n  "/, "%{\"").sub(/\},\n\}/, "}}")
         end
 
         def write_temporary_dependency_files
