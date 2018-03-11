@@ -1,3 +1,8 @@
+## v0.50.17, 11 March 2018
+
+- Elixir: Don't change lockfile format during update
+- Python: Use Pipenv 11.3.3
+
 ## v0.50.16, 11 March 2018
 
 - Allow hyphens in git tags and refs
