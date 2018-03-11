@@ -1,3 +1,7 @@
+## v0.50.16, 11 March 2018
+
+- Allow hyphens in git tags and refs
+
 ## v0.50.15, 11 March 2018
 
 - Elixir: Add support for updating pinned git dependencies
