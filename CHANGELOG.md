@@ -1,3 +1,7 @@
+## v0.50.15, 11 March 2018
+
+- Elixir: Add support for updating pinned git dependencies
+
 ## v0.50.14, 10 March 2018
 
 - Add specs for Elixir FilePreparer (and fix a bug)
