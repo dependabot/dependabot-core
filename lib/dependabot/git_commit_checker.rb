@@ -7,7 +7,7 @@ require "dependabot/errors"
 
 module Dependabot
   class GitCommitChecker
-    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9]+)*)$/
+    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
 
     def initialize(dependency:, github_access_token:)
       @dependency = dependency

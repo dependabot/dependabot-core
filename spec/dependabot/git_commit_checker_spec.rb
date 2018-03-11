@@ -396,6 +396,30 @@ RSpec.describe Dependabot::GitCommitChecker do
       it { is_expected.to eq(false) }
     end
 
+    context "with a version pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v1.0.0"
+        }
+      end
+      it { is_expected.to eq(true) }
+
+      context "that includes a hyphen" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "v1.0.0-pre"
+          }
+        end
+        it { is_expected.to eq(true) }
+      end
+    end
+
     context "with a non-version pin" do
       let(:source) do
         {
