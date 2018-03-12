@@ -13,6 +13,12 @@ module Dependabot
       }
     }.freeze
 
+    RETRYABLE_ERRORS = [
+      Faraday::ConnectionFailed,
+      Faraday::TimeoutError,
+      Octokit::InternalServerError
+    ].freeze
+
     def initialize(max_retries: 1, **args)
       args = DEFAULT_CLIENT_ARGS.merge(args)
 
@@ -39,7 +45,7 @@ module Dependabot
 
       begin
         yield
-      rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      rescue *RETRYABLE_ERRORS
         retry_attempt += 1
         retry_attempt <= @max_retries ? retry : raise
       end
