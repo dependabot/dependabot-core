@@ -21,7 +21,7 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return updated_pipfile_based_files if pipfile
+          return updated_pipfile_based_files if pipfile && lockfile
           updated_requirement_based_files
         end
 
