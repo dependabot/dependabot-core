@@ -263,4 +263,123 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "#release_text" do
+    subject { finder.release_text }
+
+    context "with a github repo" do
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/business/releases"
+      end
+
+      let(:github_status) { 200 }
+
+      before do
+        stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: github_status,
+                    body: github_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      context "with releases" do
+        let(:github_response) { fixture("github", "business_releases.json") }
+
+        context "when the release is present" do
+          let(:dependency_version) { "1.8.0" }
+
+          context "and is updating from one version previous" do
+            let(:dependency_previous_version) { "1.7.0" }
+
+            it "gets the right text" do
+              expect(subject).
+                to eq(
+                  "#### v1.8.0\n"\
+                  "- Add 2018-2027 TARGET holiday defintions\n"\
+                  "- Add 2018-2027 Bankgirot holiday defintions"
+                )
+            end
+
+            context "but prefixed" do
+              let(:github_response) do
+                fixture("github", "prefixed_releases.json")
+              end
+
+              it "still gets the right text" do
+                expect(subject).
+                  to eq(
+                    "#### business-1.8.0\n"\
+                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "- Add 2018-2027 Bankgirot holiday defintions"
+                  )
+              end
+            end
+          end
+
+          context "and is updating from two versions previous" do
+            let(:dependency_previous_version) { "1.6.0" }
+
+            it "gets the right text" do
+              expect(subject).
+                to eq(
+                  "#### v1.8.0\n"\
+                  "- Add 2018-2027 TARGET holiday defintions\n"\
+                  "- Add 2018-2027 Bankgirot holiday defintions\n"\
+                  "\n"\
+                  "#### v1.7.0\n"\
+                  "No release notes provided."
+                )
+            end
+          end
+
+          context "and the previous release doesn't have a github release" do
+            let(:dependency_previous_version) { "0.9.1" }
+            it { is_expected.to be_nil }
+          end
+
+          context "and the new version doesn't have a github release" do
+            let(:dependency_version) { "1.6.0" }
+            it { is_expected.to be_nil }
+          end
+        end
+      end
+    end
+
+    context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+      end
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "gitlab",
+          repo: "org/#{dependency_name}"
+        )
+      end
+
+      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
+
+      before do
+        stub_request(:get, gitlab_url).
+          to_return(status: 200,
+                    body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
+      let(:dependency_version) { "1.4.0" }
+      let(:dependency_previous_version) { "1.3.0" }
+
+      it "gets the right text" do
+        expect(subject).
+          to eq(
+            "#### v1.4.0\n"\
+            "Some release notes"
+          )
+      end
+    end
+
+    context "without a recognised source" do
+      let(:source) { nil }
+      it { is_expected.to be_nil }
+    end
+  end
 end

@@ -22,16 +22,28 @@ module Dependabot
           return releases_index_url unless dependency.previous_version
           return releases_index_url unless previous_release
 
-          intermediate_release_count =
-            all_releases.index(previous_release) -
-            all_releases.index(updated_release) -
-            1
-
-          if previous_release && intermediate_release_count.zero?
+          if intermediate_releases.none?
             updated_release.html_url
           else
             releases_index_url
           end
+        end
+
+        def release_text
+          return unless updated_release
+          return unless dependency.previous_version && previous_release
+
+          [updated_release, *intermediate_releases].map do |r|
+            title = "#### #{r.name || r.tag_name}\n"
+            body =
+              if r.body.gsub(/\n*\z/m, "") == ""
+                "No release notes provided."
+              else
+                r.body.gsub(/\n*\z/m, "")
+              end
+
+            title + body
+          end.join("\n\n")
         end
 
         private
@@ -54,6 +66,33 @@ module Dependabot
           end
         end
 
+        def intermediate_releases
+          intermediate_release_count =
+            all_releases.index(previous_release) -
+            all_releases.index(updated_release) -
+            1
+
+          intermediate_releases = all_releases.slice(
+            all_releases.index(updated_release) + 1,
+            intermediate_release_count
+          )
+
+          unless Gem::Version.correct?(dependency.version)
+            return intermediate_releases
+          end
+
+          intermediate_releases.reject do |release|
+            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
+
+            # Don't reject anything we can't be certain of
+            next false unless Gem::Version.correct?(cleaned_tag)
+
+            # Do reject any releases that are greater than the version we're
+            # updating to (e.g., if two major versions are being maintained)
+            Gem::Version.new(cleaned_tag) > Gem::Version.new(dependency.version)
+          end
+        end
+
         def releases_index_url
           build_releases_index_url(
             releases: all_releases,
@@ -69,26 +108,36 @@ module Dependabot
           return [] unless source
 
           case source.host
-          when "github"
-            github_client.releases(source.repo).sort_by(&:id).reverse
-          when "bitbucket"
-            [] # Bitbucket doesn't support releases
-          when "gitlab"
-            releases = gitlab_client.tags(source.repo).
-                       select(&:release).
-                       sort_by { |r| r.commit.authored_date }.
-                       reverse
-
-            releases.map do |tag|
-              OpenStruct.new(
-                name: tag.name,
-                tag_name: tag.release.tag_name,
-                html_url: "#{source.url}/tags/#{tag.name}"
-              )
-            end
+          when "github" then fetch_github_releases
+          when "bitbucket" then [] # Bitbucket doesn't support releases
+          when "gitlab" then fetch_gitlab_releases
           else raise "Unexpected repo host '#{source.host}'"
           end
-        rescue Octokit::NotFound, Gitlab::Error::NotFound
+        end
+
+        def fetch_github_releases
+          github_client.releases(source.repo).sort_by(&:id).reverse
+        rescue Octokit::NotFound
+          []
+        end
+
+        def fetch_gitlab_releases
+          releases =
+            gitlab_client.
+            tags(source.repo).
+            select(&:release).
+            sort_by { |r| r.commit.authored_date }.
+            reverse
+
+          releases.map do |tag|
+            OpenStruct.new(
+              name: tag.name,
+              tag_name: tag.release.tag_name,
+              body: tag.release.description,
+              html_url: "#{source.url}/tags/#{tag.name}"
+            )
+          end
+        rescue Gitlab::Error::NotFound
           []
         end
 
