@@ -169,15 +169,16 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
-        if release_url(dep) || changelog_url(dep) || upgrade_url(dep)
+        if release_url(dep) || changelog_url(dep) || upgrade_url(dep) ||
+           commits(dep).none?
           return metadata_links_for_dep(dep)
         end
 
-        return metadata_links_for_dep(dep) if commits(dep).none?
+        commits_cascade(dep)
+      end
 
-        msg = "\n<details>\n"\
-              "<summary>Commits</summary>\n"\
-              "\n"
+      def commits_cascade(dep)
+        msg = "\n<details>\n<summary>Commits</summary>\n\n"
 
         commits(dep).first(10).each do |commit|
           title = commit[:message].split("\n").first
