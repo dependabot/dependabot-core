@@ -1,3 +1,7 @@
+## v0.50.21, 12 March 2018
+
+- Elixir: Use commit SHA, not tag SHA, when updating git references
+
 ## v0.50.20, 12 March 2018
 
 - Fix handling of git commit tags (non-semver)
