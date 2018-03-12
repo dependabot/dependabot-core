@@ -1,3 +1,8 @@
+## v0.50.23, 12 March 2018
+
+- Never return nil from CommitsFinder#commits
+- Add release_text method to ReleaseFinder
+
 ## v0.50.22, 12 March 2018
 
 - Use details tab for commit details, if they're all we're including in PR
