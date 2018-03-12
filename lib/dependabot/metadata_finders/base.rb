@@ -5,7 +5,7 @@ module Dependabot
     class Base
       require "dependabot/metadata_finders/base/changelog_finder"
       require "dependabot/metadata_finders/base/release_finder"
-      require "dependabot/metadata_finders/base/commits_url_finder"
+      require "dependabot/metadata_finders/base/commits_finder"
 
       class Source
         SOURCE_REGEX = %r{
@@ -88,21 +88,21 @@ module Dependabot
       end
 
       def commits_url
-        @commits_url_finder ||= CommitsUrlFinder.new(
+        @commits_finder ||= CommitsFinder.new(
           dependency: dependency,
           source: source,
           credentials: credentials
         )
-        @commits_url_finder.commits_url
+        @commits_finder.commits_url
       end
 
       def commits
-        @commits_url_finder ||= CommitsUrlFinder.new(
+        @commits_finder ||= CommitsFinder.new(
           dependency: dependency,
           source: source,
           credentials: credentials
         )
-        @commits_url_finder.commits
+        @commits_finder.commits
       end
 
       private

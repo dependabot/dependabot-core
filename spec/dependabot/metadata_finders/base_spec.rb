@@ -129,19 +129,19 @@ RSpec.describe Dependabot::MetadataFinders::Base do
 
   describe "#commits_url" do
     subject { finder.commits_url }
-    let(:dummy_commits_url_finder) do
-      instance_double(Dependabot::MetadataFinders::Base::CommitsUrlFinder)
+    let(:dummy_commits_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
     end
 
-    it "delegates to CommitsUrlFinder (and caches the instance)" do
-      expect(Dependabot::MetadataFinders::Base::CommitsUrlFinder).
+    it "delegates to CommitsFinder (and caches the instance)" do
+      expect(Dependabot::MetadataFinders::Base::CommitsFinder).
         to receive(:new).
         with(
           credentials: credentials,
           source: source,
           dependency: dependency
-        ).once.and_return(dummy_commits_url_finder)
-      expect(dummy_commits_url_finder).
+        ).once.and_return(dummy_commits_finder)
+      expect(dummy_commits_finder).
         to receive(:commits_url).twice.
         and_return("https://example.com/commits")
       expect(finder.commits_url).to eq("https://example.com/commits")

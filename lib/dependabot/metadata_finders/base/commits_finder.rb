@@ -11,7 +11,7 @@ require "dependabot/metadata_finders/base"
 module Dependabot
   module MetadataFinders
     class Base
-      class CommitsUrlFinder
+      class CommitsFinder
         attr_reader :source, :dependency, :credentials
 
         def initialize(source:, dependency:, credentials:)

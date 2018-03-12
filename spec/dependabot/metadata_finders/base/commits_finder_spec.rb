@@ -3,9 +3,9 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/base/commits_url_finder"
+require "dependabot/metadata_finders/base/commits_finder"
 
-RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
+RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   subject(:builder) do
     described_class.new(
       dependency: dependency,
