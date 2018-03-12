@@ -1,3 +1,7 @@
+## v0.50.22, 12 March 2018
+
+- Use details tab for commit details, if they're all we're including in PR
+
 ## v0.50.21, 12 March 2018
 
 - Elixir: Use commit SHA, not tag SHA, when updating git references
