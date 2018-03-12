@@ -27,8 +27,7 @@ module Dependabot
       end
 
       def pr_message
-        return commit_message_body unless pr_message_footer
-        commit_message_body + "\n\n#{pr_message_footer}"
+        commit_message_body + prefixed_pr_message_footer
       end
 
       def commit_message
@@ -43,6 +42,11 @@ module Dependabot
       def commit_message_body
         return requirement_pr_message if library?
         version_pr_message
+      end
+
+      def prefixed_pr_message_footer
+        return "" unless pr_message_footer
+        "\n\n#{pr_message_footer}"
       end
 
       def signoff_message
