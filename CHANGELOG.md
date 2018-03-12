@@ -1,3 +1,9 @@
+## v0.50.18, 12 March 2018
+
+- Handle Elixir dependencies without a requirement in UpdateChecker
+- Automatically retry GitHub 500s
+- Python: Use Pipenv 11.5.2
+
 ## v0.50.17, 11 March 2018
 
 - Elixir: Don't change lockfile format during update
