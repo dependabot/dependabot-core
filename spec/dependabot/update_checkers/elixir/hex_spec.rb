@@ -123,7 +123,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
             headers: { "Content-Type" => "application/json" }
           )
       end
-      it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+      it { is_expected.to eq("5d83459c539f7f4172e9a76355e7a86b70bc537b") }
     end
   end
 
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
               fixture("elixir", "lockfiles", "git_source_tag_can_update")
             end
 
-            it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
+            it { is_expected.to eq("5d83459c539f7f4172e9a76355e7a86b70bc537b") }
           end
 
           context "that can't update (because of resolvability)" do

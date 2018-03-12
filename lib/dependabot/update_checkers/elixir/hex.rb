@@ -81,7 +81,7 @@ module Dependabot
           if git_commit_checker.pinned_ref_looks_like_version? &&
              latest_git_tag_is_resolvable?
             new_tag = git_commit_checker.local_tag_for_latest_version
-            return new_tag.fetch(:tag_sha)
+            return new_tag.fetch(:commit_sha)
           end
 
           # If the dependency is pinned then there's nothing we can do.
@@ -113,7 +113,7 @@ module Dependabot
           # of the latest tag that looks like a version.
           if git_commit_checker.pinned_ref_looks_like_version?
             latest_tag = git_commit_checker.local_tag_for_latest_version
-            return latest_tag&.fetch(:tag_sha) || dependency.version
+            return latest_tag&.fetch(:commit_sha) || dependency.version
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
