@@ -23,22 +23,7 @@ module Dependabot
 
       def pr_name
         return library_pr_name if library?
-
-        pr_name = using_semantic_commit_messages? ? "build: bump " : "Bump "
-
-        pr_name +=
-          if dependencies.count == 1
-            dependency = dependencies.first
-            "#{dependency.name} from #{previous_version(dependency)} "\
-            "to #{new_version(dependency)}"
-          else
-            names = dependencies.map(&:name)
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
-          end
-
-        return pr_name if files.first.directory == "/"
-
-        pr_name + " in #{files.first.directory}"
+        application_pr_name
       end
 
       def pr_message
@@ -55,36 +40,15 @@ module Dependabot
 
       private
 
-      def using_semantic_commit_messages?
-        return false if recent_commit_messages.none?
-
-        semantic_messages = recent_commit_messages.select do |message|
-          SEMANTIC_PREFIXES.any? do |pre|
-            message.downcase.match?(/#{pre}[:(]/)
-          end
-        end
-
-        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      def commit_message_body
+        return requirement_pr_message if library?
+        version_pr_message
       end
 
       def signoff_message
         return unless author_details.is_a?(Hash)
         return unless author_details[:name] && author_details[:email]
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
-      end
-
-      def recent_commit_messages
-        @recent_commit_messages ||=
-          github_client.commits(repo_name).
-          reject { |c| c.author&.type == "Bot" }.
-          map(&:commit).
-          map(&:message).
-          compact
-      end
-
-      def commit_message_body
-        return requirement_pr_message if library?
-        version_pr_message
       end
 
       def library_pr_name
@@ -97,6 +61,24 @@ module Dependabot
           else
             names = dependencies.map(&:name)
             "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+          end
+
+        return pr_name if files.first.directory == "/"
+
+        pr_name + " in #{files.first.directory}"
+      end
+
+      def application_pr_name
+        pr_name = using_semantic_commit_messages? ? "build: bump " : "Bump "
+
+        pr_name +=
+          if dependencies.count == 1
+            dependency = dependencies.first
+            "#{dependency.name} from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          else
+            names = dependencies.map(&:name)
+            "#{names[0..-2].join(', ')} and #{names[-1]}"
           end
 
         return pr_name if files.first.directory == "/"
@@ -118,6 +100,24 @@ module Dependabot
         msg + metadata_links
       end
 
+      def version_pr_message
+        if dependencies.count == 1
+          dependency = dependencies.first
+          msg = "Bumps #{dependency_links.first} "\
+                "from #{previous_version(dependency)} "\
+                "to #{new_version(dependency)}."
+          if switching_from_ref_to_release?(dependency)
+            msg += " This release includes the previously tagged commit."
+          end
+        else
+          msg = "Bumps #{dependency_links[0..-2].join(', ')} "\
+                "and #{dependency_links[-1]}. These "\
+                "dependencies needed to be updated together."
+        end
+
+        msg + metadata_links
+      end
+
       def dependency_links
         dependencies.map do |dependency|
           if source_url(dependency)
@@ -128,24 +128,6 @@ module Dependabot
             dependency.name
           end
         end
-      end
-
-      def version_pr_message
-        if dependencies.count == 1
-          dependency = dependencies.first
-          msg = "Bumps #{dependency_links.first} "\
-                "from #{previous_version(dependency)} "\
-                "to #{new_version(dependency)}."
-          if switching_from_ref_to_release?(dependencies.first)
-            msg += " This release includes the previously tagged commit."
-          end
-        else
-          msg = "Bumps #{dependency_links[0..-2].join(', ')} "\
-                "and #{dependency_links[-1]}. These "\
-                "dependencies needed to be updated together."
-        end
-
-        msg + metadata_links
       end
 
       def metadata_links
@@ -231,11 +213,6 @@ module Dependabot
         end.compact.first
       end
 
-      def ref_changed?(dependency)
-        previous_ref(dependency) && new_ref(dependency) &&
-          previous_ref(dependency) != new_ref(dependency)
-      end
-
       def new_library_requirement(dependency)
         updated_reqs =
           dependency.requirements - dependency.previous_requirements
@@ -246,14 +223,9 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
-      def credentials
-        [
-          {
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => github_client.access_token
-          }
-        ]
+      def ref_changed?(dependency)
+        previous_ref(dependency) && new_ref(dependency) &&
+          previous_ref(dependency) != new_ref(dependency)
       end
 
       def library?
@@ -265,6 +237,35 @@ module Dependabot
       def switching_from_ref_to_release?(dependency)
         return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
         Gem::Version.correct?(dependency.version)
+      end
+
+      def using_semantic_commit_messages?
+        return false if recent_commit_messages.none?
+
+        semantic_messages = recent_commit_messages.select do |message|
+          SEMANTIC_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
+        end
+
+        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
+      def recent_commit_messages
+        @recent_commit_messages ||=
+          github_client.commits(repo_name).
+          reject { |c| c.author&.type == "Bot" }.
+          map(&:commit).
+          map(&:message).
+          compact
+      end
+
+      def credentials
+        [
+          {
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => github_client.access_token
+          }
+        ]
       end
     end
   end
