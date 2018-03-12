@@ -233,7 +233,7 @@ module Dependabot
           end
 
           dependency.requirements.any? do |req|
-            req[:requirement].match?(/\d-[A-Za-z0-9]/)
+            req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
           end
         end
 

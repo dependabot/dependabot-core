@@ -71,6 +71,14 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       it { is_expected.to eq(Gem::Version.new("1.5.0-rc.0")) }
     end
 
+    context "when the dependency doesn't have a requirement" do
+      let(:version) { "1.4.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: nil, groups: [], source: nil }]
+      end
+      it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+    end
+
     context "when the registry 404s" do
       before { stub_request(:get, hex_url).to_return(status: 404) }
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }

@@ -94,6 +94,31 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       end
     end
 
+    context "with no requirements specified" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "no_requirement") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "no_requirement") }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("plug")
+          expect(dependency.version).to eq("1.5.0")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: nil,
+                file: "mix.exs",
+                groups: ["docs"],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "with a development dependency" do
       let(:mixfile_body) do
         fixture("elixir", "mixfiles", "development_dependency")
