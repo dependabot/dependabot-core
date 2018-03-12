@@ -107,10 +107,11 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       context "for a java update" do
         let(:files) { [pom] }
         let(:pom) do
-          Dependabot::DependencyFile.new(
-            name: "pom.xml",
-            content: fixture("java", "poms", "property_pom.xml")
-          )
+          Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
+        end
+        let(:pom_content) do
+          fixture("java", "poms", "property_pom.xml").
+            gsub("4.3.12.RELEASE", "23.6-jre")
         end
         let(:dependencies) do
           [
