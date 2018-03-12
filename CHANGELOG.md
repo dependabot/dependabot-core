@@ -1,3 +1,8 @@
+## v0.50.19, 12 March 2018
+
+- Python: only do Pipfile file updates if a lockfile is also present
+- Java: Find property-based dependencies in branch namer correctly
+
 ## v0.50.18, 12 March 2018
 
 - Handle Elixir dependencies without a requirement in UpdateChecker
