@@ -23,14 +23,12 @@ module Dependabot
         def commits_url
           return unless source
 
-          current_version = dependency.version
+          new_version = dependency.version
           previous_version = dependency.previous_version
 
-          current_tag =
-            if git_source?(dependency.requirements)
-              current_version
-            else
-              dependency_tags.find { |t| t =~ version_regex(current_version) }
+          new_tag =
+            if git_source?(dependency.requirements) then new_version
+            else dependency_tags.find { |t| t =~ version_regex(new_version) }
             end
 
           previous_tag =
@@ -40,7 +38,7 @@ module Dependabot
               dependency_tags.find { |t| t =~ version_regex(previous_version) }
             end
 
-          build_compare_commits_url(current_tag, previous_tag)
+          build_compare_commits_url(new_tag, previous_tag)
         end
 
         private
@@ -89,45 +87,45 @@ module Dependabot
           []
         end
 
-        def build_compare_commits_url(current_tag, previous_tag)
-          case source.host
-          when "github"
-            build_github_compare_url(current_tag, previous_tag)
-          when "bitbucket"
-            build_bitbucket_compare_url(current_tag, previous_tag)
-          when "gitlab"
-            build_gitlab_compare_url(current_tag, previous_tag)
-          else raise "Unexpected repo host '#{source.host}'"
+        def build_compare_commits_url(new_tag, previous_tag)
+          path =
+            case source.host
+            when "github" then github_compare_path(new_tag, previous_tag)
+            when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
+            when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
+            else raise "Unexpected repo host '#{source.host}'"
+            end
+
+          "#{source.url}/#{path}"
+        end
+
+        def github_compare_path(new_tag, previous_tag)
+          if new_tag && previous_tag
+            "compare/#{previous_tag}...#{new_tag}"
+          elsif new_tag
+            "commits/#{new_tag}"
+          else
+            "commits"
           end
         end
 
-        def build_github_compare_url(current_tag, previous_tag)
-          if current_tag && previous_tag
-            "#{source.url}/compare/#{previous_tag}...#{current_tag}"
-          elsif current_tag
-            "#{source.url}/commits/#{current_tag}"
+        def bitbucket_compare_path(new_tag, previous_tag)
+          if new_tag && previous_tag
+            "branches/compare/#{new_tag}..#{previous_tag}"
+          elsif new_tag
+            "commits/tag/#{new_tag}"
           else
-            "#{source.url}/commits"
+            "commits"
           end
         end
 
-        def build_bitbucket_compare_url(current_tag, previous_tag)
-          if current_tag && previous_tag
-            "#{source.url}/branches/compare/#{current_tag}..#{previous_tag}"
-          elsif current_tag
-            "#{source.url}/commits/tag/#{current_tag}"
+        def gitlab_compare_path(new_tag, previous_tag)
+          if new_tag && previous_tag
+            "compare/#{previous_tag}...#{new_tag}"
+          elsif new_tag
+            "commits/#{new_tag}"
           else
-            "#{source.url}/commits"
-          end
-        end
-
-        def build_gitlab_compare_url(current_tag, previous_tag)
-          if current_tag && previous_tag
-            "#{source.url}/compare/#{previous_tag}...#{current_tag}"
-          elsif current_tag
-            "#{source.url}/commits/#{current_tag}"
-          else
-            "#{source.url}/commits/master"
+            "commits/master"
           end
         end
 
