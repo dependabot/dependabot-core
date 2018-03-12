@@ -107,29 +107,19 @@ module Dependabot
       def requirement_pr_message
         msg = "Updates the requirements on "
 
-        names = dependencies.map do |dependency|
-          if source_url(dependency)
-            "[#{dependency.name}](#{source_url(dependency)})"
-          elsif homepage_url(dependency)
-            "[#{dependency.name}](#{homepage_url(dependency)})"
-          else
-            dependency.name
-          end
-        end
-
         msg +=
           if dependencies.count == 1
-            "#{names.first} "
+            "#{dependency_links.first} "
           else
-            "#{names[0..-2].join(', ')} and #{names[-1]} "
+            "#{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]} "
           end
 
         msg += "to permit the latest version."
         msg + metadata_links
       end
 
-      def version_pr_message
-        names = dependencies.map do |dependency|
+      def dependency_links
+        dependencies.map do |dependency|
           if source_url(dependency)
             "[#{dependency.name}](#{source_url(dependency)})"
           elsif homepage_url(dependency)
@@ -138,52 +128,46 @@ module Dependabot
             dependency.name
           end
         end
+      end
 
+      def version_pr_message
         if dependencies.count == 1
           dependency = dependencies.first
-          msg = "Bumps #{names.first} from #{previous_version(dependency)} "\
+          msg = "Bumps #{dependency_links.first} "\
+                "from #{previous_version(dependency)} "\
                 "to #{new_version(dependency)}."
           if switching_from_ref_to_release?(dependencies.first)
             msg += " This release includes the previously tagged commit."
           end
         else
-          msg = "Bumps #{names[0..-2].join(', ')} and #{names[-1]}. These "\
-          "dependencies needed to be updated together."
+          msg = "Bumps #{dependency_links[0..-2].join(', ')} "\
+                "and #{dependency_links[-1]}. These "\
+                "dependencies needed to be updated together."
         end
 
         msg + metadata_links
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/AbcSize
       def metadata_links
-        msg = ""
         if dependencies.count == 1
-          dep = dependencies.first
-          msg += "\n- [Release notes](#{release_url(dep)})" if release_url(dep)
-          msg += "\n- [Changelog](#{changelog_url(dep)})" if changelog_url(dep)
-          if upgrade_guide_url(dep)
-            msg += "\n- [Upgrade guide](#{upgrade_guide_url(dep)})"
-          end
-          msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
-        else
-          dependencies.each do |d|
-            msg += "\n\nUpdates `#{d.name}` from #{previous_version(d)} "\
-                   "to #{new_version(d)}"
-            msg += "\n- [Release notes](#{release_url(d)})" if release_url(d)
-            msg += "\n- [Changelog](#{changelog_url(d)})" if changelog_url(d)
-            if upgrade_guide_url(d)
-              msg += "\n- [Upgrade guide](#{upgrade_guide_url(d)})"
-            end
-            msg += "\n- [Commits](#{commits_url(d)})" if commits_url(d)
-          end
+          return metadata_links_for_dep(dependencies.first)
         end
+
+        dependencies.map do |dep|
+          "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
+          "#{new_version(dep)}"\
+          "#{metadata_links_for_dep(dep)}"
+        end.join
+      end
+
+      def metadata_links_for_dep(dep)
+        msg = ""
+        msg += "\n- [Release notes](#{release_url(dep)})" if release_url(dep)
+        msg += "\n- [Changelog](#{changelog_url(dep)})" if changelog_url(dep)
+        msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
+        msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/AbcSize
 
       def release_url(dependency)
         metadata_finder(dependency).release_url
@@ -193,7 +177,7 @@ module Dependabot
         metadata_finder(dependency).changelog_url
       end
 
-      def upgrade_guide_url(dependency)
+      def upgrade_url(dependency)
         metadata_finder(dependency).upgrade_guide_url
       end
 
