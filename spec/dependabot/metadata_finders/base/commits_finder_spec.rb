@@ -598,7 +598,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
-      it { is_expected.to be_nil }
+      it { is_expected.to eq([]) }
     end
   end
 end

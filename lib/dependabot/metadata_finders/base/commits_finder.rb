@@ -35,7 +35,7 @@ module Dependabot
         end
 
         def commits
-          return unless source
+          return [] unless source
           return [] unless new_tag && previous_tag
 
           case source.host
