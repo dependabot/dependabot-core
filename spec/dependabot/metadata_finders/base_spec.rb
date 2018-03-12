@@ -165,9 +165,9 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         ).once.and_return(dummy_commits_finder)
       expect(dummy_commits_finder).
         to receive(:commits).twice.
-        and_return(["some", "commits"])
-      expect(finder.commits).to eq(["some", "commits"])
-      expect(finder.commits).to eq(["some", "commits"])
+        and_return(%w(some commits))
+      expect(finder.commits).to eq(%w(some commits))
+      expect(finder.commits).to eq(%w(some commits))
     end
   end
 
