@@ -7,7 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/message_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
-  subject(:namer) do
+  subject(:builder) do
     described_class.new(
       repo_name: repo,
       dependencies: dependencies,
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
 
   describe "#pr_name" do
-    subject(:pr_name) { namer.pr_name }
+    subject(:pr_name) { builder.pr_name }
 
     context "for an application" do
       context "that doesn't use semantic commits" do
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   end
 
   describe "#pr_message" do
-    subject(:pr_message) { namer.pr_message }
+    subject(:pr_message) { builder.pr_message }
 
     before do
       business_repo_url = "https://api.github.com/repos/gocardless/business"
@@ -587,14 +587,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   end
 
   describe "#commit_message" do
-    subject(:commit_message) { namer.commit_message }
+    subject(:commit_message) { builder.commit_message }
 
     before do
-      allow(namer).to receive(:pr_name).and_return("PR name")
-      allow(namer).to receive(:commit_message_body).and_return("Message")
+      allow(builder).to receive(:pr_name).and_return("PR name")
+      allow(builder).to receive(:commit_message_intro).and_return("Message")
+      allow(builder).to receive(:metadata_links).and_return("\n\nLinks")
     end
 
-    it { is_expected.to eq("PR name\n\nMessage") }
+    it { is_expected.to eq("PR name\n\nMessage\n\nLinks") }
 
     context "with author details" do
       let(:author_details) do

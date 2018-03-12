@@ -27,21 +27,22 @@ module Dependabot
       end
 
       def pr_message
-        commit_message_body + prefixed_pr_message_footer
+        commit_message_intro + metadata_links + prefixed_pr_message_footer
       end
 
       def commit_message
         message =  pr_name + "\n\n"
-        message += commit_message_body
+        message += commit_message_intro
+        message += metadata_links
         message += "\n\n" + signoff_message if signoff_message
         message
       end
 
       private
 
-      def commit_message_body
-        return requirement_pr_message if library?
-        version_pr_message
+      def commit_message_intro
+        return requirement_commit_message_intro if library?
+        version_commit_message_intro
       end
 
       def prefixed_pr_message_footer
@@ -90,7 +91,7 @@ module Dependabot
         pr_name + " in #{files.first.directory}"
       end
 
-      def requirement_pr_message
+      def requirement_commit_message_intro
         msg = "Updates the requirements on "
 
         msg +=
@@ -100,26 +101,26 @@ module Dependabot
             "#{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]} "
           end
 
-        msg += "to permit the latest version."
-        msg + metadata_links
+        msg + "to permit the latest version."
       end
 
-      def version_pr_message
-        if dependencies.count == 1
-          dependency = dependencies.first
-          msg = "Bumps #{dependency_links.first} "\
-                "from #{previous_version(dependency)} "\
-                "to #{new_version(dependency)}."
-          if switching_from_ref_to_release?(dependency)
-            msg += " This release includes the previously tagged commit."
-          end
-        else
-          msg = "Bumps #{dependency_links[0..-2].join(', ')} "\
-                "and #{dependency_links[-1]}. These "\
-                "dependencies needed to be updated together."
+      def version_commit_message_intro
+        if dependencies.count > 1
+          return "Bumps #{dependency_links[0..-2].join(', ')} "\
+                 "and #{dependency_links[-1]}. These "\
+                 "dependencies needed to be updated together."
         end
 
-        msg + metadata_links
+        dependency = dependencies.first
+        msg = "Bumps #{dependency_links.first} "\
+              "from #{previous_version(dependency)} "\
+              "to #{new_version(dependency)}."
+
+        if switching_from_ref_to_release?(dependency)
+          msg += " This release includes the previously tagged commit."
+        end
+
+        msg
       end
 
       def dependency_links
