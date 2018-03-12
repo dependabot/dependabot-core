@@ -35,6 +35,8 @@ module Dependabot
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
+              req = req.merge(source: updated_source)
+              next req unless latest_resolvable_version
               next req unless req[:requirement]
               next req if req[:requirement].match?(/^[a-z]/i)
               if library?
@@ -61,7 +63,7 @@ module Dependabot
               ruby_req = ruby_requirements(current_requirement).first
               return req if ruby_req.satisfied_by?(latest_resolvable_version)
               updated_req = update_range_requirement(current_requirement)
-              return req.merge(requirement: updated_req, source: updated_source)
+              return req.merge(requirement: updated_req)
             end
 
             req.merge(requirement: update_version_string(current_requirement))
@@ -86,7 +88,7 @@ module Dependabot
                 current_requirement
               end
 
-            req.merge(requirement: updated_requirement, source: updated_source)
+            req.merge(requirement: updated_requirement)
           end
 
           def ruby_requirements(requirement_string)

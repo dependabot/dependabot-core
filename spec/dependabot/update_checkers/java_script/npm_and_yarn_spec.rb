@@ -247,7 +247,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         it "fetches the latest SHA-1 hash of the latest version tag" do
           expect(checker.latest_version).
-            to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+            to eq("1a5c15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
         context "but there are no tags" do
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         it "fetches the latest SHA-1 hash of the latest version tag" do
           expect(checker.latest_version).
-            to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+            to eq("1a5c15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
         context "but there are no tags" do

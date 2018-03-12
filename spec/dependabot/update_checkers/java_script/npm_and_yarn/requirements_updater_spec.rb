@@ -66,8 +66,33 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           }
         }
       end
+      let(:updated_source) do
+        {
+          type: "git",
+          url: "https://github.com/jonschlinkert/is-number",
+          branch: nil,
+          ref: "2.1.0"
+        }
+      end
 
-      it { is_expected.to eq(package_json_req) }
+      it "updates the source" do
+        expect(updater.updated_requirements).
+          to eq(
+            [
+              {
+                file: "package.json",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "2.1.0"
+                }
+              }
+            ]
+          )
+      end
     end
 
     context "for an app requirement" do
