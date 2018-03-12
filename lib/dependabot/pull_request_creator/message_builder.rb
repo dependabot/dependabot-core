@@ -42,12 +42,13 @@ module Dependabot
       end
 
       def pr_message
-        return pr_message_without_footer unless pr_message_footer
-        pr_message_without_footer + "\n\n#{pr_message_footer}"
+        return commit_message_body unless pr_message_footer
+        commit_message_body + "\n\n#{pr_message_footer}"
       end
 
       def commit_message
-        message = pr_name + "\n\n" + pr_message_without_footer
+        message =  pr_name + "\n\n"
+        message += commit_message_body
         message += "\n\n" + signoff_message if signoff_message
         message
       end
@@ -81,7 +82,7 @@ module Dependabot
           compact
       end
 
-      def pr_message_without_footer
+      def commit_message_body
         return requirement_pr_message if library?
         version_pr_message
       end
@@ -272,20 +273,14 @@ module Dependabot
       end
 
       def library?
-        if files.map(&:name).any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
-          return true
-        end
-
+        filenames = files.map(&:name)
+        return true if filenames.any? { |nm| nm.match?(%r{^[^/]*\.gemspec$}) }
         dependencies.none?(&:appears_in_lockfile?)
       end
 
       def switching_from_ref_to_release?(dependency)
         return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
-
-        Gem::Version.new(dependency.version)
-        true
-      rescue ArgumentError
-        false
+        Gem::Version.correct?(dependency.version)
       end
     end
   end

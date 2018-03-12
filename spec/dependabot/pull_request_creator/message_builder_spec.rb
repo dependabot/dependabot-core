@@ -591,7 +591,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
     before do
       allow(namer).to receive(:pr_name).and_return("PR name")
-      allow(namer).to receive(:pr_message_without_footer).and_return("Message")
+      allow(namer).to receive(:commit_message_body).and_return("Message")
     end
 
     it { is_expected.to eq("PR name\n\nMessage") }
