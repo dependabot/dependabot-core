@@ -1,3 +1,7 @@
+## v0.50.20, 12 March 2018
+
+- Fix handling of git commit tags (non-semver)
+
 ## v0.50.19, 12 March 2018
 
 - Python: only do Pipfile file updates if a lockfile is also present
