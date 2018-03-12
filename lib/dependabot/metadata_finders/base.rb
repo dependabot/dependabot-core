@@ -87,6 +87,15 @@ module Dependabot
         @release_finder.release_url
       end
 
+      def release_text
+        @release_finder ||= ReleaseFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials
+        )
+        @release_finder.release_text
+      end
+
       def commits_url
         @commits_finder ||= CommitsFinder.new(
           dependency: dependency,

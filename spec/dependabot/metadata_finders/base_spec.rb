@@ -236,4 +236,26 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       expect(finder.release_url).to eq("https://example.com/RELEASES.md")
     end
   end
+
+  describe "#release_text" do
+    subject { finder.release_text }
+    let(:dummy_release_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
+    end
+
+    it "delegates to ReleaseFinder (and caches the instance)" do
+      expect(Dependabot::MetadataFinders::Base::ReleaseFinder).
+        to receive(:new).
+        with(
+          credentials: credentials,
+          source: source,
+          dependency: dependency
+        ).once.and_return(dummy_release_finder)
+      expect(dummy_release_finder).
+        to receive(:release_text).twice.
+        and_return("Some release notes")
+      expect(finder.release_text).to eq("Some release notes")
+      expect(finder.release_text).to eq("Some release notes")
+    end
+  end
 end
