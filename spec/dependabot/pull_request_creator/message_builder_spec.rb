@@ -304,16 +304,48 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         let(:new_ref) { nil }
         let(:old_ref) { nil }
 
-        it "has the right text" do
-          expect(pr_message).
-            to eq(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "from 2468a0 to cff701.\n"\
-              "- [Commits]"\
-              "(https://github.com/gocardless/business/compare/"\
-              "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
-              "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2)"
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/compare/"\
+            "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
+            "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_compare_commits.json"),
+              headers: { "Content-Type" => "application/json" }
             )
+        end
+
+        it "has the right text" do
+          expect(pr_message).to eq(
+            "Bumps [business](https://github.com/gocardless/business) "\
+            "from 2468a0 to cff701.\n"\
+            "<details>\n"\
+            "<summary>Commits</summary>\n\n"\
+            "- [`Remove SEPA calendar (replaced by TARGET)`]"\
+            "(https://github.com/gocardless/business/commit/"\
+            "d2eb29beda934c14220146c82f830de2edd63a25)\n"\
+            "- [`Merge pull request #8 from gocardless/rename-sepa-to-ecb`]"\
+            "(https://github.com/gocardless/business/commit/"\
+            "a5970daf0b824e4c3974e57474b6cf9e39a11d0f)\n"\
+            "- [`Spacing`](https://github.com/gocardless/business/commit/"\
+            "0bfb8c3f0d2701abf9248185beeb8adf643374f6)\n"\
+            "- [`Allow custom calendars`](https://github.com/gocardless/"\
+            "business/commit/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076)\n"\
+            "- [`Merge pull request #9 from gocardless/custom-calendars`]"\
+            "(https://github.com/gocardless/business/commit/"\
+            "7abe4c2dc0161904c40c221a48999d12995fbea7)\n"\
+            "- [`Bump version to v1.4.0`](https://github.com/gocardless/"\
+            "business/commit/26f4887ec647493f044836363537e329d9d213aa)\n"\
+            "- See full diff in [compare view]"\
+            "(https://github.com/gocardless/business/compare/"\
+            "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
+            "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2)\n"\
+            "</details>\n"\
+            "<br />"
+          )
         end
 
         context "due to a ref change" do

@@ -27,7 +27,7 @@ module Dependabot
       end
 
       def pr_message
-        commit_message_intro + metadata_links + prefixed_pr_message_footer
+        commit_message_intro + metadata_cascades + prefixed_pr_message_footer
       end
 
       def commit_message
@@ -156,6 +156,46 @@ module Dependabot
         msg
       end
 
+      def metadata_cascades
+        if dependencies.count == 1
+          return metadata_cascades_for_dep(dependencies.first)
+        end
+
+        dependencies.map do |dep|
+          "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
+          "#{new_version(dep)}"\
+          "#{metadata_cascades_for_dep(dep)}"
+        end.join
+      end
+
+      def metadata_cascades_for_dep(dep)
+        if release_url(dep) || changelog_url(dep) || upgrade_url(dep)
+          return metadata_links_for_dep(dep)
+        end
+
+        return metadata_links_for_dep(dep) if commits(dep).none?
+
+        msg = "\n<details>\n"\
+              "<summary>Commits</summary>\n"\
+              "\n"
+
+        commits(dep).first(10).each do |commit|
+          title = commit[:message].split("\n").first
+          title = title.slice(0..76) + "..." if title.length > 80
+          msg += "- [`#{title}`](#{commit[:html_url]})\n"
+        end
+
+        msg +=
+          if commits(dep).count > 10
+            "- Additional commits viewable in "\
+            "[compare view](#{commits_url(dep)})\n"
+          else
+            "- See full diff in [compare view](#{commits_url(dep)})\n"
+          end
+
+        msg + "</details>\n<br />"
+      end
+
       def release_url(dependency)
         metadata_finder(dependency).release_url
       end
@@ -178,6 +218,10 @@ module Dependabot
 
       def homepage_url(dependency)
         metadata_finder(dependency).homepage_url
+      end
+
+      def commits(dependency)
+        metadata_finder(dependency).commits
       end
 
       def metadata_finder(dependency)

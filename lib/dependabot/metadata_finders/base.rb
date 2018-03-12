@@ -96,6 +96,15 @@ module Dependabot
         @commits_url_finder.commits_url
       end
 
+      def commits
+        @commits_url_finder ||= CommitsUrlFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials
+        )
+        @commits_url_finder.commits
+      end
+
       private
 
       def source
