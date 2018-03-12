@@ -23,25 +23,51 @@ module Dependabot
         def commits_url
           return unless source
 
-          new_version = dependency.version
-          previous_version = dependency.previous_version
-
-          new_tag =
-            if git_source?(dependency.requirements) then new_version
-            else dependency_tags.find { |t| t =~ version_regex(new_version) }
+          path =
+            case source.host
+            when "github" then github_compare_path(new_tag, previous_tag)
+            when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
+            when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
+            else raise "Unexpected repo host '#{source.host}'"
             end
 
-          previous_tag =
-            if git_source?(dependency.previous_requirements)
-              previous_version || previous_ref
-            else
-              dependency_tags.find { |t| t =~ version_regex(previous_version) }
-            end
+          "#{source.url}/#{path}"
+        end
 
-          build_compare_commits_url(new_tag, previous_tag)
+        def commits
+          return unless source
+          return [] unless new_tag && previous_tag
+
+          case source.host
+          when "github"
+            fetch_github_commits
+          when "bitbucket"
+            fetch_bitbucket_commits
+          when "gitlab"
+            fetch_gitlab_commits
+          else raise "Unexpected repo host '#{source.host}'"
+          end
         end
 
         private
+
+        def new_tag
+          new_version = dependency.version
+
+          if git_source?(dependency.requirements) then new_version
+          else dependency_tags.find { |t| t =~ version_regex(new_version) }
+          end
+        end
+
+        def previous_tag
+          previous_version = dependency.previous_version
+
+          if git_source?(dependency.previous_requirements)
+            previous_version || previous_ref
+          else
+            dependency_tags.find { |t| t =~ version_regex(previous_version) }
+          end
+        end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
         def git_source?(requirements)
@@ -87,18 +113,6 @@ module Dependabot
           []
         end
 
-        def build_compare_commits_url(new_tag, previous_tag)
-          path =
-            case source.host
-            when "github" then github_compare_path(new_tag, previous_tag)
-            when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
-            when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
-            else raise "Unexpected repo host '#{source.host}'"
-            end
-
-          "#{source.url}/#{path}"
-        end
-
         def github_compare_path(new_tag, previous_tag)
           if new_tag && previous_tag
             "compare/#{previous_tag}...#{new_tag}"
@@ -142,6 +156,52 @@ module Dependabot
           JSON.parse(response.body).
             fetch("values", []).
             map { |tag| tag["name"] }
+        end
+
+        def fetch_github_commits
+          commits =
+            github_client.compare(source.repo, previous_tag, new_tag).commits
+          return [] unless commits
+
+          commits.map do |commit|
+            {
+              message: commit.commit.message,
+              html_url: commit.html_url
+            }
+          end
+        end
+
+        def fetch_bitbucket_commits
+          url = "https://api.bitbucket.org/2.0/repositories/"\
+                "#{source.repo}/commits/?"\
+                "include=#{new_tag}&exclude=#{previous_tag}"
+          response = Excon.get(
+            url,
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+          return [] if response.status >= 300
+
+          JSON.parse(response.body).
+            fetch("values", []).
+            map do |commit|
+              {
+                message: commit.dig("summary", "raw"),
+                html_url: commit.dig("links", "html", "href")
+              }
+            end
+        end
+
+        def fetch_gitlab_commits
+          gitlab_client.
+            compare(source.repo, previous_tag, new_tag).
+            commits.
+            map do |commit|
+              {
+                message: commit["message"],
+                html_url: "#{source.url}/commit/#{commit['id']}"
+              }
+            end
         end
 
         def gitlab_client

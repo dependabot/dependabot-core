@@ -1,0 +1,717 @@
+{
+  "url": "https://api.github.com/repos/gocardless/business/compare/v1.3.0...v1.4.0",
+  "html_url": "https://github.com/gocardless/business/compare/v1.3.0...v1.4.0",
+  "permalink_url": "https://github.com/gocardless/business/compare/gocardless:469dacb...gocardless:26f4887",
+  "diff_url": "https://github.com/gocardless/business/compare/v1.3.0...v1.4.0.diff",
+  "patch_url": "https://github.com/gocardless/business/compare/v1.3.0...v1.4.0.patch",
+  "base_commit": {
+    "sha": "469dacb70fafd72ed9571748036642df0d0857fa",
+    "commit": {
+      "author": {
+        "name": "Harry Marr",
+        "email": "harry.marr@gmail.com",
+        "date": "2014-12-02T10:08:38Z"
+      },
+      "committer": {
+        "name": "Harry Marr",
+        "email": "harry.marr@gmail.com",
+        "date": "2014-12-02T10:08:38Z"
+      },
+      "message": "Bump version to v1.3.0",
+      "tree": {
+        "sha": "aea5241365f0717386ea392b4448acea17f7bdab",
+        "url": "https://api.github.com/repos/gocardless/business/git/trees/aea5241365f0717386ea392b4448acea17f7bdab"
+      },
+      "url": "https://api.github.com/repos/gocardless/business/git/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+    "html_url": "https://github.com/gocardless/business/commit/469dacb70fafd72ed9571748036642df0d0857fa",
+    "comments_url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa/comments",
+    "author": {
+      "login": "hmarr",
+      "id": 110275,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/hmarr",
+      "html_url": "https://github.com/hmarr",
+      "followers_url": "https://api.github.com/users/hmarr/followers",
+      "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+      "organizations_url": "https://api.github.com/users/hmarr/orgs",
+      "repos_url": "https://api.github.com/users/hmarr/repos",
+      "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/hmarr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "hmarr",
+      "id": 110275,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/hmarr",
+      "html_url": "https://github.com/hmarr",
+      "followers_url": "https://api.github.com/users/hmarr/followers",
+      "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+      "organizations_url": "https://api.github.com/users/hmarr/orgs",
+      "repos_url": "https://api.github.com/users/hmarr/repos",
+      "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/hmarr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f1f6a6bdd97b176be039de354615f94268d25221",
+        "url": "https://api.github.com/repos/gocardless/business/commits/f1f6a6bdd97b176be039de354615f94268d25221",
+        "html_url": "https://github.com/gocardless/business/commit/f1f6a6bdd97b176be039de354615f94268d25221"
+      }
+    ]
+  },
+  "merge_base_commit": {
+    "sha": "469dacb70fafd72ed9571748036642df0d0857fa",
+    "commit": {
+      "author": {
+        "name": "Harry Marr",
+        "email": "harry.marr@gmail.com",
+        "date": "2014-12-02T10:08:38Z"
+      },
+      "committer": {
+        "name": "Harry Marr",
+        "email": "harry.marr@gmail.com",
+        "date": "2014-12-02T10:08:38Z"
+      },
+      "message": "Bump version to v1.3.0",
+      "tree": {
+        "sha": "aea5241365f0717386ea392b4448acea17f7bdab",
+        "url": "https://api.github.com/repos/gocardless/business/git/trees/aea5241365f0717386ea392b4448acea17f7bdab"
+      },
+      "url": "https://api.github.com/repos/gocardless/business/git/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+    "html_url": "https://github.com/gocardless/business/commit/469dacb70fafd72ed9571748036642df0d0857fa",
+    "comments_url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa/comments",
+    "author": {
+      "login": "hmarr",
+      "id": 110275,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/hmarr",
+      "html_url": "https://github.com/hmarr",
+      "followers_url": "https://api.github.com/users/hmarr/followers",
+      "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+      "organizations_url": "https://api.github.com/users/hmarr/orgs",
+      "repos_url": "https://api.github.com/users/hmarr/repos",
+      "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/hmarr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "hmarr",
+      "id": 110275,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/hmarr",
+      "html_url": "https://github.com/hmarr",
+      "followers_url": "https://api.github.com/users/hmarr/followers",
+      "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+      "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+      "organizations_url": "https://api.github.com/users/hmarr/orgs",
+      "repos_url": "https://api.github.com/users/hmarr/repos",
+      "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/hmarr/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f1f6a6bdd97b176be039de354615f94268d25221",
+        "url": "https://api.github.com/repos/gocardless/business/commits/f1f6a6bdd97b176be039de354615f94268d25221",
+        "html_url": "https://github.com/gocardless/business/commit/f1f6a6bdd97b176be039de354615f94268d25221"
+      }
+    ]
+  },
+  "status": "ahead",
+  "ahead_by": 6,
+  "behind_by": 0,
+  "total_commits": 6,
+  "commits": [
+    {
+      "sha": "d2eb29beda934c14220146c82f830de2edd63a25",
+      "commit": {
+        "author": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T11:08:21Z"
+        },
+        "committer": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T11:21:55Z"
+        },
+        "message": "Remove SEPA calendar (replaced by TARGET)",
+        "tree": {
+          "sha": "3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/d2eb29beda934c14220146c82f830de2edd63a25",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/d2eb29beda934c14220146c82f830de2edd63a25",
+      "html_url": "https://github.com/gocardless/business/commit/d2eb29beda934c14220146c82f830de2edd63a25",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/d2eb29beda934c14220146c82f830de2edd63a25/comments",
+      "author": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "469dacb70fafd72ed9571748036642df0d0857fa",
+          "url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+          "html_url": "https://github.com/gocardless/business/commit/469dacb70fafd72ed9571748036642df0d0857fa"
+        }
+      ]
+    },
+    {
+      "sha": "a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+      "commit": {
+        "author": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T11:51:38Z"
+        },
+        "committer": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T11:51:38Z"
+        },
+        "message": "Merge pull request #8 from gocardless/rename-sepa-to-ecb\n\nRemove SEPA calendar (replaced by TARGET)",
+        "tree": {
+          "sha": "3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+      "html_url": "https://github.com/gocardless/business/commit/a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/a5970daf0b824e4c3974e57474b6cf9e39a11d0f/comments",
+      "author": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "469dacb70fafd72ed9571748036642df0d0857fa",
+          "url": "https://api.github.com/repos/gocardless/business/commits/469dacb70fafd72ed9571748036642df0d0857fa",
+          "html_url": "https://github.com/gocardless/business/commit/469dacb70fafd72ed9571748036642df0d0857fa"
+        },
+        {
+          "sha": "d2eb29beda934c14220146c82f830de2edd63a25",
+          "url": "https://api.github.com/repos/gocardless/business/commits/d2eb29beda934c14220146c82f830de2edd63a25",
+          "html_url": "https://github.com/gocardless/business/commit/d2eb29beda934c14220146c82f830de2edd63a25"
+        }
+      ]
+    },
+    {
+      "sha": "0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+      "commit": {
+        "author": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T13:41:22Z"
+        },
+        "committer": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T13:41:22Z"
+        },
+        "message": "Spacing",
+        "tree": {
+          "sha": "8379df34da8e2985b89ca93c430120bb35d5d978",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/8379df34da8e2985b89ca93c430120bb35d5d978"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+      "html_url": "https://github.com/gocardless/business/commit/0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/0bfb8c3f0d2701abf9248185beeb8adf643374f6/comments",
+      "author": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+          "url": "https://api.github.com/repos/gocardless/business/commits/a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
+          "html_url": "https://github.com/gocardless/business/commit/a5970daf0b824e4c3974e57474b6cf9e39a11d0f"
+        }
+      ]
+    },
+    {
+      "sha": "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+      "commit": {
+        "author": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T14:29:51Z"
+        },
+        "committer": {
+          "name": "Grey Baker",
+          "email": "greysteil@gmail.com",
+          "date": "2014-12-24T16:16:55Z"
+        },
+        "message": "Allow custom calendars",
+        "tree": {
+          "sha": "23d7441279d87e155f45347e7c484c56ed4c6afa",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/23d7441279d87e155f45347e7c484c56ed4c6afa"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+      "html_url": "https://github.com/gocardless/business/commit/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076/comments",
+      "author": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "greysteil",
+        "id": 1144873,
+        "avatar_url": "https://avatars0.githubusercontent.com/u/1144873?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/greysteil",
+        "html_url": "https://github.com/greysteil",
+        "followers_url": "https://api.github.com/users/greysteil/followers",
+        "following_url": "https://api.github.com/users/greysteil/following{/other_user}",
+        "gists_url": "https://api.github.com/users/greysteil/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/greysteil/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/greysteil/subscriptions",
+        "organizations_url": "https://api.github.com/users/greysteil/orgs",
+        "repos_url": "https://api.github.com/users/greysteil/repos",
+        "events_url": "https://api.github.com/users/greysteil/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/greysteil/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+          "url": "https://api.github.com/repos/gocardless/business/commits/0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+          "html_url": "https://github.com/gocardless/business/commit/0bfb8c3f0d2701abf9248185beeb8adf643374f6"
+        }
+      ]
+    },
+    {
+      "sha": "7abe4c2dc0161904c40c221a48999d12995fbea7",
+      "commit": {
+        "author": {
+          "name": "Harry Marr",
+          "email": "harry.marr@gmail.com",
+          "date": "2014-12-24T16:22:19Z"
+        },
+        "committer": {
+          "name": "Harry Marr",
+          "email": "harry.marr@gmail.com",
+          "date": "2014-12-24T16:22:19Z"
+        },
+        "message": "Merge pull request #9 from gocardless/custom-calendars\n\nAllow custom calendars",
+        "tree": {
+          "sha": "23d7441279d87e155f45347e7c484c56ed4c6afa",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/23d7441279d87e155f45347e7c484c56ed4c6afa"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/7abe4c2dc0161904c40c221a48999d12995fbea7",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/7abe4c2dc0161904c40c221a48999d12995fbea7",
+      "html_url": "https://github.com/gocardless/business/commit/7abe4c2dc0161904c40c221a48999d12995fbea7",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/7abe4c2dc0161904c40c221a48999d12995fbea7/comments",
+      "author": {
+        "login": "hmarr",
+        "id": 110275,
+        "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/hmarr",
+        "html_url": "https://github.com/hmarr",
+        "followers_url": "https://api.github.com/users/hmarr/followers",
+        "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+        "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+        "organizations_url": "https://api.github.com/users/hmarr/orgs",
+        "repos_url": "https://api.github.com/users/hmarr/repos",
+        "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/hmarr/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "hmarr",
+        "id": 110275,
+        "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/hmarr",
+        "html_url": "https://github.com/hmarr",
+        "followers_url": "https://api.github.com/users/hmarr/followers",
+        "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+        "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+        "organizations_url": "https://api.github.com/users/hmarr/orgs",
+        "repos_url": "https://api.github.com/users/hmarr/repos",
+        "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/hmarr/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+          "url": "https://api.github.com/repos/gocardless/business/commits/0bfb8c3f0d2701abf9248185beeb8adf643374f6",
+          "html_url": "https://github.com/gocardless/business/commit/0bfb8c3f0d2701abf9248185beeb8adf643374f6"
+        },
+        {
+          "sha": "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+          "url": "https://api.github.com/repos/gocardless/business/commits/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
+          "html_url": "https://github.com/gocardless/business/commit/1c72c35ff2aa9d7ce0403d7fd4aa010d94723076"
+        }
+      ]
+    },
+    {
+      "sha": "26f4887ec647493f044836363537e329d9d213aa",
+      "commit": {
+        "author": {
+          "name": "Harry Marr",
+          "email": "harry.marr@gmail.com",
+          "date": "2014-12-24T16:23:18Z"
+        },
+        "committer": {
+          "name": "Harry Marr",
+          "email": "harry.marr@gmail.com",
+          "date": "2014-12-24T16:23:18Z"
+        },
+        "message": "Bump version to v1.4.0",
+        "tree": {
+          "sha": "f35fe855ead0e27f3e3ccc32e56e8ca85661fbf7",
+          "url": "https://api.github.com/repos/gocardless/business/git/trees/f35fe855ead0e27f3e3ccc32e56e8ca85661fbf7"
+        },
+        "url": "https://api.github.com/repos/gocardless/business/git/commits/26f4887ec647493f044836363537e329d9d213aa",
+        "comment_count": 0,
+        "verification": {
+          "verified": false,
+          "reason": "unsigned",
+          "signature": null,
+          "payload": null
+        }
+      },
+      "url": "https://api.github.com/repos/gocardless/business/commits/26f4887ec647493f044836363537e329d9d213aa",
+      "html_url": "https://github.com/gocardless/business/commit/26f4887ec647493f044836363537e329d9d213aa",
+      "comments_url": "https://api.github.com/repos/gocardless/business/commits/26f4887ec647493f044836363537e329d9d213aa/comments",
+      "author": {
+        "login": "hmarr",
+        "id": 110275,
+        "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/hmarr",
+        "html_url": "https://github.com/hmarr",
+        "followers_url": "https://api.github.com/users/hmarr/followers",
+        "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+        "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+        "organizations_url": "https://api.github.com/users/hmarr/orgs",
+        "repos_url": "https://api.github.com/users/hmarr/repos",
+        "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/hmarr/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "committer": {
+        "login": "hmarr",
+        "id": 110275,
+        "avatar_url": "https://avatars3.githubusercontent.com/u/110275?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/hmarr",
+        "html_url": "https://github.com/hmarr",
+        "followers_url": "https://api.github.com/users/hmarr/followers",
+        "following_url": "https://api.github.com/users/hmarr/following{/other_user}",
+        "gists_url": "https://api.github.com/users/hmarr/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/hmarr/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/hmarr/subscriptions",
+        "organizations_url": "https://api.github.com/users/hmarr/orgs",
+        "repos_url": "https://api.github.com/users/hmarr/repos",
+        "events_url": "https://api.github.com/users/hmarr/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/hmarr/received_events",
+        "type": "User",
+        "site_admin": false
+      },
+      "parents": [
+        {
+          "sha": "7abe4c2dc0161904c40c221a48999d12995fbea7",
+          "url": "https://api.github.com/repos/gocardless/business/commits/7abe4c2dc0161904c40c221a48999d12995fbea7",
+          "html_url": "https://github.com/gocardless/business/commit/7abe4c2dc0161904c40c221a48999d12995fbea7"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "sha": "54242f4d408c90179f7ad6f849753a8b19e151d2",
+      "filename": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/CHANGELOG.md",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/CHANGELOG.md",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -1,3 +1,9 @@\n+## 1.4.0 - December 24, 2014\n+\n+- Add support for custom calendar load paths\n+- Remove the 'sepa' calendar\n+\n+\n ## 1.3.0 - December 2, 2014\n \n - Add `Calendar#previous_business_day`"
+    },
+    {
+      "sha": "f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+      "filename": "README.md",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "changes": 12,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/README.md",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/README.md",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/README.md?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -49,6 +49,17 @@ calendar.business_day?(Date.parse(\"Sunday, 8 June 2014\"))\n # => false\n ```\n \n+### Custom calendars\n+\n+To use a calendar you've written yourself, you need to add the directory it's\n+stored in as an additional calendar load path:\n+\n+```ruby\n+Business::Calendar.additional_load_paths = ['path/to/your/calendar/directory']\n+```\n+\n+You can then load the calendar as normal.\n+\n ### Business day arithmetic\n \n The `add_business_days` and `subtract_business_days` are used to perform\n@@ -86,7 +97,6 @@ calendar.business_days_between(date, date + 7)\n # => 5\n ```\n \n-\n ## But other libraries already do this\n \n Another gem, [business_time](https://github.com/bokmann/business_time), also"
+    },
+    {
+      "sha": "28a0e3d500576fab520a237d5601dfcbb8aa6e98",
+      "filename": "lib/business/calendar.rb",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 9,
+      "changes": 31,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/lib/business/calendar.rb",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/lib/business/calendar.rb",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/lib/business/calendar.rb?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -2,21 +2,34 @@\n \n module Business\n   class Calendar\n+    class << self\n+      attr_accessor :additional_load_paths\n+    end\n+\n+    def self.calendar_directories\n+      directories = @additional_load_paths || []\n+      directories + [File.join(File.dirname(__FILE__), 'data')]\n+    end\n+    private_class_method :calendar_directories\n+\n     def self.load(calendar)\n-      path = File.join(File.dirname(__FILE__), 'data', \"#{calendar}.yml\")\n-      raise \"No such calendar '#{calendar}'\" unless File.exists?(path)\n-      yaml = YAML.load_file(path)\n+      directory = calendar_directories.find do |dir|\n+        File.exists?(File.join(dir, \"#{calendar}.yml\"))\n+      end\n+      raise \"No such calendar '#{calendar}'\" unless directory\n+\n+      yaml = YAML.load_file(File.join(directory, \"#{calendar}.yml\"))\n       self.new(holidays: yaml['holidays'], working_days: yaml['working_days'])\n     end\n \n     @lock = Mutex.new\n     def self.load_cached(calendar)\n-       @lock.synchronize do\n-          @cache ||= { }\n-          unless @cache.include?(calendar)\n-            @cache[calendar] = self.load(calendar)\n-          end\n-          @cache[calendar]\n+      @lock.synchronize do\n+        @cache ||= { }\n+        unless @cache.include?(calendar)\n+          @cache[calendar] = self.load(calendar)\n+        end\n+        @cache[calendar]\n       end\n     end\n "
+    },
+    {
+      "sha": "e95613cce312273e9f061c0838b8a58db7087894",
+      "filename": "lib/business/version.rb",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/lib/business/version.rb",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/lib/business/version.rb",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/lib/business/version.rb?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -1,3 +1,3 @@\n module Business\n-  VERSION = \"1.3.0\"\n+  VERSION = \"1.4.0\"\n end"
+    },
+    {
+      "sha": "038a024a715a620d66a574d4c7f04c48d48d7730",
+      "filename": "spec/calendar_spec.rb",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 0,
+      "changes": 28,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/spec/calendar_spec.rb",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/spec/calendar_spec.rb",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/spec/calendar_spec.rb?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -21,6 +21,34 @@\n       it { is_expected.to be_a Business::Calendar }\n     end\n \n+    context \"when given a calendar from a custom directory\" do\n+      before do\n+        Business::Calendar.additional_load_paths = [\n+          File.join(File.dirname(__FILE__), 'fixtures', 'calendars')\n+        ]\n+      end\n+      after { Business::Calendar.additional_load_paths = nil }\n+      subject { Business::Calendar.load(\"ecb\") }\n+\n+      it \"loads the yaml file\" do\n+        expect(YAML).to receive(:load_file) { |path|\n+          expect(path).to match(/ecb\\.yml$/)\n+        }.and_return({})\n+        subject\n+      end\n+\n+      it { is_expected.to be_a Business::Calendar }\n+\n+      context \"that also exists as a default calendar\" do\n+        subject { Business::Calendar.load(\"bacs\") }\n+\n+        it \"uses the custom calendar\" do\n+          expect(subject.business_day?(Date.parse(\"25th December 2014\"))).\n+            to eq(true)\n+        end\n+      end\n+    end\n+\n     context \"when given an invalid calendar\" do\n       subject { Business::Calendar.load(\"invalid-calendar\") }\n       specify { expect{ subject }.to raise_error }"
+    },
+    {
+      "sha": "1c9e44ac593fe8eea56a3eba734e3756d75e4fa8",
+      "filename": "spec/fixtures/calendars/bacs.yml",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "changes": 9,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/spec/fixtures/calendars/bacs.yml",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/spec/fixtures/calendars/bacs.yml",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/spec/fixtures/calendars/bacs.yml?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "patch": "@@ -0,0 +1,9 @@\n+working_days:\n+  - monday\n+  - tuesday\n+  - wednesday\n+  - thursday\n+  - friday\n+\n+holidays:\n+  - January 1st, 2015"
+    },
+    {
+      "sha": "a31cc349b5577106915e6f48d298509dcdf902c8",
+      "filename": "spec/fixtures/calendars/ecb.yml",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": "https://github.com/gocardless/business/blob/26f4887ec647493f044836363537e329d9d213aa/spec/fixtures/calendars/ecb.yml",
+      "raw_url": "https://github.com/gocardless/business/raw/26f4887ec647493f044836363537e329d9d213aa/spec/fixtures/calendars/ecb.yml",
+      "contents_url": "https://api.github.com/repos/gocardless/business/contents/spec/fixtures/calendars/ecb.yml?ref=26f4887ec647493f044836363537e329d9d213aa",
+      "previous_filename": "lib/business/data/sepa.yml"
+    }
+  ]
+}

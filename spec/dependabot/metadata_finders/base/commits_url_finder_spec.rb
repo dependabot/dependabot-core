@@ -49,7 +49,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
     )
   end
 
-  context "#commits_url" do
+  describe "#commits_url" do
     subject { builder.commits_url }
 
     context "with a github repo and old/new tags" do
@@ -373,6 +373,227 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsUrlFinder do
           is_expected.to eq("https://bitbucket.org/org/business/commits")
         end
       end
+    end
+
+    context "without a recognised source" do
+      let(:source) { nil }
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#commits" do
+    subject { builder.commits }
+
+    context "with old and new tags" do
+      let(:dependency_previous_version) { "1.3.0" }
+
+      context "with a github repo" do
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_tags.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/compare/"\
+            "v1.3.0...v1.4.0"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_compare_commits.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "returns an array of commits" do
+          is_expected.to match_array(
+            [
+              {
+                message:  "Remove SEPA calendar (replaced by TARGET)",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "d2eb29beda934c14220146c82f830de2edd63a25"
+              },
+              {
+                message:  "Merge pull request #8 from gocardless/"\
+                          "rename-sepa-to-ecb\n\nRemove SEPA calendar "\
+                          "(replaced by TARGET)",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "a5970daf0b824e4c3974e57474b6cf9e39a11d0f"
+              },
+              {
+                message:  "Spacing",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "0bfb8c3f0d2701abf9248185beeb8adf643374f6"
+              },
+              {
+                message:  "Allow custom calendars",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076"
+              },
+              {
+                message:  "Merge pull request #9 from gocardless/"\
+                          "custom-calendars\n\nAllow custom calendars",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "7abe4c2dc0161904c40c221a48999d12995fbea7"
+              },
+              {
+                message:  "Bump version to v1.4.0",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "26f4887ec647493f044836363537e329d9d213aa"
+              }
+            ]
+          )
+        end
+      end
+
+      context "with a bitbucket repo" do
+        let(:bitbucket_tags_url) do
+          "https://api.bitbucket.org/2.0/repositories/org/business/refs/tags"\
+          "?pagelen=100"
+        end
+        let(:bitbucket_compare_url) do
+          "https://api.bitbucket.org/2.0/repositories/org/business/commits/"\
+          "?exclude=v1.3.0&include=v1.4.0"
+        end
+
+        let(:bitbucket_tags) { fixture("bitbucket", "business_tags.json") }
+        let(:bitbucket_compare) do
+          fixture("bitbucket", "business_compare_commits.json")
+        end
+
+        let(:source) do
+          Dependabot::MetadataFinders::Base::Source.new(
+            host: "bitbucket",
+            repo: "org/#{dependency_name}"
+          )
+        end
+
+        before do
+          stub_request(:get, bitbucket_tags_url).
+            to_return(status: 200,
+                      body: bitbucket_tags,
+                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, bitbucket_compare_url).
+            to_return(status: 200,
+                      body: bitbucket_compare,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "returns an array of commits" do
+          is_expected.to match_array(
+            [
+              {
+                message:  "Added signature for changeset f275e318641f",
+                html_url: "https://bitbucket.org/ged/ruby-pg/commits/"\
+                          "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
+              },
+              {
+                message:  "Eliminate use of deprecated PGError constant from "\
+                          "specs",
+                html_url: "https://bitbucket.org/ged/ruby-pg/commits/"\
+                          "f275e318641f185b8a15a2220e7c189b1769f84c"
+              }
+            ]
+          )
+        end
+      end
+
+      context "with a gitlab repo" do
+        let(:gitlab_tags_url) do
+          "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+        end
+        let(:gitlab_compare_url) do
+          "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/"\
+          "compare?from=v1.3.0&to=v1.4.0"
+        end
+
+        let(:gitlab_tags) { fixture("gitlab", "business_tags.json") }
+        let(:gitlab_compare) do
+          fixture("gitlab", "business_compare_commits.json")
+        end
+        let(:source) do
+          Dependabot::MetadataFinders::Base::Source.new(
+            host: "gitlab",
+            repo: "org/#{dependency_name}"
+          )
+        end
+        before do
+          stub_request(:get, gitlab_tags_url).
+            to_return(status: 200,
+                      body: gitlab_tags,
+                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, gitlab_compare_url).
+            to_return(status: 200,
+                      body: gitlab_compare,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "returns an array of commits" do
+          is_expected.to match_array(
+            [
+              {
+                message:  "Add find command\n",
+                html_url: "https://gitlab.com/org/business/commit/"\
+                          "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
+              },
+              {
+                message:  "...\n",
+                html_url: "https://gitlab.com/org/business/commit/"\
+                          "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
+              },
+              {
+                message:  "MP version\n",
+                html_url: "https://gitlab.com/org/business/commit/"\
+                          "4e5081f867631f10d8a29dc6853a052f52241fab"
+              },
+              {
+                message:  "BUG: added 'force_consistent' keyword argument "\
+                          "with default True\n\nThe bug fix is necessayry to "\
+                          "pass the test turbomole_h3o2m.py.\n",
+                html_url: "https://gitlab.com/org/business/commit/"\
+                          "e718899ddcdc666311d08497401199e126428163"
+              }
+            ]
+          )
+        end
+      end
+    end
+
+    context "with only a new tag" do
+      before do
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "business_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to eq([]) }
+    end
+
+    context "with no tags found" do
+      before do
+        stub_request(
+          :get,
+          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: "[]",
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to eq([]) }
     end
 
     context "without a recognised source" do
