@@ -27,6 +27,21 @@ module Dependabot
           changelog&.html_url
         end
 
+        def changelog_text
+          return unless changelog
+
+          @changelog_text ||=
+            if source.host == "github"
+              github_client.get(changelog.download_url)
+            else
+              Excon.get(
+                changelog.download_url,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              ).body
+            end
+        end
+
         def upgrade_guide_url
           upgrade_guide&.html_url
         end
@@ -76,8 +91,6 @@ module Dependabot
           when "gitlab" then fetch_gitlab_file_list
           else raise "Unexpected repo host '#{source.host}'"
           end
-        rescue Octokit::NotFound, Gitlab::Error::NotFound
-          []
         end
 
         def fetch_github_file_list
@@ -94,6 +107,8 @@ module Dependabot
           end
 
           files
+        rescue Octokit::NotFound
+          []
         end
 
         def fetch_bitbucket_file_list
@@ -111,7 +126,8 @@ module Dependabot
               name: file.fetch("path").split("/").last,
               type: file.fetch("type") == "commit_file" ? "file" : file["type"],
               size: file.fetch("size", 0),
-              html_url: "#{source.url}/src/master/#{file['path']}"
+              html_url: "#{source.url}/src/master/#{file['path']}",
+              download_url: "#{source.url}/raw/master/#{file['path']}"
             )
           end
         end
@@ -122,9 +138,12 @@ module Dependabot
               name: file.name,
               type: file.type == "blob" ? "file" : file.type,
               size: 0, # GitLab doesn't return file size
-              html_url: "#{source.url}/blob/master/#{file.path}"
+              html_url: "#{source.url}/blob/master/#{file.path}",
+              download_url: "#{source.url}/raw/master/#{file.path}"
             )
           end
+        rescue Gitlab::Error::NotFound
+          []
         end
 
         def previous_ref

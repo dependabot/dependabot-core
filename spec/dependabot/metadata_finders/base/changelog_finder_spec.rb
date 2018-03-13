@@ -284,6 +284,135 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     end
   end
 
+  describe "#changelog_text" do
+    subject { finder.changelog_text }
+
+    context "with a github repo" do
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/business/contents/"
+      end
+      let(:github_raw_changelog_url) do
+        "https://raw.githubusercontent.com/gocardless/business/master/"\
+        "CHANGELOG.md"
+      end
+      let(:github_contents_response) do
+        fixture("github", "business_files.json")
+      end
+
+      before do
+        stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: github_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_raw_changelog_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+      end
+
+      context "with a changelog" do
+        let(:github_contents_response) do
+          fixture("github", "business_files.json")
+        end
+
+        it "gets the right content" do
+          expect(subject).to eq(fixture("raw", "changelog.md"))
+        end
+
+        it "caches the call to GitHub" do
+          finder.changelog_text
+          finder.changelog_text
+          expect(WebMock).to have_requested(:get, github_url).once
+          expect(WebMock).to have_requested(:get, github_raw_changelog_url).once
+        end
+      end
+
+      context "without a changelog" do
+        let(:github_contents_response) do
+          fixture("github", "business_files_no_changelog.json")
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
+      end
+      let(:gitlab_raw_changelog_url) do
+        "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
+      end
+
+      let(:gitlab_contents_response) do
+        fixture("gitlab", "business_files.json")
+      end
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "gitlab",
+          repo: "org/#{dependency_name}"
+        )
+      end
+
+      before do
+        stub_request(:get, gitlab_url).
+          to_return(status: 200,
+                    body: gitlab_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_raw_changelog_url).
+          to_return(status: 200,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+      end
+
+      it "gets the right content" do
+        expect(subject).to eq(fixture("raw", "changelog.md"))
+      end
+    end
+
+    context "with a bitbucket source" do
+      let(:bitbucket_url) do
+        "https://api.bitbucket.org/2.0/repositories/org/business/src"\
+        "?pagelen=100"
+      end
+      let(:bitbucket_raw_changelog_url) do
+        "https://bitbucket.org/org/business/raw/master/CHANGELOG.md"
+      end
+
+      let(:bitbucket_contents_response) do
+        fixture("bitbucket", "business_files.json")
+      end
+      let(:source) do
+        Dependabot::MetadataFinders::Base::Source.new(
+          host: "bitbucket",
+          repo: "org/#{dependency_name}"
+        )
+      end
+
+      before do
+        stub_request(:get, bitbucket_url).
+          to_return(status: 200,
+                    body: bitbucket_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_raw_changelog_url).
+          to_return(status: 200,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+      end
+
+      it "gets the right content" do
+        expect(subject).to eq(fixture("raw", "changelog.md"))
+      end
+    end
+
+    context "without a source" do
+      let(:source) { nil }
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#upgrade_guide_url" do
     subject { finder.upgrade_guide_url }
 
