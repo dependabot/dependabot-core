@@ -169,12 +169,15 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
-        if release_url(dep) || changelog_url(dep) || upgrade_url(dep) ||
-           commits(dep).none?
+        if changelog_url(dep) || upgrade_url(dep)
           return metadata_links_for_dep(dep)
         end
 
-        commits_cascade(dep)
+        msg = ""
+        msg += release_cascade(dep) if release_url(dep)
+        msg += commits_cascade(dep) if commits_url(dep)
+        msg += "\n<br />\n" unless msg == ""
+        msg
       end
 
       def commits_cascade(dep)
@@ -194,11 +197,28 @@ module Dependabot
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
 
-        msg + "</details>\n<br />"
+        msg + "</details>"
+      end
+
+      def release_cascade(dep)
+        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
+
+        msg +=
+          if release_text(dep)
+            release_text(dep).split("\n").map { |line| "> #{line}\n" }.join
+          else
+            "- [See all GitHub releases](#{release_url(dep)})\n"
+          end
+
+        msg + "</details>"
       end
 
       def release_url(dependency)
         metadata_finder(dependency).release_url
+      end
+
+      def release_text(dependency)
+        metadata_finder(dependency).release_text
       end
 
       def changelog_url(dependency)
@@ -213,16 +233,16 @@ module Dependabot
         metadata_finder(dependency).commits_url
       end
 
+      def commits(dependency)
+        metadata_finder(dependency).commits
+      end
+
       def source_url(dependency)
         metadata_finder(dependency).source_url
       end
 
       def homepage_url(dependency)
         metadata_finder(dependency).homepage_url
-      end
-
-      def commits(dependency)
-        metadata_finder(dependency).commits
       end
 
       def metadata_finder(dependency)

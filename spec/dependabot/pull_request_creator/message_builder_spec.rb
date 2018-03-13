@@ -414,6 +414,90 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "with release notes and commits (but no changelog)" do
+        before do
+          business_repo_url = "https://api.github.com/repos/gocardless/business"
+          stub_request(:get, "#{business_repo_url}/contents/").
+            to_return(
+              status: 200,
+              body: fixture("github", "business_files_no_changelog.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/compare/"\
+            "v1.4.0...v1.5.0"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_compare_commits.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "has the right text" do
+          expect(pr_message).
+            to start_with(
+              "Bumps [business](https://github.com/gocardless/business) from "\
+              "1.4.0 to 1.5.0.\n"\
+              "<details>\n"\
+              "<summary>Release notes</summary>\n"\
+              "\n"\
+              "- [See all GitHub releases]"\
+              "(https://github.com/gocardless/business/releases?"\
+              "after=v1.6.0)\n"\
+              "</details>\n"\
+              "\n"\
+              "<details>\n"\
+              "<summary>Commits</summary>\n"
+            )
+        end
+
+        context "and release notes text that can be pulled in" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.6.0",
+              previous_version: "1.5.0",
+              package_manager: "bundler",
+              requirements: [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.5.0",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.4.0",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          end
+
+          it "has the right text" do
+            puts pr_message
+            expect(pr_message).
+              to start_with(
+                "Bumps [business](https://github.com/gocardless/business) "\
+                "from 1.5.0 to 1.6.0.\n"\
+                "<details>\n"\
+                "<summary>Release notes</summary>\n"\
+                "\n"\
+                "> #### v1.6.0\n"\
+                "> No release notes provided.\n"\
+                "</details>\n"\
+                "<details>\n"\
+                "<summary>Commits</summary>\n"
+              )
+          end
+        end
+      end
+
       context "updating multiple dependencies" do
         let(:dependencies) { [dependency, dependency2] }
         let(:dependency2) do
