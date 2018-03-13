@@ -1,3 +1,7 @@
+## v0.50.27, 13 March 2018
+
+- Java: Better POM property substitution in MetadataFinder
+
 ## v0.50.26, 13 March 2018
 
 - Escape @mentions in PR body
