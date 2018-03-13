@@ -24,6 +24,16 @@ module Dependabot
         end
 
         def changelog_url
+          changelog&.html_url
+        end
+
+        def upgrade_guide_url
+          upgrade_guide&.html_url
+        end
+
+        private
+
+        def changelog
           return unless source
 
           # Changelog won't be relevant for a git commit bump
@@ -36,13 +46,13 @@ module Dependabot
 
           CHANGELOG_NAMES.each do |name|
             file = files.select { |f| f.name =~ /#{name}/i }.max_by(&:size)
-            return file.html_url if file
+            return file if file
           end
 
           nil
         end
 
-        def upgrade_guide_url
+        def upgrade_guide
           return unless source
 
           # Upgrade guide usually won't be relevant for bumping anything other
@@ -52,10 +62,8 @@ module Dependabot
           dependency_file_list.
             select { |f| f.type == "file" }.
             select { |f| f.name.casecmp("upgrade.md").zero? }.
-            max_by(&:size)&.html_url
+            max_by(&:size)
         end
-
-        private
 
         def dependency_file_list
           @dependency_file_list ||= fetch_dependency_file_list
