@@ -285,7 +285,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   end
 
   describe "#changelog_text" do
-    subject { finder.changelog_text }
+    subject(:changelog_text) { finder.changelog_text }
+    let(:dependency_version) { "1.4.0" }
+    let(:dependency_previous_version) { "1.0.0" }
+
+    let(:expected_pruned_changelog) do
+      "## 1.4.0 - December 24, 2014\n\n"\
+      "- Add support for custom calendar load paths\n"\
+      "- Remove the 'sepa' calendar\n\n\n"\
+      "## 1.3.0 - December 2, 2014\n\n"\
+      "- Add `Calendar#previous_business_day`\n\n\n"\
+      "## 1.2.0 - November 15, 2014\n\n"\
+      "- Add TARGET calendar\n\n\n"\
+      "## 1.1.0 - September 30, 2014\n\n"\
+      "- Add 2015 holiday definitions"
+    end
 
     context "with a github repo" do
       let(:github_url) do
@@ -317,15 +331,40 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           fixture("github", "business_files.json")
         end
 
-        it "gets the right content" do
-          expect(subject).to eq(fixture("raw", "changelog.md"))
-        end
+        it { is_expected.to eq(expected_pruned_changelog) }
 
         it "caches the call to GitHub" do
           finder.changelog_text
           finder.changelog_text
           expect(WebMock).to have_requested(:get, github_url).once
           expect(WebMock).to have_requested(:get, github_raw_changelog_url).once
+        end
+
+        context "when the dependency has no previous version" do
+          let(:dependency_previous_version) { nil }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("## 1.4.0 - December 24, 2014")
+            expect(changelog_text).to end_with("- Initial public release")
+          end
+        end
+
+        context "when the changelog doesn't include the previous version" do
+          let(:dependency_previous_version) { "0.0.1" }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("## 1.4.0 - December 24, 2014")
+            expect(changelog_text).to end_with("- Initial public release")
+          end
+        end
+
+        context "when the changelog doesn't include the new version" do
+          let(:dependency_version) { "2.0.0" }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("## 1.11.1 - December 20")
+            expect(changelog_text).to end_with("- Add 2015 holiday definitions")
+          end
         end
       end
 
@@ -367,9 +406,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
-      it "gets the right content" do
-        expect(subject).to eq(fixture("raw", "changelog.md"))
-      end
+      it { is_expected.to eq(expected_pruned_changelog) }
     end
 
     context "with a bitbucket source" do
@@ -402,9 +439,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
-      it "gets the right content" do
-        expect(subject).to eq(fixture("raw", "changelog.md"))
-      end
+      it { is_expected.to eq(expected_pruned_changelog) }
     end
 
     context "without a source" do
@@ -468,6 +503,48 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         it { is_expected.to be_nil }
+      end
+    end
+  end
+
+  describe "#upgrade_guide_text" do
+    subject(:upgrade_guide_text) { finder.upgrade_guide_text }
+    let(:dependency_version) { "1.4.0" }
+    let(:dependency_previous_version) { "0.9.0" }
+
+    context "with a github repo" do
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/business/contents/"
+      end
+      let(:github_raw_upgrade_guide_url) do
+        "https://raw.githubusercontent.com/gocardless/business/master/"\
+        "UPGRADE.md"
+      end
+      let(:github_contents_response) do
+        fixture("github", "business_files_with_upgrade_guide.json")
+      end
+
+      before do
+        stub_request(:get, github_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: github_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_raw_upgrade_guide_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: fixture("raw", "upgrade.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+      end
+
+      it { is_expected.to eq(fixture("raw", "upgrade.md").sub(/\n*\z/, "")) }
+
+      it "caches the call to GitHub" do
+        finder.upgrade_guide_text
+        finder.upgrade_guide_text
+        expect(WebMock).to have_requested(:get, github_url).once
+        expect(WebMock).
+          to have_requested(:get, github_raw_upgrade_guide_url).once
       end
     end
   end

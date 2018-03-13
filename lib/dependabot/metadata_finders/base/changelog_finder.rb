@@ -28,22 +28,48 @@ module Dependabot
         end
 
         def changelog_text
-          return unless changelog
+          return unless full_changelog_text
 
-          @changelog_text ||=
-            if source.host == "github"
-              github_client.get(changelog.download_url)
-            else
-              Excon.get(
-                changelog.download_url,
-                idempotent: true,
-                middlewares: SharedHelpers.excon_middleware
-              ).body
-            end
+          changelog_lines = full_changelog_text.split("\n")
+
+          new_version_declaration_line =
+            changelog_line_for_declaration(dependency.version)
+
+          old_version_declaration_line =
+            changelog_line_for_declaration(dependency.previous_version)
+
+          if old_version_declaration_line
+            changelog_lines =
+              changelog_lines.
+              slice(Range.new(0, old_version_declaration_line - 1))
+          end
+
+          if new_version_declaration_line
+            changelog_lines =
+              changelog_lines.
+              slice(Range.new(new_version_declaration_line, -1))
+          end
+
+          changelog_lines.join("\n").sub(/\n*\z/, "")
         end
 
         def upgrade_guide_url
           upgrade_guide&.html_url
+        end
+
+        def upgrade_guide_text
+          return unless upgrade_guide
+
+          @upgrade_guide_text ||=
+            if source.host == "github"
+              github_client.get(upgrade_guide.download_url)
+            else
+              Excon.get(
+                upgrade_guide.download_url,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              ).body
+            end.sub(/\n*\z/, "")
         end
 
         private
@@ -65,6 +91,35 @@ module Dependabot
           end
 
           nil
+        end
+
+        def full_changelog_text
+          return unless changelog
+
+          @full_changelog_text ||=
+            if source.host == "github"
+              github_client.get(changelog.download_url)
+            else
+              Excon.get(
+                changelog.download_url,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              ).body
+            end
+        end
+
+        def changelog_line_for_declaration(version)
+          raise "No changelog text" unless full_changelog_text
+          return nil unless version
+
+          changelog_lines = full_changelog_text.split("\n")
+
+          changelog_lines.find_index.with_index do |line, index|
+            next false unless line.include?(version)
+            next true if line.start_with?("#")
+            next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
+            false
+          end
         end
 
         def upgrade_guide
