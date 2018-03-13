@@ -489,7 +489,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<summary>Release notes</summary>\n"\
                 "\n"\
                 "> #### v1.6.0\n"\
-                "> No release notes provided.\n"\
+                "> Mad props to [**greysteil**](https://github.com/greysteil) "\
+                "for this\n"\
                 "</details>\n"\
                 "<details>\n"\
                 "<summary>Commits</summary>\n"

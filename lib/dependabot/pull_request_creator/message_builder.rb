@@ -3,6 +3,7 @@
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
@@ -187,7 +188,7 @@ module Dependabot
           title = commit[:message].split("\n").first
           title = title.slice(0..76) + "..." if title.length > 80
           sha = commit[:sha][0, 7]
-          msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
+          msg += "- [`#{sha}`](#{commit[:html_url]}) #{delink_mention(title)}\n"
         end
 
         msg +=
@@ -206,7 +207,10 @@ module Dependabot
 
         msg +=
           if release_text(dep)
-            release_text(dep).split("\n").map { |line| "> #{line}\n" }.join
+            text =
+              release_text(dep).split("\n").
+              map { |line| "> #{line}\n" }.join
+            delink_mention(text)
           else
             "- [See all GitHub releases](#{release_url(dep)})\n"
           end
@@ -294,6 +298,13 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
+      def delink_mention(text)
+        text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
+          "[**#{mention.tr('@', '')}**]"\
+          "(https://github.com/#{mention.tr('@', '')})"
+        end
+      end
+
       def ref_changed?(dependency)
         previous_ref(dependency) && new_ref(dependency) &&
           previous_ref(dependency) != new_ref(dependency)
@@ -341,3 +352,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
