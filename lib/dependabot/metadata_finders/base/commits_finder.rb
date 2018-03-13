@@ -166,6 +166,7 @@ module Dependabot
           commits.map do |commit|
             {
               message: commit.commit.message,
+              sha: commit.sha,
               html_url: commit.html_url
             }
           end
@@ -187,6 +188,7 @@ module Dependabot
             map do |commit|
               {
                 message: commit.dig("summary", "raw"),
+                sha: commit["hash"],
                 html_url: commit.dig("links", "html", "href")
               }
             end
@@ -199,6 +201,7 @@ module Dependabot
             map do |commit|
               {
                 message: commit["message"],
+                sha: commit["id"],
                 html_url: "#{source.url}/commit/#{commit['id']}"
               }
             end

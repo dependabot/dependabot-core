@@ -176,7 +176,7 @@ module Dependabot
         msg = ""
         msg += release_cascade(dep) if release_url(dep)
         msg += commits_cascade(dep) if commits_url(dep)
-        msg += "\n<br />\n" unless msg == ""
+        msg += "\n<br />" unless msg == ""
         msg
       end
 
@@ -186,7 +186,8 @@ module Dependabot
         commits(dep).first(10).each do |commit|
           title = commit[:message].split("\n").first
           title = title.slice(0..76) + "..." if title.length > 80
-          msg += "- [`#{title}`](#{commit[:html_url]})\n"
+          sha = commit[:sha][0, 7]
+          msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
         end
 
         msg +=

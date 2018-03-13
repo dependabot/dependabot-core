@@ -415,6 +415,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             [
               {
                 message:  "Remove SEPA calendar (replaced by TARGET)",
+                sha:      "d2eb29beda934c14220146c82f830de2edd63a25",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "d2eb29beda934c14220146c82f830de2edd63a25"
               },
@@ -422,27 +423,32 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                 message:  "Merge pull request #8 from gocardless/"\
                           "rename-sepa-to-ecb\n\nRemove SEPA calendar "\
                           "(replaced by TARGET)",
+                sha:      "a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "a5970daf0b824e4c3974e57474b6cf9e39a11d0f"
               },
               {
                 message:  "Spacing",
+                sha:      "0bfb8c3f0d2701abf9248185beeb8adf643374f6",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "0bfb8c3f0d2701abf9248185beeb8adf643374f6"
               },
               {
                 message:  "Allow custom calendars",
+                sha:      "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076"
               },
               {
                 message:  "Merge pull request #9 from gocardless/"\
                           "custom-calendars\n\nAllow custom calendars",
+                sha:      "7abe4c2dc0161904c40c221a48999d12995fbea7",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "7abe4c2dc0161904c40c221a48999d12995fbea7"
               },
               {
                 message:  "Bump version to v1.4.0",
+                sha:      "26f4887ec647493f044836363537e329d9d213aa",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "26f4887ec647493f044836363537e329d9d213aa"
               }
@@ -489,12 +495,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             [
               {
                 message:  "Added signature for changeset f275e318641f",
+                sha:      "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
                 html_url: "https://bitbucket.org/ged/ruby-pg/commits/"\
                           "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
               },
               {
                 message:  "Eliminate use of deprecated PGError constant from "\
                           "specs",
+                sha:      "f275e318641f185b8a15a2220e7c189b1769f84c",
                 html_url: "https://bitbucket.org/ged/ruby-pg/commits/"\
                           "f275e318641f185b8a15a2220e7c189b1769f84c"
               }
@@ -538,16 +546,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             [
               {
                 message:  "Add find command\n",
+                sha:      "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
                 html_url: "https://gitlab.com/org/business/commit/"\
                           "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
               },
               {
                 message:  "...\n",
+                sha:      "4ac81646582f254b3e86653b8fcd5eda6d8bb45d",
                 html_url: "https://gitlab.com/org/business/commit/"\
                           "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
               },
               {
                 message:  "MP version\n",
+                sha:      "4e5081f867631f10d8a29dc6853a052f52241fab",
                 html_url: "https://gitlab.com/org/business/commit/"\
                           "4e5081f867631f10d8a29dc6853a052f52241fab"
               },
@@ -555,6 +566,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                 message:  "BUG: added 'force_consistent' keyword argument "\
                           "with default True\n\nThe bug fix is necessayry to "\
                           "pass the test turbomole_h3o2m.py.\n",
+                sha:      "e718899ddcdc666311d08497401199e126428163",
                 html_url: "https://gitlab.com/org/business/commit/"\
                           "e718899ddcdc666311d08497401199e126428163"
               }
