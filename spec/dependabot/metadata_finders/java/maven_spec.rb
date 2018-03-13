@@ -63,6 +63,16 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     context "when the github link includes a property" do
       let(:maven_response) { fixture("java", "poms", "property_url_pom.xml") }
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
+
+      context "that is nested" do
+        let(:maven_response) do
+          fixture("java", "poms", "nested_property_url_pom.xml")
+        end
+
+        it do
+          is_expected.to eq("https://github.com/apache/maven-checkstyle-plugin")
+        end
+      end
     end
 
     context "when there is a github link in the maven response" do
