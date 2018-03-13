@@ -63,7 +63,13 @@ module Dependabot
 
         def wants_prerelease?
           return false unless dependency.version
-          Maven::Version.new(dependency.version).prerelease?
+          return false unless version_class.correct?(dependency.version)
+          version_class.new(dependency.version).prerelease?
+        end
+
+        def numeric_version_can_update?(_)
+          return false unless version_class.correct?(dependency.version)
+          super
         end
 
         def property_updater

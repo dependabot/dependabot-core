@@ -68,7 +68,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when the user doesn't want a pre-release" do
       let(:dependency_version) { "18.0" }
+      it { is_expected.to eq(described_class::Version.new("23.0")) }
+    end
 
+    context "when the current version isn't normal" do
+      let(:dependency_version) { "RELEASE802" }
       it { is_expected.to eq(described_class::Version.new("23.0")) }
     end
 
@@ -327,6 +331,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           ]
         )
       end
+    end
+  end
+
+  describe "#numeric_version_can_update?" do
+    subject { checker.can_update?(requirements_to_unlock: :all) }
+
+    context "when the current version isn't normal" do
+      let(:dependency_version) { "RELEASE802" }
+      it { is_expected.to eq(false) }
     end
   end
 end
