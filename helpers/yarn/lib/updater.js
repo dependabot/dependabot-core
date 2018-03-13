@@ -199,7 +199,7 @@ async function updateDependencyFile(
   cleanLockfile(lockfile2, [dep], packagePatterns, reporter);
   const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
   await add2.init();
-  const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"));
+  const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"), depName);
 
   // Do a normal install to ensure the lockfile doesn't change when we do
   fs.writeFileSync(path.join(directory, "yarn.lock"), dedupedYarnLock);
