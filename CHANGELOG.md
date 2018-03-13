@@ -1,3 +1,7 @@
+## v0.50.29, 13 March 2018
+
+- Java: Fix Java argument in UpdateChecker
+
 ## v0.50.28, 13 March 2018
 
 - Java: Ignore versions that can't be matched
