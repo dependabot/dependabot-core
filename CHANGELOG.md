@@ -1,3 +1,7 @@
+## v0.50.26, 13 March 2018
+
+- Escape @mentions in PR body
+
 ## v0.50.25, 13 March 2018
 
 - JS: Only de-dop the dependency we're updating
