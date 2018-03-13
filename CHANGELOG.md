@@ -1,3 +1,7 @@
+## v0.50.28, 13 March 2018
+
+- Java: Ignore versions that can't be matched
+
 ## v0.50.27, 13 March 2018
 
 - Java: Better POM property substitution in MetadataFinder
