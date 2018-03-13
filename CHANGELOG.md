@@ -1,3 +1,8 @@
+## v0.50.24, 13 March 2018
+
+- Better commits view for pull requests
+- Add embedded release notes to PRs
+
 ## v0.50.23, 12 March 2018
 
 - Never return nil from CommitsFinder#commits
