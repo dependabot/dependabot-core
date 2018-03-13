@@ -1,3 +1,8 @@
+## v0.50.25, 13 March 2018
+
+- JS: Only de-dop the dependency we're updating
+- Ruby: Update commit SHAs should come from commit, not tag
+
 ## v0.50.24, 13 March 2018
 
 - Better commits view for pull requests
