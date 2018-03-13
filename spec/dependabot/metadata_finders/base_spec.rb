@@ -193,8 +193,30 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
   end
 
-  describe "#update_guide_url" do
-    subject { finder.update_guide_url }
+  describe "#changelog_text" do
+    subject { finder.changelog_text }
+    let(:dummy_changelog_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
+    end
+
+    it "delegates to ChangelogFinder (and caches the instance)" do
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
+        to receive(:new).
+        with(
+          credentials: credentials,
+          source: source,
+          dependency: dependency
+        ).once.and_return(dummy_changelog_finder)
+      expect(dummy_changelog_finder).
+        to receive(:changelog_text).twice.
+        and_return("Such changelog")
+      expect(finder.changelog_text).to eq("Such changelog")
+      expect(finder.changelog_text).to eq("Such changelog")
+    end
+  end
+
+  describe "#upgrade_guide_url" do
+    subject { finder.upgrade_guide_url }
     let(:dummy_changelog_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
     end
@@ -212,6 +234,28 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         and_return("https://example.com/CHANGELOG.md")
       expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
       expect(finder.upgrade_guide_url).to eq("https://example.com/CHANGELOG.md")
+    end
+  end
+
+  describe "#upgrade_guide_text" do
+    subject { finder.upgrade_guide_text }
+    let(:dummy_changelog_finder) do
+      instance_double(Dependabot::MetadataFinders::Base::ChangelogFinder)
+    end
+
+    it "delegates to ReleaseFinder (and caches the instance)" do
+      expect(Dependabot::MetadataFinders::Base::ChangelogFinder).
+        to receive(:new).
+        with(
+          credentials: credentials,
+          source: source,
+          dependency: dependency
+        ).once.and_return(dummy_changelog_finder)
+      expect(dummy_changelog_finder).
+        to receive(:upgrade_guide_text).twice.
+        and_return("Some upgrade guide notes")
+      expect(finder.upgrade_guide_text).to eq("Some upgrade guide notes")
+      expect(finder.upgrade_guide_text).to eq("Some upgrade guide notes")
     end
   end
 
