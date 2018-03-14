@@ -1,3 +1,11 @@
+## v0.50.33, 14 March 2018
+
+- More robust PR message builder
+- Truncate long changelogs
+- Add fullstop to changelog source line
+- Better release sorting
+- More robust changelog sorting
+
 ## v0.50.32, 14 March 2018
 
 - Better changelog line detection
