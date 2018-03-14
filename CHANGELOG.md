@@ -1,3 +1,7 @@
+## v0.50.30, 14 March 2018
+
+- Pull changelogs into PR descriptions
+
 ## v0.50.29, 13 March 2018
 
 - Java: Fix Java argument in UpdateChecker
