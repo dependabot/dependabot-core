@@ -170,12 +170,11 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
-        if changelog_url(dep) || upgrade_url(dep)
-          return metadata_links_for_dep(dep)
-        end
+        return metadata_links_for_dep(dep) if upgrade_url(dep)
 
         msg = ""
         msg += release_cascade(dep) if release_url(dep)
+        msg += changelog_cascade(dep) if changelog_url(dep)
         msg += commits_cascade(dep) if commits_url(dep)
         msg += "\n<br />" unless msg == ""
         msg
@@ -198,6 +197,16 @@ module Dependabot
           else
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
+
+        msg + "</details>"
+      end
+
+      def changelog_cascade(dep)
+        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
+
+        msg += "> Sourced from [this file](#{changelog_url(dep)})\n>\n"
+        msg += changelog_text(dep).split("\n").map { |line| "> #{line}\n" }.join
+        msg = delink_mention(msg)
 
         msg + "</details>"
       end
@@ -228,6 +237,10 @@ module Dependabot
 
       def changelog_url(dependency)
         metadata_finder(dependency).changelog_url
+      end
+
+      def changelog_text(dependency)
+        metadata_finder(dependency).changelog_text
       end
 
       def upgrade_url(dependency)

@@ -32,22 +32,22 @@ module Dependabot
 
           changelog_lines = full_changelog_text.split("\n")
 
-          new_version_declaration_line =
-            changelog_line_for_declaration(dependency.version)
+          new_version = git_source? ? new_ref : dependency.version
+          new_version_line_number =
+            changelog_line_for_version(new_version)
 
-          old_version_declaration_line =
-            changelog_line_for_declaration(dependency.previous_version)
+          old_version = git_source? ? previous_ref : dependency.previous_version
+          old_version_line_number =
+            changelog_line_for_version(old_version)
 
-          if old_version_declaration_line
+          if old_version_line_number
             changelog_lines =
-              changelog_lines.
-              slice(Range.new(0, old_version_declaration_line - 1))
+              changelog_lines.slice(Range.new(0, old_version_line_number - 1))
           end
 
-          if new_version_declaration_line
+          if new_version_line_number
             changelog_lines =
-              changelog_lines.
-              slice(Range.new(new_version_declaration_line, -1))
+              changelog_lines.slice(Range.new(new_version_line_number, -1))
           end
 
           changelog_lines.join("\n").sub(/\n*\z/, "")
@@ -78,7 +78,7 @@ module Dependabot
           return unless source
 
           # Changelog won't be relevant for a git commit bump
-          return if git_source?(dependency.requirements) && !ref_changed?
+          return if git_source? && !ref_changed?
 
           files =
             dependency_file_list.
@@ -108,9 +108,10 @@ module Dependabot
             end
         end
 
-        def changelog_line_for_declaration(version)
+        def changelog_line_for_version(version)
           raise "No changelog text" unless full_changelog_text
           return nil unless version
+          version = version.gsub(/^v/, "")
 
           changelog_lines = full_changelog_text.split("\n")
 
@@ -218,11 +219,12 @@ module Dependabot
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
-        def git_source?(requirements)
+        def git_source?
           # Special case Composer, which uses git as a source but handles tags
           # internally
           return false if dependency.package_manager == "composer"
 
+          requirements = dependency.requirements
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
