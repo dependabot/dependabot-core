@@ -170,11 +170,10 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
-        return metadata_links_for_dep(dep) if upgrade_url(dep)
-
         msg = ""
         msg += release_cascade(dep)
         msg += changelog_cascade(dep)
+        msg += upgrade_guide_cascade(dep)
         msg += commits_cascade(dep)
         msg += "\n<br />" unless msg == ""
         msg
@@ -213,6 +212,23 @@ module Dependabot
               changelog_lines << "> ... (truncated)"
             end
             changelog_lines.join
+          end
+        msg += "</details>"
+        delink_mention(msg)
+      end
+
+      def upgrade_guide_cascade(dep)
+        return "" unless upgrade_url(dep) && upgrade_text(dep)
+
+        msg = "\n<details>\n<summary>Upgrade guide</summary>\n\n"
+        msg += "*Sourced from #{dep.name}'s "\
+               "[upgrade guide](#{upgrade_url(dep)}).*\n\n"
+        msg +=
+          begin
+            upgrade_lines = upgrade_text(dep).split("\n").first(50)
+            upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
+            upgrade_lines << "> ... (truncated)" if upgrade_lines.count == 50
+            upgrade_lines.join
           end
         msg += "</details>"
         delink_mention(msg)
@@ -259,6 +275,10 @@ module Dependabot
 
       def upgrade_url(dependency)
         metadata_finder(dependency).upgrade_guide_url
+      end
+
+      def upgrade_text(dependency)
+        metadata_finder(dependency).upgrade_guide_text
       end
 
       def commits_url(dependency)

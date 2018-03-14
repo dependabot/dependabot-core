@@ -578,6 +578,106 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "and an upgrade guide that can be pulled in" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "0.9.0",
+            package_manager: "bundler",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 0.9.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/compare/"\
+            "v0.9.0...v1.5.0"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_compare_commits.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(:get, "#{business_repo_url}/contents/").
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "business_files_with_upgrade_guide.json"),
+              headers: json_header
+            )
+          stub_request(:get, "https://raw.githubusercontent.com/gocardless/"\
+                         "business/master/UPGRADE.md").
+            to_return(
+              status: 200,
+              body: fixture("raw", "upgrade.md"),
+              headers: { "Content-Type" => "text/plain; charset=utf-8" }
+            )
+        end
+
+        it "has the right text" do
+          expect(pr_message).
+            to start_with(
+              "Bumps [business](https://github.com/gocardless/business) "\
+              "from 0.9.0 to 1.5.0.\n"\
+              "<details>\n"\
+              "<summary>Changelog</summary>\n\n"\
+              "*Sourced from business's [changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
+              "> ## 1.5.0 - June 2, 2015\n"\
+              "> \n"\
+              "> - Add 2016 holiday definitions\n"\
+              "> \n"\
+              "> ## 1.4.0 - December 24, 2014\n"\
+              "> \n"\
+              "> - Add support for custom calendar load paths\n"\
+              "> - Remove the 'sepa' calendar\n"\
+              "> \n"\
+              "> \n"\
+              "> ## 1.3.0 - December 2, 2014\n"\
+              "> \n"\
+              "> - Add `Calendar#previous_business_day`\n"\
+              "> \n"\
+              "> \n"\
+              "> ## 1.2.0 - November 15, 2014\n"\
+              "> \n"\
+              "> - Add TARGET calendar\n"\
+              "> \n"\
+              "> \n"\
+              "> ## 1.1.0 - September 30, 2014\n"\
+              "> \n"\
+              "> - Add 2015 holiday definitions\n"\
+              "> \n"\
+              "> \n"\
+              "> ## 1.0.0 - June 11, 2014\n"\
+              "> \n"\
+              "> - Initial public release\n"\
+              "</details>\n"\
+              "<details>\n"\
+              "<summary>Upgrade guide</summary>\n\n"\
+              "*Sourced from business's [upgrade guide](https://github.com/"\
+              "gocardless/business/blob/master/UPGRADE.md).*\n\n"\
+              "> UPGRADE GUIDE FROM 2.x to 3.0\n"
+            )
+        end
+      end
+
       context "updating multiple dependencies" do
         let(:dependencies) { [dependency, dependency2] }
         let(:dependency2) do
