@@ -295,8 +295,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "from 1.4.0 to 1.5.0.\n"\
             "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
-            "*Sourced from [this file](https://github.com/gocardless/"\
-            "business/blob/master/CHANGELOG.md).*\n\n"\
+            "*Sourced from business's [changelog](https://github.com/"\
+            "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
             "> ## 1.5.0 - June 2, 2015\n"\
             "> \n"\
             "> - Add 2016 holiday definitions\n"\
@@ -384,8 +384,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "from v1.0.0 to v1.1.0.\n"\
                 "<details>\n"\
                 "<summary>Changelog</summary>\n\n"\
-                "*Sourced from [this file](https://github.com/gocardless/"\
-                "business/blob/master/CHANGELOG.md).*\n\n"\
+                "*Sourced from business's [changelog](https://github.com/"\
+                "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
                 "> ## 1.1.0 - September 30, 2014\n"\
                 "> \n"\
                 "> - Add 2015 holiday definitions\n"\
@@ -451,8 +451,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "tagged commit.\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from [this file](https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md).*\n\n"\
+              "*Sourced from business's [changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
               "> - Add 2016 holiday definitions\n"\
@@ -645,8 +645,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from [this file](https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md).*\n\n"\
+              "*Sourced from business's [changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
               "> - Add 2016 holiday definitions\n"\
@@ -656,8 +656,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from [this file](https://github.com/gocardless/"\
-              "statesman/blob/master/CHANGELOG.md).*\n\n"\
+              "*Sourced from statesman's [changelog](https://github.com/"\
+              "gocardless/statesman/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.7.0 - January 18, 2017\n"\
               "> \n"\
               "> - Add 2018-2027 BACS holiday defintions\n"\
@@ -690,8 +690,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "to permit the latest version.\n"\
             "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
-            "*Sourced from [this file](https://github.com/gocardless/"\
-            "business/blob/master/CHANGELOG.md).*\n\n"\
+            "*Sourced from business's [changelog](https://github.com/"\
+            "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
             "> ## 1.5.0 - June 2, 2015\n"\
             "> \n"\
             "> - Add 2016 holiday definitions\n"\
@@ -769,8 +769,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from [this file](https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md).*\n\n"\
+              "*Sourced from business's [changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
               "> - Add 2016 holiday definitions\n"\
@@ -780,8 +780,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from [this file](https://github.com/gocardless/"\
-              "statesman/blob/master/CHANGELOG.md).*\n\n"\
+              "*Sourced from statesman's [changelog](https://github.com/"\
+              "gocardless/statesman/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.7.0 - January 18, 2017\n"\
               "> \n"\
               "> - Add 2018-2027 BACS holiday defintions\n"\
