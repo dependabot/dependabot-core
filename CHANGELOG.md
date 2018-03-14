@@ -1,3 +1,10 @@
+## v0.50.37, 14 March 2018
+
+- Better changelog intro text
+- Better display of SHA version is PRs
+- Use 7 digits for SHA branch names, not 6
+- Fix broken method name
+
 ## v0.50.36, 14 March 2018
 
 - Fall back to tag name in ReleaseFinder#releases_text
