@@ -204,7 +204,7 @@ module Dependabot
       def changelog_cascade(dep)
         msg = "\n<details>\n<summary>Changelog</summary>\n\n"
 
-        msg += "> Sourced from [this file](#{changelog_url(dep)})\n>\n"
+        msg += "*Sourced from [this file](#{changelog_url(dep)})*\n\n"
         msg += changelog_text(dep).split("\n").map { |line| "> #{line}\n" }.join
         msg = delink_mention(msg)
 
