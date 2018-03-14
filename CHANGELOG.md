@@ -1,3 +1,8 @@
+## v0.50.35, 14 March 2018
+
+- Better release note parsing for PRs
+- Use Pipenv 11.7.1
+
 ## v0.50.34, 14 March 2018
 
 - Fix release sorting
