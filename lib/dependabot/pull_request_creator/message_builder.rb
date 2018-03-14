@@ -173,14 +173,16 @@ module Dependabot
         return metadata_links_for_dep(dep) if upgrade_url(dep)
 
         msg = ""
-        msg += release_cascade(dep) if release_url(dep)
-        msg += changelog_cascade(dep) if changelog_url(dep)
-        msg += commits_cascade(dep) if commits_url(dep)
+        msg += release_cascade(dep)
+        msg += changelog_cascade(dep)
+        msg += commits_cascade(dep)
         msg += "\n<br />" unless msg == ""
         msg
       end
 
       def commits_cascade(dep)
+        return "" unless commits_url(dep) && commits(dep)
+
         msg = "\n<details>\n<summary>Commits</summary>\n\n"
 
         commits(dep).first(10).each do |commit|
@@ -202,18 +204,19 @@ module Dependabot
       end
 
       def changelog_cascade(dep)
-        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
+        return "" unless changelog_url(dep) && changelog_text(dep)
 
+        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
         msg += "*Sourced from [this file](#{changelog_url(dep)})*\n\n"
         msg += changelog_text(dep).split("\n").map { |line| "> #{line}\n" }.join
         msg = delink_mention(msg)
-
         msg + "</details>"
       end
 
       def release_cascade(dep)
-        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
+        return "" unless release_text(dep) || release_url(dep)
 
+        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
         msg +=
           if release_text(dep)
             text =
@@ -223,7 +226,6 @@ module Dependabot
           else
             "- [See all GitHub releases](#{release_url(dep)})\n"
           end
-
         msg + "</details>"
       end
 

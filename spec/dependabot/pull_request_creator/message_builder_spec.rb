@@ -250,8 +250,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_message" do
     subject(:pr_message) { builder.pr_message }
 
+    let(:business_repo_url) do
+      "https://api.github.com/repos/gocardless/business"
+    end
+
     before do
-      business_repo_url = "https://api.github.com/repos/gocardless/business"
       stub_request(:get, watched_repo_url + "/commits").
         to_return(status: 200, body: "[]", headers: json_header)
 
@@ -497,7 +500,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with release notes and commits (but no changelog)" do
         before do
-          business_repo_url = "https://api.github.com/repos/gocardless/business"
           stub_request(:get, "#{business_repo_url}/contents/").
             to_return(
               status: 200,
