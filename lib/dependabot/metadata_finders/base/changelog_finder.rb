@@ -32,19 +32,26 @@ module Dependabot
 
           changelog_lines = full_changelog_text.split("\n")
 
-          # If we don't have line numbers for both the version we're updating to
-          # and the one we're updating from, just return the full changelog.
-          # (Changelogs can be in ascending or descending order, so doing
-          # partial truncations is dangerous.)
-          unless old_version_changelog_line && new_version_changelog_line
-            return changelog_lines.join("\n").sub(/\n*\z/, "")
-          end
+          slice_range =
+            if old_version_changelog_line && new_version_changelog_line
+              # If we have line numbers for both versions we can check if the
+              # changelog is in ascending or descending order
+              range = [
+                old_version_changelog_line,
+                new_version_changelog_line
+              ].sort
+              Range.new(range.first, range.last - 1)
+            elsif old_version_changelog_line
+              # Assumes changelog is in descending order
+              Range.new(0, old_version_changelog_line - 1)
+            elsif new_version_changelog_line
+              # Assumes changelog is in descending order
+              Range.new(new_version_changelog_line, -1)
+            else
+              Range.new(0, -1)
+            end
 
-          range = [old_version_changelog_line, new_version_changelog_line].sort
-
-          changelog_lines.
-            slice(Range.new(range.first, range.last - 1)).
-            join("\n").sub(/\n*\z/, "")
+          changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
 
         def upgrade_guide_url

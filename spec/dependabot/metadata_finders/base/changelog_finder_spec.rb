@@ -344,8 +344,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { nil }
 
           it "gets the right content" do
-            expect(changelog_text).
-              to eq(fixture("raw", "changelog.md").sub(/\n*\z/, ""))
+            expect(changelog_text).to start_with("## 1.4.0 - December 24, 2014")
+            expect(changelog_text).to end_with("- Initial public release")
           end
         end
 
@@ -353,8 +353,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { "0.0.1" }
 
           it "gets the right content" do
-            expect(changelog_text).
-              to eq(fixture("raw", "changelog.md").sub(/\n*\z/, ""))
+            expect(changelog_text).to start_with("## 1.4.0 - December 24, 2014")
+            expect(changelog_text).to end_with("- Initial public release")
           end
         end
 
@@ -362,8 +362,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_version) { "2.0.0" }
 
           it "gets the right content" do
-            expect(changelog_text).
-              to eq(fixture("raw", "changelog.md").sub(/\n*\z/, ""))
+            expect(changelog_text).to start_with("## 1.11.1 - December 20")
+            expect(changelog_text).to end_with("- Add 2015 holiday definitions")
           end
         end
       end
