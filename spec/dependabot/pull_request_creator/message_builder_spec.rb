@@ -567,7 +567,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "\n"\
                 "*Sourced from business's [releases](https://github.com/"\
                 "gocardless/business/releases).*\n\n"\
-                "> #### v1.6.0\n"\
+                "> ## v1.6.0\n"\
                 "> Mad props to [**greysteil**](https://github.com/greysteil) "\
                 "for this\n"\
                 "</details>\n"\

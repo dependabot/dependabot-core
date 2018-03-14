@@ -32,7 +32,7 @@ module Dependabot
           return if updated_release.body.nil? || updated_release.body == ""
 
           relevant_releases.map do |r|
-            title = "#### #{r.name.to_s != '' ? r.name : r.tag_name}\n"
+            title = "## #{r.name.to_s != '' ? r.name : r.tag_name}\n"
             body =
               if r.body.gsub(/\n*\z/m, "") == ""
                 "No release notes provided."
