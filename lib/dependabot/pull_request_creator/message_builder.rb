@@ -9,6 +9,8 @@ module Dependabot
     class MessageBuilder
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
+      ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s)]|$)/
+
       attr_reader :repo_name, :dependencies, :files, :github_client,
                   :pr_message_footer, :author_details
 
@@ -196,6 +198,7 @@ module Dependabot
           end
         msg += "</details>"
         msg = delink_mentions(msg)
+        msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
 
@@ -216,6 +219,7 @@ module Dependabot
           end
         msg += "</details>"
         msg = delink_mentions(msg)
+        msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
 
@@ -234,6 +238,7 @@ module Dependabot
           end
         msg += "</details>"
         msg = delink_mentions(msg)
+        msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
 
@@ -246,8 +251,7 @@ module Dependabot
           title = commit[:message].split("\n").first
           title = title.slice(0..76) + "..." if title.length > 80
           sha = commit[:sha][0, 7]
-          msg += "- [`#{sha}`](#{commit[:html_url]}) "\
-                 "#{delink_mentions(title)}\n"
+          msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
         end
 
         msg +=
@@ -259,6 +263,8 @@ module Dependabot
           end
 
         msg += "</details>"
+        msg = delink_mentions(msg)
+        msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
 
@@ -354,6 +360,13 @@ module Dependabot
         text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
           "[**#{mention.tr('@', '')}**]"\
           "(https://github.com/#{mention.tr('@', '')})"
+        end
+      end
+
+      def link_issues(text:, dependency:)
+        text.gsub(ISSUE_TAG_REGEX) do |mention|
+          number = mention.tr("#", "").gsub("GH-", "")
+          "[#{mention}](#{source_url(dependency)}/issues/#{number})"
         end
       end
 
