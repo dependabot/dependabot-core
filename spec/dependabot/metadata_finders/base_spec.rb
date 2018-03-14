@@ -259,8 +259,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     end
   end
 
-  describe "#release_url" do
-    subject { finder.release_url }
+  describe "#releases_url" do
+    subject { finder.releases_url }
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
@@ -274,15 +274,15 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           dependency: dependency
         ).once.and_return(dummy_release_finder)
       expect(dummy_release_finder).
-        to receive(:release_url).twice.
+        to receive(:releases_url).twice.
         and_return("https://example.com/RELEASES.md")
-      expect(finder.release_url).to eq("https://example.com/RELEASES.md")
-      expect(finder.release_url).to eq("https://example.com/RELEASES.md")
+      expect(finder.releases_url).to eq("https://example.com/RELEASES.md")
+      expect(finder.releases_url).to eq("https://example.com/RELEASES.md")
     end
   end
 
-  describe "#release_text" do
-    subject { finder.release_text }
+  describe "#releases_text" do
+    subject { finder.releases_text }
     let(:dummy_release_finder) do
       instance_double(Dependabot::MetadataFinders::Base::ReleaseFinder)
     end
@@ -296,10 +296,10 @@ RSpec.describe Dependabot::MetadataFinders::Base do
           dependency: dependency
         ).once.and_return(dummy_release_finder)
       expect(dummy_release_finder).
-        to receive(:release_text).twice.
+        to receive(:releases_text).twice.
         and_return("Some release notes")
-      expect(finder.release_text).to eq("Some release notes")
-      expect(finder.release_text).to eq("Some release notes")
+      expect(finder.releases_text).to eq("Some release notes")
+      expect(finder.releases_text).to eq("Some release notes")
     end
   end
 end

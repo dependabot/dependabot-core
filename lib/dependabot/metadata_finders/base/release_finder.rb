@@ -17,23 +17,21 @@ module Dependabot
           @credentials = credentials
         end
 
-        def release_url
-          return nil unless updated_release
-          return releases_index_url unless dependency.previous_version
-          return releases_index_url unless previous_release
-
-          if intermediate_releases.none?
-            updated_release.html_url
-          else
-            releases_index_url
+        def releases_url
+          return unless source
+          case source.host
+          when "github" then "#{source.url}/releases"
+          when "gitlab" then "#{source.url}/tags"
+          when "bitbucket" then nil
+          else raise "Unexpected repo host '#{source.host}'"
           end
         end
 
-        def release_text
+        def releases_text
           return unless updated_release
-          return unless dependency.previous_version && previous_release
+          return if updated_release.body.nil? || updated_release.body == ""
 
-          [updated_release, *intermediate_releases].map do |r|
+          relevant_releases.map do |r|
             title = "#### #{r.name || r.tag_name}\n"
             body =
               if r.body.gsub(/\n*\z/m, "") == ""
@@ -50,6 +48,14 @@ module Dependabot
 
         def all_releases
           @all_releases ||= fetch_dependency_releases
+        end
+
+        def relevant_releases
+          if dependency.previous_version && previous_release
+            [updated_release, *intermediate_releases]
+          else
+            [updated_release]
+          end
         end
 
         def updated_release
@@ -91,13 +97,6 @@ module Dependabot
             # updating to (e.g., if two major versions are being maintained)
             Gem::Version.new(cleaned_tag) > Gem::Version.new(dependency.version)
           end
-        end
-
-        def releases_index_url
-          build_releases_index_url(
-            releases: all_releases,
-            release: updated_release
-          )
         end
 
         def version_regex(version)
@@ -149,23 +148,6 @@ module Dependabot
           end
         rescue Gitlab::Error::NotFound
           []
-        end
-
-        def build_releases_index_url(releases:, release:)
-          case source.host
-          when "github"
-            if releases.first == release
-              "#{source.url}/releases"
-            else
-              subsequent_release = releases[releases.index(release) - 1]
-              "#{source.url}/releases?after=#{subsequent_release.tag_name}"
-            end
-          when "gitlab"
-            "#{source.url}/tags"
-          when "bitbucket"
-            raise "Bitbucket doesn't support releases"
-          else raise "Unexpected repo host '#{source.host}'"
-          end
         end
 
         def gitlab_client

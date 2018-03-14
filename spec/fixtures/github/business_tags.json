@@ -1,4 +1,14 @@
 [
+
+  {
+    "name": "v1.6.0",
+    "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/v1.6.0",
+    "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/v1.6.0",
+    "commit": {
+      "sha": "66d39bf3042fac0b770bca2bfb200cfdffcd0175",
+      "url": "https://api.github.com/repos/gocardless/business/commits/66d39bf3042fac0b770bca2bfb200cfdffcd0175"
+    }
+  },
   {
     "name": "v1.4.0",
     "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/v1.4.0",

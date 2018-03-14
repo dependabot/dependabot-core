@@ -278,7 +278,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   body: fixture("github", "business_tags.json"),
                   headers: { "Content-Type" => "application/json" }
                 )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.5.0").
+              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
                 to_return(
                   status: 200,
                   body: fixture("github", "ref.json"),
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
             it "fetches the latest SHA-1 hash of the latest version commit" do
               expect(checker.latest_version).
-                to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+                to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
             end
 
             context "but there are no tags" do
@@ -714,7 +714,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   body: fixture("github", "business_tags.json"),
                   headers: { "Content-Type" => "application/json" }
                 )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.5.0").
+              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
                 to_return(
                   status: 200,
                   body: fixture("github", "ref.json"),
@@ -724,7 +724,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
             it "fetches the latest SHA-1 hash of the latest version commit" do
               expect(checker.latest_resolvable_version).
-                to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+                to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
             end
 
             context "but there are no tags" do
@@ -1379,7 +1379,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                   body: fixture("github", "business_tags.json"),
                   headers: { "Content-Type" => "application/json" }
                 )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.5.0").
+              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
                 to_return(
                   status: 200,
                   body: fixture("github", "ref.json"),
@@ -1398,7 +1398,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                     type: "git",
                     url: "https://github.com/gocardless/business",
                     branch: "master",
-                    ref: "v1.5.0"
+                    ref: "v1.6.0"
                   }
                 ).and_call_original
 

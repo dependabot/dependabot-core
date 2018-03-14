@@ -294,11 +294,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "Bumps [business](https://github.com/gocardless/business) "\
             "from 1.4.0 to 1.5.0.\n"\
             "<details>\n"\
-            "<summary>Release notes</summary>\n\n"\
-            "- [See all GitHub releases](https://github.com/gocardless/"\
-            "business/releases?after=v1.6.0)\n"\
-            "</details>\n"\
-            "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
             "*Sourced from [this file](https://github.com/gocardless/"\
             "business/blob/master/CHANGELOG.md).*\n\n"\
@@ -455,11 +450,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "from 2468a0 to 1.5.0. This release includes the previously "\
               "tagged commit.\n"\
               "<details>\n"\
-              "<summary>Release notes</summary>\n\n"\
-              "- [See all GitHub releases](https://github.com/gocardless/"\
-              "business/releases?after=v1.6.0)\n"\
-              "</details>\n"\
-              "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
               "*Sourced from [this file](https://github.com/gocardless/"\
               "business/blob/master/CHANGELOG.md).*\n\n"\
@@ -498,7 +488,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "with release notes and commits (but no changelog)" do
+      context "with commits (but no changelog)" do
         before do
           stub_request(:get, "#{business_repo_url}/contents/").
             to_return(
@@ -523,13 +513,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to eq(
               "Bumps [business](https://github.com/gocardless/business) from "\
               "1.4.0 to 1.5.0.\n"\
-              "<details>\n"\
-              "<summary>Release notes</summary>\n"\
-              "\n"\
-              "- [See all GitHub releases]"\
-              "(https://github.com/gocardless/business/releases?"\
-              "after=v1.6.0)\n"\
-              "</details>\n"\
               "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
               "<br />"
             )
@@ -545,7 +528,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               requirements: [
                 {
                   file: "Gemfile",
-                  requirement: "~> 1.5.0",
+                  requirement: "~> 1.6.0",
                   groups: [],
                   source: nil
                 }
@@ -553,7 +536,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: [
                 {
                   file: "Gemfile",
-                  requirement: "~> 1.4.0",
+                  requirement: "~> 1.5.0",
                   groups: [],
                   source: nil
                 }
@@ -561,20 +544,35 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
 
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/business/compare/"\
+              "v1.5.0...v1.6.0"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "business_compare_commits.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
           it "has the right text" do
             expect(pr_message).
-              to start_with(
+              to eq(
                 "Bumps [business](https://github.com/gocardless/business) "\
                 "from 1.5.0 to 1.6.0.\n"\
                 "<details>\n"\
                 "<summary>Release notes</summary>\n"\
                 "\n"\
+                "*Sourced from business's [releases](https://github.com/"\
+                "gocardless/business/releases).*\n\n"\
                 "> #### v1.6.0\n"\
                 "> Mad props to [**greysteil**](https://github.com/greysteil) "\
                 "for this\n"\
                 "</details>\n"\
-                "<details>\n"\
-                "<summary>Commits</summary>\n"
+                "#{commits_details(base: 'v1.5.0', head: 'v1.6.0')}"\
+                "<br />"
               )
           end
         end
@@ -646,11 +644,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "These dependencies needed to be updated together.\n\n"\
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
-              "<summary>Release notes</summary>\n\n"\
-              "- [See all GitHub releases](https://github.com/gocardless/"\
-              "business/releases?after=v1.6.0)\n"\
-              "</details>\n"\
-              "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
               "*Sourced from [this file](https://github.com/gocardless/"\
               "business/blob/master/CHANGELOG.md).*\n\n"\
@@ -661,11 +654,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
               "<br />\n\n"\
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
-              "<details>\n"\
-              "<summary>Release notes</summary>\n\n"\
-              "> #### v1.7.0\n"\
-              "> No release notes provided.\n"\
-              "</details>\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
               "*Sourced from [this file](https://github.com/gocardless/"\
@@ -700,11 +688,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "Updates the requirements on "\
             "[business](https://github.com/gocardless/business) "\
             "to permit the latest version.\n"\
-            "<details>\n"\
-            "<summary>Release notes</summary>\n\n"\
-            "- [See all GitHub releases](https://github.com/gocardless/"\
-            "business/releases?after=v1.6.0)\n"\
-            "</details>\n"\
             "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
             "*Sourced from [this file](https://github.com/gocardless/"\
@@ -785,11 +768,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "to permit the latest version.\n\n"\
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
-              "<summary>Release notes</summary>\n\n"\
-              "- [See all GitHub releases](https://github.com/gocardless/"\
-              "business/releases?after=v1.6.0)\n"\
-              "</details>\n"\
-              "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
               "*Sourced from [this file](https://github.com/gocardless/"\
               "business/blob/master/CHANGELOG.md).*\n\n"\
@@ -800,11 +778,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
               "<br />\n\n"\
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
-              "<details>\n"\
-              "<summary>Release notes</summary>\n\n"\
-              "> #### v1.7.0\n"\
-              "> No release notes provided.\n"\
-              "</details>\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
               "*Sourced from [this file](https://github.com/gocardless/"\

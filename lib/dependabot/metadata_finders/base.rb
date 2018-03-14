@@ -96,22 +96,22 @@ module Dependabot
         @changelog_finder.upgrade_guide_text
       end
 
-      def release_url
+      def releases_url
         @release_finder ||= ReleaseFinder.new(
           dependency: dependency,
           source: source,
           credentials: credentials
         )
-        @release_finder.release_url
+        @release_finder.releases_url
       end
 
-      def release_text
+      def releases_text
         @release_finder ||= ReleaseFinder.new(
           dependency: dependency,
           source: source,
           credentials: credentials
         )
-        @release_finder.release_text
+        @release_finder.releases_text
       end
 
       def commits_url

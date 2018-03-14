@@ -485,16 +485,16 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with version tags" do
         let(:tags_response) { fixture("github", "business_tags.json") }
         before do
-          stub_request(:get, repo_url + "/git/refs/tags/v1.5.0").
+          stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
             to_return(
               status: 200,
               body: fixture("github", "ref.json"),
               headers: { "Content-Type" => "application/json" }
             )
         end
-        its([:tag]) { is_expected.to eq("v1.5.0") }
+        its([:tag]) { is_expected.to eq("v1.6.0") }
         its([:commit_sha]) do
-          is_expected.to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+          is_expected.to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
         end
         its([:tag_sha]) do
           is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")

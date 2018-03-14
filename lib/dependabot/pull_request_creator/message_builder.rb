@@ -180,6 +180,43 @@ module Dependabot
         msg
       end
 
+      def release_cascade(dep)
+        return "" unless releases_text(dep) && releases_url(dep)
+
+        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
+        msg += "*Sourced from #{dep.name}'s [releases](#{releases_url(dep)}).*"\
+               "\n\n"
+        msg +=
+          begin
+            release_note_lines = releases_text(dep).split("\n").first(50)
+            release_note_lines = release_note_lines.map { |line| "> #{line}\n" }
+            if release_note_lines.count == 50
+              release_note_lines << "> ... (truncated)"
+            end
+            release_note_lines.join
+          end
+        msg = delink_mention(msg)
+        msg + "</details>"
+      end
+
+      def changelog_cascade(dep)
+        return "" unless changelog_url(dep) && changelog_text(dep)
+
+        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
+        msg += "*Sourced from [this file](#{changelog_url(dep)}).*\n\n"
+        msg +=
+          begin
+            changelog_lines = changelog_text(dep).split("\n").first(50)
+            changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
+            if changelog_lines.count == 50
+              changelog_lines << "> ... (truncated)"
+            end
+            changelog_lines.join
+          end
+        msg = delink_mention(msg)
+        msg + "</details>"
+      end
+
       def commits_cascade(dep)
         return "" unless commits_url(dep) && commits(dep)
 
@@ -203,46 +240,12 @@ module Dependabot
         msg + "</details>"
       end
 
-      def changelog_cascade(dep)
-        return "" unless changelog_url(dep) && changelog_text(dep)
-
-        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
-        msg += "*Sourced from [this file](#{changelog_url(dep)}).*\n\n"
-        msg +=
-          begin
-            changelog_lines = changelog_text(dep).split("\n").first(50)
-            changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
-            if changelog_lines.count == 50
-              changelog_lines << "> ... (truncated)"
-            end
-            changelog_lines.join
-          end
-        msg = delink_mention(msg)
-        msg + "</details>"
+      def releases_url(dependency)
+        metadata_finder(dependency).releases_url
       end
 
-      def release_cascade(dep)
-        return "" unless release_text(dep) || release_url(dep)
-
-        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
-        msg +=
-          if release_text(dep)
-            text =
-              release_text(dep).split("\n").
-              map { |line| "> #{line}\n" }.join
-            delink_mention(text)
-          else
-            "- [See all GitHub releases](#{release_url(dep)})\n"
-          end
-        msg + "</details>"
-      end
-
-      def release_url(dependency)
-        metadata_finder(dependency).release_url
-      end
-
-      def release_text(dependency)
-        metadata_finder(dependency).release_text
+      def releases_text(dependency)
+        metadata_finder(dependency).releases_text
       end
 
       def changelog_url(dependency)
