@@ -1,3 +1,8 @@
+## v0.50.31, 14 March 2018
+
+- Fix encoding bug during PR creation
+- Better referencing of changelog source
+
 ## v0.50.30, 14 March 2018
 
 - Pull changelogs into PR descriptions
