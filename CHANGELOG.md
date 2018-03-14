@@ -1,3 +1,7 @@
+## v0.50.34, 14 March 2018
+
+- Fix release sorting
+
 ## v0.50.33, 14 March 2018
 
 - More robust PR message builder
