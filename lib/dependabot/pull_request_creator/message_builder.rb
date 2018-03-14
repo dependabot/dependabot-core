@@ -195,7 +195,8 @@ module Dependabot
             release_note_lines.join
           end
         msg += "</details>"
-        delink_mention(msg)
+        msg = delink_mentions(msg)
+        sanitize_template_tags(msg)
       end
 
       def changelog_cascade(dep)
@@ -214,7 +215,8 @@ module Dependabot
             changelog_lines.join
           end
         msg += "</details>"
-        delink_mention(msg)
+        msg = delink_mentions(msg)
+        sanitize_template_tags(msg)
       end
 
       def upgrade_guide_cascade(dep)
@@ -231,7 +233,8 @@ module Dependabot
             upgrade_lines.join
           end
         msg += "</details>"
-        delink_mention(msg)
+        msg = delink_mentions(msg)
+        sanitize_template_tags(msg)
       end
 
       def commits_cascade(dep)
@@ -243,7 +246,8 @@ module Dependabot
           title = commit[:message].split("\n").first
           title = title.slice(0..76) + "..." if title.length > 80
           sha = commit[:sha][0, 7]
-          msg += "- [`#{sha}`](#{commit[:html_url]}) #{delink_mention(title)}\n"
+          msg += "- [`#{sha}`](#{commit[:html_url]}) "\
+                 "#{delink_mentions(title)}\n"
         end
 
         msg +=
@@ -254,7 +258,8 @@ module Dependabot
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
 
-        msg + "</details>"
+        msg += "</details>"
+        sanitize_template_tags(msg)
       end
 
       def releases_url(dependency)
@@ -345,10 +350,21 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
-      def delink_mention(text)
+      def delink_mentions(text)
         text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
           "[**#{mention.tr('@', '')}**]"\
           "(https://github.com/#{mention.tr('@', '')})"
+        end
+      end
+
+      def sanitize_template_tags(text)
+        text.gsub(/\<.*?\>/) do |tag|
+          tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
+
+          # Unclosed calls to template overflow out of the blockquote block,
+          # wrecking the rest of our PRs. Other tags don't share this problem.
+          next "\\#{tag}" if tag_contents.start_with?("template")
+          tag
         end
       end
 
