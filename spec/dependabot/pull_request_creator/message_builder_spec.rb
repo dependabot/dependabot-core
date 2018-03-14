@@ -154,7 +154,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:old_ref) { nil }
 
           it "truncates the version" do
-            expect(pr_name).to eq("Bump business from 2468a0 to cff701")
+            expect(pr_name).to eq("Bump business from `2468a02` to `cff701b`")
           end
 
           context "due to a ref change" do
@@ -363,7 +363,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
           expect(pr_message).to eq(
             "Bumps [business](https://github.com/gocardless/business) "\
-            "from 2468a0 to cff701.\n"\
+            "from `2468a02` to `cff701b`.\n"\
             "#{commits_details}"\
             "<br />"
           )
@@ -447,7 +447,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           expect(pr_message).
             to eq(
               "Bumps [business](https://github.com/gocardless/business) "\
-              "from 2468a0 to 1.5.0. This release includes the previously "\
+              "from `2468a02` to 1.5.0. This release includes the previously "\
               "tagged commit.\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
