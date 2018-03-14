@@ -1,3 +1,8 @@
+## v0.50.38, 14 March 2018
+
+- Include upgrade guide in dependency tabs
+- Sanitize template tags in changelogs
+
 ## v0.50.37, 14 March 2018
 
 - Better changelog intro text
