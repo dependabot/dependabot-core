@@ -1,3 +1,7 @@
+## v0.50.36, 14 March 2018
+
+- Fall back to tag name in ReleaseFinder#releases_text
+
 ## v0.50.35, 14 March 2018
 
 - Better release note parsing for PRs
