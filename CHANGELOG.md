@@ -1,3 +1,7 @@
+## v0.50.39, 14 March 2018
+
+- Link tags in changelogs correctly
+
 ## v0.50.38, 14 March 2018
 
 - Include upgrade guide in dependency tabs
