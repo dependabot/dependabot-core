@@ -121,6 +121,7 @@ module Dependabot
           changelog_lines.find_index.with_index do |line, index|
             next false unless line.include?(version)
             next true if line.start_with?("#")
+            next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
             next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
             false
           end
