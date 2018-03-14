@@ -1,3 +1,7 @@
+## v0.50.32, 14 March 2018
+
+- Better changelog line detection
+
 ## v0.50.31, 14 March 2018
 
 - Fix encoding bug during PR creation
