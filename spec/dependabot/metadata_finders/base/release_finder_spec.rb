@@ -135,6 +135,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
               it { is_expected.to be_nil }
             end
+
+            context "but has blank names" do
+              let(:github_response) do
+                fixture("github", "releases_no_names.json")
+              end
+
+              it "falls back to the tag name" do
+                expect(subject).
+                  to eq(
+                    "#### v1.8.0\n"\
+                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "- Add 2018-2027 Bankgirot holiday defintions"
+                  )
+              end
+            end
           end
 
           context "and is updating from several versions previous" do
