@@ -207,7 +207,7 @@ module Dependabot
         return "" unless changelog_url(dep) && changelog_text(dep)
 
         msg = "\n<details>\n<summary>Changelog</summary>\n\n"
-        msg += "*Sourced from [this file](#{changelog_url(dep)})*\n\n"
+        msg += "*Sourced from [this file](#{changelog_url(dep)}).*\n\n"
         msg +=
           begin
             changelog_lines = changelog_text(dep).split("\n").first(50)
