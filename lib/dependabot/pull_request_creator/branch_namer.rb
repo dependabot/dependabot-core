@@ -78,7 +78,7 @@ module Dependabot
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
           return new_ref(dependency) if ref_changed?(dependency)
-          dependency.version[0..5]
+          dependency.version[0..6]
         else
           dependency.version
         end

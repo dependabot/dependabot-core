@@ -235,7 +235,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       let(:old_ref) { nil }
 
       it "truncates the version" do
-        expect(new_branch_name).to eq("dependabot/bundler/business-cff701")
+        expect(new_branch_name).to eq("dependabot/bundler/business-cff701b")
       end
 
       context "due to a ref change" do
