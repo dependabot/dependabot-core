@@ -32,25 +32,19 @@ module Dependabot
 
           changelog_lines = full_changelog_text.split("\n")
 
-          new_version = git_source? ? new_ref : dependency.version
-          new_version_line_number =
-            changelog_line_for_version(new_version)
-
-          old_version = git_source? ? previous_ref : dependency.previous_version
-          old_version_line_number =
-            changelog_line_for_version(old_version)
-
-          if old_version_line_number
-            changelog_lines =
-              changelog_lines.slice(Range.new(0, old_version_line_number - 1))
+          # If we don't have line numbers for both the version we're updating to
+          # and the one we're updating from, just return the full changelog.
+          # (Changelogs can be in ascending or descending order, so doing
+          # partial truncations is dangerous.)
+          unless old_version_changelog_line && new_version_changelog_line
+            return changelog_lines.join("\n").sub(/\n*\z/, "")
           end
 
-          if new_version_line_number
-            changelog_lines =
-              changelog_lines.slice(Range.new(new_version_line_number, -1))
-          end
+          range = [old_version_changelog_line, new_version_changelog_line].sort
 
-          changelog_lines.join("\n").sub(/\n*\z/, "")
+          changelog_lines.
+            slice(Range.new(range.first, range.last - 1)).
+            join("\n").sub(/\n*\z/, "")
         end
 
         def upgrade_guide_url
@@ -109,6 +103,18 @@ module Dependabot
               ).body
             end
           @full_changelog_text.force_encoding("UTF-8").encode
+        end
+
+        def old_version_changelog_line
+          old_version = git_source? ? previous_ref : dependency.previous_version
+          return nil unless old_version
+          changelog_line_for_version(old_version)
+        end
+
+        def new_version_changelog_line
+          new_version = git_source? ? new_ref : dependency.version
+          return nil unless new_version
+          changelog_line_for_version(new_version)
         end
 
         def changelog_line_for_version(version)
