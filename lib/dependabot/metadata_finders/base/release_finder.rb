@@ -122,8 +122,8 @@ module Dependabot
 
           if clean_release_names.all? { |nm| Gem::Version.correct?(nm) }
             releases.sort_by do |r|
-              Gem::Version.correct?(r.tag_name.gsub(/^[^0-9\.]*/, ""))
-            end
+              Gem::Version.new(r.tag_name.gsub(/^[^0-9\.]*/, ""))
+            end.reverse
           else
             releases.sort_by(&:id).reverse
           end

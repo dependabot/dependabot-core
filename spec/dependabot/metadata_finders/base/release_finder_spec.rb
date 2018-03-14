@@ -327,6 +327,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   "- Add 2018-2027 Bankgirot holiday defintions\n"\
                   "\n"\
                   "#### v1.7.0\n"\
+                  "No release notes provided.\n"\
+                  "\n"\
+                  "#### v1.7.0.beta\n"\
                   "No release notes provided."
                 )
             end
