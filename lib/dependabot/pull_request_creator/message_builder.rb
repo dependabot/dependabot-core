@@ -208,7 +208,15 @@ module Dependabot
 
         msg = "\n<details>\n<summary>Changelog</summary>\n\n"
         msg += "*Sourced from [this file](#{changelog_url(dep)})*\n\n"
-        msg += changelog_text(dep).split("\n").map { |line| "> #{line}\n" }.join
+        msg +=
+          begin
+            changelog_lines = changelog_text(dep).split("\n").first(50)
+            changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
+            if changelog_lines.count == 50
+              changelog_lines << "> ... (truncated)"
+            end
+            changelog_lines.join
+          end
         msg = delink_mention(msg)
         msg + "</details>"
       end
