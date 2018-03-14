@@ -69,7 +69,9 @@ module Dependabot
                 idempotent: true,
                 middlewares: SharedHelpers.excon_middleware
               ).body
-            end.sub(/\n*\z/, "")
+            end
+
+          @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
         private
@@ -106,6 +108,7 @@ module Dependabot
                 middlewares: SharedHelpers.excon_middleware
               ).body
             end
+          @full_changelog_text.force_encoding("UTF-8").encode
         end
 
         def changelog_line_for_version(version)
