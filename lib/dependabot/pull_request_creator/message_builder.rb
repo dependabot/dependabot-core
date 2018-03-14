@@ -150,7 +150,7 @@ module Dependabot
 
       def metadata_links_for_dep(dep)
         msg = ""
-        msg += "\n- [Release notes](#{release_url(dep)})" if release_url(dep)
+        msg += "\n- [Release notes](#{releases_url(dep)})" if releases_url(dep)
         msg += "\n- [Changelog](#{changelog_url(dep)})" if changelog_url(dep)
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
@@ -195,8 +195,8 @@ module Dependabot
             end
             release_note_lines.join
           end
-        msg = delink_mention(msg)
-        msg + "</details>"
+        msg += "</details>"
+        delink_mention(msg)
       end
 
       def changelog_cascade(dep)
@@ -214,8 +214,8 @@ module Dependabot
             end
             changelog_lines.join
           end
-        msg = delink_mention(msg)
-        msg + "</details>"
+        msg += "</details>"
+        delink_mention(msg)
       end
 
       def commits_cascade(dep)
