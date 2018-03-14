@@ -116,7 +116,17 @@ module Dependabot
         end
 
         def fetch_github_releases
-          github_client.releases(source.repo).sort_by(&:id).reverse
+          releases = github_client.releases(source.repo)
+          clean_release_names =
+            releases.map { |r| r.tag_name.gsub(/^[^0-9\.]*/, "") }
+
+          if clean_release_names.all? { |nm| Gem::Version.correct?(nm) }
+            releases.sort_by do |r|
+              Gem::Version.correct?(r.tag_name.gsub(/^[^0-9\.]*/, ""))
+            end
+          else
+            releases.sort_by(&:id).reverse
+          end
         rescue Octokit::NotFound
           []
         end
