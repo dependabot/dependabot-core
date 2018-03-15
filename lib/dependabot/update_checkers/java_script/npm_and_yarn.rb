@@ -48,15 +48,16 @@ module Dependabot
         end
 
         def updated_requirements
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            updated_source: updated_source,
-            latest_version:
-              fetch_latest_version_details&.fetch(:version, nil)&.to_s,
-            latest_resolvable_version:
-              fetch_latest_version_details&.fetch(:version, nil)&.to_s,
-            library: library?
-          ).updated_requirements
+          @updated_requirements ||=
+            RequirementsUpdater.new(
+              requirements: dependency.requirements,
+              updated_source: updated_source,
+              latest_version:
+                fetch_latest_version_details&.fetch(:version, nil)&.to_s,
+              latest_resolvable_version:
+                fetch_latest_version_details&.fetch(:version, nil)&.to_s,
+              library: library?
+            ).updated_requirements
         end
 
         def version_class
