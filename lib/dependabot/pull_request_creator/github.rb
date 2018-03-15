@@ -41,6 +41,7 @@ module Dependabot
         create_label unless custom_labels || dependencies_label_exists?
 
         pull_request = create_pull_request
+        return unless pull_request
         add_label_to_pull_request(pull_request)
         pull_request
       end
@@ -190,6 +191,9 @@ module Dependabot
           pr_name,
           pr_description
         )
+      rescue Octokit::UnprocessableEntity => error
+        # Ignore races that we lose
+        raise unless error.message.include?("pull request already exists")
       end
 
       def default_branch
