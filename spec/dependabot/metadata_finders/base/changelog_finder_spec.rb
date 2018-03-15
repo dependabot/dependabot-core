@@ -312,6 +312,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_contents_response) do
         fixture("github", "business_files.json")
       end
+      let(:changelog_body) { fixture("raw", "changelog.md") }
 
       before do
         stub_request(:get, github_url).
@@ -322,7 +323,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         stub_request(:get, github_raw_changelog_url).
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
-                    body: fixture("raw", "changelog.md"),
+                    body: changelog_body,
                     headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
@@ -338,6 +339,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           finder.changelog_text
           expect(WebMock).to have_requested(:get, github_url).once
           expect(WebMock).to have_requested(:get, github_raw_changelog_url).once
+        end
+
+        context "that is in reverse order" do
+          let(:changelog_body) { fixture("raw", "reverse_changelog.md") }
+          let(:dependency_version) { "1.11.1" }
+          let(:dependency_previous_version) { "1.10.0" }
+
+          # Ideally we'd prune the 1.10.0 entry off, but it's tricky.
+          let(:expected_pruned_changelog) do
+            "## 1.10.0 - September 20, 2017\n\n"\
+            "- Add 2018-2019 Betalingsservice holiday definitions\n\n"\
+            "## 1.11.1 - December 20, 2017\n\n"\
+            "- Add 2017-2018 BECS holiday definitions"
+          end
+
+          it { is_expected.to eq(expected_pruned_changelog) }
         end
 
         context "when the dependency has no previous version" do

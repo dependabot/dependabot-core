@@ -27,6 +27,7 @@ module Dependabot
           changelog&.html_url
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def changelog_text
           return unless full_changelog_text
 
@@ -34,13 +35,14 @@ module Dependabot
 
           slice_range =
             if old_version_changelog_line && new_version_changelog_line
-              # If we have line numbers for both versions we can check if the
-              # changelog is in ascending or descending order
-              range = [
-                old_version_changelog_line,
-                new_version_changelog_line
-              ].sort
-              Range.new(range.first, range.last - 1)
+              if old_version_changelog_line < new_version_changelog_line
+                Range.new(old_version_changelog_line, -1)
+              else
+                Range.new(
+                  new_version_changelog_line,
+                  old_version_changelog_line - 1
+                )
+              end
             elsif old_version_changelog_line
               # Assumes changelog is in descending order
               Range.new(0, old_version_changelog_line - 1)
@@ -53,6 +55,7 @@ module Dependabot
 
           changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def upgrade_guide_url
           upgrade_guide&.html_url
