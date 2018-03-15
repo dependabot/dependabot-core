@@ -58,23 +58,23 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   def commits_details(base:, head:)
     "<details>\n"\
     "<summary>Commits</summary>\n\n"\
-    "- [`d2eb29b`](https://github.com/gocardless/business/commit/"\
-    "d2eb29beda934c14220146c82f830de2edd63a25) "\
-    "Remove SEPA calendar (replaced by TARGET)\n"\
-    "- [`a5970da`](https://github.com/gocardless/business/commit/"\
-    "a5970daf0b824e4c3974e57474b6cf9e39a11d0f) "\
-    "Merge pull request [#8](https://github.com/gocardless/business/issues/8) "\
-    "from gocardless/rename-sepa-to-ecb\n"\
-    "- [`0bfb8c3`](https://github.com/gocardless/business/commit/"\
-    "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing\n"\
-    "- [`1c72c35`](https://github.com/gocardless/business/commit/"\
-    "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076) Allow custom calendars\n"\
+    "- [`26f4887`](https://github.com/gocardless/business/commit/"\
+    "26f4887ec647493f044836363537e329d9d213aa) Bump version to v1.4.0\n"\
     "- [`7abe4c2`](https://github.com/gocardless/business/commit/"\
     "7abe4c2dc0161904c40c221a48999d12995fbea7) "\
     "Merge pull request [#9](https://github.com/gocardless/business/issues/9) "\
     "from gocardless/custom-calendars\n"\
-    "- [`26f4887`](https://github.com/gocardless/business/commit/"\
-    "26f4887ec647493f044836363537e329d9d213aa) Bump version to v1.4.0\n"\
+    "- [`1c72c35`](https://github.com/gocardless/business/commit/"\
+    "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076) Allow custom calendars\n"\
+    "- [`0bfb8c3`](https://github.com/gocardless/business/commit/"\
+    "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing\n"\
+    "- [`a5970da`](https://github.com/gocardless/business/commit/"\
+    "a5970daf0b824e4c3974e57474b6cf9e39a11d0f) "\
+    "Merge pull request [#8](https://github.com/gocardless/business/issues/8) "\
+    "from gocardless/rename-sepa-to-ecb\n"\
+    "- [`d2eb29b`](https://github.com/gocardless/business/commit/"\
+    "d2eb29beda934c14220146c82f830de2edd63a25) "\
+    "Remove SEPA calendar (replaced by TARGET)\n"\
     "- See full diff in [compare view](https://github.com/gocardless/business/"\
     "compare/#{base}...#{head})\n"\
     "</details>\n"
