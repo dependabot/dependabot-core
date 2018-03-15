@@ -1,3 +1,9 @@
+## v0.50.40, 14 March 2018
+
+- Reverse commits order (most recent first)
+- Better changelog importing when changelog is appended at bottom
+- Bump pipenv from 11.7.4 to 11.8.0
+
 ## v0.50.39, 14 March 2018
 
 - Link tags in changelogs correctly
