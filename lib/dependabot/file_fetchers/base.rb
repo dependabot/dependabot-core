@@ -120,13 +120,16 @@ module Dependabot
 
         case host
         when "github"
-          tmp = github_client.contents(repo, path: path, ref: commit).content
+          tmp = github_client.contents(repo, path: path, ref: commit)
+          tmp = tmp.content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         else raise "Unsupported host '#{host}'."
         end
+      rescue NoMethodError
+        raise "Array error is happening. Response was #{tmp}."
       end
 
       def github_client
