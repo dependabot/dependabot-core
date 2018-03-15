@@ -67,6 +67,11 @@ module Dependabot
           version_class.new(dependency.version).prerelease?
         end
 
+        def numeric_version_up_to_date?
+          return false unless version_class.correct?(dependency.version)
+          super
+        end
+
         def numeric_version_can_update?(requirements_to_unlock:)
           return false unless version_class.correct?(dependency.version)
           super

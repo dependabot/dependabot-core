@@ -334,7 +334,16 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     end
   end
 
-  describe "#numeric_version_can_update?" do
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+
+    context "when the current version isn't normal" do
+      let(:dependency_version) { "RELEASE802" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :all) }
 
     context "when the current version isn't normal" do
