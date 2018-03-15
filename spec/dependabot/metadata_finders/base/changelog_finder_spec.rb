@@ -383,6 +383,56 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             expect(changelog_text).to end_with("- Add 2015 holiday definitions")
           end
         end
+
+        context "for a git dependency" do
+          let(:dependency_requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: new_ref
+                }
+              }
+            ]
+          end
+          let(:dependency_previous_requirements) do
+            [
+              {
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: old_ref
+                }
+              }
+            ]
+          end
+          let(:new_ref) { "master" }
+          let(:old_ref) { "master" }
+          let(:dependency_version) { "aa12b317" }
+          let(:dependency_previous_version) { "a1a123b1" }
+
+          it { is_expected.to be_nil }
+
+          context "when the package manager is composer" do
+            let(:package_manager) { "composer" }
+
+            it { is_expected.to eq(changelog_body.sub(/\n*\z/, "")) }
+          end
+
+          context "when the ref has changed" do
+            let(:new_ref) { "v1.4.0" }
+            let(:old_ref) { "v1.0.0" }
+
+            it { is_expected.to eq(expected_pruned_changelog) }
+          end
+        end
       end
 
       context "without a changelog" do
