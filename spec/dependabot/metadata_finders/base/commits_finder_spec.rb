@@ -455,6 +455,27 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             ]
           )
         end
+
+        context "that 404s" do
+          before do
+            response = {
+              message: "No common ancestor between v4.7.0 and 5.0.8."
+            }.to_json
+
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/business/compare/"\
+              "v1.3.0...v1.4.0"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 404,
+                body: response,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it { is_expected.to eq([]) }
+        end
       end
 
       context "with a bitbucket repo" do

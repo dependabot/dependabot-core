@@ -39,12 +39,9 @@ module Dependabot
           return [] unless new_tag && previous_tag
 
           case source.host
-          when "github"
-            fetch_github_commits
-          when "bitbucket"
-            fetch_bitbucket_commits
-          when "gitlab"
-            fetch_gitlab_commits
+          when "github" then fetch_github_commits
+          when "bitbucket" then fetch_bitbucket_commits
+          when "gitlab" then fetch_gitlab_commits
           else raise "Unexpected repo host '#{source.host}'"
           end
         end
@@ -170,6 +167,9 @@ module Dependabot
               html_url: commit.html_url
             }
           end
+        rescue Octokit::NotFound => error
+          raise unless error.message.include?("No common ancestor")
+          []
         end
 
         def fetch_bitbucket_commits
