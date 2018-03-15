@@ -1,3 +1,8 @@
+## v0.50.43, 15 March 2018
+
+- Java: Handle non-numeric versions
+- Ignore lost races when creating PRs
+
 ## v0.50.42, 15 March 2018
 
 - Add logging for rare GitHub error
