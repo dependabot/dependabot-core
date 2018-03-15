@@ -1,3 +1,7 @@
+## v0.50.42, 15 March 2018
+
+- Add logging for rare GitHub error
+
 ## v0.50.41, 15 March 2018
 
 - Handle commit diffs with no common ancestor
