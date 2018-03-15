@@ -1,3 +1,7 @@
+## v0.50.41, 15 March 2018
+
+- Handle commit diffs with no common ancestor
+
 ## v0.50.40, 14 March 2018
 
 - Reverse commits order (most recent first)
