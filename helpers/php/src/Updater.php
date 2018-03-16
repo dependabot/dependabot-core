@@ -24,14 +24,14 @@ class Updater
         $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
-        if($githubToken) {
+        if ($githubToken) {
             $httpBasicCredentials['github.com'] = [
                 'username' => 'x-access-token',
                 'password' => $githubToken,
             ];
         }
 
-        foreach($registry_credentials as &$cred) {
+        foreach ($registry_credentials as &$cred) {
             $httpBasicCredentials[$cred['registry']] = [
                 'username' => $cred['username'],
                 'password' => $cred['password'],
@@ -43,7 +43,7 @@ class Updater
                 [
                     'config' => [
                         'http-basic' => $httpBasicCredentials,
-                    ]
+                    ],
                 ]
             );
             $io->loadConfiguration($config);
