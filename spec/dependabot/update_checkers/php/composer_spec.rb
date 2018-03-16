@@ -175,6 +175,67 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           )
       end
     end
+
+    context "with a private registry" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "private_registry")
+      end
+      let(:lockfile_content) { fixture("php", "lockfiles", "private_registry") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: "2.1.0",
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+      let(:gemfury_response) { fixture("php", "gemfury_response.json") }
+      let(:gemfury_url) do
+        "https://php.fury.io/dependabot-throwaway/packages.json"
+      end
+
+      before do
+        stub_request(:get, gemfury_url).
+          to_return(status: 200, body: gemfury_response)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.2.0")) }
+      it "doesn't hit the main registry (since requested not to)" do
+        checker.latest_version
+        expect(WebMock).to_not have_requested(:get, packagist_url)
+      end
+
+      context "when given credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "php.fury.io",
+              "username" => "user",
+              "password" => "pass"
+            }
+          ]
+        end
+
+        it "uses the credentials" do
+          checker.latest_version
+          expect(WebMock).
+            to have_requested(:get, gemfury_url).
+            with(basic_auth: %w(user pass))
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do

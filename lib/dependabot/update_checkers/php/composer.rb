@@ -16,18 +16,11 @@ module Dependabot
         require_relative "composer/requirement"
 
         def latest_version
-          # Fall back to latest_resolvable_version if no listing on main
-          # registry.
-          # TODO: Check against all repositories, if alternatives are specified
-          if packagist_listing&.fetch("packages", nil) == []
-            return latest_resolvable_version
-          end
-          unless packagist_listing&.dig("packages", dependency.name.downcase)
-            return latest_resolvable_version
-          end
+          # Fall back to latest_resolvable_version if no listings found
+          return latest_resolvable_version if registry_versions.empty?
 
           versions =
-            packagist_listing["packages"][dependency.name.downcase].keys.
+            registry_versions.
             select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
             map { |version| version_class.new(version.gsub(/^v/, "")) }
 
@@ -145,18 +138,49 @@ module Dependabot
           File.join(project_root, "helpers/php/bin/run.php")
         end
 
-        def packagist_listing
-          return @packagist_listing unless @packagist_listing.nil?
+        def registry_versions
+          return @registry_versions unless @registry_versions.nil?
+
+          repositories =
+            JSON.parse(composer_file.content).
+            fetch("repositories", []).
+            select { |r| r.is_a?(Hash) }
+
+          @registry_versions = []
+
+          urls = repositories.
+                 map { |h| h["url"] }.compact.
+                 map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
+
+          unless repositories.any? { |rep| rep["packagist.org"] == false }
+            urls << "https://packagist.org/p/#{dependency.name.downcase}.json"
+          end
+
+          urls.each do |url|
+            @registry_versions += fetch_registry_versions_from_url(url)
+          end
+
+          @registry_versions.uniq
+        end
+
+        def fetch_registry_versions_from_url(url)
+          cred = registry_credentials.find { |c| url.include?(c["registry"]) }
 
           response = Excon.get(
-            "https://packagist.org/p/#{dependency.name.downcase}.json",
+            url,
             idempotent: true,
+            user: cred&.fetch("username", nil),
+            password: cred&.fetch("password", nil),
             middlewares: SharedHelpers.excon_middleware
           )
 
-          return nil unless response.status == 200
+          return [] unless response.status == 200
 
-          @packagist_listing = JSON.parse(response.body)
+          listing = JSON.parse(response.body)
+          return [] if listing.nil?
+          return [] if listing.fetch("packages") == []
+          return [] unless listing.dig("packages", dependency.name.downcase)
+          listing.dig("packages", dependency.name.downcase).keys
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
