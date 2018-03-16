@@ -39,20 +39,18 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
   let(:files) { [composer_file, lockfile] }
   let(:composer_file) do
     Dependabot::DependencyFile.new(
-      content: composer_file_content,
+      content: fixture("php", "composer_files", manifest_fixture_name),
       name: "composer.json"
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
-      content: lockfile_content,
+      content: fixture("php", "lockfiles", lockfile_fixture_name),
       name: "composer.lock"
     )
   end
-  let(:composer_file_content) do
-    fixture("php", "composer_files", "exact_version")
-  end
-  let(:lockfile_content) { fixture("php", "lockfiles", "exact_version") }
+  let(:manifest_fixture_name) { "exact_version" }
+  let(:lockfile_fixture_name) { "exact_version" }
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -177,10 +175,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a private registry" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "private_registry")
-      end
-      let(:lockfile_content) { fixture("php", "lockfiles", "private_registry") }
+      let(:manifest_fixture_name) { "private_registry" }
+      let(:lockfile_fixture_name) { "private_registry" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "dependabot/dummy-pkg-a",
@@ -253,23 +249,14 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a dev dependency" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "development_dependencies")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "development_dependencies")
-      end
-
+      let(:manifest_fixture_name) { "development_dependencies" }
+      let(:lockfile_fixture_name) { "development_dependencies" }
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
     end
 
     context "with a private registry" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "private_registry")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "private_registry")
-      end
+      let(:manifest_fixture_name) { "private_registry" }
+      let(:lockfile_fixture_name) { "private_registry" }
       before { `composer clear-cache --quiet` }
 
       let(:dependency) do
@@ -354,12 +341,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a replaced dependency" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "replaced_dependency")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "replaced_dependency")
-      end
+      let(:manifest_fixture_name) { "replaced_dependency" }
+      let(:lockfile_fixture_name) { "replaced_dependency" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "illuminate/console",
@@ -379,6 +362,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a PEAR dependency" do
+      let(:manifest_fixture_name) { "pear" }
+      let(:lockfile_fixture_name) { "pear" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "pear-pear.horde.org/Horde_Date",
@@ -395,9 +380,6 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      let(:composer_file_content) { fixture("php", "composer_files", "pear") }
-      let(:lockfile_content) { fixture("php", "lockfiles", "pear") }
-
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
         expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
@@ -405,6 +387,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a version conflict at the latest version" do
+      let(:manifest_fixture_name) { "version_conflict_at_latest" }
+      let(:lockfile_fixture_name) { "version_conflict_at_latest" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "doctrine/dbal",
@@ -421,13 +405,6 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "version_conflict_at_latest")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "version_conflict_at_latest")
-      end
-
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
         expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
@@ -435,6 +412,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "with a version conflict in the current files" do
+      let(:manifest_fixture_name) { "version_conflict" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "monolog/monolog",
@@ -451,14 +429,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "version_conflict")
-      end
-
       it { is_expected.to be_nil }
     end
 
     context "with an update that can't resolve" do
+      let(:manifest_fixture_name) { "version_conflict_on_update" }
+      let(:lockfile_fixture_name) { "version_conflict_on_update" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "longman/telegram-bot",
@@ -475,25 +451,13 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "version_conflict_on_update")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "version_conflict_on_update")
-      end
-
       it { is_expected.to be_nil }
     end
 
     context "with a dependency with a git source" do
-      let(:lockfile_content) { fixture("php", "lockfiles", "git_source") }
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "git_source")
-      end
-
-      context "that is the gem we're checking" do
-        it { is_expected.to be >= Gem::Version.new("1.22.1") }
-      end
+      let(:manifest_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source" }
+      it { is_expected.to be >= Gem::Version.new("1.22.1") }
 
       context "that is not the gem we're checking" do
         let(:dependency) do
@@ -515,12 +479,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
 
         context "that is unreachable" do
-          let(:lockfile_content) do
-            fixture("php", "lockfiles", "git_source_unreachable")
-          end
-          let(:composer_file_content) do
-            fixture("php", "composer_files", "git_source_unreachable")
-          end
+          let(:manifest_fixture_name) { "git_source_unreachable" }
+          let(:lockfile_fixture_name) { "git_source_unreachable" }
 
           it "raises a helpful error" do
             expect { checker.latest_resolvable_version }.
@@ -532,12 +492,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           end
 
           context "with a git URL" do
-            let(:lockfile_content) do
-              fixture("php", "lockfiles", "git_source_unreachable_git_url")
-            end
-            let(:composer_file_content) do
-              fixture("php", "composer_files", "git_source_unreachable_git_url")
-            end
+            let(:manifest_fixture_name) { "git_source_unreachable_git_url" }
+            let(:lockfile_fixture_name) { "git_source_unreachable_git_url" }
 
             it "raises a helpful error" do
               expect { checker.latest_resolvable_version }.
@@ -553,13 +509,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "when an alternative source is specified" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "alternative_source")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "alternative_source")
-      end
-
+      let(:manifest_fixture_name) { "alternative_source" }
+      let(:lockfile_fixture_name) { "alternative_source" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "wpackagist-plugin/acf-to-rest-api",
@@ -580,13 +531,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "when an autoload is specified" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "autoload")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "autoload")
-      end
-
+      let(:manifest_fixture_name) { "autoload" }
+      let(:lockfile_fixture_name) { "autoload" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "illuminate/support",
@@ -607,13 +553,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     context "when an old version of PHP is specified" do
-      let(:composer_file_content) do
-        fixture("php", "composer_files", "old_php_specified")
-      end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "old_php_specified")
-      end
-
+      let(:manifest_fixture_name) { "old_php_specified" }
+      let(:lockfile_fixture_name) { "old_php_specified" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "illuminate/support",
