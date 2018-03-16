@@ -168,7 +168,6 @@ module Dependabot
             }
           end
         rescue Octokit::NotFound => error
-          raise unless error.message.include?("No common ancestor")
           []
         end
 
