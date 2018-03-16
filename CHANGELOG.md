@@ -1,3 +1,7 @@
+## v0.50.46, 16 March 2018
+
+- PHP: Fix PHP Updater bug (oops!)
+
 ## v0.50.45, 16 March 2018
 
 - PHP: Pass registry credentials to Composer
