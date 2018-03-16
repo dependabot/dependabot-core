@@ -38,7 +38,10 @@ module Dependabot
                   env: mix_env,
                   command: "mix run #{elixir_helper_path}",
                   function: "get_latest_resolvable_version",
-                  args: [Dir.pwd, dependency.name]
+                  args: [Dir.pwd,
+                         dependency.name,
+                         organization_credentials],
+                  popen_opts: { err: %i(child out) }
                 )
               end
 
@@ -57,6 +60,17 @@ module Dependabot
               # environment specifications.
               # TODO: Update the environment specifications instead
               return
+            end
+
+            if error.message.include?("No authenticated organization found")
+              org = error.message.match(/found for ([a-z_]+)\./).captures.first
+              raise Dependabot::PrivateSourceNotReachable, org
+            end
+
+            if error.message.include?("Request failed (403)")
+              org_match = error.message.match(%r{for 'hexpm:([a-z_]+)/})
+              org = org_match&.captures&.first
+              raise Dependabot::PrivateSourceNotReachable, org if org
             end
 
             raise error unless error.message.start_with?("Invalid requirement")
@@ -94,6 +108,11 @@ module Dependabot
 
           def project_root
             File.join(File.dirname(__FILE__), "../../../../..")
+          end
+
+          def organization_credentials
+            credentials.select { |cred| cred.key?("organization") }.
+              flat_map { |cred| [cred["organization"], cred["token"]] }
           end
         end
       end

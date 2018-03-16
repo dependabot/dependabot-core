@@ -14,16 +14,19 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     described_class.new(
       dependency: dependency,
       dependency_files: files,
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
   end
 
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
@@ -174,6 +177,91 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
 
       it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
+
+    context "with a dependency with a private source" do
+      let(:mixfile_body) { fixture("elixir", "mixfiles", "private_package") }
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "private_package") }
+
+      before { `mix hex.organization deauth dependabot` }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example_package_a",
+          version: "1.0.0",
+          requirements: [
+            {
+              file: "mix.exs",
+              requirement: "~> 1.0.0",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "hex"
+        )
+      end
+
+      context "with good credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "organization" => "dependabot",
+              "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+            }
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "organization" => "dependabot",
+              "token" => "111f6cbeffc6e14c6a884f0111caff3e"
+            }
+          ]
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "with no credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
+        end
+
+        # The Elixir process hangs waiting for input in this case. This spec
+        # passes as long as we're intelligently timing out.
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
     end
 
     context "with a dependency with a git source" do

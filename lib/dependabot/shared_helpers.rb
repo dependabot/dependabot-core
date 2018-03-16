@@ -63,10 +63,11 @@ module Dependabot
       end
     end
 
-    def self.run_helper_subprocess(command:, function:, args:, env: nil)
+    def self.run_helper_subprocess(command:, function:, args:, env: nil,
+                                   popen_opts: {})
       raw_response = nil
       popen_args = [env, command, "w+"].compact
-      IO.popen(*popen_args) do |process|
+      IO.popen(*popen_args, **popen_opts) do |process|
         process.write(JSON.dump(function: function, args: args))
         process.close_write
         raw_response = process.read

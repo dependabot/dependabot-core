@@ -1,4 +1,28 @@
-[dependency_name] = System.argv()
+[dependency_name | credentials] = System.argv()
+
+grouped_creds = Enum.reduce credentials, [], fn cred, acc ->
+  if List.last(acc) == nil || List.last(acc)[:token] do
+    acc = List.insert_at(acc, -1, %{ organization: cred })
+  else
+    { item, acc } = List.pop_at(acc, -1)
+    item = Map.put(item, :token, cred)
+    acc = List.insert_at(acc, -1, item)
+  end
+end
+
+Enum.each grouped_creds, fn cred ->
+  hexpm = Hex.Repo.get_repo("hexpm")
+  repo = %{
+    url: hexpm.url <> "/repos/#{cred.organization}",
+    public_key: nil,
+    auth_key: cred.token
+  }
+
+  Hex.Config.read()
+  |> Hex.Config.read_repos()
+  |> Map.put("hexpm:#{cred.organization}", repo)
+  |> Hex.Config.update_repos()
+end
 
 # dependency atom
 dependency = String.to_atom(dependency_name)
