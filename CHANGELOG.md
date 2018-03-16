@@ -1,3 +1,7 @@
+## v0.50.45, 16 March 2018
+
+- PHP: Pass registry credentials to Composer
+
 ## v0.50.44, 16 March 2018
 
 - Rescue all commit URL NotFound errors
