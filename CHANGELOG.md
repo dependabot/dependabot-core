@@ -1,3 +1,8 @@
+## v0.50.44, 16 March 2018
+
+- Rescue all commit URL NotFound errors
+- JS: Cache updated requirements in UpdateChecker
+
 ## v0.50.43, 15 March 2018
 
 - Java: Handle non-numeric versions
