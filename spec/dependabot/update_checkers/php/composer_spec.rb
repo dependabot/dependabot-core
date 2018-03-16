@@ -206,7 +206,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:composer_file_content) do
         fixture("php", "composer_files", "private_registry")
       end
-      let(:files) { [composer_file] }
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "private_registry")
+      end
+      before { `composer clear-cache --quiet` }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -223,22 +226,70 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           package_manager: "composer"
         )
       end
-      let(:credentials) do
-        [
-          {
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          },
-          {
-            "registry" => "repo.packagist.com",
-            "username" => "dependabot",
-            "password" => "bullshit"
-          }
-        ]
+
+      context "with good credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "php.fury.io",
+              "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+              "password" => ""
+            }
+          ]
+        end
+
+        it { is_expected.to be >= Gem::Version.new("2.2.0") }
       end
 
-      it { is_expected.to be >= Gem::Version.new("2.0.0") }
+      context "with bad credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "php.fury.io",
+              "username" => "bad",
+              "password" => ""
+            }
+          ]
+        end
+
+        it "raises a helpful error message" do
+          expect { checker.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).to eq("php.fury.io")
+            end
+        end
+      end
+
+      context "with no credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
+        end
+
+        it "raises a helpful error message" do
+          expect { checker.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error.source).to eq("php.fury.io")
+            end
+        end
+      end
     end
 
     context "with a replaced dependency" do

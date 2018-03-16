@@ -2,7 +2,7 @@
     "repositories": [
         {
             "type": "composer",
-            "url": "https://repo.packagist.com/dependabot/"
+            "url": "https://php.fury.io/dependabot-throwaway/"
         },
         {
             "packagist.org": false

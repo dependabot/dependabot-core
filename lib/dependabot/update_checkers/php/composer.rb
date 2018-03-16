@@ -159,6 +159,7 @@ module Dependabot
           @packagist_listing = JSON.parse(response.body)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
           if error.message.start_with?("Failed to execute git clone")
             dependency_url =
@@ -176,12 +177,19 @@ module Dependabot
             # can't install and cases where we can't update. For now, we
             # therefore just ignore the dependency.
             nil
+          elsif error.message.include?("URL required authentication") ||
+                error.message.include?("403 Forbidden")
+            source =
+              error.message.match(%r{https?://(?<source>[^/]+)/}).
+              named_captures.fetch("source")
+            raise Dependabot::PrivateSourceNotReachable, source
           elsif error.message.start_with?("Allowed memory size")
             raise "Composer out of memory"
           else
             raise error
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def library?
           JSON.parse(composer_file.content)["type"] == "library"

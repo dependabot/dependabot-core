@@ -13,16 +13,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
     described_class.new(
       dependency_files: files,
       dependencies: [dependency],
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
   end
 
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:files) { [composer_json, lockfile] }
   let(:composer_json) do
     Dependabot::DependencyFile.new(
@@ -297,6 +300,60 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
         it "has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        end
+      end
+
+      context "with a private registry" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "private_registry")
+        end
+        let(:lockfile_body) { fixture("php", "lockfiles", "private_registry") }
+        before { `composer clear-cache --quiet` }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dependabot/dummy-pkg-a",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "*",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "*",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        context "with good credentials" do
+          let(:credentials) do
+            [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "registry" => "php.fury.io",
+                "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+                "password" => ""
+              }
+            ]
+          end
+
+          it "has details of the updated item" do
+            expect(updated_lockfile_content).to include("\"version\":\"2.2.0\"")
+          end
         end
       end
 

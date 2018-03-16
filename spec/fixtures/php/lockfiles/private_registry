@@ -4,39 +4,18 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "134cf5ece00871493fdd05e43b0200d4",
+    "content-hash": "e1dbdc030a81b4cd4a95606e0c5525f5",
     "packages": [
         {
             "name": "dependabot/dummy-pkg-a",
-            "version": "v2.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
-                "reference": "183c190aa576256c768a04ff2163c208e0dd81d1"
-            },
+            "version": "2.1.0",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/183c190aa576256c768a04ff2163c208e0dd81d1",
-                "reference": "183c190aa576256c768a04ff2163c208e0dd81d1",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://repo.packagist.com/dependabot/dists/%package%/%version%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
+                "url": "https://yFu9PBmw1HxNjFB818TW:@php.fury.io/dependabot-throwaway/~/d/dependabot%2Fdummy-pkg-a/dependabot%2Fdummy-pkg-a-2.1.0",
+                "reference": null,
+                "shasum": null
             },
-            "type": "library",
-            "notification-url": "https://repo.packagist.com/dependabot/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "A dummy package for testing Dependabot",
-            "support": {
-                "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v2.0.0",
-                "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues"
-            },
-            "time": "2017-06-08T12:52:19+00:00"
+            "type": "library"
         }
     ],
     "packages-dev": [],
