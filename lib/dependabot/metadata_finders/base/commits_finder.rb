@@ -167,7 +167,7 @@ module Dependabot
               html_url: commit.html_url
             }
           end
-        rescue Octokit::NotFound => error
+        rescue Octokit::NotFound
           []
         end
 
