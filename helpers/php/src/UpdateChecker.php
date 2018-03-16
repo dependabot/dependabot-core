@@ -17,7 +17,6 @@ class UpdateChecker
         $io = new ExceptionIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
         $config = $composer->getConfig();
-
         $httpBasicCredentials = [];
 
         if($githubToken) {

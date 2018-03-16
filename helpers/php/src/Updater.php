@@ -22,6 +22,7 @@ class Updater
         $io = new ExceptionIO();
         $composer = Factory::create($io);
         $config = $composer->getConfig();
+        $httpBasicCredentials = [];
 
         if($githubToken) {
             $httpBasicCredentials['github.com'] = [
