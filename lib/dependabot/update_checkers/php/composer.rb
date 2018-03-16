@@ -101,7 +101,12 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
               function: "get_latest_resolvable_version",
-              args: [Dir.pwd, dependency.name.downcase, github_access_token]
+              args: [
+                Dir.pwd,
+                dependency.name.downcase,
+                github_access_token,
+                registry_credentials
+              ]
             )
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
@@ -186,6 +191,11 @@ module Dependabot
           credentials.
             find { |cred| cred["host"] == "github.com" }.
             fetch("password")
+        end
+
+        def registry_credentials
+          credentials.
+            select { |cred| cred.key?("registry") }
         end
       end
     end

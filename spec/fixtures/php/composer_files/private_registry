@@ -1,0 +1,14 @@
+{
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://repo.packagist.com/dependabot/"
+        },
+        {
+            "packagist.org": false
+        }
+    ],
+    "require": {
+        "monolog/monolog": "*"
+    }
+}

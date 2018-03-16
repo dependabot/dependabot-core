@@ -11,7 +11,7 @@ class Updater
 {
     public static function update(array $args): array
     {
-        [$workingDirectory, $dependencyName, $dependencyVersion, $githubToken] = $args;
+        [$workingDirectory, $dependencyName, $dependencyVersion, $githubToken, $registry_credentials] = $args;
 
         // Change working directory to the one provided, this ensures that we
         // install dependencies into the working dir, rather than a vendor folder
@@ -23,17 +23,26 @@ class Updater
         $composer = Factory::create($io);
         $config = $composer->getConfig();
 
-        if ($githubToken) {
+        if($githubToken) {
+            $httpBasicCredentials['github.com'] = [
+                'username' => 'x-access-token',
+                'password' => $githubToken,
+            ];
+        }
+
+        foreach($registry_credentials as &$cred) {
+            $httpBasicCredentials[$cred['registry']] = [
+                'username' => $cred['username'],
+                'password' => $cred['password'],
+            ];
+        }
+
+        if ($httpBasicCredentials) {
             $config->merge(
                 [
                     'config' => [
-                        'http-basic' => [
-                            'github.com' => [
-                                'username' => 'x-access-token',
-                                'password' => $githubToken,
-                            ],
-                        ],
-                    ],
+                        'http-basic' => $httpBasicCredentials,
+                    ]
                 ]
             );
             $io->loadConfiguration($config);

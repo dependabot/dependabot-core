@@ -12,23 +12,34 @@ class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $githubToken] = $args;
+        [$workingDirectory, $dependencyName, $githubToken, $registry_credentials] = $args;
 
         $io = new ExceptionIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
         $config = $composer->getConfig();
 
-        if ($githubToken) {
+        $httpBasicCredentials = [];
+
+        if($githubToken) {
+            $httpBasicCredentials['github.com'] = [
+                'username' => 'x-access-token',
+                'password' => $githubToken,
+            ];
+        }
+
+        foreach($registry_credentials as &$cred) {
+            $httpBasicCredentials[$cred['registry']] = [
+                'username' => $cred['username'],
+                'password' => $cred['password'],
+            ];
+        }
+
+        if ($httpBasicCredentials) {
             $config->merge(
                 [
                     'config' => [
-                        'http-basic' => [
-                            'github.com' => [
-                                'username' => 'x-access-token',
-                                'password' => $githubToken,
-                            ],
-                        ],
-                    ],
+                        'http-basic' => $httpBasicCredentials,
+                    ]
                 ]
             );
             $io->loadConfiguration($config);

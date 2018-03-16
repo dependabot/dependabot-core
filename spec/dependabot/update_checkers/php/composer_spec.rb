@@ -13,13 +13,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     described_class.new(
       dependency: dependency,
       dependency_files: files,
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: credentials
     )
   end
 
@@ -33,7 +27,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       package_manager: "composer"
     )
   end
-
+  let(:credentials) do
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    ]
+  end
   let(:files) { [composer_file, lockfile] }
   let(:composer_file) do
     Dependabot::DependencyFile.new(
@@ -198,6 +200,31 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       end
 
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    end
+
+    context "with a private registry" do
+      let(:composer_file_content) do
+        fixture("php", "composer_files", "private_registry")
+      end
+      let(:lockfile_content) do
+        fixture("php", "lockfiles", "private_registry")
+      end
+      let(:credentials) do
+        [
+          {
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "registry" => "repo.packagist.com",
+            "username" => "dependabot",
+            "password" => "bullshit"
+          }
+        ]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("1.23.0") }
     end
 
     context "with a replaced dependency" do

@@ -68,7 +68,8 @@ module Dependabot
                     Dir.pwd,
                     dependency.name,
                     dependency.version,
-                    github_access_token
+                    github_access_token,
+                    registry_credentials
                   ]
                 ).fetch("composer.lock")
 
@@ -156,6 +157,11 @@ module Dependabot
           credentials.
             find { |cred| cred["host"] == "github.com" }.
             fetch("password")
+        end
+
+        def registry_credentials
+          credentials.
+            select { |cred| cred.key?("registry") }
         end
       end
     end
