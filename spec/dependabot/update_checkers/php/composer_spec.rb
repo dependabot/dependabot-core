@@ -206,8 +206,22 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:composer_file_content) do
         fixture("php", "composer_files", "private_registry")
       end
-      let(:lockfile_content) do
-        fixture("php", "lockfiles", "private_registry")
+      let(:files) { [composer_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: nil,
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
       end
       let(:credentials) do
         [
@@ -224,7 +238,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         ]
       end
 
-      it { is_expected.to be >= Gem::Version.new("1.23.0") }
+      it { is_expected.to be >= Gem::Version.new("2.0.0") }
     end
 
     context "with a replaced dependency" do

@@ -9,6 +9,6 @@
         }
     ],
     "require": {
-        "monolog/monolog": "*"
+        "dependabot/dummy-pkg-a": "*"
     }
 }
