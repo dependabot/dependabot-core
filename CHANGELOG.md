@@ -1,3 +1,7 @@
+## v0.50.49, 18 March 2018
+
+- PHP: Handle unexpected data from private registries
+
 ## v0.50.48, 18 March 2018
 
 - Python: Use pip 9.0.2
