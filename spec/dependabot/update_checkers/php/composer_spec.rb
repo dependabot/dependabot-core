@@ -208,6 +208,19 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         expect(WebMock).to_not have_requested(:get, packagist_url)
       end
 
+      context "when a 404 is returned" do
+        before { stub_request(:get, gemfury_url).to_return(status: 404) }
+        it { is_expected.to eq(Gem::Version.new("1.17.0")) }
+      end
+
+      context "when a hash with bad keys is returned" do
+        before do
+          stub_request(:get, gemfury_url).
+            to_return(status: 200, body: { odd: "data" }.to_json)
+        end
+        it { is_expected.to eq(Gem::Version.new("1.17.0")) }
+      end
+
       context "when given credentials" do
         let(:credentials) do
           [
