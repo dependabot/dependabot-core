@@ -286,9 +286,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 )
             end
 
-            it "fetches the latest SHA-1 hash of the latest version commit" do
+            it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_version).
-                to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
+                to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
             end
 
             context "but there are no tags" do
@@ -722,9 +722,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 )
             end
 
-            it "fetches the latest SHA-1 hash of the latest version commit" do
+            it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_resolvable_version).
-                to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
+                to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
             end
 
             context "but there are no tags" do
