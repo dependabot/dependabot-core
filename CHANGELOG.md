@@ -1,3 +1,9 @@
+## v0.50.48, 18 March 2018
+
+- Python: Use pip 9.0.2
+- Ruby: Update commit SHAs should come from tag (because that's what Gemfile
+  stores)
+
 ## v0.50.47, 16 March 2018
 
 - PHP: Spec private registry behaviour, and add better error messages for it
