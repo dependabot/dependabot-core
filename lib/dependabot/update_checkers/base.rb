@@ -26,6 +26,7 @@ module Dependabot
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else
           # TODO: Handle full unlock updates for requirement files
+          return false if requirements_to_unlock == :none
           requirements_can_update?
         end
       end

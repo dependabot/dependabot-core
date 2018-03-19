@@ -177,6 +177,19 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         updater_instance.can_update?(requirements_to_unlock: :none)
       end
 
+      context "when the dependency is not in the lockfile" do
+        let(:latest_version) { Gem::Version.new("7.5.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: nil,
+            requirements: original_requirements,
+            package_manager: "bundler"
+          )
+        end
+        it { is_expected.to be_falsey }
+      end
+
       context "when the dependency is up-to-date" do
         let(:latest_version) { Gem::Version.new("1.5.0") }
         it { is_expected.to be_falsey }
