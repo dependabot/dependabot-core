@@ -1,4 +1,8 @@
-## v0.50.51, 18 March 2018
+## v0.50.52, 19 March 2018
+
+- Update git dependencies that specify a reference along with a full URL
+
+## v0.50.51, 19 March 2018
 
 - Return `false` early in UpdateCheckers#can_update? when checking whether a
   library can be updated without unlocking its requirements
