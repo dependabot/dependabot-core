@@ -244,7 +244,7 @@ module Dependabot
 
           content.match(
             %r{"#{Regexp.escape(dependency_name)}":\s*
-               "#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
+               ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
           ).to_s
         end
 
