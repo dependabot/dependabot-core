@@ -149,6 +149,7 @@ module Dependabot
           @registry_versions = []
 
           urls = repositories.
+                 select { |h| h["type"] == "composer" }.
                  map { |h| h["url"] }.compact.
                  map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 

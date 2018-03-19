@@ -174,7 +174,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       end
     end
 
-    context "with a private registry" do
+    context "with a private composer registry" do
       let(:manifest_fixture_name) { "private_registry" }
       let(:lockfile_fixture_name) { "private_registry" }
       let(:dependency) do
@@ -244,6 +244,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
             with(basic_auth: %w(user pass))
         end
       end
+    end
+
+    context "with an unreachable source (speccing we don't try to reach it)" do
+      let(:manifest_fixture_name) { "git_source_unreachable_git_url" }
+      let(:lockfile_fixture_name) { "git_source_unreachable_git_url" }
+      it { is_expected.to eq(Gem::Version.new("1.22.1")) }
     end
   end
 
