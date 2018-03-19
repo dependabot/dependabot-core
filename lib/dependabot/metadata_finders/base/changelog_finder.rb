@@ -89,7 +89,8 @@ module Dependabot
           files =
             dependency_file_list.
             select { |f| f.type == "file" }.
-            reject { |f| f.name.end_with?(".sh") }
+            reject { |f| f.name.end_with?(".sh") }.
+            reject { |f| f.size > 1_000_000 }
 
           CHANGELOG_NAMES.each do |name|
             file = files.select { |f| f.name =~ /#{name}/i }.max_by(&:size)
@@ -112,7 +113,7 @@ module Dependabot
                 middlewares: SharedHelpers.excon_middleware
               ).body
             end
-          @full_changelog_text.force_encoding("UTF-8").encode
+          @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
         def old_version_changelog_line
@@ -153,6 +154,7 @@ module Dependabot
           dependency_file_list.
             select { |f| f.type == "file" }.
             select { |f| f.name.casecmp("upgrade.md").zero? }.
+            reject { |f| f.size > 1_000_000 }.
             max_by(&:size)
         end
 
