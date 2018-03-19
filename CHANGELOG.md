@@ -1,3 +1,7 @@
+## v0.50.53, 19 March 2018
+
+- Add newline after changelog truncation
+
 ## v0.50.52, 19 March 2018
 
 - Update git dependencies that specify a reference along with a full URL
