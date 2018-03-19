@@ -1,3 +1,7 @@
+## v0.50.50, 18 March 2018
+
+- PHP: Only fetch composer URLs when looking for registry details
+
 ## v0.50.49, 18 March 2018
 
 - PHP: Handle unexpected data from private registries
