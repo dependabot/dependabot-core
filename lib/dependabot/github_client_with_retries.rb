@@ -16,7 +16,8 @@ module Dependabot
     RETRYABLE_ERRORS = [
       Faraday::ConnectionFailed,
       Faraday::TimeoutError,
-      Octokit::InternalServerError
+      Octokit::InternalServerError,
+      Octokit::BadGateway
     ].freeze
 
     def initialize(max_retries: 1, **args)
