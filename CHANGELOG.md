@@ -1,3 +1,7 @@
+## v0.50.54, 19 March 2018
+
+- Don't pull down changelogs over 1mb
+
 ## v0.50.53, 19 March 2018
 
 - Add newline after changelog truncation
