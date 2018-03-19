@@ -1,3 +1,8 @@
+## v0.50.51, 18 March 2018
+
+- Return `false` early in UpdateCheckers#can_update? when checking whether a
+  library can be updated without unlocking its requirements
+
 ## v0.50.50, 18 March 2018
 
 - PHP: Only fetch composer URLs when looking for registry details
