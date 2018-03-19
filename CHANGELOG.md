@@ -1,3 +1,7 @@
+## v0.50.55, 19 March 2018
+
+- Retry Octokit::BadGateway errors
+
 ## v0.50.54, 19 March 2018
 
 - Don't pull down changelogs over 1mb
