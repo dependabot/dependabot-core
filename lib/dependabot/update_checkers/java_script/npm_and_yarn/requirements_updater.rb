@@ -37,7 +37,7 @@ module Dependabot
             requirements.map do |req|
               req = req.merge(source: updated_source)
               next req unless latest_resolvable_version
-              next req unless req[:requirement]
+              next initial_req_after_source_change(req) unless req[:requirement]
               next req if req[:requirement].match?(/^[a-z]/i)
               if library?
                 updated_library_requirement(req)
@@ -54,6 +54,18 @@ module Dependabot
 
           def library?
             @library
+          end
+
+          def updating_from_git_to_npm?
+            return false unless updated_source.nil?
+            original_source = requirements.map { |r| r[:source] }.compact.first
+            original_source&.fetch(:type) == "git"
+          end
+
+          def initial_req_after_source_change(req)
+            return req unless updating_from_git_to_npm?
+            return req unless req[:requirement].nil?
+            req.merge(requirement: "^#{latest_resolvable_version}")
           end
 
           def updated_app_requirement(req)

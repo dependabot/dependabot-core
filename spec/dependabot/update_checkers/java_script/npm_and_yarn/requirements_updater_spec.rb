@@ -51,12 +51,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       its([:requirement]) { is_expected.to eq(package_json_req_string) }
     end
 
-    context "with a git dependency with no requirement" do
+    context "with a git dependency" do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
       let(:package_json_req) do
         {
           file: "package.json",
-          requirement: nil,
+          requirement: package_json_req_string,
           groups: [],
           source: {
             type: "git",
@@ -75,23 +75,86 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         }
       end
 
-      it "updates the source" do
-        expect(updater.updated_requirements).
-          to eq(
-            [
-              {
-                file: "package.json",
-                requirement: nil,
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/jonschlinkert/is-number",
-                  branch: nil,
-                  ref: "2.1.0"
+      context "with no requirement" do
+        let(:package_json_req_string) { nil }
+
+        it "updates the source" do
+          expect(updater.updated_requirements).
+            to eq(
+              [
+                {
+                  file: "package.json",
+                  requirement: nil,
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "2.1.0"
+                  }
                 }
-              }
-            ]
-          )
+              ]
+            )
+        end
+
+        context "updating to use npm" do
+          let(:updated_source) { nil }
+
+          it "updates the source and requirement" do
+            expect(updater.updated_requirements).
+              to eq(
+                [
+                  {
+                    file: "package.json",
+                    requirement: "^1.5.0",
+                    groups: [],
+                    source: nil
+                  }
+                ]
+              )
+          end
+        end
+      end
+
+      context "with a requirement" do
+        let(:package_json_req_string) { "~0.9.0" }
+
+        it "updates the source" do
+          expect(updater.updated_requirements).
+            to eq(
+              [
+                {
+                  file: "package.json",
+                  requirement: "~1.5.0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "2.1.0"
+                  }
+                }
+              ]
+            )
+        end
+
+        context "updating to use npm" do
+          let(:updated_source) { nil }
+
+          it "updates the source and requirement" do
+            expect(updater.updated_requirements).
+              to eq(
+                [
+                  {
+                    file: "package.json",
+                    requirement: "~1.5.0",
+                    groups: [],
+                    source: nil
+                  }
+                ]
+              )
+          end
+        end
       end
     end
 

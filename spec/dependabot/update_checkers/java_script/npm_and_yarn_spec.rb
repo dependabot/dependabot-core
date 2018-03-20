@@ -1103,6 +1103,22 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           fixture("github", "commit_compare_behind.json")
         end
 
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: nil,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "master"
+              }
+            }
+          ]
+        end
+
         it "delegates to the RequirementsUpdater" do
           expect(described_class::RequirementsUpdater).
             to receive(:new).
