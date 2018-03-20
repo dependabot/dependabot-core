@@ -73,7 +73,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     end
 
     context "when there is a github link in the npm response" do
-      let(:npm_response) { fixture("javascript", "npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
 
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "https://registry.npmjs.org/eTag" }
-      let(:npm_response) { fixture("javascript", "npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
 
       before do
         stub_request(:get, npm_url).
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "when the npm link 404s" do
       before { stub_request(:get, npm_url).to_return(status: 404) }
-      let(:npm_response) { fixture("javascript", "npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
 
       # Not an idea error, but this should never happen
       specify { expect { finder.source_url }.to raise_error(JSON::ParserError) }
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
           to_return(status: 200, body: npm_response)
       end
       let(:dependency_name) { "@etag/etag" }
-      let(:npm_response) { fixture("javascript", "npm_response.json") }
+      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
 
       it "requests the escaped name" do
         finder.source_url

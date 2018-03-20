@@ -10,9 +10,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   it_behaves_like "an update checker"
 
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
+  let(:registry_response) do
+    fixture("javascript", "npm_responses", "etag.json")
+  end
   before do
     stub_request(:get, registry_listing_url).
-      to_return(status: 200, body: fixture("javascript", "npm_response.json"))
+      to_return(status: 200, body: registry_response)
     stub_request(:get, registry_listing_url + "/1.7.0").
       to_return(status: 200)
   end
@@ -133,7 +136,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           to_return(
             status: 200,
-            body: fixture("javascript", "npm_response.json")
+            body: fixture("javascript", "npm_responses", "etag.json")
           )
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
           to_return(status: 200)
@@ -192,6 +195,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           package_manager: "npm_and_yarn"
         )
       end
+      let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
+      let(:registry_response) do
+        fixture("javascript", "npm_responses", "is_number.json")
+      end
       let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
       before do
         git_url = "https://github.com/jonschlinkert/is-number.git"
@@ -205,6 +212,25 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             body: fixture("git", "upload_packs", "is-number"),
             headers: git_header
           )
+        stub_request(:get, registry_listing_url + "/4.0.0").
+          to_return(status: 200)
+
+        repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
+        stub_request(:get, repo_url + "/tags?per_page=100").
+          to_return(
+            status: 200,
+            body: fixture("github", "is_number_tags.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, repo_url + "/compare/4.0.0...#{ref}").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_diverged.json")
       end
 
       context "with a branch" do
@@ -224,6 +250,35 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             expect(checker.latest_version).to eq(current_version)
           end
         end
+
+        context "that is behind the latest release" do
+          let(:commit_compare_response) do
+            fixture("github", "commit_compare_behind.json")
+          end
+
+          it "updates to the latest release" do
+            expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
+          end
+        end
+      end
+
+      context "with a commit ref" do
+        let(:ref) { "d5ac058" }
+        let(:req) { nil }
+
+        it "returns the current version" do
+          expect(checker.latest_version).to eq(current_version)
+        end
+
+        context "that is behind the latest release" do
+          let(:commit_compare_response) do
+            fixture("github", "commit_compare_behind.json")
+          end
+
+          it "updates to the latest release" do
+            expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
+          end
+        end
       end
 
       context "with a ref that looks like a version" do
@@ -231,12 +286,6 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         let(:req) { nil }
         before do
           repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-          stub_request(:get, repo_url + "/tags?per_page=100").
-            to_return(
-              status: 200,
-              body: fixture("github", "is_number_tags.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
           stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
             to_return(
               status: 200,
@@ -618,7 +667,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         stub_request(:get, redirect_url).
           to_return(
             status: 200,
-            body: fixture("javascript", "npm_response.json")
+            body: fixture("javascript", "npm_responses", "etag.json")
           )
       end
 
@@ -951,7 +1000,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     context "with a git dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "etag",
+          name: "is-number",
           version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
           requirements: dependency_requirements,
           package_manager: "npm_and_yarn"
@@ -971,6 +1020,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             }
           }
         ]
+      end
+      let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
+      let(:registry_response) do
+        fixture("javascript", "npm_responses", "is_number.json")
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_diverged.json")
       end
 
       before do
@@ -998,6 +1054,14 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             body: fixture("github", "ref.json"),
             headers: { "Content-Type" => "application/json" }
           )
+        stub_request(:get, repo_url + "/compare/4.0.0...master").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+        stub_request(:get, registry_listing_url + "/4.0.0").
+          to_return(status: 200)
       end
 
       it "delegates to the RequirementsUpdater" do
@@ -1032,6 +1096,36 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               }
             ]
           )
+      end
+
+      context "that should switch to a registry source" do
+        let(:commit_compare_response) do
+          fixture("github", "commit_compare_behind.json")
+        end
+
+        it "delegates to the RequirementsUpdater" do
+          expect(described_class::RequirementsUpdater).
+            to receive(:new).
+            with(
+              requirements: dependency_requirements,
+              updated_source: nil,
+              latest_version: "4.0.0",
+              latest_resolvable_version: "4.0.0",
+              library: false
+            ).
+            and_call_original
+          expect(checker.updated_requirements).
+            to eq(
+              [
+                {
+                  file: "package.json",
+                  requirement: "^4.0.0",
+                  groups: ["devDependencies"],
+                  source: nil
+                }
+              ]
+            )
+        end
       end
     end
   end

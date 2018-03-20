@@ -89,11 +89,37 @@ module Dependabot
         end
 
         def latest_version_for_git_dependency
+          latest_release = fetch_latest_version_details_from_registry
+
+          # If there's been a release that includes the current pinned ref or
+          # that the current branch is behind, we switch to that release.
+          if git_branch_or_ref_in_release?(latest_release&.fetch(:version))
+            return latest_release.fetch(:version)
+          end
+
           latest_git_version_details[:sha]
         end
 
+        def should_switch_source_from_git_to_registry?
+          return false unless git_dependency?
+          return false if latest_version_for_git_dependency.nil?
+          version_class.correct?(latest_version_for_git_dependency)
+        end
+
+        def git_branch_or_ref_in_release?(release)
+          return false unless release
+          git_commit_checker.branch_or_ref_in_release?(release)
+        end
+
         def fetch_latest_version_details
-          return latest_git_version_details if git_dependency?
+          if git_dependency? && !should_switch_source_from_git_to_registry?
+            return latest_git_version_details
+          end
+
+          fetch_latest_version_details_from_registry
+        end
+
+        def fetch_latest_version_details_from_registry
           return nil unless npm_details&.fetch("dist-tags", nil)
 
           dist_tag_version = version_from_dist_tags(npm_details)
@@ -142,6 +168,9 @@ module Dependabot
           # Never need to update source, unless a git_dependency
           return dependency_source_details unless git_dependency?
 
+          # Source becomes `nil` if switching to default rubygems
+          return nil if should_switch_source_from_git_to_registry?
+
           # Update the git tag if updating a pinned version
           if git_commit_checker.pinned_ref_looks_like_version? &&
              !git_commit_checker.local_tag_for_latest_version.nil?
@@ -151,15 +180,6 @@ module Dependabot
 
           # Otherwise return the original source
           dependency_source_details
-        end
-
-        def dependency_source_details
-          sources =
-            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-          sources.first
         end
 
         def version_from_dist_tags(npm_details)
@@ -250,12 +270,14 @@ module Dependabot
 
         def wants_prerelease?
           current_version = dependency.version
-          if current_version && version_class.new(current_version).prerelease?
+          if current_version &&
+             version_class.correct?(current_version) &&
+             version_class.new(current_version).prerelease?
             return true
           end
 
           dependency.requirements.any? do |req|
-            req[:requirement].match?(/\d-[A-Za-z]/)
+            req[:requirement]&.match?(/\d-[A-Za-z]/)
           end
         end
 
@@ -308,9 +330,13 @@ module Dependabot
         end
 
         def dependency_url
+          source = dependency_source_details
+
           registry_url =
-            if dependency_source_details.nil? then "https://registry.npmjs.org"
-            else dependency_source_details.fetch(:url)
+            if source&.fetch(:type) == "private_registry"
+              source.fetch(:url)
+            else
+              "https://registry.npmjs.org"
             end
 
           # npm registries expect slashes to be escaped
@@ -321,9 +347,20 @@ module Dependabot
         def dependency_registry
           source = dependency_source_details
 
-          if source.nil? then "registry.npmjs.org"
-          else source.fetch(:url).gsub("https://", "").gsub("http://", "")
+          if source&.fetch(:type) == "private_registry"
+            source.fetch(:url).gsub("https://", "").gsub("http://", "")
+          else
+            "registry.npmjs.org"
           end
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def registry_auth_headers
