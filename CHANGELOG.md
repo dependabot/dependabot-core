@@ -1,3 +1,7 @@
+## v0.51.1, 20 March 2018
+
+- JS: Handle git dependencies that have never been released
+
 ## v0.51.0, 20 March 2018
 
 - JS: Update from git commit refs/branches to released versions
