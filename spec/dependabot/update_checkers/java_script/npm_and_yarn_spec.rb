@@ -260,6 +260,18 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
           end
         end
+
+        context "for a dependency that doesn't have a release" do
+          before do
+            stub_request(:get, registry_listing_url).
+              to_return(status: 404, body: "{}")
+          end
+
+          it "fetches the latest SHA-1 hash of the head of the branch" do
+            expect(checker.latest_version).
+              to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+        end
       end
 
       context "with a commit ref" do

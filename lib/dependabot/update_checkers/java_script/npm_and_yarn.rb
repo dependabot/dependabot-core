@@ -254,6 +254,7 @@ module Dependabot
           # since no lockfile needs to be generated they won't cause problems
           # later.
           return if npm_response.status == 404 && library?
+          return if npm_response.status == 404 && git_dependency?
           raise "Got #{npm_response.status} response with body "\
                 "#{npm_response.body}"
         end
