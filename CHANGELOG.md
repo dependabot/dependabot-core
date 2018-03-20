@@ -1,3 +1,7 @@
+## v0.50.56, 20 March 2018
+
+- Add UpdateCheckers#requirements_unlocked_or_can_be? method
+
 ## v0.50.55, 19 March 2018
 
 - Retry Octokit::BadGateway errors
