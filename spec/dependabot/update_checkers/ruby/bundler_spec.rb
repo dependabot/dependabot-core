@@ -1616,10 +1616,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "Gemfile" }
       let(:lockfile_fixture_name) { "Gemfile.lock" }
       let(:requirements) do
-        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+        [{ file: "Gemfile", requirement: req, groups: [], source: nil }]
       end
+      let(:req) { "~> 1.4.0" }
 
       it { is_expected.to eq(true) }
+
+      context "with multiple requirements" do
+        let(:gemfile_fixture_name) { "version_between_bounds" }
+        let(:req) { "> 1.0.0, < 1.5.0" }
+
+        it { is_expected.to eq(true) }
+      end
     end
 
     # For now we always let git dependencies through

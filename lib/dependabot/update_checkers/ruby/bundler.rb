@@ -56,7 +56,7 @@ module Dependabot
           dependency.requirements.
             reject { |r| r[:requirement].nil? }.
             all? do |req|
-              requirement = Gem::Requirement.new(req[:requirement])
+              requirement = Gem::Requirement.new(req[:requirement].split(","))
               next true if requirement.satisfied_by?(Gem::Version.new("100000"))
 
               file = dependency_files.find { |f| f.name == req.fetch(:file) }
