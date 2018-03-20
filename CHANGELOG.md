@@ -1,3 +1,7 @@
+## v0.51.0, 20 March 2018
+
+- JS: Update from git commit refs/branches to released versions
+
 ## v0.50.56, 20 March 2018
 
 - Add UpdateCheckers#requirements_unlocked_or_can_be? method
