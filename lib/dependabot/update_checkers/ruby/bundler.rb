@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
+require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
 require "dependabot/git_commit_checker"
 
 module Dependabot
@@ -49,6 +50,24 @@ module Dependabot
             latest_resolvable_version:
               latest_resolvable_version_details&.fetch(:version)&.to_s
           ).updated_requirements
+        end
+
+        def requirements_unlocked_or_can_be?
+          dependency.requirements.
+            reject { |r| r[:requirement].nil? }.
+            all? do |req|
+              requirement = Gem::Requirement.new(req[:requirement])
+              next true if requirement.satisfied_by?(Gem::Version.new("100000"))
+
+              file = dependency_files.find { |f| f.name == req.fetch(:file) }
+              updated = FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
+                dependency: dependency,
+                file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
+                updated_requirement: "whatever"
+              ).rewrite(file.content)
+
+              updated != file.content
+            end
         end
 
         private

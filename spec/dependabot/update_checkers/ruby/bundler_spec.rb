@@ -1598,4 +1598,60 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
     end
   end
+
+  describe "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    context "with a Gemfile dependency that is already unlocked" do
+      let(:gemfile_fixture_name) { "version_not_specified" }
+      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a Gemfile dependency that can be unlocked" do
+      let(:gemfile_fixture_name) { "Gemfile" }
+      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to eq(true) }
+    end
+
+    # For now we always let git dependencies through
+    context "with a Gemfile dependency that is a git dependency" do
+      let(:gemfile_fixture_name) { "git_source_no_ref" }
+      let(:lockfile_fixture_name) { "git_source_no_ref.lock" }
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "master"
+            }
+          }
+        ]
+      end
+
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a Gemfile with a function version" do
+      let(:gemfile_fixture_name) { "function_version" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "1.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to eq(false) }
+    end
+  end
 end
