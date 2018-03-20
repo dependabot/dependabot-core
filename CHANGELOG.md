@@ -1,3 +1,7 @@
+## v0.51.2, 20 March 2018
+
+- Ruby: More robust requirements_unlocked_or_can_be? implementation
+
 ## v0.51.1, 20 March 2018
 
 - JS: Handle git dependencies that have never been released
