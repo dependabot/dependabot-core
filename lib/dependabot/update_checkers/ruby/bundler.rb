@@ -235,11 +235,7 @@ module Dependabot
         def should_switch_source_from_git_to_rubygems?
           return false unless git_dependency?
           return false if latest_resolvable_version_for_git_dependency.nil?
-
-          Gem::Version.new(latest_resolvable_version_for_git_dependency)
-          true
-        rescue ArgumentError
-          false
+          Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
         end
 
         def force_updater
