@@ -339,9 +339,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         context "when using full git URL" do
-          let(:previous_version) { "2.0.0" }
-          let(:version) { "4.0.0" }
-
           let(:package_json_body) do
             fixture("javascript", "package_files", "git_dependency_ref.json")
           end
@@ -374,6 +371,83 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
             expect(yarn_lock.content).
               to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+        end
+
+        context "updating to use the registry" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: "4.0.0",
+              previous_version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+              package_manager: "npm_and_yarn",
+              requirements: [
+                {
+                  requirement: "^4.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  requirement: nil,
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "d5ac058"
+                  }
+                }
+              ]
+            )
+          end
+
+          let(:package_json_body) do
+            fixture(
+              "javascript",
+              "package_files",
+              "git_dependency_commit_ref.json"
+            )
+          end
+          let(:package_lock_body) do
+            fixture(
+              "javascript",
+              "npm_lockfiles",
+              "git_dependency_commit_ref.json"
+            )
+          end
+          let(:yarn_lock_body) do
+            fixture(
+              "javascript",
+              "yarn_lockfiles",
+              "git_dependency_commit_ref.lock"
+            )
+          end
+
+          it "updates the package.json and the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json yarn.lock))
+
+            package_json =
+              updated_files.find { |f| f.name == "package.json" }
+            package_lock =
+              updated_files.find { |f| f.name == "package-lock.json" }
+            yarn_lock =
+              updated_files.find { |f| f.name == "yarn.lock" }
+
+            parsed_package_json = JSON.parse(package_json.content)
+            expect(parsed_package_json["devDependencies"]["is-number"]).
+              to eq("^4.0.0")
+
+            parsed_package_lock = JSON.parse(package_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("4.0.0")
+
+            expect(yarn_lock.content).
+              to include("is-number@^4.0.0")
           end
         end
       end

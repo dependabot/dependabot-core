@@ -249,16 +249,24 @@ module Dependabot
         end
 
         def replacement_declaration_line(original_line:, old_req:, new_req:)
-          git_dependency = new_req.dig(:source, :type) == "git"
+          was_git_dependency = old_req.dig(:source, :type) == "git"
+          now_git_dependency = new_req.dig(:source, :type) == "git"
 
-          unless git_dependency
+          unless was_git_dependency
             return original_line.gsub(
               %("#{old_req.fetch(:requirement)}"),
               %("#{new_req.fetch(:requirement)}")
             )
           end
 
-          if git_dependency && original_line.include?("semver:")
+          unless now_git_dependency
+            return original_line.gsub(
+              /(?<=\s").*[^\\](?=")/,
+              new_req.fetch(:requirement)
+            )
+          end
+
+          if original_line.include?("semver:")
             return original_line.gsub(
               %(semver:#{old_req.fetch(:requirement)}"),
               %(semver:#{new_req.fetch(:requirement)}")
