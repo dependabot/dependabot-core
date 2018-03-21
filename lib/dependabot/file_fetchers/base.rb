@@ -129,7 +129,13 @@ module Dependabot
         else raise "Unsupported host '#{host}'."
         end
       rescue NoMethodError
-        raise "Array error is happening. Response was #{tmp}."
+        # Oddly, GitHub sometimes ignores the specified path and returns an
+        # array of files instead. Retrying may help.
+        @fetch_file_retry_count ||= {}
+        @fetch_file_retry_count[path] ||= 0
+        retry if @fetch_file_retry_count[path] == 0
+        @fetch_file_retry_count[path] += 1
+        raise "Array error happening for #{repo}, #{path}, #{commit}."
       end
 
       def github_client
