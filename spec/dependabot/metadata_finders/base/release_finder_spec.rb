@@ -136,6 +136,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it { is_expected.to be_nil }
             end
 
+            context "but is nil" do
+              let(:dependency_version) { "1.7.0.beta" }
+              let(:dependency_previous_version) { "1.7.0.alpha" }
+
+              it { is_expected.to be_nil }
+            end
+
             context "but has blank names" do
               let(:github_response) do
                 fixture("github", "releases_no_names.json")
@@ -166,6 +173,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   "No release notes provided.\n"\
                   "\n"\
                   "## v1.7.0.beta\n"\
+                  "No release notes provided.\n"\
+                  "\n"\
+                  "## v1.7.0.alpha\n"\
                   "No release notes provided."
                 )
             end

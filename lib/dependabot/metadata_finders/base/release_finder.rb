@@ -34,7 +34,7 @@ module Dependabot
           relevant_releases.map do |r|
             title = "## #{r.name.to_s != '' ? r.name : r.tag_name}\n"
             body =
-              if r.body.gsub(/\n*\z/m, "") == ""
+              if r.body.to_s.gsub(/\n*\z/m, "") == ""
                 "No release notes provided."
               else
                 r.body.gsub(/\n*\z/m, "")
