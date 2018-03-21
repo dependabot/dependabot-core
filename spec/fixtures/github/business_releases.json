@@ -70,7 +70,8 @@
         "published_at": "2017-01-18T17:33:42Z",
         "assets": [],
         "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/v1.7.0.alpha",
-        "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/v1.7.0.alpha"
+        "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/v1.7.0.alpha",
+        "body": null
     },
     {
         "url": "https://api.github.com/repos/gocardless/business/releases/5442955",
