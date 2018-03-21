@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "octokit"
 require "excon"
+require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
 
@@ -241,7 +241,8 @@ module Dependabot
 
     def github_client
       @github_client ||=
-        Octokit::Client.new(access_token: github_access_token)
+        Dependabot::GithubClientWithRetries.
+        new(access_token: github_access_token)
     end
 
     def credentials
