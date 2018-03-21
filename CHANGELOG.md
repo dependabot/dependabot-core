@@ -1,3 +1,7 @@
+## v0.51.3, 21 March 2018
+
+- Handle null bodies in release notes
+
 ## v0.51.2, 20 March 2018
 
 - Ruby: More robust requirements_unlocked_or_can_be? implementation
