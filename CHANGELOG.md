@@ -1,3 +1,7 @@
+## v0.51.4, 21 March 2018
+
+- Automatically retry strange GitHub error
+
 ## v0.51.3, 21 March 2018
 
 - Handle null bodies in release notes
