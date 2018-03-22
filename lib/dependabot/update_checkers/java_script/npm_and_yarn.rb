@@ -295,7 +295,7 @@ module Dependabot
           return true unless dependency.version
 
           @library =
-            LibraryDetector.new(package_json_file: package_json_file).library?
+            LibraryDetector.new(package_json_file: package_json).library?
         end
 
         def development_dependency?
