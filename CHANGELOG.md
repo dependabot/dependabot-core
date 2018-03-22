@@ -1,3 +1,7 @@
+## v0.51.5, 22 March 2018
+
+- Raise BranchNotFound error when getting a branch's head commit fails
+
 ## v0.51.4, 21 March 2018
 
 - Automatically retry strange GitHub error
