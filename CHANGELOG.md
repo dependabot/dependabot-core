@@ -1,3 +1,7 @@
+## v0.51.6, 22 March 2018
+
+- Sanitize GitHub links
+
 ## v0.51.5, 22 March 2018
 
 - Raise BranchNotFound error when getting a branch's head commit fails
