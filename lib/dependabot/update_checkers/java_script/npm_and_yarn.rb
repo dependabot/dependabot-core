@@ -14,6 +14,7 @@ module Dependabot
         require_relative "npm_and_yarn/version"
         require_relative "npm_and_yarn/requirement"
         require_relative "npm_and_yarn/registry_finder"
+        require_relative "npm_and_yarn/library_detector"
 
         AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
 
@@ -252,11 +253,10 @@ module Dependabot
 
           return if npm_response.status.to_s.start_with?("2")
 
-          # Ignore 404s from the registry for libraries. These can be caused by
-          # monorepos using Lerna that haven't pushed all of their packages, and
-          # since no lockfile needs to be generated they won't cause problems
-          # later.
-          return if npm_response.status == 404 && library?
+          # Ignore 404s from the registry for updates where a lockfile doesn't
+          # need to be generated. The 404 won't cause problems later.
+          return if npm_response.status == 404 && dependency.version.nil?
+
           return if npm_response.status == 404 && git_dependency?
           raise "Got #{npm_response.status} response with body "\
                 "#{npm_response.body}"
@@ -292,41 +292,10 @@ module Dependabot
         end
 
         def library?
-          return true if dependency.version.nil?
+          return true unless dependency.version
 
-          return false unless package_json_may_be_for_library?
-
-          npm_response_matches_package_json?
-        end
-
-        def package_json_may_be_for_library?
-          parsed_package_json = JSON.parse(package_json.content)
-
-          project_name = parsed_package_json&.fetch("name", nil)
-          return false unless project_name
-          return false if project_name.match?(/\{\{.*\}\}/)
-          return false unless parsed_package_json["version"]
-          return false if parsed_package_json["private"]
-          true
-        end
-
-        def npm_response_matches_package_json?
-          project_name = JSON.parse(package_json.content)["name"]
-          project_description = JSON.parse(package_json.content)["description"]
-          return false unless project_description
-
-          # Check if the project is listed on npm. If it is, treat as a library
-          @project_npm_response ||= Excon.get(
-            "https://registry.npmjs.org/#{project_name.gsub('/', '%2F')}",
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
-
-          return false unless @project_npm_response.status == 200
-          @project_npm_response.body.force_encoding("UTF-8").encode.
-            include?(project_description)
-        rescue Excon::Error::Socket, Excon::Error::Timeout, JSON::ParserError
-          false
+          @library =
+            LibraryDetector.new(package_json_file: package_json_file).library?
         end
 
         def development_dependency?
