@@ -585,6 +585,26 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
+        context "without a lockfile" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "@blep/blep",
+              version: nil,
+              requirements: [
+                {
+                  file: "package.json",
+                  requirement: "^1.0.0",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
+        end
+
         context "without https" do
           before do
             body = fixture("javascript", "gemfury_response_etag.json")

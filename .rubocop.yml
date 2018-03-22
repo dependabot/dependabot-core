@@ -10,7 +10,7 @@ Layout/DotPosition:
   EnforcedStyle: trailing
 
 Metrics/ClassLength:
-  Max: 300
+  Max: 325
 
 Metrics/CyclomaticComplexity:
   Max: 7
