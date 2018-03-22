@@ -10,6 +10,7 @@ module Dependabot
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
       ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s)]|$)/
+      GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
       attr_reader :repo_name, :dependencies, :files, :github_client,
                   :pr_message_footer, :author_details
@@ -178,7 +179,7 @@ module Dependabot
         msg += upgrade_guide_cascade(dep)
         msg += commits_cascade(dep)
         msg += "\n<br />" unless msg == ""
-        msg
+        sanitize_links_and_mentions(msg)
       end
 
       def release_cascade(dep)
@@ -197,7 +198,6 @@ module Dependabot
             release_note_lines.join
           end
         msg += "</details>"
-        msg = delink_mentions(msg)
         msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
@@ -218,7 +218,6 @@ module Dependabot
             changelog_lines.join
           end
         msg += "</details>"
-        msg = delink_mentions(msg)
         msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
@@ -237,7 +236,6 @@ module Dependabot
             upgrade_lines.join
           end
         msg += "</details>"
-        msg = delink_mentions(msg)
         msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
@@ -263,7 +261,6 @@ module Dependabot
           end
 
         msg += "</details>"
-        msg = delink_mentions(msg)
         msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
@@ -356,17 +353,21 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
-      def delink_mentions(text)
-        text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
-          "[**#{mention.tr('@', '')}**]"\
-          "(https://github.com/#{mention.tr('@', '')})"
-        end
-      end
-
       def link_issues(text:, dependency:)
         text.gsub(ISSUE_TAG_REGEX) do |mention|
           number = mention.tr("#", "").gsub("GH-", "")
           "[#{mention}](#{source_url(dependency)}/issues/#{number})"
+        end
+      end
+
+      def sanitize_links_and_mentions(text)
+        text = text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
+          "[**#{mention.tr('@', '')}**]"\
+          "(https://github.com/#{mention.tr('@', '')})"
+        end
+
+        text.gsub(GITHUB_REF_REGEX) do |ref|
+          ref.gsub("github.com", "github-redirect.dependabot.com")
         end
       end
 
