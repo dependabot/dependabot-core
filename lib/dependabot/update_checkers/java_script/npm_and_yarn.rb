@@ -13,6 +13,7 @@ module Dependabot
         require_relative "npm_and_yarn/requirements_updater"
         require_relative "npm_and_yarn/version"
         require_relative "npm_and_yarn/requirement"
+        require_relative "npm_and_yarn/registry_finder"
 
         AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
 
@@ -348,13 +349,12 @@ module Dependabot
         end
 
         def dependency_registry
-          source = dependency_source_details
+          registry_finder.registry
+        end
 
-          if source&.fetch(:type) == "private_registry"
-            source.fetch(:url).gsub("https://", "").gsub("http://", "")
-          else
-            registry_for_dep
-          end
+        def registry_auth_headers
+          return {} unless registry_finder.auth_token
+          { "Authorization" => "Bearer #{registry_finder.auth_token}" }
         end
 
         def dependency_source_details
@@ -366,53 +366,13 @@ module Dependabot
           sources.first
         end
 
-        def registry_auth_headers
-          return {} unless auth_token
-          { "Authorization" => "Bearer #{auth_token}" }
-        end
-
-        def auth_token
-          registries.
-            find { |cred| cred["registry"] == dependency_registry }&.
-            fetch("token")
-        end
-
-        def registry_for_dep
-          escaped_dependency_name = dependency.name.gsub("/", "%2F")
-
-          @registry_for_dep ||=
-            registries.find do |details|
-              token = details["token"]
-              headers = token ? { "Authorization" => "Bearer #{token}" } : {}
-
-              Excon.get(
-                "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
-                "#{escaped_dependency_name}",
-                headers: headers,
-                idempotent: true,
-                middlewares: SharedHelpers.excon_middleware
-              ).status < 400
-            end&.fetch("registry")
-
-          @registry_for_dep ||= "registry.npmjs.org"
-        end
-
-        def registries
-          registries = []
-          registries += credentials.select { |cred| cred["registry"] }
-
-          npmrc&.content.to_s.scan(AUTH_TOKEN_REGEX) do
-            registries << {
-              "registry" => Regexp.last_match[:registry],
-              "token" => Regexp.last_match[:token]
-            }
-          end
-
-          registries.uniq
-        end
-
-        def npmrc
-          @npmrc ||= dependency_files.find { |f| f.name == ".npmrc" }
+        def registry_finder
+          @registry_finder ||=
+            RegistryFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              npmrc_file: dependency_files.find { |f| f.name == ".npmrc" }
+            )
         end
 
         def package_json
