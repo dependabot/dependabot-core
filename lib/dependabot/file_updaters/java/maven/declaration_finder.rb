@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/file_updaters/java/maven"
+require "dependabot/file_parsers/java/maven"
 
 module Dependabot
   module FileUpdaters
@@ -31,7 +32,9 @@ module Dependabot
 
           def version_comes_from_property?
             return false unless declaration_node.at_css("version")
-            declaration_node.at_css("version").content.start_with?("${")
+
+            declaration_node.at_css("version").content.
+              match?(FileParsers::Java::Maven::PROPERTY_REGEX)
           end
 
           private
@@ -57,20 +60,27 @@ module Dependabot
 
           def dependency_requirement_for_node(dependency_node)
             return unless dependency_node.at_css("version")
-            version_content = dependency_node.at_css("version").content
+            version = dependency_node.at_css("version").content
 
-            return version_content unless version_content.start_with?("${")
+            unless version.match?(FileParsers::Java::Maven::PROPERTY_REGEX)
+              return version
+            end
 
-            property_name = version_content.strip[2..-2]
+            property_name =
+              version.match(FileParsers::Java::Maven::PROPERTY_REGEX).
+              named_captures.fetch("property")
+
             doc = Nokogiri::XML(pom_content)
             doc.remove_namespaces!
-            if property_name.start_with?("project.")
-              path = "//project/#{property_name.gsub(/^project\./, '')}"
-              doc.at_xpath(path)&.content ||
+            prop_value =
+              if property_name.start_with?("project.")
+                path = "//project/#{property_name.gsub(/^project\./, '')}"
+                doc.at_xpath(path)&.content ||
+                  doc.at_xpath("//properties/#{property_name}").content
+              else
                 doc.at_xpath("//properties/#{property_name}").content
-            else
-              doc.at_xpath("//properties/#{property_name}").content
-            end
+              end
+            version.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, prop_value)
           end
         end
       end

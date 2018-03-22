@@ -32,8 +32,8 @@ module Dependabot
               dependencies_using_property.map do |dep|
                 Dependency.new(
                   name: dep.name,
-                  version: target_version.to_s,
-                  requirements: updated_requirements,
+                  version: updated_version(dep),
+                  requirements: updated_requirements(dep),
                   previous_version: dep.version,
                   previous_requirements: dep.requirements,
                   package_manager: dep.package_manager
@@ -50,7 +50,9 @@ module Dependabot
               FileParsers::Java::Maven.new(
                 dependency_files: dependency_files,
                 repo: nil
-              ).parse.select { |dep| version_string(dep) == property_name }
+              ).parse.select do |dep|
+                version_string(dep).to_s.include?(property_name)
+              end
           end
 
           def property_name
@@ -75,11 +77,16 @@ module Dependabot
             dependency_files.find { |f| f.name == "pom.xml" }
           end
 
-          def updated_requirements
-            @updated_requirements ||=
+          def updated_version(dep)
+            version_string(dep).gsub(property_name, target_version.to_s)
+          end
+
+          def updated_requirements(dep)
+            @updated_requirements ||= {}
+            @updated_requirements[dep.name] ||=
               RequirementsUpdater.new(
                 requirements: dependency.requirements,
-                latest_version: target_version.to_s
+                latest_version: updated_version(dep)
               ).updated_requirements
           end
         end
