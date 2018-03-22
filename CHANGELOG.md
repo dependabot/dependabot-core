@@ -1,3 +1,7 @@
+## v0.51.7, 22 March 2018
+
+- Java: Handle versions that come partially from a property
+
 ## v0.51.6, 22 March 2018
 
 - Sanitize GitHub links
