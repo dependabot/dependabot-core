@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/metadata_finders/base"
+require "dependabot/file_parsers/java/maven"
 
 module Dependabot
   module MetadataFinders
@@ -26,7 +27,8 @@ module Dependabot
           return unless source_url
           return source_url unless source_url.include?("${")
 
-          property_name = source_url.match(/\$\{(?<name>.*)}/)[:name]
+          regex = FileParsers::Java::Maven::PROPERTY_REGEX
+          property_name = source_url.match(regex).named_captures["property"]
           doc = pom_file.dup
           doc.remove_namespaces!
           temp_name = property_name

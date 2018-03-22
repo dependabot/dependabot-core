@@ -11,6 +11,7 @@ module Dependabot
       class Maven < Dependabot::FileParsers::Base
         DEPENDENCY_SELECTOR = "parent, dependencies > dependency,
                                plugins > plugin"
+        PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
         def parse
           doc = Nokogiri::XML(pom.content)
@@ -57,18 +58,23 @@ module Dependabot
           return unless dependency_node.at_css("version")
           version_content = dependency_node.at_css("version").content
 
-          return version_content unless version_content.start_with?("${")
+          return version_content unless version_content.match?(PROPERTY_REGEX)
 
-          property_name = version_content.strip[2..-2]
+          property_name = version_content.match(PROPERTY_REGEX).
+                          named_captures.fetch("property")
+
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
-          if property_name.start_with?("project.")
-            path = "//project/#{property_name.gsub(/^project\./, '')}"
-            doc.at_xpath(path)&.content ||
+          property_value =
+            if property_name.start_with?("project.")
+              path = "//project/#{property_name.gsub(/^project\./, '')}"
+              doc.at_xpath(path)&.content ||
+                doc.at_xpath("//properties/#{property_name}").content
+            else
               doc.at_xpath("//properties/#{property_name}").content
-          else
-            doc.at_xpath("//properties/#{property_name}").content
-          end
+            end
+
+          version_content.gsub(PROPERTY_REGEX, property_value)
         end
 
         def pom

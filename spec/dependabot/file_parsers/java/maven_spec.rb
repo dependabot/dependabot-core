@@ -159,6 +159,26 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
         end
       end
 
+      describe "the second dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("org.springframework:spring-context")
+          expect(dependency.version).to eq("4.3.12.RELEASE.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "4.3.12.RELEASE.1",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
       context "where the property is the project version" do
         let(:pom_body) { fixture("java", "poms", "project_version_pom.xml") }
 
