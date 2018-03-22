@@ -1,3 +1,7 @@
+## v0.51.9, 22 March 2018
+
+- JS: Handle private sources when we don't have a lockfile
+
 ## v0.51.8, 22 March 2018
 
 - Java: Handle property version suffixes in update checker
