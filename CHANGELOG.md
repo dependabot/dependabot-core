@@ -1,3 +1,7 @@
+## v0.51.8, 22 March 2018
+
+- Java: Handle property version suffixes in update checker
+
 ## v0.51.7, 22 March 2018
 
 - Java: Handle versions that come partially from a property
