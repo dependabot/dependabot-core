@@ -1,3 +1,9 @@
+## v0.51.10, 22 March 2018
+
+- Allow punctuation after GitHub issue / PR numbers when creating links
+- JS: Refactor registry lookup into separate class
+- JS: Split library detection out of UpdateChecker
+
 ## v0.51.9, 22 March 2018
 
 - JS: Handle private sources when we don't have a lockfile
