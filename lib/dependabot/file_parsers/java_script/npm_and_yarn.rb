@@ -31,6 +31,16 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
+          dependency_set += manifest_dependencies
+          dependency_set += yarn_lock_dependencies if yarn_lock
+          dependency_set += package_lock_dependencies if package_lock
+          dependency_set.dependencies
+        end
+
+        private
+
+        def manifest_dependencies
+          dependency_set = DependencySet.new
 
           package_files.each do |file|
             # TODO: Currently, Dependabot can't handle flat dependency files
@@ -50,10 +60,43 @@ module Dependabot
             end
           end
 
-          dependency_set.dependencies
+          dependency_set
         end
 
-        private
+        def yarn_lock_dependencies
+          dependency_set = DependencySet.new
+          parsed_yarn_lock.each do |dep|
+            next unless dep["version"]
+
+            # TODO: This isn't quite right, as it will only give us one
+            # version of each dependency (when in fact there are many)
+            dependency_set << Dependency.new(
+              name: dep["name"],
+              version: dep["version"],
+              package_manager: "npm_and_yarn",
+              requirements: []
+            )
+          end
+          dependency_set
+        end
+
+        def package_lock_dependencies
+          dependency_set = DependencySet.new
+          parsed_package_lock_json.
+            fetch("dependencies", {}).each do |name, details|
+              next unless details["version"]
+
+              # TODO: This isn't quite right, as it will only give us one
+              # version of each dependency (when in fact there are many)
+              dependency_set << Dependency.new(
+                name: name,
+                version: details["version"],
+                package_manager: "npm_and_yarn",
+                requirements: []
+              )
+            end
+          dependency_set
+        end
 
         def build_dependency(file:, type:, name:, requirement:)
           return if lockfile? && !version_for(name, requirement)
