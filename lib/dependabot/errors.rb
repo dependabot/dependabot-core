@@ -4,6 +4,28 @@ module Dependabot
   class DependabotError < StandardError; end
 
   #####################
+  # Repo leval errors #
+  #####################
+
+  class BranchNotFound < DependabotError
+    attr_reader :branch_name
+
+    def initialize(branch_name, msg = nil)
+      @branch_name = branch_name
+      super(msg)
+    end
+
+    def file_name
+      branch_name.split("/").last
+    end
+
+    def directory
+      # Directory should always start with a `/`
+      branch_name.split("/")[0..-2].join("/").sub(%r{^/*}, "/")
+    end
+  end
+
+  #####################
   # File level errors #
   #####################
 

@@ -48,6 +48,8 @@ module Dependabot
             gitlab_client.branch(repo, branch).commit.id
           else raise "Unsupported host '#{host}'."
           end
+      rescue Octokit::NotFound
+        raise Dependabot::BranchNotFound, branch
       end
 
       private

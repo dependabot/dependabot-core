@@ -77,6 +77,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
+
+        context "that can't be found" do
+          before do
+            stub_request(:get, url + "/git/refs/heads/my_branch").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404,
+                        headers: { "content-type" => "application/json" })
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::BranchNotFound) do |error|
+                expect(error.branch_name).to eq("my_branch")
+              end
+          end
+        end
       end
     end
 
