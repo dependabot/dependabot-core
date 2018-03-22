@@ -1,3 +1,7 @@
+## v0.51.12, 22 March 2018
+
+- Return subdependencies from JS FileParsers (imperfectly)
+
 ## v0.51.11, 22 March 2018
 
 - Fix typo
