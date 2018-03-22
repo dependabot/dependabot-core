@@ -9,7 +9,7 @@ module Dependabot
     class MessageBuilder
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
-      ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s)]|$)/
+      ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s),.:]|$)/
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
       attr_reader :repo_name, :dependencies, :files, :github_client,
