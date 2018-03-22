@@ -1,3 +1,7 @@
+## v0.51.11, 22 March 2018
+
+- Fix typo
+
 ## v0.51.10, 22 March 2018
 
 - Allow punctuation after GitHub issue / PR numbers when creating links
