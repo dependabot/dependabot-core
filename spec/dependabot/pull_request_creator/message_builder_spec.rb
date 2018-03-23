@@ -276,11 +276,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200,
                   body: fixture("github", "business_releases.json"),
                   headers: json_header)
-      stub_request(:get, "https://raw.githubusercontent.com/gocardless/"\
-                         "business/master/CHANGELOG.md").
+      stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                         "business/contents/CHANGELOG.md").
         to_return(status: 200,
-                  body: fixture("raw", "changelog.md"),
-                  headers: { "Content-Type" => "text/plain; charset=utf-8" })
+                  body: fixture("github", "changelog_contents.json"),
+                  headers: json_header)
       stub_request(:get, "#{business_repo_url}/compare/v1.4.0...v1.5.0").
         to_return(status: 200,
                   body: fixture("github", "business_compare_commits.json"),
@@ -624,12 +624,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 fixture("github", "business_files_with_upgrade_guide.json"),
               headers: json_header
             )
-          stub_request(:get, "https://raw.githubusercontent.com/gocardless/"\
-                         "business/master/UPGRADE.md").
+          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                         "business/contents/UPGRADE.md").
             to_return(
               status: 200,
-              body: fixture("raw", "upgrade.md"),
-              headers: { "Content-Type" => "text/plain; charset=utf-8" }
+              body: fixture("github", "upgrade_guide_contents.json"),
+              headers: json_header
             )
         end
 
@@ -726,11 +726,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
-          stub_request(:get, "https://raw.githubusercontent.com/gocardless/"\
-                             "statesman/master/CHANGELOG.md").
+          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                             "statesman/contents/CHANGELOG.md").
             to_return(status: 200,
-                      body: fixture("raw", "changelog.md"),
-                      headers: { "Content-Type" => "text/plain" })
+                      body: fixture("github", "changelog_contents.json"),
+                      headers: json_header)
           stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
             to_return(
               status: 200,
@@ -849,11 +849,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
-          stub_request(:get, "https://raw.githubusercontent.com/gocardless/"\
-                             "statesman/master/CHANGELOG.md").
+          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                             "statesman/contents/CHANGELOG.md").
             to_return(status: 200,
-                      body: fixture("raw", "changelog.md"),
-                      headers: { "Content-Type" => "text/plain" })
+                      body: fixture("github", "changelog_contents.json"),
+                      headers: json_header)
           stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
             to_return(
               status: 200,

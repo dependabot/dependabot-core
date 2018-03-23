@@ -305,14 +305,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_url) do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
-      let(:github_raw_changelog_url) do
-        "https://raw.githubusercontent.com/gocardless/business/master/"\
-        "CHANGELOG.md"
+      let(:github_changelog_url) do
+        "https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md"
       end
       let(:github_contents_response) do
         fixture("github", "business_files.json")
       end
-      let(:changelog_body) { fixture("raw", "changelog.md") }
+      let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       before do
         stub_request(:get, github_url).
@@ -320,11 +319,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: 200,
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_raw_changelog_url).
+        stub_request(:get, github_changelog_url).
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: changelog_body,
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+                    headers: { "Content-Type" => "application/json" })
       end
 
       context "with a changelog" do
@@ -338,11 +337,24 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           finder.changelog_text
           finder.changelog_text
           expect(WebMock).to have_requested(:get, github_url).once
-          expect(WebMock).to have_requested(:get, github_raw_changelog_url).once
+          expect(WebMock).to have_requested(:get, github_changelog_url).once
+        end
+
+        context "that has non-standard characters" do
+          let(:changelog_body) do
+            fixture("github", "changelog_contents_japanese.json")
+          end
+          let(:expected_changelog) do
+            fixture("raw", "japanese_changelog.md").gsub(/\n*\z/, "")
+          end
+
+          it { is_expected.to eq(expected_changelog) }
         end
 
         context "that is in reverse order" do
-          let(:changelog_body) { fixture("raw", "reverse_changelog.md") }
+          let(:changelog_body) do
+            fixture("github", "changelog_contents_reversed.json")
+          end
           let(:dependency_version) { "1.11.1" }
           let(:dependency_previous_version) { "1.10.0" }
 
@@ -422,8 +434,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           context "when the package manager is composer" do
             let(:package_manager) { "composer" }
-
-            it { is_expected.to eq(changelog_body.sub(/\n*\z/, "")) }
+            let(:raw_changelog) { fixture("raw", "changelog.md") }
+            it { is_expected.to eq(raw_changelog.sub(/\n*\z/, "")) }
           end
 
           context "when the ref has changed" do
@@ -583,9 +595,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_url) do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
-      let(:github_raw_upgrade_guide_url) do
-        "https://raw.githubusercontent.com/gocardless/business/master/"\
-        "UPGRADE.md"
+      let(:github_upgrade_guide_url) do
+        "https://api.github.com/repos/gocardless/business/contents/UPGRADE.md"
       end
       let(:github_contents_response) do
         fixture("github", "business_files_with_upgrade_guide.json")
@@ -597,11 +608,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: 200,
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_raw_upgrade_guide_url).
+        stub_request(:get, github_upgrade_guide_url).
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
-                    body: fixture("raw", "upgrade.md"),
-                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+                    body: fixture("github", "upgrade_guide_contents.json"),
+                    headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq(fixture("raw", "upgrade.md").sub(/\n*\z/, "")) }
@@ -611,7 +622,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         finder.upgrade_guide_text
         expect(WebMock).to have_requested(:get, github_url).once
         expect(WebMock).
-          to have_requested(:get, github_raw_upgrade_guide_url).once
+          to have_requested(:get, github_upgrade_guide_url).once
       end
     end
   end

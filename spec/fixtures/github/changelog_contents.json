@@ -1,0 +1,18 @@
+{
+    "name": "NEWS.ja",
+    "path": "NEWS.ja",
+    "sha": "573fcc3b5952e689528763484bac0b461e844c3b",
+    "size": 926,
+    "url": "https://api.github.com/repos/hiki/hikidoc/contents/NEWS.ja?ref=master",
+    "html_url": "https://github.com/hiki/hikidoc/blob/master/NEWS.ja",
+    "git_url": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
+    "download_url": "https://raw.githubusercontent.com/hiki/hikidoc/master/NEWS.ja",
+    "type": "file",
+    "content": "IyMgMS4xMS4xIC0gRGVjZW1iZXIgMjAsIDIwMTcKCi0gQWRkIDIwMTctMjAx\nOCBCRUNTIGhvbGlkYXkgZGVmaW5pdGlvbnMKCiMjIDEuMTAuMCAtIFNlcHRl\nbWJlciAyMCwgMjAxNwoKLSBBZGQgMjAxOC0yMDE5IEJldGFsaW5nc3NlcnZp\nY2UgaG9saWRheSBkZWZpbml0aW9ucwoKIyMgMS45LjAgLSBBdWd1c3QgMjMs\nIDIwMTcKCi0gQWRkIDIwMTcgQmV0YWxpbmdzc2VydmljZSBob2xpZGF5IGRl\nZmluaXRpb25zCgojIyAxLjguMCAtIEZlYnJ1YXJ5IDEzLCAyMDE3CgotIEFk\nZCAyMDE4LTIwMjcgVEFSR0VUIGhvbGlkYXkgZGVmaW50aW9ucwotIEFkZCAy\nMDE4LTIwMjcgQmFua2dpcm90IGhvbGlkYXkgZGVmaW50aW9ucwoKIyMgMS43\nLjAgLSBKYW51YXJ5IDE4LCAyMDE3CgotIEFkZCAyMDE4LTIwMjcgQkFDUyBo\nb2xpZGF5IGRlZmludGlvbnMKCiMjIDEuNi4wIC0gRGVjZW1iZXIgMjMsIDIw\nMTYKCi0gQWRkIDIwMTcgQkFDUyBob2xpZGF5IGRlZmluaXRpb25zCi0gQWRk\nIDIwMTcgYW5kIDIwMTggVEFSR0VUIGhvbGlkYXkgZGVmaW5pdGlvbnMKCiMj\nIDEuNS4wIC0gSnVuZSAyLCAyMDE1CgotIEFkZCAyMDE2IGhvbGlkYXkgZGVm\naW5pdGlvbnMKCiMjIDEuNC4wIC0gRGVjZW1iZXIgMjQsIDIwMTQKCi0gQWRk\nIHN1cHBvcnQgZm9yIGN1c3RvbSBjYWxlbmRhciBsb2FkIHBhdGhzCi0gUmVt\nb3ZlIHRoZSAnc2VwYScgY2FsZW5kYXIKCgojIyAxLjMuMCAtIERlY2VtYmVy\nIDIsIDIwMTQKCi0gQWRkIGBDYWxlbmRhciNwcmV2aW91c19idXNpbmVzc19k\nYXlgCgoKIyMgMS4yLjAgLSBOb3ZlbWJlciAxNSwgMjAxNAoKLSBBZGQgVEFS\nR0VUIGNhbGVuZGFyCgoKIyMgMS4xLjAgLSBTZXB0ZW1iZXIgMzAsIDIwMTQK\nCi0gQWRkIDIwMTUgaG9saWRheSBkZWZpbml0aW9ucwoKCiMjIDEuMC4wIC0g\nSnVuZSAxMSwgMjAxNAoKLSBJbml0aWFsIHB1YmxpYyByZWxlYXNlCg==\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/hiki/hikidoc/contents/NEWS.ja?ref=master",
+        "git": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
+        "html": "https://github.com/hiki/hikidoc/blob/master/NEWS.ja"
+    }
+}

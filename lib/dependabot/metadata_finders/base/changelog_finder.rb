@@ -66,7 +66,12 @@ module Dependabot
 
           @upgrade_guide_text ||=
             if source.host == "github"
-              github_client.get(upgrade_guide.download_url)
+              # Hitting the download URL directly causes encoding problems
+              raw_content = github_client.contents(
+                source.repo,
+                path: upgrade_guide.path
+              ).content
+              Base64.decode64(raw_content).force_encoding("UTF-8").encode
             else
               Excon.get(
                 upgrade_guide.download_url,
@@ -105,7 +110,12 @@ module Dependabot
 
           @full_changelog_text ||=
             if source.host == "github"
-              github_client.get(changelog.download_url)
+              # Hitting the download URL directly causes encoding problems
+              raw_content = github_client.contents(
+                source.repo,
+                path: changelog.path
+              ).content
+              Base64.decode64(raw_content).force_encoding("UTF-8").encode
             else
               Excon.get(
                 changelog.download_url,
@@ -137,7 +147,7 @@ module Dependabot
 
           changelog_lines.find_index.with_index do |line, index|
             next false unless line.include?(version)
-            next true if line.start_with?("#")
+            next true if line.start_with?("#") || line.start_with?("!")
             next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
             next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
             false
