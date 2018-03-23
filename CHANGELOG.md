@@ -1,3 +1,7 @@
+## v0.51.15, 23 March 2018
+
+- Docker: Handle file updates where a tag and digest have been specified
+
 ## v0.51.14, 23 March 2018
 
 - Fix encoding error when fetching changelogs
