@@ -41,14 +41,17 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   let(:lockfile_fixture_name) { "Gemfile.lock" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "business",
-      version: "1.5.0",
-      previous_version: "1.4.0",
+      name: dependency_name,
+      version: dependency_version,
+      previous_version: dependency_previous_version,
       requirements: requirements,
       previous_requirements: previous_requirements,
       package_manager: "bundler"
     )
   end
+  let(:dependency_name) { "business" }
+  let(:dependency_version) { "1.5.0" }
+  let(:dependency_previous_version) { "1.4.0" }
   let(:requirements) do
     [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
   end
@@ -110,8 +113,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             }
           ]
         end
-        its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
-        its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
+        its(:content) { is_expected.to include("\"business\", \"~> 1.5.0\"") }
+        its(:content) { is_expected.to include("\"statesman\", \"~> 1.2.0\"") }
+      end
+
+      context "when updating a sub-dependency" do
+        let(:gemfile_fixture_name) { "subdependency" }
+        let(:lockfile_fixture_name) { "subdependency.lock" }
+        let(:dependency_name) { "i18n" }
+        let(:dependency_version) { "1.6.0.beta" }
+        let(:dependency_previous_version) { "0.7.0.beta1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it { is_expected.to be_nil }
       end
 
       context "when a pre-release is specified" do
@@ -544,23 +559,35 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
 
+      context "when updating a sub-dependency" do
+        let(:gemfile_fixture_name) { "subdependency" }
+        let(:lockfile_fixture_name) { "subdependency.lock" }
+        let(:dependency_name) { "i18n" }
+        let(:dependency_version) { "0.7.0" }
+        let(:dependency_previous_version) { "0.7.0.beta1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        its(:content) { is_expected.to include("i18n (0.7.0)") }
+      end
+
       context "when the old Gemfile specified the version" do
         let(:gemfile_fixture_name) { "version_specified" }
 
         it "locks the updated gem to the latest version" do
-          expect(file.content).to include "business (1.5.0)"
+          expect(file.content).to include("business (1.5.0)")
         end
 
         it "doesn't change the version of the other (also outdated) gem" do
-          expect(file.content).to include "statesman (1.2.1)"
+          expect(file.content).to include("statesman (1.2.1)")
         end
 
         it "preserves the BUNDLED WITH line in the lockfile" do
-          expect(file.content).to include "BUNDLED WITH\n   1.10.6"
+          expect(file.content).to include("BUNDLED WITH\n   1.10.6")
         end
 
         it "doesn't add in a RUBY VERSION" do
-          expect(file.content).to_not include "RUBY VERSION"
+          expect(file.content).to_not include("RUBY VERSION")
         end
       end
 
@@ -569,18 +596,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:lockfile_fixture_name) { "explicit_ruby.lock" }
 
         it "locks the updated gem to the latest version" do
-          expect(file.content).to include "business (1.5.0)"
+          expect(file.content).to include("business (1.5.0)")
         end
 
         it "preserves the Ruby version in the lockfile" do
-          expect(file.content).to include "RUBY VERSION\n   ruby 2.2.0p0"
+          expect(file.content).to include("RUBY VERSION\n   ruby 2.2.0p0")
         end
 
         context "but the lockfile didn't include that version" do
           let(:lockfile_fixture_name) { "Gemfile.lock" }
 
           it "doesn't add in a RUBY VERSION" do
-            expect(file.content).to_not include "RUBY VERSION"
+            expect(file.content).to_not include("RUBY VERSION")
           end
         end
 
