@@ -438,23 +438,25 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         describe "the first dependency" do
           subject { dependencies.first }
           let(:expected_requirements) do
-            [{
-              requirement: "~> 1.0",
-              file: "example.gemspec",
-              source: nil,
-              groups: ["runtime"]
-            },
-            {
-              requirement: "~> 1.4.0",
-              file: "Gemfile",
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                branch: "master",
-                ref: "master"
+            [
+              {
+                requirement: "~> 1.0",
+                file: "example.gemspec",
+                source: nil,
+                groups: ["runtime"]
               },
-              groups: [:default]
-            }]
+              {
+                requirement: "~> 1.4.0",
+                file: "Gemfile",
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "master"
+                },
+                groups: [:default]
+              }
+            ]
           end
 
           it { is_expected.to be_a(Dependabot::Dependency) }

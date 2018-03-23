@@ -156,18 +156,20 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to be_nil }
             its(:requirements) do
               is_expected.to eq(
-                [{
-                  requirement: "0.1.x",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                },
-                {
-                  requirement: "^0.1.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }]
+                [
+                  {
+                    requirement: "0.1.x",
+                    file: "package.json",
+                    groups: ["dependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^0.1.0",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  }
+                ]
               )
             end
           end
@@ -692,18 +694,20 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.1") }
             its(:requirements) do
               is_expected.to match_array(
-                [{
-                  requirement: "^1.1.0",
-                  file: "packages/package1/package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                },
-                {
-                  requirement: "^1.0.0",
-                  file: "other_package/package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }]
+                [
+                  {
+                    requirement: "^1.1.0",
+                    file: "packages/package1/package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^1.0.0",
+                    file: "other_package/package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  }
+                ]
               )
             end
           end

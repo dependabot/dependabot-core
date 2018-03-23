@@ -203,18 +203,20 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to eq("2.0.0")
             expect(dependency.requirements).to match_array(
-              [{
-                requirement: nil,
-                file: "requirements.txt",
-                groups: [],
-                source: nil
-              },
-              {
-                requirement: "==2.0.0",
-                file: "constraints.txt",
-                groups: [],
-                source: nil
-              }]
+              [
+                {
+                  requirement: nil,
+                  file: "requirements.txt",
+                  groups: [],
+                  source: nil
+                },
+                {
+                  requirement: "==2.0.0",
+                  file: "constraints.txt",
+                  groups: [],
+                  source: nil
+                }
+              ]
             )
           end
         end
@@ -231,18 +233,20 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               expect(dependency.name).to eq("requests")
               expect(dependency.version).to eq("2.0.0")
               expect(dependency.requirements).to match_array(
-                [{
-                  requirement: "==2.0.0",
-                  file: "constraints.txt",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  requirement: "==2.4.1",
-                  file: "requirements.txt",
-                  groups: [],
-                  source: nil
-                }]
+                [
+                  {
+                    requirement: "==2.0.0",
+                    file: "constraints.txt",
+                    groups: [],
+                    source: nil
+                  },
+                  {
+                    requirement: "==2.4.1",
+                    file: "requirements.txt",
+                    groups: [],
+                    source: nil
+                  }
+                ]
               )
             end
           end
@@ -366,18 +370,20 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           expect(dependency.name).to eq("requests")
           expect(dependency.version).to eq("2.1.0")
           expect(dependency.requirements).to eq(
-            [{
-              requirement: "==2.1.0",
-              file: "requirements.txt",
-              groups: [],
-              source: nil
-            },
-            {
-              requirement: "==2.12.*",
-              file: "setup.py",
-              groups: [],
-              source: nil
-            }]
+            [
+              {
+                requirement: "==2.1.0",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "==2.12.*",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }
+            ]
           )
         end
       end
