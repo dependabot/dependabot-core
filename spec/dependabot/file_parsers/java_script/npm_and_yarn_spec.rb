@@ -47,14 +47,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("0.0.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^0.0.1",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -73,14 +71,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("0.2.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "*",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "*",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -111,14 +107,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.1.4") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.1.4",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.1.4",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -137,14 +131,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -164,20 +156,18 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to be_nil }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "0.1.x",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  },
-                  {
-                    requirement: "^0.1.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "0.1.x",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "^0.1.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -197,17 +187,15 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("2.3.0") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^2.0.0",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: {
-                      type: "private_registry",
-                      url: "http://registry.npm.taobao.org"
-                    }
+                [{
+                  requirement: "^2.0.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "http://registry.npm.taobao.org"
                   }
-                ]
+                }]
               )
             end
           end
@@ -220,17 +208,15 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: {
-                      type: "private_registry",
-                      url: "https://npm.fury.io/dependabot"
-                    }
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://npm.fury.io/dependabot"
                   }
-                ]
+                }]
               )
             end
           end
@@ -250,14 +236,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["optionalDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["optionalDependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -297,19 +281,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: nil,
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: {
-                      type: "git",
-                      url: "https://github.com/jonschlinkert/is-number.git",
-                      branch: nil,
-                      ref: "master"
-                    }
+                [{
+                  requirement: nil,
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number.git",
+                    branch: nil,
+                    ref: "master"
                   }
-                ]
+                }]
               )
             end
           end
@@ -332,19 +314,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: nil,
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: {
-                      type: "git",
-                      url: "https://github.com/jonschlinkert/is-number",
-                      branch: nil,
-                      ref: "2.0.0"
-                    }
+                [{
+                  requirement: nil,
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "2.0.0"
                   }
-                ]
+                }]
               )
             end
           end
@@ -366,19 +346,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               end
               its(:requirements) do
                 is_expected.to eq(
-                  [
-                    {
-                      requirement: "^2.0.0",
-                      file: "package.json",
-                      groups: ["devDependencies"],
-                      source: {
-                        type: "git",
-                        url: "https://github.com/jonschlinkert/is-number",
-                        branch: nil,
-                        ref: "master"
-                      }
+                  [{
+                    requirement: "^2.0.0",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
                     }
-                  ]
+                  }]
                 )
               end
             end
@@ -401,19 +379,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               end
               its(:requirements) do
                 is_expected.to eq(
-                  [
-                    {
-                      requirement: nil,
-                      file: "package.json",
-                      groups: ["devDependencies"],
-                      source: {
-                        type: "git",
-                        url: "https://github.com/jonschlinkert/is-number",
-                        branch: nil,
-                        ref: "master"
-                      }
+                  [{
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
                     }
-                  ]
+                  }]
                 )
               end
             end
@@ -436,19 +412,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               end
               its(:requirements) do
                 is_expected.to eq(
-                  [
-                    {
-                      requirement: nil,
-                      file: "package.json",
-                      groups: ["devDependencies"],
-                      source: {
-                        type: "git",
-                        url: "https://github.com/jonschlinkert/is-number",
-                        branch: nil,
-                        ref: "master"
-                      }
+                  [{
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
                     }
-                  ]
+                  }]
                 )
               end
             end
@@ -468,14 +442,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to be_nil }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^0.0.1",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -492,19 +464,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               its(:version) { is_expected.to be_nil }
               its(:requirements) do
                 is_expected.to eq(
-                  [
-                    {
-                      requirement: nil,
-                      file: "package.json",
-                      groups: ["devDependencies"],
-                      source: {
-                        type: "git",
-                        url: "https://github.com/jonschlinkert/is-number.git",
-                        branch: nil,
-                        ref: "master"
-                      }
+                  [{
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number.git",
+                      branch: nil,
+                      ref: "master"
                     }
-                  ]
+                  }]
                 )
               end
             end
@@ -540,14 +510,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("0.0.1") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^0.0.1",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -565,14 +533,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.0") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -591,14 +557,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.7.0") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["optionalDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["optionalDependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -620,14 +584,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               expect(dependency.name).to eq("lodash")
               expect(dependency.version).to eq("0.1.0")
               expect(dependency.requirements).to eq(
-                [
-                  {
-                    requirement: "^0.1.0",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^0.1.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
               )
             end
           end
@@ -647,17 +609,15 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("2.3.0") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^2.0.0",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: {
-                      type: "private_registry",
-                      url: "http://registry.npm.taobao.org"
-                    }
+                [{
+                  requirement: "^2.0.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "http://registry.npm.taobao.org"
                   }
-                ]
+                }]
               )
             end
           end
@@ -670,17 +630,15 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.0") }
             its(:requirements) do
               is_expected.to eq(
-                [
-                  {
-                    requirement: "^1.0.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: {
-                      type: "private_registry",
-                      url: "https://npm.fury.io/dependabot"
-                    }
+                [{
+                  requirement: "^1.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://npm.fury.io/dependabot"
                   }
-                ]
+                }]
               )
             end
           end
@@ -734,20 +692,18 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:version) { is_expected.to eq("1.8.1") }
             its(:requirements) do
               is_expected.to match_array(
-                [
-                  {
-                    requirement: "^1.1.0",
-                    file: "packages/package1/package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  },
-                  {
-                    requirement: "^1.0.0",
-                    file: "other_package/package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "^1.1.0",
+                  file: "packages/package1/package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "^1.0.0",
+                  file: "other_package/package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
               )
             end
           end
