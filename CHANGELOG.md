@@ -1,3 +1,7 @@
+## v0.51.14, 23 March 2018
+
+- Fix encoding error when fetching changelogs
+
 ## v0.51.13, 23 March 2018
 
 - Ruby: Don't try to replace requirement if using a ternary operator
