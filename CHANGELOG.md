@@ -1,3 +1,8 @@
+## v0.51.17, 23 March 2018
+
+- JS: Don't try to downgrade requirement files that have pinned to a
+  post-latest version
+
 ## v0.51.16, 23 March 2018
 
 - Docker: Move digest fetching to UpdateChecker
