@@ -29,7 +29,7 @@ module Dependabot
           end
 
           class Rewriter < Parser::TreeRewriter
-            SKIPPED_TYPES = %i(send lvar dstr).freeze
+            SKIPPED_TYPES = %i(send lvar dstr begin).freeze
 
             def initialize(dependency:, file_type:, updated_requirement:)
               @dependency = dependency
