@@ -16,8 +16,6 @@ module Dependabot
         require_relative "npm_and_yarn/registry_finder"
         require_relative "npm_and_yarn/library_detector"
 
-        AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
-
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
           @latest_version ||= fetch_latest_version_details&.fetch(:version)

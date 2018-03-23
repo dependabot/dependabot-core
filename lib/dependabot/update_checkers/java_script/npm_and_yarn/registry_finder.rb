@@ -9,6 +9,8 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class RegistryFinder
+          AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+
           def initialize(dependency:, credentials:, npmrc_file: nil)
             @dependency = dependency
             @credentials = credentials
