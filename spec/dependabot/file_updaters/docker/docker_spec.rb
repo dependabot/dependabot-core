@@ -170,7 +170,11 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { type: "digest" }
+              source: {
+                type: "digest",
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                        "ca97eba880ebf600d68608"
+              }
             }
           ],
           previous_requirements: [
@@ -178,59 +182,18 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { type: "digest" }
+              source: {
+                type: "digest",
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                        "dfc38288cf73aa07485005"
+              }
             }
           ],
           package_manager: "docker"
         )
       end
 
-      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
-        old_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
-        stub_request(:head, repo_url + "manifests/12.04.5").
-          and_return(status: 200, body: "", headers: JSON.parse(old_headers))
-
-        new_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
-        stub_request(:head, repo_url + "manifests/17.10").
-          and_return(status: 200, body: "", headers: JSON.parse(new_headers))
-      end
-
       its(:length) { is_expected.to eq(1) }
-
-      context "when the docker registry times out" do
-        before do
-          old_headers = fixture(
-            "docker",
-            "registry_manifest_headers",
-            "ubuntu_12.04.5.json"
-          )
-          stub_request(:head, repo_url + "manifests/12.04.5").
-            to_raise(RestClient::Exceptions::OpenTimeout).then.
-            to_return(status: 200, body: "", headers: JSON.parse(old_headers))
-        end
-
-        its(:length) { is_expected.to eq(1) }
-
-        context "every time" do
-          before do
-            stub_request(:head, repo_url + "manifests/12.04.5").
-              to_raise(RestClient::Exceptions::OpenTimeout)
-          end
-
-          it "raises" do
-            expect { updater.updated_dependency_files }.
-              to raise_error(RestClient::Exceptions::OpenTimeout)
-          end
-        end
-      end
 
       describe "the updated Dockerfile" do
         subject(:updated_dockerfile) do
@@ -265,7 +228,12 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
                 requirement: nil,
                 groups: [],
                 file: "Dockerfile",
-                source: { type: "digest", registry: "registry-host.io:5000" }
+                source: {
+                  type: "digest",
+                  registry: "registry-host.io:5000",
+                  digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                          "ca97eba880ebf600d68608"
+                }
               }
             ],
             previous_requirements: [
@@ -273,52 +241,30 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
                 requirement: nil,
                 groups: [],
                 file: "Dockerfile",
-                source: { type: "digest", registry: "registry-host.io:5000" }
+                source: {
+                  type: "digest",
+                  registry: "registry-host.io:5000",
+                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                          "dfc38288cf73aa07485005"
+                }
               }
             ],
             package_manager: "docker"
           )
         end
-        let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
-        context "without authentication credentials" do
-          it "raises a to Dependabot::PrivateSourceNotReachable error" do
-            expect { updated_files }.
-              to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
-                expect(error.source).to eq("registry-host.io:5000")
-              end
-          end
-        end
+        its(:length) { is_expected.to eq(1) }
 
-        context "with authentication credentials" do
-          let(:credentials) do
-            [
-              {
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              },
-              {
-                "registry" => "registry-host.io:5000",
-                "username" => "grey",
-                "password" => "pa55word"
-              }
-            ]
+        describe "the updated Dockerfile" do
+          subject(:updated_dockerfile) do
+            updated_files.find { |f| f.name == "Dockerfile" }
           end
 
-          its(:length) { is_expected.to eq(1) }
-
-          describe "the updated Dockerfile" do
-            subject(:updated_dockerfile) do
-              updated_files.find { |f| f.name == "Dockerfile" }
-            end
-
-            its(:content) do
-              is_expected.to include("FROM registry-host.io:5000/"\
-                                     "myreg/ubuntu@sha256:3ea1ca1aa")
-            end
-            its(:content) { is_expected.to include "RUN apt-get update" }
+          its(:content) do
+            is_expected.to include("FROM registry-host.io:5000/"\
+                                   "myreg/ubuntu@sha256:3ea1ca1aa")
           end
+          its(:content) { is_expected.to include "RUN apt-get update" }
         end
       end
     end

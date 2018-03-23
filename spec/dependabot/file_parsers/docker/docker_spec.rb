@@ -204,7 +204,11 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
                 requirement: nil,
                 groups: [],
                 file: "Dockerfile",
-                source: { type: "digest" }
+                source: {
+                  type: "digest",
+                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                          "fc38288cf73aa07485005"
+                }
               }
             ]
           end
@@ -262,7 +266,9 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
                     file: "Dockerfile",
                     source: {
                       type: "digest",
-                      registry: "registry-host.io:5000"
+                      registry: "registry-host.io:5000",
+                      digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                              "e4c8dfc38288cf73aa07485005"
                     }
                   }
                 ]

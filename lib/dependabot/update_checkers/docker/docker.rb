@@ -29,7 +29,12 @@ module Dependabot
         end
 
         def updated_requirements
-          dependency.requirements
+          dependency.requirements.map do |req|
+            next req unless req.fetch(:source).fetch(:type) == "digest"
+            next req unless updated_digest
+            updated_source = req.fetch(:source).merge(digest: updated_digest)
+            req.merge(source: updated_source)
+          end
         end
 
         private
@@ -74,6 +79,7 @@ module Dependabot
         end
 
         def tags_from_registry
+          attempt = 1
           @tags_from_registry ||=
             begin
               if dependency.name.split("/").count < 2
@@ -86,9 +92,27 @@ module Dependabot
                   fetch("tags")
               end
             rescue RestClient::Exceptions::Timeout
-              @attempt ||= 1
-              @attempt += 1
-              raise if @attempt > 3
+              attempt += 1
+              raise if attempt > 3
+              retry
+            end
+        end
+
+        def updated_digest
+          return unless latest_version
+          attempt = 1
+          @updated_digest ||=
+            begin
+              image = dependency.name
+              repo = image.split("/").count < 2 ? "library/#{image}" : image
+              tag = latest_version
+
+              docker_registry_client.
+                dohead("/v2/#{repo}/manifests/#{tag}").
+                headers.fetch(:docker_content_digest)
+            rescue RestClient::Exceptions::Timeout
+              attempt += 1
+              raise if attempt > 3
               retry
             end
         end
