@@ -94,24 +94,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       context "when the full version is specified" do
         let(:gemfile_fixture_name) { "version_specified" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
         end
         its(:content) { is_expected.to include("\"business\", \"~> 1.5.0\"") }
         its(:content) { is_expected.to include("\"statesman\", \"~> 1.2.0\"") }
@@ -132,24 +128,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       context "when a pre-release is specified" do
         let(:gemfile_fixture_name) { "prerelease_specified" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0.rc1",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0.rc1",
+            groups: [],
+            source: nil
+          }]
         end
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
       end
@@ -236,24 +228,10 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           ]
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "3.6.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{ file: "Gemfile", requirement: "3.6.0", groups: [], source: nil }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "3.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{ file: "Gemfile", requirement: "3.5.0", groups: [], source: nil }]
         end
 
         it "updates both dependencies" do
@@ -291,17 +269,15 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           ]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.0.0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "http://github.com/gocardless/business"
-              }
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "http://github.com/gocardless/business"
             }
-          ]
+          }]
         end
         its(:content) do
           is_expected.to include "\"business\", \"~> 1.11.1\", git"
@@ -313,18 +289,16 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               %(git: "https://github.com/gocardless/business", tag: "v1.0.0")
           end
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.8.0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "http://github.com/gocardless/business",
-                  ref: "v1.8.0"
-                }
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.8.0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "http://github.com/gocardless/business",
+                ref: "v1.8.0"
               }
-            ]
+            }]
           end
 
           let(:expected_string) do
@@ -332,9 +306,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               %(git: "https://github.com/gocardless/business", tag: "v1.8.0")
           end
 
-          its(:content) do
-            is_expected.to eq(expected_string)
-          end
+          its(:content) { is_expected.to eq(expected_string) }
         end
 
         context "that should be removed" do
@@ -349,14 +321,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             )
           end
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.8.0",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.8.0",
+              groups: [],
+              source: nil
+            }]
           end
 
           its(:content) do
@@ -412,9 +382,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           end
 
           context "with a comment" do
-            let(:gemfile_body) do
-              %(gem "business", git: "git_url" # My gem)
-            end
+            let(:gemfile_body) { %(gem "business", git: "git_url" # My gem) }
             its(:content) { is_expected.to eq(%(gem "business" # My gem)) }
           end
         end
@@ -423,24 +391,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       context "when the new (and old) requirement is a range" do
         let(:gemfile_fixture_name) { "version_between_bounds" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "> 1.0.0, < 1.6.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "> 1.0.0, < 1.6.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "> 1.0.0, < 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "> 1.0.0, < 1.5.0",
+            groups: [],
+            source: nil
+          }]
         end
         its(:content) do
           is_expected.to include "\"business\", \"> 1.0.0\", \"< 1.6.0\""
@@ -467,36 +431,32 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           fixture("ruby", "gemfiles", "version_not_specified")
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "backend/Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "backend/Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "backend/Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "backend/Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be_nil }
       end
@@ -506,36 +466,32 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           fixture("ruby", "gemfiles", "version_specified")
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "backend/Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "backend/Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "backend/Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "backend/Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
         end
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
         its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
@@ -717,24 +673,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           ]
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "3.6.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "3.6.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "3.5.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "3.5.0",
+            groups: [],
+            source: nil
+          }]
         end
 
         it "updates both dependencies" do
@@ -757,24 +709,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 2.0.1",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 2.0.1",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.2.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.2.0",
+            groups: [],
+            source: nil
+          }]
         end
 
         it "updates the gem just fine" do
@@ -818,34 +766,30 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/prius",
-                branch: "master",
-                ref: "master"
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/prius",
+              branch: "master",
+              ref: "master"
             }
-          ]
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/prius",
-                branch: "master",
-                ref: "master"
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/prius",
+              branch: "master",
+              ref: "master"
             }
-          ]
+          }]
         end
 
         it "updates the dependency's revision" do
@@ -883,30 +827,26 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               )
             end
             let(:requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.11.1",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "http://github.com/gocardless/business"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.11.1",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "http://github.com/gocardless/business"
                 }
-              ]
+              }]
             end
             let(:previous_requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.0.0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "http://github.com/gocardless/business"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.0.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "http://github.com/gocardless/business"
                 }
-              ]
+              }]
             end
             its(:content) { is_expected.to include "business (~> 1.11.1)!" }
           end
@@ -1246,24 +1186,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         )
       end
       let(:requirements) do
-        [
-          {
-            file: "example.gemspec",
-            requirement: ">= 4.6, < 6.0",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "example.gemspec",
+          requirement: ">= 4.6, < 6.0",
+          groups: [],
+          source: nil
+        }]
       end
       let(:previous_requirements) do
-        [
-          {
-            file: "example.gemspec",
-            requirement: "~> 4.6",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "example.gemspec",
+          requirement: "~> 4.6",
+          groups: [],
+          source: nil
+        }]
       end
       let(:dependency_name) { "octokit" }
 
@@ -1277,36 +1213,32 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
         let(:dependency_name) { "business" }
         let(:requirements) do
-          [
-            {
-              file: "example.gemspec",
-              requirement: ">= 1.0, < 6.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "Gemfile",
-              requirement: "~> 5.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "example.gemspec",
+            requirement: ">= 1.0, < 6.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "Gemfile",
+            requirement: "~> 5.1.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:previous_requirements) do
-          [
-            {
-              file: "example.gemspec",
-              requirement: "~> 1.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
         end
 
         its(:length) { is_expected.to eq(2) }

@@ -18,13 +18,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   end
   let(:files) { [package_json, yarn_lock, package_lock] }
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:package_json) do
     Dependabot::DependencyFile.new(
@@ -728,12 +726,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
 
           let(:credentials) do
-            [
-              {
-                "registry" => "registry.npmjs.org",
-                "token" => "secret_token"
-              }
-            ]
+            [{ "registry" => "registry.npmjs.org", "token" => "secret_token" }]
           end
 
           its(:content) do

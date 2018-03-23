@@ -18,13 +18,11 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
     )
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dockerfile) do
     Dependabot::DependencyFile.new(

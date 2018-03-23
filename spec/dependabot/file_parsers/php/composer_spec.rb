@@ -40,17 +40,15 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         its(:version) { is_expected.to eq("1.0.2") }
         its(:requirements) do
           is_expected.to eq(
-            [
-              {
-                requirement: "1.0.*",
-                file: "composer.json",
-                groups: ["runtime"],
-                source: {
-                  type: "git",
-                  url: "https://github.com/Seldaek/monolog.git"
-                }
+            [{
+              requirement: "1.0.*",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "https://github.com/Seldaek/monolog.git"
               }
-            ]
+            }]
           )
         end
       end
@@ -77,17 +75,15 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         its(:version) { is_expected.to eq("1.0.1") }
         its(:requirements) do
           is_expected.to eq(
-            [
-              {
-                requirement: "1.0.1",
-                file: "composer.json",
-                groups: ["development"],
-                source: {
-                  type: "git",
-                  url: "https://github.com/Seldaek/monolog.git"
-                }
+            [{
+              requirement: "1.0.1",
+              file: "composer.json",
+              groups: ["development"],
+              source: {
+                type: "git",
+                url: "https://github.com/Seldaek/monolog.git"
               }
-            ]
+            }]
           )
         end
       end
@@ -136,14 +132,12 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
         its(:version) { is_expected.to be_nil }
         its(:requirements) do
           is_expected.to eq(
-            [
-              {
-                requirement: "1.0.*",
-                file: "composer.json",
-                groups: ["runtime"],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.0.*",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: nil
+            }]
           )
         end
       end
@@ -165,14 +159,12 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
           its(:version) { is_expected.to be_nil }
           its(:requirements) do
             is_expected.to eq(
-              [
-                {
-                  requirement: "1.0.1",
-                  file: "composer.json",
-                  groups: ["development"],
-                  source: nil
-                }
-              ]
+              [{
+                requirement: "1.0.1",
+                file: "composer.json",
+                groups: ["development"],
+                source: nil
+              }]
             )
           end
         end
