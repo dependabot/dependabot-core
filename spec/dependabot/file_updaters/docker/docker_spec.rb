@@ -239,6 +239,16 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
 
         its(:content) { is_expected.to include "FROM ubuntu@sha256:3ea1ca1aa" }
         its(:content) { is_expected.to include "RUN apt-get update" }
+
+        context "when the dockerfile has a tag as well as a digest" do
+          let(:dockerfile_body) do
+            fixture("docker", "dockerfiles", "digest_and_tag")
+          end
+
+          its(:content) do
+            is_expected.to include "FROM ubuntu:17.10@sha256:3ea1ca1aa"
+          end
+        end
       end
 
       context "when the dependency has a private registry" do

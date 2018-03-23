@@ -33,26 +33,27 @@ module Dependabot
         end
 
         def updated_dockerfile_content
-          if specified_with_digest?
-            update_digest(dockerfile.content)
-          else
-            update_tag(dockerfile.content)
+          updated_content =
+            if specified_with_digest?
+              update_digest(dockerfile.content)
+            else
+              update_tag(dockerfile.content)
+            end
+
+          if updated_content == dockerfile.content
+            raise "Expected content to change!"
           end
+          updated_content
         end
 
         def update_digest(content)
-          old_declaration =
-            if private_registry_url
-              "#{private_registry_url}/"
-            else
-              ""
-            end
-          old_declaration += "#{dependency.name}@#{old_digest}"
-          escaped_declaration = Regexp.escape(old_declaration)
-          old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
+          old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest}/
 
           content.gsub(old_declaration_regex) do |old_dec|
-            old_dec.gsub("@#{old_digest}", "@#{new_digest}")
+            old_dec.
+              gsub("@#{old_digest}", "@#{new_digest}").
+              gsub(":#{dependency.previous_version}",
+                   ":#{dependency.version}")
           end
         end
 
