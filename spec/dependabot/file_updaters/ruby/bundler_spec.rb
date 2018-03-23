@@ -30,13 +30,15 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   let(:dependencies) { [dependency] }
   let(:dependency_files) { [gemfile, lockfile] }
   let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
+    Dependabot::DependencyFile.new(name: "Gemfile", content: gemfile_body)
   end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
   let(:lockfile) do
-    Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: lockfile_body)
   end
-  let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+  let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
+  let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
+  let(:gemfile_fixture_name) { "Gemfile" }
+  let(:lockfile_fixture_name) { "Gemfile.lock" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "business",
@@ -76,9 +78,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when no change is required" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "version_not_specified")
-        end
+        let(:gemfile_fixture_name) { "version_not_specified" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the full version is specified" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
+        let(:gemfile_fixture_name) { "version_specified" }
         let(:requirements) do
           [
             {
@@ -115,9 +115,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when a pre-release is specified" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "prerelease_specified")
-        end
+        let(:gemfile_fixture_name) { "prerelease_specified" }
         let(:requirements) do
           [
             {
@@ -142,9 +140,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the minor version is specified" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "minor_version_specified")
-        end
+        let(:gemfile_fixture_name) { "minor_version_specified" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: "~> 1.5", groups: [], source: nil }]
         end
@@ -156,10 +152,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with a gem whose name includes a number" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "gem_with_number") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "gem_with_number.lock")
-        end
+        let(:gemfile_fixture_name) { "gem_with_number" }
+        let(:lockfile_fixture_name) { "gem_with_number.lock" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "i18n",
@@ -187,29 +181,25 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when there is a comment" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "comments") }
+        let(:gemfile_fixture_name) { "comments" }
         its(:content) do
           is_expected.to include "\"business\", \"~> 1.5.0\"   # Business time"
         end
       end
 
       context "when the previous version used string interpolation" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "interpolated_version")
-        end
+        let(:gemfile_fixture_name) { "interpolated_version" }
         its(:content) { is_expected.to include "\"business\", \"~> #" }
       end
 
       context "when the previous version used a function" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "function_version") }
+        let(:gemfile_fixture_name) { "function_version" }
         its(:content) { is_expected.to include "\"business\", version" }
       end
 
       context "with multiple dependencies" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "version_conflict.lock")
-        end
+        let(:gemfile_fixture_name) { "version_conflict" }
+        let(:lockfile_fixture_name) { "version_conflict.lock" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -260,12 +250,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with a gem that has a git source" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "git_source_with_version")
-        end
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "git_source_with_version.lock")
-        end
+        let(:gemfile_fixture_name) { "git_source_with_version" }
+        let(:lockfile_fixture_name) { "git_source_with_version.lock" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "business",
@@ -420,9 +406,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the new (and old) requirement is a range" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "version_between_bounds")
-        end
+        let(:gemfile_fixture_name) { "version_between_bounds" }
         let(:requirements) do
           [
             {
@@ -463,10 +447,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when no change is required" do
+        let(:gemfile_fixture_name) { "version_not_specified" }
         let(:child_gemfile_body) do
-          fixture("ruby", "gemfiles", "version_not_specified")
-        end
-        let(:gemfile_body) do
           fixture("ruby", "gemfiles", "version_not_specified")
         end
         let(:requirements) do
@@ -549,9 +531,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       subject(:file) { updated_files.find { |f| f.name == "Gemfile.lock" } }
 
       context "when no change is required" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "Gemfile")
-        end
+        let(:gemfile_fixture_name) { "Gemfile" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: "~>1.4.0", groups: [], source: nil }]
         end
@@ -565,7 +545,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the old Gemfile specified the version" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_specified") }
+        let(:gemfile_fixture_name) { "version_specified" }
 
         it "locks the updated gem to the latest version" do
           expect(file.content).to include "business (1.5.0)"
@@ -585,10 +565,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the Gemfile specifies a Ruby version" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "explicit_ruby") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "explicit_ruby.lock")
-        end
+        let(:gemfile_fixture_name) { "explicit_ruby" }
+        let(:lockfile_fixture_name) { "explicit_ruby.lock" }
 
         it "locks the updated gem to the latest version" do
           expect(file.content).to include "business (1.5.0)"
@@ -599,7 +577,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
 
         context "but the lockfile didn't include that version" do
-          let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+          let(:lockfile_fixture_name) { "Gemfile.lock" }
 
           it "doesn't add in a RUBY VERSION" do
             expect(file.content).to_not include "RUBY VERSION"
@@ -607,10 +585,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
 
         context "that is legacy" do
-          let(:gemfile_body) { fixture("ruby", "gemfiles", "legacy_ruby") }
-          let(:lockfile_body) do
-            fixture("ruby", "lockfiles", "legacy_ruby.lock")
-          end
+          let(:gemfile_fixture_name) { "legacy_ruby" }
+          let(:lockfile_fixture_name) { "legacy_ruby.lock" }
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "public_suffix",
@@ -647,7 +623,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "given a Gemfile that loads a .ruby-version file" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "ruby_version_file") }
+        let(:gemfile_fixture_name) { "ruby_version_file" }
         let(:ruby_version_file) do
           Dependabot::DependencyFile.new(content: "2.2", name: ".ruby-version")
         end
@@ -671,9 +647,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the Gemfile.lock didn't have a BUNDLED WITH line" do
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "no_bundled_with.lock")
-        end
+        let(:lockfile_fixture_name) { "no_bundled_with.lock" }
 
         it "doesn't add in a BUNDLED WITH" do
           expect(file.content).to_not include "BUNDLED WITH"
@@ -681,9 +655,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when the old Gemfile didn't specify the version" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "version_not_specified")
-        end
+        let(:gemfile_fixture_name) { "version_not_specified" }
 
         it "locks the updated gem to the latest version" do
           expect(file.content).to include "business (1.8.0)"
@@ -695,10 +667,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with multiple dependencies" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "version_conflict.lock")
-        end
+        let(:gemfile_fixture_name) { "version_conflict" }
+        let(:lockfile_fixture_name) { "version_conflict.lock" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -747,8 +717,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when another gem in the Gemfile has a git source" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
+        let(:gemfile_fixture_name) { "git_source" }
+        let(:lockfile_fixture_name) { "git_source.lock" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
@@ -808,8 +778,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "for a git dependency" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "git_source") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "git_source.lock") }
+        let(:gemfile_fixture_name) { "git_source" }
+        let(:lockfile_fixture_name) { "git_source.lock" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "prius",
@@ -873,12 +843,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
         context "that specifies a version that needs updating" do
           context "with a gem that has a git source" do
-            let(:gemfile_body) do
-              fixture("ruby", "gemfiles", "git_source_with_version")
-            end
-            let(:lockfile_body) do
-              fixture("ruby", "lockfiles", "git_source_with_version.lock")
-            end
+            let(:gemfile_fixture_name) { "git_source_with_version" }
+            let(:lockfile_fixture_name) { "git_source_with_version.lock" }
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "business",
@@ -921,8 +887,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "when another gem in the Gemfile has a path source" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
+        let(:gemfile_fixture_name) { "path_source" }
+        let(:lockfile_fixture_name) { "path_source.lock" }
 
         context "that we've downloaded" do
           let(:gemspec_body) { fixture("ruby", "gemspecs", "no_overlap") }
@@ -965,7 +931,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       context "when the Gemfile evals a child gemfile" do
         let(:dependency_files) { [gemfile, lockfile, child_gemfile] }
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
+        let(:gemfile_fixture_name) { "eval_gemfile" }
         let(:child_gemfile) do
           Dependabot::DependencyFile.new(
             content: child_gemfile_body,
@@ -973,7 +939,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         let(:child_gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-        let(:lockfile_body) { fixture("ruby", "lockfiles", "path_source.lock") }
+        let(:lockfile_fixture_name) { "path_source.lock" }
 
         it "updates the gem just fine" do
           expect(file.content).to include "business (1.5.0)"
@@ -981,11 +947,9 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with a Gemfile that imports a gemspec" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
         let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }
-        let(:lockfile_body) do
-          fixture("ruby", "lockfiles", "imports_gemspec.lock")
-        end
+        let(:gemfile_fixture_name) { "imports_gemspec" }
+        let(:lockfile_fixture_name) { "imports_gemspec.lock" }
         let(:gemspec) do
           Dependabot::DependencyFile.new(
             content: gemspec_body,
@@ -1082,9 +1046,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
           context "and only appears in the gemspec" do
             let(:gemspec_body) { fixture("ruby", "gemspecs", "no_overlap") }
-            let(:lockfile_body) do
-              fixture("ruby", "lockfiles", "imports_gemspec_no_overlap.lock")
-            end
+            let(:lockfile_fixture_name) { "imports_gemspec_no_overlap.lock" }
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "json",
@@ -1246,7 +1208,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         )
       end
       let(:gemspec_body) { fixture("ruby", "gemspecs", "example") }
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "imports_gemspec") }
+      let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,

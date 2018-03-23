@@ -24,9 +24,8 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          if git_dependency? && git_commit_checker.pinned?
-            return dependency.version
-          end
+          current_ver = dependency.version
+          return current_ver if git_dependency? && git_commit_checker.pinned?
 
           @latest_resolvable_version_detail_with_no_unlock ||=
             version_resolver(

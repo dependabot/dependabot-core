@@ -1208,6 +1208,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         it { is_expected.to eq(Gem::Version.new("0.3.4")) }
       end
     end
+
+    context "with a sub-dependency" do
+      let(:gemfile_fixture_name) { "subdependency" }
+      let(:lockfile_fixture_name) { "subdependency.lock" }
+      let(:requirements) { [] }
+      let(:dependency_name) { "i18n" }
+      let(:current_version) { "0.7.0.beta1" }
+
+      it { is_expected.to eq(Gem::Version.new("0.7.0")) }
+    end
   end
 
   describe "#updated_requirements" do
@@ -1251,6 +1261,22 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         expect(updated_requirements.count).to eq(1)
         expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+      end
+
+      context "with a sub-dependency" do
+        let(:gemfile_fixture_name) { "subdependency" }
+        let(:lockfile_fixture_name) { "subdependency.lock" }
+        let(:requirements) { [] }
+        let(:dependency_name) { "i18n" }
+        let(:current_version) { "0.7.0.beta1" }
+
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(:get, "https://rubygems.org/api/v1/versions/i18n.json").
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        it { is_expected.to eq([]) }
       end
 
       context "for a gem with a git source" do
@@ -1608,6 +1634,16 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:requirements) do
         [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
       end
+
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a sub-dependency" do
+      let(:gemfile_fixture_name) { "subdependency" }
+      let(:lockfile_fixture_name) { "subdependency.lock" }
+      let(:requirements) { [] }
+      let(:dependency_name) { "i18n" }
+      let(:current_version) { "0.7.0.beta1" }
 
       it { is_expected.to eq(true) }
     end
