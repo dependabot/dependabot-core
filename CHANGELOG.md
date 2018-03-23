@@ -1,3 +1,7 @@
+## v0.51.16, 23 March 2018
+
+- Docker: Move digest fetching to UpdateChecker
+
 ## v0.51.15, 23 March 2018
 
 - Docker: Handle file updates where a tag and digest have been specified
