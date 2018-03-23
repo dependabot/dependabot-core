@@ -1,3 +1,7 @@
+## v0.51.13, 23 March 2018
+
+- Ruby: Don't try to replace requirement if using a ternary operator
+
 ## v0.51.12, 22 March 2018
 
 - Return subdependencies from JS FileParsers (imperfectly)
