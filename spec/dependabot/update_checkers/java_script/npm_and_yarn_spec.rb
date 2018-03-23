@@ -395,7 +395,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the latest version is a prerelease" do
       before do
-        body = fixture("javascript", "npm_response_prerelease.json")
+        body = fixture("javascript", "npm_responses", "prerelease.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/2.0.0-rc1").
@@ -473,7 +473,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "for a private npm-hosted dependency" do
       before do
-        body = fixture("javascript", "npm_response_prerelease.json")
+        body = fixture("javascript", "npm_responses", "prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
@@ -717,7 +717,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the npm link fails at first" do
       before do
-        body = fixture("javascript", "npm_response_prerelease.json")
+        body = fixture("javascript", "npm_responses", "prerelease.json")
         stub_request(:get, registry_listing_url).
           to_raise(Excon::Error::Timeout).then.
           to_return(status: 200, body: body)
@@ -728,7 +728,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the latest version has been yanked" do
       before do
-        body = fixture("javascript", "npm_response_old_latest.json")
+        body = fixture("javascript", "npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/1.7.0").
@@ -815,7 +815,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
     context "when the latest version is older than another, non-prerelease" do
       before do
-        body = fixture("javascript", "npm_response_old_latest.json")
+        body = fixture("javascript", "npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/1.6.0").
@@ -823,6 +823,46 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+
+      context "that the user is already using" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.7.0",
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
+
+      context "that the user has pinned in their package.json" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            requirements: [
+              {
+                file: "package.json",
+                requirement: "^1.7.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
     end
   end
 

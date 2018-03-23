@@ -197,11 +197,34 @@ module Dependabot
             return tag_vers unless yanked?(tag_vers)
           end
 
-          # Use the latest dist tag  unless there's a reason not to
+          # Use the latest dist tag unless there's a reason not to
           latest = version_class.new(npm_details["dist-tags"]["latest"])
 
-          return if wants_prerelease? || latest.prerelease? || yanked?(latest)
-          latest
+          wants_latest_dist_tag?(latest) ? latest : nil
+        end
+
+        def wants_latest_dist_tag?(latest_version)
+          return false if wants_prerelease?
+          return false if latest_version.prerelease?
+          return false if current_version_greater_than?(latest_version)
+          return false if current_requirement_greater_than?(latest_version)
+          return false if yanked?(latest_version)
+          true
+        end
+
+        def current_version_greater_than?(version)
+          return false unless dependency.version
+          return false unless version_class.correct?(dependency.version)
+          version_class.new(dependency.version) > version
+        end
+
+        def current_requirement_greater_than?(version)
+          dependency.requirements.any? do |req|
+            next false unless req[:requirement]
+            req_version = req[:requirement].sub(/^\^|~|>=?/, "")
+            next false unless version_class.correct?(req_version)
+            version_class.new(req_version) > version
+          end
         end
 
         def version_from_versions_array(npm_details)
