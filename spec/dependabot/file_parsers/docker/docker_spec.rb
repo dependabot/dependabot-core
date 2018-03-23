@@ -26,14 +26,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
       let(:expected_requirements) do
-        [
-          {
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { type: "tag" }
-          }
-        ]
+        [{
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile",
+          source: { type: "tag" }
+        }]
       end
 
       it "has the right details" do
@@ -55,14 +53,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -80,14 +76,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -105,14 +99,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -130,14 +122,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -294,14 +284,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -315,14 +303,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
         end
 
         it "has the right details" do
@@ -342,14 +328,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
-          [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag", registry: "registry-host.io:5000" }
-            }
-          ]
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag", registry: "registry-host.io:5000" }
+          }]
         end
 
         it "has the right details" do

@@ -52,13 +52,11 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
     end
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
     let(:credentials) do
-      [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      [{
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     end
 
     let(:json_header) { { "content-type" => "application/json" } }

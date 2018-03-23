@@ -12,13 +12,11 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   end
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }

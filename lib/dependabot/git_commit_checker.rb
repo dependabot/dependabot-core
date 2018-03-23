@@ -246,13 +246,11 @@ module Dependabot
     end
 
     def credentials
-      [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => github_access_token
-        }
-      ]
+      [{
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => github_access_token
+      }]
     end
   end
 end

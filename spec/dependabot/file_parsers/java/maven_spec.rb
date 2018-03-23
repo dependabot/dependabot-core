@@ -29,14 +29,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "23.3-jre",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "23.3-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -57,14 +55,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "23.3-jre",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "23.3-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -84,14 +80,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
             to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.5.8.RELEASE",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.5.8.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -121,14 +115,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
             to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.5.8.RELEASE",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.5.8.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -147,14 +139,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("org.springframework:spring-beans")
           expect(dependency.version).to eq("4.3.12.RELEASE")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "4.3.12.RELEASE",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "4.3.12.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -167,14 +157,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("org.springframework:spring-context")
           expect(dependency.version).to eq("4.3.12.RELEASE.1")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "4.3.12.RELEASE.1",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "4.3.12.RELEASE.1",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -221,14 +209,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           )
           expect(dependency.version).to eq("1.5.9.RELEASE")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.5.9.RELEASE",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.5.9.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -247,14 +233,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "[23.3-jre,)",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "[23.3-jre,)",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -273,14 +257,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "[23.3-jre]",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "[23.3-jre]",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -299,14 +281,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: nil,
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: nil,
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -325,14 +305,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "23.3-jre",
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "23.3-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end

@@ -44,19 +44,17 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
         expect(dependency.name).to eq("about/documents")
         expect(dependency.version).to eq("sha2")
         expect(dependency.requirements).to eq(
-          [
-            {
-              requirement: nil,
-              file: ".gitmodules",
-              source: {
-                type: "git",
-                url: "git@github.com:example/documents.git",
-                branch: "gh-pages",
-                ref: "gh-pages"
-              },
-              groups: []
-            }
-          ]
+          [{
+            requirement: nil,
+            file: ".gitmodules",
+            source: {
+              type: "git",
+              url: "git@github.com:example/documents.git",
+              branch: "gh-pages",
+              ref: "gh-pages"
+            },
+            groups: []
+          }]
         )
       end
     end
@@ -69,19 +67,17 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
         expect(dependency.name).to eq("manifesto")
         expect(dependency.version).to eq("sha1")
         expect(dependency.requirements).to eq(
-          [
-            {
-              requirement: nil,
-              file: ".gitmodules",
-              source: {
-                type: "git",
-                url: "https://github.com/example/manifesto.git",
-                branch: nil,
-                ref: nil
-              },
-              groups: []
-            }
-          ]
+          [{
+            requirement: nil,
+            file: ".gitmodules",
+            source: {
+              type: "git",
+              url: "https://github.com/example/manifesto.git",
+              branch: nil,
+              ref: nil
+            },
+            groups: []
+          }]
         )
       end
     end
@@ -94,19 +90,17 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
         expect(dependency.name).to eq("relative/url")
         expect(dependency.version).to eq("sha3")
         expect(dependency.requirements).to eq(
-          [
-            {
-              requirement: nil,
-              file: ".gitmodules",
-              source: {
-                type: "git",
-                url: "https://github.com/org/such-relative.git",
-                branch: nil,
-                ref: nil
-              },
-              groups: []
-            }
-          ]
+          [{
+            requirement: nil,
+            file: ".gitmodules",
+            source: {
+              type: "git",
+              url: "https://github.com/org/such-relative.git",
+              branch: nil,
+              ref: nil
+            },
+            groups: []
+          }]
         )
       end
     end
