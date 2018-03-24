@@ -1,3 +1,7 @@
+## v0.51.18, 24 March 2018
+
+- JS: Use npm 5.8.0
+
 ## v0.51.17, 23 March 2018
 
 - JS: Don't try to downgrade requirement files that have pinned to a
