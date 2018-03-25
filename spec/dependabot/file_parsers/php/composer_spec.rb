@@ -21,8 +21,12 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       content: lockfile_body
     )
   end
-  let(:composer_json_body) { fixture("php", "composer_files", "minor_version") }
-  let(:lockfile_body) { fixture("php", "lockfiles", "minor_version") }
+  let(:composer_json_body) do
+    fixture("php", "composer_files", composer_json_fixture_name)
+  end
+  let(:lockfile_body) { fixture("php", "lockfiles", lockfile_fixture_name) }
+  let(:composer_json_fixture_name) { "minor_version" }
+  let(:lockfile_fixture_name) { "minor_version" }
   let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
@@ -55,12 +59,8 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
     end
 
     context "for development dependencies" do
-      let(:composer_json_body) do
-        fixture("php", "composer_files", "development_dependencies")
-      end
-      let(:lockfile_body) do
-        fixture("php", "lockfiles", "development_dependencies")
-      end
+      let(:composer_json_fixture_name) { "development_dependencies" }
+      let(:lockfile_fixture_name) { "development_dependencies" }
 
       it "includes development dependencies" do
         expect(dependencies.length).to eq(2)
@@ -90,10 +90,8 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
     end
 
     context "with the PHP version specified" do
-      let(:composer_json_body) do
-        fixture("php", "composer_files", "php_specified")
-      end
-      let(:lockfile_body) { fixture("php", "lockfiles", "php_specified") }
+      let(:composer_json_fixture_name) { "php_specified" }
+      let(:lockfile_fixture_name) { "php_specified" }
 
       its(:length) { is_expected.to eq(5) }
 
@@ -104,7 +102,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
     end
 
     context "with a version with a 'v' prefix" do
-      let(:lockfile_body) { fixture("php", "lockfiles", "v_prefix") }
+      let(:lockfile_fixture_name) { "v_prefix" }
 
       it "strips the prefix" do
         expect(dependencies.first.version).to eq("1.0.2")
@@ -112,7 +110,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
     end
 
     context "with a non-numeric version" do
-      let(:lockfile_body) { fixture("php", "lockfiles", "git_source") }
+      let(:lockfile_fixture_name) { "git_source" }
 
       it "skips the dependency" do
         expect(dependencies.length).to eq(1)
@@ -143,9 +141,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       end
 
       context "for development dependencies" do
-        let(:composer_json_body) do
-          fixture("php", "composer_files", "development_dependencies")
-        end
+        let(:composer_json_fixture_name) { "development_dependencies" }
 
         it "includes development dependencies" do
           expect(dependencies.length).to eq(2)
@@ -171,10 +167,7 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       end
 
       context "with the PHP version specified" do
-        let(:composer_json_body) do
-          fixture("php", "composer_files", "php_specified")
-        end
-
+        let(:composer_json_fixture_name) { "php_specified" }
         its(:length) { is_expected.to eq(2) }
       end
     end

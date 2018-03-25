@@ -10,13 +10,19 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
 
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
-    Dependabot::DependencyFile.new(name: "mix.exs", content: mixfile_body)
+    Dependabot::DependencyFile.new(
+      name: "mix.exs",
+      content: fixture("elixir", "mixfiles", mixfile_fixture_name)
+    )
   end
   let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "mix.lock", content: lockfile_body)
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+    )
   end
-  let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
-  let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+  let(:mixfile_fixture_name) { "minor_version" }
+  let(:lockfile_fixture_name) { "minor_version" }
   let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
@@ -47,8 +53,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     end
 
     context "with an exact version specified" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "exact_version") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "exact_version" }
+      let(:lockfile_fixture_name) { "exact_version" }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -95,8 +101,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     end
 
     context "with no requirements specified" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "no_requirement") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "no_requirement") }
+      let(:mixfile_fixture_name) { "no_requirement" }
+      let(:lockfile_fixture_name) { "no_requirement" }
 
       describe "the last dependency" do
         subject(:dependency) { dependencies.last }
@@ -120,12 +126,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     end
 
     context "with a development dependency" do
-      let(:mixfile_body) do
-        fixture("elixir", "mixfiles", "development_dependency")
-      end
-      let(:lockfile_body) do
-        fixture("elixir", "lockfiles", "development_dependency")
-      end
+      let(:mixfile_fixture_name) { "development_dependency" }
+      let(:lockfile_fixture_name) { "development_dependency" }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -172,8 +174,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     end
 
     context "with a git source" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+      let(:mixfile_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source" }
 
       it "includes the git dependency" do
         expect(dependencies.length).to eq(2)
@@ -200,12 +202,8 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       end
 
       context "with a tag (rather than a ref)" do
-        let(:mixfile_body) do
-          fixture("elixir", "mixfiles", "git_source_with_charlist")
-        end
-        let(:lockfile_body) do
-          fixture("elixir", "lockfiles", "git_source_with_charlist")
-        end
+        let(:mixfile_fixture_name) { "git_source_with_charlist" }
+        let(:lockfile_fixture_name) { "git_source_with_charlist" }
 
         it "includes the git dependency" do
           expect(dependencies.length).to eq(2)
@@ -234,38 +232,36 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
     end
 
     context "with an old elixir version" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "old_elixir") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "old_elixir") }
+      let(:mixfile_fixture_name) { "old_elixir" }
+      let(:lockfile_fixture_name) { "old_elixir" }
 
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with a really old elixir version" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "really_old_elixir") }
-      let(:lockfile_body) do
-        fixture("elixir", "lockfiles", "really_old_elixir")
-      end
+      let(:mixfile_fixture_name) { "really_old_elixir" }
+      let(:lockfile_fixture_name) { "really_old_elixir" }
 
       its(:length) { is_expected.to eq(7) }
     end
 
     context "with a call to read a version file" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "loads_file" }
+      let(:lockfile_fixture_name) { "exact_version" }
 
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with a bad specification" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "bad_spec") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "bad_spec" }
+      let(:lockfile_fixture_name) { "exact_version" }
 
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with an umbrella app" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+      let(:mixfile_fixture_name) { "umbrella" }
+      let(:lockfile_fixture_name) { "umbrella" }
       let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
       let(:sub_mixfile1) do
         Dependabot::DependencyFile.new(

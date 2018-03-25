@@ -10,12 +10,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
 
   let(:files) { [dockerfile] }
   let(:dockerfile) do
-    Dependabot::DependencyFile.new(
-      name: "Dockerfile",
-      content: dockerfile_body
-    )
+    Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
   end
-  let(:dockerfile_body) { fixture("docker", "dockerfiles", "tag") }
+  let(:dockerfile_body) do
+    fixture("docker", "dockerfiles", dockerfile_fixture_name)
+  end
+  let(:dockerfile_fixture_name) { "tag" }
   let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
 
   describe "parse" do
@@ -43,12 +43,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with no tag or digest" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "bare") }
+      let(:dockerfile_fixture_name) { "bare" }
       its(:length) { is_expected.to eq(0) }
     end
 
     context "with a name" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "name") }
+      let(:dockerfile_fixture_name) { "name" }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with a namespace" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
+      let(:dockerfile_fixture_name) { "namespace" }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with a FROM line written by a nutcase" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "case") }
+      let(:dockerfile_fixture_name) { "case" }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with a digest" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
+      let(:dockerfile_fixture_name) { "digest" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
         JSON.parse(
@@ -212,9 +212,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         end
 
         context "for a private registry" do
-          let(:dockerfile_body) do
-            fixture("docker", "dockerfiles", "private_digest")
-          end
+          let(:dockerfile_fixture_name) { "private_digest" }
           let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
           context "without authentication credentials" do
@@ -277,7 +275,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with multiple FROM lines" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+      let(:dockerfile_fixture_name) { "multiple" }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -321,7 +319,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     end
 
     context "with a private registry and a tag" do
-      let(:dockerfile_body) { fixture("docker", "dockerfiles", "private_tag") }
+      let(:dockerfile_fixture_name) { "private_tag" }
 
       its(:length) { is_expected.to eq(1) }
 
@@ -345,10 +343,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
       end
 
       context "when the registry has no port" do
-        let(:dockerfile_body) do
-          fixture("docker", "dockerfiles", "private_no_port")
-        end
-
+        let(:dockerfile_fixture_name) { "private_no_port" }
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
