@@ -1,0 +1,531 @@
+{
+    "categories": [
+        {
+            "category": "No standard library",
+            "crates_cnt": 290,
+            "created_at": "2017-02-10T01:52:09.447906+00:00",
+            "description": "Crates that are able to function without the Rust standard library.\n",
+            "id": "no-std",
+            "slug": "no-std"
+        }
+    ],
+    "crate": {
+        "badges": [
+            {
+                "attributes": {
+                    "branch": null,
+                    "repository": "rust-lang-nursery/bitflags"
+                },
+                "badge_type": "travis-ci"
+            }
+        ],
+        "categories": [
+            "no-std"
+        ],
+        "created_at": "2015-01-15T08:35:24.901276+00:00",
+        "description": "A macro to generate structures which behave like bitflags.\n",
+        "documentation": "https://docs.rs/bitflags",
+        "downloads": 6673052,
+        "exact_match": false,
+        "homepage": "https://github.com/rust-lang-nursery/bitflags",
+        "id": "bitflags",
+        "keywords": [
+            "bitmask",
+            "bit",
+            "bitflags",
+            "flags"
+        ],
+        "links": {
+            "owner_team": "/api/v1/crates/bitflags/owner_team",
+            "owner_user": "/api/v1/crates/bitflags/owner_user",
+            "owners": "/api/v1/crates/bitflags/owners",
+            "reverse_dependencies": "/api/v1/crates/bitflags/reverse_dependencies",
+            "version_downloads": "/api/v1/crates/bitflags/downloads",
+            "versions": null
+        },
+        "max_version": "1.0.1",
+        "name": "bitflags",
+        "recent_downloads": 1033166,
+        "repository": "https://github.com/rust-lang-nursery/bitflags",
+        "updated_at": "2017-11-12T16:03:15.079909+00:00",
+        "versions": [
+            71130,
+            64852,
+            55072,
+            53976,
+            48660,
+            48642,
+            45450,
+            45376,
+            27090,
+            25901,
+            23166,
+            20770,
+            20767,
+            18188,
+            12713,
+            12706,
+            12247,
+            11144,
+            11138,
+            4788,
+            2989
+        ]
+    },
+    "keywords": [
+        {
+            "crates_cnt": 4,
+            "created_at": "2015-08-06T04:30:52.656736+00:00",
+            "id": "bitmask",
+            "keyword": "bitmask"
+        },
+        {
+            "crates_cnt": 22,
+            "created_at": "2015-02-13T07:34:55.973030+00:00",
+            "id": "bit",
+            "keyword": "bit"
+        },
+        {
+            "crates_cnt": 6,
+            "created_at": "2016-08-28T14:43:12.353632+00:00",
+            "id": "bitflags",
+            "keyword": "bitflags"
+        },
+        {
+            "crates_cnt": 5,
+            "created_at": "2016-08-28T14:43:12.353632+00:00",
+            "id": "flags",
+            "keyword": "flags"
+        }
+    ],
+    "versions": [
+        {
+            "crate": "bitflags",
+            "created_at": "2017-11-12T16:03:15.079909+00:00",
+            "dl_path": "/api/v1/crates/bitflags/1.0.1/download",
+            "downloads": 442137,
+            "features": {
+                "default": [
+                    "example_generated"
+                ],
+                "example_generated": []
+            },
+            "id": 71130,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/1.0.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/1.0.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/1.0.1/downloads"
+            },
+            "num": "1.0.1",
+            "readme_path": "/api/v1/crates/bitflags/1.0.1/readme",
+            "updated_at": "2017-11-30T03:02:27.769092+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-09-09T01:44:34.463701+00:00",
+            "dl_path": "/api/v1/crates/bitflags/1.0.0/download",
+            "downloads": 101054,
+            "features": {
+                "default": [
+                    "example_generated"
+                ],
+                "example_generated": [],
+                "unstable_testing": []
+            },
+            "id": 64852,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/1.0.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/1.0.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/1.0.0/downloads"
+            },
+            "num": "1.0.0",
+            "readme_path": "/api/v1/crates/bitflags/1.0.0/readme",
+            "updated_at": "2017-11-30T02:25:41.166830+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-05-29T16:09:20.144659+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.9.1/download",
+            "downloads": 1063360,
+            "features": {
+                "default": [
+                    "example_generated"
+                ],
+                "example_generated": [],
+                "unstable_testing": []
+            },
+            "id": 55072,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.9.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.9.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.9.1/downloads"
+            },
+            "num": "0.9.1",
+            "readme_path": "/api/v1/crates/bitflags/0.9.1/readme",
+            "updated_at": "2017-11-30T03:23:44.999584+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-05-21T15:49:35.940203+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.9.0/download",
+            "downloads": 2554,
+            "features": {
+                "default": [
+                    "example_generated"
+                ],
+                "example_generated": [],
+                "unstable_testing": []
+            },
+            "id": 53976,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.9.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.9.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.9.0/downloads"
+            },
+            "num": "0.9.0",
+            "readme_path": "/api/v1/crates/bitflags/0.9.0/readme",
+            "updated_at": "2017-11-30T03:10:31.191071+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-03-24T18:13:50.802785+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.8.2/download",
+            "downloads": 518569,
+            "features": {
+                "i128": [],
+                "unstable": [
+                    "i128"
+                ]
+            },
+            "id": 48660,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.8.2/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.8.2/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.8.2/downloads"
+            },
+            "num": "0.8.2",
+            "readme_path": "/api/v1/crates/bitflags/0.8.2/readme",
+            "updated_at": "2017-11-30T03:52:12.528635+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-03-24T15:00:26.348062+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.8.1/download",
+            "downloads": 419,
+            "features": {
+                "i128": [],
+                "unstable": [
+                    "i128"
+                ]
+            },
+            "id": 48642,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.8.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.8.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.8.1/downloads"
+            },
+            "num": "0.8.1",
+            "readme_path": "/api/v1/crates/bitflags/0.8.1/readme",
+            "updated_at": "2017-11-30T03:35:30.951790+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-02-14T14:52:27.467859+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.8.0/download",
+            "downloads": 38139,
+            "features": {
+                "i128": [],
+                "unstable": [
+                    "i128"
+                ]
+            },
+            "id": 45450,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.8.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.8.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.8.0/downloads"
+            },
+            "num": "0.8.0",
+            "readme_path": "/api/v1/crates/bitflags/0.8.0/readme",
+            "updated_at": "2017-11-30T03:28:17.438022+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2017-02-13T15:45:41.748488+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.7.1/download",
+            "downloads": 3811,
+            "features": {
+                "i128": [],
+                "unstable": [
+                    "i128"
+                ]
+            },
+            "id": 45376,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.7.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.7.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.7.1/downloads"
+            },
+            "num": "0.7.1",
+            "readme_path": "/api/v1/crates/bitflags/0.7.1/readme",
+            "updated_at": "2017-11-30T04:00:08.542750+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2016-05-15T00:03:44.183249+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.7.0/download",
+            "downloads": 1903294,
+            "features": {},
+            "id": 27090,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.7.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.7.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.7.0/downloads"
+            },
+            "num": "0.7.0",
+            "readme_path": "/api/v1/crates/bitflags/0.7.0/readme",
+            "updated_at": "2017-11-30T03:15:42.019360+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2016-04-20T20:08:52.852816+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.6.0/download",
+            "downloads": 101479,
+            "features": {},
+            "id": 25901,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.6.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.6.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.6.0/downloads"
+            },
+            "num": "0.6.0",
+            "readme_path": "/api/v1/crates/bitflags/0.6.0/readme",
+            "updated_at": "2017-11-30T02:53:28.127606+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2016-02-28T18:51:40.354168+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.5.0/download",
+            "downloads": 539907,
+            "features": {
+                "assignment_operators": [],
+                "no_std": []
+            },
+            "id": 23166,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.5.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.5.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.5.0/downloads"
+            },
+            "num": "0.5.0",
+            "readme_path": "/api/v1/crates/bitflags/0.5.0/readme",
+            "updated_at": "2017-11-30T02:30:53.237336+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2016-01-13T18:38:49.556348+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.4.0/download",
+            "downloads": 734176,
+            "features": {
+                "no_std": []
+            },
+            "id": 20770,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.4.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.4.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.4.0/downloads"
+            },
+            "num": "0.4.0",
+            "readme_path": "/api/v1/crates/bitflags/0.4.0/readme",
+            "updated_at": "2017-11-30T03:53:01.103463+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2016-01-13T17:35:15.468211+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.3.4/download",
+            "downloads": 565,
+            "features": {
+                "no_std": []
+            },
+            "id": 20767,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.3.4/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.3.4/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.3.4/downloads"
+            },
+            "num": "0.3.4",
+            "readme_path": "/api/v1/crates/bitflags/0.3.4/readme",
+            "updated_at": "2017-11-30T03:18:34.390553+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-11-16T18:28:20.655971+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.3.3/download",
+            "downloads": 628070,
+            "features": {},
+            "id": 18188,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.3.3/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.3.3/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.3.3/downloads"
+            },
+            "num": "0.3.3",
+            "readme_path": "/api/v1/crates/bitflags/0.3.3/readme",
+            "updated_at": "2017-11-30T03:02:49.546413+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-07-05T18:04:18.170465+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.3.2/download",
+            "downloads": 180570,
+            "features": {},
+            "id": 12713,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.3.2/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.3.2/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.3.2/downloads"
+            },
+            "num": "0.3.2",
+            "readme_path": "/api/v1/crates/bitflags/0.3.2/readme",
+            "updated_at": "2017-11-30T03:28:50.396610+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-07-05T16:54:14.597655+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.3.1/download",
+            "downloads": 197,
+            "features": {},
+            "id": 12706,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.3.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.3.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.3.1/downloads"
+            },
+            "num": "0.3.1",
+            "readme_path": "/api/v1/crates/bitflags/0.3.1/readme",
+            "updated_at": "2017-11-30T02:28:37.675049+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-06-25T06:42:35.125362+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.3.0/download",
+            "downloads": 5054,
+            "features": {},
+            "id": 12247,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.3.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.3.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.3.0/downloads"
+            },
+            "num": "0.3.0",
+            "readme_path": "/api/v1/crates/bitflags/0.3.0/readme",
+            "updated_at": "2017-11-30T03:52:59.936700+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-06-01T20:37:56.658056+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.2.1/download",
+            "downloads": 52191,
+            "features": {},
+            "id": 11144,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.2.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.2.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.2.1/downloads"
+            },
+            "num": "0.2.1",
+            "readme_path": "/api/v1/crates/bitflags/0.2.1/readme",
+            "updated_at": "2017-11-30T03:35:26.325246+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-06-01T16:52:03.256460+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.2.0/download",
+            "downloads": 250,
+            "features": {},
+            "id": 11138,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.2.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.2.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.2.0/downloads"
+            },
+            "num": "0.2.0",
+            "readme_path": "/api/v1/crates/bitflags/0.2.0/readme",
+            "updated_at": "2017-11-30T03:53:17.273724+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-02-09T17:22:19.143201+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.1.1/download",
+            "downloads": 349242,
+            "features": {},
+            "id": 4788,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.1.1/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.1.1/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.1.1/downloads"
+            },
+            "num": "0.1.1",
+            "readme_path": "/api/v1/crates/bitflags/0.1.1/readme",
+            "updated_at": "2017-11-30T03:07:56.040360+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "bitflags",
+            "created_at": "2015-01-15T08:35:24.907314+00:00",
+            "dl_path": "/api/v1/crates/bitflags/0.1.0/download",
+            "downloads": 8014,
+            "features": {},
+            "id": 2989,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/bitflags/0.1.0/authors",
+                "dependencies": "/api/v1/crates/bitflags/0.1.0/dependencies",
+                "version_downloads": "/api/v1/crates/bitflags/0.1.0/downloads"
+            },
+            "num": "0.1.0",
+            "readme_path": "/api/v1/crates/bitflags/0.1.0/readme",
+            "updated_at": "2017-11-30T03:31:09.499703+00:00",
+            "yanked": false
+        }
+    ]
+}
