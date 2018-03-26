@@ -53,6 +53,60 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "with a git dependency" do
+        let(:manifest_fixture_name) { "git_dependency" }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("utf8-ranges")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "Cargo.toml",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/BurntSushi/utf8-ranges",
+                  branch: nil,
+                  ref: nil
+                }
+              }]
+            )
+          end
+        end
+
+        context "with a tag" do
+          let(:manifest_fixture_name) { "git_dependency_with_tag" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("utf8-ranges")
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/BurntSushi/utf8-ranges",
+                    branch: nil,
+                    ref: "0.1.3"
+                  }
+                }]
+              )
+            end
+          end
+        end
+      end
+
       context "that is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 
@@ -116,6 +170,37 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
                   file: "Cargo.toml",
                   groups: ["dev-dependencies"],
                   source: nil
+                }]
+              )
+            end
+          end
+        end
+
+        context "with a git dependency" do
+          let(:manifest_fixture_name) { "git_dependency_with_tag" }
+          let(:lockfile_fixture_name) { "git_dependency_with_tag" }
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("utf8-ranges")
+              expect(dependency.version).
+                to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/BurntSushi/utf8-ranges",
+                    branch: nil,
+                    ref: "0.1.3"
+                  }
                 }]
               )
             end

@@ -1,0 +1,14 @@
+[[package]]
+name = "dependabot"
+version = "0.1.0"
+dependencies = [
+ "utf8-ranges 0.1.3 (git+https://github.com/BurntSushi/utf8-ranges?tag=0.1.3)",
+]
+
+[[package]]
+name = "utf8-ranges"
+version = "0.1.3"
+source = "git+https://github.com/BurntSushi/utf8-ranges?tag=0.1.3#d5094c7e9456f2965dec20de671094a98c6929c2"
+
+[metadata]
+"checksum utf8-ranges 0.1.3 (git+https://github.com/BurntSushi/utf8-ranges?tag=0.1.3)" = "<none>"

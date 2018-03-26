@@ -32,18 +32,15 @@ module Dependabot
 
           DEPENDENCY_TYPES.each do |type|
             parsed_manifest.fetch(type, {}).each do |name, requirement|
-              # TODO: Handle version objects (e.g., for git dependencies)
-              next unless requirement.is_a?(String)
-
               dependency_set << Dependency.new(
                 name: name,
                 version: nil,
                 package_manager: "cargo",
                 requirements: [{
-                  requirement: requirement,
+                  requirement: requirement_from_declaration(requirement),
                   file: "Cargo.toml",
                   groups: [type],
-                  source: nil
+                  source: source_from_declaration(requirement)
                 }]
               )
             end
@@ -58,15 +55,48 @@ module Dependabot
 
           parsed_lockfile.fetch("package", []).each do |package_details|
             next unless package_details["source"]
+
+            # TODO: This isn't quite right, as it will only give us one
+            # version of each dependency (when in fact there are many)
             dependency_set << Dependency.new(
               name: package_details["name"],
-              version: package_details["version"],
+              version: version_from_lockfile_details(package_details),
               package_manager: "cargo",
               requirements: []
             )
           end
 
           dependency_set
+        end
+
+        def requirement_from_declaration(declaration)
+          declaration.is_a?(String) ? declaration : nil
+        end
+
+        def source_from_declaration(declaration)
+          return if declaration.is_a?(String)
+          unless declaration.is_a?(Hash)
+            raise "Unexpected dependency declaration: #{declaration}"
+          end
+
+          if declaration["git"]
+            {
+              type: "git",
+              url: declaration["git"],
+              branch: declaration["branch"],
+              ref: declaration["tag"] || declaration["rev"]
+            }
+          elsif declaration["path"]
+            { type: "path" }
+          else raise "Unexpected dependency declaration: #{declaration}"
+          end
+        end
+
+        def version_from_lockfile_details(package_details)
+          unless package_details["source"]&.start_with?("git+")
+            return package_details["version"]
+          end
+          package_details["source"].split("#").last
         end
 
         def check_required_files
