@@ -1,0 +1,482 @@
+[
+  {
+    "name": ".dockerignore",
+    "path": ".dockerignore",
+    "sha": "d50e6adfc556bbbb56e6d47ac3bc5d24d17e9d9a",
+    "size": 194,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.dockerignore?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.dockerignore",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/d50e6adfc556bbbb56e6d47ac3bc5d24d17e9d9a",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.dockerignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.dockerignore?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/d50e6adfc556bbbb56e6d47ac3bc5d24d17e9d9a",
+      "html": "https://github.com/runconduit/conduit/blob/master/.dockerignore"
+    }
+  },
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+    "size": 520,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.editorconfig?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.editorconfig",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.editorconfig?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+      "html": "https://github.com/runconduit/conduit/blob/master/.editorconfig"
+    }
+  },
+  {
+    "name": ".gcp.json.enc",
+    "path": ".gcp.json.enc",
+    "sha": "f5bdff3c9841b25be6c66a839ce987f68d4347dc",
+    "size": 2320,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.gcp.json.enc?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.gcp.json.enc",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/f5bdff3c9841b25be6c66a839ce987f68d4347dc",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.gcp.json.enc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.gcp.json.enc?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/f5bdff3c9841b25be6c66a839ce987f68d4347dc",
+      "html": "https://github.com/runconduit/conduit/blob/master/.gcp.json.enc"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "26e119e6eea82e1fee62430ea3338fbd2aa52e21",
+    "size": 146,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.gitattributes?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.gitattributes",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/26e119e6eea82e1fee62430ea3338fbd2aa52e21",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.gitattributes?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/26e119e6eea82e1fee62430ea3338fbd2aa52e21",
+      "html": "https://github.com/runconduit/conduit/blob/master/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "53ffce7e140b26c616994274fbaf9c2b57eb1958",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.github?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/.github",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/53ffce7e140b26c616994274fbaf9c2b57eb1958",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.github?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/53ffce7e140b26c616994274fbaf9c2b57eb1958",
+      "html": "https://github.com/runconduit/conduit/tree/master/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "c22ac7dc7c8e49a7923e19518bb24f6825f4c00e",
+    "size": 152,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/c22ac7dc7c8e49a7923e19518bb24f6825f4c00e",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/c22ac7dc7c8e49a7923e19518bb24f6825f4c00e",
+      "html": "https://github.com/runconduit/conduit/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".prometheus.dev.yml",
+    "path": ".prometheus.dev.yml",
+    "sha": "b0f800c7025bbd16e5ce5603ecf96705c4e177e6",
+    "size": 692,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.prometheus.dev.yml?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.prometheus.dev.yml",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/b0f800c7025bbd16e5ce5603ecf96705c4e177e6",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.prometheus.dev.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.prometheus.dev.yml?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/b0f800c7025bbd16e5ce5603ecf96705c4e177e6",
+      "html": "https://github.com/runconduit/conduit/blob/master/.prometheus.dev.yml"
+    }
+  },
+  {
+    "name": ".travis.yml",
+    "path": ".travis.yml",
+    "sha": "74f2a6a793fb70cea866cb49e9b749ce2b70969a",
+    "size": 3975,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.travis.yml?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.travis.yml",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/74f2a6a793fb70cea866cb49e9b749ce2b70969a",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.travis.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.travis.yml?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/74f2a6a793fb70cea866cb49e9b749ce2b70969a",
+      "html": "https://github.com/runconduit/conduit/blob/master/.travis.yml"
+    }
+  },
+  {
+    "name": "BUILD.md",
+    "path": "BUILD.md",
+    "sha": "c6ac7ac90f9d5db8f4a69298e01b3496fb1bdf80",
+    "size": 13453,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/BUILD.md?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/BUILD.md",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/c6ac7ac90f9d5db8f4a69298e01b3496fb1bdf80",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/BUILD.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/BUILD.md?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/c6ac7ac90f9d5db8f4a69298e01b3496fb1bdf80",
+      "html": "https://github.com/runconduit/conduit/blob/master/BUILD.md"
+    }
+  },
+  {
+    "name": "CHANGES.md",
+    "path": "CHANGES.md",
+    "sha": "f082aeab5bd659dc3a46f93ced73e56f5ccdb4ad",
+    "size": 7196,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/CHANGES.md?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/CHANGES.md",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/f082aeab5bd659dc3a46f93ced73e56f5ccdb4ad",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/CHANGES.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/CHANGES.md?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/f082aeab5bd659dc3a46f93ced73e56f5ccdb4ad",
+      "html": "https://github.com/runconduit/conduit/blob/master/CHANGES.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "bc4448b3b9eebebf549a1d6b4eaa1367c0f6ced6",
+    "size": 3051,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/CONTRIBUTING.md?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/bc4448b3b9eebebf549a1d6b4eaa1367c0f6ced6",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/CONTRIBUTING.md?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/bc4448b3b9eebebf549a1d6b4eaa1367c0f6ced6",
+      "html": "https://github.com/runconduit/conduit/blob/master/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "Cargo.toml",
+    "path": "Cargo.toml",
+    "sha": "cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+    "size": 213,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/Cargo.toml",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Cargo.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+      "html": "https://github.com/runconduit/conduit/blob/master/Cargo.toml"
+    }
+  },
+  {
+    "name": "DCO",
+    "path": "DCO",
+    "sha": "8201f992154a14a7fcd95a5937d5c40c610990c9",
+    "size": 1421,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/DCO?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/DCO",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/8201f992154a14a7fcd95a5937d5c40c610990c9",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/DCO",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/DCO?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/8201f992154a14a7fcd95a5937d5c40c610990c9",
+      "html": "https://github.com/runconduit/conduit/blob/master/DCO"
+    }
+  },
+  {
+    "name": "Dockerfile-base",
+    "path": "Dockerfile-base",
+    "sha": "a7557e731aec731c7e2bb72422a17350841a2deb",
+    "size": 376,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/Dockerfile-base?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/Dockerfile-base",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/a7557e731aec731c7e2bb72422a17350841a2deb",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Dockerfile-base",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/Dockerfile-base?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/a7557e731aec731c7e2bb72422a17350841a2deb",
+      "html": "https://github.com/runconduit/conduit/blob/master/Dockerfile-base"
+    }
+  },
+  {
+    "name": "Dockerfile-go-deps",
+    "path": "Dockerfile-go-deps",
+    "sha": "2c1f97cdf389c52cea8eabe3033563ca7a5f123a",
+    "size": 4584,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/Dockerfile-go-deps?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/Dockerfile-go-deps",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/2c1f97cdf389c52cea8eabe3033563ca7a5f123a",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Dockerfile-go-deps",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/Dockerfile-go-deps?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/2c1f97cdf389c52cea8eabe3033563ca7a5f123a",
+      "html": "https://github.com/runconduit/conduit/blob/master/Dockerfile-go-deps"
+    }
+  },
+  {
+    "name": "Gopkg.lock",
+    "path": "Gopkg.lock",
+    "sha": "bbd7ee70f2c4420df5d9aa7757a524ef84a800ed",
+    "size": 14934,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/Gopkg.lock?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/Gopkg.lock",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/bbd7ee70f2c4420df5d9aa7757a524ef84a800ed",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Gopkg.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/Gopkg.lock?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/bbd7ee70f2c4420df5d9aa7757a524ef84a800ed",
+      "html": "https://github.com/runconduit/conduit/blob/master/Gopkg.lock"
+    }
+  },
+  {
+    "name": "Gopkg.toml",
+    "path": "Gopkg.toml",
+    "sha": "862493869afdf5b5e587788381ff37c64bb12dfb",
+    "size": 1574,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/Gopkg.toml?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/Gopkg.toml",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/862493869afdf5b5e587788381ff37c64bb12dfb",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Gopkg.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/Gopkg.toml?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/862493869afdf5b5e587788381ff37c64bb12dfb",
+      "html": "https://github.com/runconduit/conduit/blob/master/Gopkg.toml"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "6f756351aae24b479e6a9418c1f08a8b7a991076",
+    "size": 11357,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/6f756351aae24b479e6a9418c1f08a8b7a991076",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/6f756351aae24b479e6a9418c1f08a8b7a991076",
+      "html": "https://github.com/runconduit/conduit/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "ff2e465d8417aad97550b36bb446dd4732e13134",
+    "size": 3729,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/README.md?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/ff2e465d8417aad97550b36bb446dd4732e13134",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/ff2e465d8417aad97550b36bb446dd4732e13134",
+      "html": "https://github.com/runconduit/conduit/blob/master/README.md"
+    }
+  },
+  {
+    "name": "bin",
+    "path": "bin",
+    "sha": "a16fd67bcb0b9043c32df62017172c158efb43c6",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/bin?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/bin",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/a16fd67bcb0b9043c32df62017172c158efb43c6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/bin?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/a16fd67bcb0b9043c32df62017172c158efb43c6",
+      "html": "https://github.com/runconduit/conduit/tree/master/bin"
+    }
+  },
+  {
+    "name": "cli",
+    "path": "cli",
+    "sha": "7af2a7b1bf3c211e99e080ab0cff5cd87abc5dbf",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/cli?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/cli",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/7af2a7b1bf3c211e99e080ab0cff5cd87abc5dbf",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/cli?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/7af2a7b1bf3c211e99e080ab0cff5cd87abc5dbf",
+      "html": "https://github.com/runconduit/conduit/tree/master/cli"
+    }
+  },
+  {
+    "name": "controller",
+    "path": "controller",
+    "sha": "25f699d74cde866ebe011cd9f1d1a28ac8135782",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/controller?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/controller",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/25f699d74cde866ebe011cd9f1d1a28ac8135782",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/controller?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/25f699d74cde866ebe011cd9f1d1a28ac8135782",
+      "html": "https://github.com/runconduit/conduit/tree/master/controller"
+    }
+  },
+  {
+    "name": "doc",
+    "path": "doc",
+    "sha": "3e81bb7bf65eedd121fc9bf16bd78372ea69728a",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/doc?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/doc",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/3e81bb7bf65eedd121fc9bf16bd78372ea69728a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/doc?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/3e81bb7bf65eedd121fc9bf16bd78372ea69728a",
+      "html": "https://github.com/runconduit/conduit/tree/master/doc"
+    }
+  },
+  {
+    "name": "docker-compose.yml",
+    "path": "docker-compose.yml",
+    "sha": "7fb968187a400b9ae0f1fce24f5b8c1214d8e9a5",
+    "size": 2973,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/docker-compose.yml?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/docker-compose.yml",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/7fb968187a400b9ae0f1fce24f5b8c1214d8e9a5",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/docker-compose.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/docker-compose.yml?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/7fb968187a400b9ae0f1fce24f5b8c1214d8e9a5",
+      "html": "https://github.com/runconduit/conduit/blob/master/docker-compose.yml"
+    }
+  },
+  {
+    "name": "grafana",
+    "path": "grafana",
+    "sha": "2e32af58a94ead59a12553852e5cc8ecfd1a4b31",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/grafana?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/grafana",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/2e32af58a94ead59a12553852e5cc8ecfd1a4b31",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/grafana?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/2e32af58a94ead59a12553852e5cc8ecfd1a4b31",
+      "html": "https://github.com/runconduit/conduit/tree/master/grafana"
+    }
+  },
+  {
+    "name": "pkg",
+    "path": "pkg",
+    "sha": "acba8cd6130f785b699b250ad5276dcae2d84358",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/pkg?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/pkg",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/acba8cd6130f785b699b250ad5276dcae2d84358",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/pkg?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/acba8cd6130f785b699b250ad5276dcae2d84358",
+      "html": "https://github.com/runconduit/conduit/tree/master/pkg"
+    }
+  },
+  {
+    "name": "proto",
+    "path": "proto",
+    "sha": "ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/proto?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/proto",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/proto?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+      "html": "https://github.com/runconduit/conduit/tree/master/proto"
+    }
+  },
+  {
+    "name": "proxy-init",
+    "path": "proxy-init",
+    "sha": "7f1424e01ecfcc2ecb978c2608b53007747b319c",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/proxy-init?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/proxy-init",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/7f1424e01ecfcc2ecb978c2608b53007747b319c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/proxy-init?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/7f1424e01ecfcc2ecb978c2608b53007747b319c",
+      "html": "https://github.com/runconduit/conduit/tree/master/proxy-init"
+    }
+  },
+  {
+    "name": "proxy",
+    "path": "proxy",
+    "sha": "64e70c81edb9260a6e95df6672366f8507acf100",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/proxy?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/proxy",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/64e70c81edb9260a6e95df6672366f8507acf100",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/proxy?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/64e70c81edb9260a6e95df6672366f8507acf100",
+      "html": "https://github.com/runconduit/conduit/tree/master/proxy"
+    }
+  },
+  {
+    "name": "web",
+    "path": "web",
+    "sha": "9d2e2512f314afb3e3745e7ae3ea40f817a10479",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/web?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/web",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/9d2e2512f314afb3e3745e7ae3ea40f817a10479",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/web?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/9d2e2512f314afb3e3745e7ae3ea40f817a10479",
+      "html": "https://github.com/runconduit/conduit/tree/master/web"
+    }
+  }
+]

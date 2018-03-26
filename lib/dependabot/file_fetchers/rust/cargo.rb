@@ -7,11 +7,11 @@ module Dependabot
     module Rust
       class Cargo < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(Cargo.toml Cargo.lock) - filenames).empty?
+          filenames.include?("Cargo.toml")
         end
 
         def self.required_files_message
-          "Repo must contain a Cargo.toml and Cargo.lock."
+          "Repo must contain a Cargo.toml."
         end
 
         private
@@ -19,16 +19,16 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << cargo_toml
-          fetched_files << cargo_lock
+          fetched_files << cargo_lock if cargo_lock
           fetched_files
         end
 
         def cargo_toml
-          @cargo_toml ||= fetch_file_from_github("Cargo.toml")
+          @cargo_toml ||= fetch_file_from_host("Cargo.toml")
         end
 
         def cargo_lock
-          @cargo_lock ||= fetch_file_from_github("Cargo.lock")
+          @cargo_lock ||= fetch_file_if_present("Cargo.lock")
         end
       end
     end
