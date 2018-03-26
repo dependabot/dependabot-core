@@ -1,3 +1,7 @@
+## v0.51.20, 25 March 2018
+
+- Ruby: Handle yanked dependencies
+
 ## v0.51.19, 24 March 2018
 
 - Handle GitHub contents error in MetadataFinder
