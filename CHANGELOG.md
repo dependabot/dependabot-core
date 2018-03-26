@@ -1,3 +1,7 @@
+## v0.51.19, 24 March 2018
+
+- Handle GitHub contents error in MetadataFinder
+
 ## v0.51.18, 24 March 2018
 
 - JS: Use npm 5.8.0
