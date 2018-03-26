@@ -107,6 +107,28 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "with an optional dependency" do
+        let(:manifest_fixture_name) { "optional_dependency" }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("utf8-ranges")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.1.3",
+                file: "Cargo.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+
       context "that is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 

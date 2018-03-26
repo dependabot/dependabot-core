@@ -7,7 +7,8 @@ require "dependabot/file_parsers/base"
 require "dependabot/errors"
 
 # Relevant Cargo docs can be found at:
-# https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+# - https://doc.rust-lang.org/cargo/reference/manifest.html
+# - https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
 module Dependabot
   module FileParsers
     module Rust
@@ -70,7 +71,12 @@ module Dependabot
         end
 
         def requirement_from_declaration(declaration)
-          declaration.is_a?(String) ? declaration : nil
+          return declaration if declaration.is_a?(String)
+          unless declaration.is_a?(Hash)
+            raise "Unexpected dependency declaration: #{declaration}"
+          end
+          return declaration["version"] if declaration["version"]
+          nil
         end
 
         def source_from_declaration(declaration)
@@ -79,17 +85,19 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
 
-          if declaration["git"]
-            {
-              type: "git",
-              url: declaration["git"],
-              branch: declaration["branch"],
-              ref: declaration["tag"] || declaration["rev"]
-            }
-          elsif declaration["path"]
-            { type: "path" }
-          else raise "Unexpected dependency declaration: #{declaration}"
-          end
+          return if declaration["version"]
+          return git_source_details(declaration) if declaration["git"]
+          return { type: "path" } if declaration["path"]
+          raise "Unexpected dependency declaration: #{declaration}"
+        end
+
+        def git_source_details(declaration)
+          {
+            type: "git",
+            url: declaration["git"],
+            branch: declaration["branch"],
+            ref: declaration["tag"] || declaration["rev"]
+          }
         end
 
         def version_from_lockfile_details(package_details)
