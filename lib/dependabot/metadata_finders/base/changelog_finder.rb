@@ -81,6 +81,13 @@ module Dependabot
             end
 
           @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+        rescue NoMethodError
+          # Oddly, GitHub sometimes ignores the specified path and returns an
+          # array of files instead. Retrying may help.
+          @fetch_upgrade_guide_retry_count ||= 0
+          @fetch_upgrade_guide_retry_count += 1
+          retry if @fetch_upgrade_guide_retry_count < 1
+          raise "Array error happening for #{repo}, #{path}, #{commit}."
         end
 
         private
@@ -124,6 +131,13 @@ module Dependabot
               ).body
             end
           @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+        rescue NoMethodError
+          # Oddly, GitHub sometimes ignores the specified path and returns an
+          # array of files instead. Retrying may help.
+          @fetch_changelog_retry_count ||= 0
+          @fetch_changelog_retry_count += 1
+          retry if @fetch_changelog_retry_count < 1
+          raise "Array error happening for #{repo}, #{path}, #{commit}."
         end
 
         def old_version_changelog_line

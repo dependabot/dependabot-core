@@ -135,8 +135,8 @@ module Dependabot
         # array of files instead. Retrying may help.
         @fetch_file_retry_count ||= {}
         @fetch_file_retry_count[path] ||= 0
-        retry if @fetch_file_retry_count[path].zero?
         @fetch_file_retry_count[path] += 1
+        retry if @fetch_file_retry_count[path] < 1
         raise "Array error happening for #{repo}, #{path}, #{commit}."
       end
 
