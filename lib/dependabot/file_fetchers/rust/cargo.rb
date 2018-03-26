@@ -20,6 +20,7 @@ module Dependabot
           fetched_files = []
           fetched_files << cargo_toml
           fetched_files << cargo_lock if cargo_lock
+          # TODO: Read the Cargo.toml and get any workspaces
           fetched_files
         end
 
