@@ -18,6 +18,7 @@ module Dependabot
           RUBYGEMS_API = "https://rubygems.org/api/v1/"
           GIT_REF_REGEX =
             /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
+          GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
@@ -154,14 +155,7 @@ module Dependabot
             return latest_version_details unless gemfile
 
             in_a_temporary_bundler_context do
-              definition = ::Bundler::Definition.build(
-                "Gemfile",
-                lockfile&.name,
-                gems: [dependency.name]
-              )
-
-              definition.resolve_remotely!
-              dep = definition.resolve.find { |d| d.name == dependency.name }
+              dep = dependency_from_definition
 
               # If the dependency wasn't found in the definition, it's because
               # the Gemfile didn't import the gemspec. This is unusual, but
@@ -175,6 +169,31 @@ module Dependabot
               end
               details
             end
+          end
+
+          def dependency_from_definition
+            dependencies_to_unlock = [dependency.name]
+            begin
+              definition = build_definition(dependencies_to_unlock)
+              definition.resolve_remotely!
+            rescue ::Bundler::GemNotFound => error
+              raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+              gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
+                         named_captures["name"]
+              raise if dependencies_to_unlock.include?(gem_name)
+              dependencies_to_unlock << gem_name
+              retry
+            end
+
+            definition.resolve.find { |d| d.name == dependency.name }
+          end
+
+          def build_definition(dependencies_to_unlock)
+            ::Bundler::Definition.build(
+              "Gemfile",
+              lockfile&.name,
+              gems: dependencies_to_unlock
+            )
           end
 
           def dependency_source

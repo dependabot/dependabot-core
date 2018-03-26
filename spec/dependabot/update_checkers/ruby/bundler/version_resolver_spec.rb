@@ -477,13 +477,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
 
-        context "and it's another gem that we're attempting to bump" do
+        context "and it's another gem" do
           let(:dependency_name) { "statesman" }
-
-          it "raises a Dependabot::DependencyFileNotResolvable error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
-          end
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.3.1")) }
         end
       end
     end

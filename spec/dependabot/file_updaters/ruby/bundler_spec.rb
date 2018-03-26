@@ -535,6 +535,45 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         its(:content) { is_expected.to include("i18n (0.7.0)") }
       end
 
+      context "when a gem has been yanked" do
+        let(:gemfile_fixture_name) { "minor_version_specified" }
+        let(:lockfile_fixture_name) { "yanked_gem.lock" }
+
+        context "and it's that gem that we're attempting to bump" do
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.5.0)")
+            expect(file.content).to include("statesman (1.2.1)")
+          end
+        end
+
+        context "and it's another gem" do
+          let(:dependency_name) { "statesman" }
+          let(:dependency_version) { "1.2.1" }
+          let(:dependency_previous_version) { "1.3.1" }
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.3",
+              groups: [],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.2",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "locks the updated gem to the latest version" do
+            expect(file.content).to include("business (1.8.0)")
+            expect(file.content).to include("statesman (1.3.1)")
+          end
+        end
+      end
+
       context "when the old Gemfile specified the version" do
         let(:gemfile_fixture_name) { "version_specified" }
 

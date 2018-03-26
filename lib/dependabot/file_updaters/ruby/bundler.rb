@@ -20,6 +20,7 @@ module Dependabot
         require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
 
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+        GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
         def self.updated_files_regex
           [
@@ -220,16 +221,35 @@ module Dependabot
                   )
                 end
 
-                definition = ::Bundler::Definition.build(
-                  "Gemfile",
-                  "Gemfile.lock",
-                  gems: dependencies.map(&:name)
-                )
-                definition.resolve_remotely!
-                definition.to_lock
+                generate_lockfile
               end
             end
           post_process_lockfile(lockfile_body)
+        end
+
+        def generate_lockfile
+          dependencies_to_unlock = dependencies.map(&:name)
+
+          begin
+            definition = build_definition(dependencies_to_unlock)
+            definition.resolve_remotely!
+            definition.to_lock
+          rescue ::Bundler::GemNotFound => error
+            raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+            gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
+                       named_captures["name"]
+            raise if dependencies_to_unlock.include?(gem_name)
+            dependencies_to_unlock << gem_name
+            retry
+          end
+        end
+
+        def build_definition(dependencies_to_unlock)
+          ::Bundler::Definition.build(
+            "Gemfile",
+            "Gemfile.lock",
+            gems: dependencies_to_unlock
+          )
         end
 
         def write_temporary_dependency_files
