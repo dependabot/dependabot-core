@@ -27,8 +27,10 @@ module Dependabot
               )
           end
 
-          updated_files <<
-            updated_file(file: lockfile, content: updated_lockfile_content)
+          if lockfile
+            updated_files <<
+              updated_file(file: lockfile, content: updated_lockfile_content)
+          end
 
           updated_files
         end
