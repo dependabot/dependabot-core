@@ -1,3 +1,8 @@
+## v0.52.1, 28 March 2018
+
+- JS: Fix bug in git dependency handling
+- Rust: Only try to update lockfile if we were given one to start with
+
 ## v0.52.0, 27 March 2018
 
 - First version of Rust support
