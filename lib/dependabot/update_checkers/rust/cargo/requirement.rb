@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
+################################################################################
+# For more details on rust version constraints, see:                           #
+# - https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html     #
+# - https://steveklabnik.github.io/semver/semver/index.html                    #
+################################################################################
+
 require "dependabot/update_checkers/rust/cargo"
 
-# Best Rust docs on specifying dependencies are:
-# - https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
-# - https://steveklabnik.github.io/semver/semver/index.html
 module Dependabot
   module UpdateCheckers
     module Rust
@@ -27,7 +30,7 @@ module Dependabot
               ruby_range(req_string.gsub(/(?:\.|^)[*]/, "").gsub(/^[^\d]/, ""))
             elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
             elsif req_string.match?(/^[\d^]/) then convert_caret_req(req_string)
-            elsif req_string.match?(/[<>]/) then req_string
+            elsif req_string.match?(/[<=>]/) then req_string
             else ruby_range(req_string)
             end
           end

@@ -9,6 +9,7 @@ module Dependabot
     module Rust
       class Cargo < Dependabot::UpdateCheckers::Base
         require_relative "cargo/requirement"
+        require_relative "cargo/version"
 
         def latest_version
           # TODO: Handle git dependencies
@@ -52,6 +53,10 @@ module Dependabot
           dependency.requirements
         end
 
+        def version_class
+          Cargo::Version
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?
@@ -65,7 +70,7 @@ module Dependabot
 
         def wants_prerelease?
           if dependency.version &&
-             Gem::Version.new(dependency.version).prerelease?
+             Cargo::Version.new(dependency.version).prerelease?
             return true
           end
 
@@ -79,7 +84,7 @@ module Dependabot
           crates_listing.
             fetch("versions", []).
             reject { |v| v["yanked"] }.
-            map { |v| Gem::Version.new(v.fetch("num")) }
+            map { |v| Cargo::Version.new(v.fetch("num")) }
         end
 
         def git_dependency?

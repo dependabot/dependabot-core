@@ -107,8 +107,13 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::Requirement do
     end
 
     context "with an = version specified" do
-      let(:requirement_string) { "=1.5.1" }
-      it { is_expected.to eq(Gem::Requirement.new("1.5.1")) }
+      let(:requirement_string) { "=1.5" }
+      it { is_expected.to eq(Gem::Requirement.new("1.5")) }
+    end
+
+    context "with an ~> version specified" do
+      let(:requirement_string) { "~> 1.5.1" }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
     end
   end
 end
