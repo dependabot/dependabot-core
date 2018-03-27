@@ -1,0 +1,257 @@
+{
+    "categories": [],
+    "crate": {
+        "badges": [],
+        "categories": [],
+        "created_at": "2015-09-20T21:42:28.529732+00:00",
+        "description": "A library for storing and retrieving files according to XDG Base Directory specification",
+        "documentation": "https://docs.rs/xdg/",
+        "downloads": 147014,
+        "exact_match": false,
+        "homepage": "https://github.com/whitequark/rust-xdg",
+        "id": "xdg",
+        "keywords": [
+            "linux",
+            "configuration"
+        ],
+        "links": {
+            "owner_team": "/api/v1/crates/xdg/owner_team",
+            "owner_user": "/api/v1/crates/xdg/owner_user",
+            "owners": "/api/v1/crates/xdg/owners",
+            "reverse_dependencies": "/api/v1/crates/xdg/reverse_dependencies",
+            "version_downloads": "/api/v1/crates/xdg/downloads",
+            "versions": null
+        },
+        "max_version": "2.1.0",
+        "name": "xdg",
+        "recent_downloads": 37562,
+        "repository": "https://github.com/whitequark/rust-xdg",
+        "updated_at": "2017-03-11T23:52:52.055229+00:00",
+        "versions": [
+            47574,
+            23534,
+            20228,
+            19585,
+            17946,
+            17939,
+            17875,
+            17833,
+            15930,
+            15920
+        ]
+    },
+    "keywords": [
+        {
+            "crates_cnt": 90,
+            "created_at": "2014-11-21T06:08:11.835567+00:00",
+            "id": "linux",
+            "keyword": "linux"
+        },
+        {
+            "crates_cnt": 23,
+            "created_at": "2015-01-26T04:01:52.683657+00:00",
+            "id": "configuration",
+            "keyword": "configuration"
+        }
+    ],
+    "versions": [
+        {
+            "crate": "xdg",
+            "created_at": "2018-03-09T11:10:11.701728+00:00",
+            "dl_path": "/api/v1/crates/xdg/3.0.0-pre1/download",
+            "downloads": 155,
+            "features": {},
+            "id": 50000,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/3.0.0-pre1/authors",
+                "dependencies": "/api/v1/crates/xdg/3.0.0-pre1/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/3.0.0-pre1/downloads"
+            },
+            "num": "3.0.0-pre1",
+            "readme_path": "/api/v1/crates/xdg/3.0.0-pre1/readme",
+            "updated_at": "2018-03-09T04:08:38.601386+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2017-03-11T23:52:52.055229+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.1.0/download",
+            "downloads": 91676,
+            "features": {},
+            "id": 47574,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.1.0/authors",
+                "dependencies": "/api/v1/crates/xdg/2.1.0/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.1.0/downloads"
+            },
+            "num": "2.1.0",
+            "readme_path": "/api/v1/crates/xdg/2.1.0/readme",
+            "updated_at": "2017-11-30T03:33:33.706979+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2016-03-06T09:02:51.597608+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0/download",
+            "downloads": 53665,
+            "features": {},
+            "id": 23534,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0/downloads"
+            },
+            "num": "2.0.0",
+            "readme_path": "/api/v1/crates/xdg/2.0.0/readme",
+            "updated_at": "2017-11-30T03:14:27.555923+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2016-01-04T21:55:34.720694+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre7/download",
+            "downloads": 444,
+            "features": {},
+            "id": 20228,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre7/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre7/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre7/downloads"
+            },
+            "num": "2.0.0-pre7",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre7/readme",
+            "updated_at": "2017-11-30T02:54:05.910209+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-12-19T20:41:30.919158+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre6/download",
+            "downloads": 175,
+            "features": {},
+            "id": 19585,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre6/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre6/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre6/downloads"
+            },
+            "num": "2.0.0-pre6",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre6/readme",
+            "updated_at": "2017-11-30T02:57:02.774800+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-11-10T10:45:53.669270+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre5/download",
+            "downloads": 209,
+            "features": {},
+            "id": 17946,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre5/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre5/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre5/downloads"
+            },
+            "num": "2.0.0-pre5",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre5/readme",
+            "updated_at": "2017-11-30T02:57:02.772504+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-11-10T05:50:43.446192+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre4/download",
+            "downloads": 159,
+            "features": {},
+            "id": 17939,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre4/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre4/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre4/downloads"
+            },
+            "num": "2.0.0-pre4",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre4/readme",
+            "updated_at": "2017-11-30T04:08:38.603219+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-11-09T11:10:11.701728+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre3/download",
+            "downloads": 155,
+            "features": {},
+            "id": 17875,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre3/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre3/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre3/downloads"
+            },
+            "num": "2.0.0-pre3",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre3/readme",
+            "updated_at": "2017-11-30T04:08:38.601386+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-11-08T17:31:40.799053+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre2/download",
+            "downloads": 162,
+            "features": {},
+            "id": 17833,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre2/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre2/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre2/downloads"
+            },
+            "num": "2.0.0-pre2",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre2/readme",
+            "updated_at": "2017-11-30T04:08:38.599464+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-09-21T02:24:27.521449+00:00",
+            "dl_path": "/api/v1/crates/xdg/2.0.0-pre1/download",
+            "downloads": 224,
+            "features": {},
+            "id": 15930,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/2.0.0-pre1/authors",
+                "dependencies": "/api/v1/crates/xdg/2.0.0-pre1/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/2.0.0-pre1/downloads"
+            },
+            "num": "2.0.0-pre1",
+            "readme_path": "/api/v1/crates/xdg/2.0.0-pre1/readme",
+            "updated_at": "2017-11-30T02:57:02.770612+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "xdg",
+            "created_at": "2015-09-20T21:42:28.574430+00:00",
+            "dl_path": "/api/v1/crates/xdg/1.0.0/download",
+            "downloads": 145,
+            "features": {},
+            "id": 15920,
+            "license": "Apache-2.0/MIT",
+            "links": {
+                "authors": "/api/v1/crates/xdg/1.0.0/authors",
+                "dependencies": "/api/v1/crates/xdg/1.0.0/dependencies",
+                "version_downloads": "/api/v1/crates/xdg/1.0.0/downloads"
+            },
+            "num": "1.0.0",
+            "readme_path": "/api/v1/crates/xdg/1.0.0/readme",
+            "updated_at": "2017-11-30T02:57:16.501012+00:00",
+            "yanked": false
+        }
+    ]
+}

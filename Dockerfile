@@ -72,3 +72,8 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && d
     && rm -f Precompiled.zip
 ENV PATH="$PATH:/usr/local/elixir/bin"
 RUN mix local.hex --force
+
+### Rust
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH=${PATH}:/root/.cargo/bin

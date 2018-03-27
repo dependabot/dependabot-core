@@ -1,8 +1,8 @@
 # Dependabot Core
 
 Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python, PHP, Elixir and Java. It can also update
-git submodules and Docker files. Highlights include:
+updating in Ruby, JavaScript, Python, PHP, Elixir, Rust and Java. It can also
+update git submodules and Docker files. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
   a project's other dependencies*. That means tapping into the package manager's
@@ -14,9 +14,10 @@ Dependabot Core is used by [Dependabot][dependabot].
 
 ## Setup
 
-To run Dependabot Core, you'll need Ruby, Python, PHP, Elixir and Node
-installed. The main library is written in Ruby, while JavaScript, Python, Elixir
-and PHP are required for dealing with updates for their respective languages.
+To run Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node and Rust
+installed. The main library is written in Ruby, while JavaScript, Python, PHP,
+Elixir and Rust are required for dealing with updates for their respective
+languages.
 
 Before running Dependabot Core, install dependencies for the core library and
 the helpers:

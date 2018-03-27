@@ -8,6 +8,7 @@ require "dependabot/file_parsers/php/composer"
 require "dependabot/file_parsers/git/submodules"
 require "dependabot/file_parsers/docker/docker"
 require "dependabot/file_parsers/elixir/hex"
+require "dependabot/file_parsers/rust/cargo"
 
 module Dependabot
   module FileParsers
@@ -22,6 +23,7 @@ module Dependabot
       when "submodules" then FileParsers::Git::Submodules
       when "docker" then FileParsers::Docker::Docker
       when "hex" then FileParsers::Elixir::Hex
+      when "cargo" then FileParsers::Rust::Cargo
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
