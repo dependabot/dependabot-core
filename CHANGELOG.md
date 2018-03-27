@@ -1,3 +1,7 @@
+## v0.52.0, 27 March 2018
+
+- First version of Rust support
+
 ## v0.51.20, 25 March 2018
 
 - Ruby: Handle yanked dependencies
