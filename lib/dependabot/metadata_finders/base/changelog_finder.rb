@@ -87,7 +87,7 @@ module Dependabot
           @fetch_upgrade_guide_retry_count ||= 0
           @fetch_upgrade_guide_retry_count += 1
           retry if @fetch_upgrade_guide_retry_count < 1
-          raise "Array error happening for #{repo}, #{path}, #{commit}."
+          raise "Array error happening: #{source.repo}, #{upgrade_guide.path}."
         end
 
         private
@@ -137,7 +137,7 @@ module Dependabot
           @fetch_changelog_retry_count ||= 0
           @fetch_changelog_retry_count += 1
           retry if @fetch_changelog_retry_count < 1
-          raise "Array error happening for #{repo}, #{path}, #{commit}."
+          raise "Array error happening: #{source.repo}, #{changelog.path}."
         end
 
         def old_version_changelog_line
