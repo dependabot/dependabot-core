@@ -1,32 +1,45 @@
 # frozen_string_literal: true
 
+require "excon"
+require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 
 module Dependabot
   module UpdateCheckers
     module Rust
       class Cargo < Dependabot::UpdateCheckers::Base
+        require_relative "cargo/requirement"
+
         def latest_version
-          # Hit the registry for this dependency and get its latest version.
-          #
-          # This needs to be implemented as part of v1 - we can't do updating
-          # without it!
+          # TODO: Handle git dependencies
+          return if git_dependency?
+
+          @latest_version =
+            begin
+              versions = available_versions
+              versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.sort.last
+            end
         end
 
         def latest_resolvable_version
-          # Resolving the dependency files to get the latest version of
-          # this dependency that doesn't cause conflicts is hard, and needs to
-          # be done through a language helper that piggy-backs off of the
-          # package manager's own resolution logic (see PHP, for example).
-          #
-          # In the absense of the above, just returning the latest version isn't
-          # the end of the world.
           latest_version
         end
 
         def latest_resolvable_version_with_no_unlock
-          # Get the latest version available that satisfies the current manifest
-          # requirements
+          # TODO: Handle git dependencies
+          return if git_dependency?
+
+          @latest_resolvable_version_with_no_unlock ||=
+            begin
+              versions = available_versions
+              reqs = dependency.requirements.map do |r|
+                Cargo::Requirement.new(r.fetch(:requirement).split(","))
+              end
+              versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.select! { |v| reqs.all? { |r| r.satisfied_by?(v) } }
+              versions.sort.last
+            end
         end
 
         def updated_requirements
@@ -48,6 +61,55 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def wants_prerelease?
+          if dependency.version &&
+             Gem::Version.new(dependency.version).prerelease?
+            return true
+          end
+
+          dependency.requirements.any? do |req|
+            reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
+            reqs.any? { |r| r.match?(/[A-Za-z]/) }
+          end
+        end
+
+        def available_versions
+          crates_listing.
+            fetch("versions", []).
+            reject { |v| v["yanked"] }.
+            map { |v| Gem::Version.new(v.fetch("num")) }
+        end
+
+        def git_dependency?
+          git_commit_checker.git_dependency?
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              github_access_token: github_access_token
+            )
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
+        end
+
+        def crates_listing
+          return @crates_listing unless @crates_listing.nil?
+
+          response = Excon.get(
+            "https://crates.io/api/v1/crates/#{dependency.name}",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+
+          @crates_listing = JSON.parse(response.body)
         end
       end
     end
