@@ -142,8 +142,8 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
     end
 
     context "with a lockfile" do
-      # TODO: This would be 16 if we weren't combining two winapi versions
-      its(:length) { is_expected.to eq(15) }
+      # TODO: This would be 14 if we weren't combining two winapi versions
+      its(:length) { is_expected.to eq(13) }
 
       it "excludes the source application / library" do
         expect(dependencies.map(&:name)).to_not include("dependabot")
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("time")
             # Surprisingly, Rust's treats bare requirements as semver reqs
-            expect(dependency.version).to eq("0.1.39")
+            expect(dependency.version).to eq("0.1.38")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "0.1.12",

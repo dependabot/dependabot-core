@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module FileUpdaters
     module Rust
       class Cargo < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
-          # An array of regexes that will help Dependabot determine when it
-          # might need to rebase PRs.
           [
             /^Cargo\.toml$/,
             /^Cargo\.lock$/
@@ -37,9 +36,66 @@ module Dependabot
         private
 
         def check_required_files
-          %w(Cargo.toml Cargo.lock).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No Cargo.toml!" unless get_original_file("Cargo.toml")
+        end
+
+        # Currently, there will only be a single updated dependency
+        def dependency
+          dependencies.first
+        end
+
+        def updated_cargo_toml_content
+          dependencies.
+            select { |dep| requirement_changed?(cargo_toml, dep) }.
+            reduce(cargo_toml.content.dup) do |content, dep|
+              updated_requirement =
+                dep.requirements.
+                find { |r| r[:file] == cargo_toml.name }.
+                fetch(:requirement)
+
+              old_req =
+                dep.previous_requirements.
+                find { |r| r[:file] == cargo_toml.name }.
+                fetch(:requirement)
+
+              updated_content =
+                content.gsub(declaration_regex(dep)) do |line|
+                  line.gsub(old_req, updated_requirement)
+                end
+
+              raise "Expected content to change!" if content == updated_content
+              updated_content
+            end
+        end
+
+        def updated_lockfile_content
+          @updated_lockfile_content ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+              dep = dependency
+
+              # Shell out to Cargo, which handles everything for us, and does
+              # so without doing an install (so it's fast).
+              `cargo update -q -p #{dep.name} --precise #{dep.version}`
+
+              File.read("Cargo.lock")
+            end
+        end
+
+        def write_temporary_dependency_files
+          File.write(cargo_toml.name, updated_cargo_toml_content)
+          File.write(lockfile.name, lockfile.content)
+          FileUtils.mkdir_p("src")
+          File.write("src/lib.rs", dummy_app_content)
+          File.write("src/main.rs", dummy_app_content)
+        end
+
+        def dummy_app_content
+          %{fn main() {\nprintln!("Hello, world!");\n}}
+        end
+
+        def declaration_regex(dep)
+          /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
         end
 
         def cargo_toml
@@ -48,15 +104,6 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Cargo.lock")
-        end
-
-        def updated_cargo_toml_content
-          # TODO: This can normally be written using regexs
-        end
-
-        def updated_lockfile_content
-          # TODO: This normally needs to be written in the native language.
-          # We do so by shelling out to a helper method (see other languages)
         end
       end
     end
