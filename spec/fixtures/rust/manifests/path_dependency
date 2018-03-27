@@ -1,0 +1,8 @@
+[package]
+name = "dependabot" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+authors = ["support@dependabot.com"]
+
+[dependencies]
+cargo-registry-s3 = { path = "src/s3", version = "0.2.0" }
+regex = "=0.1.39"
