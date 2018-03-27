@@ -198,6 +198,7 @@ module Dependabot
           end
 
           # Use the latest dist tag unless there's a reason not to
+          return nil unless npm_details["dist-tags"]["latest"]
           latest = version_class.new(npm_details["dist-tags"]["latest"])
 
           wants_latest_dist_tag?(latest) ? latest : nil
@@ -308,6 +309,7 @@ module Dependabot
 
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
+            next false if req[:requirement].nil?
             req[:requirement].match?(/^[A-Za-z]/)
           end
         end

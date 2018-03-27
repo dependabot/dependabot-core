@@ -1,0 +1,1089 @@
+{
+    "_attachments": {},
+    "_id": "is-number",
+    "_rev": "36-79699f2a02ff317079d9d696bfc0f3e4",
+    "author": {
+        "name": "Jon Schlinkert",
+        "url": "https://github.com/jonschlinkert"
+    },
+    "bugs": {
+        "url": "https://github.com/jonschlinkert/is-number/issues"
+    },
+    "contributors": [
+        {
+            "name": "Jon Schlinkert",
+            "url": "http://twitter.com/jonschlinkert"
+        },
+        {
+            "name": "Olsten Larck",
+            "url": "https://i.am.charlike.online"
+        },
+        {
+            "name": "Rouven Weßling",
+            "url": "www.rouvenwessling.de"
+        }
+    ],
+    "description": "Returns true if the value is a number. comprehensive tests.",
+    "dist-tags": {
+        "develop": "4.0.0"
+    },
+    "homepage": "https://github.com/jonschlinkert/is-number",
+    "keywords": [
+        "check",
+        "coerce",
+        "coercion",
+        "integer",
+        "is",
+        "is-nan",
+        "is-num",
+        "is-number",
+        "istype",
+        "kind",
+        "math",
+        "nan",
+        "num",
+        "number",
+        "numeric",
+        "test",
+        "type",
+        "typeof",
+        "value"
+    ],
+    "license": "MIT",
+    "maintainers": [
+        {
+            "email": "me@rouvenwessling.de",
+            "name": "realityking"
+        },
+        {
+            "email": "brian.woodward@gmail.com",
+            "name": "doowb"
+        },
+        {
+            "email": "github@sellside.com",
+            "name": "jonschlinkert"
+        }
+    ],
+    "name": "is-number",
+    "readme": "# is-number [![NPM version](https://img.shields.io/npm/v/is-number.svg?style=flat)](https://www.npmjs.com/package/is-number) [![NPM monthly downloads](https://img.shields.io/npm/dm/is-number.svg?style=flat)](https://npmjs.org/package/is-number) [![NPM total downloads](https://img.shields.io/npm/dt/is-number.svg?style=flat)](https://npmjs.org/package/is-number) [![Linux Build Status](https://img.shields.io/travis/jonschlinkert/is-number.svg?style=flat&label=Travis)](https://travis-ci.org/jonschlinkert/is-number)\n\n> Returns true if the value is a number. comprehensive tests.\n\nPlease consider following this project's author, [Jon Schlinkert](https://github.com/jonschlinkert), and consider starring the project to show your :heart: and support.\n\n## Install\n\nInstall with [npm](https://www.npmjs.com/):\n\n```sh\n$ npm install --save is-number\n```\n\n## Usage\n\nTo understand some of the rationale behind the decisions made in this library (and to learn about some oddities of number evaluation in JavaScript), [see this gist](https://gist.github.com/jonschlinkert/e30c70c713da325d0e81).\n\n```js\nvar isNumber = require('is-number');\n```\n\n### true\n\nSee the [tests](./test.js) for more examples.\n\n```js\nisNumber(5e3)      //=> 'true'\nisNumber(0xff)     //=> 'true'\nisNumber(-1.1)     //=> 'true'\nisNumber(0)        //=> 'true'\nisNumber(1)        //=> 'true'\nisNumber(1.1)      //=> 'true'\nisNumber(10)       //=> 'true'\nisNumber(10.10)    //=> 'true'\nisNumber(100)      //=> 'true'\nisNumber('-1.1')   //=> 'true'\nisNumber('0')      //=> 'true'\nisNumber('012')    //=> 'true'\nisNumber('0xff')   //=> 'true'\nisNumber('1')      //=> 'true'\nisNumber('1.1')    //=> 'true'\nisNumber('10')     //=> 'true'\nisNumber('10.10')  //=> 'true'\nisNumber('100')    //=> 'true'\nisNumber('5e3')    //=> 'true'\nisNumber(parseInt('012'))   //=> 'true'\nisNumber(parseFloat('012')) //=> 'true'\n```\n\n### False\n\nSee the [tests](./test.js) for more examples.\n\n```js\nisNumber('foo')             //=> 'false'\nisNumber([1])               //=> 'false'\nisNumber([])                //=> 'false'\nisNumber(function () {})    //=> 'false'\nisNumber(Infinity)          //=> 'false'\nisNumber(NaN)               //=> 'false'\nisNumber(new Buffer('abc')) //=> 'false'\nisNumber(null)              //=> 'false'\nisNumber(undefined)         //=> 'false'\nisNumber({abc: 'abc'})      //=> 'false'\n```\n\n## Why is this needed?\n\nThis library provides a fast, simple way of checking whether a value is a number, whether defined as a string or number by the user.\n\nIn JavaScript, can easily test for a number by doing `typeof value === 'number'`. But sometimes that's not enough. For example, `typeof NaN` returns `number`, and there are many use cases where it's possible or necessary for a numerical value to be defined as a string (I personally use this library to check for numbers when parsing a string. Clearly, this is a case where it's not possible for the value to be defined as a number).\n\n## Release history\n\n### 5.0.0\n\n**Breaking changes**\n\n* removed support for `instanceof Number` and `instanceof String`\n\n## About\n\n<details>\n<summary><strong>Contributing</strong></summary>\n\nPull requests and stars are always welcome. For bugs and feature requests, [please create an issue](../../issues/new).\n\n</details>\n\n<details>\n<summary><strong>Running Tests</strong></summary>\n\nRunning and reviewing unit tests is a great way to get familiarized with a library and its API. You can install dependencies and run tests with the following command:\n\n```sh\n$ npm install && npm test\n```\n\n</details>\n\n<details>\n<summary><strong>Building docs</strong></summary>\n\n_(This project's readme.md is generated by [verb](https://github.com/verbose/verb-generate-readme), please don't edit the readme directly. Any changes to the readme must be made in the [.verb.md](.verb.md) readme template.)_\n\nTo generate the readme, run the following command:\n\n```sh\n$ npm install -g verbose/verb#dev verb-generate-readme && verb\n```\n\n</details>\n\n### Related projects\n\nYou might also be interested in these projects:\n\n* [is-plain-object](https://www.npmjs.com/package/is-plain-object): Returns true if an object was created by the `Object` constructor. | [homepage](https://github.com/jonschlinkert/is-plain-object \"Returns true if an object was created by the `Object` constructor.\")\n* [is-primitive](https://www.npmjs.com/package/is-primitive): Returns `true` if the value is a primitive.  | [homepage](https://github.com/jonschlinkert/is-primitive \"Returns `true` if the value is a primitive. \")\n* [isobject](https://www.npmjs.com/package/isobject): Returns true if the value is an object and not an array or null. | [homepage](https://github.com/jonschlinkert/isobject \"Returns true if the value is an object and not an array or null.\")\n* [kind-of](https://www.npmjs.com/package/kind-of): Get the native type of a value. | [homepage](https://github.com/jonschlinkert/kind-of \"Get the native type of a value.\")\n\n### Contributors\n\n| **Commits** | **Contributor** | \n| --- | --- |\n| 42 | [jonschlinkert](https://github.com/jonschlinkert) |\n| 5 | [charlike-old](https://github.com/charlike-old) |\n| 1 | [realityking](https://github.com/realityking) |\n\n### Author\n\n**Jon Schlinkert**\n\n* [linkedin/in/jonschlinkert](https://linkedin.com/in/jonschlinkert)\n* [github/jonschlinkert](https://github.com/jonschlinkert)\n* [twitter/jonschlinkert](https://twitter.com/jonschlinkert)\n\n### License\n\nCopyright © 2018, [Jon Schlinkert](https://github.com/jonschlinkert).\nReleased under the [MIT License](LICENSE).\n\n***\n\n_This file was generated by [verb-generate-readme](https://github.com/verbose/verb-generate-readme), v0.6.0, on January 28, 2018._",
+    "readmeFilename": "README.md",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jonschlinkert/is-number.git"
+    },
+    "time": {
+        "0.1.0": "2014-09-22T01:58:51.592Z",
+        "0.1.1": "2014-09-22T03:37:27.931Z",
+        "1.0.0": "2015-01-24T10:16:54.470Z",
+        "1.1.0": "2015-01-24T10:33:21.598Z",
+        "1.1.1": "2015-03-05T18:37:07.633Z",
+        "1.1.2": "2015-03-05T18:57:33.841Z",
+        "2.0.0": "2015-05-02T08:11:57.926Z",
+        "2.0.1": "2015-05-03T04:27:13.630Z",
+        "2.0.2": "2015-05-03T05:59:55.976Z",
+        "2.1.0": "2015-11-22T13:56:56.624Z",
+        "3.0.0": "2016-09-11T00:51:30.912Z",
+        "4.0.0": "2017-10-17T05:43:56.559Z",
+        "created": "2014-09-22T01:58:51.592Z",
+        "modified": "2018-02-23T21:50:33.754Z"
+    },
+    "users": {
+        "456wyc": true,
+        "antanst": true,
+        "fizzvr": true,
+        "gugadev": true,
+        "jameskrill": true,
+        "jonschlinkert": true,
+        "leix3041": true,
+        "maycon_ribeiro": true,
+        "papasavva": true,
+        "rioli": true,
+        "rocket0191": true,
+        "snowdream": true
+    },
+    "versions": {
+        "0.1.0": {
+            "_from": ".",
+            "_id": "is-number@0.1.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "1.4.9",
+            "_shasum": "4407a37aec259352affb5548886744ba4903f8bd",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Is the value a number?",
+            "devDependencies": {
+                "mocha": "*",
+                "verb": ">= 0.2.6",
+                "verb-tag-jscomments": ">= 0.2.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "4407a37aec259352affb5548886744ba4903f8bd",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-0.1.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "docs",
+                "documentation",
+                "generate",
+                "generator",
+                "markdown",
+                "templates",
+                "verb"
+            ],
+            "licenses": [
+                {
+                    "type": "MIT",
+                    "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE-MIT"
+                }
+            ],
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha -R spec"
+            },
+            "version": "0.1.0"
+        },
+        "0.1.1": {
+            "_from": ".",
+            "_id": "is-number@0.1.1",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "1.4.9",
+            "_shasum": "69a7af116963d47206ec9bd9b48a14216f1e3806",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Is the value a number? Has extensive tests.",
+            "devDependencies": {
+                "mocha": "*",
+                "verb": ">= 0.2.6",
+                "verb-tag-jscomments": ">= 0.2.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "69a7af116963d47206ec9bd9b48a14216f1e3806",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-0.1.1.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "coerce",
+                "coercion",
+                "integer",
+                "is",
+                "istype",
+                "javascript",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "util",
+                "utility",
+                "value"
+            ],
+            "licenses": [
+                {
+                    "type": "MIT",
+                    "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE-MIT"
+                }
+            ],
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha -R spec"
+            },
+            "version": "0.1.1"
+        },
+        "1.0.0": {
+            "_from": ".",
+            "_id": "is-number@1.0.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "1.4.28",
+            "_shasum": "de821e3936a8996badeb879ca6f93605e769d498",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "de821e3936a8996badeb879ca6f93605e769d498",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-1.0.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "3183207ab31bb09c65ad8999c39090a3c0530526",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE-MIT"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha -R spec"
+            },
+            "version": "1.0.0"
+        },
+        "1.1.0": {
+            "_from": ".",
+            "_id": "is-number@1.1.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "1.4.28",
+            "_shasum": "620db9e22fded44d43d8e3e47044319083d31855",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "620db9e22fded44d43d8e3e47044319083d31855",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-1.1.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "3183207ab31bb09c65ad8999c39090a3c0530526",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE-MIT"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha -R spec"
+            },
+            "version": "1.1.0"
+        },
+        "1.1.1": {
+            "_from": ".",
+            "_id": "is-number@1.1.1",
+            "_nodeVersion": "0.12.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "2.5.1",
+            "_shasum": "e393e7ec07c17770dbb67941e7f89c675feb110f",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "e393e7ec07c17770dbb67941e7f89c675feb110f",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-1.1.1.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "5184d76c622b97d45486340a85147c6d59d14e25",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "version": "1.1.1"
+        },
+        "1.1.2": {
+            "_from": ".",
+            "_id": "is-number@1.1.2",
+            "_nodeVersion": "0.12.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "2.5.1",
+            "_shasum": "9d82409f3a8a8beecf249b1bc7dada49829966e4",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1",
+                "mocha": "^2.1.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "9d82409f3a8a8beecf249b1bc7dada49829966e4",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-1.1.2.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "a902495bca1f471beaa8deb6193ba628bf80c0e4",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "version": "1.1.2"
+        },
+        "2.0.0": {
+            "_from": ".",
+            "_id": "is-number@2.0.0",
+            "_nodeVersion": "0.12.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "2.5.1",
+            "_shasum": "451c78bfe6c427f37bc2a406226e0cde449f3b5a",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1",
+                "mocha": "^2.1.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "451c78bfe6c427f37bc2a406226e0cde449f3b5a",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-2.0.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "version": "2.0.0"
+        },
+        "2.0.1": {
+            "_from": ".",
+            "_id": "is-number@2.0.1",
+            "_nodeVersion": "0.12.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "2.5.1",
+            "_shasum": "a3754e651f0df489f290ee0a1102c87cc5a0db02",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "dependencies": {
+                "kind-of": "^1.1.0"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1",
+                "mocha": "^2.1.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "a3754e651f0df489f290ee0a1102c87cc5a0db02",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-2.0.1.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "bb9b2e19a9aa2ed4b1e7a5d27e43417c8c9570c0",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "version": "2.0.1"
+        },
+        "2.0.2": {
+            "_from": ".",
+            "_id": "is-number@2.0.2",
+            "_nodeVersion": "0.12.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "2.5.1",
+            "_shasum": "c7542a0f420610655834cd3825bc2f0eb72afe21",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "dependencies": {
+                "kind-of": "^1.1.0"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1",
+                "mocha": "^2.1.0"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "c7542a0f420610655834cd3825bc2f0eb72afe21",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-2.0.2.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "63d5b26c793194bf7f341a7203e0e5568c753539",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is number",
+                "is",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": {
+                "type": "MIT",
+                "url": "https://github.com/jonschlinkert/is-number/blob/master/LICENSE"
+            },
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "version": "2.0.2"
+        },
+        "2.1.0": {
+            "_from": ".",
+            "_id": "is-number@2.1.0",
+            "_nodeVersion": "5.0.0",
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "3.3.6",
+            "_shasum": "01fcbbb393463a548f2f466cce16dece49db908f",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "dependencies": {
+                "kind-of": "^3.0.2"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.1.3",
+                "chalk": "^0.5.1",
+                "mocha": "*"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "01fcbbb393463a548f2f466cce16dece49db908f",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-2.1.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "d06c6e2cc048d3cad016cb8dfb055bb14d86fffa",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is",
+                "is number",
+                "is-number",
+                "istype",
+                "kind of",
+                "math",
+                "number",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                },
+                {
+                    "email": "brian.woodward@gmail.com",
+                    "name": "doowb"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "verb": {
+                "related": {
+                    "list": [
+                        "kind-of",
+                        "is-primitive",
+                        "even",
+                        "odd",
+                        "is-even",
+                        "is-odd"
+                    ]
+                }
+            },
+            "version": "2.1.0"
+        },
+        "3.0.0": {
+            "_from": ".",
+            "_id": "is-number@3.0.0",
+            "_nodeVersion": "6.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/is-number-3.0.0.tgz_1473555089490_0.21388969756662846"
+            },
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "3.10.3",
+            "_shasum": "24fd6201a4782cf50561c810276afc7d12d71195",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "contributors": [
+                {
+                    "name": "Charlike Mike Reagent",
+                    "url": "http://www.tunnckocore.tk"
+                },
+                {
+                    "email": "jon.schlinkert@sellside.com",
+                    "name": "Jon Schlinkert",
+                    "url": "http://twitter.com/jonschlinkert"
+                }
+            ],
+            "dependencies": {
+                "kind-of": "^3.0.2"
+            },
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^0.2.5",
+                "chalk": "^1.1.3",
+                "gulp-format-md": "^0.1.10",
+                "mocha": "^3.0.2"
+            },
+            "directories": {},
+            "dist": {
+                "shasum": "24fd6201a4782cf50561c810276afc7d12d71195",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-3.0.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is",
+                "is-nan",
+                "is-num",
+                "is-number",
+                "istype",
+                "kind",
+                "math",
+                "nan",
+                "num",
+                "number",
+                "numeric",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                },
+                {
+                    "email": "brian.woodward@gmail.com",
+                    "name": "doowb"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "verb": {
+                "layout": "default",
+                "lint": {
+                    "reflinks": true
+                },
+                "plugins": [
+                    "gulp-format-md"
+                ],
+                "reflinks": [
+                    "verb",
+                    "verb-generate-readme"
+                ],
+                "related": {
+                    "list": [
+                        "even",
+                        "is-even",
+                        "is-odd",
+                        "is-primitive",
+                        "kind-of",
+                        "odd"
+                    ]
+                },
+                "tasks": [
+                    "readme"
+                ],
+                "toc": false
+            },
+            "version": "3.0.0"
+        },
+        "4.0.0": {
+            "_id": "is-number@4.0.0",
+            "_nodeVersion": "8.7.0",
+            "_npmOperationalInternal": {
+                "host": "s3://npm-registry-packages",
+                "tmp": "tmp/is-number-4.0.0.tgz_1508219035603_0.08690439746715128"
+            },
+            "_npmUser": {
+                "email": "github@sellside.com",
+                "name": "jonschlinkert"
+            },
+            "_npmVersion": "5.4.2",
+            "author": {
+                "name": "Jon Schlinkert",
+                "url": "https://github.com/jonschlinkert"
+            },
+            "bugs": {
+                "url": "https://github.com/jonschlinkert/is-number/issues"
+            },
+            "contributors": [
+                {
+                    "name": "Jon Schlinkert",
+                    "url": "http://twitter.com/jonschlinkert"
+                },
+                {
+                    "name": "tunnckoCore",
+                    "url": "https://i.am.charlike.online"
+                }
+            ],
+            "description": "Returns true if the value is a number. comprehensive tests.",
+            "devDependencies": {
+                "benchmarked": "^2.0.0",
+                "chalk": "^2.1.0",
+                "gulp-format-md": "^1.0.0",
+                "mocha": "^3.0.1"
+            },
+            "directories": {},
+            "dist": {
+                "integrity": "sha512-rSklcAIlf1OmFdyAqbnWTLVelsQ58uvZ66S/ZyawjWqIviTWCjg2PzVGw8WUA+nNuPTqb4wgA+NszrJ+08LlgQ==",
+                "shasum": "0026e37f5454d73e356dfe6564699867c6a7f0ff",
+                "tarball": "https://registry.npmjs.org/is-number/-/is-number-4.0.0.tgz"
+            },
+            "engines": {
+                "node": ">=0.10.0"
+            },
+            "files": [
+                "index.js"
+            ],
+            "gitHead": "0c6b15a88bc10cd47f67a09506399dfc9ddc075d",
+            "homepage": "https://github.com/jonschlinkert/is-number",
+            "keywords": [
+                "check",
+                "coerce",
+                "coercion",
+                "integer",
+                "is",
+                "is-nan",
+                "is-num",
+                "is-number",
+                "istype",
+                "kind",
+                "math",
+                "nan",
+                "num",
+                "number",
+                "numeric",
+                "test",
+                "type",
+                "typeof",
+                "value"
+            ],
+            "license": "MIT",
+            "main": "index.js",
+            "maintainers": [
+                {
+                    "email": "brian.woodward@gmail.com",
+                    "name": "doowb"
+                },
+                {
+                    "email": "github@sellside.com",
+                    "name": "jonschlinkert"
+                }
+            ],
+            "name": "is-number",
+            "repository": {
+                "type": "git",
+                "url": "git+https://github.com/jonschlinkert/is-number.git"
+            },
+            "scripts": {
+                "test": "mocha"
+            },
+            "verb": {
+                "layout": "default",
+                "lint": {
+                    "reflinks": true
+                },
+                "plugins": [
+                    "gulp-format-md"
+                ],
+                "related": {
+                    "list": [
+                        "even",
+                        "is-even",
+                        "is-odd",
+                        "is-primitive",
+                        "kind-of",
+                        "odd"
+                    ]
+                },
+                "tasks": [
+                    "readme"
+                ],
+                "toc": false
+            },
+            "version": "4.0.0"
+        }
+    }
+}

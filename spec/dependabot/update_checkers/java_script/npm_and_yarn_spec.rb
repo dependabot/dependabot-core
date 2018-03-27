@@ -259,6 +259,16 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           it "updates to the latest release" do
             expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
           end
+
+          context "when the registry doesn't return a latest release" do
+            let(:registry_response) do
+              fixture("javascript", "npm_responses", "no_latest.json")
+            end
+
+            it "updates to the latest release" do
+              expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
+            end
+          end
         end
 
         context "for a dependency that doesn't have a release" do
