@@ -8,6 +8,7 @@ module Dependabot
   module UpdateCheckers
     module Rust
       class Cargo < Dependabot::UpdateCheckers::Base
+        require_relative "cargo/requirements_updater"
         require_relative "cargo/requirement"
         require_relative "cargo/version"
 
@@ -44,13 +45,11 @@ module Dependabot
         end
 
         def updated_requirements
-          # If the dependency file needs to be updated we store the updated
-          # requirements on the dependency. Figuring our the changes that need
-          # to be made to the requirements often gets complicated, so most
-          # languages split this out into a RequirementsUpdater class.
-          #
-          # Java is probably the simplest example to copy here.
-          dependency.requirements
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version&.to_s,
+            library: dependency.version.nil?
+          ).updated_requirements
         end
 
         def version_class

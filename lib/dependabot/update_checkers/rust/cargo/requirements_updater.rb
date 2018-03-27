@@ -17,7 +17,7 @@ module Dependabot
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_*]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
 
           def initialize(requirements:, library:, latest_version:)
             @requirements = requirements
@@ -33,7 +33,7 @@ module Dependabot
               next req if req[:requirement].nil?
 
               if library?
-                nil
+                updated_library_requirement(req)
               else
                 updated_app_requirement(req)
               end
@@ -68,6 +68,18 @@ module Dependabot
               end
 
             req.merge(requirement: new_requirement)
+          end
+
+          def updated_library_requirement(req)
+            string_reqs = req[:requirement].split(",").map(&:strip)
+            ruby_reqs = string_reqs.map { |r| Cargo::Requirement.new(r) }
+
+            return req if ruby_reqs.all? { |r| r.satisfied_by?(latest_version) }
+
+            # TODO: In future, we might want to treat libraries differently to
+            # applications. Fo now, since Rust allows multiple versions of the
+            # same dependeny, it's fine to upgrade them like apps if required
+            updated_app_requirement(req)
           end
 
           def update_version_string(req_string)
@@ -107,7 +119,7 @@ module Dependabot
               end
             end.join(", ")
           rescue UnfixableRequirement
-            req.merge(requirement: :unfixable)
+            :unfixable
           end
 
           def update_greatest_version(old_version, version_to_be_permitted)
