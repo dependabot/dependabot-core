@@ -1,3 +1,7 @@
+## v0.52.9, 28 March 2018
+
+- JS: Avoid yarn bug by always authing when Basic credentials are present
+
 ## v0.52.8, 28 March 2018
 
 - JS: Handle Basic auth in FileUpdater
