@@ -1,3 +1,7 @@
+## v0.52.11, 28 March 2018
+
+- JS: Fix scoped registry URL
+
 ## v0.52.10, 28 March 2018
 
 - JS: Scope private registries to the scoped packages they're intended for
