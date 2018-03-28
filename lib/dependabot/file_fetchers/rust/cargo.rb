@@ -38,6 +38,7 @@ module Dependabot
 
         def fetch_path_dependency_files(file:, previously_fetched_files:)
           current_dir = file.name.split("/")[0..-2].join("/")
+          current_dir = nil if current_dir == ""
 
           path_dependency_paths_from_file(file).flat_map do |path|
             path = File.join(current_dir, path) unless current_dir.nil?

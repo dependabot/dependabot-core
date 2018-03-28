@@ -105,7 +105,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
 
       it "fetches the path dependency's Cargo.toml" do
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Cargo.toml /src/s3/Cargo.toml))
+          to match_array(%w(Cargo.toml src/s3/Cargo.toml))
       end
 
       context "with a trailing slash in the path" do
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(Cargo.toml /src/s3/Cargo.toml))
+            to match_array(%w(Cargo.toml src/s3/Cargo.toml))
         end
       end
 
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
 
         it "fetches the path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(Cargo.toml /src/s3/Cargo.toml))
+            to match_array(%w(Cargo.toml src/s3/Cargo.toml))
           expect(file_fetcher_instance.files.map(&:path)).
             to match_array(%w(/my_dir/Cargo.toml /my_dir/src/s3/Cargo.toml))
         end
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         it "fetches the nested path dependency's Cargo.toml" do
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(
-              %w(Cargo.toml /src/s3/Cargo.toml /src/s3/src/s3/Cargo.toml)
+              %w(Cargo.toml src/s3/Cargo.toml src/s3/src/s3/Cargo.toml)
             )
         end
       end

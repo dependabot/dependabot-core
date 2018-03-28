@@ -5,4 +5,4 @@ authors = ["support@dependabot.com"]
 
 [dependencies]
 cargo-registry-s3 = { path = "src/s3", version = "0.2.0" }
-regex = "=0.1.39"
+regex = "=0.1.38"
