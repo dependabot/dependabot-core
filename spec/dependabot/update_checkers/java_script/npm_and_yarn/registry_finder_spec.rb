@@ -139,10 +139,10 @@ RSpec.describe tested_module::RegistryFinder do
 
     context "with a private registry source" do
       let(:source) do
-        { type: "private_registry", url: "http://npm.fury.io/dependabot" }
+        { type: "private_registry", url: "http://npm.mine.io/dependabot" }
       end
 
-      it { is_expected.to eq("http://npm.fury.io/dependabot/etag") }
+      it { is_expected.to eq("http://npm.mine.io/dependabot/etag") }
     end
   end
 end

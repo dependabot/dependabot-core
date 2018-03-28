@@ -54,8 +54,14 @@ module Dependabot
           end
 
           def registry_url
-            return dependency_source.fetch(:url) if locked_registry
-            "https://#{registry}"
+            protocol =
+              if dependency_source&.fetch(:type) == "private_registry"
+                dependency_source.fetch(:url).split("://").first
+              else
+                "https"
+              end
+
+            "#{protocol}://#{registry}"
           end
 
           def locked_registry
@@ -63,7 +69,14 @@ module Dependabot
             return unless source
             return unless source.fetch(:type) == "private_registry"
 
-            source.fetch(:url).gsub("https://", "").gsub("http://", "")
+            lockfile_registry =
+              source.fetch(:url).gsub("https://", "").gsub("http://", "")
+            detailed_registry =
+              known_registries.
+              find { |h| h["registry"].include?(lockfile_registry) }&.
+              fetch("registry")
+
+            detailed_registry || lockfile_registry
           end
 
           def known_registries
