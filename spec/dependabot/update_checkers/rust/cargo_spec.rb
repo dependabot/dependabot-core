@@ -152,6 +152,19 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
 
       it { is_expected.to be_nil }
     end
+
+    context "with a path dependency" do
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: { type: "path" }
+        }]
+      end
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -198,6 +211,19 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
             branch: nil,
             ref: nil
           }
+        }]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with a path dependency" do
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: { type: "path" }
         }]
       end
 

@@ -25,7 +25,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
 
   let(:files) { [manifest, lockfile] }
   let(:manifest) do
-    Dependabot::DependencyFile.new(content: manifest_body, name: "Cargo.toml")
+    Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
@@ -81,6 +81,53 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
         expect(updated_lockfile_content).to_not include(
           "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
         )
+      end
+
+      context "when there is a path dependency" do
+        let(:files) { [manifest, lockfile, path_dependency_file] }
+        let(:manifest_fixture_name) { "path_dependency" }
+        let(:lockfile_fixture_name) { "path_dependency" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "regex",
+            version: "0.2.10",
+            requirements: [
+              {
+                file: "Cargo.toml",
+                requirement: "=0.2.10",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "0.1.38",
+            previous_requirements: [
+              {
+                file: "Cargo.toml",
+                requirement: "=0.1.38",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "cargo"
+          )
+        end
+        let(:path_dependency_file) do
+          Dependabot::DependencyFile.new(
+            name: "src/s3/Cargo.toml",
+            content: fixture("rust", "manifests", "cargo-registry-s3")
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "regex"\nversion = "0.2.10"))
+          expect(updated_lockfile_content).to include(
+            "aec3f58d903a7d2a9dc2bf0e41a746f4530e0cab6b615494e058f67a3ef947fb"
+          )
+          expect(updated_lockfile_content).to_not include(
+            "bc2a4457b0c25dae6fee3dcd631ccded31e97d689b892c26554e096aa08dd136"
+          )
+        end
       end
     end
   end

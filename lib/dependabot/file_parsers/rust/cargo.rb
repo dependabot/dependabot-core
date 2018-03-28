@@ -23,6 +23,7 @@ module Dependabot
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies if lockfile
           # TODO: Handle workspace manifests
+          # TODO: Consider parsing path dependency manifests
           dependency_set.dependencies
         end
 
@@ -85,9 +86,10 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
 
-          return if declaration["version"]
           return git_source_details(declaration) if declaration["git"]
           return { type: "path" } if declaration["path"]
+
+          return if declaration["version"]
           raise "Unexpected dependency declaration: #{declaration}"
         end
 

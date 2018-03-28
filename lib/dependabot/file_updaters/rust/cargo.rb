@@ -87,6 +87,13 @@ module Dependabot
         def write_temporary_dependency_files
           File.write(cargo_toml.name, updated_cargo_toml_content)
           File.write(lockfile.name, lockfile.content)
+
+          path_dependency_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(file.name, file.content)
+          end
+
           FileUtils.mkdir_p("src")
           File.write("src/lib.rs", dummy_app_content)
           File.write("src/main.rs", dummy_app_content)
@@ -102,6 +109,12 @@ module Dependabot
 
         def cargo_toml
           @cargo_toml ||= get_original_file("Cargo.toml")
+        end
+
+        def path_dependency_files
+          dependency_files.
+            select { |f| f.name.end_with?("Cargo.toml") }.
+            reject { |f| f.name == "Cargo.toml" }
         end
 
         def lockfile
