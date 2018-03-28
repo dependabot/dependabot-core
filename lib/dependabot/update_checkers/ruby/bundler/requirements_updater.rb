@@ -89,8 +89,19 @@ module Dependabot
           end
 
           def at_same_precision(new_version, old_version)
-            precision = old_version.to_s.split(".").count
-            new_version.to_s.split(".").first(precision).join(".")
+            release_precision =
+              old_version.to_s.split(".").select { |i| i.match?(/^\d+$/) }.count
+            prerelease_precision =
+              old_version.to_s.split(".").count - release_precision
+
+            new_release =
+              new_version.to_s.split(".").first(release_precision)
+            new_prerelease =
+              new_version.to_s.split(".").
+              drop_while { |i| i.match?(/^\d+$/) }.
+              first(prerelease_precision)
+
+            [*new_release, *new_prerelease].join(".")
           end
 
           def updated_gemspec_requirement(req)
