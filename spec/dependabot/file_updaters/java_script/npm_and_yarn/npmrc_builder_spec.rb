@@ -113,7 +113,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
               }
             ]
           end
-          it { is_expected.to eq("//registry.npmjs.org/:_auth=bXk6dG9rZW4=") }
+          it "includes Basic auth details" do
+            expect(npmrc_content).to eq(
+              "always-auth = true\n//registry.npmjs.org/:_auth=bXk6dG9rZW4="
+            )
+          end
         end
 
         context "and an npmrc file" do

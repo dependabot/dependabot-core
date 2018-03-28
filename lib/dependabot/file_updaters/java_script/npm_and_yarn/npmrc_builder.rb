@@ -84,15 +84,20 @@ module Dependabot
           end
 
           def credential_lines_for_npmrc
-            registry_credentials.
-              map do |cred|
-                if cred.fetch("token").include?(":")
-                  encoded_token = Base64.encode64(cred.fetch("token")).chomp
-                  "//#{cred['registry']}/:_auth=#{encoded_token}"
-                else
-                  "//#{cred['registry']}/:_authToken=#{cred.fetch('token')}"
-                end
+            credential_lines = registry_credentials.map do |cred|
+              if cred.fetch("token").include?(":")
+                encoded_token = Base64.encode64(cred.fetch("token")).chomp
+                "//#{cred['registry']}/:_auth=#{encoded_token}"
+              else
+                "//#{cred['registry']}/:_authToken=#{cred.fetch('token')}"
               end
+            end
+
+            unless credential_lines.any? { |str| str.include?("auth=") }
+              return credential_lines
+            end
+
+            ["always-auth = true"] + credential_lines
           end
 
           def registry_credentials
