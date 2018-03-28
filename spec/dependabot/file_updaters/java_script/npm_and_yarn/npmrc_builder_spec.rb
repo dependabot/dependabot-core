@@ -99,6 +99,23 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
         end
         it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
+        context "that uses basic auth" do
+          let(:credentials) do
+            [
+              {
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "registry" => "registry.npmjs.org",
+                "token" => "my:token"
+              }
+            ]
+          end
+          it { is_expected.to eq("//registry.npmjs.org/:_auth=bXk6dG9rZW4=") }
+        end
+
         context "and an npmrc file" do
           let(:dependency_files) { [package_json, yarn_lock, npmrc] }
 

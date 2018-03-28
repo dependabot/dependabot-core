@@ -21,14 +21,8 @@ module Dependabot
 
           def npmrc_content
             initial_content =
-              if npmrc_file.nil?
-                build_npmrc_from_lockfile
-              else
-                content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
-                content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
-                  cred = credentials.find { |c| c.key?("registry") }
-                  cred.nil? ? ln : ln.sub(/\${.*}/, cred.fetch("token"))
-                end
+              if npmrc_file.nil? then build_npmrc_from_lockfile
+              else complete_npmrc_from_credentials
               end
 
             ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
@@ -79,9 +73,26 @@ module Dependabot
             "always-auth = true"
           end
 
+          def complete_npmrc_from_credentials
+            initial_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
+
+            return initial_content unless (cred = registry_credentials.first)
+
+            initial_content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
+              ln.sub(/\${.*}/, cred.fetch("token"))
+            end
+          end
+
           def credential_lines_for_npmrc
             registry_credentials.
-              map { |c| "//#{c['registry']}/:_authToken=#{c.fetch('token')}" }
+              map do |cred|
+                if cred.fetch("token").include?(":")
+                  encoded_token = Base64.encode64(cred.fetch("token")).chomp
+                  "//#{cred['registry']}/:_auth=#{encoded_token}"
+                else
+                  "//#{cred['registry']}/:_authToken=#{cred.fetch('token')}"
+                end
+              end
           end
 
           def registry_credentials
