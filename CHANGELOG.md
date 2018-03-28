@@ -1,3 +1,7 @@
+## v0.52.8, 28 March 2018
+
+- JS: Handle Basic auth in FileUpdater
+
 ## v0.52.7, 28 March 2018
 
 - JS: Use Basic auth to get latest version when appropriate
