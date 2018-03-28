@@ -1,3 +1,7 @@
+## v0.52.3, 28 March 2018
+
+- JS: Rely on RegistryFinder for constructing all dependency URLs
+
 ## v0.52.2, 28 March 2018
 
 - Rust: Add support for Cargo.toml files with path dependencies
