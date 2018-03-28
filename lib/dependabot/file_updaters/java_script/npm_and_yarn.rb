@@ -8,6 +8,8 @@ module Dependabot
   module FileUpdaters
     module JavaScript
       class NpmAndYarn < Dependabot::FileUpdaters::Base
+        require_relative "npm_and_yarn/npmrc_builder"
+
         def self.updated_files_regex
           [
             /^package\.json$/,
@@ -162,26 +164,11 @@ module Dependabot
           end
         end
 
-        # Construct a .npmrc from the passed credentials. In future we may want
-        # to fetch the .npmrc and augment it, instead
         def npmrc_content
-          npmrc_file = dependency_files.find { |f| f.name == ".npmrc" }
-
-          updated_credential_lines =
-            credentials.
-            select { |cred| cred.key?("registry") }.
-            map do |cred|
-              "//#{cred.fetch('registry')}/:_authToken=#{cred.fetch('token')}"
-            end
-
-          return updated_credential_lines.join("\n") if npmrc_file.nil?
-
-          initial_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
-          initial_content = initial_content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
-            cred = credentials.find { |c| c.key?("registry") }
-            cred.nil? ? ln : ln.sub(/\${.*}/, cred.fetch("token"))
-          end
-          ([initial_content] + updated_credential_lines).join("\n")
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files,
+          ).npmrc_content
         end
 
         def updated_package_json_content(file)
