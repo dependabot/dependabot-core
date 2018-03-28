@@ -58,7 +58,7 @@ module Dependabot
 
             return "" unless global_registry
 
-            "registry = https://#{global_registry["registry"]}\n"\
+            "registry = https://#{global_registry['registry']}\n"\
             "always-auth = true"
           end
 
@@ -74,7 +74,7 @@ module Dependabot
 
             return "" unless global_registry
 
-            "registry = https://#{global_registry["registry"]}\n"\
+            "registry = https://#{global_registry['registry']}\n"\
             "always-auth = true"
           end
 
