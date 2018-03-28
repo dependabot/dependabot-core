@@ -1,3 +1,7 @@
+## v0.52.5, 28 March 2018
+
+- JS: Fix typo
+
 ## v0.52.4, 28 March 2018
 
 - JS: Use lockfile to build .npmrc file, if required and not committed
