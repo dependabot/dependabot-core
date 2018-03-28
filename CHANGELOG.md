@@ -1,3 +1,7 @@
+## v0.52.6, 28 March 2018
+
+- JS: Include global auth token when building a global registry npmrc
+
 ## v0.52.5, 28 March 2018
 
 - JS: Fix typo
