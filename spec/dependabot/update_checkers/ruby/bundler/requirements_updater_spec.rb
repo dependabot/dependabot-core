@@ -90,6 +90,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }
         end
 
+        context "and it's a pre-release" do
+          let(:latest_resolvable_version) { "1.5.0.beta" }
+          let(:gemfile_requirement_string) { "~> 1.4.0" }
+          its([:requirement]) { is_expected.to eq("~> 1.5.0.beta") }
+        end
+
         context "and a pre-release was previously specified" do
           let(:gemfile_requirement_string) { "~> 1.5.0.beta" }
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }

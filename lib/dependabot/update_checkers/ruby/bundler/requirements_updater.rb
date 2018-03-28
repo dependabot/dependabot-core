@@ -99,7 +99,7 @@ module Dependabot
             new_prerelease =
               new_version.to_s.split(".").
               drop_while { |i| i.match?(/^\d+$/) }.
-              first(prerelease_precision)
+              first([prerelease_precision, 1].max)
 
             [*new_release, *new_prerelease].join(".")
           end
