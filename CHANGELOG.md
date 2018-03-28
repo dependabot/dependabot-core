@@ -1,3 +1,7 @@
+## v0.52.7, 28 March 2018
+
+- JS: Use Basic auth to get latest version when appropriate
+
 ## v0.52.6, 28 March 2018
 
 - JS: Include global auth token when building a global registry npmrc
