@@ -57,7 +57,9 @@ module Dependabot
               end
 
             return "" unless global_registry
-            "registry = https://#{global_registry}\nalways-auth = true"
+
+            "registry = https://#{global_registry["registry"]}\n"\
+            "always-auth = true"
           end
 
           def build_npmrc_from_yarn_lock
@@ -71,7 +73,9 @@ module Dependabot
               end
 
             return "" unless global_registry
-            "registry = https://#{global_registry}\nalways-auth = true"
+
+            "registry = https://#{global_registry["registry"]}\n"\
+            "always-auth = true"
           end
 
           def credential_lines_for_npmrc
