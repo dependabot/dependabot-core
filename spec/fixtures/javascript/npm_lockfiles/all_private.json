@@ -1,0 +1,75 @@
+{
+    "name": "test",
+    "version": "1.0.0",
+    "lockfileVersion": 1,
+    "requires": true,
+    "dependencies": {
+        "encoding": {
+            "version": "0.1.12",
+            "resolved": "https://npm.fury.io/dependabot/encoding/-/encoding-0.1.12.tgz",
+            "integrity": "sha1-U4tm8+5izRq1HsMjgp0flIDHS+s=",
+            "requires": {
+                "iconv-lite": "0.4.19"
+            }
+        },
+        "es6-promise": {
+            "version": "3.3.1",
+            "resolved": "https://npm.fury.io/dependabot/es6-promise/-/es6-promise-3.3.1.tgz",
+            "integrity": "sha1-oIzd6EzNvzTQJ6FFG8kdS80ophM="
+        },
+        "etag": {
+            "version": "1.8.1",
+            "resolved": "https://npm.fury.io/dependabot/etag/-/etag-1.8.1.tgz",
+            "integrity": "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
+            "dev": true
+        },
+        "fetch-factory": {
+            "version": "0.0.1",
+            "resolved": "https://npm.fury.io/dependabot/fetch-factory/-/fetch-factory-0.0.1.tgz",
+            "integrity": "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE=",
+            "requires": {
+                "es6-promise": "3.3.1",
+                "isomorphic-fetch": "2.2.1",
+                "lodash": "3.10.1"
+            }
+        },
+        "iconv-lite": {
+            "version": "0.4.19",
+            "resolved": "https://npm.fury.io/dependabot/iconv-lite/-/iconv-lite-0.4.19.tgz",
+            "integrity": "sha512-oTZqweIP51xaGPI4uPa56/Pri/480R+mo7SeU+YETByQNhDG55ycFyNLIgta9vXhILrxXDmF7ZGhqZIcuN0gJQ=="
+        },
+        "is-stream": {
+            "version": "1.1.0",
+            "resolved": "https://npm.fury.io/dependabot/is-stream/-/is-stream-1.1.0.tgz",
+            "integrity": "sha1-EtSj3U5o4Lec6428hBc66A2RykQ="
+        },
+        "isomorphic-fetch": {
+            "version": "2.2.1",
+            "resolved": "https://npm.fury.io/dependabot/isomorphic-fetch/-/isomorphic-fetch-2.2.1.tgz",
+            "integrity": "sha1-YRrhrPFPXoH3KVB0coGf6XM1WKk=",
+            "requires": {
+                "node-fetch": "1.7.3",
+                "whatwg-fetch": "2.0.3"
+            }
+        },
+        "lodash": {
+            "version": "3.10.1",
+            "resolved": "https://npm.fury.io/dependabot/lodash/-/lodash-3.10.1.tgz",
+            "integrity": "sha1-W/Rejkm6QYnhfUgnid/RW9FAt7Y="
+        },
+        "node-fetch": {
+            "version": "1.7.3",
+            "resolved": "https://npm.fury.io/dependabot/node-fetch/-/node-fetch-1.7.3.tgz",
+            "integrity": "sha512-NhZ4CsKx7cYm2vSrBAr2PvFOe6sWDf0UYLRqA6svUYg7+/TSfVAu49jYC4BvQ4Sms9SZgdqGBgroqfDhJdTyKQ==",
+            "requires": {
+                "encoding": "0.1.12",
+                "is-stream": "1.1.0"
+            }
+        },
+        "whatwg-fetch": {
+            "version": "2.0.3",
+            "resolved": "https://npm.fury.io/dependabot/whatwg-fetch/-/whatwg-fetch-2.0.3.tgz",
+            "integrity": "sha1-nITsLc9oGH/wC8ZOEnS0QhduHIQ="
+        }
+    }
+}
