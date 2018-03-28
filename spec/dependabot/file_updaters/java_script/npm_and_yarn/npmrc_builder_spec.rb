@@ -152,6 +152,27 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             ]
           end
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
+
+          context "that match a scoped package" do
+            let(:credentials) do
+              [
+                {
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                },
+                {
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "my_token"
+                }
+              ]
+            end
+            it "adds auth details, and scopes them correctly" do
+              expect(npmrc_content).
+                to eq("@dependabot:registry=https:npm.fury.io/dependabot/\n"\
+                      "//npm.fury.io/dependabot/:_authToken=my_token")
+            end
+          end
         end
       end
 
@@ -279,6 +300,27 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             ]
           end
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
+
+          context "that match a scoped package" do
+            let(:credentials) do
+              [
+                {
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                },
+                {
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "my_token"
+                }
+              ]
+            end
+            it "adds auth details, and scopes them correctly" do
+              expect(npmrc_content).
+                to eq("@dependabot:registry=https:npm.fury.io/dependabot/\n"\
+                      "//npm.fury.io/dependabot/:_authToken=my_token")
+            end
+          end
         end
       end
 

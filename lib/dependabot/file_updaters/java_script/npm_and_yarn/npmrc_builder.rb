@@ -21,9 +21,11 @@ module Dependabot
 
           def npmrc_content
             initial_content =
-              if npmrc_file.nil? then build_npmrc_from_lockfile
-              else complete_npmrc_from_credentials
+              if npmrc_file then complete_npmrc_from_credentials
+              else build_npmrc_content_from_lockfile
               end
+
+            return initial_content || "" unless registry_credentials.any?
 
             ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
           end
@@ -32,45 +34,30 @@ module Dependabot
 
           attr_reader :dependency_files, :credentials
 
-          def build_npmrc_from_lockfile
-            return build_npmrc_from_package_lock if package_lock
-            return build_npmrc_from_yarn_lock if yarn_lock
+          def build_npmrc_content_from_lockfile
+            return unless yarn_lock || package_lock
+
+            global_registry =
+              registry_credentials.find do |cred|
+                next false if CENTRAL_REGISTRIES.include?(cred["registry"])
+                dependency_urls.all? { |url| url.include?(cred["registry"]) }
+              end
+
+            return unless global_registry
+
+            "registry = https://#{global_registry['registry']}\n"\
+            "_auth = #{global_registry.fetch('token')}\n"\
+            "always-auth = true"
           end
 
-          def build_npmrc_from_package_lock
-            dependency_urls =
+          def dependency_urls
+            if package_lock
               parsed_package_lock.fetch("dependencies", {}).
-              map { |_, details| details["resolved"] }.compact.
-              reject { |url| url.start_with?("git") }
-
-            global_registry =
-              registry_credentials.find do |cred|
-                next false if CENTRAL_REGISTRIES.include?(cred["registry"])
-                dependency_urls.all? { |url| url.include?(cred["registry"]) }
-              end
-
-            return unless global_registry
-
-            "registry = https://#{global_registry['registry']}\n"\
-            "_auth = #{global_registry.fetch('token')}\n"\
-            "always-auth = true"
-          end
-
-          def build_npmrc_from_yarn_lock
-            dependency_urls =
+                map { |_, details| details["resolved"] }.compact.
+                reject { |url| url.start_with?("git") }
+            elsif yarn_lock
               yarn_lock.content.scan(/ resolved "(.*?)"/).flatten
-
-            global_registry =
-              registry_credentials.find do |cred|
-                next false if CENTRAL_REGISTRIES.include?(cred["registry"])
-                dependency_urls.all? { |url| url.include?(cred["registry"]) }
-              end
-
-            return unless global_registry
-
-            "registry = https://#{global_registry['registry']}\n"\
-            "_auth = #{global_registry.fetch('token')}\n"\
-            "always-auth = true"
+            end
           end
 
           def complete_npmrc_from_credentials
@@ -84,20 +71,45 @@ module Dependabot
           end
 
           def credential_lines_for_npmrc
-            credential_lines = registry_credentials.map do |cred|
+            lines = []
+            registry_credentials.each do |cred|
+              registry = cred.fetch("registry")
+
+              lines << registry_scope(registry) if registry_scope(registry)
+
               if cred.fetch("token").include?(":")
                 encoded_token = Base64.encode64(cred.fetch("token")).chomp
-                "//#{cred['registry']}/:_auth=#{encoded_token}"
+                lines << "//#{registry}/:_auth=#{encoded_token}"
               else
-                "//#{cred['registry']}/:_authToken=#{cred.fetch('token')}"
+                lines << "//#{registry}/:_authToken=#{cred.fetch('token')}"
               end
             end
 
-            unless credential_lines.any? { |str| str.include?("auth=") }
-              return credential_lines
+            return lines unless lines.any? { |str| str.include?("auth=") }
+
+            # Work around a suspected yarn bug
+            ["always-auth = true"] + lines
+          end
+
+          def registry_scope(registry)
+            # Central registries don't just apply to scopes
+            return if CENTRAL_REGISTRIES.include?(registry)
+
+            return unless dependency_urls
+            affected_urls = dependency_urls.
+                            select { |url| url.include?(registry) }
+
+            scopes = affected_urls.map do |url|
+              url.split(/\%40|@/)[1]&.split(%r{\%2F|/})&.first
             end
 
-            ["always-auth = true"] + credential_lines
+            # Registry used for unscoped packages
+            return if scopes.include?(nil)
+
+            # This just seems unlikely
+            return unless scopes.uniq.count == 1
+
+            "@#{scopes.first}:registry=https:#{registry}/"
           end
 
           def registry_credentials
