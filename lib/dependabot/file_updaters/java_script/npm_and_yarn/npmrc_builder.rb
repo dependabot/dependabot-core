@@ -31,7 +31,7 @@ module Dependabot
                 end
               end
 
-            ([initial_content] + credential_lines_for_npmrc).join("\n")
+            ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
           end
 
           private
@@ -41,7 +41,6 @@ module Dependabot
           def build_npmrc_from_lockfile
             return build_npmrc_from_package_lock if package_lock
             return build_npmrc_from_yarn_lock if yarn_lock
-            ""
           end
 
           def build_npmrc_from_package_lock
@@ -56,7 +55,7 @@ module Dependabot
                 dependency_urls.all? { |url| url.include?(cred["registry"]) }
               end
 
-            return "" unless global_registry
+            return unless global_registry
 
             "registry = https://#{global_registry['registry']}\n"\
             "_auth = #{global_registry.fetch('token')}\n"\
@@ -73,7 +72,7 @@ module Dependabot
                 dependency_urls.all? { |url| url.include?(cred["registry"]) }
               end
 
-            return "" unless global_registry
+            return unless global_registry
 
             "registry = https://#{global_registry['registry']}\n"\
             "_auth = #{global_registry.fetch('token')}\n"\
