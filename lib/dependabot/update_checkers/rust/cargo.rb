@@ -15,6 +15,7 @@ module Dependabot
         def latest_version
           # TODO: Handle git dependencies
           return if git_dependency?
+          return if path_dependency?
 
           @latest_version =
             begin
@@ -31,6 +32,7 @@ module Dependabot
         def latest_resolvable_version_with_no_unlock
           # TODO: Handle git dependencies
           return if git_dependency?
+          return if path_dependency?
 
           @latest_resolvable_version_with_no_unlock ||=
             begin
@@ -88,6 +90,14 @@ module Dependabot
 
         def git_dependency?
           git_commit_checker.git_dependency?
+        end
+
+        def path_dependency?
+          sources = dependency.requirements.
+                    map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          sources.first&.fetch(:type) == "path"
         end
 
         def git_commit_checker
