@@ -1,3 +1,7 @@
+## v0.52.13, 28 March 2018
+
+- Ruby: Always include pre-release details in requirement if updating to one
+
 ## v0.52.12, 28 March 2018
 
 - Ruby: Handle the prerelease part of versions separately when updating
