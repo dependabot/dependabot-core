@@ -317,7 +317,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https:npm.fury.io/dependabot/\n"\
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
           end

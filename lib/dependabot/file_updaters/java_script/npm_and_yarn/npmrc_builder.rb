@@ -109,7 +109,7 @@ module Dependabot
             # This just seems unlikely
             return unless scopes.uniq.count == 1
 
-            "@#{scopes.first}:registry=https:#{registry}/"
+            "@#{scopes.first}:registry=https://#{registry}/"
           end
 
           def registry_credentials
