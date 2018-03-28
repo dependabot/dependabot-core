@@ -25,7 +25,7 @@ module Dependabot
                 build_npmrc_from_lockfile
               else
                 content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
-                content = content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
+                content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
                   cred = credentials.find { |c| c.key?("registry") }
                   cred.nil? ? ln : ln.sub(/\${.*}/, cred.fetch("token"))
                 end
@@ -41,7 +41,7 @@ module Dependabot
           def build_npmrc_from_lockfile
             return build_npmrc_from_package_lock if package_lock
             return build_npmrc_from_yarn_lock if yarn_lock
-            return ""
+            ""
           end
 
           def build_npmrc_from_package_lock

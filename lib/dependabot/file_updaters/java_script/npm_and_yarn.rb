@@ -167,7 +167,7 @@ module Dependabot
         def npmrc_content
           NpmrcBuilder.new(
             credentials: credentials,
-            dependency_files: dependency_files,
+            dependency_files: dependency_files
           ).npmrc_content
         end
 
