@@ -1,3 +1,8 @@
+## v0.52.12, 28 March 2018
+
+- Ruby: Handle the prerelease part of versions separately when updating
+  requirements
+
 ## v0.52.11, 28 March 2018
 
 - JS: Fix scoped registry URL
