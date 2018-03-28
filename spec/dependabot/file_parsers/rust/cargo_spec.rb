@@ -53,6 +53,28 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "with a path dependency" do
+        let(:manifest_fixture_name) { "path_dependency" }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("cargo-registry-s3")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.2.0",
+                file: "Cargo.toml",
+                groups: ["dependencies"],
+                source: { type: "path" }
+              }]
+            )
+          end
+        end
+      end
+
       context "with a git dependency" do
         let(:manifest_fixture_name) { "git_dependency" }
 
