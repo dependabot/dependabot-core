@@ -5,6 +5,8 @@ require "toml-rb"
 require "dependabot/file_fetchers/base"
 require "dependabot/file_parsers/rust/cargo"
 
+# Docs on Cargo workspaces:
+# https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-section
 module Dependabot
   module FileFetchers
     module Rust
