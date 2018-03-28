@@ -334,8 +334,7 @@ module Dependabot
         end
 
         def registry_auth_headers
-          return {} unless registry_finder.auth_token
-          { "Authorization" => "Bearer #{registry_finder.auth_token}" }
+          registry_finder.auth_headers
         end
 
         def dependency_source_details

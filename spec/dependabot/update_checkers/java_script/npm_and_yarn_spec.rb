@@ -545,6 +545,33 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             end
         end
       end
+
+      context "with Basic auth credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "registry" => "registry.npmjs.org",
+              "token" => "secret:token"
+            }
+          ]
+        end
+        before do
+          body = fixture("javascript", "npm_responses", "prerelease.json")
+          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+            with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
+            to_return(status: 200, body: body)
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
     end
 
     context "for a dependency hosted on another registry" do

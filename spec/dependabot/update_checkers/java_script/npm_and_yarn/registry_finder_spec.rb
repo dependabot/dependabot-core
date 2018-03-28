@@ -96,10 +96,10 @@ RSpec.describe tested_module::RegistryFinder do
     end
   end
 
-  describe "#auth_token" do
-    subject { finder.auth_token }
+  describe "#auth_headers" do
+    subject { finder.auth_headers }
 
-    it { is_expected.to be_nil }
+    it { is_expected.to eq({}) }
 
     context "with credentials for a private registry" do
       before do
@@ -116,7 +116,7 @@ RSpec.describe tested_module::RegistryFinder do
             to_return(status: 404)
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq({}) }
       end
 
       context "which lists the dependency" do
@@ -127,7 +127,21 @@ RSpec.describe tested_module::RegistryFinder do
             to_return(status: 200, body: body)
         end
 
-        it { is_expected.to eq("secret_token") }
+        it { is_expected.to eq("Authorization" => "Bearer secret_token") }
+
+        context "with a username/password style token" do
+          before do
+            credentials.last["token"] = "secret:token"
+            body = fixture("javascript", "gemfury_response_etag.json")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
+              to_return(status: 200, body: body)
+          end
+          it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
+        end
       end
     end
   end

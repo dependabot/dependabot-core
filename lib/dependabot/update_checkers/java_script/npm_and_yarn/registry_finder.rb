@@ -21,10 +21,8 @@ module Dependabot
             locked_registry || first_registry_with_dependency_details
           end
 
-          def auth_token
-            known_registries.
-              find { |cred| cred["registry"] == registry }&.
-              fetch("token")
+          def auth_headers
+            auth_header_for(auth_token)
           end
 
           def dependency_url
@@ -38,13 +36,10 @@ module Dependabot
           def first_registry_with_dependency_details
             @first_registry_with_dependency_details ||=
               known_registries.find do |details|
-                token = details["token"]
-                headers = token ? { "Authorization" => "Bearer #{token}" } : {}
-
                 Excon.get(
                   "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
                   "#{escaped_dependency_name}",
-                  headers: headers,
+                  headers: auth_header_for(details["token"]),
                   idempotent: true,
                   middlewares: SharedHelpers.excon_middleware
                 ).status < 400
@@ -62,6 +57,23 @@ module Dependabot
               end
 
             "#{protocol}://#{registry}"
+          end
+
+          def auth_header_for(token)
+            return {} unless token
+
+            if token.include?(":")
+              encoded_token = Base64.encode64(token).chomp
+              { "Authorization" => "Basic #{encoded_token}" }
+            else
+              { "Authorization" => "Bearer #{token}" }
+            end
+          end
+
+          def auth_token
+            known_registries.
+              find { |cred| cred["registry"] == registry }&.
+              fetch("token")
           end
 
           def locked_registry
