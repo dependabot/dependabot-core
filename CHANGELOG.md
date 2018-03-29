@@ -1,3 +1,7 @@
+## v0.52.18, 29 March 2018
+
+- More logging for strange GitHub array error
+
 ## v0.52.17, 29 March 2018
 
 - Rust: More specs, and error if no files are updated in FileUpdater
