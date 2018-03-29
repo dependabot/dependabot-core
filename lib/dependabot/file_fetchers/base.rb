@@ -117,6 +117,7 @@ module Dependabot
           end
       end
 
+      # rubocop:disable Metrics/AbcSize
       def fetch_file_content(path)
         path = path.gsub(%r{^/*}, "")
 
@@ -137,8 +138,11 @@ module Dependabot
         @fetch_file_retry_count[path] ||= 0
         @fetch_file_retry_count[path] += 1
         retry if @fetch_file_retry_count[path] < 1
-        raise "Array error happening for #{repo}, #{path}, #{commit}."
+        raise "Array error happening for #{repo}, #{path}, #{commit}.\n"\
+              "Response headers: #{github_client.last_response.headers}.\n"\
+              "Response data: #{github_client.last_response.data}."
       end
+      # rubocop:enable Metrics/AbcSize
 
       def github_client
         access_token =
