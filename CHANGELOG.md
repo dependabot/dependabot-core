@@ -1,3 +1,7 @@
+## v0.52.15, 29 March 2018
+
+- Rust: Drop use of --precise when updating files
+
 ## v0.52.14, 29 March 2018
 
 - Rust: Get relevant versions in FileParser when there are multiple available
