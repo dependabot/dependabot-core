@@ -4,6 +4,8 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/update_checkers/rust/cargo/requirement"
+require "dependabot/update_checkers/rust/cargo/version"
 require "dependabot/errors"
 
 # Relevant Cargo docs can be found at:
@@ -36,7 +38,7 @@ module Dependabot
             parsed_manifest.fetch(type, {}).each do |name, requirement|
               dependency_set << Dependency.new(
                 name: name,
-                version: nil,
+                version: version_from_lockfile(name, requirement),
                 package_manager: "cargo",
                 requirements: [{
                   requirement: requirement_from_declaration(requirement),
@@ -93,6 +95,28 @@ module Dependabot
           raise "Unexpected dependency declaration: #{declaration}"
         end
 
+        def version_from_lockfile(name, declaration)
+          return unless lockfile
+
+          candidate_packages =
+            parsed_lockfile.fetch("package", []).
+            select { |p| p["name"] == name }
+
+          if (req = requirement_from_declaration(declaration))
+            req = UpdateCheckers::Rust::Cargo::Requirement.new(req)
+
+            candidate_packages =
+              candidate_packages.
+              select { |p| req.satisfied_by?(version_class.new(p["version"])) }
+          end
+
+          package =
+            candidate_packages.
+            max_by { |p| version_class.new(p["version"]) }
+
+          version_from_lockfile_details(package)
+        end
+
         def git_source_details(declaration)
           {
             type: "git",
@@ -131,6 +155,10 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Cargo.lock")
+        end
+
+        def version_class
+          UpdateCheckers::Rust::Cargo::Version
         end
       end
     end
