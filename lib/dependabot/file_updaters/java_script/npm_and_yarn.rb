@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
+require "dependabot/file_parsers/java_script/npm_and_yarn"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -108,9 +109,11 @@ module Dependabot
         end
 
         def updated_package_lock_content
+          return package_lock.content if npmrc_disables_lockfile?
+
           @updated_package_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+              write_temporary_dependency_files(lock_git_deps: true)
 
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/npm/bin/run.js")
@@ -127,8 +130,7 @@ module Dependabot
               )
 
               updated_content = updated_files.fetch("package-lock.json")
-              if package_lock.content == updated_content &&
-                 !npmrc_disables_lockfile?
+              if package_lock.content == updated_content
                 raise "Expected content to change!"
               end
               updated_content
@@ -151,7 +153,7 @@ module Dependabot
           raise
         end
 
-        def write_temporary_dependency_files
+        def write_temporary_dependency_files(lock_git_deps: false)
           File.write("yarn.lock", yarn_lock.content) if yarn_lock
           File.write("package-lock.json", package_lock.content) if package_lock
           File.write(".npmrc", npmrc_content)
@@ -159,9 +161,48 @@ module Dependabot
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content = updated_package_json_content(file)
+
+            # When updating a package-lock.json we have to manually lock all
+            # git dependencies, otherwise npm will (unhelpfully) update them
+            updated_content = lock_git_deps(updated_content) if lock_git_deps
+
             updated_content = sanitized_package_json_content(updated_content)
             File.write(file.name, updated_content)
           end
+        end
+
+        def lock_git_deps(content)
+          return content if git_dependencies_to_lock.empty?
+          types = FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES
+
+          json = JSON.parse(content)
+          types.each do |type|
+            json.fetch(type, {}).each do |nm, _|
+              updated_version = git_dependencies_to_lock[nm]
+              next unless updated_version
+              json[type][nm] = git_dependencies_to_lock[nm]
+            end
+          end
+
+          json.to_json
+        end
+
+        def git_dependencies_to_lock
+          return {} unless package_lock
+          return @git_dependencies_to_lock if @git_dependencies_to_lock
+
+          @git_dependencies_to_lock = {}
+          dependency_names = dependencies.map(&:name)
+
+          FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
+            JSON.parse(package_lock.content).fetch(t, {}).each do |nm, details|
+              next if dependency_names.include?(nm)
+              next unless details["version"]
+              next unless details["version"].start_with?("git")
+              @git_dependencies_to_lock[nm] = details["version"]
+            end
+          end
+          @git_dependencies_to_lock
         end
 
         def npmrc_content

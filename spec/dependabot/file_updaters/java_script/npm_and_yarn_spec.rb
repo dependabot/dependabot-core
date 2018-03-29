@@ -261,6 +261,43 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(yarn_lock.content).to include("is-number")
             expect(yarn_lock.content).to_not include("af885e2e890")
           end
+
+          context "when updating another dependency" do
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "chalk",
+                version: "2.3.2",
+                previous_version: "0.4.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  requirement: "2.3.2",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  requirement: "0.4.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+
+            it "doesn't remove the git dependency" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json yarn.lock))
+
+              package_lock =
+                updated_files.find { |f| f.name == "package-lock.json" }
+              parsed_npm_lock = JSON.parse(package_lock.content)
+              expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                      "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+              yarn_lock = updated_files.find { |f| f.name == "yarn.lock" }
+              expect(yarn_lock.content).to include("is-number.git#af885")
+            end
+          end
         end
       end
 

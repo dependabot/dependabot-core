@@ -34,18 +34,25 @@ async function updateDependencyFiles(
 
   const dryRun = true;
   const args = install_args(depName, desiredVersion, requirements, oldLockfile);
-  const installer = new Installer(directory, dryRun, args, {
+  const initial_installer = new Installer(directory, dryRun, args, {
+    packageLockOnly: true
+  });
+  // A bug in npm means the initial install will remove any git dependencies
+  // from the lockfile. A subsequent install with no arguments fixes this.
+  const cleanup_installer = new Installer(directory, dryRun, [], {
     packageLockOnly: true
   });
 
   // Skip printing the success message
-  installer.printInstalled = cb => cb();
+  initial_installer.printInstalled = cb => cb();
+  cleanup_installer.printInstalled = cb => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
-    await runAsync(installer, installer.run, []);
+    await runAsync(initial_installer, initial_installer.run, []);
+    await runAsync(cleanup_installer, cleanup_installer.run, []);
   } finally {
     unmute();
   }
