@@ -32,7 +32,7 @@ async function updateDependencyFiles(
   await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
   const oldLockfile = JSON.parse(readFile("package-lock.json"));
 
-  const dryRun = false;
+  const dryRun = true;
   const args = install_args(depName, desiredVersion, requirements, oldLockfile);
   const installer = new Installer(directory, dryRun, args, {
     packageLockOnly: true

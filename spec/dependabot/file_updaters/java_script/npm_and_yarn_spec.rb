@@ -232,6 +232,35 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
             to eq("github:jonschlinkert/is-number#"\
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          yarn_lock = updated_files.find { |f| f.name == "yarn.lock" }
+          expect(yarn_lock.content).to include("is-number.git#")
+          expect(yarn_lock.content).to_not include("is-number.git#d5ac0")
+        end
+
+        context "specified as a full URL" do
+          let(:req) { nil }
+          let(:ref) { "master" }
+          let(:old_req) { nil }
+          let(:old_ref) { "master" }
+
+          let(:manifest_fixture_name) { "git_dependency.json" }
+          let(:yarn_lock_fixture_name) { "git_dependency.lock" }
+          let(:npm_lock_fixture_name) { "git_dependency.json" }
+
+          it "only updates the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package-lock.json yarn.lock))
+
+            package_lock =
+              updated_files.find { |f| f.name == "package-lock.json" }
+            parsed_package_lock = JSON.parse(package_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            yarn_lock = updated_files.find { |f| f.name == "yarn.lock" }
+            expect(yarn_lock.content).to include("is-number.git#")
+            expect(yarn_lock.content).to_not include("is-number.git#af885")
+          end
         end
       end
 
