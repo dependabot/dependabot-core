@@ -1,3 +1,7 @@
+## v0.52.16, 29 March 2018
+
+- Rust: Raise errors when file updating fails
+
 ## v0.52.15, 29 March 2018
 
 - Rust: Drop use of --precise when updating files

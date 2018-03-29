@@ -79,7 +79,7 @@ module Dependabot
               # so without doing an install (so it's fast).
               command = "cargo update -p #{dependency.name}"
               raw_response = nil
-              IO.popen(command, err: [:child, :out]) do |process|
+              IO.popen(command, err: %i(child out)) do |process|
                 raw_response = process.read
               end
 
