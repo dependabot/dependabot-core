@@ -233,8 +233,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             to eq("github:jonschlinkert/is-number#"\
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           yarn_lock = updated_files.find { |f| f.name == "yarn.lock" }
-          expect(yarn_lock.content).to include("is-number.git#")
-          expect(yarn_lock.content).to_not include("is-number.git#d5ac0")
+          expect(yarn_lock.content).to include("is-number")
+          expect(yarn_lock.content).to_not include("d5ac0584ee")
         end
 
         context "specified as a full URL" do
@@ -258,8 +258,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               to eq("git+https://github.com/jonschlinkert/is-number.git#"\
                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             yarn_lock = updated_files.find { |f| f.name == "yarn.lock" }
-            expect(yarn_lock.content).to include("is-number.git#")
-            expect(yarn_lock.content).to_not include("is-number.git#af885")
+            expect(yarn_lock.content).to include("is-number")
+            expect(yarn_lock.content).to_not include("af885e2e890")
           end
         end
       end
