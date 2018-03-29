@@ -27,10 +27,12 @@ module Dependabot
               )
           end
 
-          if lockfile
+          if lockfile && updated_lockfile_content != lockfile.content
             updated_files <<
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
+
+          raise "No files changed!" if updated_files.empty?
 
           updated_files
         end

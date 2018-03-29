@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "time",
+      name: dependency_name,
       version: dependency_version,
       requirements: requirements,
       previous_version: dependency_previous_version,
@@ -45,6 +45,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
       package_manager: "cargo"
     )
   end
+  let(:dependency_name) { "time" }
   let(:dependency_version) { "0.1.39" }
   let(:dependency_previous_version) { "0.1.38" }
   let(:requirements) { previous_requirements }
@@ -68,6 +69,73 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
 
     it { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(1) }
+
+    context "without a lockfile" do
+      let(:files) { [manifest] }
+
+      context "if no files have changed" do
+        it "raises a helpful error" do
+          expect { updater.updated_dependency_files }.
+            to raise_error("No files changed!")
+        end
+      end
+
+      context "when the manifest has changed" do
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "0.1.38",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the updated manifest" do
+          subject(:updated_manifest_content) do
+            updated_files.find { |f| f.name == "Cargo.toml" }.content
+          end
+
+          it "includes the new requirement" do
+            expect(updated_manifest_content).to include(%(time = "0.1.38"))
+            expect(updated_manifest_content).to include(%(regex = "0.1.41"))
+            expect(updated_manifest_content).
+              to_not include(%("time" = "0.1.12"))
+          end
+
+          context "with an optional dependency" do
+            let(:manifest_fixture_name) { "optional_dependency" }
+            let(:lockfile_fixture_name) { "optional_dependency" }
+            let(:dependency_name) { "utf8-ranges" }
+            let(:dependency_version) { "1.0.0" }
+            let(:dependency_previous_version) { "0.1.3" }
+            let(:requirements) do
+              [{
+                file: "Cargo.toml",
+                requirement: "1.0.0",
+                groups: [],
+                source: nil
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                file: "Cargo.toml",
+                requirement: "0.1.3",
+                groups: [],
+                source: nil
+              }]
+            end
+
+            it "includes the new requirement" do
+              expect(updated_manifest_content).to include(
+                %(utf8-ranges = { version = "1.0.0", optional = true })
+              )
+            end
+          end
+        end
+      end
+    end
 
     context "when updating the lockfile fails" do
       let(:dependency_version) { "99.0.0" }
