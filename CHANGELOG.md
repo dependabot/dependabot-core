@@ -1,3 +1,7 @@
+## v0.52.17, 29 March 2018
+
+- Rust: More specs, and error if no files are updated in FileUpdater
+
 ## v0.52.16, 29 March 2018
 
 - Rust: Raise errors when file updating fails
