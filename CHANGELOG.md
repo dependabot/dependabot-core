@@ -1,3 +1,7 @@
+## v0.52.14, 29 March 2018
+
+- Rust: Get relevant versions in FileParser when there are multiple available
+
 ## v0.52.13, 28 March 2018
 
 - Ruby: Always include pre-release details in requirement if updating to one
