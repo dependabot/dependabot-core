@@ -75,5 +75,6 @@ RUN mix local.hex --force
 
 ### Rust
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH=${PATH}:/root/.cargo/bin
+ENV RUSTUP_HOME=/opt/rust
+RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="${PATH}:/opt/rust/bin"
