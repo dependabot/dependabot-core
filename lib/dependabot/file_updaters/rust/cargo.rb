@@ -74,11 +74,23 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-              dep = dependency
 
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              `cargo update -q -p #{dep.name}`
+              command = "cargo update -p #{dependency.name}"
+              raw_response = nil
+              IO.popen(command, err: [:child, :out]) do |process|
+                raw_response = process.read
+              end
+
+              # Raise an error with the output from the shell session if Cargo
+              # returns a non-zero status
+              unless $CHILD_STATUS.success?
+                raise SharedHelpers::HelperSubprocessFailed.new(
+                  raw_response,
+                  command
+                )
+              end
 
               File.read("Cargo.lock")
             end

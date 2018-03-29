@@ -38,16 +38,18 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "time",
-      version: "0.1.39",
-      requirements: [
-        { file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }
-      ],
-      previous_version: "0.1.38",
-      previous_requirements: [
-        { file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }
-      ],
+      version: dependency_version,
+      requirements: requirements,
+      previous_version: dependency_previous_version,
+      previous_requirements: previous_requirements,
       package_manager: "cargo"
     )
+  end
+  let(:dependency_version) { "0.1.39" }
+  let(:dependency_previous_version) { "0.1.38" }
+  let(:requirements) { previous_requirements }
+  let(:previous_requirements) do
+    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
 
@@ -66,6 +68,22 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
 
     it { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(1) }
+
+    context "when updating the lockfile fails" do
+      let(:dependency_version) { "99.0.0" }
+      let(:requirements) do
+        [{ file: "Cargo.toml", requirement: "99", groups: [], source: nil }]
+      end
+
+      it "raises a helpful error" do
+        expect { updater.updated_dependency_files }.
+          to raise_error do |error|
+            expect(error).
+              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            expect(error.message).to include("no matching version")
+          end
+      end
+    end
 
     describe "the updated lockfile" do
       subject(:updated_lockfile_content) do
