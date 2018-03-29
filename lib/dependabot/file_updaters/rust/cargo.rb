@@ -78,7 +78,7 @@ module Dependabot
 
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              `cargo update -q -p #{dep.name} --precise #{dep.version}`
+              `cargo update -q -p #{dep.name}`
 
               File.read("Cargo.lock")
             end
