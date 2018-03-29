@@ -32,10 +32,11 @@ async function updateDependencyFiles(
   await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
   const oldLockfile = JSON.parse(readFile("package-lock.json"));
 
-  // dryRun mode prevents the actual install
-  const dryRun = true;
+  const dryRun = false;
   const args = install_args(depName, desiredVersion, requirements, oldLockfile);
-  const installer = new Installer(directory, dryRun, args);
+  const installer = new Installer(directory, dryRun, args, {
+    packageLockOnly: true
+  });
 
   // Skip printing the success message
   installer.printInstalled = cb => cb();
@@ -44,9 +45,7 @@ async function updateDependencyFiles(
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
-    // Do the dry run, then save our net set of dependencies
     await runAsync(installer, installer.run, []);
-    await runAsync(installer, installer.saveToDependencies, []);
   } finally {
     unmute();
   }
