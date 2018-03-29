@@ -1,3 +1,8 @@
+## v0.52.19, 29 March 2018
+
+- JS: Use package-lockfile-only option
+- Add workaround for npm git dependency issues
+
 ## v0.52.18, 29 March 2018
 
 - More logging for strange GitHub array error
