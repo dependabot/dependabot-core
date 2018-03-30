@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "Cargo.toml",
+  "sha": "cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+  "size": 213,
+  "url": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",
+  "html_url": "https://github.com/runconduit/conduit/blob/master/Cargo.toml",
+  "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+  "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Cargo.toml",
+  "type": "file",
+  "content": "W3dvcmtzcGFjZV0KbWVtYmVycyA9IFsiLi9wYWNrYWdlcy8qIl0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",
+    "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
+    "html": "https://github.com/runconduit/conduit/blob/master/Cargo.toml"
+  }
+}

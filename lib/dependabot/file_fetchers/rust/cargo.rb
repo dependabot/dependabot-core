@@ -25,20 +25,22 @@ module Dependabot
           fetched_files = []
           fetched_files << cargo_toml
           fetched_files << cargo_lock if cargo_lock
-          fetched_files += path_dependency_files
-          # TODO: Read the Cargo.toml and get any workspaces
+          fetched_files += workspace_and_path_dependency_files
           fetched_files
         end
 
-        def path_dependency_files
-          @path_dependency_files ||=
-            fetch_path_dependency_files(
+        def workspace_and_path_dependency_files
+          @workspace_and_path_dependency_files ||=
+            fetch_workspace_and_path_dependency_files(
               file: cargo_toml,
               previously_fetched_files: []
             )
         end
 
-        def fetch_path_dependency_files(file:, previously_fetched_files:)
+        def fetch_workspace_and_path_dependency_files(
+          file:,
+          previously_fetched_files:
+        )
           current_dir = file.name.split("/")[0..-2].join("/")
           current_dir = nil if current_dir == ""
 
@@ -50,10 +52,11 @@ module Dependabot
             next if file.name == path
 
             fetched_file = fetch_file_from_host(path)
-            grandchild_requirement_files = fetch_path_dependency_files(
-              file: fetched_file,
-              previously_fetched_files: previously_fetched_files + [file]
-            )
+            grandchild_requirement_files =
+              fetch_workspace_and_path_dependency_files(
+                file: fetched_file,
+                previously_fetched_files: previously_fetched_files + [file]
+              )
             [fetched_file, *grandchild_requirement_files]
           end.compact
         end

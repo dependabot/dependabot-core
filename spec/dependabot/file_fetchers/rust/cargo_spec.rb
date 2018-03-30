@@ -236,6 +236,33 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
           to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+    context "that specifies a directory of packages" do
+      let(:parent_fixture) do
+        fixture("github", "contents_cargo_manifest_workspace_root_glob.json")
+      end
+      let(:child_fixture) do
+        fixture("github", "contents_cargo_manifest_workspace_child.json")
+      end
+
+      before do
+        stub_request(:get, url + "packages?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_cargo_packages.json"),
+            headers: json_header
+          )
+        stub_request(:get, url + "packages/sub_crate/Cargo.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, body: child_fixture, headers: json_header)
+      end
+
+      it "fetches the workspace dependency's Cargo.toml" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Cargo.toml packages/sub_crate/Cargo.toml))
+      end
+    end
   end
 
   context "without a Cargo.toml" do
