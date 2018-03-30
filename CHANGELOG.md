@@ -1,4 +1,8 @@
-## v0.52.21, 29 March 2018
+## v0.52.22, 30 March 2018
+
+- Rust: Use --aggressive update if conservative one fails
+
+## v0.52.21, 30 March 2018
 
 - Rust: Handle projects that use workspaces
 
