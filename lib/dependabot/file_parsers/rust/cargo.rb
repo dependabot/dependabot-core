@@ -149,10 +149,6 @@ module Dependabot
             dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
         end
 
-        def manifest
-          @manifest ||= manifest_files.find { |f| f.name == "Cargo.toml" }
-        end
-
         def lockfile
           @lockfile ||= get_original_file("Cargo.lock")
         end

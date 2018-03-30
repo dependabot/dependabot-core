@@ -19,11 +19,12 @@ module Dependabot
           # should be returned.
           updated_files = []
 
-          if file_changed?(cargo_toml)
+          manifest_files.each do |file|
+            next unless file_changed?(file)
             updated_files <<
               updated_file(
-                file: cargo_toml,
-                content: updated_cargo_toml_content
+                file: file,
+                content: updated_manifest_file_content(file)
               )
           end
 
@@ -48,18 +49,18 @@ module Dependabot
           dependencies.first
         end
 
-        def updated_cargo_toml_content
+        def updated_manifest_file_content(file)
           dependencies.
-            select { |dep| requirement_changed?(cargo_toml, dep) }.
-            reduce(cargo_toml.content.dup) do |content, dep|
+            select { |dep| requirement_changed?(file, dep) }.
+            reduce(file.content.dup) do |content, dep|
               updated_requirement =
                 dep.requirements.
-                find { |r| r[:file] == cargo_toml.name }.
+                find { |r| r[:file] == file.name }.
                 fetch(:requirement)
 
               old_req =
                 dep.previous_requirements.
-                find { |r| r[:file] == cargo_toml.name }.
+                find { |r| r[:file] == file.name }.
                 fetch(:requirement)
 
               updated_content =
@@ -104,18 +105,18 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          File.write(cargo_toml.name, updated_cargo_toml_content)
-          File.write(lockfile.name, lockfile.content)
-
-          path_dependency_files.each do |file|
+          manifest_files.each do |file|
             path = file.name
+            dir = Pathname.new(path).dirname
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(file.name, file.content)
+            File.write(file.name, updated_manifest_file_content(file))
+
+            FileUtils.mkdir_p(File.join(dir, "src"))
+            File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
+            File.write(File.join(dir, "src/main.rs"), dummy_app_content)
           end
 
-          FileUtils.mkdir_p("src")
-          File.write("src/lib.rs", dummy_app_content)
-          File.write("src/main.rs", dummy_app_content)
+          File.write(lockfile.name, lockfile.content)
         end
 
         def dummy_app_content
@@ -126,14 +127,9 @@ module Dependabot
           /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
         end
 
-        def cargo_toml
-          @cargo_toml ||= get_original_file("Cargo.toml")
-        end
-
-        def path_dependency_files
-          dependency_files.
-            select { |f| f.name.end_with?("Cargo.toml") }.
-            reject { |f| f.name == "Cargo.toml" }
+        def manifest_files
+          @manifest_files ||=
+            dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         def lockfile

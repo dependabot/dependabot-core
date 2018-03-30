@@ -233,6 +233,49 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
           )
         end
       end
+
+      context "when there is a workspace" do
+        let(:files) { [manifest, lockfile, workspace_child] }
+        let(:manifest_fixture_name) { "workspace_root" }
+        let(:lockfile_fixture_name) { "workspace" }
+        let(:workspace_child) do
+          Dependabot::DependencyFile.new(
+            name: "lib/sub_crate/Cargo.toml",
+            content: fixture("rust", "manifests", "workspace_child")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "log",
+            version: "0.4.1",
+            requirements: [{
+              requirement: "=0.4.1",
+              file: "lib/sub_crate/Cargo.toml",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_version: "0.4.0",
+            previous_requirements: [{
+              requirement: "=0.4.0",
+              file: "lib/sub_crate/Cargo.toml",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "cargo"
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "log"\nversion = "0.4.1"))
+          expect(updated_lockfile_content).to include(
+            "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
+          )
+          expect(updated_lockfile_content).to_not include(
+            "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
+          )
+        end
+      end
     end
   end
 end
