@@ -1,3 +1,7 @@
+## v0.52.21, 29 March 2018
+
+- Rust: Handle projects that use workspaces
+
 ## v0.52.20, 29 March 2018
 
 - Rust: Handle multi-version dependencies in FileUpdater
