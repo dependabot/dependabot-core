@@ -1,3 +1,7 @@
+## v0.52.23, 30 March 2018
+
+- JS: Handle registry timeouts when looking through private registries
+
 ## v0.52.22, 30 March 2018
 
 - Rust: Use --aggressive update if conservative one fails
