@@ -250,6 +250,82 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
             end
           end
         end
+
+        context "regression spec: conduit" do
+          let(:manifest_fixture_name) { "conduit" }
+          let(:lockfile_fixture_name) { "conduit" }
+          let(:files) do
+            [
+              manifest,
+              lockfile,
+              conduit_proxy,
+              conduit_proxy_controller_grpc,
+              conduit_proxy_convert,
+              conduit_proxy_futures_mpsc_lossy,
+              conduit_proxy_router
+            ]
+          end
+          let(:conduit_proxy) do
+            Dependabot::DependencyFile.new(
+              name: "proxy/Cargo.toml",
+              content: fixture("rust", "manifests", "conduit-proxy")
+            )
+          end
+          let(:conduit_proxy_controller_grpc) do
+            Dependabot::DependencyFile.new(
+              name: "proxy/controller-grpc/Cargo.toml",
+              content:
+                fixture("rust", "manifests", "conduit-proxy-controller-grpc")
+            )
+          end
+          let(:conduit_proxy_convert) do
+            Dependabot::DependencyFile.new(
+              name: "proxy/convert/Cargo.toml",
+              content: fixture("rust", "manifests", "conduit-proxy-convert")
+            )
+          end
+          let(:conduit_proxy_router) do
+            Dependabot::DependencyFile.new(
+              name: "proxy/router/Cargo.toml",
+              content: fixture("rust", "manifests", "conduit-proxy-router")
+            )
+          end
+          let(:conduit_proxy_futures_mpsc_lossy) do
+            Dependabot::DependencyFile.new(
+              name: "proxy/futures-mpsc-lossy/Cargo.toml",
+              content:
+                fixture("rust", "manifests", "conduit-proxy-futures-mpsc-lossy")
+            )
+          end
+
+          describe "top level dependencies" do
+            subject(:top_level_dependencies) do
+              dependencies.select(&:top_level?)
+            end
+
+            its(:length) { is_expected.to eq(36) }
+
+            describe "a dependency" do
+              subject(:dependency) do
+                top_level_dependencies.find { |d| d.name == "tokio-core" }
+              end
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("tokio-core")
+                expect(dependency.version).to eq("0.1.12")
+                expect(dependency.requirements).to eq(
+                  [{
+                    requirement: "0.1",
+                    file: "proxy/Cargo.toml",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                )
+              end
+            end
+          end
+        end
       end
 
       context "with a git dependency" do

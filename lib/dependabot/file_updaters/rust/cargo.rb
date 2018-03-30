@@ -78,30 +78,57 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
-              spec = dependency.name
-              if dependency.previous_version
-                spec += ":#{dependency.previous_version}"
-              end
-
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              command = "cargo update -p #{spec}"
-              raw_response = nil
-              IO.popen(command, err: %i(child out)) do |process|
-                raw_response = process.read
+              command = "cargo update -p #{dependency_spec}"
+              run_cargo_command(command)
+
+              updated_lockfile = File.read("Cargo.lock")
+
+              if updated_lockfile.include?(desired_lockfile_content)
+                next updated_lockfile
               end
 
-              # Raise an error with the output from the shell session if Cargo
-              # returns a non-zero status
-              unless $CHILD_STATUS.success?
-                raise SharedHelpers::HelperSubprocessFailed.new(
-                  raw_response,
-                  command
-                )
+              # If we failed to update first time around, try again but force
+              # updating of sub-dependencies.
+              write_temporary_dependency_files
+              run_cargo_command("#{command} --aggressive")
+
+              updated_lockfile = File.read("Cargo.lock")
+
+              if updated_lockfile.include?(desired_lockfile_content)
+                next updated_lockfile
               end
 
-              File.read("Cargo.lock")
+              raise "Failed to update #{dependency.name}!"
             end
+        end
+
+        def dependency_spec
+          spec = dependency.name
+          if dependency.previous_version
+            spec += ":#{dependency.previous_version}"
+          end
+          spec
+        end
+
+        def desired_lockfile_content
+          %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
+        end
+
+        def run_cargo_command(command)
+          raw_response = nil
+          IO.popen(command, err: %i(child out)) do |process|
+            raw_response = process.read
+          end
+
+          # Raise an error with the output from the shell session if Cargo
+          # returns a non-zero status
+          return if $CHILD_STATUS.success?
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            raw_response,
+            command
+          )
         end
 
         def write_temporary_dependency_files
