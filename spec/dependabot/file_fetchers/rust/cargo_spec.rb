@@ -244,6 +244,12 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
       let(:child_fixture) do
         fixture("github", "contents_cargo_manifest_workspace_child.json")
       end
+      let(:child_fixture2) do
+        # This fixture also requires the first child as a path dependency,
+        # so we're testing whether the first child gets fetched twice here, as
+        # well as whether the second child gets fetched.
+        fixture("github", "contents_cargo_manifest_workspace_child2.json")
+      end
 
       before do
         stub_request(:get, url + "packages?ref=sha").
@@ -256,11 +262,18 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         stub_request(:get, url + "packages/sub_crate/Cargo.toml?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200, body: child_fixture, headers: json_header)
+        stub_request(:get, url + "packages/sub_crate2/Cargo.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, body: child_fixture2, headers: json_header)
       end
 
       it "fetches the workspace dependency's Cargo.toml" do
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Cargo.toml packages/sub_crate/Cargo.toml))
+          to match_array(
+            %w(Cargo.toml
+               packages/sub_crate/Cargo.toml
+               packages/sub_crate2/Cargo.toml)
+          )
       end
     end
   end

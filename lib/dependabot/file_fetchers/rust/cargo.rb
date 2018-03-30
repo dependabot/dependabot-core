@@ -52,10 +52,11 @@ module Dependabot
             next if file.name == path
 
             fetched_file = fetch_file_from_host(path)
+            previously_fetched_files << fetched_file
             grandchild_requirement_files =
               fetch_workspace_and_path_dependency_files(
                 file: fetched_file,
-                previously_fetched_files: previously_fetched_files + [file]
+                previously_fetched_files: previously_fetched_files
               )
             [fetched_file, *grandchild_requirement_files]
           end.compact

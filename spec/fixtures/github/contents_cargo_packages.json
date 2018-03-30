@@ -30,5 +30,21 @@
       "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
       "html": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate"
     }
+  },
+  {
+    "name": "sub_crate2",
+    "path": "packages/sub_crate2",
+    "sha": "ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate2?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate2",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate2?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+      "html": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate2"
+    }
   }
 ]
