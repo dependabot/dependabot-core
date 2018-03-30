@@ -8,7 +8,7 @@
   "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/cb9ddc34d2c13ca51bd54ec7374d89cbad814d78",
   "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/Cargo.toml",
   "type": "file",
-  "content": "W3dvcmtzcGFjZV0KbWVtYmVycyA9IFsKICAicHJveHkiLAogICJwcm94eS9j\nb252ZXJ0IiwKICAicHJveHkvY29udHJvbGxlci1ncnBjIiwKICAicHJveHkv\nZnV0dXJlcy1tcHNjLWxvc3N5IiwKICAicHJveHkvcm91dGVyIiwKXQoKW3Bh\ndGNoLmNyYXRlcy1pb10KcHJvc3QtZGVyaXZlID0geyBnaXQgPSAiaHR0cHM6\nLy9naXRodWIuY29tL2RhbmJ1cmtlcnQvcHJvc3QiIH0K\n",
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAiZGVwZW5kYWJvdCIgIyB0aGUgbmFtZSBvZiB0\naGUgcGFja2FnZQp2ZXJzaW9uID0gIjAuMS4wIiAgICAjIHRoZSBjdXJyZW50\nIHZlcnNpb24sIG9iZXlpbmcgc2VtdmVyCmF1dGhvcnMgPSBbInN1cHBvcnRA\nZGVwZW5kYWJvdC5jb20iXQoKW2RlcGVuZGVuY2llc10KdGltZSA9ICIwLjEu\nMTIiCnJlZ2V4ID0gIjAuMS40MSIK\n",
   "encoding": "base64",
   "_links": {
     "self": "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=master",

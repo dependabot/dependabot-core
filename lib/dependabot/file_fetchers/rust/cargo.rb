@@ -42,7 +42,7 @@ module Dependabot
           current_dir = file.name.split("/")[0..-2].join("/")
           current_dir = nil if current_dir == ""
 
-          path_dependency_paths_from_file(file).flat_map do |path|
+          path_dep_and_workspace_paths_from_file(file).flat_map do |path|
             path = File.join(current_dir, path) unless current_dir.nil?
             path = Pathname.new(path).cleanpath.to_path
 
@@ -58,6 +58,13 @@ module Dependabot
           end.compact
         end
 
+        def path_dep_and_workspace_paths_from_file(file)
+          [
+            *path_dependency_paths_from_file(file),
+            *workspace_dependency_paths_from_file(file)
+          ].uniq
+        end
+
         def path_dependency_paths_from_file(file)
           FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
             parsed_file(file).fetch(type, {}).map do |_, details|
@@ -66,6 +73,30 @@ module Dependabot
               File.join(details["path"], "Cargo.toml")
             end
           end.compact
+        end
+
+        def workspace_dependency_paths_from_file(file)
+          workspace_paths = parsed_file(file).dig("workspace", "members")
+          return [] unless workspace_paths&.any?
+
+          # Expand any workspace paths that specify a `*`
+          workspace_paths = workspace_paths.flat_map do |path|
+            path.end_with?("*") ? expand_workspaces(path) : [path]
+          end
+
+          # Excluded paths, to be subtracted for the workspaces array
+          excluded_paths = parsed_file(file).dig("workspace", "excluded_paths")
+
+          (workspace_paths - (excluded_paths || [])).map do |path|
+            File.join(path, "Cargo.toml")
+          end
+        end
+
+        def expand_workspaces(path)
+          dir = directory.gsub(%r{(^/|/$)}, "")
+          repo_contents(dir: path.gsub(/\*$/, "")).
+            select { |file| file.type == "dir" }.
+            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
         end
 
         def parsed_file(file)

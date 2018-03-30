@@ -191,6 +191,53 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
     end
   end
 
+  context "with a workspace dependency" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_without_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 200, body: parent_fixture, headers: json_header)
+    end
+    let(:parent_fixture) do
+      fixture("github", "contents_cargo_manifest_workspace_root.json")
+    end
+
+    context "that is fetchable" do
+      before do
+        stub_request(:get, url + "lib/sub_crate/Cargo.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, body: child_fixture, headers: json_header)
+      end
+      let(:child_fixture) do
+        fixture("github", "contents_cargo_manifest_workspace_child.json")
+      end
+
+      it "fetches the workspace dependency's Cargo.toml" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml))
+      end
+    end
+
+    context "that is not fetchable" do
+      before do
+        stub_request(:get, url + "lib/sub_crate/Cargo.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
+      end
+
+      it "raises a DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+  end
+
   context "without a Cargo.toml" do
     before do
       stub_request(:get, url + "?ref=sha").
