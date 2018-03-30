@@ -1,3 +1,8 @@
+## v0.52.20, 29 March 2018
+
+- Rust: Handle multi-version dependencies in FileUpdater
+- Rust: Add support for workspaces to FileFetcher
+
 ## v0.52.19, 29 March 2018
 
 - JS: Use package-lockfile-only option
