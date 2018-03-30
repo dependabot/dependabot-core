@@ -40,9 +40,14 @@ module Dependabot
                   "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
                   "#{escaped_dependency_name}",
                   headers: auth_header_for(details["token"]),
+                  connect_timeout: 5,
+                  write_timeout: 5,
+                  read_timeout: 5,
                   idempotent: true,
                   middlewares: SharedHelpers.excon_middleware
                 ).status < 400
+              rescue Excon::Error::Timeout
+                nil
               end&.fetch("registry")
 
             @first_registry_with_dependency_details ||= "registry.npmjs.org"

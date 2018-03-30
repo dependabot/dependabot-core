@@ -72,6 +72,16 @@ RSpec.describe tested_module::RegistryFinder do
 
         it { is_expected.to eq("npm.fury.io/dependabot") }
       end
+
+      context "which times out" do
+        before do
+          stub_request(:get, "https://npm.fury.io/dependabot/etag").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_raise(Excon::Error::Timeout)
+        end
+
+        it { is_expected.to eq("registry.npmjs.org") }
+      end
     end
 
     context "with a private registry source" do
