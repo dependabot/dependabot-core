@@ -24,8 +24,6 @@ module Dependabot
           dependency_set = DependencySet.new
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies if lockfile
-          # TODO: Handle workspace manifests
-          # TODO: Consider parsing path dependency manifests
           dependency_set.dependencies
         end
 
@@ -35,18 +33,20 @@ module Dependabot
           dependency_set = DependencySet.new
 
           DEPENDENCY_TYPES.each do |type|
-            parsed_manifest.fetch(type, {}).each do |name, requirement|
-              dependency_set << Dependency.new(
-                name: name,
-                version: version_from_lockfile(name, requirement),
-                package_manager: "cargo",
-                requirements: [{
-                  requirement: requirement_from_declaration(requirement),
-                  file: "Cargo.toml",
-                  groups: [type],
-                  source: source_from_declaration(requirement)
-                }]
-              )
+            manifest_files.each do |file|
+              parsed_file(file).fetch(type, {}).each do |name, requirement|
+                dependency_set << Dependency.new(
+                  name: name,
+                  version: version_from_lockfile(name, requirement),
+                  package_manager: "cargo",
+                  requirements: [{
+                    requirement: requirement_from_declaration(requirement),
+                    file: file.name,
+                    groups: [type],
+                    source: source_from_declaration(requirement)
+                  }]
+                )
+              end
             end
           end
 
@@ -57,7 +57,7 @@ module Dependabot
           dependency_set = DependencySet.new
           return dependency_set unless lockfile
 
-          parsed_lockfile.fetch("package", []).each do |package_details|
+          parsed_file(lockfile).fetch("package", []).each do |package_details|
             next unless package_details["source"]
 
             # TODO: This isn't quite right, as it will only give us one
@@ -99,7 +99,7 @@ module Dependabot
           return unless lockfile
 
           candidate_packages =
-            parsed_lockfile.fetch("package", []).
+            parsed_file(lockfile).fetch("package", []).
             select { |p| p["name"] == name }
 
           if (req = requirement_from_declaration(declaration))
@@ -137,20 +137,20 @@ module Dependabot
           raise "No Cargo.toml!" unless get_original_file("Cargo.toml")
         end
 
-        def parsed_manifest
-          TomlRB.parse(manifest.content)
+        def parsed_file(file)
+          @parsed_file ||= {}
+          @parsed_file[file.name] ||= TomlRB.parse(file.content)
         rescue TomlRB::ParseError
-          raise Dependabot::DependencyFileNotParseable, manifest.path
+          raise Dependabot::DependencyFileNotParseable, file.path
         end
 
-        def parsed_lockfile
-          TomlRB.parse(lockfile.content)
-        rescue TomlRB::ParseError
-          raise Dependabot::DependencyFileNotParseable, lockfile.path
+        def manifest_files
+          @manifest_files ||=
+            dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
         end
 
         def manifest
-          @manifest ||= get_original_file("Cargo.toml")
+          @manifest ||= manifest_files.find { |f| f.name == "Cargo.toml" }
         end
 
         def lockfile

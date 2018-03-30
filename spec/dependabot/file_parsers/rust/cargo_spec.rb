@@ -55,22 +55,56 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
 
       context "with a path dependency" do
         let(:manifest_fixture_name) { "path_dependency" }
+        let(:lockfile_fixture_name) { "path_dependency" }
+        let(:files) { [manifest, lockfile, path_dependency_manifest] }
+        let(:path_dependency_manifest) do
+          Dependabot::DependencyFile.new(
+            name: "src/s3/Cargo.toml",
+            content: fixture("rust", "manifests", "cargo-registry-s3")
+          )
+        end
 
-        describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+        its(:length) { is_expected.to eq(37) }
 
-          it "has the right details" do
-            expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("cargo-registry-s3")
-            expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
-              [{
-                requirement: "0.2.0",
-                file: "Cargo.toml",
-                groups: ["dependencies"],
-                source: { type: "path" }
-              }]
-            )
+        describe "top level dependencies" do
+          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+          its(:length) { is_expected.to eq(6) }
+
+          describe "the first dependency" do
+            subject(:dependency) { top_level_dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("cargo-registry-s3")
+              expect(dependency.version).to eq("0.2.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "0.2.0",
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: { type: "path" }
+                }]
+              )
+            end
+          end
+
+          describe "the last dependency" do
+            subject(:dependency) { top_level_dependencies.last }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("base64")
+              expect(dependency.version).to eq("0.9.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "0.9",
+                  file: "src/s3/Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
           end
         end
       end
