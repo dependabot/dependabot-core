@@ -169,6 +169,24 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
         )
       end
 
+      context "with multiple versions available of the dependency" do
+        let(:manifest_fixture_name) { "multiple_versions" }
+        let(:lockfile_fixture_name) { "multiple_versions" }
+
+        let(:dependency_name) { "rand" }
+        let(:dependency_version) { "0.4.2" }
+        let(:dependency_previous_version) { "0.4.1" }
+        let(:requirements) { previous_requirements }
+        let(:previous_requirements) do
+          [{ file: "Cargo.toml", requirement: "0.4", groups: [], source: nil }]
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "rand"\nversion = "0.4.2"))
+        end
+      end
+
       context "when there is a path dependency" do
         let(:files) { [manifest, lockfile, path_dependency_file] }
         let(:manifest_fixture_name) { "path_dependency" }

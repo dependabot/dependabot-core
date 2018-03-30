@@ -77,9 +77,14 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
+              spec = dependency.name
+              if dependency.previous_version
+                spec += ":#{dependency.previous_version}"
+              end
+
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              command = "cargo update -p #{dependency.name}"
+              command = "cargo update -p #{spec}"
               raw_response = nil
               IO.popen(command, err: %i(child out)) do |process|
                 raw_response = process.read
