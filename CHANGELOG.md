@@ -1,3 +1,7 @@
+## v0.52.25, 31 March 2018
+
+- Rust: Handle feature dependencies
+
 ## v0.52.24, 31 March 2018
 
 - Rust: Add resolvability check to UpdateChecker
