@@ -1,3 +1,7 @@
+## v0.52.29, 31 March 2018
+
+- Rust: Target latest version, not latest resolvable version, for libraries
+
 ## v0.52.28, 31 March 2018
 
 - Rust: Handle repos without a lockfile in UpdateCheckers::VersionResolver
