@@ -1,3 +1,7 @@
+## v0.52.27, 31 March 2018
+
+- Ruby: Sanitize gemspec using GemspecSanitizer class everywhere
+
 ## v0.52.26, 31 March 2018
 
 - Ruby: Sanitize require_relative lines from gemspec
