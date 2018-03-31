@@ -90,9 +90,6 @@ module Dependabot
 
           return git_source_details(declaration) if declaration["git"]
           return { type: "path" } if declaration["path"]
-
-          return if declaration["version"]
-          raise "Unexpected dependency declaration: #{declaration}"
         end
 
         def version_from_lockfile(name, declaration)

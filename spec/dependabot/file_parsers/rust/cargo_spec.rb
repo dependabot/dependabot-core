@@ -452,6 +452,51 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
             end
           end
         end
+
+        context "with a feature dependency" do
+          let(:manifest_fixture_name) { "feature_dependency" }
+          let(:lockfile_fixture_name) { "feature_dependency" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.select(&:top_level?).first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("gtk")
+              expect(dependency.version).to eq("0.3.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "0.3.0",
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          context "with no requirement specified" do
+            let(:manifest_fixture_name) { "feature_dependency_no_version" }
+
+            describe "the first dependency" do
+              subject(:dependency) { dependencies.select(&:top_level?).first }
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("gtk")
+                expect(dependency.version).to eq("0.3.0")
+                expect(dependency.requirements).to eq(
+                  [{
+                    requirement: nil,
+                    file: "Cargo.toml",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                )
+              end
+            end
+          end
+        end
       end
 
       context "with no dependencies" do

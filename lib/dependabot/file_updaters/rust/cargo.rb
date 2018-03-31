@@ -63,11 +63,12 @@ module Dependabot
                 find { |r| r[:file] == file.name }.
                 fetch(:requirement)
 
-              updated_content =
-                content.gsub(declaration_regex(dep)) do |line|
-                  line.gsub(old_req, updated_requirement)
-                end
-
+              updated_content = update_manifest_content(
+                content: content,
+                dep: dep,
+                old_req: old_req,
+                new_req: updated_requirement
+              )
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
@@ -91,6 +92,23 @@ module Dependabot
 
               raise "Failed to update #{dependency.name}!"
             end
+        end
+
+        def update_manifest_content(content:, dep:, old_req:, new_req:)
+          if content.match?(declaration_regex(dep))
+            content.gsub(declaration_regex(dep)) do |line|
+              line.gsub(old_req, new_req)
+            end
+          elsif content.match?(feature_declaration_regex(dep))
+            content.gsub(feature_declaration_regex(dep)) do |part|
+              line = content.match(feature_declaration_regex(dep)).
+                     named_captures.fetch("requirement_declaration")
+              new_line = line.gsub(old_req, new_req)
+              part.gsub(line, new_line)
+            end
+          else
+            content
+          end
         end
 
         def dependency_spec
@@ -141,6 +159,14 @@ module Dependabot
 
         def declaration_regex(dep)
           /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
+        end
+
+        def feature_declaration_regex(dep)
+          /
+            #{Regexp.quote("[dependencies.#{dep.name}]")}
+            (?!.*(?:^\[)).*
+            (?<requirement_declaration>version\s*=.*)$
+          /mx
         end
 
         def manifest_files
