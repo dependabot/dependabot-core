@@ -1,3 +1,7 @@
+## v0.52.28, 31 March 2018
+
+- Rust: Handle repos without a lockfile in UpdateCheckers::VersionResolver
+
 ## v0.52.27, 31 March 2018
 
 - Ruby: Sanitize gemspec using GemspecSanitizer class everywhere
