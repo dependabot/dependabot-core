@@ -14,9 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
   end
 
   let(:requirements_to_unlock) { :own }
-  let(:dependency_files) do
-    [manifest, lockfile]
-  end
+  let(:dependency_files) { [manifest, lockfile] }
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Cargo.toml",
@@ -50,6 +48,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     it { is_expected.to eq(Gem::Version.new("0.2.10")) }
+
+    context "without a lockfile" do
+      let(:dependency_files) { [manifest] }
+      it { is_expected.to eq(Gem::Version.new("0.2.10")) }
+    end
 
     context "with an optional dependency" do
       let(:manifest_fixture_name) { "optional_dependency" }

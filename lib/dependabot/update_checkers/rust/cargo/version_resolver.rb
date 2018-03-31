@@ -80,7 +80,7 @@ module Dependabot
               File.write(File.join(dir, "src/main.rs"), dummy_app_content)
             end
 
-            File.write(lockfile.name, lockfile.content)
+            File.write(lockfile.name, lockfile.content) if lockfile
           end
 
           # Note: We don't need to care about formatting in this method, since
