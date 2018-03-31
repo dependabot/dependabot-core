@@ -201,7 +201,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
         its(:content) { is_expected.to include(%("gitlab", ">= 0"\n)) }
         its(:content) { is_expected.to_not include("require ") }
-        its(:content) { is_expected.to include(%(version      = '0.0.1')) }
+        its(:content) { is_expected.to include(%(version      = "0.0.1")) }
       end
 
       context "with multiple requirements" do
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
 
         its(:content) { is_expected.to_not include("require ") }
-        its(:content) { is_expected.to include(%(version      = '0.0.1')) }
+        its(:content) { is_expected.to include(%(version      = "0.0.1")) }
       end
     end
 

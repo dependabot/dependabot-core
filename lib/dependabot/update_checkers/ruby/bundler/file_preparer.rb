@@ -2,6 +2,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/file_updaters/ruby/bundler/gemspec_sanitizer"
 require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
 require "dependabot/file_updaters/ruby/bundler/git_source_remover"
 require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
@@ -162,9 +163,9 @@ module Dependabot
           def sanitize_gemspec_content(gemspec_content)
             # No need to set the version correctly - this is just an update
             # check so we're not going to persist any changes to the lockfile.
-            gemspec_content.
-              gsub(/^\s*require.*$/, "").
-              gsub(/=.*VERSION.*$/, "= '0.0.1'")
+            FileUpdaters::Ruby::Bundler::GemspecSanitizer.
+              new(replacement_version: "0.0.1").
+              rewrite(gemspec_content)
           end
 
           def remove_git_source(content)
