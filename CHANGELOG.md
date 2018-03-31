@@ -1,3 +1,7 @@
+## v0.52.24, 31 March 2018
+
+- Rust: Add resolvability check to UpdateChecker
+
 ## v0.52.23, 30 March 2018
 
 - JS: Handle registry timeouts when looking through private registries
