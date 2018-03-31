@@ -1,3 +1,7 @@
+## v0.52.26, 31 March 2018
+
+- Ruby: Sanitize require_relative lines from gemspec
+
 ## v0.52.25, 31 March 2018
 
 - Rust: Handle feature dependencies
