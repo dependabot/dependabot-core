@@ -11,6 +11,7 @@ module Dependabot
         require_relative "cargo/requirements_updater"
         require_relative "cargo/requirement"
         require_relative "cargo/version"
+        require_relative "cargo/version_resolver"
 
         def latest_version
           # TODO: Handle git dependencies
@@ -26,7 +27,16 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          latest_version
+          # TODO: Handle git dependencies
+          return if git_dependency?
+          return if path_dependency?
+
+          @latest_resolvable_version ||=
+            VersionResolver.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              requirements_to_unlock: :own
+            ).latest_resolvable_version
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -35,21 +45,17 @@ module Dependabot
           return if path_dependency?
 
           @latest_resolvable_version_with_no_unlock ||=
-            begin
-              versions = available_versions
-              reqs = dependency.requirements.map do |r|
-                Cargo::Requirement.new(r.fetch(:requirement).split(","))
-              end
-              versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.select! { |v| reqs.all? { |r| r.satisfied_by?(v) } }
-              versions.sort.last
-            end
+            VersionResolver.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              requirements_to_unlock: :none
+            ).latest_resolvable_version
         end
 
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            latest_version: latest_version&.to_s,
+            latest_resolvable_version: latest_resolvable_version&.to_s,
             library: dependency.version.nil?
           ).updated_requirements
         end

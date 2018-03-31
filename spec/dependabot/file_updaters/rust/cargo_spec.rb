@@ -32,8 +32,8 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
   end
   let(:manifest_body) { fixture("rust", "manifests", manifest_fixture_name) }
   let(:lockfile_body) { fixture("rust", "lockfiles", lockfile_fixture_name) }
-  let(:manifest_fixture_name) { "exact_version_specified" }
-  let(:lockfile_fixture_name) { "exact_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
+  let(:lockfile_fixture_name) { "bare_version_specified" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -274,79 +274,6 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
           expect(updated_lockfile_content).to_not include(
             "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
           )
-        end
-      end
-
-      context "regression spec: conduit" do
-        let(:manifest_fixture_name) { "conduit" }
-        let(:lockfile_fixture_name) { "conduit" }
-        let(:files) do
-          [
-            manifest,
-            lockfile,
-            conduit_proxy,
-            conduit_proxy_controller_grpc,
-            conduit_proxy_convert,
-            conduit_proxy_futures_mpsc_lossy,
-            conduit_proxy_router
-          ]
-        end
-        let(:conduit_proxy) do
-          Dependabot::DependencyFile.new(
-            name: "proxy/Cargo.toml",
-            content: fixture("rust", "manifests", "conduit-proxy")
-          )
-        end
-        let(:conduit_proxy_controller_grpc) do
-          Dependabot::DependencyFile.new(
-            name: "proxy/controller-grpc/Cargo.toml",
-            content:
-              fixture("rust", "manifests", "conduit-proxy-controller-grpc")
-          )
-        end
-        let(:conduit_proxy_convert) do
-          Dependabot::DependencyFile.new(
-            name: "proxy/convert/Cargo.toml",
-            content: fixture("rust", "manifests", "conduit-proxy-convert")
-          )
-        end
-        let(:conduit_proxy_router) do
-          Dependabot::DependencyFile.new(
-            name: "proxy/router/Cargo.toml",
-            content: fixture("rust", "manifests", "conduit-proxy-router")
-          )
-        end
-        let(:conduit_proxy_futures_mpsc_lossy) do
-          Dependabot::DependencyFile.new(
-            name: "proxy/futures-mpsc-lossy/Cargo.toml",
-            content:
-              fixture("rust", "manifests", "conduit-proxy-futures-mpsc-lossy")
-          )
-        end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "tokio-core",
-            version: "0.1.16",
-            requirements: [{
-              requirement: "0.1",
-              file: "proxy/Cargo.toml",
-              groups: ["dependencies"],
-              source: nil
-            }],
-            previous_version: "0.1.12",
-            previous_requirements: [{
-              requirement: "0.1",
-              file: "proxy/Cargo.toml",
-              groups: ["dependencies"],
-              source: nil
-            }],
-            package_manager: "cargo"
-          )
-        end
-
-        it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "tokio-core"\nversion = "0.1.16"))
         end
       end
     end

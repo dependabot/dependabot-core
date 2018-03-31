@@ -38,11 +38,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     [
       Dependabot::DependencyFile.new(
         name: "Cargo.toml",
-        content: fixture("rust", "manifests", "exact_version_specified")
+        content: fixture("rust", "manifests", "bare_version_specified")
       ),
       Dependabot::DependencyFile.new(
         name: "Cargo.lock",
-        content: fixture("rust", "lockfiles", "exact_version_specified")
+        content: fixture("rust", "lockfiles", "bare_version_specified")
       )
     ]
   end
@@ -170,34 +170,30 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    it "delegates to latest_version" do
-      expect(checker).
-        to receive(:latest_version).
-        and_return(Gem::Version.new("2.6.0"))
-      expect(checker.latest_resolvable_version).to eq(Gem::Version.new("2.6.0"))
+    it "delegates to VersionResolved" do
+      expect(Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver).
+        to receive(:new).
+        and_call_original
+      expect(checker.latest_resolvable_version).
+        to eq(Gem::Version.new("0.1.39"))
     end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+    let(:dependency_name) { "regex" }
+    let(:dependency_version) { "0.1.41" }
     let(:requirements) do
       [{
         file: "Cargo.toml",
-        requirement: req_string,
+        requirement: "0.1.41",
         groups: ["dependencies"],
         source: nil
       }]
     end
+    let(:crates_response) { nil }
 
-    context "with an equality string" do
-      let(:req_string) { "=0.1.12" }
-      it { is_expected.to eq(Gem::Version.new("0.1.12")) }
-    end
-
-    context "with a >= string" do
-      let(:req_string) { ">=0.1.12" }
-      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
-    end
+    it { is_expected.to eq(Gem::Version.new("0.1.80")) }
 
     context "with a git dependency" do
       let(:requirements) do
@@ -237,7 +233,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to receive(:new).
         with(
           requirements: requirements,
-          latest_version: "0.1.39",
+          latest_resolvable_version: "0.1.39",
           library: false
         ).
         and_call_original

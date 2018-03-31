@@ -89,17 +89,6 @@ module Dependabot
                 next updated_lockfile
               end
 
-              # If we failed to update first time around, try again but force
-              # updating of sub-dependencies.
-              write_temporary_dependency_files
-              run_cargo_command("#{command} --aggressive")
-
-              updated_lockfile = File.read("Cargo.lock")
-
-              if updated_lockfile.include?(desired_lockfile_content)
-                next updated_lockfile
-              end
-
               raise "Failed to update #{dependency.name}!"
             end
         end
