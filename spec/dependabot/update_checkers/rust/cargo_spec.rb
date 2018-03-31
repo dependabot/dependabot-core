@@ -233,6 +233,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to receive(:new).
         with(
           requirements: requirements,
+          latest_version: "0.1.39",
           latest_resolvable_version: "0.1.39",
           library: false
         ).

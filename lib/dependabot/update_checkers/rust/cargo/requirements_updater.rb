@@ -19,9 +19,15 @@ module Dependabot
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
 
-          def initialize(requirements:, library:, latest_resolvable_version:)
+          def initialize(requirements:, library:, latest_version:,
+                         latest_resolvable_version:)
             @requirements = requirements
             @library = library
+
+            if latest_version
+              @latest_version = Cargo::Version.new(latest_version)
+            end
+
             return unless latest_resolvable_version
             @latest_resolvable_version =
               Cargo::Version.new(latest_resolvable_version)
@@ -43,10 +49,14 @@ module Dependabot
 
           private
 
-          attr_reader :requirements, :latest_resolvable_version
+          attr_reader :requirements, :latest_version, :latest_resolvable_version
 
           def library?
             @library
+          end
+
+          def target_version
+            library? ? latest_version : latest_resolvable_version
           end
 
           def updated_app_requirement(req)
@@ -75,8 +85,7 @@ module Dependabot
             string_reqs = req[:requirement].split(",").map(&:strip)
             ruby_reqs = string_reqs.map { |r| Cargo::Requirement.new(r) }
 
-            latest_version = latest_resolvable_version
-            return req if ruby_reqs.all? { |r| r.satisfied_by?(latest_version) }
+            return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }
 
             # TODO: In future, we might want to treat libraries differently to
             # applications. Fo now, since Rust allows multiple versions of the
@@ -86,17 +95,15 @@ module Dependabot
 
           def update_version_string(req_string)
             req_string.sub(VERSION_REGEX) do |old_version|
-              if old_version.match?(/\d-/)
-                # For pre-release versions, just use the full version string
-                latest_resolvable_version.to_s
-              else
-                old_parts = old_version.split(".")
-                new_parts = latest_resolvable_version.to_s.split(".").
-                            first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old_parts[i] == "*" ? "*" : part
-                end.join(".")
-              end
+              # For pre-release versions, just use the full version string
+              next target_version.to_s if old_version.match?(/\d-/)
+
+              old_parts = old_version.split(".")
+              new_parts = target_version.to_s.split(".").
+                          first(old_parts.count)
+              new_parts.map.with_index do |part, i|
+                old_parts[i] == "*" ? "*" : part
+              end.join(".")
             end
           end
 
@@ -112,12 +119,12 @@ module Dependabot
             string_reqs.map do |req|
               next req unless req.match?(/[<>]/)
               ruby_req = Cargo::Requirement.new(req)
-              next req if ruby_req.satisfied_by?(latest_resolvable_version)
+              next req if ruby_req.satisfied_by?(target_version)
 
               raise UnfixableRequirement if req.start_with?(">")
 
               req.sub(VERSION_REGEX) do |old_version|
-                update_greatest_version(old_version, latest_resolvable_version)
+                update_greatest_version(old_version, target_version)
               end
             end.join(", ")
           rescue UnfixableRequirement

@@ -56,6 +56,7 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             latest_resolvable_version: latest_resolvable_version&.to_s,
+            latest_version: latest_version&.to_s,
             library: dependency.version.nil?
           ).updated_requirements
         end
