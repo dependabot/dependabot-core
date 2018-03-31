@@ -39,7 +39,7 @@ module Dependabot
             attr_reader :replacement_version
 
             def requires_file?(node)
-              node.children[1] == :require
+              %i(require require_relative).include?(node.children[1])
             end
 
             def node_assigns_to_version_constant?(node)
