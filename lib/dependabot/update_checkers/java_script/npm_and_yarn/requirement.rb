@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/java_script/npm_and_yarn/version"
+require "dependabot/utils/java_script/version"
 
 module Dependabot
   module UpdateCheckers

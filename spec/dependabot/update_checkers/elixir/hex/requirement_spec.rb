@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "dependabot/update_checkers/elixir/hex/requirement"
-require "dependabot/update_checkers/elixir/hex/version"
+require "dependabot/utils/elixir/version"
 
 RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
@@ -28,10 +28,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::Requirement do
       end
     end
 
-    context "with a Hex::Version" do
-      let(:version) do
-        Dependabot::UpdateCheckers::Elixir::Hex::Version.new(version_string)
-      end
+    context "with a Utils::Elixir::Version" do
+      let(:version) { Dependabot::Utils::Elixir::Version.new(version_string) }
 
       context "for the current version" do
         let(:version_string) { "1.0.0" }

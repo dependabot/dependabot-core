@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
+require "dependabot/utils/rust/version"
 
 module Dependabot
   module UpdateCheckers
@@ -10,7 +11,6 @@ module Dependabot
       class Cargo < Dependabot::UpdateCheckers::Base
         require_relative "cargo/requirements_updater"
         require_relative "cargo/requirement"
-        require_relative "cargo/version"
         require_relative "cargo/version_resolver"
 
         def latest_version
@@ -62,7 +62,7 @@ module Dependabot
         end
 
         def version_class
-          Cargo::Version
+          Utils::Rust::Version
         end
 
         private
@@ -78,7 +78,7 @@ module Dependabot
 
         def wants_prerelease?
           if dependency.version &&
-             Cargo::Version.new(dependency.version).prerelease?
+             version_class.new(dependency.version).prerelease?
             return true
           end
 
@@ -92,7 +92,7 @@ module Dependabot
           crates_listing.
             fetch("versions", []).
             reject { |v| v["yanked"] }.
-            map { |v| Cargo::Version.new(v.fetch("num")) }
+            map { |v| version_class.new(v.fetch("num")) }
         end
 
         def git_dependency?

@@ -6,6 +6,7 @@
 #######################################################
 
 require "dependabot/update_checkers/java/maven"
+require "dependabot/utils/java/version"
 
 module Dependabot
   module UpdateCheckers
@@ -41,7 +42,7 @@ module Dependabot
           attr_reader :requirements, :latest_version
 
           def version_class
-            Maven::Version
+            Utils::Java::Version
           end
         end
       end

@@ -4,6 +4,7 @@ require "toml-rb"
 require "dependabot/shared_helpers"
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/update_checkers/rust/cargo"
+require "dependabot/utils/rust/version"
 
 module Dependabot
   module UpdateCheckers
@@ -41,7 +42,7 @@ module Dependabot
                                 fetch("version")
 
               return updated_version if updated_version.nil?
-              Gem::Version.new(updated_version)
+              Utils::Rust::Version.new(updated_version)
             end
           end
 

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "dependabot/update_checkers/java_script/npm_and_yarn/requirement"
-require "dependabot/update_checkers/java_script/npm_and_yarn/version"
+require "dependabot/utils/java_script/version"
 
 namespace = Dependabot::UpdateCheckers::JavaScript
 RSpec.describe namespace::NpmAndYarn::Requirement do

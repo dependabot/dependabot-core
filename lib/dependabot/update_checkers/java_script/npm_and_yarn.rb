@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
+require "dependabot/utils/java_script/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -11,7 +12,6 @@ module Dependabot
     module JavaScript
       class NpmAndYarn < Dependabot::UpdateCheckers::Base
         require_relative "npm_and_yarn/requirements_updater"
-        require_relative "npm_and_yarn/version"
         require_relative "npm_and_yarn/requirement"
         require_relative "npm_and_yarn/registry_finder"
         require_relative "npm_and_yarn/library_detector"
@@ -63,7 +63,7 @@ module Dependabot
         end
 
         def version_class
-          NpmAndYarn::Version
+          Utils::JavaScript::Version
         end
 
         private

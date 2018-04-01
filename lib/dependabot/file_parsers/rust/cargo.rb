@@ -5,7 +5,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/update_checkers/rust/cargo/requirement"
-require "dependabot/update_checkers/rust/cargo/version"
+require "dependabot/utils/rust/version"
 require "dependabot/errors"
 
 # Relevant Cargo docs can be found at:

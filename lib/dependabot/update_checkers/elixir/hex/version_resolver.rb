@@ -2,8 +2,8 @@
 
 require "excon"
 
+require "dependabot/utils/elixir/version"
 require "dependabot/update_checkers/elixir/hex"
-require "dependabot/update_checkers/elixir/hex/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -67,7 +67,7 @@ module Dependabot
           end
 
           def version_class
-            Hex::Version
+            Utils::Elixir::Version
           end
 
           def mix_env

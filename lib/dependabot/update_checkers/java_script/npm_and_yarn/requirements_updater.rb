@@ -6,7 +6,7 @@
 ################################################################################
 
 require "dependabot/update_checkers/java_script/npm_and_yarn"
-require "dependabot/update_checkers/java_script/npm_and_yarn/version"
+require "dependabot/utils/java_script/version"
 require "dependabot/update_checkers/java_script/npm_and_yarn/requirement"
 
 module Dependabot
@@ -163,7 +163,7 @@ module Dependabot
           end
 
           def version_class
-            NpmAndYarn::Version
+            Utils::JavaScript::Version
           end
         end
       end

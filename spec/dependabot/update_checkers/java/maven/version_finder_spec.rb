@@ -6,7 +6,7 @@ require "dependabot/update_checkers/java/maven/version_finder"
 
 RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
   let(:finder) { described_class.new(dependency: dependency) }
-  let(:version_class) { Dependabot::UpdateCheckers::Java::Maven::Version }
+  let(:version_class) { Dependabot::Utils::Java::Version }
 
   let(:dependency) do
     Dependabot::Dependency.new(

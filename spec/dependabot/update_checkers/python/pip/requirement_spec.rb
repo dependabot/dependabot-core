@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "dependabot/update_checkers/python/pip/requirement"
-require "dependabot/update_checkers/python/pip/version"
+require "dependabot/utils/python/version"
 
 RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
@@ -68,9 +68,9 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Requirement do
       end
     end
 
-    context "with a Pip::Version" do
+    context "with a Utils::Python::Version" do
       let(:version) do
-        Dependabot::UpdateCheckers::Python::Pip::Version.new(version_string)
+        Dependabot::Utils::Python::Version.new(version_string)
       end
 
       context "for the current version" do

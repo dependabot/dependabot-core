@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/python/pip"
-require "dependabot/update_checkers/python/pip/version"
+require "dependabot/utils/python/version"
 
 module Dependabot
   module UpdateCheckers
@@ -9,13 +9,15 @@ module Dependabot
       class Pip
         class Requirement < Gem::Requirement
           quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
-          version_pattern = Pip::Version::VERSION_PATTERN
+          version_pattern = Utils::Python::Version::VERSION_PATTERN
 
           PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
           PATTERN = /\A#{PATTERN_RAW}\z/
 
           def self.parse(obj)
-            return ["=", Pip::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
+            if obj.is_a?(Gem::Version)
+              return ["=", Utils::Python::Version.new(obj.to_s)]
+            end
 
             unless (matches = PATTERN.match(obj.to_s))
               msg = "Illformed requirement [#{obj.inspect}]"
@@ -23,7 +25,7 @@ module Dependabot
             end
 
             return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
-            [matches[1] || "=", Pip::Version.new(matches[2])]
+            [matches[1] || "=", Utils::Python::Version.new(matches[2])]
           end
 
           def initialize(*requirements)
@@ -35,7 +37,7 @@ module Dependabot
           end
 
           def satisfied_by?(version)
-            version = Pip::Version.new(version.to_s)
+            version = Utils::Python::Version.new(version.to_s)
             super
           end
 

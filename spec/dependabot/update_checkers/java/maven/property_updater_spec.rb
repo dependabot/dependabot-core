@@ -13,7 +13,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
     )
   end
 
-  let(:version_class) { Dependabot::UpdateCheckers::Java::Maven::Version }
+  let(:version_class) { Dependabot::Utils::Java::Version }
   let(:target_version) { version_class.new("23.6-jre") }
 
   let(:dependency) do

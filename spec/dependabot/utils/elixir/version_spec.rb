@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/python/pip/version"
+require "dependabot/utils/elixir/version"
 
-RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
+RSpec.describe Dependabot::Utils::Elixir::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
@@ -14,8 +14,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq(true) }
 
-      context "that includes a local version" do
+      context "that includes build information" do
         let(:version_string) { "1.0.0+abc.1" }
+        it { is_expected.to eq(true) }
+      end
+
+      context "that includes pre-release details" do
+        let(:version_string) { "1.0.0-beta+abc.1" }
         it { is_expected.to eq(true) }
       end
     end
@@ -39,9 +44,14 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       it { is_expected.to eq "1.0.0" }
     end
 
-    context "with a local version" do
+    context "with build information" do
       let(:version_string) { "1.0.0+gc.1" }
       it { is_expected.to eq "1.0.0+gc.1" }
+    end
+
+    context "with pre-release details" do
+      let(:version_string) { "1.0.0-beta+abc.1" }
+      it { is_expected.to eq("1.0.0-beta+abc.1") }
     end
   end
 
@@ -58,7 +68,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
         let(:other_version) { Gem::Version.new("1.0.0") }
         it { is_expected.to eq(0) }
 
-        context "but our version has a local version" do
+        context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(1) }
         end
@@ -70,7 +80,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       end
     end
 
-    context "compared to a Pip::Version" do
+    context "compared to a Utils::Python::Version" do
       context "that is lower" do
         let(:other_version) { described_class.new("0.9.0") }
         it { is_expected.to eq(1) }
@@ -80,29 +90,17 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
         let(:other_version) { described_class.new("1.0.0") }
         it { is_expected.to eq(0) }
 
-        context "but our version has a local version" do
+        context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(1) }
         end
 
-        context "with a prerelease specifier that needs normalising" do
-          let(:version_string) { "1.0.0c1" }
-          let(:other_version) { described_class.new("1.0.0rc1") }
-          it { is_expected.to eq(0) }
-
-          context "with a dash that needs sanitizing" do
-            let(:version_string) { "0.5.4-alpha" }
-            let(:other_version) { described_class.new("0.5.4a0") }
-            it { is_expected.to eq(0) }
-          end
-        end
-
-        context "but the other version has a local version" do
+        context "but the other version has build information" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
           it { is_expected.to eq(-1) }
         end
 
-        context "and both sides have a local version" do
+        context "and both sides have build information" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
 
           context "that is equal" do
@@ -130,12 +128,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       context "that is greater" do
         let(:other_version) { described_class.new("1.1.0") }
         it { is_expected.to eq(-1) }
-
-        context "with a dash that needs sanitizing" do
-          let(:version_string) { "0.5.4-alpha" }
-          let(:other_version) { described_class.new("0.5.4a1") }
-          it { is_expected.to eq(-1) }
-        end
       end
     end
   end
@@ -154,7 +146,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Version do
       it { is_expected.to eq(false) }
     end
 
-    context "with a valid local version" do
+    context "with a valid build information" do
       let(:version_string) { "1.1.0+gc.1" }
       it { is_expected.to eq(true) }
     end

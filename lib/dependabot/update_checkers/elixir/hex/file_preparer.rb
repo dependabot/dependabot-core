@@ -2,6 +2,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/elixir/hex"
+require "dependabot/utils/elixir/version"
 
 module Dependabot
   module UpdateCheckers
@@ -140,7 +141,7 @@ module Dependabot
           end
 
           def version_class
-            Hex::Version
+            Utils::Elixir::Version
           end
 
           def dependency_appears_in_file?(file_name)

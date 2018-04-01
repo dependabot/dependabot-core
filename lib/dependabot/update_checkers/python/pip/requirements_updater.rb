@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/python/pip"
-require "dependabot/update_checkers/python/pip/version"
+require "dependabot/utils/python/version"
 require "dependabot/update_checkers/python/pip/requirement"
 
 module Dependabot
@@ -15,11 +15,13 @@ module Dependabot
                          latest_resolvable_version:)
             @requirements = requirements
 
-            @latest_version = Pip::Version.new(latest_version) if latest_version
+            if latest_version
+              @latest_version = Utils::Python::Version.new(latest_version)
+            end
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Pip::Version.new(latest_resolvable_version)
+              Utils::Python::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -164,9 +166,9 @@ module Dependabot
           def update_greatest_version(req_string, version_to_be_permitted)
             if version_to_be_permitted.is_a?(String)
               version_to_be_permitted =
-                Pip::Version.new(version_to_be_permitted)
+                Utils::Python::Version.new(version_to_be_permitted)
             end
-            version = Pip::Version.new(req_string.gsub(/<=?/, ""))
+            version = Utils::Python::Version.new(req_string.gsub(/<=?/, ""))
             version = version.release if version.prerelease?
 
             index_to_update =

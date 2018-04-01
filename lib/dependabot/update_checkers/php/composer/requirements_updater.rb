@@ -6,7 +6,7 @@
 ################################################################################
 
 require "dependabot/update_checkers/php/composer"
-require "dependabot/update_checkers/php/composer/version"
+require "dependabot/utils/php/version"
 require "dependabot/update_checkers/php/composer/requirement"
 
 module Dependabot
@@ -225,7 +225,7 @@ module Dependabot
           end
 
           def version_class
-            Composer::Version
+            Utils::Php::Version
           end
         end
       end

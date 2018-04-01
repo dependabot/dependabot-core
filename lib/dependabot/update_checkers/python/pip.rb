@@ -3,6 +3,7 @@
 require "excon"
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
+require "dependabot/utils/python/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -10,7 +11,6 @@ module Dependabot
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
         require_relative "pip/requirements_updater"
-        require_relative "pip/version"
         require_relative "pip/requirement"
 
         def latest_version
@@ -50,7 +50,7 @@ module Dependabot
         end
 
         def version_class
-          Pip::Version
+          Utils::Python::Version
         end
 
         private
@@ -75,7 +75,8 @@ module Dependabot
 
         def wants_prerelease?
           if dependency.version
-            return Pip::Version.new(dependency.version.tr("+", ".")).prerelease?
+            version = version_class.new(dependency.version.tr("+", "."))
+            return version.prerelease?
           end
 
           dependency.requirements.any? do |req|
@@ -102,8 +103,8 @@ module Dependabot
                   gsub(/#{name_regex}-/i, "").
                   split(/-|(\.tar\.gz)/).
                   first
-                next unless Pip::Version.correct?(version)
-                Pip::Version.new(version)
+                next unless version_class.correct?(version)
+                version_class.new(version)
               end.compact
           end
         end

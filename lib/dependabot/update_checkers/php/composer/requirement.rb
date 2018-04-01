@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/php/composer/version"
+require "dependabot/update_checkers/php/composer"
+require "dependabot/utils/php/version"
 
 module Dependabot
   module UpdateCheckers

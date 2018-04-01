@@ -2,6 +2,7 @@
 
 require "excon"
 require "dependabot/update_checkers/base"
+require "dependabot/utils/php/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -12,7 +13,6 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         require_relative "composer/requirements_updater"
-        require_relative "composer/version"
         require_relative "composer/requirement"
 
         def latest_version
@@ -48,7 +48,7 @@ module Dependabot
         end
 
         def version_class
-          Composer::Version
+          Utils::Php::Version
         end
 
         private

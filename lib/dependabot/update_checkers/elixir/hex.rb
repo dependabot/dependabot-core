@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
+require "dependabot/utils/elixir/version"
 require "dependabot/shared_helpers"
 
 require "json"
@@ -12,7 +13,6 @@ module Dependabot
     module Elixir
       class Hex < Dependabot::UpdateCheckers::Base
         require_relative "hex/file_preparer"
-        require_relative "hex/version"
         require_relative "hex/requirements_updater"
         require_relative "hex/version_resolver"
 
@@ -50,7 +50,7 @@ module Dependabot
         end
 
         def version_class
-          Hex::Version
+          Utils::Elixir::Version
         end
 
         private

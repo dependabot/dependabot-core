@@ -206,7 +206,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
             context "to a new pre-release version" do
               let(:latest_resolvable_version) do
-                module_to_test::NpmAndYarn::Version.new("1.2.3-beta.2")
+                Utils::JavaScript::Version.new("1.2.3-beta.2")
               end
               let(:package_json_req_string) { "1.2.3-beta" }
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }

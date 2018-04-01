@@ -23,7 +23,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
   let(:pom_req_string) { "23.3-jre" }
   let(:latest_version) { version_class.new("23.6-jre") }
 
-  let(:version_class) { Dependabot::UpdateCheckers::Java::Maven::Version }
+  let(:version_class) { Dependabot::Utils::Java::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }

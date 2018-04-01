@@ -8,7 +8,7 @@
 
 require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/rust/cargo/requirement"
-require "dependabot/update_checkers/rust/cargo/version"
+require "dependabot/utils/rust/version"
 
 module Dependabot
   module UpdateCheckers
@@ -25,12 +25,12 @@ module Dependabot
             @library = library
 
             if latest_version
-              @latest_version = Cargo::Version.new(latest_version)
+              @latest_version = Utils::Rust::Version.new(latest_version)
             end
 
             return unless latest_resolvable_version
             @latest_resolvable_version =
-              Cargo::Version.new(latest_resolvable_version)
+              Utils::Rust::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -132,7 +132,7 @@ module Dependabot
           end
 
           def update_greatest_version(old_version, version_to_be_permitted)
-            version = Cargo::Version.new(old_version)
+            version = Utils::Rust::Version.new(old_version)
             version = version.release if version.prerelease?
 
             index_to_update =

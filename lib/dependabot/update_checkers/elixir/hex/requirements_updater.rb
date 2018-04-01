@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/utils/elixir/version"
 require "dependabot/update_checkers/elixir/hex"
-require "dependabot/update_checkers/elixir/hex/version"
 require "dependabot/update_checkers/elixir/hex/requirement"
 
 module Dependabot
@@ -20,9 +20,11 @@ module Dependabot
             @updated_source = updated_source
 
             return unless latest_resolvable_version
-            return unless Hex::Version.correct?(latest_resolvable_version)
+            unless Utils::Elixir::Version.correct?(latest_resolvable_version)
+              return
+            end
             @latest_resolvable_version =
-              Hex::Version.new(latest_resolvable_version)
+              Utils::Elixir::Version.new(latest_resolvable_version)
           end
 
           def updated_requirements
@@ -82,7 +84,8 @@ module Dependabot
 
           def update_exact_version(previous_req, new_version)
             op = previous_req.match(OPERATORS).to_s
-            old_version = Hex::Version.new(previous_req.gsub(OPERATORS, ""))
+            old_version =
+              Utils::Elixir::Version.new(previous_req.gsub(OPERATORS, ""))
             updated_version = at_same_precision(new_version, old_version)
             "#{op} #{updated_version}".strip
           end
@@ -124,7 +127,7 @@ module Dependabot
           def update_greatest_version(requirement, version_to_be_permitted)
             if version_to_be_permitted.is_a?(String)
               version_to_be_permitted =
-                Hex::Version.new(version_to_be_permitted)
+                Utils::Elixir::Version.new(version_to_be_permitted)
             end
             op, version = requirement.requirements.first
             version = version.release if version.prerelease?

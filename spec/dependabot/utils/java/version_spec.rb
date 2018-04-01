@@ -1,28 +1,33 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/php/composer/version"
+require "dependabot/utils/java/version"
 
-RSpec.describe Dependabot::UpdateCheckers::Php::Composer::Version do
+RSpec.describe Dependabot::Utils::Java::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
   describe "#to_s" do
     subject { version.to_s }
 
-    context "with a non-prerelease" do
+    context "with no dashes" do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq "1.0.0" }
     end
 
-    context "with a normal prerelease" do
+    context "with a dot-specified prerelease" do
       let(:version_string) { "1.0.0.pre1" }
       it { is_expected.to eq "1.0.0.pre1" }
     end
 
-    context "with a PHP-style prerelease" do
+    context "with a dash-specified prerelease" do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
+    end
+
+    context "with an underscore-specified prerelease" do
+      let(:version_string) { "1.0.0_pre1" }
+      it { is_expected.to eq "1.0.0_pre1" }
     end
   end
 
@@ -40,7 +45,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::Version do
       it { is_expected.to eq(false) }
     end
 
-    context "with a valid prerelease version" do
+    context "with a valid dash-separated version" do
       let(:version_string) { "1.1.0-pre" }
       it { is_expected.to eq(true) }
     end

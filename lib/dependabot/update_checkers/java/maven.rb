@@ -2,13 +2,13 @@
 
 require "dependabot/update_checkers/base"
 require "dependabot/file_updaters/java/maven/declaration_finder"
+require "dependabot/utils/java/version"
 
 module Dependabot
   module UpdateCheckers
     module Java
       class Maven < Dependabot::UpdateCheckers::Base
         require_relative "maven/requirements_updater"
-        require_relative "maven/version"
         require_relative "maven/version_finder"
         require_relative "maven/property_updater"
 
@@ -47,7 +47,7 @@ module Dependabot
         end
 
         def version_class
-          Maven::Version
+          Utils::Java::Version
         end
 
         private

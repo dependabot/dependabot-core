@@ -3,7 +3,7 @@
 require "nokogiri"
 require "dependabot/shared_helpers"
 require "dependabot/update_checkers/java/maven"
-require "dependabot/update_checkers/java/maven/version"
+require "dependabot/utils/java/version"
 
 module Dependabot
   module UpdateCheckers
@@ -16,14 +16,14 @@ module Dependabot
 
           def latest_release
             return if maven_central_latest_version.nil?
-            Maven::Version.new(maven_central_latest_version)
+            Utils::Java::Version.new(maven_central_latest_version)
           end
 
           def versions
             maven_central_dependency_metadata.
               css("versions > version").
-              select { |node| Maven::Version.correct?(node.content) }.
-              map { |node| Maven::Version.new(node.content) }.sort
+              select { |node| Utils::Java::Version.correct?(node.content) }.
+              map { |node| Utils::Java::Version.new(node.content) }.sort
           end
 
           private

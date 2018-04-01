@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/java_script/npm_and_yarn/version"
+require "dependabot/utils/php/version"
 
-RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn::Version do
+RSpec.describe Dependabot::Utils::Php::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
@@ -20,7 +20,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn::Version do
       it { is_expected.to eq "1.0.0.pre1" }
     end
 
-    context "with a JS-style prerelease" do
+    context "with a PHP-style prerelease" do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end

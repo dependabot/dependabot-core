@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "dependabot/update_checkers/php/composer/requirement"
-require "dependabot/update_checkers/php/composer/version"
+require "dependabot/utils/php/version"
 
 RSpec.describe Dependabot::UpdateCheckers::Php::Composer::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
