@@ -7,7 +7,7 @@
 
 require "dependabot/update_checkers/php/composer"
 require "dependabot/utils/php/version"
-require "dependabot/update_checkers/php/composer/requirement"
+require "dependabot/utils/php/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -135,10 +135,12 @@ module Dependabot
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  Composer::Requirement.new(r_string)
+                  Utils::Php::Requirement.new(r_string)
                 end
 
-              Composer::Requirement.new(ruby_requirements.join(",").split(","))
+              Utils::Php::Requirement.new(
+                ruby_requirements.join(",").split(",")
+              )
             end
           end
 

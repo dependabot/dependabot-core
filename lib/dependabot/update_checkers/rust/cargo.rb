@@ -10,7 +10,6 @@ module Dependabot
     module Rust
       class Cargo < Dependabot::UpdateCheckers::Base
         require_relative "cargo/requirements_updater"
-        require_relative "cargo/requirement"
         require_relative "cargo/version_resolver"
 
         def latest_version

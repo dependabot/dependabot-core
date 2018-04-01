@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/java/maven"
+require "dependabot/utils/java/version"
 require_relative "../shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
@@ -13,6 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     "https://search.maven.org/remotecontent?filepath="\
     "com/google/guava/guava/maven-metadata.xml"
   end
+  let(:version_class) { Dependabot::Utils::Java::Version }
 
   before do
     stub_request(:get, maven_central_metadata_url).
@@ -52,7 +54,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+    it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when Maven Central doesn't return a release tag" do
       before do
@@ -63,17 +65,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           )
       end
 
-      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
     context "when the user doesn't want a pre-release" do
       let(:dependency_version) { "18.0" }
-      it { is_expected.to eq(described_class::Version.new("23.0")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      it { is_expected.to eq(described_class::Version.new("23.0")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "when the version comes from a property" do
@@ -95,18 +97,18 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
 
-      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
-        it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+        it { is_expected.to eq(version_class.new("23.6-jre")) }
       end
     end
   end
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
-    it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+    it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when the version comes from a property" do
       let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
@@ -127,7 +129,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
 
-      it { is_expected.to eq(described_class::Version.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
@@ -142,7 +144,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     before do
       allow(checker).
         to receive(:latest_version).
-        and_return(described_class::Version.new("23.6-jre"))
+        and_return(version_class.new("23.6-jre"))
     end
 
     it "delegates to the RequirementsUpdater" do
@@ -205,7 +207,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       before do
         allow(checker).
           to receive(:latest_version).
-          and_return(described_class::Version.new("23.6-jre"))
+          and_return(version_class.new("23.6-jre"))
         stub_request(:get, maven_central_metadata_url_beans).
           to_return(
             status: 200,
@@ -224,7 +226,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
-            target_version: described_class::Version.new("23.6-jre")
+            target_version: version_class.new("23.6-jre")
           ).
           and_call_original
         expect(subject).to eq(true)
@@ -260,7 +262,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       before do
         allow(checker).
           to receive(:latest_version).
-          and_return(described_class::Version.new("23.6-jre"))
+          and_return(version_class.new("23.6-jre"))
         stub_request(:get, maven_central_metadata_url_beans).
           to_return(
             status: 200,
@@ -279,7 +281,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
-            target_version: described_class::Version.new("23.6-jre")
+            target_version: version_class.new("23.6-jre")
           ).
           and_call_original
         expect(subject).to eq(

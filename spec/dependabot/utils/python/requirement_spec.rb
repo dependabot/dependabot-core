@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/python/pip/requirement"
+require "dependabot/utils/python/requirement"
 require "dependabot/utils/python/version"
 
-RSpec.describe Dependabot::UpdateCheckers::Python::Pip::Requirement do
+RSpec.describe Dependabot::Utils::Python::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 

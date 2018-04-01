@@ -4,7 +4,7 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
-require "dependabot/update_checkers/rust/cargo/requirement"
+require "dependabot/utils/rust/requirement"
 require "dependabot/utils/rust/version"
 require "dependabot/errors"
 
@@ -100,7 +100,7 @@ module Dependabot
             select { |p| p["name"] == name }
 
           if (req = requirement_from_declaration(declaration))
-            req = UpdateCheckers::Rust::Cargo::Requirement.new(req)
+            req = Utils::Rust::Requirement.new(req)
 
             candidate_packages =
               candidate_packages.
@@ -151,7 +151,7 @@ module Dependabot
         end
 
         def version_class
-          UpdateCheckers::Rust::Cargo::Version
+          Utils::Rust::Version
         end
       end
     end

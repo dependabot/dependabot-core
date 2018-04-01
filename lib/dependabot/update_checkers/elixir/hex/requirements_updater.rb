@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/elixir/version"
+require "dependabot/utils/elixir/requirement"
 require "dependabot/update_checkers/elixir/hex"
-require "dependabot/update_checkers/elixir/hex/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -75,10 +75,10 @@ module Dependabot
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
               ruby_requirements =
                 req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  Hex::Requirement.new(r_string)
+                  requirement_class.new(r_string)
                 end
 
-              Hex::Requirement.new(ruby_requirements.map(&:to_s))
+              requirement_class.new(ruby_requirements.map(&:to_s))
             end
           end
 
@@ -91,14 +91,14 @@ module Dependabot
           end
 
           def update_twiddle_version(previous_req, new_version)
-            previous_req = Hex::Requirement.new(previous_req)
+            previous_req = requirement_class.new(previous_req)
             old_version = previous_req.requirements.first.last
             updated_version = at_same_precision(new_version, old_version)
-            Hex::Requirement.new("~> #{updated_version}")
+            requirement_class.new("~> #{updated_version}")
           end
 
           def update_mixfile_range(requirements)
-            requirements = requirements.map { |r| Hex::Requirement.new(r) }
+            requirements = requirements.map { |r| requirement_class.new(r) }
             updated_requirements =
               requirements.flat_map do |r|
                 next r if r.satisfied_by?(latest_resolvable_version)
@@ -144,7 +144,7 @@ module Dependabot
               end
             end
 
-            Hex::Requirement.new("#{op} #{new_segments.join('.')}")
+            requirement_class.new("#{op} #{new_segments.join('.')}")
           end
 
           def binding_requirements(requirements)
@@ -161,8 +161,12 @@ module Dependabot
               end
             end.uniq
 
-            binding_reqs << Hex::Requirement.new if binding_reqs.empty?
+            binding_reqs << requirement_class.new if binding_reqs.empty?
             binding_reqs.sort_by { |r| r.requirements.first.last }
+          end
+
+          def requirement_class
+            Utils::Elixir::Requirement
           end
         end
       end

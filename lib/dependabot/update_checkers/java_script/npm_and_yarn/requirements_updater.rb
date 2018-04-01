@@ -7,7 +7,7 @@
 
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/utils/java_script/version"
-require "dependabot/update_checkers/java_script/npm_and_yarn/requirement"
+require "dependabot/utils/java_script/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -104,7 +104,8 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            NpmAndYarn::Requirement.requirements_array(requirement_string)
+            Utils::JavaScript::Requirement.
+              requirements_array(requirement_string)
           end
 
           def update_range_requirement(req_string)

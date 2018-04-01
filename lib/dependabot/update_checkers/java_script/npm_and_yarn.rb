@@ -4,6 +4,7 @@ require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/utils/java_script/version"
+require "dependabot/utils/java_script/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -12,7 +13,6 @@ module Dependabot
     module JavaScript
       class NpmAndYarn < Dependabot::UpdateCheckers::Base
         require_relative "npm_and_yarn/requirements_updater"
-        require_relative "npm_and_yarn/requirement"
         require_relative "npm_and_yarn/registry_finder"
         require_relative "npm_and_yarn/library_detector"
 
@@ -33,7 +33,9 @@ module Dependabot
           end
 
           reqs = dependency.requirements.map do |r|
-            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+            Utils::JavaScript::Requirement.requirements_array(
+              r.fetch(:requirement)
+            )
           end.compact
 
           (npm_details || {}).fetch("versions", {}).
@@ -79,7 +81,9 @@ module Dependabot
 
         def latest_resolvable_version_with_no_unlock_for_git_dependency
           reqs = dependency.requirements.map do |r|
-            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+            Utils::JavaScript::Requirement.requirements_array(
+              r.fetch(:requirement)
+            )
           end.compact
 
           return dependency.version if git_commit_checker.pinned?

@@ -2,7 +2,7 @@
 
 require "dependabot/update_checkers/python/pip"
 require "dependabot/utils/python/version"
-require "dependabot/update_checkers/python/pip/requirement"
+require "dependabot/utils/python/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -44,12 +44,12 @@ module Dependabot
             req_strings = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
-              if req_strings.any? { |r| Pip::Requirement.new(r).exact? }
+              if req_strings.any? { |r| requirement_class.new(r).exact? }
                 find_and_update_equality_match(req_strings)
               elsif req_strings.any? { |r| r.start_with?("~=", "==") }
                 tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
                 convert_twidle_to_range(
-                  Pip::Requirement.new(tw_req),
+                  requirement_class.new(tw_req),
                   latest_resolvable_version
                 )
               else
@@ -81,12 +81,12 @@ module Dependabot
           end
 
           def new_version_satisfies?(req)
-            Pip::Requirement.new(req.fetch(:requirement).split(",")).
+            requirement_class.new(req.fetch(:requirement).split(",")).
               satisfied_by?(latest_resolvable_version)
           end
 
           def find_and_update_equality_match(requirement_strings)
-            if requirement_strings.any? { |r| Pip::Requirement.new(r).exact? }
+            if requirement_strings.any? { |r| requirement_class.new(r).exact? }
               # True equality match
               "==#{latest_resolvable_version}"
             else
@@ -113,7 +113,7 @@ module Dependabot
 
           def update_requirements_range(requirement_strings)
             ruby_requirements =
-              requirement_strings.map { |r| Pip::Requirement.new(r) }
+              requirement_strings.map { |r| requirement_class.new(r) }
 
             updated_requirement_strings = ruby_requirements.flat_map do |r|
               next r.to_s if r.satisfied_by?(latest_resolvable_version)
@@ -129,7 +129,7 @@ module Dependabot
             end.compact
 
             updated_requirement_strings.
-              sort_by { |r| Pip::Requirement.new(r).requirements.first.last }.
+              sort_by { |r| requirement_class.new(r).requirements.first.last }.
               map(&:to_s).join(",").delete(" ")
           end
 
@@ -184,6 +184,10 @@ module Dependabot
             end
 
             new_segments.join(".")
+          end
+
+          def requirement_class
+            Utils::Python::Requirement
           end
         end
       end

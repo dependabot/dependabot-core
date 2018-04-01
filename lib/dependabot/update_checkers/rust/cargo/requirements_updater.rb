@@ -7,7 +7,7 @@
 ################################################################################
 
 require "dependabot/update_checkers/rust/cargo"
-require "dependabot/update_checkers/rust/cargo/requirement"
+require "dependabot/utils/rust/requirement"
 require "dependabot/utils/rust/version"
 
 module Dependabot
@@ -83,7 +83,7 @@ module Dependabot
 
           def updated_library_requirement(req)
             string_reqs = req[:requirement].split(",").map(&:strip)
-            ruby_reqs = string_reqs.map { |r| Cargo::Requirement.new(r) }
+            ruby_reqs = string_reqs.map { |r| Utils::Rust::Requirement.new(r) }
 
             return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }
 
@@ -112,13 +112,13 @@ module Dependabot
           end
 
           def exact_req(string_reqs)
-            string_reqs.find { |r| Cargo::Requirement.new(r).exact? }
+            string_reqs.find { |r| Utils::Rust::Requirement.new(r).exact? }
           end
 
           def update_range_requirements(string_reqs)
             string_reqs.map do |req|
               next req unless req.match?(/[<>]/)
-              ruby_req = Cargo::Requirement.new(req)
+              ruby_req = Utils::Rust::Requirement.new(req)
               next req if ruby_req.satisfied_by?(target_version)
 
               raise UnfixableRequirement if req.start_with?(">")

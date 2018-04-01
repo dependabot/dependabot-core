@@ -4,6 +4,7 @@ require "excon"
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
 require "dependabot/utils/python/version"
+require "dependabot/utils/python/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -11,7 +12,6 @@ module Dependabot
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
         require_relative "pip/requirements_updater"
-        require_relative "pip/requirement"
 
         def latest_version
           @latest_version ||= fetch_latest_version
@@ -32,7 +32,7 @@ module Dependabot
             begin
               versions = available_versions
               reqs = dependency.requirements.map do |r|
-                Pip::Requirement.new(r.fetch(:requirement).split(","))
+                Utils::Python::Requirement.new(r.fetch(:requirement).split(","))
               end
               versions.reject!(&:prerelease?) unless wants_prerelease?
               versions.sort.reverse.find do |v|

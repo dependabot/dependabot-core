@@ -13,7 +13,6 @@ module Dependabot
     module Php
       class Composer < Dependabot::UpdateCheckers::Base
         require_relative "composer/requirements_updater"
-        require_relative "composer/requirement"
 
         def latest_version
           # Fall back to latest_resolvable_version if no listings found
