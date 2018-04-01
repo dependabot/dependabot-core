@@ -1,3 +1,7 @@
+## v0.53.0, 2 April 2018
+
+- BREAKING: Move Version and Requirement classes into Utils namespace
+
 ## v0.52.30, 1 April 2018
 
 - Add convenience methods for accessing version and requirement classes
