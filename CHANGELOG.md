@@ -1,3 +1,7 @@
+## v0.52.30, 1 April 2018
+
+- Add convenience methods for accessing version and requirement classes
+
 ## v0.52.29, 31 March 2018
 
 - Rust: Target latest version, not latest resolvable version, for libraries
