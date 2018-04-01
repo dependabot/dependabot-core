@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "./lib/dependabot/version"
+require "./lib/dependabot"
 
 Gem::Specification.new do |spec|
   spec.name         = "dependabot-core"

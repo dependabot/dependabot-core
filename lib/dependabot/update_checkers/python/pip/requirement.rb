@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/update_checkers/python/pip"
 require "dependabot/update_checkers/python/pip/version"
 
 module Dependabot
