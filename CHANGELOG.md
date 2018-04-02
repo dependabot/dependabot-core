@@ -1,3 +1,8 @@
+## v0.53.3, 2 April 2018
+
+- Truncate long vulnerability descriptions
+- Include source details for security vulnerabilities
+
 ## v0.53.2, 2 April 2018
 
 - Add [security] prefix to PR names for PRs that fix vulnerabilities
