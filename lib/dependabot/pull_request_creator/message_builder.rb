@@ -429,7 +429,7 @@ module Dependabot
       end
 
       def sanitize_links_and_mentions(text)
-        text = text.gsub(/(?<![A-Za-z0-9])@[A-Za-z0-9]+/) do |mention|
+        text = text.gsub(/(?<![A-Za-z0-9\-])@[A-Za-z0-9\-]+/) do |mention|
           "[**#{mention.tr('@', '')}**]"\
           "(https://github.com/#{mention.tr('@', '')})"
         end
