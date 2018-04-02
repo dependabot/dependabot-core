@@ -217,23 +217,7 @@ module Dependabot
         return "" unless fixed_vulns&.any?
 
         msg = "\n<details>\n<summary>Vulnerabilities fixed</summary>\n\n"
-
-        fixed_vulns.each do |details|
-          if details["title"]
-            title = details["title"].lines.map(&:strip).join(" ")
-            msg += "> **#{title}**\n"
-          end
-          if (description = details["description"])
-            description.strip.lines.first(10).each do |line|
-              msg += "> #{line}"
-            end
-            msg += "> ... (truncated)\n" if description.strip.lines.count > 10
-          end
-          msg += "\n> \n"
-          msg += "> Patched versions: #{details['patched_versions']}\n"
-          msg += "> Unaffected versions: #{details['unaffected_versions']}\n"
-          msg += "\n"
-        end
+        fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
         msg += "</details>"
         sanitize_template_tags(msg)
       end
@@ -320,6 +304,34 @@ module Dependabot
         msg = link_issues(text: msg, dependency: dep)
         sanitize_template_tags(msg)
       end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      def serialized_vulnerability_details(details)
+        msg = ""
+
+        if details["source_url"] && details["source_name"]
+          msg += "*Sourced from [#{details['source_name']}]"\
+                 "(#{details['source_url']}).*\n\n"
+        elsif details["source_name"]
+          msg += "*Sourced from #{details['source_name']}.*\n\n"
+        end
+
+        if details["title"]
+          msg += "> **#{details['title'].lines.map(&:strip).join(' ')}**\n"
+        end
+
+        if (description = details["description"])
+          description.strip.lines.first(10).each { |line| msg += "> #{line}" }
+          msg += "> ... (truncated)\n" if description.strip.lines.count > 10
+        end
+
+        msg + "\n"\
+              "> \n"\
+              "> Patched versions: #{details['patched_versions']}\n"\
+              "> Unaffected versions: #{details['unaffected_versions']}\n"\
+              "\n"
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def releases_url(dependency)
         metadata_finder(dependency).releases_url
