@@ -1,3 +1,7 @@
+## v0.53.4, 2 April 2018
+
+- Create Utils::Ruby::Requirement class
+
 ## v0.53.3, 2 April 2018
 
 - Truncate long vulnerability descriptions
