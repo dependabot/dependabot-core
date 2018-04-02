@@ -1,3 +1,7 @@
+## v0.53.5, 3 April 2018
+
+- Handle comma separated requirement strings in Utils::Php::Requirement
+
 ## v0.53.4, 2 April 2018
 
 - Create Utils::Ruby::Requirement class
