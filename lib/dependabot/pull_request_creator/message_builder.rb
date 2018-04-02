@@ -223,7 +223,12 @@ module Dependabot
             title = details["title"].lines.map(&:strip).join(" ")
             msg += "> **#{title}**\n"
           end
-          details["description"]&.strip&.lines&.each { |l| msg += "> #{l}" }
+          if (description = details["description"])
+            description.strip.lines.first(10).each do |line|
+              msg += "> #{line}"
+            end
+            msg += "> ... (truncated)\n" if description.strip.lines.count > 10
+          end
           msg += "\n> \n"
           msg += "> Patched versions: #{details['patched_versions']}\n"
           msg += "> Unaffected versions: #{details['unaffected_versions']}\n"
