@@ -1,3 +1,7 @@
+## v0.53.1, 2 April 2018
+
+- Display vulnerability details in PR text if passed them
+
 ## v0.53.0, 2 April 2018
 
 - BREAKING: Move Version and Requirement classes into Utils namespace
