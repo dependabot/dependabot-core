@@ -13,16 +13,18 @@ module Dependabot
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
       attr_reader :repo_name, :dependencies, :files, :github_client,
-                  :pr_message_footer, :author_details
+                  :pr_message_footer, :author_details, :vulnerabilities_fixed
 
       def initialize(repo_name:, dependencies:, files:, github_client:,
-                     pr_message_footer: nil, author_details: nil)
+                     pr_message_footer: nil, author_details: nil,
+                     vulnerabilities_fixed: {})
         @dependencies = dependencies
         @files = files
         @repo_name = repo_name
         @github_client = github_client
         @pr_message_footer = pr_message_footer
         @author_details = author_details
+        @vulnerabilities_fixed = vulnerabilities_fixed
       end
 
       def pr_name
@@ -124,6 +126,10 @@ module Dependabot
           msg += " This release includes the previously tagged commit."
         end
 
+        if vulnerabilities_fixed[dependency.name]&.any?
+          msg += " **This update includes security fixes.**"
+        end
+
         msg
       end
 
@@ -166,20 +172,45 @@ module Dependabot
         end
 
         dependencies.map do |dep|
-          "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
-          "#{new_version(dep)}"\
-          "#{metadata_cascades_for_dep(dep)}"
+          msg = "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
+                "#{new_version(dep)}"
+          if vulnerabilities_fixed[dep.name]&.any?
+            msg += ". **This update includes security fixes.**"
+          end
+          msg + metadata_cascades_for_dep(dep)
         end.join
       end
 
       def metadata_cascades_for_dep(dep)
         msg = ""
+        msg += vulnerabilities_cascade(dep)
         msg += release_cascade(dep)
         msg += changelog_cascade(dep)
         msg += upgrade_guide_cascade(dep)
         msg += commits_cascade(dep)
         msg += "\n<br />" unless msg == ""
         sanitize_links_and_mentions(msg)
+      end
+
+      def vulnerabilities_cascade(dep)
+        fixed_vulns = vulnerabilities_fixed[dep.name]
+        return "" unless fixed_vulns&.any?
+
+        msg = "\n<details>\n<summary>Vulnerabilities fixed</summary>\n\n"
+
+        fixed_vulns.each do |details|
+          if details["title"]
+            title = details["title"].lines.map(&:strip).join(" ")
+            msg += "> **#{title}**\n"
+          end
+          details["description"]&.strip&.lines&.each { |l| msg += "> #{l}" }
+          msg += "\n> \n"
+          msg += "> Patched versions: #{details['patched_versions']}\n"
+          msg += "> Unaffected versions: #{details['unaffected_versions']}\n"
+          msg += "\n"
+        end
+        msg += "</details>"
+        sanitize_template_tags(msg)
       end
 
       def release_cascade(dep)

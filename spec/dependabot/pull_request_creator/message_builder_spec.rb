@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       files: files,
       github_client: github_client,
       pr_message_footer: pr_message_footer,
-      author_details: author_details
+      author_details: author_details,
+      vulnerabilities_fixed: vulnerabilities_fixed
     )
   end
 
@@ -38,6 +39,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
+  let(:vulnerabilities_fixed) { {} }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -577,6 +579,41 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<br />"
               )
           end
+        end
+      end
+
+      context "and security vulnerabilities fixed" do
+        let(:vulnerabilities_fixed) do
+          {
+            "business" => [
+              {
+                "title" => "Serious vulnerability",
+                "description" => "A vulnerability that allows arbitrary code\n"\
+                                 "execution.\n",
+                "patched_versions" => ["> 1.5.0"],
+                "unaffected_versions" => [],
+                "url" => "https://dependabot.com"
+              }
+            ]
+          }
+        end
+
+        it "has the right text" do
+          expect(pr_message).
+            to start_with(
+              "Bumps [business](https://github.com/gocardless/business) "\
+              "from 1.4.0 to 1.5.0. **This update includes security fixes.**\n"\
+              "<details>\n"\
+              "<summary>Vulnerabilities fixed</summary>\n\n"\
+              "> **Serious vulnerability**\n"\
+              "> A vulnerability that allows arbitrary code\n"\
+              "> execution.\n"\
+              "> \n"\
+              "> Patched versions: [\"> 1.5.0\"]\n"\
+              "> Unaffected versions: []\n"\
+              "\n"\
+              "</details>\n"
+            )
         end
       end
 
