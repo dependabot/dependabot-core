@@ -133,14 +133,7 @@ module Dependabot
 
           def ruby_requirements(requirement_string)
             requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              ruby_requirements =
-                req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  Utils::Php::Requirement.new(r_string)
-                end
-
-              Utils::Php::Requirement.new(
-                ruby_requirements.join(",").split(",")
-              )
+              Utils::Php::Requirement.new(req_string)
             end
           end
 

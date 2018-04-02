@@ -6,15 +6,18 @@ module Dependabot
   module Utils
     module Php
       class Requirement < Gem::Requirement
+        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
+
         def self.parse(obj)
           new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
           super(new_obj)
         end
 
         def initialize(*requirements)
-          requirements = requirements.flatten.flat_map do |req_string|
-            convert_php_constraint_to_ruby_constraint(req_string)
-          end
+          requirements =
+            requirements.flatten.
+            flat_map { |req_string| req_string.split(AND_SEPARATOR) }.
+            flat_map { |req| convert_php_constraint_to_ruby_constraint(req) }
 
           super(requirements)
         end

@@ -10,6 +10,11 @@ RSpec.describe Dependabot::Utils::Php::Requirement do
   describe ".new" do
     it { is_expected.to be_a(described_class) }
 
+    context "with a comma-separated string" do
+      let(:requirement_string) { ">= 1.0.0, < 1.2.1" }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 1.2.1")) }
+    end
+
     context "with a stability constraint" do
       let(:requirement_string) { ">=1.0.0@dev" }
       it { is_expected.to eq(described_class.new(">=1.0.0")) }
