@@ -62,8 +62,17 @@ module Dependabot
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def library_pr_name
-        pr_name = using_semantic_commit_messages? ? "build: update " : "Update "
+        pr_name = ""
+        if using_semantic_commit_messages?
+          pr_name += "build: "
+          pr_name += "[security] " if includes_security_fixes?
+          pr_name += "update "
+        else
+          pr_name += "[Security] " if includes_security_fixes?
+          pr_name += "Update "
+        end
 
         pr_name +=
           if dependencies.count == 1
@@ -78,9 +87,19 @@ module Dependabot
 
         pr_name + " in #{files.first.directory}"
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def application_pr_name
-        pr_name = using_semantic_commit_messages? ? "build: bump " : "Bump "
+        pr_name = ""
+        if using_semantic_commit_messages?
+          pr_name += "build: "
+          pr_name += "[security] " if includes_security_fixes?
+          pr_name += "bump "
+        else
+          pr_name += "[Security] " if includes_security_fixes?
+          pr_name += "Bump "
+        end
 
         pr_name +=
           if dependencies.count == 1
@@ -96,6 +115,7 @@ module Dependabot
 
         pr_name + " in #{files.first.directory}"
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def requirement_commit_message_intro
         msg = "Updates the requirements on "
@@ -427,6 +447,10 @@ module Dependabot
       def switching_from_ref_to_release?(dependency)
         return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
         Gem::Version.correct?(dependency.version)
+      end
+
+      def includes_security_fixes?
+        vulnerabilities_fixed.values.flatten.any?
       end
 
       def using_semantic_commit_messages?

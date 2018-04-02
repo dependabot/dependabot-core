@@ -39,7 +39,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:github_client) { Octokit::Client.new(access_token: "token") }
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
-  let(:vulnerabilities_fixed) { {} }
+  let(:vulnerabilities_fixed) { { "business" => [] } }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -94,15 +94,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("[Security] Bump business") }
+        end
+
         context "with two dependencies" do
           let(:dependencies) { [dependency, dependency] }
-
           it { is_expected.to eq("Bump business and business") }
         end
 
         context "with three dependencies" do
           let(:dependencies) { [dependency, dependency, dependency] }
-
           it { is_expected.to eq("Bump business, business and business") }
         end
 
@@ -181,6 +184,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         it { is_expected.to eq("build: bump business from 1.4.0 to 1.5.0") }
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("build: [security] bump") }
+        end
       end
     end
 
@@ -200,6 +208,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         it { is_expected.to eq("Update business requirement to ~> 1.5.0") }
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("[Security] Update business") }
+        end
 
         context "with two dependencies" do
           let(:dependencies) { [dependency, dependency] }
@@ -246,6 +259,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "uses a semantic commit prefix" do
           expect(pr_name).
             to eq("build: update business requirement to ~> 1.5.0")
+        end
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("build: [security] update") }
         end
       end
     end
