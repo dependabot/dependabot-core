@@ -1,3 +1,7 @@
+## v0.53.2, 2 April 2018
+
+- Add [security] prefix to PR names for PRs that fix vulnerabilities
+
 ## v0.53.1, 2 April 2018
 
 - Display vulnerability details in PR text if passed them
