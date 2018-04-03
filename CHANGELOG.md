@@ -1,3 +1,8 @@
+## v0.53.7, 3 April 2018
+
+- Python: Handle odd Python requirements
+- Ruby: Fall back to lockfile if no source information in Gemfile
+
 ## v0.53.6, 3 April 2018
 
 - Show vulnerability version range depending on kind of range passed
