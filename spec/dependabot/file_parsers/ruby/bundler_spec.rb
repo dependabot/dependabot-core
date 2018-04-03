@@ -193,6 +193,30 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
         end
       end
+
+      context "with a subdependency of a git source" do
+        let(:lockfile_fixture_name) { "git_source_undeclared.lock" }
+        let(:gemfile_fixture_name) { "git_source_undeclared" }
+
+        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "https://github.com/kaminari/kaminari",
+              branch: "master",
+              ref: "master"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("kaminari-actionview") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
     end
 
     context "with a dependency that only appears in the lockfile" do
