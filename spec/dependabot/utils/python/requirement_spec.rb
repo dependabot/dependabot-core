@@ -37,6 +37,12 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
       it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
     end
 
+    context "with another operator after the first" do
+      let(:requirement_string) { ">=2.0<2.1" }
+      # Python ignores that second operator!
+      it { is_expected.to eq(Gem::Requirement.new(">=2.0")) }
+    end
+
     context "with an array" do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
       it { is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0"])) }

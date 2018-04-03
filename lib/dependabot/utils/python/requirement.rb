@@ -45,6 +45,7 @@ module Dependabot
           return nil if req_string.nil?
           return nil if req_string == "*"
           req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
+          req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
           return req_string unless req_string.include?(".*")
 
           # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
