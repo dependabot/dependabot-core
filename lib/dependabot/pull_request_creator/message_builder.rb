@@ -305,16 +305,8 @@ module Dependabot
         sanitize_template_tags(msg)
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def serialized_vulnerability_details(details)
-        msg = ""
-
-        if details["source_url"] && details["source_name"]
-          msg += "*Sourced from [#{details['source_name']}]"\
-                 "(#{details['source_url']}).*\n\n"
-        elsif details["source_name"]
-          msg += "*Sourced from #{details['source_name']}.*\n\n"
-        end
+        msg = vulnerability_source_line(details)
 
         if details["title"]
           msg += "> **#{details['title'].lines.map(&:strip).join(' ')}**\n"
@@ -325,13 +317,30 @@ module Dependabot
           msg += "> ... (truncated)\n" if description.strip.lines.count > 10
         end
 
-        msg + "\n"\
-              "> \n"\
-              "> Patched versions: #{details['patched_versions']}\n"\
-              "> Unaffected versions: #{details['unaffected_versions']}\n"\
-              "\n"
+        msg += "\n> \n"
+        msg += vulnerability_version_range_lines(details)
+        msg + "\n"
       end
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      def vulnerability_source_line(details)
+        if details["source_url"] && details["source_name"]
+          "*Sourced from [#{details['source_name']}]"\
+          "(#{details['source_url']}).*\n\n"
+        elsif details["source_name"]
+          "*Sourced from #{details['source_name']}.*\n\n"
+        else
+          ""
+        end
+      end
+
+      def vulnerability_version_range_lines(details)
+        msg = ""
+        %w(patched_versions unaffected_versions affected_versions).each do |tp|
+          type = tp.split("_").first.capitalize
+          msg += "> #{type} versions: #{details[tp]}\n" if details[tp]
+        end
+        msg
+      end
 
       def releases_url(dependency)
         metadata_finder(dependency).releases_url
