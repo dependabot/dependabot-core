@@ -169,6 +169,11 @@ module Dependabot
 
         def source_for(dependency)
           source = dependency.source
+          if lockfile && default_rubygems?(source)
+            # If there's a lockfile and the Gemfile doesn't have anything
+            # interesting to say about the source, check that.
+            source = source_from_lockfile(dependency.name)
+          end
           raise "Bad source: #{source}" unless SOURCES.include?(source.class)
 
           return nil if default_rubygems?(source)
@@ -209,6 +214,10 @@ module Dependabot
             return spec.source.revision
           end
           spec.version
+        end
+
+        def source_from_lockfile(dependency_name)
+          parsed_lockfile.specs.find { |s| s.name == dependency_name }&.source
         end
 
         def dependency_in_gemfile?(gemfile:, dependency:)
