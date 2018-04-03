@@ -1,3 +1,7 @@
+## v0.53.6, 3 April 2018
+
+- Show vulnerability version range depending on kind of range passed
+
 ## v0.53.5, 3 April 2018
 
 - Handle comma separated requirement strings in Utils::Php::Requirement
