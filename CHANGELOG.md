@@ -1,3 +1,7 @@
+## v0.53.10, 4 April 2018
+
+- Fix GitHub file contents error that was being caused by mutated arguments
+
 ## v0.53.9, 4 April 2018
 
 - Ruby: Use source of dependency from lockfile and Gemfile combined in
