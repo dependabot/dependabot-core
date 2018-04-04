@@ -1,3 +1,8 @@
+## v0.53.9, 4 April 2018
+
+- Ruby: Use source of dependency from lockfile and Gemfile combined in
+  UpdateChecker
+
 ## v0.53.8, 4 April 2018
 
 - PHP: Use vcs repository types, not git ones
