@@ -110,12 +110,19 @@ module Dependabot
         end
 
         def prepared_composer_json_content(unlock_requirement)
-          return composer_file.content unless unlock_requirement
+          content = composer_file.content
+
+          # We need to replace `git` types with `vcs` so that auth works. We
+          # also have to do this in the FileUpdater, and return the altered
+          # composer.json to the user.
+          content = content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
+
+          return content unless unlock_requirement
 
           new_requirement =
             dependency.version.nil? ? "*" : ">= #{dependency.version}"
 
-          composer_file.content.gsub(
+          content.gsub(
             /"#{Regexp.escape(dependency.name)}":\s*".*"/,
             %("#{dependency.name}": "#{new_requirement}")
           )

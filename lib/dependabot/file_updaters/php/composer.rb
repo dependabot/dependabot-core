@@ -85,7 +85,8 @@ module Dependabot
         def updated_composer_json_content
           file = composer_json
 
-          dependencies.
+          updated_content =
+            dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
               updated_requirement =
@@ -104,6 +105,9 @@ module Dependabot
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+
+          # We need to replace `git` types with `vcs` so that auth works
+          updated_content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
         end
 
         def handle_composer_errors(error)
