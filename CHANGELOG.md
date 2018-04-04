@@ -1,3 +1,7 @@
+## v0.53.8, 4 April 2018
+
+- PHP: Use vcs repository types, not git ones
+
 ## v0.53.7, 3 April 2018
 
 - Python: Handle odd Python requirements
