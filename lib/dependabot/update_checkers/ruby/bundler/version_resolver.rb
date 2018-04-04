@@ -164,7 +164,7 @@ module Dependabot
               next latest_version_details unless dep
 
               details = { version: dep.version }
-              if dependency_source.instance_of?(::Bundler::Source::Git)
+              if dep.source.instance_of?(::Bundler::Source::Git)
                 details[:commit_sha] = dep.source.revision
               end
               details
