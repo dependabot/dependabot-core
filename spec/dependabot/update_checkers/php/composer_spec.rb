@@ -506,7 +506,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                 expect(error.dependency_urls).
-                  to eq(["https://github.com/no-exist-sorry/monolog"])
+                  to eq(["https://github.com/no-exist-sorry/monolog.git"])
               end
           end
 
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
                 to raise_error do |error|
                   expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                   expect(error.dependency_urls).
-                    to eq(["git@github.com:no-exist-sorry/monolog"])
+                    to eq(["https://github.com/no-exist-sorry/monolog.git"])
                 end
             end
           end
