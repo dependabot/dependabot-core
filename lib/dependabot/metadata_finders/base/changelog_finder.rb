@@ -61,7 +61,6 @@ module Dependabot
           upgrade_guide&.html_url
         end
 
-        # rubocop:disable Metrics/AbcSize
         def upgrade_guide_text
           return unless upgrade_guide
 
@@ -82,17 +81,7 @@ module Dependabot
             end
 
           @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
-        rescue NoMethodError
-          # Oddly, GitHub sometimes ignores the specified path and returns an
-          # array of files instead. Retrying may help.
-          @fetch_upgrade_guide_retry_count ||= 0
-          @fetch_upgrade_guide_retry_count += 1
-          retry if @fetch_upgrade_guide_retry_count < 1
-          raise "Array error: #{source.repo}, #{upgrade_guide.path}.\n"\
-                "Response headers: #{github_client.last_response.headers}.\n"\
-                "Response data: #{github_client.last_response.data}."
         end
-        # rubocop:enable Metrics/AbcSize
 
         private
 
@@ -116,7 +105,6 @@ module Dependabot
           nil
         end
 
-        # rubocop:disable Metrics/AbcSize
         def full_changelog_text
           return unless changelog
 
@@ -136,17 +124,7 @@ module Dependabot
               ).body
             end
           @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
-        rescue NoMethodError
-          # Oddly, GitHub sometimes ignores the specified path and returns an
-          # array of files instead. Retrying may help.
-          @fetch_changelog_retry_count ||= 0
-          @fetch_changelog_retry_count += 1
-          retry if @fetch_changelog_retry_count < 1
-          raise "Array error: #{source.repo}, #{changelog.path}.\n"\
-                "Response headers: #{github_client.last_response.headers}.\n"\
-                "Response data: #{github_client.last_response.data}."
         end
-        # rubocop:enable Metrics/AbcSize
 
         def old_version_changelog_line
           old_version = git_source? ? previous_ref : dependency.previous_version

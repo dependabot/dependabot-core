@@ -117,7 +117,6 @@ module Dependabot
           end
       end
 
-      # rubocop:disable Metrics/AbcSize
       def fetch_file_content(path)
         path = path.gsub(%r{^/*}, "")
 
@@ -131,18 +130,7 @@ module Dependabot
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         else raise "Unsupported host '#{host}'."
         end
-      rescue NoMethodError
-        # Oddly, GitHub sometimes ignores the specified path and returns an
-        # array of files instead. Retrying may help.
-        @fetch_file_retry_count ||= {}
-        @fetch_file_retry_count[path] ||= 0
-        @fetch_file_retry_count[path] += 1
-        retry if @fetch_file_retry_count[path] < 1
-        raise "Array error happening for #{repo}, #{path}, #{commit}.\n"\
-              "Response headers: #{github_client.last_response.headers}.\n"\
-              "Response data: #{github_client.last_response.data}."
       end
-      # rubocop:enable Metrics/AbcSize
 
       def github_client
         access_token =

@@ -30,7 +30,8 @@ module Dependabot
     def method_missing(method_name, *args, &block)
       retry_connection_failures do
         if @client.respond_to?(method_name)
-          @client.public_send(method_name, *args, &block)
+          mutatable_args = args.map(&:dup)
+          @client.public_send(method_name, *mutatable_args, &block)
         else
           super
         end
