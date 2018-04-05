@@ -143,8 +143,7 @@ module Dependabot
         end
 
         def handle_updater_error(error)
-          if error.message.start_with?("No matching version found") ||
-             error.message.start_with?("404 Not Found")
+          if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
           if error.message.include?("make sure you have the correct access") ||
