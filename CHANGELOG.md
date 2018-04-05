@@ -1,3 +1,7 @@
+## v0.53.16, 5 April 2018
+
+- Ruby: More aggressive gemspec sanitization
+
 ## v0.53.15, 5 April 2018
 
 - Rust: Handle dependencies with multiple versions properly in UpdateChecker
