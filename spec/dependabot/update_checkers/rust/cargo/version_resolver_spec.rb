@@ -64,6 +64,16 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
     end
 
+    context "with multiple versions available of the dependency" do
+      let(:manifest_fixture_name) { "multiple_versions" }
+      let(:lockfile_fixture_name) { "multiple_versions" }
+      let(:dependency_name) { "rand" }
+      let(:dependency_version) { "0.4.1" }
+      let(:string_req) { "0.4" }
+
+      it { is_expected.to eq(Gem::Version.new("0.4.2")) }
+    end
+
     context "when the latest version is blocked" do
       let(:manifest_fixture_name) { "mdBook" }
       let(:lockfile_fixture_name) { "mdBook" }
