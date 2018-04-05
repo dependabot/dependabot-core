@@ -40,7 +40,7 @@ module Dependabot
 
             requirements.map do |req|
               next req unless req[:requirement].match?(/\d/)
-              next req if req[:requirement].include?("#")
+              next req if req[:requirement].start_with?("dev-")
               next updated_alias(req) if req[:requirement].match?(ALIAS_REGEX)
               next req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
