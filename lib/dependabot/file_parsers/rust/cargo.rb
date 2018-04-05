@@ -24,7 +24,10 @@ module Dependabot
           dependency_set = DependencySet.new
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies if lockfile
-          dependency_set.dependencies
+
+          # TODO: Handle patched dependencies
+          dependency_set.dependencies.
+            reject { |d| patched_dependencies.include?(d.name) }
         end
 
         private
@@ -71,6 +74,13 @@ module Dependabot
           end
 
           dependency_set
+        end
+
+        def patched_dependencies
+          root_manifest = manifest_files.find { |f| f.name == "Cargo.toml" }
+          return [] unless parsed_file(root_manifest)["patch"]
+
+          parsed_file(root_manifest)["patch"].values.flat_map(&:keys)
         end
 
         def requirement_from_declaration(declaration)

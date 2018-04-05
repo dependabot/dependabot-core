@@ -164,6 +164,16 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
           end
         end
 
+        context "with an override (specified as a patch)" do
+          let(:manifest_fixture_name) { "workspace_root_with_patch" }
+          let(:lockfile_fixture_name) { "workspace_with_patch" }
+          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+          it "excludes the patched dependency" do
+            expect(top_level_dependencies.map(&:name)).to eq(["regex"])
+          end
+        end
+
         context "with a virtual workspace root" do
           let(:manifest_fixture_name) { "virtual_workspace_root" }
           let(:lockfile_fixture_name) { "virtual_workspace" }
