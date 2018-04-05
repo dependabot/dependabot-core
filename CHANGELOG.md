@@ -1,3 +1,7 @@
+## v0.53.11, 4 April 2018
+
+- PHP: Add hack for updating composer.json correctly
+
 ## v0.53.10, 4 April 2018
 
 - Fix GitHub file contents error that was being caused by mutated arguments
