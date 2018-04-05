@@ -1,3 +1,7 @@
+## v0.53.18, 5 April 2018
+
+- PHP: Ensure version requirements don't decrease, and refactor UpdateChecker
+
 ## v0.53.17, 5 April 2018
 
 - Ruby: Fix gemspec version sanitization from string versions
