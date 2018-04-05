@@ -265,6 +265,27 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "without a lockfile" do
       let(:files) { [composer_file] }
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
+
+      context "when there are conflicts at the version specified" do
+        let(:manifest_fixture_name) { "conflicts" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phpdocumentor/reflection-docblock",
+            version: nil,
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "^4.3",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+        it { is_expected.to be >= Gem::Version.new("4.3.0") }
+      end
     end
 
     context "with a dev dependency" do
