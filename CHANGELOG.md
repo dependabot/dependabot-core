@@ -1,4 +1,8 @@
-## v0.53.11, 4 April 2018
+## v0.53.12, 5 April 2018
+
+- JS: Handle non-existant dependencies
+
+## v0.53.11, 5 April 2018
 
 - PHP: Add hack for updating composer.json correctly
 
