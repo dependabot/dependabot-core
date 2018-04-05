@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 Gem::Specification.new do |spec|
   spec.name         = "example"
-  spec.version      = bad_code
-  spec.summary      = "Automated dependency management"
+  spec.version      = "1.0.0"
+  spec.summary      = bad_code # <----- The bad code is here
   spec.description  = "Core logic for updating a GitHub repos dependencies"
 
   spec.author       = "Dependabot"
