@@ -1,3 +1,7 @@
+## v0.53.13, 5 April 2018
+
+- Rust: Ignore patched dependencies (for now)
+
 ## v0.53.12, 5 April 2018
 
 - JS: Handle non-existant dependencies
