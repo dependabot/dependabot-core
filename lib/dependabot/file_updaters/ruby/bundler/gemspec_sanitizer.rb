@@ -76,8 +76,8 @@ module Dependabot
             end
 
             def replace_constant(node)
-              return if node.children.last&.type == :str
               case node.children.last&.type
+              when :str then nil # no-op
               when :const, :send
                 replace(
                   node.children.last.loc.expression,
