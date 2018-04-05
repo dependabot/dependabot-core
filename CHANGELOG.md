@@ -1,3 +1,7 @@
+## v0.53.14, 5 April 2018
+
+- PHP: Handle branch names with a number in them
+
 ## v0.53.13, 5 April 2018
 
 - Rust: Ignore patched dependencies (for now)
