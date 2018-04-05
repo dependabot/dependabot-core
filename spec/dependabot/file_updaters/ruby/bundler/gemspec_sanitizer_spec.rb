@@ -49,6 +49,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
     end
 
+    context "with an assignment to a string" do
+      let(:content) { %(Spec.new { |s| s.version = "1.4.0" }) }
+      # Don't actually do the replacement
+      it { is_expected.to eq(%(Spec.new { |s| s.version = "1.4.0" })) }
+    end
+
     # rubocop:disable Lint/InterpolationCheck
     context "with an assignment to a string-interpolated constant" do
       let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
