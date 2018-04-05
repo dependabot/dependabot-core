@@ -104,8 +104,11 @@ module Dependabot
               ).fetch("yarn.lock")
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          raise unless error.message.start_with?("Couldn't find any versions")
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          if error.message.start_with?("Couldn't find any versions") ||
+             error.message.include?(": Not found")
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+          raise
         end
 
         def updated_package_lock_content
@@ -140,7 +143,8 @@ module Dependabot
         end
 
         def handle_updater_error(error)
-          if error.message.start_with?("No matching version found")
+          if error.message.start_with?("No matching version found") ||
+             error.message.start_with?("404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
           if error.message.include?("make sure you have the correct access") ||

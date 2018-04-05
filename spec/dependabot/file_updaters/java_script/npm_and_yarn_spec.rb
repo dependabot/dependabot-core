@@ -93,9 +93,36 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     context "with a dependency version that can't be found" do
       let(:manifest_fixture_name) { "yanked_version.json" }
       let(:npm_lock_fixture_name) { "yanked_version.json" }
-      it "raises a helpful error" do
-        expect { updated_files }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+      let(:yarn_lock_fixture_name) { "yanked_version.lock" }
+
+      context "with a yarn lockfile" do
+        let(:files) { [package_json, yarn_lock] }
+        it "raises a helpful error" do
+          expect { updated_files }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
+
+    context "with a dependency that can't be found" do
+      let(:manifest_fixture_name) { "non_existant_dependency.json" }
+      let(:npm_lock_fixture_name) { "yanked_version.json" }
+      let(:yarn_lock_fixture_name) { "yanked_version.lock" }
+
+      context "with an npm lockfile" do
+        let(:files) { [package_json, package_lock] }
+        it "raises a helpful error" do
+          expect { updated_files }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
+      context "with a yarn lockfile" do
+        let(:files) { [package_json, yarn_lock] }
+        it "raises a helpful error" do
+          expect { updated_files }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
       end
     end
 
