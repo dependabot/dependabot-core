@@ -1,3 +1,7 @@
+## v0.53.17, 5 April 2018
+
+- Ruby: Fix gemspec version sanitization from string versions
+
 ## v0.53.16, 5 April 2018
 
 - Ruby: More aggressive gemspec sanitization
