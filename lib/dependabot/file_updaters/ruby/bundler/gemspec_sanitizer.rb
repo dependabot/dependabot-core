@@ -47,6 +47,7 @@ module Dependabot
               return false unless node.children.first.is_a?(Parser::AST::Node)
               return false unless node.children.first&.type == :lvar
 
+              return true if node.children[1] == :version=
               return true if node_is_version_constant?(node.children.last)
               return true if node_calls_version_constant?(node.children.last)
               node_interpolates_version_constant?(node.children.last)

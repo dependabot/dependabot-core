@@ -44,6 +44,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       end
     end
 
+    context "with an assignment to a function" do
+      let(:content) { %(Spec.new { |s| s.version = Example.gem_version }) }
+      it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+    end
+
     # rubocop:disable Lint/InterpolationCheck
     context "with an assignment to a string-interpolated constant" do
       let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
