@@ -106,8 +106,13 @@ module Dependabot
               updated_content
             end
 
-          # We need to replace `git` types with `vcs` so that auth works
-          updated_content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
+          # We need to replace `git` types with `vcs` so that auth works.
+          # Spacing is important so we don't accidentally replace the source for
+          # "type": "package" dependencies.
+          updated_content.gsub(
+            /^      "type"\s*:\s*"git"/,
+            '      "type": "vcs"'
+          )
         end
 
         def handle_composer_errors(error)
