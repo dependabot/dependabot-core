@@ -64,6 +64,16 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
     end
 
+    context "with a feature dependency, when the feature has been removed" do
+      let(:manifest_fixture_name) { "feature_removed" }
+      let(:lockfile_fixture_name) { "feature_removed" }
+      let(:dependency_name) { "syntect" }
+      let(:dependency_version) { "1.8.1" }
+      let(:string_req) { "1.8" }
+
+      it { is_expected.to be_nil }
+    end
+
     context "with multiple versions available of the dependency" do
       let(:manifest_fixture_name) { "multiple_versions" }
       let(:lockfile_fixture_name) { "multiple_versions" }

@@ -1,0 +1,10 @@
+[package]
+name = "feature_removed"
+version = "0.1.0"
+authors = ["Dependabot <support@dependabot.com>"]
+
+[dependencies.syntect]
+version = "1.8"
+optional = true
+default-features = false
+features =  ["parsing", "assets", "html", "static-onig", "dump-load"]

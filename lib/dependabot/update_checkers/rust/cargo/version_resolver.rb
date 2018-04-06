@@ -46,6 +46,8 @@ module Dependabot
               return updated_version if updated_version.nil?
               Utils::Rust::Version.new(updated_version)
             end
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            handle_cargo_errors(error)
           end
 
           def dependency_spec
@@ -82,6 +84,15 @@ module Dependabot
             end
 
             File.write(lockfile.name, lockfile.content) if lockfile
+          end
+
+          def handle_cargo_errors(error)
+            if error.message.include?("does not have these features")
+              # TODO: Ideally we should update the declaration not to ask
+              # for the specified features"
+              return nil
+            end
+            raise error
           end
 
           # Note: We don't need to care about formatting in this method, since
