@@ -1,3 +1,7 @@
+## v0.53.20, 6 April 2018
+
+- Ruby: Ignore requirements specified with a ternary operator and an expression
+
 ## v0.53.19, 6 April 2018
 
 - Include previous release notes in PR if valuable, even if the latest version
