@@ -60,14 +60,16 @@ module Dependabot
         end
 
         def updated_release
-          release_regex = version_regex(dependency.version)
-          all_releases.find do |r|
-            [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
-          end
+          release_for_version(dependency.version)
         end
 
         def previous_release
-          release_regex = version_regex(dependency.previous_version)
+          release_for_version(dependency.previous_version)
+        end
+
+        def release_for_version(version)
+          return nil unless version
+          release_regex = version_regex(version)
           all_releases.find do |r|
             [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
           end
