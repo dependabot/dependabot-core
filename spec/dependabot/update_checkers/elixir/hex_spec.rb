@@ -130,17 +130,6 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    it "returns a non-normalized version, following semver" do
-      expect(subject.segments.count).to eq(3)
-    end
-
-    it "respects the resolvability of the mix.exs" do
-      expect(latest_resolvable_version).
-        to be > Gem::Version.new("1.3.5")
-      expect(latest_resolvable_version).
-        to be < Gem::Version.new("1.4.0")
-    end
-
     context "with a version conflict at the latest version" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -303,16 +292,6 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
             it { is_expected.to be_nil }
           end
         end
-      end
-    end
-
-    context "with a dependency with a bad specification" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "bad_spec") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
-
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { checker.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

@@ -52,6 +52,13 @@ module Dependabot
           end
 
           def handle_hex_errors(error)
+            if error.message.end_with?("continue due to errors on dependencies")
+              # Ignore dependencies which don't resolve due to mis-matching
+              # environment specifications.
+              # TODO: Update the environment specifications instead
+              return
+            end
+
             raise error unless error.message.start_with?("Invalid requirement")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end

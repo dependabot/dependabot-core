@@ -22,13 +22,14 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "plug",
+      name: dependency_name,
       version: version,
       requirements: dependency_requirements,
       package_manager: "hex"
     )
   end
 
+  let(:dependency_name) { "plug" }
   let(:version) { "1.3.0" }
   let(:dependency_requirements) do
     [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
@@ -77,6 +78,32 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when the environments for another dependency diverge" do
+      # In this example, updating `credo` would add its sub-dependency,
+      # `poison`, to the `dev` environment, but the Mixfile explicitly specifies
+      # that `poison` should only be available in the `test` environment.
+      let(:mixfile_fixture_name) { "diverging_environments" }
+      let(:lockfile_fixture_name) { "diverging_environments" }
+
+      let(:dependency_name) { "credo" }
+      let(:version) { "0.6.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "mix.exs",
+          requirement: "~> 0.6",
+          groups: ["dev", "test"],
+          source: nil
+        }]
+      end
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        # In an ideal world, Dependabot would update the environment specified
+        # for `poison` in the Mixfile. In the meantime, though, we just treat
+        # this as an impossible-to-update dependency.
+        expect(resolver.latest_resolvable_version).to be_nil
       end
     end
   end
