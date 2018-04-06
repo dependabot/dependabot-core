@@ -5,6 +5,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/shared_helpers"
 
+# For docs, see https://hexdocs.pm/mix/Mix.Tasks.Deps.html
 module Dependabot
   module FileParsers
     module Elixir

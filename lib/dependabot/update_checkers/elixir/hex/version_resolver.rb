@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "excon"
-
 require "dependabot/utils/elixir/version"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/shared_helpers"
