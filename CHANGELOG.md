@@ -1,3 +1,8 @@
+## v0.53.19, 6 April 2018
+
+- Include previous release notes in PR if valuable, even if the latest version
+  doesn't have any (but previous versions do)
+
 ## v0.53.18, 5 April 2018
 
 - PHP: Ensure version requirements don't decrease, and refactor UpdateChecker
