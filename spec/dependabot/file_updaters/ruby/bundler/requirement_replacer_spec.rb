@@ -83,6 +83,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       context "with a ternary requirement" do
         let(:content) { %(gem "business", (true ? "1.0.0" : "1.2.0")) }
         it { is_expected.to eq(content) }
+
+        context "that uses an expression" do
+          let(:content) do
+            %(gem "business", RUBY_VERSION >= "2.2" ? "1.0.0" : "1.2.0")
+          end
+          it { is_expected.to eq(content) }
+        end
       end
 
       context "with a dependency that uses single quotes" do
