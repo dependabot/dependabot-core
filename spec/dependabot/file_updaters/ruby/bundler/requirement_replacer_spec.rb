@@ -93,7 +93,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       end
 
       context "with a conditional" do
-        let(:content) { %(gem "rouge", ENV["ROUGE"] if ENV["ROUGE"]) }
+        let(:content) { %(gem "business", ENV["ROUGE"] if ENV["ROUGE"]) }
         it { is_expected.to eq(content) }
       end
 
@@ -131,6 +131,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       context "when declared without a version" do
         let(:dependency_name) { "rake" }
         it { is_expected.to include(%(ent_dependency "rake"\n)) }
+      end
+
+      context "when declared with an array expansion" do
+        let(:content) do
+          %(s.add_runtime_dependency("business", *rouge_versions))
+        end
+        it { is_expected.to eq(content) }
       end
 
       context "when declared with `add_development_dependency`" do
