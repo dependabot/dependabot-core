@@ -30,7 +30,7 @@ module Dependabot
 
         def releases_text
           return unless updated_release
-          return if updated_release.body.nil? || updated_release.body == ""
+          return if relevant_releases.all? { |r| r.body.nil? || r.body == "" }
 
           relevant_releases.map do |r|
             title = "## #{r.name.to_s != '' ? r.name : r.tag_name}\n"
@@ -52,7 +52,7 @@ module Dependabot
         end
 
         def relevant_releases
-          if dependency.previous_version && previous_release
+          if previous_release
             [updated_release, *intermediate_releases]
           else
             [updated_release]

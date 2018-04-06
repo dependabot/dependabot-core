@@ -180,9 +180,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 )
             end
 
-            context "but the latest version is blank" do
+            context "but all versions are blank or nil" do
               let(:dependency_version) { "1.7.0" }
               it { is_expected.to be_nil }
+            end
+
+            context "when the latest version is blank, but not all are" do
+              let(:dependency_version) { "1.7.0" }
+              let(:dependency_previous_version) { "1.5.0" }
+
+              it "gets the right text" do
+                expect(subject).
+                  to eq(
+                    "## v1.7.0\n"\
+                    "No release notes provided.\n"\
+                    "\n"\
+                    "## v1.7.0.beta\n"\
+                    "No release notes provided.\n"\
+                    "\n"\
+                    "## v1.7.0.alpha\n"\
+                    "No release notes provided.\n"\
+                    "\n"\
+                    "## v1.6.0\n"\
+                    "Mad props to @greysteil for this"
+                  )
+              end
             end
           end
 
