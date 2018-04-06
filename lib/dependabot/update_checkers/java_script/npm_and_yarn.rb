@@ -3,7 +3,6 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/java_script/version"
 require "dependabot/utils/java_script/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -62,10 +61,6 @@ module Dependabot
                 fetch_latest_version_details&.fetch(:version, nil)&.to_s,
               library: library?
             ).updated_requirements
-        end
-
-        def version_class
-          Utils::JavaScript::Version
         end
 
         private

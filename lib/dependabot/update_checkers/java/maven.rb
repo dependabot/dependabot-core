@@ -2,7 +2,6 @@
 
 require "dependabot/update_checkers/base"
 require "dependabot/file_updaters/java/maven/declaration_finder"
-require "dependabot/utils/java/version"
 
 module Dependabot
   module UpdateCheckers
@@ -44,10 +43,6 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s
           ).updated_requirements
-        end
-
-        def version_class
-          Utils::Java::Version
         end
 
         private

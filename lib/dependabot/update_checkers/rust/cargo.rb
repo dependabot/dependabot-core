@@ -3,7 +3,6 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/rust/version"
 
 module Dependabot
   module UpdateCheckers
@@ -58,10 +57,6 @@ module Dependabot
             latest_version: latest_version&.to_s,
             library: dependency.version.nil?
           ).updated_requirements
-        end
-
-        def version_class
-          Utils::Rust::Version
         end
 
         private

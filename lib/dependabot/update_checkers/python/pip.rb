@@ -3,7 +3,6 @@
 require "excon"
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
 require "dependabot/shared_helpers"
 
@@ -47,10 +46,6 @@ module Dependabot
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s
           ).updated_requirements
-        end
-
-        def version_class
-          Utils::Python::Version
         end
 
         private

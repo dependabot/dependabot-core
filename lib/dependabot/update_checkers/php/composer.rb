@@ -2,7 +2,6 @@
 
 require "excon"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/php/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -55,10 +54,6 @@ module Dependabot
             latest_resolvable_version: latest_resolvable_version&.to_s,
             library: library?
           ).updated_requirements
-        end
-
-        def version_class
-          Utils::Php::Version
         end
 
         private

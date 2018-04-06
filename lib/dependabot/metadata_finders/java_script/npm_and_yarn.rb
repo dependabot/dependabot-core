@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils"
 
 module Dependabot
   module MetadataFinders
@@ -65,7 +66,7 @@ module Dependabot
           return [] if npm_listing["versions"].nil?
 
           npm_listing["versions"].
-            sort_by { |version, _| Gem::Version.new(version) }.
+            sort_by { |version, _| Utils::JavaScript::Version.new(version) }.
             reverse
         end
 

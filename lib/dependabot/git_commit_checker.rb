@@ -4,6 +4,7 @@ require "excon"
 require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
+require "dependabot/utils"
 
 module Dependabot
   class GitCommitChecker
@@ -59,7 +60,7 @@ module Dependabot
         select { |t| t.name.match?(VERSION_REGEX) }.
         max_by do |t|
           version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-          Gem::Version.new(version)
+          version_class.new(version)
         end
 
       return unless tag
@@ -243,6 +244,10 @@ module Dependabot
       @github_client ||=
         Dependabot::GithubClientWithRetries.
         new(access_token: github_access_token)
+    end
+
+    def version_class
+      Utils.version_class_for_package_manager(dependency.package_manager)
     end
 
     def credentials

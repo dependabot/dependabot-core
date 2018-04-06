@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/utils"
 
 module Dependabot
   module UpdateCheckers
@@ -60,10 +61,8 @@ module Dependabot
         raise NotImplementedError
       end
 
-      # Update checkers can (optionally) define their own version class, to be
-      # used when comparing and serializing versions
       def version_class
-        Gem::Version
+        Utils.version_class_for_package_manager(dependency.package_manager)
       end
 
       # For some langauges, the manifest file may be constructed such that

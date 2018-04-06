@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils"
 
 module Dependabot
   module MetadataFinders
@@ -31,8 +32,8 @@ module Dependabot
 
           version_listings =
             packagist_listing["packages"][dependency.name.downcase].
-            select { |version, _| Gem::Version.correct?(version) }.
-            sort_by { |version, _| Gem::Version.new(version) }.
+            select { |version, _| Utils::Php::Version.correct?(version) }.
+            sort_by { |version, _| Utils::Php::Version.new(version) }.
             map { |_, listing| listing }.
             reverse
 

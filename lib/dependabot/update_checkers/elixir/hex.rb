@@ -3,7 +3,6 @@
 require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/elixir/version"
 require "dependabot/shared_helpers"
 
 require "json"
@@ -47,10 +46,6 @@ module Dependabot
             updated_source: updated_source,
             latest_resolvable_version: latest_resolvable_version&.to_s
           ).updated_requirements
-        end
-
-        def version_class
-          Utils::Elixir::Version
         end
 
         private
