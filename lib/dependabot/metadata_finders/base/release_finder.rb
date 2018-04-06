@@ -4,6 +4,7 @@ require "gitlab"
 
 require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders/base"
+require "dependabot/utils"
 
 module Dependabot
   module MetadataFinders
@@ -83,24 +84,27 @@ module Dependabot
             intermediate_release_count
           )
 
-          unless Gem::Version.correct?(dependency.version)
-            return intermediate_releases
-          end
+          version = dependency.version
+          return intermediate_releases unless version_class.correct?(version)
 
           intermediate_releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
 
             # Don't reject anything we can't be certain of
-            next false unless Gem::Version.correct?(cleaned_tag)
+            next false unless version_class.correct?(cleaned_tag)
 
             # Do reject any releases that are greater than the version we're
             # updating to (e.g., if two major versions are being maintained)
-            Gem::Version.new(cleaned_tag) > Gem::Version.new(dependency.version)
+            version_class.new(cleaned_tag) > version_class.new(version)
           end
         end
 
         def version_regex(version)
           /(?:[^0-9\.]|\A)#{Regexp.escape(version || "unknown")}\z/
+        end
+
+        def version_class
+          Utils.version_class_for_package_manager(dependency.package_manager)
         end
 
         def fetch_dependency_releases
@@ -119,9 +123,9 @@ module Dependabot
           clean_release_names =
             releases.map { |r| r.tag_name.gsub(/^[^0-9\.]*/, "") }
 
-          if clean_release_names.all? { |nm| Gem::Version.correct?(nm) }
+          if clean_release_names.all? { |nm| version_class.correct?(nm) }
             releases.sort_by do |r|
-              Gem::Version.new(r.tag_name.gsub(/^[^0-9\.]*/, ""))
+              version_class.new(r.tag_name.gsub(/^[^0-9\.]*/, ""))
             end.reverse
           else
             releases.sort_by(&:id).reverse
