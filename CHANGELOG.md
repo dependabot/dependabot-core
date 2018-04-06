@@ -1,3 +1,7 @@
+## v0.53.21, 6 April 2018
+
+- Ruby: Even more gemspec sanitization (this time for splatted requirements)
+
 ## v0.53.20, 6 April 2018
 
 - Ruby: Ignore requirements specified with a ternary operator and an expression
