@@ -1,3 +1,8 @@
+## v0.53.22, 6 April 2018
+
+- Elixir: Ignore dependency updates that would cause diverging environment
+  requirements
+
 ## v0.53.21, 6 April 2018
 
 - Ruby: Even more gemspec sanitization (this time for splatted requirements)
