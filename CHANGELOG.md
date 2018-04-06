@@ -1,3 +1,8 @@
+## v0.53.23, 6 April 2018
+
+- Rust: Handle feature dependencies that have a feature removed in the new
+  version
+
 ## v0.53.22, 6 April 2018
 
 - Elixir: Ignore dependency updates that would cause diverging environment
