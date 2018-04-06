@@ -89,7 +89,7 @@ module Dependabot
           def handle_cargo_errors(error)
             if error.message.include?("does not have these features")
               # TODO: Ideally we should update the declaration not to ask
-              # for the specified features"
+              # for the specified features
               return nil
             end
             raise error
