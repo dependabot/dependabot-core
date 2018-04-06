@@ -94,7 +94,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
         [{
           file: "mix.exs",
           requirement: "~> 0.6",
-          groups: ["dev", "test"],
+          groups: %w(dev test),
           source: nil
         }]
       end
