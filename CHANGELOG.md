@@ -1,3 +1,7 @@
+## v0.53.25, 9 April 2018
+
+- Look at release tag_name before looking at release name
+
 ## v0.53.24, 9 April 2018
 
 - Update Elixir and PHP versions
