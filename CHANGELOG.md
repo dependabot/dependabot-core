@@ -1,3 +1,9 @@
+## v0.53.24, 9 April 2018
+
+- Update Elixir and PHP versions
+- PHP: Raise Dependabot::DependencyFileNotResolvable error for invalid version
+  constraints
+
 ## v0.53.23, 6 April 2018
 
 - Rust: Handle feature dependencies that have a feature removed in the new
