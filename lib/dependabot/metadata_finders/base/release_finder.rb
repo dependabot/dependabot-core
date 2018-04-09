@@ -132,9 +132,9 @@ module Dependabot
         def release_for_version(version)
           return nil unless version
           release_regex = version_regex(version)
-          all_releases.find do |r|
-            [r.tag_name, r.name].any? { |nm| release_regex.match?(nm.to_s) }
-          end
+          # Doing two loops looks inefficient, but it ensures consistency
+          all_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||
+            all_releases.find { |r| release_regex.match?(r.name.to_s) }
         end
 
         def intermediate_releases

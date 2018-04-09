@@ -239,6 +239,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:dependency_previous_version) { "1.8.0" }
           it { is_expected.to be_nil }
         end
+
+        context "when the release has a bad name" do
+          let(:dependency_version) { "1.8.0" }
+          let(:dependency_previous_version) { "1.7.0" }
+          let(:github_response) do
+            fixture("github", "business_releases_bad_name.json")
+          end
+          it "gets the right text" do
+            expect(subject).
+              to eq(
+                "## v1.7.0\n"\
+                "- Add 2018-2027 TARGET holiday defintions\n"\
+                "- Add 2018-2027 Bankgirot holiday defintions"
+              )
+          end
+        end
       end
     end
 
