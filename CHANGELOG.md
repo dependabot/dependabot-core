@@ -1,3 +1,8 @@
+## v0.53.26, 9 April 2018
+
+- Better release note filtering (will mean release notes are included in PRs
+  even if the latest version doesn't have any)
+
 ## v0.53.25, 9 April 2018
 
 - Look at release tag_name before looking at release name
