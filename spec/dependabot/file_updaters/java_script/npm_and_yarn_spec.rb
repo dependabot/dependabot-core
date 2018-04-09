@@ -1059,7 +1059,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         it "has details of the updated item" do
           expect(updated_yarn_lock_file.content).
-            to include("bootstrap@next:\n  version \"4.0.0-beta.3\"")
+            to include("bootstrap@next:\n  version \"4.1.0\"")
         end
       end
 
