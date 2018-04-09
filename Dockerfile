@@ -57,7 +57,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.1 php7.1-xml php7.1-zip \
+    && apt-get install -y php7.2 php7.2-xml php7.2-zip \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -67,7 +67,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.0/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.4/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip
 ENV PATH="$PATH:/usr/local/elixir/bin"
