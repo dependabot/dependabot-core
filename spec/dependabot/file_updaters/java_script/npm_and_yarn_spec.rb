@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_updaters/java_script/npm_and_yarn"
+require "dependabot/utils/java_script/version"
 require_relative "../shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
@@ -1059,7 +1060,15 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         it "has details of the updated item" do
           expect(updated_yarn_lock_file.content).
-            to include("bootstrap@next:\n  version \"4.1.0\"")
+            to include("bootstrap@next:")
+
+          version =
+            updated_yarn_lock_file.content.
+            match(/bootstrap\@next:\n  version "(?<version>.*?)"/).
+            named_captures["version"]
+
+          expect(Dependabot::Utils::JavaScript::Version.new(version)).
+            to be > Dependabot::Utils::JavaScript::Version.new("4.0.0")
         end
       end
 
