@@ -259,6 +259,11 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
               end
             end
           end
+
+          context "when using an old format lockfile" do
+            let(:lockfile_fixture_name) { "virtual_workspace_old_format" }
+            its(:length) { is_expected.to eq(2) }
+          end
         end
       end
 

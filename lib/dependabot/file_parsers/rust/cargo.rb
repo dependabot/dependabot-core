@@ -38,6 +38,8 @@ module Dependabot
           DEPENDENCY_TYPES.each do |type|
             manifest_files.each do |file|
               parsed_file(file).fetch(type, {}).each do |name, requirement|
+                next if lockfile && !version_from_lockfile(name, requirement)
+
                 dependency_set << Dependency.new(
                   name: name,
                   version: version_from_lockfile(name, requirement),
@@ -121,6 +123,7 @@ module Dependabot
             candidate_packages.
             max_by { |p| version_class.new(p["version"]) }
 
+          return unless package
           version_from_lockfile_details(package)
         end
 
