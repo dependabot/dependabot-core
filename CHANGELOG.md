@@ -1,3 +1,7 @@
+## v0.53.28, 9 April 2018
+
+- PHP: Add patches back to lockfile after update (if required)
+
 ## v0.53.27, 9 April 2018
 
 - Handle badly named releases
