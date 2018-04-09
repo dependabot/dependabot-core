@@ -84,6 +84,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/AbcSize
           def handle_composer_errors(error)
             if error.message.start_with?("Failed to execute git clone")
               dependency_url =
@@ -116,6 +117,7 @@ module Dependabot
             end
           end
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/AbcSize
 
           def php_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
