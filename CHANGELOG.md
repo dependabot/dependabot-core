@@ -1,3 +1,7 @@
+## v0.53.27, 9 April 2018
+
+- Handle badly named releases
+
 ## v0.53.26, 9 April 2018
 
 - Better release note filtering (will mean release notes are included in PRs
