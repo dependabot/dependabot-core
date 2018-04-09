@@ -29,7 +29,7 @@ module Dependabot
         end
 
         def releases_text
-          return unless updated_release
+          return unless relevant_releases.any?
           return if relevant_releases.all? { |r| r.body.nil? || r.body == "" }
 
           relevant_releases.map do |r|
@@ -52,10 +52,72 @@ module Dependabot
         end
 
         def relevant_releases
-          if previous_release
-            [updated_release, *intermediate_releases]
+          releases = releases_since_previous_version
+
+          if updated_release && version_class.correct?(dependency.version)
+            releases = filter_releases_using_updated_release(releases)
+            filter_releases_using_updated_version(releases, conservative: true)
+          elsif updated_release
+            filter_releases_using_updated_release(releases)
+          elsif version_class.correct?(dependency.version)
+            filter_releases_using_updated_version(releases, conservative: false)
           else
-            [updated_release]
+            [updated_release].compact
+          end
+        end
+
+        def releases_since_previous_version
+          previous_version = dependency.previous_version
+          return [updated_release].compact unless previous_version
+
+          if previous_release && version_class.correct?(previous_version)
+            releases = filter_releases_using_previous_release(all_releases)
+            filter_releases_using_previous_version(releases, conservative: true)
+          elsif previous_release
+            filter_releases_using_previous_release(all_releases)
+          elsif version_class.correct?(previous_version)
+            filter_releases_using_previous_version(
+              all_releases,
+              conservative: false
+            )
+          else
+            [updated_release].compact
+          end
+        end
+
+        def filter_releases_using_previous_release(releases)
+          releases.first(releases.index(previous_release))
+        end
+
+        def filter_releases_using_updated_release(releases)
+          releases[releases.index(updated_release)..-1]
+        end
+
+        def filter_releases_using_previous_version(releases, conservative:)
+          previous_version = version_class.new(dependency.previous_version)
+
+          releases.reject do |release|
+            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
+
+            next conservative unless version_class.correct?(cleaned_tag)
+
+            # Reject any releases that are less than the previous version
+            # (e.g., if two major versions are being maintained)
+            version_class.new(cleaned_tag) <= previous_version
+          end
+        end
+
+        def filter_releases_using_updated_version(releases, conservative:)
+          updated_version = version_class.new(dependency.version)
+
+          releases.reject do |release|
+            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
+
+            next conservative unless version_class.correct?(cleaned_tag)
+
+            # Reject any releases that are greater than the updated version
+            # (e.g., if two major versions are being maintained)
+            version_class.new(cleaned_tag) > updated_version
           end
         end
 

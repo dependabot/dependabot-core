@@ -209,14 +209,26 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           end
 
           context "and the previous release doesn't have a github release" do
-            let(:dependency_previous_version) { "0.9.1" }
+            let(:dependency_previous_version) { "1.5.1" }
 
-            it "returns text for the latest release only" do
+            it "uses the version number to filter the releases" do
               expect(subject).
                 to eq(
                   "## v1.8.0\n"\
                   "- Add 2018-2027 TARGET holiday defintions\n"\
-                  "- Add 2018-2027 Bankgirot holiday defintions"
+                  "- Add 2018-2027 Bankgirot holiday defintions\n"\
+                  "\n"\
+                  "## v1.7.0\n"\
+                  "No release notes provided.\n"\
+                  "\n"\
+                  "## v1.7.0.beta\n"\
+                  "No release notes provided.\n"\
+                  "\n"\
+                  "## v1.7.0.alpha\n"\
+                  "No release notes provided.\n"\
+                  "\n"\
+                  "## v1.6.0\n"\
+                  "Mad props to @greysteil for this"
                 )
             end
           end
@@ -224,6 +236,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
         context "when the release is not present" do
           let(:dependency_version) { "1.9.0" }
+          let(:dependency_previous_version) { "1.8.0" }
           it { is_expected.to be_nil }
         end
       end
