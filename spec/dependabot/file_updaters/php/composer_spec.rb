@@ -440,6 +440,47 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
       end
 
+      context "when there are patches" do
+        let(:composer_body) do
+          fixture("php", "composer_files", "patches")
+        end
+        let(:lockfile_body) { fixture("php", "lockfiles", "patches") }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "ehime/hello-world",
+            version: "1.0.5",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.5",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.0.4",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "1.0.4",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "doesn't strip the patches" do
+          updated_dep = JSON.parse(updated_lockfile_content).
+                        fetch("packages").
+                        find { |p| p["name"] == "ehime/hello-world" }
+
+          expect(updated_dep.dig("extra", "patches_applied")).
+            to include("[PATCH] markdown modified")
+        end
+      end
+
       context "regression spec for media-organizer" do
         let(:composer_body) do
           fixture("php", "composer_files", "media_organizer")

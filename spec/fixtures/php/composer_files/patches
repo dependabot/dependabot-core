@@ -1,0 +1,23 @@
+{
+    "name": "tobybellwood/patch-test",
+    "description": "a test package to demo patching",
+    "type": "project",
+    "require": {
+        "ehime/hello-world": "1.0.4",
+        "cweagans/composer-patches": "~1.0"
+    },
+    "extra": {
+      "patches": {
+        "ehime/hello-world": {
+          "[PATCH] markdown modified": "https://github.com/ehime/hello-world/commit/f40bc39e0c0bc667a4d18c63d8dc52088ce94656.patch",
+          "[PATCH] mardown noted for autoupdate": "https://github.com/ehime/hello-world/commit/1427d3d8aa7a8ee086eb6a7fee9506e03a18cd2f.patch"
+        }
+      }
+    },
+    "authors": [
+        {
+            "name": "toby.bellwood",
+            "email": "toby.bellwood@gmail.com"
+        }
+    ]
+}

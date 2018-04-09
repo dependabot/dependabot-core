@@ -1,0 +1,104 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8b9b97f25f306370d6fe52407e096917",
+    "packages": [
+        {
+            "name": "cweagans/composer-patches",
+            "version": "1.6.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cweagans/composer-patches.git",
+                "reference": "462e65061606dc6149349535d4322241515d1b16"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/462e65061606dc6149349535d4322241515d1b16",
+                "reference": "462e65061606dc6149349535d4322241515d1b16",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "composer/composer": "~1.0",
+                "phpunit/phpunit": "~4.6"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "cweagans\\Composer\\Patches"
+            },
+            "autoload": {
+                "psr-4": {
+                    "cweagans\\Composer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Cameron Eagans",
+                    "email": "me@cweagans.net"
+                }
+            ],
+            "description": "Provides a way to patch Composer packages.",
+            "time": "2017-12-07T16:16:31+00:00"
+        },
+        {
+            "name": "ehime/hello-world",
+            "version": "1.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ehime/hello-world.git",
+                "reference": "91c00e5b0f24d9cbccfbeaa510814f13d961289e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ehime/hello-world/zipball/91c00e5b0f24d9cbccfbeaa510814f13d961289e",
+                "reference": "91c00e5b0f24d9cbccfbeaa510814f13d961289e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "patches_applied": {
+                    "[PATCH] markdown modified": "https://github.com/ehime/hello-world/commit/f40bc39e0c0bc667a4d18c63d8dc52088ce94656.patch",
+                    "[PATCH] mardown noted for autoupdate": "https://github.com/ehime/hello-world/commit/1427d3d8aa7a8ee086eb6a7fee9506e03a18cd2f.patch"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "HelloWorld": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jd Daniel",
+                    "email": "dodomeki@gmail.com"
+                }
+            ],
+            "description": "My first Composer project",
+            "time": "2015-07-31T17:49:20+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

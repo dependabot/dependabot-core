@@ -73,6 +73,7 @@ module Dependabot
                   ]
                 ).fetch("composer.lock")
 
+              updated_content = replace_patches(updated_content)
               if lockfile.content == updated_content
                 raise "Expected content to change!"
               end
@@ -155,6 +156,31 @@ module Dependabot
 
           raise unless dependency_name
           raise Dependabot::GitDependencyReferenceNotFound, dependency_name
+        end
+
+        def replace_patches(updated_content)
+          content = updated_content
+          %w(packages packages-dev).each do |package_type|
+            JSON.parse(lockfile.content).fetch(package_type).each do |details|
+              next unless (patches = details.dig("extra", "patches_applied"))
+
+              updated_object = JSON.parse(content)
+              updated_object_package =
+                updated_object.
+                fetch(package_type).
+                find { |d| d["name"] == details["name"] }
+
+              next unless updated_object_package
+              updated_object_package["extra"] ||= {}
+              updated_object_package["extra"]["patches_applied"] = patches
+
+              content =
+                JSON.pretty_generate(updated_object, indent: "    ").
+                gsub(/\[\n\n\s*\]/, "[]").
+                gsub(/\}\z/, "}\n")
+            end
+          end
+          content
         end
 
         def php_helper_path
