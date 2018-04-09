@@ -1,3 +1,7 @@
+## v0.53.29, 9 April 2018
+
+- Rust: Handle old-format lockfiles
+
 ## v0.53.28, 9 April 2018
 
 - PHP: Add patches back to lockfile after update (if required)
