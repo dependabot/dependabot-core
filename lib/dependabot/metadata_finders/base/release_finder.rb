@@ -71,7 +71,7 @@ module Dependabot
           return nil unless version
           release_regex = version_regex(version)
           all_releases.find do |r|
-            [r.name, r.tag_name].any? { |nm| release_regex.match?(nm.to_s) }
+            [r.tag_name, r.name].any? { |nm| release_regex.match?(nm.to_s) }
           end
         end
 
