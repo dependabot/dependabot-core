@@ -28,13 +28,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     )
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:files) { [composer_file, lockfile] }
   let(:composer_file) do

@@ -95,6 +95,8 @@ module Dependabot
                 error.message.match(/Failed to clone (?<url>.*?) via/).
                 named_captures.fetch("url")
               raise Dependabot::GitDependenciesNotReachable, dependency_url
+            elsif error.message.start_with?("Could not parse version")
+              raise Dependabot::DependencyFileNotResolvable, error.message
             elsif error.message == "Requirements could not be resolved"
               # We should raise a Dependabot::DependencyFileNotResolvable error
               # here, but can't confidently distinguish between cases where we
