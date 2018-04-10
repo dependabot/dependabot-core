@@ -1,3 +1,8 @@
+## v0.53.30, 10 April 2018
+
+- Python: Handle empty version strings in Utils::Python::Version
+- PHP: Handle array entries for "extra" in composer.lock
+
 ## v0.53.29, 9 April 2018
 
 - Rust: Handle old-format lockfiles
