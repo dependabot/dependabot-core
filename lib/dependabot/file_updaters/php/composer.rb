@@ -162,6 +162,7 @@ module Dependabot
           content = updated_content
           %w(packages packages-dev).each do |package_type|
             JSON.parse(lockfile.content).fetch(package_type).each do |details|
+              next unless details["extra"].is_a?(Hash)
               next unless (patches = details.dig("extra", "patches_applied"))
 
               updated_object = JSON.parse(content)
