@@ -43,6 +43,11 @@ RSpec.describe Dependabot::Utils::Python::Version do
       let(:version_string) { "1.0.0+gc.1" }
       it { is_expected.to eq "1.0.0+gc.1" }
     end
+
+    context "with an empty string" do
+      let(:version_string) { "" }
+      it { is_expected.to eq("") }
+    end
   end
 
   describe "#<=>" do

@@ -20,7 +20,7 @@ module Dependabot
         def initialize(version)
           @version_string = version.to_s
           version, @local_version = version.split("+")
-          version = normalise_prerelease(version)
+          version = normalise_prerelease(version) if version
           if @local_version
             @local_version = normalise_prerelease(@local_version)
           end

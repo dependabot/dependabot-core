@@ -22,7 +22,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
       ],
       previous_version: dependency_previous_version,
-      package_manager: "bundler"
+      package_manager: "pip"
     )
   end
   let(:dependency_name) { "business" }
