@@ -286,7 +286,10 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           [{
             requirement: ">= 0",
             file: "Gemfile",
-            source: { type: "rubygems" },
+            source: {
+              type: "rubygems",
+              url: "https://SECRET_CODES@repo.fury.io/greysteil/"
+            },
             groups: [:default]
           }]
         end

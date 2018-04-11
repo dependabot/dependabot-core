@@ -37,9 +37,8 @@ module Dependabot
 
         def look_up_source
           case new_source_type
-          when "default" then find_source_from_rubygems_listing
+          when "default", "rubygems" then find_source_from_rubygems_listing
           when "git" then find_source_from_git_url
-          when "rubygems" then nil # Private rubygems server
           else raise "Unexpected source type: #{new_source_type}"
           end
         end
@@ -74,7 +73,8 @@ module Dependabot
 
           response =
             Excon.get(
-              "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
+              "#{registry_url}api/v1/gems/#{dependency.name}.json",
+              headers: registry_auth_headers,
               idempotent: true,
               middlewares: SharedHelpers.excon_middleware
             )
@@ -82,6 +82,27 @@ module Dependabot
           @rubygems_listing = JSON.parse(response.body)
         rescue JSON::ParserError
           @rubygems_listing = {}
+        end
+
+        def registry_url
+          return "https://rubygems.org/" if new_source_type == "default"
+
+          info = dependency.requirements.map { |r| r[:source] }.compact.first
+          info[:url] || info.fetch("url")
+        end
+
+        def registry_auth_headers
+          return {} unless new_source_type == "rubygems"
+
+          token =
+            credentials.
+            find { |cred| registry_url.include?(cred["host"]) }&.
+            fetch("token")
+
+          return {} unless token
+
+          token += ":" unless token.include?(":")
+          { "Authorization" => "Basic #{Base64.encode64(token).chomp}" }
         end
       end
     end

@@ -180,11 +180,20 @@ module Dependabot
 
           details = { type: source.class.name.split("::").last.downcase }
           if source.is_a?(::Bundler::Source::Git)
-            details[:url] = source.uri
-            details[:branch] = source.branch || "master"
-            details[:ref] = source.ref
+            details.merge!(git_source_details(source))
+          end
+          if source.is_a?(::Bundler::Source::Rubygems)
+            details[:url] = source.remotes.first.to_s
           end
           details
+        end
+
+        def git_source_details(source)
+          {
+            url: source.uri,
+            branch: source.branch || "master",
+            ref: source.ref
+          }
         end
 
         def default_rubygems?(source)

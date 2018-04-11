@@ -49,14 +49,26 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               file: "Gemfile",
               requirement: ">= 0",
               groups: [],
-              source: { type: "rubygems" }
+              source: {
+                type: "rubygems",
+                url: "https://SECRET_CODES@repo.fury.io/greysteil/"
+              }
             }
           ],
           package_manager: "bundler"
         )
       end
 
-      it { is_expected.to eq(nil) }
+      let(:rubygems_url) do
+        "https://repo.fury.io/greysteil/api/v1/gems/business.json"
+      end
+      let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+      before do
+        stub_request(:get, rubygems_url).
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      it { is_expected.to eq("https://github.com/gocardless/business") }
     end
 
     context "for a git source" do
