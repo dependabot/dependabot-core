@@ -1,3 +1,7 @@
+## v0.53.35, 11 April 2018
+
+- Ruby: Fetch changelogs for private source dependencies
+
 ## v0.53.34, 11 April 2018
 
 - JS: Better sanitization of npmrc files
