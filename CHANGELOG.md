@@ -1,3 +1,7 @@
+## v0.53.34, 11 April 2018
+
+- JS: Better sanitization of npmrc files
+
 ## v0.53.33, 11 April 2018
 
 - JS: Filter out nil requirements in update checker (when updating git
