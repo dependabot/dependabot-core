@@ -61,7 +61,10 @@ module Dependabot
           end
 
           def complete_npmrc_from_credentials
-            initial_content = npmrc_file.content.gsub(/^.*:_authToken=\$.*/, "")
+            initial_content =
+              npmrc_file.content.
+              gsub(/^.*:_authToken=\$.*/, "").
+              gsub(/^.*:_auth=\$.*/, "")
 
             return initial_content unless (cred = registry_credentials.first)
 

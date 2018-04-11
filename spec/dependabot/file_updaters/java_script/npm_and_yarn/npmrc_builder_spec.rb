@@ -68,8 +68,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
               to eq(fixture("javascript", "npmrc", npmrc_fixture_name))
           end
 
-          context "that need sanitizing" do
+          context "that needs an authToken sanitizing" do
             let(:npmrc_fixture_name) { "env_auth_token" }
+
+            it "removes the env variable use" do
+              expect(npmrc_content).
+                to eq(
+                  "@dependabot:registry=https://npm.fury.io/dependabot/\n\n"
+                )
+            end
+          end
+
+          context "that needs an auth sanitizing" do
+            let(:npmrc_fixture_name) { "env_auth" }
 
             it "removes the env variable use" do
               expect(npmrc_content).
