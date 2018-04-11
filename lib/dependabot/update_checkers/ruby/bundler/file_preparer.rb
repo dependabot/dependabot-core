@@ -23,7 +23,8 @@ module Dependabot
         #   version allowed by the gemspec, if the gemspec has a required ruby
         #   version range
         class FilePreparer
-          REQUIRED_RUBY_VERSION = /required_ruby_version/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
                          unlock_requirement: true,
@@ -139,16 +140,10 @@ module Dependabot
           end
 
           def replace_gemfile_constraint(content)
-            updated_version =
-              if dependency.version&.match?(/^[0-9a-f]{40}$/) then 0
-              elsif dependency.version then dependency.version
-              else 0
-              end
-
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemfile,
-              updated_requirement: ">= #{updated_version}"
+              updated_requirement: updated_version_requirement_string
             ).rewrite(content)
           end
 
@@ -156,7 +151,7 @@ module Dependabot
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemspec,
-              updated_requirement: ">= 0"
+              updated_requirement: updated_version_requirement_string
             ).rewrite(content)
           end
 
@@ -166,6 +161,21 @@ module Dependabot
             FileUpdaters::Ruby::Bundler::GemspecSanitizer.
               new(replacement_version: "0.0.1").
               rewrite(gemspec_content)
+          end
+
+          def updated_version_requirement_string
+            return ">= 0" if dependency.version&.match?(/^[0-9a-f]{40}$/)
+            return ">= #{dependency.version}" if dependency.version
+
+            version_for_requirement =
+              dependency.requirements.map { |r| r[:requirement] }.
+              reject { |req_string| req_string.start_with?("<") }.
+              select { |req_string| req_string.match?(VERSION_REGEX) }.
+              map { |req_string| req_string.match(VERSION_REGEX) }.
+              select { |version| Gem::Version.correct?(version) }.
+              max_by { |version| Gem::Version.new(version) }
+
+            ">= #{version_for_requirement || 0}"
           end
 
           def remove_git_source(content)
