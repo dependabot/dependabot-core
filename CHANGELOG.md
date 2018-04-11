@@ -1,3 +1,8 @@
+## v0.53.33, 11 April 2018
+
+- JS: Filter out nil requirements in update checker (when updating git
+  dependencies)
+
 ## v0.53.32, 11 April 2018
 
 - Implement Requirement.requirements_array for all languages
