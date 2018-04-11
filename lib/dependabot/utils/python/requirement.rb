@@ -26,6 +26,13 @@ module Dependabot
           [matches[1] || "=", Utils::Python::Version.new(matches[2])]
         end
 
+        # For consistency with other langauges, we define a requirements array.
+        # Python doesn't have an `OR` separator for requirements, so it always
+        # contains a single element.
+        def self.requirements_array(requirement_string)
+          [new(requirement_string)]
+        end
+
         def initialize(*requirements)
           requirements = requirements.flatten.map do |req_string|
             convert_python_constraint_to_ruby_constraint(req_string)

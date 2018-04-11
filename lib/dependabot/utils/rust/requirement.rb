@@ -10,6 +10,13 @@ module Dependabot
   module Utils
     module Rust
       class Requirement < Gem::Requirement
+        # For consistency with other langauges, we define a requirements array.
+        # Rust doesn't have an `OR` separator for requirements, so it always
+        # contains a single element.
+        def self.requirements_array(requirement_string)
+          [new(requirement_string)]
+        end
+
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
             convert_rust_constraint_to_ruby_constraint(req_string)

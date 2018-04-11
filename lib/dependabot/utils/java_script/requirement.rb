@@ -12,7 +12,7 @@ module Dependabot
         # Returns an array of requirements. At least one requirement from the
         # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)
-          return if requirement_string.nil?
+          return [new(nil)] if requirement_string.nil?
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
             requirements = req_string.strip.split(AND_SEPARATOR)
             new(requirements)

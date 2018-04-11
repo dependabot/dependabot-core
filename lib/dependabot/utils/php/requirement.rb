@@ -13,6 +13,13 @@ module Dependabot
           super(new_obj)
         end
 
+        # For consistency with other langauges, we define a requirements array.
+        # PHP doesn't have an `OR` separator for requirements, so it always
+        # contains a single element.
+        def self.requirements_array(requirement_string)
+          [new(requirement_string)]
+        end
+
         def initialize(*requirements)
           requirements =
             requirements.flatten.

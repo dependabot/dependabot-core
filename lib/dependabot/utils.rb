@@ -8,6 +8,7 @@ require "dependabot/utils/php/version"
 require "dependabot/utils/rust/version"
 
 require "dependabot/utils/elixir/requirement"
+require "dependabot/utils/java/requirement"
 require "dependabot/utils/java_script/requirement"
 require "dependabot/utils/php/requirement"
 require "dependabot/utils/python/requirement"
@@ -32,7 +33,8 @@ module Dependabot
 
     def self.requirement_class_for_package_manager(package_manager)
       case package_manager
-      when "maven", "submodules", "docker" then Gem::Requirement
+      when "submodules", "docker" then Gem::Requirement
+      when "maven" then Utils::Java::Requirement
       when "bundler" then Utils::Ruby::Requirement
       when "npm_and_yarn" then Utils::JavaScript::Requirement
       when "pip" then Utils::Python::Requirement
