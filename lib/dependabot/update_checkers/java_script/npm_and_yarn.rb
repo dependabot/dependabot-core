@@ -76,6 +76,7 @@ module Dependabot
 
         def latest_resolvable_version_with_no_unlock_for_git_dependency
           reqs = dependency.requirements.map do |r|
+            next if r.fetch(:requirement).nil?
             Utils::JavaScript::Requirement.requirements_array(
               r.fetch(:requirement)
             )
