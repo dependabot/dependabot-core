@@ -1033,8 +1033,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       context "when a dist-tag is specified" do
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "bootstrap",
-            version: "4.0.0-beta.3",
+            name: "npm",
+            version: "5.9.0-next.0",
             package_manager: "npm_and_yarn",
             requirements: [
               {
@@ -1044,7 +1044,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                 source: nil
               }
             ],
-            previous_version: "3.3.7",
+            previous_version: "5.8.0",
             previous_requirements: [
               {
                 file: "package.json",
@@ -1060,15 +1060,15 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         it "has details of the updated item" do
           expect(updated_yarn_lock_file.content).
-            to include("bootstrap@next:")
+            to include("npm@next:")
 
           version =
             updated_yarn_lock_file.content.
-            match(/bootstrap\@next:\n  version "(?<version>.*?)"/).
+            match(/npm\@next:\n  version "(?<version>.*?)"/).
             named_captures["version"]
 
           expect(Dependabot::Utils::JavaScript::Version.new(version)).
-            to be > Dependabot::Utils::JavaScript::Version.new("4.0.0")
+            to be >= Dependabot::Utils::JavaScript::Version.new("5.9.0-next.0")
         end
       end
 

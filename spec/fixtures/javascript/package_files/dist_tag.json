@@ -17,6 +17,6 @@
     },
     "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
     "dependencies": {
-      "bootstrap": "next"
+      "npm": "next"
     }
 }
