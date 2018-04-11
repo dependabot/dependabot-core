@@ -1,3 +1,7 @@
+## v0.53.32, 11 April 2018
+
+- Implement Requirement.requirements_array for all languages
+
 ## v0.53.31, 11 April 2018
 
 - Ruby: Prepare files to ensure only updates are possible
