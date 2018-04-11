@@ -1,3 +1,7 @@
+## v0.53.31, 11 April 2018
+
+- Ruby: Prepare files to ensure only updates are possible
+
 ## v0.53.30, 10 April 2018
 
 - Python: Handle empty version strings in Utils::Python::Version
