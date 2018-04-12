@@ -26,6 +26,15 @@ RSpec.describe Dependabot::Utils::JavaScript::Version do
     end
   end
 
+  describe ".new" do
+    subject { described_class.new(version_string) }
+
+    context "with a version class" do
+      let(:version_string) { described_class.new("1.0.0") }
+      it { is_expected.to eq(described_class.new("1.0.0")) }
+    end
+  end
+
   describe "#to_s" do
     subject { version.to_s }
 
