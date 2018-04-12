@@ -9,6 +9,26 @@ module Dependabot
         AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
+        quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+        version_pattern = "v?#{Gem::Version::VERSION_PATTERN}"
+
+        PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+        PATTERN = /\A#{PATTERN_RAW}\z/
+
+        def self.parse(obj)
+          if obj.is_a?(Gem::Version)
+            return ["=", Utils::JavaScript::Version.new(obj.to_s)]
+          end
+
+          unless (matches = PATTERN.match(obj.to_s))
+            msg = "Illformed requirement [#{obj.inspect}]"
+            raise BadRequirementError, msg
+          end
+
+          return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+          [matches[1] || "=", Utils::JavaScript::Version.new(matches[2])]
+        end
+
         # Returns an array of requirements. At least one requirement from the
         # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)

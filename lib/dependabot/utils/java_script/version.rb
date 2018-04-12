@@ -10,8 +10,13 @@ module Dependabot
   module Utils
     module JavaScript
       class Version < Gem::Version
+        def self.correct?(version)
+          super(version.gsub(/^v/, ""))
+        end
+
         def initialize(version)
           @version_string = version.to_s
+          version = version.gsub(/^v/, "")
           super
         end
 
