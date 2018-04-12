@@ -1,3 +1,9 @@
+## v0.53.38, 12 April 2018
+
+- Ruby: Test that auth details are passed to gem server in MetadataFinder
+- Ruby: Treat private rubygems sources more like default sources in
+  MetadataFinder
+
 ## v0.53.37, 12 April 2018
 
 - JS: Handle JavaScript::Version being created with a version class
