@@ -12,9 +12,12 @@ module Dependabot
         require_relative "maven/property_updater"
 
         def latest_version
-          versions = VersionFinder.new(dependency: dependency).versions
-          versions = versions.reject(&:prerelease?) unless wants_prerelease?
-          versions.last
+          @latest_version ||=
+            begin
+              versions = VersionFinder.new(dependency: dependency).versions
+              versions = versions.reject(&:prerelease?) unless wants_prerelease?
+              versions.last
+            end
         end
 
         def latest_resolvable_version
