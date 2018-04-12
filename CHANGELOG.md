@@ -1,3 +1,7 @@
+## v0.54.2, 12 April 2018
+
+- Python: Bump pip to 10.0.0.0b2
+
 ## v0.54.1, 12 April 2018
 
 - Python: Add version resovler for Pipenv
