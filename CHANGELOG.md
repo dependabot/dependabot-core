@@ -1,3 +1,7 @@
+## v0.53.36, 12 April 2018
+
+- JS: Handle versions prefixed with a v in utils classes
+
 ## v0.53.35, 11 April 2018
 
 - Ruby: Fetch changelogs for private source dependencies
