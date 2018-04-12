@@ -1,3 +1,8 @@
+## v0.54.0, 12 April 2018
+
+- BREAKING: Pass credentials to PullRequestCreator and PullRequestUpdater
+  instead of a client
+
 ## v0.53.38, 12 April 2018
 
 - Ruby: Test that auth details are passed to gem server in MetadataFinder
