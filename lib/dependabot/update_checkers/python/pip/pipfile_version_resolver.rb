@@ -45,8 +45,10 @@ module Dependabot
                   File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
                 end
 
-                # Shell out to Pipenv, which handles everything for us, and does
-                # so without doing an install (so it's fast).
+                # Shell out to Pipenv, which handles everything for us.
+                # Whilst calling `lock` avoids doing an install as part of the
+                # pipenv flow, and install is still dont by pip-tools in order
+                # to resolve the dependencies. That means this is slow.
                 run_pipenv_command("pipenv lock")
 
                 updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
