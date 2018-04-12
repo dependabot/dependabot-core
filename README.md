@@ -60,7 +60,7 @@ If you use Dependabot Core then we'd love to hear what you build!
 
 ## License
 
-We've been unable to find a license that accurately fits Dependabot's needs
+We have been unable to find a license that accurately fits Dependabot's needs
 (suggestions are welcome) so instead we offer the below permissions informally.
 
 If you would like to use Dependabot Core for non-commerical purposes, such as to
@@ -69,6 +69,7 @@ fact, we'd love you to, and will help and support you however we can.
 
 If you would like to add Dependabot's functionality to your for-profit company's
 offering then we DO NOT give you permission to use Dependabot Core to do so.
+Please contact us directly to discuss a partnership or licensing arrangement.
 
 ## History
 
