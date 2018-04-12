@@ -39,7 +39,7 @@ module Dependabot
               rescue StandardError
                 return []
               end
-              return [clean_path(path, node)]
+              return [clean_path(path)]
             end
 
             relevant_child_nodes(node).flat_map do |child_node|
@@ -59,15 +59,11 @@ module Dependabot
             !path_node_for_gem_declaration(node).nil?
           end
 
-          def clean_path(path, node)
+          def clean_path(path)
             if Pathname.new(path).absolute?
               base_path = Pathname.new(File.expand_path(Dir.pwd))
               path = Pathname.new(path).relative_path_from(base_path).to_s
             end
-            path = File.join(
-              path,
-              "#{gem_name_for_gem_declaration(node)}.gemspec"
-            )
             path = File.join(current_dir, path) unless current_dir.nil?
             Pathname.new(path).cleanpath.to_path
           end
@@ -100,10 +96,6 @@ module Dependabot
             return unless path_hash_pair
 
             path_hash_pair.children.last
-          end
-
-          def gem_name_for_gem_declaration(node)
-            node.children[2].children.first
           end
 
           def key_from_hash_pair(node)

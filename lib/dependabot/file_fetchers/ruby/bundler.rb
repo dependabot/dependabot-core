@@ -80,11 +80,24 @@ module Dependabot
           unfetchable_gems = []
 
           gemspec_paths = fetch_gemspec_paths
+          nested_paths = gemspec_paths.flat_map do |path|
+            next [] if path.to_s == "."
+            repo_contents(dir: path).
+              select { |f| f.type == "dir" }.
+              map { |f| File.join(path, f.name) }
+          end
 
-          gemspec_paths.each do |path|
-            gemspec_files << fetch_file_from_host(path)
-          rescue Dependabot::DependencyFileNotFound
-            unfetchable_gems << path.split("/").last.gsub(".gemspec", "")
+          (gemspec_paths + nested_paths).uniq.each do |path|
+            files = repo_contents(dir: path)
+            files.
+              select { |f| f.name.end_with?(".gemspec") }.
+              each do |f|
+                file_path = File.join(path, f.name)
+                gemspec_files << fetch_file_from_host(file_path)
+              rescue Dependabot::DependencyFileNotFound
+                unfetchable_gems <<
+                  file_path.split("/").last.gsub(".gemspec", "")
+              end
           end
 
           if unfetchable_gems.any?
@@ -94,12 +107,21 @@ module Dependabot
           gemspec_files
         end
 
+        def fetch_gemspecs_from_directory(dir)
+          files = repo_contents(dir)
+          files.
+            select { |f| f.name.end_with?(".gemspec") }.
+            map do |f|
+              gemspec_files << fetch_file_from_host(File.join(path, f.name))
+            end
+        end
+
         def fetch_gemspec_paths
           if lockfile
             parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
             parsed_lockfile.specs.
               select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
-              map { |s| "#{s.source.path}/#{s.name}.gemspec" }
+              map { |s| s.source.path }
           else
             gemfiles = ([gemfile] + child_gemfiles).compact
             gemfiles.flat_map do |file|

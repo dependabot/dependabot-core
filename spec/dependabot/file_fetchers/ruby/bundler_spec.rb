@@ -153,6 +153,13 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
     context "that has a fetchable path" do
       before do
+        stub_request(:get, url + "plugins/bump-core?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -166,6 +173,40 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
         expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
           to include("plugins/bump-core/bump-core.gemspec")
+      end
+
+      context "that is nested" do
+        before do
+          stub_request(:get, url + "plugins/bump-core?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "contents_ruby_nested_path_directory.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "plugins/bump-core/bump-core?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_ruby_path_directory.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(
+            :get, url + "plugins/bump-core/bump-core/bump-core.gemspec?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemspec_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches gemspec from path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("plugins/bump-core/bump-core/bump-core.gemspec")
+        end
       end
 
       context "without a Gemfile.lock" do
@@ -189,6 +230,13 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
     context "that has an unfetchable path" do
       before do
+        stub_request(:get, url + "plugins/bump-core?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
