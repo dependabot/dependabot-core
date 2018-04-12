@@ -44,19 +44,31 @@ concern will have a language-specific class.
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
-## Why is this open source?
+## Why is this public?
 
 As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
 app is pretty much just a UI and database). If we were paranoid about someone
 stealing our business then we'd be keeping it under lock and key.
 
-Dependabot Core is open source because we're more interested in it having an
+Dependabot Core is public because we're more interested in it having an
 impact than we are in making a buck from it. We'd love you to use
 [Dependabot][dependabot], so that we can continue to develop it, but if you want
 to build and host your own version then this library should make doing so a
 *lot* easier.
 
 If you use Dependabot Core then we'd love to hear what you build!
+
+## License
+
+We've been unable to find a license that accurately fits Dependabot's needs
+(suggestions are welcome) so instead we offer the below permissions informally.
+
+If you would like to use Dependabot Core for non-commerical purposes, such as to
+host a bot at your workplace, then we give you full permission to do so. In
+fact, we'd love you to, and will help and support you however we can.
+
+If you would like to add Dependabot's functionality to your for-profit company's
+offering then we DO NOT give you permission to use Dependabot Core to do so.
 
 ## History
 
