@@ -1,3 +1,9 @@
+## v0.53.37, 12 April 2018
+
+- JS: Handle JavaScript::Version being created with a version class
+  (not a string)
+- Java: Cache latest version in update checker
+
 ## v0.53.36, 12 April 2018
 
 - JS: Handle versions prefixed with a v in utils classes
