@@ -13,7 +13,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       base_commit: base_commit,
       dependencies: [dependency],
       files: files,
-      github_client: github_client,
+      credentials: credentials,
       custom_labels: custom_labels
     )
   end
@@ -36,7 +36,13 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -288,7 +294,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           base_commit: base_commit,
           dependencies: [dependency],
           files: files,
-          github_client: github_client,
+          credentials: credentials,
           author_details: {
             email: "support@dependabot.com",
             name: "dependabot"
@@ -316,7 +322,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             base_commit: base_commit,
             dependencies: [dependency],
             files: files,
-            github_client: github_client,
+            credentials: credentials,
             author_details: {
               email: "support@dependabot.com",
               name: "dependabot"
@@ -429,7 +435,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           target_branch: "my_branch",
           dependencies: [dependency],
           files: files,
-          github_client: github_client
+          credentials: credentials
         )
       end
       let(:branch_name) { "dependabot/bundler/my_branch/business-1.5.0" }

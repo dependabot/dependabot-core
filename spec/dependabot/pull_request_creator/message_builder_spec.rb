@@ -12,7 +12,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       repo_name: repo,
       dependencies: dependencies,
       files: files,
-      github_client: github_client,
+      credentials: credentials,
       pr_message_footer: pr_message_footer,
       author_details: author_details,
       vulnerabilities_fixed: vulnerabilities_fixed
@@ -36,7 +36,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }

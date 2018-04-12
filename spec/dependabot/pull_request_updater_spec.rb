@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
     Dependabot::PullRequestUpdater.new(repo: repo,
                                        base_commit: base_commit,
                                        files: files,
-                                       github_client: github_client,
+                                       credentials: credentials,
                                        pull_request_number: pull_request_number)
   end
 
@@ -19,7 +19,13 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
   let(:pull_request_number) { 1 }
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -171,7 +177,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
           repo: repo,
           base_commit: base_commit,
           files: files,
-          github_client: github_client,
+          credentials: credentials,
           pull_request_number: pull_request_number,
           author_details: {
             email: "support@dependabot.com",
@@ -199,7 +205,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
             repo: repo,
             base_commit: base_commit,
             files: files,
-            github_client: github_client,
+            credentials: credentials,
             pull_request_number: pull_request_number,
             author_details: {
               email: "support@dependabot.com",

@@ -9,11 +9,11 @@ module Dependabot
     require "dependabot/pull_request_creator/branch_namer"
 
     attr_reader :repo_name, :dependencies, :files, :base_commit,
-                :github_client, :pr_message_footer, :target_branch,
+                :credentials, :pr_message_footer, :target_branch,
                 :author_details, :signature_key, :custom_labels,
                 :vulnerabilities_fixed
 
-    def initialize(repo:, base_commit:, dependencies:, files:, github_client:,
+    def initialize(repo:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, target_branch: nil,
                    custom_labels: nil, author_details: nil, signature_key: nil,
                    vulnerabilities_fixed: {})
@@ -21,7 +21,7 @@ module Dependabot
       @repo_name             = repo
       @base_commit           = base_commit
       @files                 = files
-      @github_client         = github_client
+      @credentials           = credentials
       @pr_message_footer     = pr_message_footer
       @target_branch         = target_branch
       @author_details        = author_details
@@ -46,7 +46,7 @@ module Dependabot
         branch_name: branch_namer.new_branch_name,
         base_commit: base_commit,
         target_branch: target_branch,
-        github_client: github_client,
+        credentials: credentials,
         files: files,
         commit_message: message_builder.commit_message,
         pr_description: message_builder.pr_message,
@@ -65,7 +65,7 @@ module Dependabot
           repo_name: repo_name,
           dependencies: dependencies,
           files: files,
-          github_client: github_client,
+          credentials: credentials,
           author_details: author_details,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed

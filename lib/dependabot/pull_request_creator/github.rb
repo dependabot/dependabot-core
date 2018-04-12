@@ -2,18 +2,19 @@
 
 require "octokit"
 require "securerandom"
+require "dependabot/github_client_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestCreator
     class Github
-      attr_reader :repo_name, :branch_name, :base_commit, :github_client,
+      attr_reader :repo_name, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
                   :custom_labels
 
-      def initialize(repo_name:, branch_name:, base_commit:, github_client:,
+      def initialize(repo_name:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
                      custom_labels:)
@@ -21,7 +22,7 @@ module Dependabot
         @branch_name    = branch_name
         @base_commit    = base_commit
         @target_branch  = target_branch
-        @github_client  = github_client
+        @credentials    = credentials
         @files          = files
         @commit_message = commit_message
         @pr_description = pr_description
@@ -47,6 +48,16 @@ module Dependabot
       end
 
       private
+
+      def github_client
+        access_token =
+          credentials.
+          find { |cred| cred["host"] == "github.com" }&.
+          fetch("password")
+
+        @github_client ||=
+          Dependabot::GithubClientWithRetries.new(access_token: access_token)
+      end
 
       def branch_exists?
         @branch_ref ||= github_client.ref(repo_name, "heads/#{branch_name}")

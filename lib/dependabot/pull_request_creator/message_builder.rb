@@ -12,18 +12,18 @@ module Dependabot
       ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s),.:]|$)/
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
-      attr_reader :repo_name, :dependencies, :files, :github_client,
+      attr_reader :repo_name, :dependencies, :files, :credentials,
                   :pr_message_footer, :author_details, :vulnerabilities_fixed
 
-      def initialize(repo_name:, dependencies:, files:, github_client:,
+      def initialize(repo_name:, dependencies:, files:, credentials:,
                      pr_message_footer: nil, author_details: nil,
                      vulnerabilities_fixed: {})
-        @dependencies = dependencies
-        @files = files
-        @repo_name = repo_name
-        @github_client = github_client
-        @pr_message_footer = pr_message_footer
-        @author_details = author_details
+        @dependencies          = dependencies
+        @files                 = files
+        @repo_name             = repo_name
+        @credentials           = credentials
+        @pr_message_footer     = pr_message_footer
+        @author_details        = author_details
         @vulnerabilities_fixed = vulnerabilities_fixed
       end
 
@@ -45,6 +45,16 @@ module Dependabot
       end
 
       private
+
+      def github_client
+        access_token =
+          credentials.
+          find { |cred| cred["host"] == "github.com" }&.
+          fetch("password")
+
+        @github_client ||=
+          Dependabot::GithubClientWithRetries.new(access_token: access_token)
+      end
 
       def commit_message_intro
         return requirement_commit_message_intro if library?
@@ -496,14 +506,6 @@ module Dependabot
           map(&:commit).
           map(&:message).
           compact
-      end
-
-      def credentials
-        [{
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => github_client.access_token
-        }]
       end
     end
   end

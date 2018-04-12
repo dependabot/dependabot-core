@@ -5,19 +5,19 @@ require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestUpdater
-    attr_reader :watched_repo, :files, :base_commit, :github_client,
+    attr_reader :watched_repo, :files, :base_commit, :credentials,
                 :pull_request_number, :author_details, :signature_key
 
-    def initialize(repo:, base_commit:, files:, github_client:,
+    def initialize(repo:, base_commit:, files:, credentials:,
                    pull_request_number:, author_details: nil,
                    signature_key: nil)
-      @watched_repo = repo
-      @base_commit = base_commit
-      @files = files
-      @github_client = github_client
+      @watched_repo        = repo
+      @base_commit         = base_commit
+      @files               = files
+      @credentials         = credentials
       @pull_request_number = pull_request_number
-      @author_details = author_details
-      @signature_key = signature_key
+      @author_details      = author_details
+      @signature_key       = signature_key
     end
 
     def update
@@ -28,6 +28,16 @@ module Dependabot
     end
 
     private
+
+    def github_client
+      access_token =
+        credentials.
+        find { |cred| cred["host"] == "github.com" }&.
+        fetch("password")
+
+      @github_client ||=
+        Dependabot::GithubClientWithRetries.new(access_token: access_token)
+    end
 
     def pull_request
       @pull_request ||=
