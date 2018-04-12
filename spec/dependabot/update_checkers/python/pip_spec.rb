@@ -14,7 +14,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   end
   let(:pypi_url) { "https://pypi.python.org/simple/luigi" }
   let(:pypi_response) { fixture("python", "pypi_simple_response.html") }
-
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -22,38 +21,38 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       credentials: credentials
     )
   end
-
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
-  let(:dependency_files) do
-    [
-      Dependabot::DependencyFile.new(
-        name: "requirements.txt",
-        content: fixture("python", "requirements", "version_specified.txt")
-      )
-    ]
+  let(:dependency_files) { [requirements_file] }
+  let(:requirements_file) do
+    Dependabot::DependencyFile.new(
+      name: "requirements.txt",
+      content: fixture("python", "requirements", requirements_fixture_name)
+    )
   end
+  let(:requirements_fixture_name) { "version_specified.txt" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "luigi",
-      version: "2.0.0",
-      requirements: [
-        {
-          file: "requirements.txt",
-          requirement: "==2.0.0",
-          groups: [],
-          source: nil
-        }
-      ],
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
       package_manager: "pip"
     )
+  end
+  let(:dependency_name) { "luigi" }
+  let(:dependency_version) { "2.0.0" }
+  let(:dependency_requirements) do
+    [{
+      file: "requirements.txt",
+      requirement: "==2.0.0",
+      groups: [],
+      source: nil
+    }]
   end
 
   describe "#can_update?" do
@@ -64,20 +63,14 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "given an up-to-date dependency" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "luigi",
-          version: "2.6.0",
-          requirements: [
-            {
-              file: "requirements.txt",
-              requirement: "==2.6.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "pip"
-        )
+      let(:dependency_version) { "2.6.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        }]
       end
       it { is_expected.to be_falsey }
     end
@@ -117,21 +110,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "when the dependency name isn't normalised" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "Luigi_ext",
-          version: "2.0.0",
-          requirements: [
-            {
-              file: "requirements.txt",
-              requirement: "==2.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "pip"
-        )
-      end
+      let(:dependency_name) { "Luigi_ext" }
       let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext" }
       let(:pypi_response) do
         fixture("python", "pypi_simple_response_underscore.html")
@@ -147,39 +126,27 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "when the user's current version is a pre-release" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "luigi",
-          version: "2.6.0a1",
-          requirements: [
-            {
-              file: "requirements.txt",
-              requirement: "==2.6.0a1",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "pip"
-        )
+      let(:dependency_version) { "2.6.0a1" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.6.0a1",
+          groups: [],
+          source: nil
+        }]
       end
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
 
     context "and the current requirement has a pre-release requirement" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "luigi",
-          version: nil,
-          requirements: [
-            {
-              file: "requirements.txt",
-              requirement: ">=2.6.0a1",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "pip"
-        )
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: ">=2.6.0a1",
+          groups: [],
+          source: nil
+        }]
       end
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
@@ -203,15 +170,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       end
 
       context "set in a requirements.txt file" do
-        let(:dependency_files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "requirements.txt",
-              content: fixture("python", "requirements", "custom_index.txt")
-            )
-          ]
-        end
-
+        let(:requirements_fixture_name) { "custom_index.txt" }
+        let(:dependency_files) { [requirements_file] }
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
       end
 
@@ -284,7 +244,34 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
-    it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+    context "without a Pipfile" do
+      let(:dependency_files) { [requirements_file] }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "with a Pipfile" do
+      let(:dependency_files) { [pipfile] }
+      let(:pipfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile",
+          content: fixture("python", "pipfiles", pipfile_fixture_name)
+        )
+      end
+      let(:pipfile_fixture_name) { "exact_version" }
+
+      it "delegates to PipfileVersionResolver" do
+        dummy_resolver =
+          instance_double(described_class::PipfileVersionResolver)
+        allow(described_class::PipfileVersionResolver).to receive(:new).
+          and_return(dummy_resolver)
+        expect(dummy_resolver).
+          to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("2.5.0"))
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("2.5.0"))
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do

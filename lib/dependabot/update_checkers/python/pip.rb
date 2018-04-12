@@ -11,6 +11,7 @@ module Dependabot
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
         require_relative "pip/requirements_updater"
+        require_relative "pip/pipfile_version_resolver"
 
         def latest_version
           @latest_version ||= fetch_latest_version
@@ -20,7 +21,16 @@ module Dependabot
           # pip doesn't (yet) do any dependency resolution. Mad but true.
           # See https://github.com/pypa/pip/issues/988 for details. This should
           # change in pip 10, due in August 2017.
-          latest_version
+          return latest_version unless pipfile
+
+          # If we're using Pipenv, we can do better (eventually we should do
+          # this for cases where we don't have a Pipfile, too).
+          @latest_resolvable_version ||=
+            PipfileVersionResolver.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            ).latest_resolvable_version
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -175,6 +185,10 @@ module Dependabot
 
         def pip_conf
           dependency_files.find { |f| f.name == "pip.conf" }
+        end
+
+        def pipfile
+          dependency_files.find { |f| f.name == "Pipfile" }
         end
 
         def requirements_files

@@ -1,0 +1,158 @@
+# frozen_string_literal: true
+
+require "dependabot/file_parsers/python/pip"
+require "dependabot/update_checkers/python/pip"
+require "dependabot/utils/python/version"
+
+module Dependabot
+  module UpdateCheckers
+    module Python
+      class Pip
+        # This class does version resolution for Pipfiles. Its current approach
+        # is somewhat crude:
+        # - Unlock the dependency we're checking in the Pipfile
+        # - Freeze all of the other dependencies in the Pipfile
+        # - Run `pipenv lock` and see what the result is
+        #
+        # Unfortunately, Pipenv doesn't resolve how we'd expect - it appears to
+        # just raise if the latest version can't be resolved. Knowing that is
+        # still better than nothing, though.
+        class PipfileVersionResolver
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+
+          attr_reader :dependency, :dependency_files, :credentials
+
+          def initialize(dependency:, dependency_files:, credentials:)
+            @dependency = dependency
+            @dependency_files = dependency_files
+            @credentials = credentials
+          end
+
+          def latest_resolvable_version
+            return @latest_resolvable_version if @resolution_already_attempted
+
+            @resolution_already_attempted = true
+            @latest_resolvable_version ||= fetch_latest_resolvable_version
+          end
+
+          private
+
+          def fetch_latest_resolvable_version
+            @latest_resolvable_version_string ||=
+              SharedHelpers.in_a_temporary_directory do |dir|
+                File.write(File.join(dir, "Pipfile"), pipfile_content)
+                if lockfile
+                  File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
+                end
+
+                # Shell out to Pipenv, which handles everything for us, and does
+                # so without doing an install (so it's fast).
+                run_pipenv_command("pipenv lock")
+
+                updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
+                updated_lockfile.dig(
+                  dependency_lockfile_group,
+                  dependency.name,
+                  "version"
+                ).gsub(/^==/, "")
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                raise unless error.message.include?("could not be resolved")
+              end
+            return unless @latest_resolvable_version_string
+            Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def pipfile_content
+            content = pipfile.content
+            content = freeze_other_dependencies(content)
+            content = unlock_target_dependency(content)
+            content
+          end
+
+          def freeze_other_dependencies(pipfile_content)
+            return pipfile_content unless lockfile
+            pipfile_object = TomlRB.parse(pipfile_content)
+
+            FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
+              next unless pipfile_object[keys[:pipfile]]
+
+              pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
+                next if dep_name == dependency.name
+                next unless dependency_version(dep_name, keys[:lockfile])
+
+                pipfile_object[keys[:pipfile]][dep_name] =
+                  "==#{dependency_version(dep_name, keys[:lockfile])}"
+              end
+            end
+
+            TomlRB.dump(pipfile_object)
+          end
+
+          def unlock_target_dependency(pipfile_content)
+            pipfile_object = TomlRB.parse(pipfile_content)
+
+            %w(packages dev-packages).each do |type|
+              if pipfile_object.dig(type, dependency.name)
+                pipfile_object[type][dependency.name] =
+                  updated_version_requirement_string
+              end
+            end
+
+            TomlRB.dump(pipfile_object)
+          end
+
+          def updated_version_requirement_string
+            return ">= #{dependency.version}" if dependency.version
+
+            version_for_requirement =
+              dependency.requirements.map { |r| r[:requirement] }.
+              reject { |req_string| req_string.start_with?("<") }.
+              select { |req_string| req_string.match?(VERSION_REGEX) }.
+              map { |req_string| req_string.match(VERSION_REGEX) }.
+              select { |version| Gem::Version.correct?(version) }.
+              max_by { |version| Gem::Version.new(version) }
+
+            ">= #{version_for_requirement || 0}"
+          end
+
+          def dependency_version(dep_name, group)
+            parsed_lockfile.
+              dig(group, dep_name, "version")&.
+              gsub(/^==/, "")
+          end
+
+          def dependency_lockfile_group
+            dependency.requirements.first[:groups].first
+          end
+
+          def parsed_lockfile
+            @parsed_lockfile ||= JSON.parse(lockfile.content)
+          end
+
+          def pipfile
+            dependency_files.find { |f| f.name == "Pipfile" }
+          end
+
+          def lockfile
+            dependency_files.find { |f| f.name == "Pipfile.lock" }
+          end
+
+          def run_pipenv_command(command)
+            raw_response = nil
+            IO.popen(command, err: %i(child out)) do |process|
+              raw_response = process.read
+            end
+
+            # Raise an error with the output from the shell session if Pipenv
+            # returns a non-zero status
+            return if $CHILD_STATUS.success?
+            raise SharedHelpers::HelperSubprocessFailed.new(
+              raw_response,
+              command
+            )
+          end
+        end
+      end
+    end
+  end
+end
