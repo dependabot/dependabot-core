@@ -6,9 +6,9 @@ import os.path
 import re
 
 import setuptools
-import pip.req.req_file
-from pip.download import PipSession
-from pip.req.req_install import InstallRequirement
+import pip._internal.req.req_file
+from pip._internal.download import PipSession
+from pip._internal.req.req_install import InstallRequirement
 
 def parse_requirements(directory):
     # Parse the requirements.txt
@@ -18,7 +18,7 @@ def parse_requirements(directory):
                         + glob.glob(os.path.join(directory, 'requirements', '*.txt'))
     for reqs_file in requirement_files:
         try:
-            requirements = pip.req.req_file.parse_requirements(
+            requirements = pip._internal.req.req_file.parse_requirements(
                 reqs_file,
                 session=PipSession()
             )

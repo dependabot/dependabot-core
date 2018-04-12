@@ -1,4 +1,4 @@
-pip==9.0.3
+pip==10.0.0.0b2
 hashin==0.13.0
 pipenv==11.10.0
 pipfile==0.0.2
