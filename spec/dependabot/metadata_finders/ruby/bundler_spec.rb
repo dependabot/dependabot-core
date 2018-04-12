@@ -26,13 +26,11 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_name) { "business" }
 
@@ -44,31 +42,61 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "rubygems",
-                url: "https://SECRET_CODES@repo.fury.io/greysteil/"
-              }
-            }
-          ],
+          requirements: requirements,
           package_manager: "bundler"
         )
       end
-
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: source
+        }]
+      end
+      let(:source) do
+        { type: "rubygems", url: "https://SECRET_CODES@repo.fury.io/grey/" }
+      end
       let(:rubygems_url) do
-        "https://repo.fury.io/greysteil/api/v1/gems/business.json"
+        "https://repo.fury.io/grey/api/v1/gems/business.json"
       end
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
       before do
         stub_request(:get, rubygems_url).
+          with(headers: { "Authorization" => "Basic U0VDUkVUX0NPREVTOg==" }).
           to_return(status: 200, body: rubygems_response)
       end
 
       it { is_expected.to eq("https://github.com/gocardless/business") }
+
+      context "with credentials" do
+        let(:source) do
+          { type: "rubygems", url: "https://gems.greysteil.com/" }
+        end
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "host" => "gems.greysteil.com",
+              "token" => "secret:token"
+            }
+          ]
+        end
+        let(:rubygems_url) do
+          "https://gems.greysteil.com/api/v1/gems/business.json"
+        end
+        before do
+          stub_request(:get, rubygems_url).
+            with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        it { is_expected.to eq("https://github.com/gocardless/business") }
+      end
     end
 
     context "for a git source" do
