@@ -18,16 +18,20 @@ module Dependabot
         ).freeze
 
         def changelog_url
-          if new_source_type == "default" && rubygems_listing["changelog_uri"]
-            return rubygems_listing["changelog_uri"]
+          if new_source_type == "default" || new_source_type == "rubygems"
+            if rubygems_listing["changelog_uri"]
+              return rubygems_listing["changelog_uri"]
+            end
           end
 
           super
         end
 
         def homepage_url
-          if new_source_type == "default" && rubygems_listing["homepage_uri"]
-            return rubygems_listing["homepage_uri"]
+          if new_source_type == "default" || new_source_type == "rubygems"
+            if rubygems_listing["homepage_uri"]
+              return rubygems_listing["homepage_uri"]
+            end
           end
 
           super
