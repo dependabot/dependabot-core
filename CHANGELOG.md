@@ -1,3 +1,10 @@
+## v0.54.3, 13 April 2018
+
+- Python: Reject `nil` values from version resolver
+- Python: Write setup.py when resolving a Pipfile
+- Python: Further fix for path dependency handling with Pipfile
+- Handle nested Ruby path dependencies
+
 ## v0.54.2, 12 April 2018
 
 - Python: Bump pip to 10.0.0.0b2
