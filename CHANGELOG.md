@@ -1,3 +1,7 @@
+## v0.54.5, 13 April 2018
+
+- Ruby: Augment private gemserver info with Rubygems details if appropriate
+
 ## v0.54.4, 13 April 2018
 
 - Ruby: Handle Bundler::PathError in update checker
