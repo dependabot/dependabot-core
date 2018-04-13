@@ -40,10 +40,7 @@ module Dependabot
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
               SharedHelpers.in_a_temporary_directory do |dir|
-                File.write(File.join(dir, "Pipfile"), pipfile_content)
-                if lockfile
-                  File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
-                end
+                write_temporary_dependency_files
 
                 # Shell out to Pipenv, which handles everything for us.
                 # Whilst calling `lock` avoids doing an install as part of the
@@ -62,6 +59,17 @@ module Dependabot
               end
             return unless @latest_resolvable_version_string
             Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def write_temporary_dependency_files
+            dependency_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, file.content)
+            end
+
+            # Overwrite the pipfile with updated content
+            File.write(File.join(dir, "Pipfile"), pipfile_content)
           end
 
           def pipfile_content
