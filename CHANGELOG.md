@@ -1,3 +1,7 @@
+## v0.54.7, 13 April 2018
+
+- Python: Ignore specified Python versions in Pipfile during file updating, too
+
 ## v0.54.6, 13 April 2018
 
 - Python: Ignore specified Python versions in Pipfile (best we can do for now)
