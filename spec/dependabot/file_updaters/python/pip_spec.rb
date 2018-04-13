@@ -490,6 +490,56 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         end
       end
 
+      context "when the Pipfile specified a Python version" do
+        let(:pipfile_body) do
+          fixture("python", "pipfiles", "required_python")
+        end
+        let(:lockfile_body) do
+          fixture("python", "lockfiles", "required_python.lock")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.18.4",
+            previous_version: "2.18.0",
+            package_manager: "pip",
+            requirements: [
+              {
+                requirement: "==2.18.4",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ],
+            previous_requirements: [
+              {
+                requirement: "==2.18.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }
+            ]
+          )
+        end
+
+        it "updates both files correctly" do
+          expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+
+          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+          updated_pipfile = updated_files.find { |f| f.name == "Pipfile" }
+          json_lockfile = JSON.parse(updated_lockfile.content)
+
+          expect(updated_pipfile.content).
+            to include('python_full_version = "3.5.0"')
+          expect(json_lockfile["default"]["requests"]["version"]).
+            to eq("==2.18.4")
+          expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
+          expect(json_lockfile["_meta"]["requires"]).
+            to eq(JSON.parse(lockfile_body)["_meta"]["requires"])
+        end
+      end
+
       describe "the updated Pipfile.lock" do
         let(:updated_lockfile) do
           updated_files.find { |f| f.name == "Pipfile.lock" }

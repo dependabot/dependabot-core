@@ -51,10 +51,12 @@ module Dependabot
               updated_file(file: pipfile, content: updated_pipfile_content)
           end
 
-          if lockfile.content != updated_lockfile_content
-            updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
+          if lockfile.content == updated_lockfile_content
+            raise "Expected Pipfile.lock to change!"
           end
+
+          updated_files <<
+            updated_file(file: lockfile, content: updated_lockfile_content)
 
           updated_files
         end
@@ -179,18 +181,28 @@ module Dependabot
           @updated_lockfile_content ||=
             begin
               pipfile_hash = pipfile_hash_for(updated_pipfile_content)
-              updated_lockfile =
-                updated_lockfile_content_for(frozen_pipfile_content)
+              original_reqs = JSON.parse(lockfile.content)["_meta"]["requires"]
 
-              updated_lockfile.sub(
-                /"sha256": ".*?"/,
-                %("sha256": "#{pipfile_hash}")
-              )
+              updated_lockfile = updated_lockfile_content_for(prepared_pipfile)
+              updated_lockfile_json = JSON.parse(updated_lockfile)
+              updated_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
+              updated_lockfile_json["_meta"]["requires"] = original_reqs
+
+              JSON.pretty_generate(updated_lockfile_json, indent: "    ").
+                gsub(/\{\n\s*\}/, "{}").
+                gsub(/\}\z/, "}\n")
             end
         end
 
-        def frozen_pipfile_content
-          frozen_pipfile_json = TomlRB.parse(updated_pipfile_content)
+        def prepared_pipfile
+          content = updated_pipfile_content
+          content = freeze_dependencies_being_updated(content)
+          content = remove_python_requirement(content)
+          content
+        end
+
+        def freeze_dependencies_being_updated(pipfile_content)
+          frozen_pipfile_json = TomlRB.parse(pipfile_content)
 
           dependencies.each do |dep|
             name = dep.name
@@ -203,6 +215,16 @@ module Dependabot
           end
 
           TomlRB.dump(frozen_pipfile_json)
+        end
+
+        def remove_python_requirement(pipfile_content)
+          pipfile_object = TomlRB.parse(pipfile_content)
+
+          return pipfile_content unless pipfile_object["requires"]
+          pipfile_object["requires"].delete("python_full_version")
+          pipfile_object["requires"].delete("python_version")
+
+          TomlRB.dump(pipfile_object)
         end
 
         def updated_lockfile_content_for(pipfile_content)
