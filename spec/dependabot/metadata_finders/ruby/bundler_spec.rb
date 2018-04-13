@@ -97,6 +97,52 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it { is_expected.to eq("https://github.com/gocardless/business") }
       end
+
+      context "without a source" do
+        let(:rubygems_response) do
+          fixture("ruby", "rubygems_response_no_source.json")
+        end
+
+        before do
+          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response.json")
+            )
+        end
+
+        it "hits Rubygems to augment the details" do
+          expect(finder.source_url).
+            to eq("https://github.com/gocardless/business")
+          expect(WebMock).
+            to have_requested(
+              :get,
+              "https://rubygems.org/api/v1/gems/business.json"
+            )
+        end
+
+        context "but the response doesn't match" do
+          before do
+            stub_request(
+              :get,
+              "https://rubygems.org/api/v1/gems/business.json"
+            ).to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response.json").
+                    gsub("1.5.0", "1.5.1")
+            )
+          end
+
+          it "hits Rubygems but doesn't augment the details" do
+            expect(finder.source_url).to be_nil
+            expect(WebMock).
+              to have_requested(
+                :get,
+                "https://rubygems.org/api/v1/gems/business.json"
+              )
+          end
+        end
+      end
     end
 
     context "for a git source" do
