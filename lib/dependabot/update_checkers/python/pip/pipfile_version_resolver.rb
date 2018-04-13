@@ -107,7 +107,7 @@ module Dependabot
             return ">= #{dependency.version}" if dependency.version
 
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.
+              dependency.requirements.map { |r| r[:requirement] }.compact.
               reject { |req_string| req_string.start_with?("<") }.
               select { |req_string| req_string.match?(VERSION_REGEX) }.
               map { |req_string| req_string.match(VERSION_REGEX) }.
