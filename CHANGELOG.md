@@ -1,3 +1,7 @@
+## v0.54.6, 13 April 2018
+
+- Python: Ignore specified Python versions in Pipfile (best we can do for now)
+
 ## v0.54.5, 13 April 2018
 
 - Ruby: Augment private gemserver info with Rubygems details if appropriate
