@@ -1,3 +1,7 @@
+## v0.54.4, 13 April 2018
+
+- Ruby: Handle Bundler::PathError in update checker
+
 ## v0.54.3, 13 April 2018
 
 - Python: Reject `nil` values from version resolver
