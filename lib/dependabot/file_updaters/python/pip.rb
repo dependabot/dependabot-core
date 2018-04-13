@@ -218,6 +218,9 @@ module Dependabot
         end
 
         def remove_python_requirement(pipfile_content)
+          # TODO: It would be nice to handle this in Python, rather than here.
+          # We should submit a patch to Pipenv to allow us to ignore the
+          # required Python version there.
           pipfile_object = TomlRB.parse(pipfile_content)
 
           return pipfile_content unless pipfile_object["requires"]
