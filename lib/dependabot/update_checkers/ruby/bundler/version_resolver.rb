@@ -19,6 +19,7 @@ module Dependabot
           GIT_REF_REGEX =
             /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
+          PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
@@ -249,6 +250,12 @@ module Dependabot
               raise Dependabot::DependencyFileNotEvaluatable, msg
             when "Bundler::Source::Git::MissingGitRevisionError"
               raise GitDependencyReferenceNotFound, dependency.name
+            when "Bundler::PathError"
+              gem_name =
+                error.error_message.match(PATH_REGEX).
+                named_captures["path"].
+                split("/").last.split("-")[0..-2].join
+              raise Dependabot::PathDependenciesNotReachable, [gem_name]
             when "Bundler::Source::Git::GitCommandError"
               if error.error_message.match?(GIT_REF_REGEX)
                 # We couldn't find the specified branch / commit (or the two

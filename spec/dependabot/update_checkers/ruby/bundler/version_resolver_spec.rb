@@ -524,5 +524,19 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
           to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
+
+    context "given a path source" do
+      let(:gemfile_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source.lock" }
+
+      context "without a downloaded gemspec" do
+        let(:dependency_files) { [gemfile, lockfile] }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::PathDependenciesNotReachable)
+        end
+      end
+    end
   end
 end
