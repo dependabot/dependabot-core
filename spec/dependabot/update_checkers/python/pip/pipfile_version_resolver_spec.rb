@@ -84,6 +84,12 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with a required python version" do
+      let(:pipfile_fixture_name) { "required_python" }
+      let(:lockfile_fixture_name) { "required_python.lock" }
+      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+    end
+
     context "with a `nil` requirement" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }

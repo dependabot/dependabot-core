@@ -77,9 +77,20 @@ module Dependabot
 
           def pipfile_content
             content = pipfile.content
+            content = remove_python_requirement(content)
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content)
             content
+          end
+
+          def remove_python_requirement(pipfile_content)
+            pipfile_object = TomlRB.parse(pipfile_content)
+
+            return pipfile_content unless pipfile_object["requires"]
+            pipfile_object["requires"].delete("python_full_version")
+            pipfile_object["requires"].delete("python_version")
+
+            TomlRB.dump(pipfile_object)
           end
 
           def freeze_other_dependencies(pipfile_content)
