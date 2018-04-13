@@ -82,10 +82,40 @@ module Dependabot
               idempotent: true,
               middlewares: SharedHelpers.excon_middleware
             )
+          response_body = response.body
+          response_body = augment_private_response_if_appropriate(response_body)
 
-          @rubygems_listing = JSON.parse(response.body)
+          @rubygems_listing = JSON.parse(response_body)
         rescue JSON::ParserError
           @rubygems_listing = {}
+        end
+
+        def augment_private_response_if_appropriate(response_body)
+          return response_body if new_source_type == "default"
+
+          parsed_body = JSON.parse(response_body)
+          return response_body if (SOURCE_KEYS - parsed_body.keys).none?
+          digest = parsed_body.values_at("version", "authors", "info").hash
+
+          source_url = parsed_body.
+                       values_at(*SOURCE_KEYS).
+                       compact.
+                       find { |url| Source.from_url(url) }
+          return response_body if source_url
+
+          rubygems_response =
+            Excon.get(
+              "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+          parsed_rubygems_body = JSON.parse(rubygems_response.body)
+          rubygems_digest =
+            parsed_rubygems_body.values_at("version", "authors", "info").hash
+
+          digest == rubygems_digest ? rubygems_response.body : response_body
+        rescue JSON::ParserError
+          response_body
         end
 
         def registry_url
