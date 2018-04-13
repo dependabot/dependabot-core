@@ -70,6 +70,28 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with a `nil` requirement" do
+      let(:dependency_files) { [pipfile] }
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [
+          {
+            file: "Pipfile",
+            requirement: "==2.18.0",
+            groups: ["default"],
+            source: nil
+          },
+          {
+            file: "requirements.txt",
+            requirement: nil,
+            groups: ["default"],
+            source: nil
+          }
+        ]
+      end
+      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+    end
+
     context "with a conflict at the latest version" do
       let(:pipfile_fixture_name) { "conflict_at_latest" }
       let(:lockfile_fixture_name) { "conflict_at_latest.lock" }

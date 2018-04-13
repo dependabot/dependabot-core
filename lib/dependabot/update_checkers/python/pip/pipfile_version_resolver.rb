@@ -39,7 +39,7 @@ module Dependabot
 
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
-              SharedHelpers.in_a_temporary_directory do |dir|
+              SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
                 # Shell out to Pipenv, which handles everything for us.
@@ -69,7 +69,7 @@ module Dependabot
             end
 
             # Overwrite the pipfile with updated content
-            File.write(File.join(dir, "Pipfile"), pipfile_content)
+            File.write("Pipfile", pipfile_content)
           end
 
           def pipfile_content
