@@ -70,6 +70,20 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with a path dependency" do
+      let(:dependency_files) { [pipfile, lockfile, setupfile] }
+      let(:setupfile) do
+        Dependabot::DependencyFile.new(
+          name: "setup.py",
+          content: fixture("python", "setup_files", setupfile_fixture_name)
+        )
+      end
+      let(:setupfile_fixture_name) { "small.py" }
+      let(:pipfile_fixture_name) { "path_dependency" }
+      let(:lockfile_fixture_name) { "path_dependency.lock" }
+      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+    end
+
     context "with a `nil` requirement" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }

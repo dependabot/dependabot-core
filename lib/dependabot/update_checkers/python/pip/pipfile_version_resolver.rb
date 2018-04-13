@@ -44,7 +44,7 @@ module Dependabot
 
                 # Shell out to Pipenv, which handles everything for us.
                 # Whilst calling `lock` avoids doing an install as part of the
-                # pipenv flow, and install is still dont by pip-tools in order
+                # pipenv flow, an install is still done by pip-tools in order
                 # to resolve the dependencies. That means this is slow.
                 run_pipenv_command("pipenv lock")
 
@@ -67,6 +67,9 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)
             end
+
+            # Workaround for Pipenv bug
+            FileUtils.mkdir_p("python_package.egg-info")
 
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content)
