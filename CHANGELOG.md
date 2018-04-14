@@ -1,3 +1,7 @@
+## v0.54.11, 14 April 2018
+
+- JS: Update Yarn resolutions when updating a dependency that specifies them
+
 ## v0.54.10, 14 April 2018
 
 - JS: Handle version requirements with a `v` prefix
