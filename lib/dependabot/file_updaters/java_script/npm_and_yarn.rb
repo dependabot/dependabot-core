@@ -10,6 +10,7 @@ module Dependabot
     module JavaScript
       class NpmAndYarn < Dependabot::FileUpdaters::Base
         require_relative "npm_and_yarn/npmrc_builder"
+        require_relative "npm_and_yarn/package_json_updater"
 
         def self.updated_files_regex
           [
@@ -77,11 +78,11 @@ module Dependabot
         end
 
         def updated_package_files
-          package_files.
-            select { |f| file_changed?(f) }.
-            map do |f|
-              updated_file(file: f, content: updated_package_json_content(f))
-            end
+          package_files.map do |file|
+            updated_content = updated_package_json_content(file)
+            next if updated_content == file.content
+            updated_file(file: file, content: updated_content)
+          end.compact
         end
 
         def updated_yarn_lock_content
@@ -216,98 +217,12 @@ module Dependabot
         end
 
         def updated_package_json_content(file)
-          dependencies.
-            select { |dep| requirement_changed?(file, dep) }.
-            reduce(file.content.dup) do |content, dep|
-              updated_reqs =
-                dep.requirements.
-                select { |r| r[:file] == file.name }.
-                reject { |r| dep.previous_requirements.include?(r) }
-
-              updated_reqs.each do |new_req|
-                old_req =
-                  dep.previous_requirements.
-                  select { |r| r[:file] == file.name }.
-                  find { |r| r[:groups] == new_req[:groups] }
-
-                new_content = update_package_json_declaration(
-                  package_json_content: content,
-                  dependency_name: dep.name,
-                  old_req: old_req,
-                  new_req: new_req
-                )
-
-                raise "Expected content to change!" if content == new_content
-                content = new_content
-              end
-
-              content
-            end
-        end
-
-        def update_package_json_declaration(package_json_content:, new_req:,
-                                            dependency_name:, old_req:)
-          original_line = declaration_line(
-            dependency_name: dependency_name,
-            dependency_req: old_req,
-            content: package_json_content
-          )
-
-          replacement_line = replacement_declaration_line(
-            original_line: original_line,
-            old_req: old_req,
-            new_req: new_req
-          )
-
-          package_json_content.sub(original_line, replacement_line)
-        end
-
-        def declaration_line(dependency_name:, dependency_req:, content:)
-          git_dependency = dependency_req.dig(:source, :type) == "git"
-
-          unless git_dependency
-            requirement = dependency_req.fetch(:requirement)
-            return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
-                                  "#{Regexp.escape(requirement)}"/x).to_s
-          end
-
-          username, repo = dependency_req.dig(:source, :url).split("/").last(2)
-
-          content.match(
-            %r{"#{Regexp.escape(dependency_name)}"\s*:\s*
-               ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
-          ).to_s
-        end
-
-        def replacement_declaration_line(original_line:, old_req:, new_req:)
-          was_git_dependency = old_req.dig(:source, :type) == "git"
-          now_git_dependency = new_req.dig(:source, :type) == "git"
-
-          unless was_git_dependency
-            return original_line.gsub(
-              %("#{old_req.fetch(:requirement)}"),
-              %("#{new_req.fetch(:requirement)}")
-            )
-          end
-
-          unless now_git_dependency
-            return original_line.gsub(
-              /(?<=\s").*[^\\](?=")/,
-              new_req.fetch(:requirement)
-            )
-          end
-
-          if original_line.include?("semver:")
-            return original_line.gsub(
-              %(semver:#{old_req.fetch(:requirement)}"),
-              %(semver:#{new_req.fetch(:requirement)}")
-            )
-          end
-
-          original_line.gsub(
-            %(\##{old_req.dig(:source, :ref)}"),
-            %(\##{new_req.dig(:source, :ref)}")
-          )
+          @updated_package_json_content ||= {}
+          @updated_package_json_content[file.name] ||=
+            PackageJsonUpdater.new(
+              package_json: file,
+              dependencies: dependencies
+            ).updated_package_json.content
         end
 
         def npmrc_disables_lockfile?
