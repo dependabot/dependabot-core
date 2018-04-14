@@ -1,3 +1,7 @@
+## v0.54.9, 14 April 2018
+
+- Java: Handle POM updates where the file uses a property with a suffix
+
 ## v0.54.8, 14 April 2018
 
 - Rust: Fix regex for updating feature dependencies
