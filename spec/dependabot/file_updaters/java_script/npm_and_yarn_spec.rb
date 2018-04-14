@@ -391,20 +391,59 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         expect(parsed_lockfile["dependencies"]["lodash"]["version"]).
           to eq("1.3.1")
         expect(updated_yarn_lock.content).to include("lodash@^1.3.1")
+
+        expect(updated_package_json.content).
+          to include("\"lodash\": \"^1.3.1\"")
+        expect(updated_package_json.content).
+          to include("\"etag\": \"file:./deps/etag\"")
       end
     end
 
-    context "with a .npmrc that precludes updates to the lockfile" do
+    context "with a .npmrc" do
       let(:files) { [package_json, package_lock, npmrc] }
 
-      let(:npmrc) do
-        Dependabot::DependencyFile.new(
-          name: ".npmrc",
-          content: fixture("javascript", "npmrc", "no_lockfile")
-        )
+      context "that has an environment variable auth token" do
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "env_auth_token")
+          )
+        end
+
+        it "updates the files" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+        end
       end
 
-      specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+      context "that has an _auth line" do
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "env_global_auth")
+          )
+        end
+
+        let(:credentials) do
+          [{ "registry" => "registry.npmjs.org", "token" => "secret_token" }]
+        end
+
+        it "updates the files" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+        end
+      end
+
+      context "that precludes updates to the lockfile" do
+        let(:npmrc) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: fixture("javascript", "npmrc", "no_lockfile")
+          )
+        end
+
+        specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+      end
     end
 
     context "when a wildcard is specified" do
@@ -438,256 +477,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         expect(updated_yarn_lock.content).
           to include("fetch-factory@*:\n  version \"0.2.1\"")
-      end
-    end
-
-    describe "the updated package_json_file" do
-      subject(:updated_package_json_file) { updated_package_json }
-
-      its(:content) { is_expected.to include "{{ name }}" }
-      its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-      its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
-
-      context "when the minor version is specified" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "fetch-factory",
-            version: "0.2.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "0.2.x",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "0.1.x",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-        let(:manifest_fixture_name) { "minor_version_specified.json" }
-
-        its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
-      end
-
-      context "when a dev dependency is specified" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "etag",
-            version: "1.8.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.8.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-        let(:manifest_fixture_name) { "package.json" }
-
-        it "updates the existing development declaration" do
-          parsed_file = JSON.parse(updated_package_json_file.content)
-          expect(parsed_file.dig("dependencies", "etag")).to be_nil
-          expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
-        end
-      end
-
-      context "when the dependency is specified as both dev and runtime" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "fetch-factory",
-            version: "0.2.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                requirement: "0.2.x",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                requirement: "^0.2.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                requirement: "0.1.x",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                requirement: "^0.1.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: nil
-              }
-            ]
-          )
-        end
-        let(:manifest_fixture_name) { "duplicate.json" }
-
-        it "updates both declarations" do
-          parsed_file = JSON.parse(updated_package_json_file.content)
-          expect(parsed_file.dig("dependencies", "fetch-factory")).
-            to eq("0.2.x")
-          expect(parsed_file.dig("devDependencies", "fetch-factory")).
-            to eq("^0.2.0")
-        end
-
-        context "with identical versions" do
-          let(:manifest_fixture_name) { "duplicate_identical.json" }
-
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "fetch-factory",
-              version: "0.2.1",
-              package_manager: "npm_and_yarn",
-              requirements: [
-                {
-                  requirement: "^0.2.0",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                },
-                {
-                  requirement: "^0.2.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  requirement: "^0.1.0",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                },
-                {
-                  requirement: "^0.1.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ]
-            )
-          end
-
-          it "updates both declarations" do
-            parsed_file = JSON.parse(updated_package_json_file.content)
-            expect(parsed_file.dig("dependencies", "fetch-factory")).
-              to eq("^0.2.0")
-            expect(parsed_file.dig("devDependencies", "fetch-factory")).
-              to eq("^0.2.0")
-          end
-        end
-      end
-
-      context "with a path-based dependency" do
-        let(:files) { [package_json, yarn_lock, path_dep] }
-        let(:manifest_fixture_name) { "path_dependency.json" }
-        let(:npm_lock_fixture_name) { "path_dependency.json" }
-        let(:path_dep) do
-          Dependabot::DependencyFile.new(
-            name: "deps/etag/package.json",
-            content: fixture("javascript", "package_files", "etag.json")
-          )
-        end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "lodash",
-            version: "1.3.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.3.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.2.1",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-
-        its(:content) { is_expected.to include "\"lodash\": \"^1.3.1\"" }
-        its(:content) do
-          is_expected.to include "\"etag\": \"file:./deps/etag\""
-        end
-      end
-
-      context "with a .npmrc" do
-        let(:files) { [package_json, yarn_lock, npmrc] }
-        let(:npmrc) do
-          Dependabot::DependencyFile.new(
-            name: ".npmrc",
-            content: fixture("javascript", "npmrc", "env_auth_token")
-          )
-        end
-
-        its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
-
-        context "that has an _auth line" do
-          let(:npmrc) do
-            Dependabot::DependencyFile.new(
-              name: ".npmrc",
-              content: fixture("javascript", "npmrc", "env_global_auth")
-            )
-          end
-
-          let(:credentials) do
-            [{ "registry" => "registry.npmjs.org", "token" => "secret_token" }]
-          end
-
-          its(:content) do
-            is_expected.to include "\"fetch-factory\": \"^0.0.2\""
-          end
-        end
-      end
-
-      context "without a package-lock.json or yarn.lock" do
-        let(:files) { [package_json] }
-
-        its(:content) { is_expected.to include "{{ name }}" }
-        its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-        its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
-      end
-
-      context "with non-standard whitespace" do
-        let(:manifest_fixture_name) { "non_standard_whitespace.json" }
-
-        its(:content) do
-          is_expected.to include %("*.js": ["eslint --fix", "git add"])
-        end
       end
     end
 
