@@ -491,7 +491,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
       its(:content) { is_expected.to include "{{ name }}" }
       its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-      its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+      its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
 
       context "when the minor version is specified" do
         let(:dependency) do
@@ -732,7 +732,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           )
         end
 
-        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+        its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
 
         context "that has an _auth line" do
           let(:npmrc) do
@@ -757,7 +757,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         its(:content) { is_expected.to include "{{ name }}" }
         its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-        its(:content) { is_expected.to include "\"etag\": \"^1.0.0\"" }
+        its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
       end
 
       context "with non-standard whitespace" do

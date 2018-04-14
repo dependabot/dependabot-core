@@ -267,14 +267,14 @@ module Dependabot
 
           unless git_dependency
             requirement = dependency_req.fetch(:requirement)
-            return content.match(/"#{Regexp.escape(dependency_name)}":\s*
+            return content.match(/"#{Regexp.escape(dependency_name)}"\s*:\s*
                                   "#{Regexp.escape(requirement)}"/x).to_s
           end
 
           username, repo = dependency_req.dig(:source, :url).split("/").last(2)
 
           content.match(
-            %r{"#{Regexp.escape(dependency_name)}":\s*
+            %r{"#{Regexp.escape(dependency_name)}"\s*:\s*
                ".*?#{Regexp.escape(username)}/#{Regexp.escape(repo)}.*"}x
           ).to_s
         end
