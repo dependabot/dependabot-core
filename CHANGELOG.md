@@ -1,3 +1,9 @@
+## v0.54.8, 14 April 2018
+
+- Rust: Fix regex for updating feature dependencies
+- JS: Handle package.json declarations with whitespace before the colon
+- PHP: Handle composer.json declarations with whitespace before the colon
+
 ## v0.54.7, 13 April 2018
 
 - Python: Ignore specified Python versions in Pipfile during file updating, too
