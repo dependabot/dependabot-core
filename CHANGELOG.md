@@ -1,3 +1,8 @@
+## v0.54.10, 14 April 2018
+
+- JS: Handle version requirements with a `v` prefix
+- Python: Bump pip from 10.0.0.0b2 to 10.0.0
+
 ## v0.54.9, 14 April 2018
 
 - Java: Handle POM updates where the file uses a property with a suffix
