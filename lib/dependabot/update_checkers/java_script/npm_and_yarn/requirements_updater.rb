@@ -31,6 +31,7 @@ module Dependabot
               version_class.new(latest_resolvable_version)
           end
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirements
             return requirements unless latest_resolvable_version
 
@@ -38,7 +39,8 @@ module Dependabot
               req = req.merge(source: updated_source)
               next req unless latest_resolvable_version
               next initial_req_after_source_change(req) unless req[:requirement]
-              next req if req[:requirement].match?(/^[a-uw-z]/i)
+              next req if req[:requirement].match?(/^[A-Za-uw-z]/)
+              next req if req[:requirement].match?(/^v[^\d]/)
               if library?
                 updated_library_requirement(req)
               else
@@ -46,6 +48,7 @@ module Dependabot
               end
             end
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           private
 

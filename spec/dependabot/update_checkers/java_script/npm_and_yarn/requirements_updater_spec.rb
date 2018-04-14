@@ -49,6 +49,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
       let(:package_json_req_string) { "latest" }
       its([:requirement]) { is_expected.to eq(package_json_req_string) }
+
+      context "that starts with a v" do
+        let(:package_json_req_string) { "very-latest" }
+        its([:requirement]) { is_expected.to eq(package_json_req_string) }
+      end
     end
 
     context "with a git dependency" do
@@ -172,6 +177,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and v-prefix was previously used" do
           let(:package_json_req_string) { "v1.2.3" }
           its([:requirement]) { is_expected.to eq("v1.5.0") }
+
+          context "that is capitalised (and therefore invalid)" do
+            let(:package_json_req_string) { "V1.2.3" }
+            its([:requirement]) { is_expected.to eq("V1.2.3") }
+          end
         end
 
         context "and a partial version was previously specified" do
