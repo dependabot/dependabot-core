@@ -38,7 +38,7 @@ module Dependabot
               req = req.merge(source: updated_source)
               next req unless latest_resolvable_version
               next initial_req_after_source_change(req) unless req[:requirement]
-              next req if req[:requirement].match?(/^[a-z]/i)
+              next req if req[:requirement].match?(/^[a-uw-z]/i)
               if library?
                 updated_library_requirement(req)
               else

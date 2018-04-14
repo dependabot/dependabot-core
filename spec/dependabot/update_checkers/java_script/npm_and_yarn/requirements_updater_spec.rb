@@ -169,6 +169,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
 
+        context "and v-prefix was previously used" do
+          let(:package_json_req_string) { "v1.2.3" }
+          its([:requirement]) { is_expected.to eq("v1.5.0") }
+        end
+
         context "and a partial version was previously specified" do
           let(:package_json_req_string) { "0.1" }
           its([:requirement]) { is_expected.to eq("1.5") }
@@ -194,6 +199,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and a caret was previously specified" do
           let(:package_json_req_string) { "^1.2.3" }
           its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "and v-prefix was previously used" do
+            let(:package_json_req_string) { "^v1.2.3" }
+            its([:requirement]) { is_expected.to eq("^v1.5.0") }
+          end
         end
 
         context "and a pre-release was previously specified" do
@@ -294,6 +304,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         context "and a full version was previously specified" do
           let(:package_json_req_string) { "1.2.3" }
           its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "and v-prefix was previously used" do
+          let(:package_json_req_string) { "v1.2.3" }
+          its([:requirement]) { is_expected.to eq("v1.5.0") }
         end
 
         context "and a partial version was previously specified" do
