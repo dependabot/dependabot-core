@@ -485,8 +485,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     describe "the updated package_json_file" do
+      # Using this method, rather than the public one, means we skip lockfile
+      # resolution and get *much* quicker tests
+      let(:updated_package_files) { updater.send(:updated_package_files) }
       subject(:updated_package_json_file) do
-        updated_files.find { |f| f.name == "package.json" }
+        updated_package_files.find { |f| f.name == "package.json" }
       end
 
       its(:content) { is_expected.to include "{{ name }}" }
@@ -550,8 +553,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         let(:yarn_lock_fixture_name) { "wildcard.lock" }
 
         it "only updates the lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(yarn.lock package-lock.json))
+          expect(updated_package_files).to eq([])
         end
       end
 
@@ -837,11 +839,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         it "updates the three package.json files" do
-          package = updated_files.find { |f| f.name == "package.json" }
-          package1 = updated_files.find do |f|
+          package = updated_package_files.find { |f| f.name == "package.json" }
+          package1 = updated_package_files.find do |f|
             f.name == "packages/package1/package.json"
           end
-          other_package = updated_files.find do |f|
+          other_package = updated_package_files.find do |f|
             f.name == "other_package/package.json"
           end
           expect(package.content).to include("\"lodash\": \"^1.3.1\"")
@@ -875,8 +877,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
 
           it "updates the right file" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(updated_package_files.map(&:name)).
+              to eq(["packages/package1/package.json"])
           end
         end
 
@@ -906,12 +908,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
 
           it "updates the right file" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(updated_package_files.map(&:name)).
+              to eq(["packages/package1/package.json"])
           end
 
           it "updates the existing development declaration" do
-            file = updated_files.find do |f|
+            file = updated_package_files.find do |f|
               f.name == "packages/package1/package.json"
             end
             parsed_file = JSON.parse(file.content)
