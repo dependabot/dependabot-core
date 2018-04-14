@@ -6,3 +6,6 @@ authors = ["Dependabot <support@dependabot.com>"]
 [dependencies.gtk]
 version = "0.3.0"
 features = ["v3_18"]
+
+[dependencies]
+time = "0.1.12"

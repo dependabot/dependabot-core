@@ -164,7 +164,7 @@ module Dependabot
         def feature_declaration_regex(dep)
           /
             #{Regexp.quote("[dependencies.#{dep.name}]")}
-            (?!.*(?:^\[)).*
+            (?:(?!^\[).)+
             (?<requirement_declaration>version\s*=.*)$
           /mx
         end

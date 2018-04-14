@@ -144,7 +144,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
               [{
                 file: "Cargo.toml",
                 requirement: "0.4.0",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             end
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
               [{
                 file: "Cargo.toml",
                 requirement: "0.3.0",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             end
