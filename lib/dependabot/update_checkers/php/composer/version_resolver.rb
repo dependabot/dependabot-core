@@ -78,7 +78,7 @@ module Dependabot
               end
 
             content.gsub(
-              /"#{Regexp.escape(dependency.name)}":\s*".*"/,
+              /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
               %("#{dependency.name}": "#{new_requirement}")
             )
           end

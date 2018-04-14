@@ -90,7 +90,7 @@ module Dependabot
             dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
-              updated_requirement =
+              updated_req =
                 dep.requirements.find { |r| r[:file] == file.name }.
                 fetch(:requirement)
 
@@ -98,10 +98,12 @@ module Dependabot
                 dep.previous_requirements.find { |r| r[:file] == file.name }.
                 fetch(:requirement)
 
-              updated_content = content.gsub(
-                /"#{Regexp.escape(dep.name)}":\s*"#{Regexp.escape(old_req)}"/,
-                %("#{dep.name}": "#{updated_requirement}")
-              )
+              regex =
+                /"#{Regexp.escape(dep.name)}"\s*:\s*"#{Regexp.escape(old_req)}"/
+
+              updated_content = content.gsub(regex) do |declaration|
+                declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+              end
 
               raise "Expected content to change!" if content == updated_content
               updated_content
