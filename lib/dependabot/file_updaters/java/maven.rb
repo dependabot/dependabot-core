@@ -28,10 +28,11 @@ module Dependabot
 
         def updated_pom_content
           updated_content =
-            if updating_a_property?
-              update_property_version
-            else
-              dependencies.reduce(pom.content.dup) do |content, dep|
+            dependencies.reduce(pom.content.dup) do |content, dep|
+              if updating_a_property?(dep)
+                content = update_property_version(dep)
+                remove_property_version_suffix(dep, content)
+              else
                 content.gsub(
                   original_pom_declaration(dep),
                   updated_pom_declaration(dep)
@@ -43,17 +44,23 @@ module Dependabot
           updated_content
         end
 
-        def update_property_version
-          prop_name = DeclarationFinder.new(
-            dependency_name: dependencies.first.name,
-            dependency_requirement:
-              dependencies.first.previous_requirements.first.
-              fetch(:requirement),
-            pom_content: pom.content
-          ).declaration_node.at_css("version").content.strip[2..-2]
+        def update_property_version(dependency)
+          declaration_node = Nokogiri::XML(original_pom_declaration(dependency))
+          prop_name =
+            declaration_node.at_css("version").content.
+            match(FileParsers::Java::Maven::PROPERTY_REGEX).
+            named_captures["property"]
+          suffix =
+            declaration_node.at_css("version").content.
+            match(/\$\{(?<property>.*?)\}(?<suffix>.*)/).
+            named_captures["suffix"]
 
-          original_requirement = original_pom_requirement(dependencies.first)
-          updated_requirement = updated_pom_requirement(dependencies.first)
+          original_requirement = original_pom_requirement(dependency)
+          if suffix
+            original_requirement =
+              original_requirement.gsub(/#{Regexp.quote(suffix)}$/, "")
+          end
+          updated_requirement = updated_pom_requirement(dependency)
 
           pom.content.gsub(
             "<#{prop_name}>#{original_requirement}</#{prop_name}>",
@@ -61,16 +68,24 @@ module Dependabot
           )
         end
 
-        def original_pom_version_content
-          Nokogiri::XML(original_pom_declaration).at_css("version").content
+        def remove_property_version_suffix(dep, content)
+          content.gsub(original_pom_declaration(dep)) do |original_declaration|
+            version_string =
+              original_declaration.match(%r{(?<=\<version\>).*(?=\</version\>)})
+            cleaned_version_string = version_string.to_s.gsub(/(?<=\}).*/, "")
+
+            original_declaration.gsub(
+              "<version>#{version_string}</version>",
+              "<version>#{cleaned_version_string}</version>"
+            )
+          end
         end
 
-        def updating_a_property?
+        def updating_a_property?(dependency)
           DeclarationFinder.new(
-            dependency_name: dependencies.first.name,
+            dependency_name: dependency.name,
             dependency_requirement:
-              dependencies.first.previous_requirements.first.
-              fetch(:requirement),
+              dependency.previous_requirements.first.fetch(:requirement),
             pom_content: pom.content
           ).version_comes_from_property?
         end

@@ -160,7 +160,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
-              name: "org.springframework:spring-beans",
+              name: "org.springframework:spring-context",
               version: "5.0.0.RELEASE",
               requirements: [
                 {
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               previous_requirements: [
                 {
                   file: "pom.xml",
-                  requirement: "4.3.12.RELEASE",
+                  requirement: "4.3.12.RELEASE.1",
                   groups: [],
                   source: nil
                 }
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
-              name: "org.springframework:spring-context",
+              name: "org.springframework:spring-beans",
               version: "5.0.0.RELEASE",
               requirements: [
                 {
@@ -214,6 +214,44 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         it "doesn't update the formatting of the POM" do
           expect(updated_pom_file.content).
             to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+        end
+
+        context "with a suffix" do
+          let(:pom_body) do
+            fixture("java", "poms", "property_pom_single_suffix.xml")
+          end
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "5.0.0.RELEASE",
+                requirements: [
+                  {
+                    file: "pom.xml",
+                    requirement: "5.0.0.RELEASE",
+                    groups: [],
+                    source: nil
+                  }
+                ],
+                previous_requirements: [
+                  {
+                    file: "pom.xml",
+                    requirement: "4.3.12.RELEASE.1",
+                    groups: [],
+                    source: nil
+                  }
+                ],
+                package_manager: "maven"
+              )
+            ]
+          end
+
+          it "updates the version in the POM" do
+            expect(updated_pom_file.content).
+              to include("<springframework.version>5.0.0.RELEASE</springframe")
+            expect(updated_pom_file.content).
+              to include("<version>${springframework.version}</version>")
+          end
         end
       end
     end
