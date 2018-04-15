@@ -1,3 +1,8 @@
+## v0.54.12, 15 April 2018
+
+- JS: Refactor UpdateChecker
+- JS: Bump Yarn to 1.6.0
+
 ## v0.54.11, 14 April 2018
 
 - JS: Update Yarn resolutions when updating a dependency that specifies them
