@@ -16,8 +16,7 @@ module Dependabot
       class Bundler
         class VersionResolver
           RUBYGEMS_API = "https://rubygems.org/api/v1/"
-          GIT_REF_REGEX =
-            /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
+          GIT_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
           PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
@@ -28,8 +27,7 @@ module Dependabot
           end
 
           def latest_version_details
-            @latest_version_details ||=
-              fetch_latest_version_details
+            @latest_version_details ||= fetch_latest_version_details
           end
 
           def latest_resolvable_version_details
@@ -54,12 +52,11 @@ module Dependabot
 
             # Rubygems excludes pre-releases from the `Gems.info` response,
             # so no need to filter them out.
-            response =
-              Excon.get(
-                "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
-                idempotent: true,
-                middlewares: SharedHelpers.excon_middleware
-              )
+            response = Excon.get(
+              "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
 
             latest_info = JSON.parse(response.body)
             return nil if latest_info["version"].nil?
@@ -73,16 +70,15 @@ module Dependabot
           end
 
           def latest_rubygems_version_details_with_pre
-            response =
-              Excon.get(
-                RUBYGEMS_API + "versions/#{dependency.name}.json",
-                idempotent: true,
-                middlewares: SharedHelpers.excon_middleware
-              )
-            latest_info =
-              JSON.parse(response.body).
-              sort_by { |d| Gem::Version.new(d["number"]) }.
-              last
+            response = Excon.get(
+              RUBYGEMS_API + "versions/#{dependency.name}.json",
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+
+            latest_info = JSON.parse(response.body).
+                          sort_by { |d| Gem::Version.new(d["number"]) }.
+                          last
 
             {
               version: Gem::Version.new(latest_info["number"]),
@@ -103,8 +99,7 @@ module Dependabot
                     reject { |s| s.version.prerelease? && !wants_prerelease? }
                 end.
                 sort_by(&:version).last
-              return nil if spec.nil?
-              { version: spec.version }
+              spec.nil? ? nil : { version: spec.version }
             end
           end
 
@@ -191,9 +186,7 @@ module Dependabot
 
           def build_definition(dependencies_to_unlock)
             ::Bundler::Definition.build(
-              "Gemfile",
-              lockfile&.name,
-              gems: dependencies_to_unlock
+              "Gemfile", lockfile&.name, gems: dependencies_to_unlock
             )
           end
 
@@ -257,11 +250,11 @@ module Dependabot
                 split("/").last.split("-")[0..-2].join
               raise Dependabot::PathDependenciesNotReachable, [gem_name]
             when "Bundler::Source::Git::GitCommandError"
-              if error.error_message.match?(GIT_REF_REGEX)
+              if error.error_message.match?(GIT_REGEX)
                 # We couldn't find the specified branch / commit (or the two
                 # weren't compatible).
                 gem_name =
-                  error.error_message.match(GIT_REF_REGEX).
+                  error.error_message.match(GIT_REGEX).
                   named_captures["path"].
                   split("/").last.split("-")[0..-2].join
                 raise GitDependencyReferenceNotFound, gem_name
