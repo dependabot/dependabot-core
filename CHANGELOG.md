@@ -1,3 +1,7 @@
+## v0.54.13, 15 April 2018
+
+- Python: Silence error output in Python file updater
+
 ## v0.54.12, 15 April 2018
 
 - JS: Refactor UpdateChecker
