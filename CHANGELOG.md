@@ -1,3 +1,7 @@
+## v0.54.20, 16 April 2018
+
+- Ruby: Require a latest_resolvable_version to update gemspec requirements
+
 ## v0.54.19, 16 April 2018
 
 - Ruby: More robust ruby requirement parsing
