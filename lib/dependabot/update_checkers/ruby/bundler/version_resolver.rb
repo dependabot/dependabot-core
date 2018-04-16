@@ -7,6 +7,7 @@ require "bundler_git_source_patch"
 require "excon"
 
 require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/utils/ruby/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -214,8 +215,9 @@ module Dependabot
             # Give the benefit of the doubt if we can't find the version's
             # required Ruby version.
             return false unless ruby_requirement
+            ruby_requirement = Utils::Ruby::Requirement.new(ruby_requirement)
 
-            !Gem::Requirement.new(ruby_requirement).satisfied_by?(ruby_version)
+            !ruby_requirement.satisfied_by?(ruby_version)
           rescue JSON::ParserError
             # Give the benefit of the doubt if something goes wrong fetching
             # version details (could be that it's a private index, etc.)
