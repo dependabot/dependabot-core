@@ -1,3 +1,7 @@
+## v0.54.15, 16 April 2018
+
+- Handle overflowing tables when truncating pull request details
+
 ## v0.54.14, 16 April 2018
 
 - Ruby: Handle file updates where the declaration is in an evaled Gemfile
