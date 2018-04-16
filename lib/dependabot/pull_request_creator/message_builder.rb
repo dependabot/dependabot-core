@@ -243,7 +243,7 @@ module Dependabot
             release_note_lines = releases_text(dep).split("\n").first(50)
             release_note_lines = release_note_lines.map { |line| "> #{line}\n" }
             if release_note_lines.count == 50
-              release_note_lines << "> ... (truncated)\n"
+              release_note_lines << truncated_line
             end
             release_note_lines.join
           end
@@ -263,7 +263,7 @@ module Dependabot
             changelog_lines = changelog_text(dep).split("\n").first(50)
             changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
             if changelog_lines.count == 50
-              changelog_lines << "> ... (truncated)\n"
+              changelog_lines << truncated_line
             end
             changelog_lines.join
           end
@@ -282,7 +282,7 @@ module Dependabot
           begin
             upgrade_lines = upgrade_text(dep).split("\n").first(50)
             upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
-            upgrade_lines << "> ... (truncated)\n" if upgrade_lines.count == 50
+            upgrade_lines << truncated_line if upgrade_lines.count == 50
             upgrade_lines.join
           end
         msg += "</details>"
@@ -324,7 +324,7 @@ module Dependabot
 
         if (description = details["description"])
           description.strip.lines.first(10).each { |line| msg += "> #{line}" }
-          msg += "> ... (truncated)\n" if description.strip.lines.count > 10
+          msg += truncated_line if description.strip.lines.count > 10
         end
 
         msg += "\n> \n"
@@ -350,6 +350,11 @@ module Dependabot
           msg += "> #{type} versions: #{details[tp]}\n" if details[tp]
         end
         msg
+      end
+
+      def truncated_line
+        # Tables can spill out of truncated details, so we close them
+        "></table> ... (truncated)\n"
       end
 
       def releases_url(dependency)
