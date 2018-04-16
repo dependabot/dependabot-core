@@ -9,29 +9,42 @@ module Dependabot
   module FileParsers
     module Java
       class Maven < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
         DEPENDENCY_SELECTOR = "parent, dependencies > dependency,
                                plugins > plugin"
         PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
         def parse
-          doc = Nokogiri::XML(pom.content)
-          doc.css(DEPENDENCY_SELECTOR).map do |dependency_node|
-            next unless dependency_name(dependency_node)
-            Dependency.new(
-              name: dependency_name(dependency_node),
-              version: dependency_version(dependency_node),
-              package_manager: "maven",
-              requirements: [{
-                requirement: dependency_requirement(dependency_node),
-                file: "pom.xml",
-                groups: [],
-                source: nil
-              }]
-            )
-          end.compact
+          dependency_set = DependencySet.new
+          dependency_set += pomfile_dependencies
+          dependency_set.dependencies
         end
 
         private
+
+        def pomfile_dependencies
+          dependency_set = DependencySet.new
+
+          doc = Nokogiri::XML(pom.content)
+          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+            next unless dependency_name(dependency_node)
+            dependency_set <<
+              Dependency.new(
+                name: dependency_name(dependency_node),
+                version: dependency_version(dependency_node),
+                package_manager: "maven",
+                requirements: [{
+                  requirement: dependency_requirement(dependency_node),
+                  file: "pom.xml",
+                  groups: [],
+                  source: nil
+                }]
+              )
+          end
+
+          dependency_set
+        end
 
         def dependency_name(dependency_node)
           return unless dependency_node.at_css("groupId")

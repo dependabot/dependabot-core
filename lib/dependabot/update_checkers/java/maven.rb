@@ -85,29 +85,31 @@ module Dependabot
         end
 
         def version_comes_from_multi_dependency_property?
-          return false unless version_comes_from_property?
-          multiple_dependencies_use_property?(original_pom_version_content)
+          declarations_using_a_property.any? do |requirement|
+            req = requirement.fetch(:requirement)
+            property =
+              declaration_finder(req).declaration_node.at_css("version").content
+
+            property_regex = /#{Regexp.escape(property)}/
+            pom.content.scan(property_regex).count >
+              dependency.requirements.select { |r| r == requirement }.count
+          end
         end
 
-        def version_comes_from_property?
-          declaration_finder.version_comes_from_property?
+        def declarations_using_a_property
+          @declarations_using_a_property ||=
+            dependency.requirements.select do |requirement|
+              req_string = requirement.fetch(:requirement)
+              declaration_finder(req_string).version_comes_from_property?
+            end
         end
 
-        def multiple_dependencies_use_property?(property)
-          property_regex = /#{Regexp.escape(property)}/
-          pom.content.scan(property_regex).count > 1
-        end
-
-        def original_pom_version_content
-          declaration_finder.declaration_node.at_css("version").content
-        end
-
-        def declaration_finder
-          @declaration_finder ||=
+        def declaration_finder(requirement)
+          @declaration_finder ||= {}
+          @declaration_finder[requirement.hash] ||=
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency_name: dependency.name,
-              dependency_requirement:
-                dependency.requirements.first.fetch(:requirement),
+              dependency_requirement: requirement,
               pom_content: pom.content
             )
         end

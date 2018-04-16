@@ -292,6 +292,41 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
+    context "with a repeated dependency" do
+      let(:pom_body) do
+        fixture("java", "poms", "repeated_pom.xml")
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.apache.maven.plugins:maven-javadoc-plugin")
+          expect(dependency.version).to eq("3.0.0-M1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "3.0.0-M1",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "2.10.4",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+    end
+
     context "for a dependency with compiler plugins" do
       let(:pom_body) { fixture("java", "poms", "compiler_plugins.xml") }
 

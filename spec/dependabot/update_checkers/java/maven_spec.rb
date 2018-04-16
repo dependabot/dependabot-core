@@ -117,14 +117,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-beans/maven-metadata.xml"
       end
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "4.3.12.RELEASE",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "pom.xml",
+          requirement: "4.3.12.RELEASE",
+          groups: [],
+          source: nil
+        }]
       end
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
@@ -134,6 +132,41 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
         it { is_expected.to be_nil }
+      end
+
+      context "for a repeated dependency" do
+        let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
+        let(:maven_central_metadata_url) do
+          "https://search.maven.org/remotecontent?filepath="\
+          "org/apache/maven/plugins/maven-javadoc-plugin/maven-metadata.xml"
+        end
+        let(:dependency_name) do
+          "org.apache.maven.plugins:maven-javadoc-plugin"
+        end
+        let(:dependency_requirements) do
+          [
+            {
+              file: "pom.xml",
+              requirement: "3.0.0-M1",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "pom.xml",
+              requirement: "2.10.4",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+        context "that affects multiple dependencies" do
+          let(:pom_body) do
+            fixture("java", "poms", "repeated_multi_property_pom.xml")
+          end
+          it { is_expected.to be_nil }
+        end
       end
     end
   end
