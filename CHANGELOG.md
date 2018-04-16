@@ -1,3 +1,7 @@
+## v0.54.19, 16 April 2018
+
+- Ruby: More robust ruby requirement parsing
+
 ## v0.54.18, 16 April 2018
 
 - Java: Filter out date-based release numbers if that's not what's currently
