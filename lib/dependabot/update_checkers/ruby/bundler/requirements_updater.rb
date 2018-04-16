@@ -105,7 +105,7 @@ module Dependabot
           end
 
           def updated_gemspec_requirement(req)
-            return req unless latest_version
+            return req unless latest_version && latest_resolvable_version
 
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }

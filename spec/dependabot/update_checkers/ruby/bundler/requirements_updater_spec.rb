@@ -227,6 +227,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         it { is_expected.to eq(gemspec_requirement) }
       end
 
+      context "when there is no resolvable version" do
+        let(:latest_resolvable_version) { nil }
+        it { is_expected.to eq(gemspec_requirement) }
+      end
+
       context "when there is a latest version" do
         let(:latest_version) { "1.8.0" }
         let(:latest_resolvable_version) { "1.5.0" }
