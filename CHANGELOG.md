@@ -1,3 +1,7 @@
+## v0.54.16, 16 April 2018
+
+- Ruby: Cleaner path dependency fetching
+
 ## v0.54.15, 16 April 2018
 
 - Handle overflowing tables when truncating pull request details
