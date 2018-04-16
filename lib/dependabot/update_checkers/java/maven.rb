@@ -69,6 +69,10 @@ module Dependabot
         end
 
         def wants_date_based_version?
+          # Alternatively, we could hit the index URL for the package
+          # (i.e., ?filepath=<dependency_name>/) and parse the messy HTML to
+          # get the updated at for each version. The below saves a request, and
+          # is probably cleaner.
           return false unless dependency.version
           return false unless version_class.correct?(dependency.version)
           version_class.new(dependency.version) >= version_class.new(100)
