@@ -1,3 +1,8 @@
+## v0.54.14, 16 April 2018
+
+- Ruby: Handle file updates where the declaration is in an evaled Gemfile
+- Move Dependabot::MetadataFinders::Base::Source to Dependabot::Source
+
 ## v0.54.13, 15 April 2018
 
 - Python: Silence error output in Python file updater
