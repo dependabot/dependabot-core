@@ -1,3 +1,8 @@
+## v0.54.17, 16 April 2018
+
+- Ruby: Handle resolution error caused by Ruby's CompactIndex ocassionally
+  being unavailable
+
 ## v0.54.16, 16 April 2018
 
 - Ruby: Cleaner path dependency fetching
