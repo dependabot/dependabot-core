@@ -234,12 +234,9 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_ruby_path_directory.json"),
+            body: "[]",
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, url + "plugins/bump-core/bump-core.gemspec?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
       end
 
       it "raises a PathDependenciesNotReachable error with details" do

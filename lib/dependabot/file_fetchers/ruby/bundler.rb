@@ -80,24 +80,23 @@ module Dependabot
           unfetchable_gems = []
 
           gemspec_paths = fetch_gemspec_paths
-          nested_paths = gemspec_paths.flat_map do |path|
-            next [] if path.to_s == "."
-            repo_contents(dir: path).
-              select { |f| f.type == "dir" }.
-              map { |f| File.join(path, f.name) }
-          end
 
-          (gemspec_paths + nested_paths).uniq.each do |path|
+          gemspec_paths.each do |path|
+            # Get any gemspecs at the path itself
+            gemspecs_at_path = fetch_gemspecs_from_directory(path)
+
+            # Get any gemspecs nested one level deeper
+            next [] if path.to_s == "."
             files = repo_contents(dir: path)
-            files.
-              select { |f| f.name.end_with?(".gemspec") }.
-              each do |f|
-                file_path = File.join(path, f.name)
-                gemspec_files << fetch_file_from_host(file_path)
-              rescue Dependabot::DependencyFileNotFound
-                unfetchable_gems <<
-                  file_path.split("/").last.gsub(".gemspec", "")
-              end
+            files.select { |f| f.type == "dir" }.each do |dir|
+              dir_path = File.join(path, dir.name)
+              gemspecs_at_path += fetch_gemspecs_from_directory(dir_path)
+            end
+
+            # Add the fetched gemspecs to the main array, and note an error if
+            # none were found for this path
+            gemspec_files += gemspecs_at_path
+            unfetchable_gems << path.basename.to_s if gemspecs_at_path.empty?
           end
 
           if unfetchable_gems.any?
@@ -107,13 +106,11 @@ module Dependabot
           gemspec_files
         end
 
-        def fetch_gemspecs_from_directory(dir)
-          files = repo_contents(dir)
-          files.
+        def fetch_gemspecs_from_directory(dir_path)
+          repo_contents(dir: dir_path).
             select { |f| f.name.end_with?(".gemspec") }.
-            map do |f|
-              gemspec_files << fetch_file_from_host(File.join(path, f.name))
-            end
+            map { |f| File.join(dir_path, f.name) }.
+            map { |fp| fetch_file_from_host(fp) }
         end
 
         def fetch_gemspec_paths
