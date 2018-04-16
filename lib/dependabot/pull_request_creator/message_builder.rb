@@ -262,9 +262,7 @@ module Dependabot
           begin
             changelog_lines = changelog_text(dep).split("\n").first(50)
             changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
-            if changelog_lines.count == 50
-              changelog_lines << truncated_line
-            end
+            changelog_lines << truncated_line if changelog_lines.count == 50
             changelog_lines.join
           end
         msg += "</details>"
