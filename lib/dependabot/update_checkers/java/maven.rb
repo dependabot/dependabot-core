@@ -16,6 +16,9 @@ module Dependabot
             begin
               versions = VersionFinder.new(dependency: dependency).versions
               versions = versions.reject(&:prerelease?) unless wants_prerelease?
+              unless wants_date_based_version?
+                versions = versions.reject { |v| v > version_class.new(1900) }
+              end
               versions.last
             end
         end
@@ -63,6 +66,12 @@ module Dependabot
           return false unless dependency.version
           return false unless version_class.correct?(dependency.version)
           version_class.new(dependency.version).prerelease?
+        end
+
+        def wants_date_based_version?
+          return false unless dependency.version
+          return false unless version_class.correct?(dependency.version)
+          version_class.new(dependency.version) >= version_class.new(100)
         end
 
         def numeric_version_up_to_date?
