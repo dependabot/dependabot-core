@@ -10,6 +10,7 @@ require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module UpdateCheckers
     module Ruby
@@ -159,6 +160,11 @@ module Dependabot
               # the repo was gemspec-only
               next latest_version_details unless dep
 
+              # If the old Gemfile index was used then it won't have checked
+              # Ruby compatibility. Fix that by doing the check manually (and
+              # saying no update is possible if the Ruby version is a mismatch)
+              next nil if ruby_version_incompatible?(dep)
+
               details = { version: dep.version }
               if dep.source.instance_of?(::Bundler::Source::Git)
                 details[:commit_sha] = dep.source.revision
@@ -184,6 +190,38 @@ module Dependabot
             definition.resolve.find { |d| d.name == dependency.name }
           end
 
+          def ruby_version_incompatible?(dep)
+            return false unless dep.source.is_a?(::Bundler::Source::Rubygems)
+            fetcher = dep.source.fetchers.first.fetchers.first
+
+            # It's only the old index we have a problem with
+            return false unless fetcher.is_a?(::Bundler::Fetcher::Dependency)
+
+            # If no Ruby version is specified, we don't have a problem
+            return false unless ruby_version
+
+            versions = Excon.get(
+              "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+
+            ruby_requirement =
+              JSON.parse(versions.body).
+              find { |details| details["number"] == dep.version.to_s }&.
+              fetch("ruby_version", nil)
+
+            # Give the benefit of the doubt if we can't find the version's
+            # required Ruby version.
+            return false unless ruby_requirement
+
+            !Gem::Requirement.new(ruby_requirement).satisfied_by?(ruby_version)
+          rescue JSON::ParserError
+            # Give the benefit of the doubt if something goes wrong fetching
+            # version details (could be that it's a private index, etc.)
+            false
+          end
+
           def build_definition(dependencies_to_unlock)
             ::Bundler::Definition.build(
               "Gemfile", lockfile&.name, gems: dependencies_to_unlock
@@ -198,6 +236,12 @@ module Dependabot
                 ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
                   find { |dep| dep.name == dependency.name }&.source
               end
+          end
+
+          def ruby_version
+            return nil unless gemfile
+
+            @ruby_version ||= build_definition([]).ruby_version&.gem_version
           end
 
           #########################
@@ -348,3 +392,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

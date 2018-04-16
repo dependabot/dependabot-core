@@ -467,6 +467,43 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0.0
         # or greater.
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
+
+        context "when Bundler's compact index is down" do
+          before do
+            old_index_url = "https://index.rubygems.org/api/v1/dependencies"
+            stub_request(:get, "https://index.rubygems.org/versions").
+              to_return(status: 500, body: "We'll be back soon")
+            stub_request(:get, "https://index.rubygems.org/info/public_suffix").
+              to_return(status: 500, body: "We'll be back soon")
+            stub_request(:get, old_index_url).to_return(status: 200)
+            stub_request(:get, old_index_url + "?gems=public_suffix").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems-dependencies-public_suffix")
+              )
+
+            versions_url =
+              "https://rubygems.org/api/v1/versions/public_suffix.json"
+            stub_request(:get, versions_url).
+              to_return(status: 200, body: rubygems_versions)
+          end
+          let(:rubygems_versions) do
+            fixture("ruby", "rubygems-versions-public_suffix.json")
+          end
+
+          it { is_expected.to be_nil }
+
+          context "and the dependency doesn't have a required Ruby version" do
+            let(:rubygems_versions) do
+              fixture("ruby", "rubygems-versions-public_suffix.json").gsub(
+                /"ruby_version": .*,/,
+                '"ruby_version": null,'
+              )
+            end
+
+            its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
+          end
+        end
       end
 
       context "when a gem has been yanked" do
