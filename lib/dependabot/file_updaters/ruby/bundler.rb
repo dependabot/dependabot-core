@@ -125,12 +125,13 @@ module Dependabot
           content = file.content
 
           dependencies.each do |dependency|
-            content = replace_gemfile_version_requirement(dependency, content)
+            content =
+              replace_gemfile_version_requirement(dependency, file, content)
             if remove_git_source?(dependency)
               content = remove_gemfile_git_source(dependency, content)
             end
             if update_git_pin?(dependency)
-              content = update_gemfile_git_pin(dependency, content)
+              content = update_gemfile_git_pin(dependency, file, content)
             end
           end
 
@@ -147,12 +148,12 @@ module Dependabot
           content
         end
 
-        def replace_gemfile_version_requirement(dependency, content)
-          return content unless requirement_changed?(gemfile, dependency)
+        def replace_gemfile_version_requirement(dependency, file, content)
+          return content unless requirement_changed?(file, dependency)
 
           updated_requirement =
             dependency.requirements.
-            find { |r| r[:file] == gemfile.name }.
+            find { |r| r[:file] == file.name }.
             fetch(:requirement)
 
           RequirementReplacer.new(
@@ -166,10 +167,10 @@ module Dependabot
           GitSourceRemover.new(dependency: dependency).rewrite(content)
         end
 
-        def update_gemfile_git_pin(dependency, content)
+        def update_gemfile_git_pin(dependency, file, content)
           new_pin =
             dependency.requirements.
-            find { |f| f[:file] == "Gemfile" }.
+            find { |f| f[:file] == file.name }.
             fetch(:source).fetch(:ref)
 
           GitPinReplacer.

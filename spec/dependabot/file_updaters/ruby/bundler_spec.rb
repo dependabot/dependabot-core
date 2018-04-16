@@ -548,8 +548,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
         context "and it's another gem" do
           let(:dependency_name) { "statesman" }
-          let(:dependency_version) { "1.2.1" }
-          let(:dependency_previous_version) { "1.3.1" }
+          let(:dependency_version) { "1.3.1" }
+          let(:dependency_previous_version) { "1.2.1" }
           let(:requirements) do
             [{
               file: "Gemfile",
@@ -954,9 +954,71 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
         let(:child_gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
         let(:lockfile_fixture_name) { "path_source.lock" }
+        let(:requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:previous_requirements) do
+          [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "backend/Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
 
         it "updates the gem just fine" do
           expect(file.content).to include "business (1.5.0)"
+        end
+
+        context "when the dependency only appears in the child Gemfile" do
+          let(:dependency_name) { "statesman" }
+          let(:dependency_version) { "1.3.1" }
+          let(:dependency_previous_version) { "1.2.1" }
+          let(:requirements) do
+            [
+              {
+                file: "backend/Gemfile",
+                requirement: "~> 1.3.1",
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+          let(:previous_requirements) do
+            [
+              {
+                file: "backend/Gemfile",
+                requirement: "~> 1.2.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+
+          it "updates the gem just fine" do
+            expect(file.content).to include "statesman (1.3.1)"
+          end
         end
       end
 
