@@ -73,13 +73,6 @@ module Dependabot
         def npm_listing
           return @npm_listing unless @npm_listing.nil?
 
-          registry_auth_headers =
-            if auth_token
-              { "Authorization" => "Bearer #{auth_token}" }
-            else
-              {}
-            end
-
           response = Excon.get(
             dependency_url,
             headers: registry_auth_headers,
@@ -104,6 +97,11 @@ module Dependabot
           # NPM registries expect slashes to be escaped
           escaped_dependency_name = dependency.name.gsub("/", "%2F")
           "#{registry_url}/#{escaped_dependency_name}"
+        end
+
+        def registry_auth_headers
+          return {} unless auth_token
+          { "Authorization" => "Bearer #{auth_token}" }
         end
 
         def dependency_registry
