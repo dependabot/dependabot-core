@@ -1,3 +1,10 @@
+## v0.54.18, 16 April 2018
+
+- Java: Filter out date-based release numbers if that's not what's currently
+  being used
+- Java: Handle dependencies with multiple declarations in FileParser and
+  UpdateChecker
+
 ## v0.54.17, 16 April 2018
 
 - Ruby: Handle resolution error caused by Ruby's CompactIndex ocassionally
