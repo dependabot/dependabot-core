@@ -104,6 +104,7 @@ module Dependabot
             [*new_release, *new_prerelease].join(".")
           end
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_gemspec_requirement(req)
             return req unless latest_version && latest_resolvable_version
 
@@ -130,6 +131,7 @@ module Dependabot
           rescue UnfixableRequirement
             req.merge(requirement: :unfixable)
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def requirement_satisfied?(req, groups)
             if groups == ["development"]
