@@ -4,6 +4,7 @@ require "octokit"
 require "gitlab"
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/source"
 require "dependabot/metadata_finders/base/release_finder"
 
 RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
@@ -38,7 +39,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     ]
   end
   let(:source) do
-    Dependabot::MetadataFinders::Base::Source.new(
+    Dependabot::Source.new(
       host: "github",
       repo: "gocardless/#{dependency_name}"
     )
@@ -55,7 +56,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "with a gitlab source" do
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "gitlab",
           repo: "org/#{dependency_name}"
         )
@@ -263,7 +264,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
       end
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "gitlab",
           repo: "org/#{dependency_name}"
         )

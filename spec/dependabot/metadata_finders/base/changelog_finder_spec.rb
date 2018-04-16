@@ -4,6 +4,7 @@ require "octokit"
 require "gitlab"
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/source"
 require "dependabot/metadata_finders/base/changelog_finder"
 
 RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
@@ -24,7 +25,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     ]
   end
   let(:source) do
-    Dependabot::MetadataFinders::Base::Source.new(
+    Dependabot::Source.new(
       host: "github",
       repo: "gocardless/#{dependency_name}"
     )
@@ -118,7 +119,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       context "with a directory" do
         let(:github_response) { fixture("github", "business_files.json") }
         let(:source) do
-          Dependabot::MetadataFinders::Base::Source.new(
+          Dependabot::Source.new(
             host: "github",
             repo: "gocardless/#{dependency_name}",
             directory: "packages/stryker"
@@ -218,7 +219,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:gitlab_status) { 200 }
       let(:gitlab_response) { fixture("gitlab", "business_files.json") }
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "gitlab",
           repo: "org/#{dependency_name}"
         )
@@ -253,7 +254,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:bitbucket_status) { 200 }
       let(:bitbucket_response) { fixture("bitbucket", "business_files.json") }
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "bitbucket",
           repo: "org/#{dependency_name}"
         )
@@ -468,7 +469,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         fixture("gitlab", "business_files.json")
       end
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "gitlab",
           repo: "org/#{dependency_name}"
         )
@@ -501,7 +502,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         fixture("bitbucket", "business_files.json")
       end
       let(:source) do
-        Dependabot::MetadataFinders::Base::Source.new(
+        Dependabot::Source.new(
           host: "bitbucket",
           repo: "org/#{dependency_name}"
         )
