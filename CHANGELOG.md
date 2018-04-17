@@ -1,4 +1,9 @@
-## v0.54.20, 16 April 2018
+## v0.54.21, 17 April 2018
+
+- Elixir: Add support for private repos
+- Ruby: Less opinionated update for equality matchers in gemspecs
+
+## v0.54.20, 17 April 2018
 
 - Ruby: Require a latest_resolvable_version to update gemspec requirements
 
