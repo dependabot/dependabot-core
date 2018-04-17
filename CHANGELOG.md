@@ -1,3 +1,7 @@
+## v0.54.22, 17 April 2018
+
+- Rust: Check for latest version differently when updating sub-dependencies
+
 ## v0.54.21, 17 April 2018
 
 - Elixir: Add support for private repos
