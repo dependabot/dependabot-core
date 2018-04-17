@@ -31,6 +31,45 @@ RSpec.describe Dependabot::Utils::Java::Version do
     end
   end
 
+  describe "#prerelease?" do
+    subject { version.prerelease? }
+
+    context "with an alpha" do
+      let(:version_string) { "1.0.0-alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a capitalised alpha" do
+      let(:version_string) { "1.0.0-Alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alpha separated with a ." do
+      let(:version_string) { "1.0.0.alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alpha with no separator" do
+      let(:version_string) { "1.0.0alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alligator" do
+      let(:version_string) { "1.0.0alligator" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a release" do
+      let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a post-release" do
+      let(:version_string) { "1.0.0.sp7" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
   describe "#<=>" do
     subject { version.send(:"<=>", other_version) }
 
@@ -144,13 +183,25 @@ RSpec.describe Dependabot::Utils::Java::Version do
           it { is_expected.to eq(0) }
         end
 
+        context "case insensitivity" do
+          let(:version) { described_class.new("1.0.FINAL") }
+          let(:other_version) { described_class.new("1") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "case insensitivity 2" do
+          let(:version) { described_class.new("1.something") }
+          let(:other_version) { described_class.new("1.SOMETHING") }
+          it { is_expected.to eq(0) }
+        end
+
         context "post releases" do
           let(:version) { described_class.new("1-sp") }
           let(:other_version) { described_class.new("1-ga") }
           it { is_expected.to eq(1) }
         end
 
-        context "post releases" do
+        context "post releases 2" do
           let(:version) { described_class.new("1-sp.1") }
           let(:other_version) { described_class.new("1-ga.1") }
           it { is_expected.to eq(1) }

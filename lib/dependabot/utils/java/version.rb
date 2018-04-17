@@ -45,7 +45,7 @@ module Dependabot
         def tokens
           @tokens ||=
             begin
-              version = @version_string.to_s
+              version = @version_string.to_s.downcase
               version = fill_tokens(version)
               version = trim_version(version)
               split_into_prefixed_tokens(version).map { |t| t[1..-1] }
@@ -53,12 +53,12 @@ module Dependabot
         end
 
         def <=>(other)
-          version = @version_string.to_s
+          version = @version_string.to_s.downcase
           version = fill_tokens(version)
           version = trim_version(version)
           prefixed_tokens = split_into_prefixed_tokens(version)
 
-          other_version = other.to_s
+          other_version = other.to_s.downcase
           other_version = fill_tokens(other_version)
           other_version = trim_version(other_version)
           other_prefixed_tokens = split_into_prefixed_tokens(other_version)
@@ -142,16 +142,6 @@ module Dependabot
           token = token.to_i if token.match?(/^\d+$/)
           other_token = other_token.to_i if other_token.match?(/^\d+$/)
           token <=> other_token
-        end
-
-        def normalise_token(token)
-          return "a" if token == "alpha"
-          return "b" if token == "beta"
-          return "m" if token == "milestone"
-          return "rc" if token == "cr"
-          return "rc" if token == "cr"
-          return "final" if token == "ga"
-          token
         end
       end
     end
