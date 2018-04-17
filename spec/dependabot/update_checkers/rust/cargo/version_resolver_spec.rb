@@ -82,6 +82,16 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:string_req) { "0.4" }
 
       it { is_expected.to eq(Gem::Version.new("0.4.2")) }
+
+      context "when the dependency isn't top-level" do
+        let(:manifest_fixture_name) { "multiple_versions_subdependency" }
+        let(:lockfile_fixture_name) { "multiple_versions_subdependency" }
+        let(:dependency_name) { "hyper" }
+        let(:dependency_version) { "0.10.13" }
+        let(:requirements) { [] }
+
+        it { is_expected.to eq(Gem::Version.new("0.10.13")) }
+      end
     end
 
     context "when the latest version is blocked" do

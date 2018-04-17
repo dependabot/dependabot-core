@@ -35,13 +35,20 @@ module Dependabot
               command = "cargo update -p #{dependency_spec}"
               run_cargo_command(command)
 
+              updated_versions =
+                TomlRB.parse(File.read("Cargo.lock")).fetch("package").
+                select { |p| p["name"] == dependency.name }
+
               updated_version =
-                TomlRB.
-                parse(File.read("Cargo.lock")).
-                fetch("package").
-                select { |p| p["name"] == dependency.name }.
-                max_by { |p| Utils::Rust::Version.new(p.fetch("version")) }.
-                fetch("version")
+                if dependency.top_level?
+                  updated_versions.
+                    max_by { |p| Utils::Rust::Version.new(p.fetch("version")) }.
+                    fetch("version")
+                else
+                  updated_versions.
+                    min_by { |p| Utils::Rust::Version.new(p.fetch("version")) }.
+                    fetch("version")
+                end
 
               return updated_version if updated_version.nil?
               Utils::Rust::Version.new(updated_version)

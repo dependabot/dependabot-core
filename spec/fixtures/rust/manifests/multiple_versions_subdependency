@@ -1,0 +1,8 @@
+[package]
+name = "dependabot"
+version = "0.1.0"
+authors = ["support@dependabot.com"]
+
+[dependencies]
+bugsnag = "0.2.1"
+reqwest = "0.8.5"
