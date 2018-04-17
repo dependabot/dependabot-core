@@ -75,7 +75,7 @@ module Dependabot
         def fetch_latest_version
           versions = available_versions
           versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.sort.last
+          versions.max
         end
 
         def wants_prerelease?

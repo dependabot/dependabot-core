@@ -79,8 +79,7 @@ module Dependabot
             )
 
             latest_info = JSON.parse(response.body).
-                          sort_by { |d| Gem::Version.new(d["number"]) }.
-                          last
+                          max_by { |d| Gem::Version.new(d["number"]) }
 
             {
               version: Gem::Version.new(latest_info["number"]),
@@ -100,7 +99,7 @@ module Dependabot
                     search_all(dependency.name).
                     reject { |s| s.version.prerelease? && !wants_prerelease? }
                 end.
-                sort_by(&:version).last
+                max_by(&:version)
               spec.nil? ? nil : { version: spec.version }
             end
           end
