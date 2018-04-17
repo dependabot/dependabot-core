@@ -61,7 +61,7 @@ module Dependabot
                 env: mix_env,
                 command: "mix run #{elixir_helper_path}",
                 function: "get_updated_lockfile",
-                args: [Dir.pwd, dependency.name]
+                args: [Dir.pwd, dependency.name, organization_credentials]
               )
             end
 
@@ -175,6 +175,11 @@ module Dependabot
 
         def project_root
           File.join(File.dirname(__FILE__), "../../../..")
+        end
+
+        def organization_credentials
+          credentials.select { |cred| cred.key?("organization") }.
+            flat_map { |cred| [cred["organization"], cred["token"]] }
         end
       end
     end

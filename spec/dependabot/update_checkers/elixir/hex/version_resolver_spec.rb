@@ -99,12 +99,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
         }]
       end
 
-      # it "raises a Dependabot::DependencyFileNotResolvable error" do
-      #   # In an ideal world, Dependabot would update the environment specified
-      #   # for `poison` in the Mixfile. In the meantime, though, we just treat
-      #   # this as an impossible-to-update dependency.
-      #   expect(resolver.latest_resolvable_version).to be_nil
-      # end
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        # In an ideal world, Dependabot would update the environment specified
+        # for `poison` in the Mixfile. In the meantime, though, we just treat
+        # this as an impossible-to-update dependency.
+        expect(resolver.latest_resolvable_version).to be_nil
+      end
     end
   end
 end

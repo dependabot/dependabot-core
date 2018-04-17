@@ -34,12 +34,12 @@ defmodule DependencyHelper do
     run_script("parse_deps.exs", dir)
   end
 
-  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name]}) do
-    run_script("check_update.exs", dir, [dependency_name])
+  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name, credentials]}) do
+    run_script("check_update.exs", dir, [dependency_name] ++ credentials)
   end
 
-  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name]}) do
-    run_script("do_update.exs", dir, [dependency_name])
+  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name, credentials]}) do
+    run_script("do_update.exs", dir, [dependency_name] ++ credentials)
   end
 
   defp run_script(script, dir, args \\ []) do
