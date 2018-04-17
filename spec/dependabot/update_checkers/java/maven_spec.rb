@@ -64,9 +64,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
-    context "when the user doesn't want a pre-release" do
-      let(:dependency_version) { "18.0" }
-      it { is_expected.to eq(version_class.new("23.0")) }
+    context "when the user wants a pre-release" do
+      let(:dependency_version) { "18.0-beta" }
+      it { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
     end
 
     context "when there are date-based versions" do
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      it { is_expected.to eq(version_class.new("23.0")) }
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
     context "when the version comes from a property" do

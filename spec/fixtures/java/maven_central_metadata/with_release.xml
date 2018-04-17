@@ -73,6 +73,7 @@
       <version>23.5-jre</version>
       <version>23.6-android</version>
       <version>23.6-jre</version>
+      <version>23.7-jre-rc1</version>
     </versions>
     <lastUpdated>20171221012203</lastUpdated>
   </versioning>

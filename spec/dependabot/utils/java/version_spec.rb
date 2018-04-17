@@ -31,6 +31,203 @@ RSpec.describe Dependabot::Utils::Java::Version do
     end
   end
 
+  describe "#prerelease?" do
+    subject { version.prerelease? }
+
+    context "with an alpha" do
+      let(:version_string) { "1.0.0-alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a capitalised alpha" do
+      let(:version_string) { "1.0.0-Alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alpha separated with a ." do
+      let(:version_string) { "1.0.0.alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alpha with no separator" do
+      let(:version_string) { "1.0.0alpha" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an alligator" do
+      let(:version_string) { "1.0.0alligator" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a release" do
+      let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a post-release" do
+      let(:version_string) { "1.0.0.sp7" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#<=>" do
+    subject { version.send(:"<=>", other_version) }
+
+    context "compared to a Gem::Version" do
+      context "that is lower" do
+        let(:other_version) { Gem::Version.new("0.9.0") }
+        it { is_expected.to eq(1) }
+      end
+
+      context "that is equal" do
+        let(:other_version) { Gem::Version.new("1.0.0") }
+        it { is_expected.to eq(0) }
+      end
+
+      context "that is greater" do
+        let(:other_version) { Gem::Version.new("1.1.0") }
+        it { is_expected.to eq(-1) }
+      end
+    end
+
+    context "compared to a Utils::Java::Version" do
+      context "that is lower" do
+        let(:other_version) { described_class.new("0.9.0") }
+        it { is_expected.to eq(1) }
+      end
+
+      context "that is equal" do
+        let(:other_version) { described_class.new("1.0.0") }
+        it { is_expected.to eq(0) }
+      end
+
+      context "that is greater" do
+        let(:other_version) { described_class.new("1.1.0") }
+        it { is_expected.to eq(-1) }
+      end
+
+      context "that is a post-release" do
+        let(:other_version) { described_class.new("1.0.0u1") }
+        it { is_expected.to eq(-1) }
+      end
+
+      context "that is a pre-release" do
+        let(:other_version) { described_class.new("1.0.0a1") }
+        it { is_expected.to eq(1) }
+      end
+
+      describe "from the spec" do
+        context "number padding" do
+          let(:version) { described_class.new("1") }
+          let(:other_version) { described_class.new("1.1") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "qualifier padding" do
+          let(:version) { described_class.new("1-snapshot") }
+          let(:other_version) { described_class.new("1") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "qualifier padding 1" do
+          let(:version) { described_class.new("1") }
+          let(:other_version) { described_class.new("1-sp") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "switching" do
+          let(:version) { described_class.new("1-foo2") }
+          let(:other_version) { described_class.new("1-foo10") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "prefixes" do
+          let(:version) { described_class.new("1.foo") }
+          let(:other_version) { described_class.new("1-foo") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "prefixes2" do
+          let(:version) { described_class.new("1-foo") }
+          let(:other_version) { described_class.new("1-1") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "prefixes3" do
+          let(:version) { described_class.new("1-1") }
+          let(:other_version) { described_class.new("1.1") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "null values" do
+          let(:version) { described_class.new("1.ga") }
+          let(:other_version) { described_class.new("1-ga") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "null values 2" do
+          let(:version) { described_class.new("1-ga") }
+          let(:other_version) { described_class.new("1-0") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "null values 3" do
+          let(:version) { described_class.new("1-0") }
+          let(:other_version) { described_class.new("1.0") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "null values 4" do
+          let(:version) { described_class.new("1.0") }
+          let(:other_version) { described_class.new("1") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "case insensitivity" do
+          let(:version) { described_class.new("1.0.FINAL") }
+          let(:other_version) { described_class.new("1") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "case insensitivity 2" do
+          let(:version) { described_class.new("1.something") }
+          let(:other_version) { described_class.new("1.SOMETHING") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "post releases" do
+          let(:version) { described_class.new("1-sp") }
+          let(:other_version) { described_class.new("1-ga") }
+          it { is_expected.to eq(1) }
+        end
+
+        context "post releases 2" do
+          let(:version) { described_class.new("1-sp.1") }
+          let(:other_version) { described_class.new("1-ga.1") }
+          it { is_expected.to eq(1) }
+        end
+
+        context "null values (again)" do
+          let(:version) { described_class.new("1-sp-1") }
+          let(:other_version) { described_class.new("1-ga-1") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "null values (again 2)" do
+          let(:version) { described_class.new("1-ga-1") }
+          let(:other_version) { described_class.new("1-1") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "named values" do
+          let(:version) { described_class.new("1-a1") }
+          let(:other_version) { described_class.new("1-alpha-1") }
+          it { is_expected.to eq(0) }
+        end
+      end
+    end
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
