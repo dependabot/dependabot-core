@@ -1,3 +1,7 @@
+## v0.54.23, 17 April 2018
+
+- Java: Implement Java version comparison based on Maven spec
+
 ## v0.54.22, 17 April 2018
 
 - Rust: Check for latest version differently when updating sub-dependencies
