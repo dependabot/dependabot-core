@@ -202,7 +202,7 @@ module Dependabot
             map { |release| version_class.new(release["version"]) }
 
           versions = versions.reject(&:prerelease?) unless wants_prerelease?
-          versions.sort.last
+          versions.max
         end
 
         def hex_registry_response

@@ -153,10 +153,8 @@ module Dependabot
 
             binding_reqs = grouped_by_operator.flat_map do |operator, reqs|
               case operator
-              when "<", "<="
-                reqs.sort_by { |r| r.requirements.first.last }.first
-              when ">", ">="
-                reqs.sort_by { |r| r.requirements.first.last }.last
+              when "<", "<=" then reqs.min_by { |r| r.requirements.first.last }
+              when ">", ">=" then reqs.max_by { |r| r.requirements.first.last }
               else requirements
               end
             end.uniq

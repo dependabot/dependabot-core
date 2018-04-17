@@ -20,7 +20,7 @@ module Dependabot
             begin
               versions = available_versions
               versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.sort.last
+              versions.max
             end
         end
 

@@ -24,7 +24,7 @@ module Dependabot
             map { |version| version_class.new(version.gsub(/^v/, "")) }
 
           versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.sort.last
+          versions.max
         end
 
         def latest_resolvable_version
