@@ -55,8 +55,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
 
   describe "#versions" do
     subject { finder.versions }
-    its(:count) { is_expected.to eq(62) }
+    its(:count) { is_expected.to eq(63) }
     its(:first) { is_expected.to eq(version_class.new("10.0-rc1")) }
-    its(:last) { is_expected.to eq(version_class.new("23.6-jre")) }
+    its(:last) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
   end
 end

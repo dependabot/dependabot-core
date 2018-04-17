@@ -33,7 +33,24 @@ module Dependabot
           @version_string
         end
 
+        def prerelease?
+          tokens.any? do |token|
+            next false unless NAMED_QUALIFIERS_HIERARCHY[token]
+            NAMED_QUALIFIERS_HIERARCHY[token] < 6
+          end
+        end
+
         private
+
+        def tokens
+          @tokens ||=
+            begin
+              version = @version_string.to_s
+              version = fill_tokens(version)
+              version = trim_version(version)
+              split_into_prefixed_tokens(version).map { |t| t[1..-1] }
+            end
+        end
 
         def <=>(other)
           version = @version_string.to_s
