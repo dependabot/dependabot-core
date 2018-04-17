@@ -1322,13 +1322,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             to receive(:new).with(
               requirements: requirements,
               library: false,
-              latest_version: "1.12.0",
-              latest_resolvable_version: "1.12.0",
+              latest_version: "1.13.0",
+              latest_resolvable_version: "1.13.0",
               updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.12.0")
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
         end
 
         context "that is pinned" do
@@ -1366,7 +1366,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.12.0",
+                  latest_version: "1.13.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: requirements.first[:source]
                 ).and_call_original
@@ -1418,7 +1418,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.12.0",
+                  latest_version: "1.13.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: {
                     type: "git",
@@ -1468,7 +1468,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.12.0",
+                  latest_version: "1.13.0",
                   latest_resolvable_version: "1.6.0",
                   updated_source: nil
                 ).and_call_original

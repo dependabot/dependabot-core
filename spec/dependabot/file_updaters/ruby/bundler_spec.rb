@@ -259,7 +259,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           [
             {
               file: "Gemfile",
-              requirement: "~> 1.12.0",
+              requirement: "~> 1.13.0",
               groups: [],
               source: {
                 type: "git",
@@ -280,7 +280,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           }]
         end
         its(:content) do
-          is_expected.to include "\"business\", \"~> 1.12.0\", git"
+          is_expected.to include "\"business\", \"~> 1.13.0\", git"
         end
 
         context "that should have its tag updated" do
@@ -876,7 +876,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.12.0",
+                requirement: "~> 1.13.0",
                 groups: [],
                 source: {
                   type: "git",
@@ -895,7 +895,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.12.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.13.0)!" }
           end
         end
       end
