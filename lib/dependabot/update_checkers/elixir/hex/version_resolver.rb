@@ -67,7 +67,7 @@ module Dependabot
               raise Dependabot::PrivateSourceNotReachable, org
             end
 
-            if error.message.include?("Request failed (403)")
+            if error.message.include?("Failed to fetch record for")
               org_match = error.message.match(%r{for 'hexpm:([a-z_]+)/})
               org = org_match&.captures&.first
               raise Dependabot::PrivateSourceNotReachable, org if org
