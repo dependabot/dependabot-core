@@ -17,18 +17,17 @@ defmodule UpdateChecker do
   end
 
   defp set_credentials(credentials) do
-    grouped_creds =
-      Enum.reduce(credentials, [], fn cred, acc ->
-        if List.last(acc) == nil || List.last(acc)[:token] do
-          acc = List.insert_at(acc, -1, %{organization: cred})
-        else
-          {item, acc} = List.pop_at(acc, -1)
-          item = Map.put(item, :token, cred)
-          acc = List.insert_at(acc, -1, item)
-        end
-      end)
-
-    Enum.each(grouped_creds, fn cred ->
+    credentials
+    |> Enum.reduce([], fn cred, acc ->
+      if List.last(acc) == nil || List.last(acc)[:token] do
+        acc = List.insert_at(acc, -1, %{organization: cred})
+      else
+        {item, acc} = List.pop_at(acc, -1)
+        item = Map.put(item, :token, cred)
+        acc = List.insert_at(acc, -1, item)
+      end
+    end)
+    |> Enum.each(fn cred ->
       hexpm = Hex.Repo.get_repo("hexpm")
 
       repo = %{
