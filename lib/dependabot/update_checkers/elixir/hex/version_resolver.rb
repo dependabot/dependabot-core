@@ -71,7 +71,10 @@ module Dependabot
               raise Dependabot::PrivateSourceNotReachable, org if org
             end
 
+            # TODO: This isn't pretty. It would be much nicer to catch the
+            # warnings as part of the Elixir module.
             return error_result(error) if includes_result?(error)
+
             raise error unless error.message.start_with?("Invalid requirement")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
