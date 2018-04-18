@@ -1,3 +1,7 @@
+## v0.54.25, 18 April 2018
+
+- Java: Handle whitespace in pom.xml declarations
+
 ## v0.54.24, 18 April 2018
 
 - Accommodate difficult tag names in ReleaseFinder
