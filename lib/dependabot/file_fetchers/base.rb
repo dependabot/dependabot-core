@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/github_client_with_retries"
 require "gitlab"
@@ -23,6 +24,7 @@ module Dependabot
         @credentials = credentials
         @directory = directory
         @target_branch = target_branch
+        @submodule_directories = {}
       end
 
       def repo
@@ -102,8 +104,14 @@ module Dependabot
       def github_repo_contents(path)
         github_response = github_client.contents(repo, path: path, ref: commit)
 
-        # TODO: Handle submodule responses here
-        raise "Unexpected GitHub response" unless github_response.is_a?(Array)
+        if github_response.respond_to?(:type) &&
+           github_response.type == "submodule"
+          @submodule_directories[path] = github_response
+
+          sub_source = Source.from_url(github_response.submodule_git_url)
+          github_response =
+            github_client.contents(sub_source.repo, ref: github_response.sha)
+        end
 
         github_response.map do |f|
           OpenStruct.new(name: f.name, path: f.path, type: f.type)
@@ -124,12 +132,37 @@ module Dependabot
 
       def fetch_file_content(path)
         path = path.gsub(%r{^/*}, "")
+        dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
+
+        if @submodule_directories.key?(dir)
+          return fetch_submodule_file_content(path)
+        end
 
         case host
         when "github"
           tmp = github_client.contents(repo, path: path, ref: commit)
-          tmp = tmp.content
+          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        when "gitlab"
+          tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
+        else raise "Unsupported host '#{host}'."
+        end
+      end
+
+      def fetch_submodule_file_content(path)
+        path = path.gsub(%r{^/*}, "")
+        dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
+        submodule = @submodule_directories[dir]
+
+        host = Source.from_url(submodule.submodule_git_url).host
+        repo = Source.from_url(submodule.submodule_git_url).repo
+        commit = submodule.sha
+        path = path.gsub("#{dir}/", "")
+
+        case host
+        when "github"
+          tmp = github_client.contents(repo, path: path, ref: commit)
+          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode

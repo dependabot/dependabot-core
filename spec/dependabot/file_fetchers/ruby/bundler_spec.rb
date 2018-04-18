@@ -10,7 +10,8 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "host" => "github.com",
@@ -206,6 +207,43 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           expect(file_fetcher_instance.files.count).to eq(3)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("plugins/bump-core/bump-core/bump-core.gemspec")
+        end
+      end
+
+      context "that is a submodule" do
+        before do
+          submodule_details =
+            fixture("github", "submodule.json").
+            gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+          stub_request(:get, url + "plugins/bump-core?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: submodule_details,
+              headers: { "content-type" => "application/json" }
+            )
+
+          sub_url = github_url + "repos/dependabot/manifesto/contents/"
+          stub_request(:get, sub_url + "?ref=sha2").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_ruby_path_dep_and_dir.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, sub_url + "bump-core.gemspec?ref=sha2").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemspec_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches gemspec from path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("plugins/bump-core/bump-core.gemspec")
         end
       end
 
