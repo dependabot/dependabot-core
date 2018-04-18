@@ -18,6 +18,8 @@ module Dependabot
         require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
         require "dependabot/file_updaters/ruby/bundler/git_source_remover"
         require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
+        require "dependabot/update_checkers/ruby/bundler/"\
+                "gemspec_dependency_name_finder"
 
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
