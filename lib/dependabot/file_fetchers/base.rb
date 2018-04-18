@@ -92,6 +92,9 @@ module Dependabot
         path = Pathname.new(File.join(directory, dir)).
                cleanpath.to_path.gsub(%r{^/*}, "")
 
+        # Don't fetch contents of repos nested in submodules
+        return [] if @submodule_directories.keys.any? { |k| path.include?(k) }
+
         @repo_contents ||= {}
         @repo_contents[dir] ||=
           case host
