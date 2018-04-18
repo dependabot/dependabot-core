@@ -71,8 +71,27 @@ module Dependabot
               raise Dependabot::PrivateSourceNotReachable, org if org
             end
 
+            return error_result(error) if includes_result?(error)
             raise error unless error.message.start_with?("Invalid requirement")
             raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+
+          def error_result(error)
+            return false unless includes_result?(error)
+
+            result_json = error.message&.split("\n")&.last
+            result = JSON.parse(result_json)["result"]
+            return version_class.new(result) if version_class.correct?(result)
+            result
+          end
+
+          def includes_result?(error)
+            result = error.message&.split("\n")&.last
+            return false unless result
+            JSON.parse(error.message&.split("\n")&.last)["result"]
+            true
+          rescue JSON::ParserError
+            false
           end
 
           def write_temporary_dependency_files

@@ -81,6 +81,17 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
       end
     end
 
+    context "with a mix.exs that generates a deps warnings" do
+      let(:mixfile_fixture_name) { "deps_warning" }
+
+      it "respects the resolvability of the mix.exs" do
+        expect(latest_resolvable_version).
+          to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).
+          to be < Gem::Version.new("1.4.0")
+      end
+    end
+
     context "when the environments for another dependency diverge" do
       # In this example, updating `credo` would add its sub-dependency,
       # `poison`, to the `dev` environment, but the Mixfile explicitly specifies
