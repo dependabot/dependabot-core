@@ -1,4 +1,4 @@
-## v0.54.24, 17 April 2018
+## v0.54.24, 18 April 2018
 
 - Accommodate difficult tag names in ReleaseFinder
 
