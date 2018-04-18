@@ -1,3 +1,7 @@
+## v0.54.28, 18 April 2018
+
+- Ruby: Better sanitization of path gemspecs
+
 ## v0.54.27, 18 April 2018
 
 - Ruby: Don't fetch contents for repos nested in submodules
