@@ -254,29 +254,18 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
-          File.write(
-            "Gemfile",
-            updated_gemfile_content(gemfile)
-          )
-          File.write(
-            "Gemfile.lock",
-            lockfile.content
-          )
+          File.write("Gemfile", updated_gemfile_content(gemfile))
+          File.write("Gemfile.lock", lockfile.content)
 
           if gemspec
             File.write(
               gemspec.name,
-              sanitized_gemspec_content(updated_gemspec)
+              sanitized_gemspec_content(updated_gemspec_content)
             )
           end
 
           write_ruby_version_file
-
-          path_gemspecs.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(file))
-          end
+          write_path_gemspecs
 
           evaled_gemfiles.each do |file|
             path = file.name
@@ -292,6 +281,14 @@ module Dependabot
           File.write(path, ruby_version_file.content)
         end
 
+        def write_path_gemspecs
+          path_gemspecs.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, sanitized_gemspec_content(file.content))
+          end
+        end
+
         def path_gemspecs
           all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
           all - [gemspec]
@@ -299,10 +296,6 @@ module Dependabot
 
         def gemspec
           dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
-        end
-
-        def updated_gemspec
-          updated_file(file: gemspec, content: updated_gemspec_content)
         end
 
         def ruby_version_file
@@ -318,14 +311,26 @@ module Dependabot
           )
         end
 
-        def sanitized_gemspec_content(gemspec)
-          parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
-          gem_name = gemspec.name.split("/").last.split(".").first
-          spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
+        def sanitized_gemspec_content(gemspec_content)
+          new_version = replacement_version_for_gemspec(gemspec_content)
 
-          GemspecSanitizer.new(
-            replacement_version: spec&.version || "0.0.1"
-          ).rewrite(gemspec.content)
+          GemspecSanitizer.
+            new(replacement_version: new_version).
+            rewrite(gemspec_content)
+        end
+
+        def replacement_version_for_gemspec(gemspec_content)
+          return "0.0.1" unless lockfile
+
+          parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+          gem_name =
+            UpdateCheckers::Ruby::Bundler::GemspecDependencyNameFinder.new(
+              gemspec_content: gemspec_content
+            ).dependency_name
+
+          return "0.0.1" unless gem_name
+          spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
+          spec&.version || "0.0.1"
         end
       end
     end
