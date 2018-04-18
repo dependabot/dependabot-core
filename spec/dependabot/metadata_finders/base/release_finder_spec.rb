@@ -158,6 +158,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   )
               end
             end
+
+            context "but has tag names with dashes, and it's Java" do
+              let(:github_response) do
+                fixture("github", "releases_dash_tags.json")
+              end
+              let(:dependency_version) { "6.5.1" }
+              let(:dependency_previous_version) { "6.4.0" }
+
+              it "falls back to the tag name" do
+                expect(subject).
+                  to eq(
+                    "## JasperReports 6.5.1\n"\
+                    "Body for 6.5.1\n"\
+                    "\n"\
+                    "## JasperReports 6.5.0\n"\
+                    "Body for 6.5.0\n"\
+                    "\n"\
+                    "## JasperReports 6.4.3\n"\
+                    "Body for 6.4.3\n"\
+                    "\n"\
+                    "## JasperReports 6.4.1\n"\
+                    "Body for 6.4.1"
+                  )
+              end
+            end
           end
 
           context "and is updating from several versions previous" do

@@ -98,12 +98,17 @@ module Dependabot
 
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
+            cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
 
-            next conservative unless version_class.correct?(cleaned_tag)
+            tag_version = [cleaned_tag, cleaned_name].
+                          select { |nm| version_class.correct?(nm) }.
+                          map { |nm| version_class.new(nm) }.max
+
+            next conservative unless tag_version
 
             # Reject any releases that are less than the previous version
             # (e.g., if two major versions are being maintained)
-            version_class.new(cleaned_tag) <= previous_version
+            tag_version <= previous_version
           end
         end
 
@@ -112,12 +117,17 @@ module Dependabot
 
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
+            cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
 
-            next conservative unless version_class.correct?(cleaned_tag)
+            tag_version = [cleaned_tag, cleaned_name].
+                          select { |nm| version_class.correct?(nm) }.
+                          map { |nm| version_class.new(nm) }.min
+
+            next conservative unless tag_version
 
             # Reject any releases that are greater than the updated version
             # (e.g., if two major versions are being maintained)
-            version_class.new(cleaned_tag) > updated_version
+            tag_version > updated_version
           end
         end
 
@@ -135,32 +145,6 @@ module Dependabot
           # Doing two loops looks inefficient, but it ensures consistency
           all_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||
             all_releases.find { |r| release_regex.match?(r.name.to_s) }
-        end
-
-        def intermediate_releases
-          intermediate_release_count =
-            all_releases.index(previous_release) -
-            all_releases.index(updated_release) -
-            1
-
-          intermediate_releases = all_releases.slice(
-            all_releases.index(updated_release) + 1,
-            intermediate_release_count
-          )
-
-          version = dependency.version
-          return intermediate_releases unless version_class.correct?(version)
-
-          intermediate_releases.reject do |release|
-            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
-
-            # Don't reject anything we can't be certain of
-            next false unless version_class.correct?(cleaned_tag)
-
-            # Do reject any releases that are greater than the version we're
-            # updating to (e.g., if two major versions are being maintained)
-            version_class.new(cleaned_tag) > version_class.new(version)
-          end
         end
 
         def version_regex(version)
