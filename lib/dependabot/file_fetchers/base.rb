@@ -100,8 +100,13 @@ module Dependabot
       end
 
       def github_repo_contents(path)
-        github_client.contents(repo, path: path, ref: commit).map do |file|
-          OpenStruct.new(name: file.name, path: file.path, type: file.type)
+        github_response = github_client.contents(repo, path: path, ref: commit)
+
+        # TODO: Handle submodule responses here
+        raise "Unexpected GitHub response" unless github_response.is_a?(Array)
+
+        github_response.map do |f|
+          OpenStruct.new(name: f.name, path: f.path, type: f.type)
         end
       end
 
