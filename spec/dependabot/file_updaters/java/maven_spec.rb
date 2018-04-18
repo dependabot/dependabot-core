@@ -73,6 +73,11 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
           to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
 
+      context "with rogue whitespace" do
+        let(:pom_body) { fixture("java", "poms", "whitespace.xml") }
+        its(:content) { is_expected.to include "<version>4.6.1</version>" }
+      end
+
       context "when the requirement is a hard requirement" do
         let(:pom_body) { fixture("java", "poms", "hard_requirement_pom.xml") }
         let(:dependency) do

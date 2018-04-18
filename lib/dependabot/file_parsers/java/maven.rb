@@ -51,8 +51,8 @@ module Dependabot
           return unless dependency_node.at_css("artifactId")
 
           [
-            dependency_node.at_css("groupId").content,
-            dependency_node.at_css("artifactId").content
+            dependency_node.at_css("groupId").content.strip,
+            dependency_node.at_css("artifactId").content.strip
           ].join(":")
         end
 
@@ -64,12 +64,12 @@ module Dependabot
           return nil if requirement.include?(",")
 
           # Remove brackets if present (and not denoting a range)
-          requirement.gsub(/[\(\)\[\]]/, "")
+          requirement.gsub(/[\(\)\[\]]/, "").strip
         end
 
         def dependency_requirement(dependency_node)
           return unless dependency_node.at_css("version")
-          version_content = dependency_node.at_css("version").content
+          version_content = dependency_node.at_css("version").content.strip
 
           return version_content unless version_content.match?(PROPERTY_REGEX)
 
@@ -81,10 +81,10 @@ module Dependabot
           property_value =
             if property_name.start_with?("project.")
               path = "//project/#{property_name.gsub(/^project\./, '')}"
-              doc.at_xpath(path)&.content ||
-                doc.at_xpath("//properties/#{property_name}").content
+              doc.at_xpath(path)&.content&.strip ||
+                doc.at_xpath("//properties/#{property_name}").content.strip
             else
-              doc.at_xpath("//properties/#{property_name}").content
+              doc.at_xpath("//properties/#{property_name}").content.strip
             end
 
           version_content.gsub(PROPERTY_REGEX, property_value)

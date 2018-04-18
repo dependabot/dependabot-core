@@ -33,7 +33,7 @@ module Dependabot
           def version_comes_from_property?
             return false unless declaration_node.at_css("version")
 
-            declaration_node.at_css("version").content.
+            declaration_node.at_css("version").content.strip.
               match?(FileParsers::Java::Maven::PROPERTY_REGEX)
           end
 
@@ -43,8 +43,8 @@ module Dependabot
             deep_find_declarations(pom_content).find do |node|
               node = Nokogiri::XML(node)
               node_name = [
-                node.at_css("groupId")&.content,
-                node.at_css("artifactId")&.content
+                node.at_css("groupId")&.content&.strip,
+                node.at_css("artifactId")&.content&.strip
               ].compact.join(":")
               next false unless node_name == dependency_name
               next true unless dependency_requirement
@@ -60,7 +60,7 @@ module Dependabot
 
           def dependency_requirement_for_node(dependency_node)
             return unless dependency_node.at_css("version")
-            version = dependency_node.at_css("version").content
+            version = dependency_node.at_css("version").content.strip
 
             unless version.match?(FileParsers::Java::Maven::PROPERTY_REGEX)
               return version
@@ -75,10 +75,10 @@ module Dependabot
             prop_value =
               if property_name.start_with?("project.")
                 path = "//project/#{property_name.gsub(/^project\./, '')}"
-                doc.at_xpath(path)&.content ||
-                  doc.at_xpath("//properties/#{property_name}").content
+                doc.at_xpath(path)&.content&.strip ||
+                  doc.at_xpath("//properties/#{property_name}").content.strip
               else
-                doc.at_xpath("//properties/#{property_name}").content
+                doc.at_xpath("//properties/#{property_name}").content.strip
               end
             version.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, prop_value)
           end

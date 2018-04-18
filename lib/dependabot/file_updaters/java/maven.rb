@@ -47,11 +47,11 @@ module Dependabot
         def update_property_version(dependency)
           declaration_node = Nokogiri::XML(original_pom_declaration(dependency))
           prop_name =
-            declaration_node.at_css("version").content.
+            declaration_node.at_css("version").content.strip.
             match(FileParsers::Java::Maven::PROPERTY_REGEX).
             named_captures["property"]
           suffix =
-            declaration_node.at_css("version").content.
+            declaration_node.at_css("version").content.strip.
             match(/\$\{(?<property>.*?)\}(?<suffix>.*)/).
             named_captures["suffix"]
 
@@ -100,8 +100,9 @@ module Dependabot
         end
 
         def updated_pom_declaration(dependency)
+          original_requirement = original_pom_requirement(dependency)
           original_pom_declaration(dependency).gsub(
-            "<version>#{original_pom_requirement(dependency)}</version>",
+            %r{<version>\s*#{Regexp.quote(original_requirement)}\s*</version>},
             "<version>#{updated_pom_requirement(dependency)}</version>"
           )
         end

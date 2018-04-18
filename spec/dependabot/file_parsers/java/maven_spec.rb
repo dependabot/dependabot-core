@@ -40,6 +40,30 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
+    context "with rogue whitespace" do
+      let(:pom_body) { fixture("java", "poms", "whitespace.xml") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.google.guava:guava")
+          expect(dependency.version).to eq("23.3-jre")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "23.3-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "for dependencyManagement dependencies" do
       let(:pom_body) do
         fixture("java", "poms", "dependency_management_pom.xml")
