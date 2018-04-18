@@ -1,3 +1,7 @@
+## v0.54.26, 18 April 2018
+
+- Ruby: Handle submodule path dependencies
+
 ## v0.54.25, 18 April 2018
 
 - Java: Handle whitespace in pom.xml declarations
