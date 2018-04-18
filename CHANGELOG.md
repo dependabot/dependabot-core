@@ -1,3 +1,7 @@
+## v0.54.29, 18 April 2018
+
+- Elixir: Ignore irrelevant Elixir warnings
+
 ## v0.54.28, 18 April 2018
 
 - Ruby: Better sanitization of path gemspecs
