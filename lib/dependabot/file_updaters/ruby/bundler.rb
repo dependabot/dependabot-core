@@ -25,11 +25,7 @@ module Dependabot
         GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
         def self.updated_files_regex
-          [
-            /^Gemfile$/,
-            /^Gemfile\.lock$/,
-            %r{^[^/]*\.gemspec$}
-          ]
+          [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
