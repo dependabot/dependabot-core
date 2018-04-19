@@ -1,3 +1,8 @@
+## v0.54.30, 19 April 2018
+
+- Handle nil tag names in ReleaseFinder
+- Move GemspecDependencyNameFinder namespace to FileUpdaters
+
 ## v0.54.29, 18 April 2018
 
 - Elixir: Ignore irrelevant Elixir warnings
