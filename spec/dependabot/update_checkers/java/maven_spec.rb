@@ -175,6 +175,26 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           end
           it { is_expected.to be_nil }
         end
+
+        context "with a nil requirement" do
+          let(:dependency_requirements) do
+            [
+              {
+                file: "pom.xml",
+                requirement: "3.0.0-M1",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "pom.xml",
+                requirement: nil,
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+          it { is_expected.to eq(version_class.new("23.6-jre")) }
+        end
       end
     end
   end
