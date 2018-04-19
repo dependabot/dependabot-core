@@ -1,3 +1,7 @@
+## v0.54.32, 19 April 2018
+
+- Ruby: Ignore gemspec versions specified with a constant
+
 ## v0.54.31, 19 April 2018
 
 - Ruby: Handle projects that import multiple top-level dependencies
