@@ -514,6 +514,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         context "that is the gem we're checking" do
           let(:dependency_name) { "example" }
+          let(:current_version) { "0.9.3" }
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
       end

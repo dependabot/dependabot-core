@@ -22,7 +22,7 @@ PLATFORMS
 
 DEPENDENCIES
   business (~> 1.4.0)
-  example!
+  example (>= 0.9.0)!
   prius!
   statesman (~> 1.2.0)
 

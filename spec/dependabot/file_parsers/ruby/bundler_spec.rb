@@ -252,7 +252,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       let(:expected_requirements) do
         [{
-          requirement: ">= 0",
+          requirement: ">= 0.9.0",
           file: "Gemfile",
           source: { type: "path" },
           groups: [:default]
