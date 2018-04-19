@@ -11,7 +11,7 @@
     <modules>
         <module>util</module>
         <module>./business-app</module>
-        <module>legacy</module>
+        <module>legacy/pom.xml</module>
     </modules>
     <packaging>pom</packaging>
 

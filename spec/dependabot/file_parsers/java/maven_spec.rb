@@ -317,9 +317,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "with a repeated dependency" do
-      let(:pom_body) do
-        fixture("java", "poms", "repeated_pom.xml")
-      end
+      let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
 
       its(:length) { is_expected.to eq(1) }
 
@@ -370,6 +368,80 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               groups: [],
               source: nil
             }]
+          )
+        end
+      end
+    end
+
+    context "with a repeated dependency" do
+      let(:files) do
+        [
+          multimodule_pom, util_pom, business_app_pom, legacy_pom, webapp_pom,
+          some_spring_project_pom
+        ]
+      end
+      let(:multimodule_pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "multimodule_pom.xml")
+        )
+      end
+      let(:util_pom) do
+        Dependabot::DependencyFile.new(
+          name: "util/pom.xml",
+          content: fixture("java", "poms", "util_pom.xml")
+        )
+      end
+      let(:business_app_pom) do
+        Dependabot::DependencyFile.new(
+          name: "business-app/pom.xml",
+          content: fixture("java", "poms", "business_app_pom.xml")
+        )
+      end
+      let(:legacy_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/pom.xml",
+          content: fixture("java", "poms", "legacy_pom.xml")
+        )
+      end
+      let(:webapp_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/webapp/pom.xml",
+          content: fixture("java", "poms", "webapp_pom.xml")
+        )
+      end
+      let(:some_spring_project_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/some-spring-project/pom.xml",
+          content: fixture("java", "poms", "some_spring_project_pom.xml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(8) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("com.google.guava:guava")
+          expect(dependency.version).to eq("24.0-jre")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "24.0-jre",
+                file: "pom.xml",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: nil,
+                file: "util/pom.xml",
+                groups: [],
+                source: nil
+              }
+            ]
           )
         end
       end

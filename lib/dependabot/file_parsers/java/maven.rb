@@ -17,13 +17,13 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += pomfile_dependencies
+          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
           dependency_set.dependencies
         end
 
         private
 
-        def pomfile_dependencies
+        def pomfile_dependencies(pom)
           dependency_set = DependencySet.new
 
           doc = Nokogiri::XML(pom.content)
@@ -36,7 +36,7 @@ module Dependabot
                 package_manager: "maven",
                 requirements: [{
                   requirement: dependency_requirement(dependency_node),
-                  file: "pom.xml",
+                  file: pom.name,
                   groups: [],
                   source: nil
                 }]
@@ -73,31 +73,40 @@ module Dependabot
 
           return version_content unless version_content.match?(PROPERTY_REGEX)
 
-          property_name = version_content.match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
+          prop_name = version_content.match(PROPERTY_REGEX).
+                      named_captures.fetch("property")
 
-          doc = Nokogiri::XML(pom.content)
-          doc.remove_namespaces!
-          property_value =
-            if property_name.start_with?("project.")
-              path = "//project/#{property_name.gsub(/^project\./, '')}"
-              doc.at_xpath(path)&.content&.strip ||
-                doc.at_xpath("//properties/#{property_name}").content.strip
-            else
-              doc.at_xpath("//properties/#{property_name}").content.strip
-            end
-
+          property_value = value_for_property(prop_name)
           version_content.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def pom
-          @pom ||= get_original_file("pom.xml")
+        def value_for_property(property_name)
+          pomfiles.each do |pom|
+            doc = Nokogiri::XML(pom.content)
+            doc.remove_namespaces!
+
+            value =
+              if property_name.start_with?("project.")
+                path = "//project/#{property_name.gsub(/^project\./, '')}"
+                doc.at_xpath(path)&.content&.strip ||
+                  doc.at_xpath("//properties/#{property_name}")&.content&.strip
+              else
+                doc.at_xpath("//properties/#{property_name}")&.content&.strip
+              end
+
+            return value if value
+          end
+
+          raise "Property not found: #{prop_name}"
+        end
+
+        def pomfiles
+          @pomfiles ||=
+            dependency_files.select { |f| f.name.end_with?("pom.xml") }
         end
 
         def check_required_files
-          %w(pom.xml).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No pom.xml!" unless get_original_file("pom.xml")
         end
       end
     end
