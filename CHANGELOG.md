@@ -1,3 +1,7 @@
+## v0.54.33, 19 April 2018
+
+- JS: Handle Don't truncate pre-release versions in RequirementsUpdater
+
 ## v0.54.32, 19 April 2018
 
 - Ruby: Ignore gemspec versions specified with a constant
