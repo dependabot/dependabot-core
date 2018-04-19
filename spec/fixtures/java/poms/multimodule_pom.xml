@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.evenh.multimodule</groupId>
+    <artifactId>my-fantastic-project</artifactId>
+    <name>My Fantastic Project (tm)</name>
+    <version>1.0.0-SNAPSHOT</version>
+    <modules>
+        <module>util</module>
+        <module>./business-app</module>
+        <module>legacy</module>
+    </modules>
+    <packaging>pom</packaging>
+
+    <description>A sample Maven multi-module project</description>
+
+    <properties>
+        <guava.version>24.0-jre</guava.version>
+        <spring.version>2.5.6</spring.version>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+    </properties>
+
+    <!-- Managed versions for projects that inherit -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <!-- Internal dependencies -->
+            <dependency>
+                <groupId>net.evenh.multimodule</groupId>
+                <artifactId>util</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <source>${java.version}</source>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
