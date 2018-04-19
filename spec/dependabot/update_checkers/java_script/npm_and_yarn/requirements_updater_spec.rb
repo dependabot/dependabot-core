@@ -301,6 +301,36 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
               ]
             )
           end
+
+          context "one of which was a pre-release" do
+            let(:package_json_req_string) { "0.4.5" }
+            let(:other_requirement_string) { "1.1.0-alpha.1" }
+
+            context "to a new pre-release version" do
+              let(:latest_resolvable_version) do
+                Dependabot::Utils::JavaScript::Version.new("1.1.0-alpha.1")
+              end
+
+              it "updates the non-prerelease requirement" do
+                expect(updater.updated_requirements).to match_array(
+                  [
+                    {
+                      file: "package.json",
+                      requirement: "1.1.0-alpha.1",
+                      groups: [],
+                      source: nil
+                    },
+                    {
+                      file: "another/package.json",
+                      requirement: "1.1.0-alpha.1",
+                      groups: [],
+                      source: nil
+                    }
+                  ]
+                )
+              end
+            end
+          end
         end
       end
     end
