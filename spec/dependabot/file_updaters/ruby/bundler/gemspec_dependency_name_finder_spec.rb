@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/ruby/bundler/gemspec_dependency_name_finder"
+require "dependabot/file_updaters/ruby/bundler/gemspec_dependency_name_finder"
 
-module_to_test = Dependabot::UpdateCheckers::Ruby::Bundler
+module_to_test = Dependabot::FileUpdaters::Ruby::Bundler
 RSpec.describe module_to_test::GemspecDependencyNameFinder do
   let(:finder) { described_class.new(gemspec_content: gemspec_content) }
   let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }

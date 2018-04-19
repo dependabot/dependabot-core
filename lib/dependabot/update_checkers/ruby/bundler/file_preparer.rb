@@ -6,8 +6,8 @@ require "dependabot/file_updaters/ruby/bundler/gemspec_sanitizer"
 require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
 require "dependabot/file_updaters/ruby/bundler/git_source_remover"
 require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
+require "dependabot/file_updaters/ruby/bundler/gemspec_dependency_name_finder"
 require "dependabot/update_checkers/ruby/bundler/ruby_requirement_setter"
-require "dependabot/update_checkers/ruby/bundler/gemspec_dependency_name_finder"
 
 module Dependabot
   module UpdateCheckers
@@ -201,9 +201,10 @@ module Dependabot
             return "0.0.1" unless lockfile
 
             parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
-            gem_name = GemspecDependencyNameFinder.new(
-              gemspec_content: gemspec_content
-            ).dependency_name
+            gem_name =
+              FileUpdaters::Ruby::Bundler::GemspecDependencyNameFinder.
+              new(gemspec_content: gemspec_content).
+              dependency_name
 
             return "0.0.1" unless gem_name
             spec = parsed_lockfile.specs.find { |s| s.name == gem_name }

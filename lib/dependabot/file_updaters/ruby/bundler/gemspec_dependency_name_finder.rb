@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "parser/current"
-require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/file_updaters/ruby/bundler"
 
 module Dependabot
-  module UpdateCheckers
+  module FileUpdaters
     module Ruby
       class Bundler
         class GemspecDependencyNameFinder
