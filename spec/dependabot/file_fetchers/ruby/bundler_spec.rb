@@ -498,6 +498,50 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
     end
   end
 
+  context "with multiple gemspecs" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby_multiple_gemspecs.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_with_gemspec_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "business.gemspec?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemspec_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "another.gemspec?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemspec_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches gemspecs" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("business.gemspec")
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("another.gemspec")
+    end
+  end
+
   context "with only a gemspec" do
     before do
       stub_request(:get, url + "?ref=sha").

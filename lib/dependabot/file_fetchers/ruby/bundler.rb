@@ -34,7 +34,7 @@ module Dependabot
           fetched_files = []
           fetched_files << gemfile if gemfile
           fetched_files << lockfile if lockfile
-          fetched_files << gemspec if gemspec
+          fetched_files += gemspecs
           fetched_files << ruby_version_file if ruby_version_file
           fetched_files += child_gemfiles
           fetched_files += path_gemspecs
@@ -48,7 +48,7 @@ module Dependabot
 
         def gemfile
           @gemfile ||=
-            if gemspec
+            if gemspecs.any?
               fetch_file_if_present("Gemfile")
             else
               # This will raise if there is no Gemfile, which is what we want
@@ -61,12 +61,11 @@ module Dependabot
           @lockfile ||= fetch_file_if_present("Gemfile.lock")
         end
 
-        def gemspec
-          gemspec = repo_contents.find { |f| f.name.end_with?(".gemspec") }
-          return unless gemspec
-          @gemspec ||= fetch_file_from_host(gemspec.name)
+        def gemspecs
+          gemspecs = repo_contents.select { |f| f.name.end_with?(".gemspec") }
+          @gemspecs ||= gemspecs.map { |gs| fetch_file_from_host(gs.name) }
         rescue Octokit::NotFound
-          nil
+          []
         end
 
         def ruby_version_file

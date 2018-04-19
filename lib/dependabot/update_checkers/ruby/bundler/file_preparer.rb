@@ -50,10 +50,10 @@ module Dependabot
               )
             end
 
-            if gemspec
+            top_level_gemspecs.each do |gemspec|
               files << DependencyFile.new(
                 name: gemspec.name,
-                content: gemspec_content_for_update_check,
+                content: gemspec_content_for_update_check(gemspec),
                 directory: gemspec.directory
               )
             end
@@ -112,8 +112,8 @@ module Dependabot
             dependency_files.find { |f| f.name == "Gemfile.lock" }
           end
 
-          def gemspec
-            dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+          def top_level_gemspecs
+            dependency_files.select { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
           end
 
           def ruby_version_file
@@ -122,7 +122,7 @@ module Dependabot
 
           def path_gemspecs
             all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
-            all - [gemspec]
+            all - top_level_gemspecs
           end
 
           def gemfile_content_for_update_check(file)
@@ -134,7 +134,7 @@ module Dependabot
             content
           end
 
-          def gemspec_content_for_update_check
+          def gemspec_content_for_update_check(gemspec)
             content = gemspec.content
             content = replace_gemspec_constraint(content) if unlock_requirement?
             sanitize_gemspec_content(content)
@@ -192,9 +192,13 @@ module Dependabot
             ).rewrite(content)
           end
 
-          def update_ruby_version(content)
-            return content unless gemspec
-            RubyRequirementSetter.new(gemspec: gemspec).rewrite(content)
+          def update_ruby_version(gemfile_content)
+            top_level_gemspecs.each do |gs|
+              gemfile_content =
+                RubyRequirementSetter.new(gemspec: gs).rewrite(gemfile_content)
+            end
+
+            gemfile_content
           end
 
           def replacement_version_for_gemspec(gemspec_content)

@@ -377,6 +377,44 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         expect(dependencies.map(&:name)).to match_array(%w(business statesman))
       end
 
+      context "with two gemspecs" do
+        let(:gemfile_fixture_name) { "imports_two_gemspecs" }
+        let(:lockfile_fixture_name) { "imports_two_gemspecs.lock" }
+        let(:gemspec2) do
+          Dependabot::DependencyFile.new(
+            name: "example2.gemspec",
+            content: fixture("ruby", "gemspecs", "small_example2")
+          )
+        end
+        let(:files) { [gemfile, lockfile, gemspec, gemspec2] }
+
+        it "fetches details from both gemspecs" do
+          expect(dependencies.map(&:name)).
+            to match_array(%w(business statesman))
+          expect(dependencies.map(&:requirements)).
+            to match_array(
+              [
+                [
+                  {
+                    requirement: "~> 1.0",
+                    groups: ["runtime"],
+                    source: nil,
+                    file: "example.gemspec"
+                  }
+                ],
+                [
+                  {
+                    requirement: "~> 1.0",
+                    groups: ["runtime"],
+                    source: nil,
+                    file: "example2.gemspec"
+                  }
+                ]
+              ]
+            )
+        end
+      end
+
       context "with a large gemspec" do
         let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
         let(:lockfile_fixture_name) { "imports_gemspec_large.lock" }

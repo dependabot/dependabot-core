@@ -62,21 +62,21 @@ module Dependabot
         def gemspec_dependencies
           dependencies = DependencySet.new
 
-          return dependencies unless gemspec
-
-          parsed_gemspec.dependencies.each do |dependency|
-            dependencies <<
-              Dependency.new(
-                name: dependency.name,
-                version: dependency_version(dependency.name)&.to_s,
-                requirements: [{
-                  requirement: dependency.requirement.to_s,
-                  groups: dependency.runtime? ? ["runtime"] : ["development"],
-                  source: nil,
-                  file: gemspec.name
-                }],
-                package_manager: "bundler"
-              )
+          gemspecs.each do |gemspec|
+            parsed_gemspec(gemspec).dependencies.each do |dependency|
+              dependencies <<
+                Dependency.new(
+                  name: dependency.name,
+                  version: dependency_version(dependency.name)&.to_s,
+                  requirements: [{
+                    requirement: dependency.requirement.to_s,
+                    groups: dependency.runtime? ? ["runtime"] : ["development"],
+                    source: nil,
+                    file: gemspec.name
+                  }],
+                  package_manager: "bundler"
+                )
+            end
           end
 
           dependencies
@@ -126,14 +126,15 @@ module Dependabot
           raise Dependabot::DependencyFileNotEvaluatable, msg
         end
 
-        def parsed_gemspec
-          @parsed_gemspec ||=
+        def parsed_gemspec(file)
+          @parsed_gemspecs ||= {}
+          @parsed_gemspecs[file.name] ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write(gemspec.name, gemspec.content)
+              File.write(file.name, file.content)
 
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-                ::Bundler.load_gemspec_uncached(gemspec.name)
+                ::Bundler.load_gemspec_uncached(file.name)
               end
             end
         rescue SharedHelpers::ChildProcessFailed => error
@@ -256,9 +257,9 @@ module Dependabot
           @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
         end
 
-        def gemspec
-          # The gemspec for this project will be at the top level
-          @gemspec ||= prepared_dependency_files.find do |file|
+        def gemspecs
+          # The gemspecs for this project will be at the top level
+          @gemspecs ||= prepared_dependency_files.select do |file|
             file.name.match?(%r{^[^/]*\.gemspec$})
           end
         end

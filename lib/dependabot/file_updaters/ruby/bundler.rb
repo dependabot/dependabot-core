@@ -27,8 +27,6 @@ module Dependabot
           [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def updated_dependency_files
           updated_files = []
 
@@ -45,24 +43,20 @@ module Dependabot
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
 
-          if gemspec && file_changed?(gemspec)
+          top_level_gemspecs.each do |file|
+            next unless file_changed?(file)
             updated_files <<
-              updated_file(file: gemspec, content: updated_gemspec_content)
+              updated_file(file: file, content: updated_gemspec_content(file))
           end
 
           evaled_gemfiles.each do |file|
             next unless file_changed?(file)
             updated_files <<
-              updated_file(
-                file: file,
-                content: updated_gemfile_content(file)
-              )
+              updated_file(file: file, content: updated_gemfile_content(file))
           end
 
           updated_files
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -135,11 +129,13 @@ module Dependabot
           content
         end
 
-        def updated_gemspec_content
+        def updated_gemspec_content(gemspec)
           content = gemspec.content
 
           dependencies.each do |dependency|
-            content = replace_gemspec_version_requirement(dependency, content)
+            content = replace_gemspec_version_requirement(
+              gemspec, dependency, content
+            )
           end
 
           content
@@ -175,7 +171,7 @@ module Dependabot
             rewrite(content)
         end
 
-        def replace_gemspec_version_requirement(dependency, content)
+        def replace_gemspec_version_requirement(gemspec, dependency, content)
           return content unless requirement_changed?(gemspec, dependency)
 
           updated_requirement =
@@ -254,10 +250,10 @@ module Dependabot
           File.write("Gemfile", updated_gemfile_content(gemfile))
           File.write("Gemfile.lock", lockfile.content)
 
-          if gemspec
+          top_level_gemspecs.each do |gemspec|
             File.write(
               gemspec.name,
-              sanitized_gemspec_content(updated_gemspec_content)
+              sanitized_gemspec_content(updated_gemspec_content(gemspec))
             )
           end
 
@@ -288,11 +284,11 @@ module Dependabot
 
         def path_gemspecs
           all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
-          all - [gemspec]
+          all - top_level_gemspecs
         end
 
-        def gemspec
-          dependency_files.find { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+        def top_level_gemspecs
+          dependency_files.select { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
         end
 
         def ruby_version_file
