@@ -29,6 +29,9 @@ module Dependabot
           doc = Nokogiri::XML(pom.content)
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             next unless dependency_name(dependency_node)
+
+            # TODO: Filter out internal dependencies
+
             dependency_set <<
               Dependency.new(
                 name: dependency_name(dependency_node),

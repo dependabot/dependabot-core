@@ -174,6 +174,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             fixture("java", "poms", "repeated_multi_property_pom.xml")
           end
           it { is_expected.to be_nil }
+
+          # TODO: Spec that this works when the dependencies are spread across
+          # multiple files
         end
 
         context "with a nil requirement" do
@@ -394,6 +397,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           ]
         )
       end
+
+      # TODO: Spec that this works when the dependencies are spread across
+      # multiple files
     end
   end
 
