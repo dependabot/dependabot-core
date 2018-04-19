@@ -44,7 +44,7 @@
         "id": 5442955,
         "tag_name": "v1.8.0",
         "target_commitish": "master",
-        "name": "",
+        "name": null,
         "draft": false,
         "author": {
             "login": "matt-thomson",

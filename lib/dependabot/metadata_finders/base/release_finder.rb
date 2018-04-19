@@ -100,7 +100,7 @@ module Dependabot
             cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
 
-            tag_version = [cleaned_tag, cleaned_name].
+            tag_version = [cleaned_tag, cleaned_name].compact.
                           select { |nm| version_class.correct?(nm) }.
                           map { |nm| version_class.new(nm) }.max
 
@@ -119,7 +119,7 @@ module Dependabot
             cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
 
-            tag_version = [cleaned_tag, cleaned_name].
+            tag_version = [cleaned_tag, cleaned_name].compact.
                           select { |nm| version_class.correct?(nm) }.
                           map { |nm| version_class.new(nm) }.min
 
