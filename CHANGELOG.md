@@ -1,3 +1,7 @@
+## v0.54.31, 19 April 2018
+
+- Ruby: Handle projects that import multiple top-level dependencies
+
 ## v0.54.30, 19 April 2018
 
 - Handle nil tag names in ReleaseFinder
