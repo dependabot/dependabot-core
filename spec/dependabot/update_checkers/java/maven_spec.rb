@@ -483,9 +483,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           ]
         )
       end
-
-      # TODO: Spec that this works when the dependencies are spread across
-      # multiple files
     end
   end
 

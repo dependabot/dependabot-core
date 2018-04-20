@@ -2,20 +2,48 @@
 
 require "nokogiri"
 
-require "dependabot/file_parsers/java/maven"
+require "dependabot/dependency_file"
+require "dependabot/file_updaters/java/maven"
 
-# For documentation, see the "Available Variables" section of
-# http://maven.apache.org/guides/introduction/introduction-to-the-pom.html
 module Dependabot
-  module FileParsers
+  module FileUpdaters
     module Java
       class Maven
-        class PropertyValueFinder
+        class PropertyValueUpdater
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
 
-          def property_value(property_name:, callsite_pom:)
+          def update_pomfiles_for_property_change(property_name:, callsite_pom:,
+                                                  updated_value:)
+            declaration_details = property_declaration_details(
+              property_name: property_name,
+              callsite_pom: callsite_pom
+            )
+            node = declaration_details.fetch(:node)
+            filename = declaration_details.fetch(:file)
+
+            pom_to_update = dependency_files.find { |f| f.name == filename }
+            updated_content = pom_to_update.content.gsub(
+              %r{<#{Regexp.quote(node.name)}>.*</#{Regexp.quote(node.name)}>},
+              "<#{node.name}>#{updated_value}</#{node.name}>"
+            )
+
+            updated_pomfiles = dependency_files.dup
+            updated_pomfiles[updated_pomfiles.index(pom_to_update)] =
+              Dependabot::DependencyFile.new(
+                name: pom_to_update.name,
+                content: updated_content
+              )
+
+            updated_pomfiles
+          end
+
+          private
+
+          attr_reader :dependency_files
+
+          def property_declaration_details(property_name:, callsite_pom:)
             pom = dependency_files.find { |f| f.name == callsite_pom.name }
 
             doc = Nokogiri::XML(pom.content)
@@ -24,30 +52,26 @@ module Dependabot
             # Loop through the paths that would satisfy this property name,
             # looking for one that exists in this POM
             temp_name = sanitize_property_name(property_name)
-            property_value =
+            property_node =
               loop do
                 node =
                   doc.at_xpath("//#{temp_name}") ||
                   doc.at_xpath("//properties/#{temp_name}")
-                break node.content.strip if node
+                break node if node
                 break unless temp_name.include?(".")
                 temp_name = temp_name.sub(".", "/")
               end
 
             # If we found a property, return it
-            return property_value if property_value
+            return { file: pom.name, node: property_node } if property_node
 
             # Otherwise, look for a value in this pom's parent
             return unless (parent = parent_pom(pom))
-            property_value(
+            property_declaration_details(
               property_name: property_name,
               callsite_pom: parent
             )
           end
-
-          private
-
-          attr_reader :dependency_files
 
           def pomfiles
             @pomfiles ||=

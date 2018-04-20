@@ -8,119 +8,145 @@ module Dependabot
   module FileUpdaters
     module Java
       class Maven < Dependabot::FileUpdaters::Base
-        require "dependabot/file_updaters/java/maven/declaration_finder"
+        require_relative "maven/declaration_finder"
+        require_relative "maven/property_value_updater"
 
         def self.updated_files_regex
-          [/^pom\.xml$/]
+          [/^pom\.xml$/, %r{/pom\.xml$}]
         end
 
         def updated_dependency_files
-          [updated_file(file: pom, content: updated_pom_content)]
+          updated_files = pomfiles.dup
+
+          # Loop through each of the changed requirements, applying changes to
+          # all pomfiles for that change. Note that the logic is different here
+          # to other languages because Java has property inheritance across
+          # files
+          dependencies.each do |dependency|
+            updated_files = updated_pomfiles_for_dependency(
+              updated_files,
+              dependency
+            )
+          end
+
+          updated_files
         end
 
         private
 
         def check_required_files
-          %w(pom.xml).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No pom.xml!" unless get_original_file("pom.xml")
         end
 
-        def updated_pom_content
-          updated_content =
-            dependencies.reduce(pom.content.dup) do |content, dep|
-              if updating_a_property?(dep)
-                content = update_property_version(dep)
-                remove_property_version_suffix(dep, content)
-              else
-                content.gsub(
-                  original_pom_declaration(dep),
-                  updated_pom_declaration(dep)
-                )
-              end
+        def updated_pomfiles_for_dependency(pomfiles, dependency)
+          updated_pomfiles = pomfiles.dup
+
+          dependency.requirements.each do |req|
+            previous_req = dependency.previous_requirements.
+                           find { |pr| pr.fetch(:file) == req.fetch(:file) }
+
+            next if req == previous_req
+
+            if updating_a_property?(dependency, req)
+              updated_pomfiles = update_pomfiles_for_property_change(
+                updated_pomfiles,
+                dependency,
+                req
+              )
+              pom = updated_pomfiles.find { |f| f.name == req.fetch(:file) }
+              updated_pomfiles[updated_pomfiles.index(pom)] =
+                remove_property_version_suffix_in_pom(dependency, pom, req)
+            else
+              pom = updated_pomfiles.find { |f| f.name == req.fetch(:file) }
+              updated_pomfiles[updated_pomfiles.index(pom)] =
+                update_version_in_pom(dependency, pom, req)
             end
+          end
+
+          updated_pomfiles
+        end
+
+        def update_pomfiles_for_property_change(pomfiles, dependency, req)
+          declaration_string =
+            Nokogiri::XML(original_pom_declaration(dependency, req)).
+            at_css("version").content
+          property_regex = FileParsers::Java::Maven::PROPERTY_REGEX
+          property_name =
+            declaration_string.match(property_regex).captures.first.to_s
+
+          PropertyValueUpdater.new(dependency_files: pomfiles).
+            update_pomfiles_for_property_change(
+              property_name: property_name,
+              callsite_pom: pomfiles.find { |f| f.name == req.fetch(:file) },
+              updated_value: req.fetch(:requirement)
+            )
+        end
+
+        def update_version_in_pom(dependency, pom, requirement)
+          updated_content =
+            pom.content.gsub(
+              original_pom_declaration(dependency, requirement),
+              updated_pom_declaration(dependency, requirement)
+            )
 
           raise "Expected content to change!" if updated_content == pom.content
-          updated_content
+          updated_file(file: pom, content: updated_content)
         end
 
-        def update_property_version(dependency)
-          declaration_node = Nokogiri::XML(original_pom_declaration(dependency))
-          prop_name =
-            declaration_node.at_css("version").content.strip.
-            match(FileParsers::Java::Maven::PROPERTY_REGEX).
-            named_captures["property"]
-          suffix =
-            declaration_node.at_css("version").content.strip.
-            match(/\$\{(?<property>.*?)\}(?<suffix>.*)/).
-            named_captures["suffix"]
+        def remove_property_version_suffix_in_pom(dep, pom, req)
+          updated_content =
+            pom.content.gsub(original_pom_declaration(dep, req)) do |old_dec|
+              version_string =
+                old_dec.match(%r{(?<=\<version\>).*(?=\</version\>)})
+              cleaned_version_string = version_string.to_s.gsub(/(?<=\}).*/, "")
 
-          original_requirement = original_pom_requirement(dependency)
-          if suffix
-            original_requirement =
-              original_requirement.gsub(/#{Regexp.quote(suffix)}$/, "")
-          end
-          updated_requirement = updated_pom_requirement(dependency)
+              old_dec.gsub(
+                "<version>#{version_string}</version>",
+                "<version>#{cleaned_version_string}</version>"
+              )
+            end
 
-          pom.content.gsub(
-            "<#{prop_name}>#{original_requirement}</#{prop_name}>",
-            "<#{prop_name}>#{updated_requirement}</#{prop_name}>"
-          )
+          updated_file(file: pom, content: updated_content)
         end
 
-        def remove_property_version_suffix(dep, content)
-          content.gsub(original_pom_declaration(dep)) do |original_declaration|
-            version_string =
-              original_declaration.match(%r{(?<=\<version\>).*(?=\</version\>)})
-            cleaned_version_string = version_string.to_s.gsub(/(?<=\}).*/, "")
-
-            original_declaration.gsub(
-              "<version>#{version_string}</version>",
-              "<version>#{cleaned_version_string}</version>"
-            )
-          end
-        end
-
-        def updating_a_property?(dependency)
+        def updating_a_property?(dependency, requirement)
+          old_req = original_pom_requirement(dependency, requirement)
           DeclarationFinder.new(
             dependency: dependency,
-            declaring_requirement: dependency.previous_requirements.first,
+            declaring_requirement: old_req,
             dependency_files: dependency_files
           ).version_comes_from_property?
         end
 
-        def original_pom_declaration(dependency)
+        def original_pom_declaration(dependency, requirement)
+          original_req = original_pom_requirement(dependency, requirement)
           DeclarationFinder.new(
             dependency: dependency,
-            declaring_requirement: dependency.previous_requirements.first,
+            declaring_requirement: original_req,
             dependency_files: dependency_files
           ).declaration_string
         end
 
-        def updated_pom_declaration(dependency)
-          original_requirement = original_pom_requirement(dependency)
-          original_pom_declaration(dependency).gsub(
-            %r{<version>\s*#{Regexp.quote(original_requirement)}\s*</version>},
-            "<version>#{updated_pom_requirement(dependency)}</version>"
+        def updated_pom_declaration(dependency, requirement)
+          original_req_string =
+            original_pom_requirement(dependency, requirement).
+            fetch(:requirement)
+
+          original_pom_declaration(dependency, requirement).gsub(
+            %r{<version>\s*#{Regexp.quote(original_req_string)}\s*</version>},
+            "<version>#{requirement.fetch(:requirement)}</version>"
           )
         end
 
-        def updated_pom_requirement(dependency)
-          dependency.
-            requirements.
-            find { |f| f.fetch(:file) == "pom.xml" }.
-            fetch(:requirement)
-        end
-
-        def original_pom_requirement(dependency)
+        def original_pom_requirement(dependency, requirement)
           dependency.
             previous_requirements.
-            find { |f| f.fetch(:file) == "pom.xml" }.
-            fetch(:requirement)
+            find { |f| f.fetch(:file) == requirement.fetch(:file) }
         end
 
-        def pom
-          @pom ||= get_original_file("pom.xml")
+        def pomfiles
+          @pomfiles ||=
+            dependency_files.select { |f| f.name.end_with?("pom.xml") }
         end
       end
     end
