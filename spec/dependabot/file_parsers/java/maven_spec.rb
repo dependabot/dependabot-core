@@ -373,7 +373,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
-    context "with a repeated dependency" do
+    context "with a multimodule pom" do
       let(:files) do
         [
           multimodule_pom, util_pom, business_app_pom, legacy_pom, webapp_pom,
@@ -417,7 +417,18 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
         )
       end
 
-      its(:length) { is_expected.to eq(8) }
+      it "gets the right dependencies" do
+        expect(dependencies.map(&:name)).
+          to match_array(
+            %w(
+              com.google.guava:guava
+              junit:junit
+              org.apache.struts:struts-core
+              org.springframework:spring-aop
+              org.apache.maven.plugins:maven-compiler-plugin
+            )
+          )
+      end
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }

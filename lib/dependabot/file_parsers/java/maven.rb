@@ -28,13 +28,12 @@ module Dependabot
 
           doc = Nokogiri::XML(pom.content)
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            next unless dependency_name(dependency_node)
-
-            # TODO: Filter out internal dependencies
+            next unless (name = dependency_name(dependency_node))
+            next if internal_dependency_names.include?(name)
 
             dependency_set <<
               Dependency.new(
-                name: dependency_name(dependency_node),
+                name: name,
                 version: dependency_version(dependency_node),
                 package_manager: "maven",
                 requirements: [{
@@ -106,6 +105,20 @@ module Dependabot
         def pomfiles
           @pomfiles ||=
             dependency_files.select { |f| f.name.end_with?("pom.xml") }
+        end
+
+        def internal_dependency_names
+          @internal_dependency_names =
+            pomfiles.map do |pom|
+              doc = Nokogiri::XML(pom.content)
+              group_id    = doc.at_css("project > groupId") ||
+                            doc.at_css("project > parent > groupId")
+              artifact_id = doc.at_css("project > artifactId")
+
+              next unless group_id && artifact_id
+
+              [group_id.content.strip, artifact_id.content.strip].join(":")
+            end.compact
         end
 
         def check_required_files
