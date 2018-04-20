@@ -1,3 +1,8 @@
+## v0.54.34, 20 April 2018
+
+- Java: Handle multimodule projects in FileFetcher, FileParser, UpdateChecker
+  and FileUpdater
+
 ## v0.54.33, 19 April 2018
 
 - JS: Don't truncate pre-release versions in RequirementsUpdater
