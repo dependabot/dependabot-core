@@ -29,6 +29,9 @@ module Dependabot
             )
           end
 
+          updated_files = updated_files.reject { |f| pomfiles.include?(f) }
+
+          raise "No files changed!" if updated_files.none?
           updated_files
         end
 
