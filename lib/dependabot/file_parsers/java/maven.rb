@@ -10,6 +10,7 @@ module Dependabot
     module Java
       class Maven < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
+        require_relative "maven/property_value_finder"
 
         DEPENDENCY_SELECTOR = "parent, dependencies > dependency,
                                plugins > plugin"
@@ -34,10 +35,10 @@ module Dependabot
             dependency_set <<
               Dependency.new(
                 name: name,
-                version: dependency_version(dependency_node),
+                version: dependency_version(pom, dependency_node),
                 package_manager: "maven",
                 requirements: [{
-                  requirement: dependency_requirement(dependency_node),
+                  requirement: dependency_requirement(pom, dependency_node),
                   file: pom.name,
                   groups: [],
                   source: nil
@@ -58,8 +59,8 @@ module Dependabot
           ].join(":")
         end
 
-        def dependency_version(dependency_node)
-          requirement = dependency_requirement(dependency_node)
+        def dependency_version(pom, dependency_node)
+          requirement = dependency_requirement(pom, dependency_node)
           return nil unless requirement
 
           # If a range is specified then we can't tell the exact version
@@ -69,7 +70,7 @@ module Dependabot
           requirement.gsub(/[\(\)\[\]]/, "").strip
         end
 
-        def dependency_requirement(dependency_node)
+        def dependency_requirement(pom, dependency_node)
           return unless dependency_node.at_css("version")
           version_content = dependency_node.at_css("version").content.strip
 
@@ -78,28 +79,22 @@ module Dependabot
           prop_name = version_content.match(PROPERTY_REGEX).
                       named_captures.fetch("property")
 
-          property_value = value_for_property(prop_name)
+          property_value = value_for_property(prop_name, pom)
           version_content.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def value_for_property(property_name)
-          pomfiles.each do |pom|
-            doc = Nokogiri::XML(pom.content)
-            doc.remove_namespaces!
+        def value_for_property(property_name, pom)
+          value = property_value_finder.property_value(
+            property_name: property_name,
+            callsite_pom: pom
+          )
 
-            value =
-              if property_name.start_with?("project.")
-                path = "//project/#{property_name.gsub(/^project\./, '')}"
-                doc.at_xpath(path)&.content&.strip ||
-                  doc.at_xpath("//properties/#{property_name}")&.content&.strip
-              else
-                doc.at_xpath("//properties/#{property_name}")&.content&.strip
-              end
+          raise "Property not found: #{prop_name}" unless value
+          value
+        end
 
-            return value if value
-          end
-
-          raise "Property not found: #{prop_name}"
+        def property_value_finder
+          PropertyValueFinder.new(dependency_files: dependency_files)
         end
 
         def pomfiles
@@ -108,7 +103,7 @@ module Dependabot
         end
 
         def internal_dependency_names
-          @internal_dependency_names =
+          @internal_dependency_names ||=
             pomfiles.map do |pom|
               doc = Nokogiri::XML(pom.content)
               group_id    = doc.at_css("project > groupId") ||

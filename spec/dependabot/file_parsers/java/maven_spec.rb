@@ -437,11 +437,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).
             to eq("com.google.guava:guava")
-          expect(dependency.version).to eq("24.0-jre")
+          expect(dependency.version).to eq("23.0-jre")
           expect(dependency.requirements).to eq(
             [
               {
-                requirement: "24.0-jre",
+                requirement: "23.0-jre",
                 file: "pom.xml",
                 groups: [],
                 source: nil
