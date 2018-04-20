@@ -3,6 +3,7 @@
 require "nokogiri"
 require "dependabot/file_updaters/java/maven"
 require "dependabot/file_parsers/java/maven"
+require "dependabot/file_parsers/java/maven/property_value_finder"
 
 module Dependabot
   module FileUpdaters
@@ -13,13 +14,12 @@ module Dependabot
             %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
                <plugin>.*?</plugin>}mx
 
-          attr_reader :dependency_name, :dependency_requirement, :pom_content
+          attr_reader :dependency, :declaring_requirement, :dependency_files
 
-          def initialize(dependency_name:, pom_content:,
-                         dependency_requirement: nil)
-            @dependency_name = dependency_name
-            @dependency_requirement = dependency_requirement
-            @pom_content = pom_content
+          def initialize(dependency:, dependency_files:, declaring_requirement:)
+            @dependency            = dependency
+            @dependency_files      = dependency_files
+            @declaring_requirement = declaring_requirement
           end
 
           def declaration_string
@@ -39,16 +39,28 @@ module Dependabot
 
           private
 
+          def declaring_pom
+            filename = declaring_requirement.fetch(:file)
+            declaring_pom = dependency_files.find { |f| f.name == filename }
+            return declaring_pom if declaring_pom
+            raise "No pom found with name #{filename}!"
+          end
+
+          def dependency_name
+            dependency.name
+          end
+
           def find_pom_declaration_string
-            deep_find_declarations(pom_content).find do |node|
+            deep_find_declarations(declaring_pom.content).find do |node|
               node = Nokogiri::XML(node)
               node_name = [
                 node.at_css("groupId")&.content&.strip,
                 node.at_css("artifactId")&.content&.strip
               ].compact.join(":")
               next false unless node_name == dependency_name
-              next true unless dependency_requirement
-              dependency_requirement_for_node(node) == dependency_requirement
+              next true unless declaring_requirement.fetch(:requirement)
+              dependency_requirement_for_node(node) ==
+                declaring_requirement.fetch(:requirement)
             end
           end
 
@@ -70,16 +82,14 @@ module Dependabot
               version.match(FileParsers::Java::Maven::PROPERTY_REGEX).
               named_captures.fetch("property")
 
-            doc = Nokogiri::XML(pom_content)
-            doc.remove_namespaces!
             prop_value =
-              if property_name.start_with?("project.")
-                path = "//project/#{property_name.gsub(/^project\./, '')}"
-                doc.at_xpath(path)&.content&.strip ||
-                  doc.at_xpath("//properties/#{property_name}").content.strip
-              else
-                doc.at_xpath("//properties/#{property_name}").content.strip
-              end
+              FileParsers::Java::Maven::PropertyValueFinder.
+              new(dependency_files: dependency_files).
+              property_value(
+                property_name: property_name,
+                callsite_pom: declaring_pom
+              )
+
             version.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, prop_value)
           end
         end

@@ -2,17 +2,40 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/file_updaters/java/maven/declaration_finder"
 
 RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
   let(:finder) do
     described_class.new(
-      dependency_name: dependency_name,
-      pom_content: pom_content
+      dependency: dependency,
+      declaring_requirement: declaring_requirement,
+      dependency_files: dependency_files
     )
   end
 
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: [declaring_requirement],
+      package_manager: "maven"
+    )
+  end
   let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
+  let(:dependency_version) { "4.5.3" }
+  let(:declaring_requirement) do
+    {
+      requirement: dependency_version,
+      file: "pom.xml",
+      groups: [],
+      source: nil
+    }
+  end
+  let(:dependency_files) { [pom] }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
+  end
 
   describe "#declaration_node" do
     subject(:declaration_node) { finder.declaration_node }
@@ -50,6 +73,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       let(:dependency_name) do
         "org.springframework.boot:spring-boot-starter-parent"
       end
+      let(:dependency_version) { "1.5.9.RELEASE" }
 
       it "finds the declaration" do
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
@@ -67,6 +91,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         fixture("java", "poms", "plugin_dependencies_pom.xml")
       end
       let(:dependency_name) { "org.jacoco:jacoco-maven-plugin" }
+      let(:dependency_version) { "0.7.9" }
 
       it "finds the declaration" do
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
@@ -82,6 +107,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         fixture("java", "poms", "plugin_management_dependencies_pom.xml")
       end
       let(:dependency_name) { "org.jacoco:jacoco-maven-plugin" }
+      let(:dependency_version) { "0.7.9" }
 
       it "finds the declaration" do
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
@@ -95,6 +121,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     context "with a nested dependency" do
       let(:pom_content) { fixture("java", "poms", "nested_dependency_pom.xml") }
       let(:dependency_name) { "com.puppycrawl.tools:checkstyle" }
+      let(:dependency_version) { "8.2" }
 
       it "finds the declaration" do
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
@@ -104,6 +131,48 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           to eq("checkstyle")
         expect(declaration_node.at_css("groupId").content).
           to eq("com.puppycrawl.tools")
+      end
+    end
+
+    context "with an inherited property" do
+      let(:dependency_files) { [pom, child_pom, grandchild_pom] }
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "multimodule_pom.xml")
+        )
+      end
+      let(:child_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/pom.xml",
+          content: fixture("java", "poms", "legacy_pom.xml")
+        )
+      end
+      let(:grandchild_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/some-spring-project/pom.xml",
+          content: fixture("java", "poms", "some_spring_project_pom.xml")
+        )
+      end
+      let(:dependency_name) { "org.springframework:spring-aop" }
+      let(:dependency_version) { "2.5.6" }
+      let(:declaring_requirement) do
+        {
+          requirement: dependency_version,
+          file: "legacy/some-spring-project/pom.xml",
+          groups: [],
+          source: nil
+        }
+      end
+
+      it "finds the declaration" do
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).
+          to eq("${spring.version}")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("spring-aop")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("org.springframework")
       end
     end
   end
@@ -120,6 +189,41 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
 
     context "with a property dependency" do
       let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:dependency_version) { "4.3.12.RELEASE" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an inherited property" do
+      let(:dependency_files) { [pom, child_pom, grandchild_pom] }
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "multimodule_pom.xml")
+        )
+      end
+      let(:child_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/pom.xml",
+          content: fixture("java", "poms", "legacy_pom.xml")
+        )
+      end
+      let(:grandchild_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/some-spring-project/pom.xml",
+          content: fixture("java", "poms", "some_spring_project_pom.xml")
+        )
+      end
+      let(:dependency_name) { "org.springframework:spring-aop" }
+      let(:dependency_version) { "2.5.6" }
+      let(:declaring_requirement) do
+        {
+          requirement: dependency_version,
+          file: "legacy/some-spring-project/pom.xml",
+          groups: [],
+          source: nil
+        }
+      end
+
       it { is_expected.to eq(true) }
     end
   end

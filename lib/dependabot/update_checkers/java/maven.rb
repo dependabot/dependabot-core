@@ -120,15 +120,11 @@ module Dependabot
         def declaration_finder(requirement)
           @declaration_finder ||= {}
           @declaration_finder[requirement.hash] ||=
-            begin
-              pom = dependency_files.
-                    find { |f| f.name == requirement.fetch(:file) }
-              FileUpdaters::Java::Maven::DeclarationFinder.new(
-                dependency_name: dependency.name,
-                dependency_requirement: requirement.fetch(:requirement),
-                pom_content: pom.content
-              )
-            end
+            FileUpdaters::Java::Maven::DeclarationFinder.new(
+              dependency: dependency,
+              declaring_requirement: requirement,
+              dependency_files: dependency_files
+            )
         end
       end
     end

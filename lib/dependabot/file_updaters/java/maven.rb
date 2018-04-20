@@ -83,19 +83,17 @@ module Dependabot
 
         def updating_a_property?(dependency)
           DeclarationFinder.new(
-            dependency_name: dependency.name,
-            dependency_requirement:
-              dependency.previous_requirements.first.fetch(:requirement),
-            pom_content: pom.content
+            dependency: dependency,
+            declaring_requirement: dependency.previous_requirements.first,
+            dependency_files: dependency_files
           ).version_comes_from_property?
         end
 
         def original_pom_declaration(dependency)
           DeclarationFinder.new(
-            dependency_name: dependency.name,
-            dependency_requirement:
-              dependency.previous_requirements.first.fetch(:requirement),
-            pom_content: pom.content
+            dependency: dependency,
+            declaring_requirement: dependency.previous_requirements.first,
+            dependency_files: dependency_files
           ).declaration_string
         end
 
