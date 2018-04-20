@@ -10,6 +10,7 @@ module Dependabot
     module Java
       class Maven < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
+        require_relative "maven/property_value_finder"
 
         DEPENDENCY_SELECTOR = "parent, dependencies > dependency,
                                plugins > plugin"
@@ -17,26 +18,28 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += pomfile_dependencies
+          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
           dependency_set.dependencies
         end
 
         private
 
-        def pomfile_dependencies
+        def pomfile_dependencies(pom)
           dependency_set = DependencySet.new
 
           doc = Nokogiri::XML(pom.content)
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            next unless dependency_name(dependency_node)
+            next unless (name = dependency_name(dependency_node))
+            next if internal_dependency_names.include?(name)
+
             dependency_set <<
               Dependency.new(
-                name: dependency_name(dependency_node),
-                version: dependency_version(dependency_node),
+                name: name,
+                version: dependency_version(pom, dependency_node),
                 package_manager: "maven",
                 requirements: [{
-                  requirement: dependency_requirement(dependency_node),
-                  file: "pom.xml",
+                  requirement: dependency_requirement(pom, dependency_node),
+                  file: pom.name,
                   groups: [],
                   source: nil
                 }]
@@ -56,8 +59,8 @@ module Dependabot
           ].join(":")
         end
 
-        def dependency_version(dependency_node)
-          requirement = dependency_requirement(dependency_node)
+        def dependency_version(pom, dependency_node)
+          requirement = dependency_requirement(pom, dependency_node)
           return nil unless requirement
 
           # If a range is specified then we can't tell the exact version
@@ -67,37 +70,49 @@ module Dependabot
           requirement.gsub(/[\(\)\[\]]/, "").strip
         end
 
-        def dependency_requirement(dependency_node)
+        def dependency_requirement(pom, dependency_node)
           return unless dependency_node.at_css("version")
           version_content = dependency_node.at_css("version").content.strip
 
           return version_content unless version_content.match?(PROPERTY_REGEX)
 
-          property_name = version_content.match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
+          prop_name = version_content.match(PROPERTY_REGEX).
+                      named_captures.fetch("property")
 
-          doc = Nokogiri::XML(pom.content)
-          doc.remove_namespaces!
-          property_value =
-            if property_name.start_with?("project.")
-              path = "//project/#{property_name.gsub(/^project\./, '')}"
-              doc.at_xpath(path)&.content&.strip ||
-                doc.at_xpath("//properties/#{property_name}").content.strip
-            else
-              doc.at_xpath("//properties/#{property_name}").content.strip
-            end
-
+          property_value = value_for_property(prop_name, pom)
           version_content.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def pom
-          @pom ||= get_original_file("pom.xml")
+        def value_for_property(property_name, pom)
+          value =
+            PropertyValueFinder.new(dependency_files: dependency_files).
+            property_value(property_name: property_name, callsite_pom: pom)
+
+          raise "Property not found: #{prop_name}" unless value
+          value
+        end
+
+        def pomfiles
+          @pomfiles ||=
+            dependency_files.select { |f| f.name.end_with?("pom.xml") }
+        end
+
+        def internal_dependency_names
+          @internal_dependency_names ||=
+            pomfiles.map do |pom|
+              doc = Nokogiri::XML(pom.content)
+              group_id    = doc.at_css("project > groupId") ||
+                            doc.at_css("project > parent > groupId")
+              artifact_id = doc.at_css("project > artifactId")
+
+              next unless group_id && artifact_id
+
+              [group_id.content.strip, artifact_id.content.strip].join(":")
+            end.compact
         end
 
         def check_required_files
-          %w(pom.xml).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No pom.xml!" unless get_original_file("pom.xml")
         end
       end
     end

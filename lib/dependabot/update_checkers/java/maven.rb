@@ -99,12 +99,13 @@ module Dependabot
 
         def version_comes_from_multi_dependency_property?
           declarations_using_a_property.any? do |requirement|
-            req = requirement.fetch(:requirement)
-            property =
-              declaration_finder(req).declaration_node.at_css("version").content
+            property = declaration_finder(requirement).
+                       declaration_node.at_css("version").content
 
             property_regex = /#{Regexp.escape(property)}/
-            pom.content.scan(property_regex).count >
+            property_use_count =
+              dependency_files.sum { |f| f.content.scan(property_regex).count }
+            property_use_count >
               dependency.requirements.select { |r| r == requirement }.count
           end
         end
@@ -112,8 +113,7 @@ module Dependabot
         def declarations_using_a_property
           @declarations_using_a_property ||=
             dependency.requirements.select do |requirement|
-              req_string = requirement.fetch(:requirement)
-              declaration_finder(req_string).version_comes_from_property?
+              declaration_finder(requirement).version_comes_from_property?
             end
         end
 
@@ -121,14 +121,10 @@ module Dependabot
           @declaration_finder ||= {}
           @declaration_finder[requirement.hash] ||=
             FileUpdaters::Java::Maven::DeclarationFinder.new(
-              dependency_name: dependency.name,
-              dependency_requirement: requirement,
-              pom_content: pom.content
+              dependency: dependency,
+              declaring_requirement: requirement,
+              dependency_files: dependency_files
             )
-        end
-
-        def pom
-          @pom ||= dependency_files.find { |f| f.name == "pom.xml" }
         end
       end
     end

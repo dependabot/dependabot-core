@@ -11,7 +11,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [pom],
+      dependency_files: dependency_files,
       dependencies: dependencies,
       credentials: [
         {
@@ -22,6 +22,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       ]
     )
   end
+  let(:dependency_files) { [pom] }
   let(:dependencies) { [dependency] }
   let(:pom) do
     Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
@@ -257,6 +258,165 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             expect(updated_pom_file.content).
               to include("<version>${springframework.version}</version>")
           end
+        end
+      end
+    end
+
+    context "with a multimodule pom" do
+      let(:dependency_files) do
+        [
+          multimodule_pom, util_pom, business_app_pom, legacy_pom, webapp_pom,
+          some_spring_project_pom
+        ]
+      end
+      let(:multimodule_pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "multimodule_pom.xml")
+        )
+      end
+      let(:util_pom) do
+        Dependabot::DependencyFile.new(
+          name: "util/pom.xml",
+          content: fixture("java", "poms", "util_pom.xml")
+        )
+      end
+      let(:business_app_pom) do
+        Dependabot::DependencyFile.new(
+          name: "business-app/pom.xml",
+          content: fixture("java", "poms", "business_app_pom.xml")
+        )
+      end
+      let(:legacy_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/pom.xml",
+          content: fixture("java", "poms", "legacy_pom.xml")
+        )
+      end
+      let(:webapp_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/webapp/pom.xml",
+          content: fixture("java", "poms", "webapp_pom.xml")
+        )
+      end
+      let(:some_spring_project_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/some-spring-project/pom.xml",
+          content: fixture("java", "poms", "some_spring_project_pom.xml")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: dependency_requirements,
+          previous_requirements: dependency_previous_requirements,
+          package_manager: "maven"
+        )
+      end
+
+      context "for a dependency inherited by others" do
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: "23.6-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            },
+            {
+              requirement: nil,
+              file: "util/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_previous_requirements) do
+          [
+            {
+              requirement: "23.0-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            },
+            {
+              requirement: nil,
+              file: "util/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_name) { "com.google.guava:guava" }
+        let(:dependency_version) { "23.6-jre" }
+
+        it "updates the version in the POM" do
+          expect(updated_files.map(&:name)).to eq(["pom.xml"])
+          expect(updated_files.first.content).
+            to include("<guava.version>23.6-jre</guava.version>")
+        end
+      end
+
+      context "for a dependency that uses a property from its parent" do
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: "2.6.0",
+              file: "legacy/some-spring-project/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_previous_requirements) do
+          [
+            {
+              requirement: "2.5.6",
+              file: "legacy/some-spring-project/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_name) { "org.springframework:spring-aop" }
+        let(:dependency_version) { "2.6.0" }
+
+        it "updates the version in the POM" do
+          expect(updated_files.map(&:name)).to eq(["pom.xml"])
+          expect(updated_files.first.content).
+            to include("<spring.version>2.6.0</spring.version>")
+        end
+      end
+
+      context "for a dependency that needs to be updated in another file" do
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: "4.11",
+              file: "business-app/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_previous_requirements) do
+          [
+            {
+              requirement: "4.10",
+              file: "business-app/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_name) { "junit:junit" }
+        let(:dependency_version) { "4.11" }
+
+        it "updates the version in the POM" do
+          expect(updated_files.map(&:name)).to eq(["business-app/pom.xml"])
+          expect(updated_files.first.content).
+            to include("<version>4.11</version>")
         end
       end
     end

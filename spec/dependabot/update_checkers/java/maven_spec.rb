@@ -175,6 +175,115 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           end
           it { is_expected.to be_nil }
         end
+
+        context "with a nil requirement" do
+          let(:dependency_requirements) do
+            [
+              {
+                file: "pom.xml",
+                requirement: "3.0.0-M1",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "pom.xml",
+                requirement: nil,
+                groups: [],
+                source: nil
+              }
+            ]
+          end
+          it { is_expected.to eq(version_class.new("23.6-jre")) }
+        end
+      end
+    end
+
+    context "with a multimodule pom" do
+      let(:dependency_files) do
+        [
+          multimodule_pom, util_pom, business_app_pom, legacy_pom, webapp_pom,
+          some_spring_project_pom
+        ]
+      end
+      let(:multimodule_pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "multimodule_pom.xml")
+        )
+      end
+      let(:util_pom) do
+        Dependabot::DependencyFile.new(
+          name: "util/pom.xml",
+          content: fixture("java", "poms", "util_pom.xml")
+        )
+      end
+      let(:business_app_pom) do
+        Dependabot::DependencyFile.new(
+          name: "business-app/pom.xml",
+          content: fixture("java", "poms", "business_app_pom.xml")
+        )
+      end
+      let(:legacy_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/pom.xml",
+          content: fixture("java", "poms", "legacy_pom.xml")
+        )
+      end
+      let(:webapp_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/webapp/pom.xml",
+          content: fixture("java", "poms", "webapp_pom.xml")
+        )
+      end
+      let(:some_spring_project_pom) do
+        Dependabot::DependencyFile.new(
+          name: "legacy/some-spring-project/pom.xml",
+          content: fixture("java", "poms", "some_spring_project_pom.xml")
+        )
+      end
+
+      context "for a dependency inherited by others" do
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: "23.0-jre",
+              file: "pom.xml",
+              groups: [],
+              source: nil
+            },
+            {
+              requirement: nil,
+              file: "util/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_name) { "com.google.guava:guava" }
+        let(:dependency_version) { "23.0-jre" }
+
+        it { is_expected.to eq(version_class.new("23.6-jre")) }
+      end
+
+      context "for a dependency that uses a property from its parent" do
+        let(:dependency_requirements) do
+          [
+            {
+              requirement: "2.5.6",
+              file: "legacy/some-spring-project/pom.xml",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_name) { "org.springframework:spring-aop" }
+        let(:dependency_version) { "2.5.6" }
+        let(:maven_central_metadata_url) do
+          "https://search.maven.org/remotecontent?filepath="\
+          "org/springframework/spring-aop/maven-metadata.xml"
+        end
+
+        it { is_expected.to eq(version_class.new("23.6-jre")) }
       end
     end
   end
