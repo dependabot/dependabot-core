@@ -1,3 +1,7 @@
+## v0.54.35, 21 April 2018
+
+- Java: Fix error message when a property can't be found
+
 ## v0.54.34, 20 April 2018
 
 - Java: Handle multimodule projects in FileFetcher, FileParser, UpdateChecker
