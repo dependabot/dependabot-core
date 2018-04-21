@@ -1,3 +1,9 @@
+## v0.54.37, 21 April 2018
+
+- Java: Add requirements_unlocked_or_can_be? method to UpdateChecker
+- Java: Remove duplicated code between PropertyValueFinder and
+  PropertyValueUpdater
+
 ## v0.54.36, 21 April 2018
 
 - Java: Encode Maven URLs correctly in UpdateChecker and MetadataFinder
