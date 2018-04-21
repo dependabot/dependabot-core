@@ -86,7 +86,8 @@ module Dependabot
         def value_for_property(property_name, pom)
           value =
             PropertyValueFinder.new(dependency_files: dependency_files).
-            property_value(property_name: property_name, callsite_pom: pom)
+            property_details(property_name: property_name, callsite_pom: pom)&.
+            fetch(:value)
 
           raise "Property not found: #{property_name}" unless value
           value

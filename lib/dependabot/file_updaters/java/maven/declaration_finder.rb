@@ -85,10 +85,10 @@ module Dependabot
             prop_value =
               FileParsers::Java::Maven::PropertyValueFinder.
               new(dependency_files: dependency_files).
-              property_value(
+              property_details(
                 property_name: property_name,
                 callsite_pom: declaring_pom
-              )
+              ).fetch(:value)
 
             version.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, prop_value)
           end

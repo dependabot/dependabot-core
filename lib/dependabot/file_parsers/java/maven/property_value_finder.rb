@@ -17,7 +17,7 @@ module Dependabot
             @dependency_files = dependency_files
           end
 
-          def property_value(property_name:, callsite_pom:)
+          def property_details(property_name:, callsite_pom:)
             pom = callsite_pom
             doc = Nokogiri::XML(pom.content)
             doc.remove_namespaces!
@@ -25,22 +25,23 @@ module Dependabot
             # Loop through the paths that would satisfy this property name,
             # looking for one that exists in this POM
             temp_name = sanitize_property_name(property_name)
-            property_value =
+            node =
               loop do
-                node =
-                  doc.at_xpath("//#{temp_name}") ||
-                  doc.at_xpath("//properties/#{temp_name}")
-                break node.content.strip if node
+                candidate_node = doc.at_xpath("//#{temp_name}") ||
+                                 doc.at_xpath("//properties/#{temp_name}")
+                break candidate_node if candidate_node
                 break unless temp_name.include?(".")
                 temp_name = temp_name.sub(".", "/")
               end
 
             # If we found a property, return it
-            return property_value if property_value
+            if node
+              return { file: pom.name, node: node, value: node.content.strip }
+            end
 
             # Otherwise, look for a value in this pom's parent
             return unless (parent = parent_pom(pom))
-            property_value(
+            property_details(
               property_name: property_name,
               callsite_pom: parent
             )

@@ -16,9 +16,9 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
   end
   let(:base_pom_fixture_name) { "property_pom.xml" }
 
-  describe "#property_value" do
-    subject(:property_value) do
-      finder.property_value(
+  describe "#property_details" do
+    subject(:property_details) do
+      finder.property_details(
         property_name: property_name,
         callsite_pom: callsite_pom
       )
@@ -28,12 +28,12 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       let(:base_pom_fixture_name) { "property_pom.xml" }
       let(:property_name) { "springframework.version" }
       let(:callsite_pom) { base_pom }
-      it { is_expected.to eq("4.3.12.RELEASE") }
+      its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
 
       context "and the property is an attribute on the project" do
         let(:base_pom_fixture_name) { "project_version_pom.xml" }
         let(:property_name) { "project.version" }
-        it { is_expected.to eq("0.0.2-RELEASE") }
+        its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
     end
 
@@ -55,7 +55,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       let(:base_pom_fixture_name) { "multimodule_pom.xml" }
       let(:property_name) { "spring.version" }
       let(:callsite_pom) { grandchild_pom }
-      it { is_expected.to eq("2.5.6") }
+      its([:value]) { is_expected.to eq("2.5.6") }
     end
 
     context "when the property is declared in a remote pom" do
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
         stub_request(:get, struts_parent_maven_url).
           to_return(status: 200, body: struts_parent_maven_response)
       end
-      it { is_expected.to eq("2.7") }
+      its([:value]) { is_expected.to eq("2.7") }
     end
   end
 end
