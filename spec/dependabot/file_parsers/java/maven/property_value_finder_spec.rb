@@ -57,5 +57,34 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       let(:callsite_pom) { grandchild_pom }
       it { is_expected.to eq("2.5.6") }
     end
+
+    context "when the property is declared in a remote pom" do
+      let(:base_pom_fixture_name) { "remote_parent_pom.xml" }
+      let(:property_name) { "log4j2.version" }
+      let(:callsite_pom) { base_pom }
+
+      let(:struts_apps_maven_url) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
+      end
+      let(:struts_parent_maven_url) do
+        "https://search.maven.org/remotecontent?filepath="\
+        "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
+      end
+      let(:struts_apps_maven_response) do
+        fixture("java", "poms", "struts2-apps-2.5.10.pom")
+      end
+      let(:struts_parent_maven_response) do
+        fixture("java", "poms", "struts2-parent-2.5.10.pom")
+      end
+
+      before do
+        stub_request(:get, struts_apps_maven_url).
+          to_return(status: 200, body: struts_apps_maven_response)
+        stub_request(:get, struts_parent_maven_url).
+          to_return(status: 200, body: struts_parent_maven_response)
+      end
+      it { is_expected.to eq("2.7") }
+    end
   end
 end

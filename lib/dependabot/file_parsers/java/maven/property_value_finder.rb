@@ -2,7 +2,9 @@
 
 require "nokogiri"
 
+require "dependabot/dependency_file"
 require "dependabot/file_parsers/java/maven"
+require "dependabot/shared_helpers"
 
 # For documentation, see the "Available Variables" section of
 # http://maven.apache.org/guides/introduction/introduction-to-the-pom.html
@@ -16,8 +18,7 @@ module Dependabot
           end
 
           def property_value(property_name:, callsite_pom:)
-            pom = dependency_files.find { |f| f.name == callsite_pom.name }
-
+            pom = callsite_pom
             doc = Nokogiri::XML(pom.content)
             doc.remove_namespaces!
 
@@ -84,12 +85,38 @@ module Dependabot
           def parent_pom(pom)
             doc = Nokogiri::XML(pom.content)
             doc.remove_namespaces!
-            group_id = doc.at_xpath("//parent/groupId")
-            artifact_id = doc.at_xpath("//parent/artifactId")
+            group_id = doc.at_xpath("//parent/groupId")&.content&.strip
+            artifact_id = doc.at_xpath("//parent/artifactId")&.content&.strip
+            version = doc.at_xpath("//parent/version")&.content&.strip
 
             return unless group_id && artifact_id
-            name = [group_id.content.strip, artifact_id.content.strip].join(":")
-            internal_dependency_poms[name]
+            name = [group_id, artifact_id].join(":")
+
+            if internal_dependency_poms[name]
+              return internal_dependency_poms[name]
+            end
+
+            fetch_remote_parent_pom(group_id, artifact_id, version)
+          end
+
+          def fetch_remote_parent_pom(group_id, artifact_id, version)
+            maven_response = Excon.get(
+              remote_pom_url(group_id, artifact_id, version),
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+            return unless maven_response.status == 200
+
+            DependencyFile.new(
+              name: "remote_pom.xml",
+              content: maven_response.body
+            )
+          end
+
+          def remote_pom_url(group_id, artifact_id, version)
+            "https://search.maven.org/remotecontent?filepath="\
+            "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
+            "#{artifact_id}-#{version}.pom"
           end
         end
       end
