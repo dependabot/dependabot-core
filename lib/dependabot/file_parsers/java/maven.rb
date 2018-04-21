@@ -88,7 +88,7 @@ module Dependabot
             PropertyValueFinder.new(dependency_files: dependency_files).
             property_value(property_name: property_name, callsite_pom: pom)
 
-          raise "Property not found: #{prop_name}" unless value
+          raise "Property not found: #{property_name}" unless value
           value
         end
 

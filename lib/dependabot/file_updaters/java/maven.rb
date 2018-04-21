@@ -73,9 +73,9 @@ module Dependabot
           declaration_string =
             Nokogiri::XML(original_pom_declaration(dependency, req)).
             at_css("version").content
-          property_regex = FileParsers::Java::Maven::PROPERTY_REGEX
           property_name =
-            declaration_string.match(property_regex).captures.first.to_s
+            declaration_string.match(FileParsers::Java::Maven::PROPERTY_REGEX).
+            named_captures.fetch("property")
 
           PropertyValueUpdater.new(dependency_files: pomfiles).
             update_pomfiles_for_property_change(
