@@ -2,6 +2,7 @@
 
 require "dependabot/update_checkers/base"
 require "dependabot/file_updaters/java/maven/declaration_finder"
+require "dependabot/file_parsers/java/maven/property_value_finder"
 
 module Dependabot
   module UpdateCheckers
@@ -51,6 +52,25 @@ module Dependabot
           ).updated_requirements
         end
 
+        def requirements_unlocked_or_can_be?
+          declarations_using_a_property.none? do |requirement|
+            version_content = declaration_finder(requirement).
+                              declaration_node.at_css("version").content
+
+            prop_regex = FileParsers::Java::Maven::PROPERTY_REGEX
+            prop_name = version_content.match(prop_regex).
+                        named_captures.fetch("property")
+            pom = dependency_files.find { |f| f.name == requirement[:file] }
+
+            declaration_pom_name =
+              property_value_finder.
+              property_details(property_name: prop_name, callsite_pom: pom)&.
+              fetch(:file)
+
+            declaration_pom_name == "remote_pom.xml"
+          end
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?
@@ -94,6 +114,13 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files,
               target_version: latest_version
+            )
+        end
+
+        def property_value_finder
+          @property_value_finder ||=
+            FileParsers::Java::Maven::PropertyValueFinder.new(
+              dependency_files: dependency_files
             )
         end
 

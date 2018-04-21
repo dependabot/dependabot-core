@@ -503,4 +503,62 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       it { is_expected.to eq(false) }
     end
   end
+
+  describe "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    context "with a basic POM" do
+      let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a property POM" do
+      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:dependency_name) { "org.springframework:spring-context" }
+      let(:dependency_version) { "4.3.12.RELEASE.1" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "4.3.12.RELEASE.1",
+          groups: [],
+          source: nil
+        }]
+      end
+      it { is_expected.to eq(true) }
+
+      context "that inherits from a remote POM" do
+        let(:pom_body) { fixture("java", "poms", "remote_parent_pom.xml") }
+
+        let(:struts_apps_maven_url) do
+          "https://search.maven.org/remotecontent?filepath="\
+          "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
+        end
+        let(:struts_parent_maven_url) do
+          "https://search.maven.org/remotecontent?filepath="\
+          "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
+        end
+        let(:struts_apps_maven_response) do
+          fixture("java", "poms", "struts2-apps-2.5.10.pom")
+        end
+        let(:struts_parent_maven_response) do
+          fixture("java", "poms", "struts2-parent-2.5.10.pom")
+        end
+
+        before do
+          stub_request(:get, struts_apps_maven_url).
+            to_return(status: 200, body: struts_apps_maven_response)
+          stub_request(:get, struts_parent_maven_url).
+            to_return(status: 200, body: struts_parent_maven_response)
+        end
+
+        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
+        let(:dependency_version) { "2.7" }
+        let(:dependency_requirements) do
+          [{ file: "pom.xml", requirement: "2.7", groups: [], source: nil }]
+        end
+
+        it { is_expected.to eq(false) }
+      end
+    end
+  end
 end
