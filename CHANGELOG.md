@@ -1,3 +1,9 @@
+## v0.54.36, 21 April 2018
+
+- Java: Encode Maven URLs correctly in UpdateChecker and MetadataFinder
+- Java: Handle remote parent poms in FileParser (will need work in
+  UpdateChecker)
+
 ## v0.54.35, 21 April 2018
 
 - Java: Fix error message when a property can't be found
