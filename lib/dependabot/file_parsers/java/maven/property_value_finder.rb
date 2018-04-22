@@ -6,8 +6,9 @@ require "dependabot/dependency_file"
 require "dependabot/file_parsers/java/maven"
 require "dependabot/shared_helpers"
 
-# For documentation, see the "Available Variables" section of
-# http://maven.apache.org/guides/introduction/introduction-to-the-pom.html
+# For documentation, see:
+# - http://maven.apache.org/guides/introduction/introduction-to-the-pom.html
+# - http://maven.apache.org/pom.html#Properties
 module Dependabot
   module FileParsers
     module Java
