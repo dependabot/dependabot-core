@@ -98,7 +98,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
               stub_request(:get, central_url).
                 to_return(status: 200, body: base_pom.content)
               stub_request(:get, custom_url).
-                to_return(status: 404, body: "{}")
+                to_return(status: 200, body: "some rubbish")
             end
 
             it "includes the declarations from the parent and the child" do
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
           context "from the custom repo" do
             before do
               stub_request(:get, central_url).
-                to_return(status: 404, body: "{}")
+                to_return(status: 200, body: "some rubbish")
               stub_request(:get, custom_url).
                 to_return(status: 200, body: base_pom.content)
             end

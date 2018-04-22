@@ -99,6 +99,7 @@ module Dependabot
                 middlewares: SharedHelpers.excon_middleware
               )
               next unless maven_response.status == 200
+              next unless pom?(maven_response.body)
 
               dependency_file = DependencyFile.new(
                 name: "remote_pom.xml",
@@ -113,6 +114,10 @@ module Dependabot
             "#{base_repo_url}/"\
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
             "#{artifact_id}-#{version}.pom"
+          end
+
+          def pom?(content)
+            !Nokogiri::XML(content).at_css("project > artifactId").nil?
           end
         end
       end
