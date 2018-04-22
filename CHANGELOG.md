@@ -1,3 +1,7 @@
+## v0.54.39, 22 April 2018
+
+- Java: Handle custom repositories in MetadataFinder
+
 ## v0.54.38, 22 April 2018
 
 - Java: Better MetadataFinder CSS paths
