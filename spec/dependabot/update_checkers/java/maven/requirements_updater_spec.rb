@@ -7,7 +7,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      latest_version: latest_version
+      latest_version: latest_version,
+      source_url: "new_url"
     )
   end
 
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
       context "and a soft requirement was previously specified" do
         let(:pom_req_string) { "23.3-jre" }
         its([:requirement]) { is_expected.to eq("23.6-jre") }
+        its([:source]) { is_expected.to eq(url: "new_url") }
       end
 
       context "and the version included capitals" do
@@ -79,13 +81,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
                 file: "pom.xml",
                 requirement: "23.6-jre",
                 groups: [],
-                source: nil
+                source: { url: "new_url" }
               },
               {
                 file: "another/pom.xml",
                 requirement: "[23.6-jre]",
                 groups: [],
-                source: nil
+                source: { url: "new_url" }
               }
             ]
           )
@@ -101,7 +103,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
                   file: "pom.xml",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: nil
+                  source: { url: "new_url" }
                 },
                 {
                   file: "another/pom.xml",

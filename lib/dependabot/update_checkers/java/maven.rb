@@ -13,8 +13,7 @@ module Dependabot
         require_relative "maven/property_updater"
 
         def latest_version
-          @latest_version ||=
-            version_finder.latest_version_details&.fetch(:version)
+          latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
@@ -41,7 +40,8 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            latest_version: latest_version&.to_s
+            latest_version: latest_version&.to_s,
+            source_url: latest_version_details&.fetch(:source_url)
           ).updated_requirements
         end
 
@@ -85,6 +85,10 @@ module Dependabot
           super
         end
 
+        def latest_version_details
+          @latest_version_details ||= version_finder.latest_version_details
+        end
+
         def version_finder
           @version_finder ||=
             VersionFinder.new(
@@ -98,7 +102,7 @@ module Dependabot
             PropertyUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              target_version: latest_version
+              target_version_details: latest_version_details
             )
         end
 

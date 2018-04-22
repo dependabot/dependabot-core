@@ -15,8 +15,9 @@ module Dependabot
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9\-]+)*/
 
-          def initialize(requirements:, latest_version:)
+          def initialize(requirements:, latest_version:, source_url:)
             @requirements = requirements
+            @source_url = source_url
             return unless latest_version
             @latest_version = version_class.new(latest_version)
           end
@@ -33,13 +34,13 @@ module Dependabot
               # just do a `gsub` on anything that looks like a version
               new_req =
                 req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
-              req.merge(requirement: new_req)
+              req.merge(requirement: new_req, source: { url: source_url })
             end
           end
 
           private
 
-          attr_reader :requirements, :latest_version
+          attr_reader :requirements, :latest_version, :source_url
 
           def version_class
             Utils::Java::Version

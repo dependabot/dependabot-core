@@ -9,12 +9,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      target_version: target_version
+      target_version_details: target_version_details
     )
   end
 
   let(:version_class) { Dependabot::Utils::Java::Version }
-  let(:target_version) { version_class.new("23.6-jre") }
+  let(:target_version_details) do
+    {
+      version: version_class.new("23.6-jre"),
+      source_url: "https://repo.maven.apache.org/maven2"
+    }
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -71,7 +76,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
     it { is_expected.to eq(true) }
 
     context "without a target version" do
-      let(:target_version) { nil }
+      let(:target_version_details) { nil }
       it { is_expected.to eq(false) }
     end
 
@@ -104,7 +109,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 file: "pom.xml",
                 requirement: "23.6-jre",
                 groups: [],
-                source: nil
+                source: { url: "https://repo.maven.apache.org/maven2" }
               }
             ],
             previous_requirements: [
@@ -126,7 +131,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 file: "pom.xml",
                 requirement: "23.6-jre.1",
                 groups: [],
-                source: nil
+                source: { url: "https://repo.maven.apache.org/maven2" }
               }
             ],
             previous_requirements: [

@@ -10,10 +10,12 @@ module Dependabot
     module Java
       class Maven
         class PropertyUpdater
-          def initialize(dependency:, dependency_files:, target_version:)
+          def initialize(dependency:, dependency_files:,
+                         target_version_details:)
             @dependency       = dependency
             @dependency_files = dependency_files
-            @target_version   = target_version
+            @target_version   = target_version_details&.fetch(:version)
+            @source_url       = target_version_details&.fetch(:source_url)
           end
 
           def update_possible?
@@ -47,7 +49,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :target_version
+          attr_reader :dependency, :dependency_files, :target_version,
+                      :source_url
 
           def dependencies_using_property
             @dependencies_using_property ||=
@@ -90,7 +93,8 @@ module Dependabot
             @updated_requirements[dep.name] ||=
               RequirementsUpdater.new(
                 requirements: dependency.requirements,
-                latest_version: updated_version(dep)
+                latest_version: updated_version(dep),
+                source_url: source_url
               ).updated_requirements
           end
         end

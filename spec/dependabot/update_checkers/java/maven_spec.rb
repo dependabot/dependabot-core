@@ -302,7 +302,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         to receive(:new).
         with(
           requirements: dependency_requirements,
-          latest_version: "23.6-jre"
+          latest_version: "23.6-jre",
+          source_url: "https://repo.maven.apache.org/maven2"
         ).
         and_call_original
       expect(checker.updated_requirements).
@@ -312,7 +313,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
               file: "pom.xml",
               requirement: "23.6-jre",
               groups: [],
-              source: nil
+              source: { url: "https://repo.maven.apache.org/maven2" }
             }
           ]
         )
@@ -376,7 +377,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
-            target_version: version_class.new("23.6-jre")
+            target_version_details: {
+              version: version_class.new("23.6-jre"),
+              source_url: "https://repo.maven.apache.org/maven2"
+            }
           ).
           and_call_original
         expect(subject).to eq(true)
@@ -431,7 +435,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
-            target_version: version_class.new("23.6-jre")
+            target_version_details: {
+              version: version_class.new("23.6-jre"),
+              source_url: "https://repo.maven.apache.org/maven2"
+            }
           ).
           and_call_original
         expect(subject).to eq(
@@ -445,7 +452,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: nil
+                  source: { url: "https://repo.maven.apache.org/maven2" }
                 }
               ],
               previous_requirements: [
@@ -467,7 +474,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "23.6-jre.1",
                   groups: [],
-                  source: nil
+                  source: { url: "https://repo.maven.apache.org/maven2" }
                 }
               ],
               previous_requirements: [
