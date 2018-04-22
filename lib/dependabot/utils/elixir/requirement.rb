@@ -2,12 +2,11 @@
 
 require "dependabot/utils/elixir/version"
 
-# rubocop:disable all
 module Dependabot
   module Utils
     module Elixir
       class Requirement < Gem::Requirement
-        OPS["=="] = lambda { |v, r| v == r }
+        OPS["=="] = ->(v, r) { v == r }
 
         # Override the version pattern to allow local versions
         quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
@@ -23,18 +22,18 @@ module Dependabot
         end
 
         # Override the parser to create Utils::Elixir::Versions
-        def self.parse obj
-          return ["=", obj] if Gem::Version === obj
-
-          unless PATTERN =~ obj.to_s
-            raise BadRequirementError, "Illformed requirement [#{obj.inspect}]"
+        def self.parse(obj)
+          if obj.is_a?(Gem::Version)
+            return ["=", Utils::Elixir::Version.new(obj.to_s)]
           end
 
-          if $1 == ">=" && $2 == "0"
-            DefaultRequirement
-          else
-            [$1 || "=", Utils::Elixir::Version.new($2)]
+          unless (matches = PATTERN.match(obj.to_s))
+            msg = "Illformed requirement [#{obj.inspect}]"
+            raise BadRequirementError, msg
           end
+
+          return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+          [matches[1] || "=", Utils::Elixir::Version.new(matches[2])]
         end
 
         def satisfied_by?(version)
@@ -45,4 +44,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable all
