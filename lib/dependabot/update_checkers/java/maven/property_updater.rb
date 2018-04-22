@@ -20,8 +20,10 @@ module Dependabot
             return false unless target_version
             @update_possible ||=
               dependencies_using_property.all? do |dep|
-                VersionFinder.new(dependency: dep).versions.
-                  include?(target_version)
+                VersionFinder.new(
+                  dependency: dep,
+                  dependency_files: dependency_files
+                ).versions.include?(target_version)
               end
           end
 

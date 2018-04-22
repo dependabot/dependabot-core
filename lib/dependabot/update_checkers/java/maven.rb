@@ -15,7 +15,7 @@ module Dependabot
         def latest_version
           @latest_version ||=
             begin
-              versions = VersionFinder.new(dependency: dependency).versions
+              versions = version_finder.versions
               versions = versions.reject(&:prerelease?) unless wants_prerelease?
               unless wants_date_based_version?
                 versions = versions.reject { |v| v > version_class.new(1900) }
@@ -106,6 +106,14 @@ module Dependabot
         def numeric_version_can_update?(requirements_to_unlock:)
           return false unless version_class.correct?(dependency.version)
           super
+        end
+
+        def version_finder
+          @version_finder ||=
+            VersionFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files
+            )
         end
 
         def property_updater
