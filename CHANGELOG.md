@@ -1,3 +1,12 @@
+## v0.54.38, 22 April 2018
+
+- Java: Better MetadataFinder CSS paths
+- Java: Support use of custom repositories in UpdateChecker
+- Java: Use main registry URL directly, not search API
+- Java: Add commments for FileParser, and add extensions to list of updatable
+  dependencies
+- Elixir: Clean up requirement class
+
 ## v0.54.37, 21 April 2018
 
 - Java: Add requirements_unlocked_or_can_be? method to UpdateChecker
