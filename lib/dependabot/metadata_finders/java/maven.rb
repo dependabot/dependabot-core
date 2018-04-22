@@ -12,9 +12,9 @@ module Dependabot
 
         def look_up_source
           potential_source_urls = [
-            pom_file.at_css("project url")&.content,
-            pom_file.at_css("project scm url")&.content,
-            pom_file.at_css("project scm issueManagement")&.content
+            pom_file.at_css("project > url")&.content,
+            pom_file.at_css("project > scm > url")&.content,
+            pom_file.at_css("project > issueManagement > url")&.content
           ].compact
 
           source_url = potential_source_urls.find { |url| Source.from_url(url) }
