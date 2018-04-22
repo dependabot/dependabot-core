@@ -13,7 +13,8 @@ module Dependabot
         require_relative "maven/property_updater"
 
         def latest_version
-          @latest_version ||= version_finder.latest_version
+          @latest_version ||=
+            version_finder.latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version

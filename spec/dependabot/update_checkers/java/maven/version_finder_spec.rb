@@ -50,30 +50,33 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       to_return(status: 200, body: maven_central_releases)
   end
 
-  describe "#latest_version" do
-    subject { finder.latest_version }
-    it { is_expected.to eq(version_class.new("23.6-jre")) }
+  describe "#latest_version_details" do
+    subject { finder.latest_version_details }
+    its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+    its([:source_url]) do
+      is_expected.to eq("https://repo.maven.apache.org/maven2")
+    end
 
     context "when the user wants a pre-release" do
       let(:dependency_version) { "18.0-beta" }
-      it { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
     end
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
         fixture("java", "maven_central_metadata", "with_date_releases.xml")
       end
-      it { is_expected.to eq(version_class.new("3.2.2")) }
+      its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
         let(:dependency_version) { "20030418" }
-        it { is_expected.to eq(version_class.new("20040616")) }
+        its([:version]) { is_expected.to eq(version_class.new("20040616")) }
       end
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
     context "with a custom repository" do
@@ -108,15 +111,34 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
           to_return(status: 404, body: "")
       end
 
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("http://repository.jboss.org/maven2")
+      end
     end
   end
 
   describe "#versions" do
-    subject { finder.versions }
+    subject(:versions) { finder.versions }
     its(:count) { is_expected.to eq(63) }
-    its(:first) { is_expected.to eq(version_class.new("10.0-rc1")) }
-    its(:last) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+
+    describe "the first version" do
+      subject { versions.first }
+
+      its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+      its([:source_url]) do
+        is_expected.to eq("https://repo.maven.apache.org/maven2")
+      end
+    end
+
+    describe "the last version" do
+      subject { versions.last }
+
+      its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      its([:source_url]) do
+        is_expected.to eq("https://repo.maven.apache.org/maven2")
+      end
+    end
 
     context "with a custom repository" do
       let(:pom_fixture_name) { "custom_repositories_pom.xml" }
@@ -150,8 +172,23 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
           to_return(status: 404, body: "")
       end
 
-      its(:first) { is_expected.to eq(version_class.new("10.0-rc1")) }
-      its(:last) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+        its([:source_url]) do
+          is_expected.to eq("http://repository.jboss.org/maven2")
+        end
+      end
+
+      describe "the last version" do
+        subject { versions.last }
+
+        its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+        its([:source_url]) do
+          is_expected.to eq("http://repository.jboss.org/maven2")
+        end
+      end
 
       context "that augment the central repo" do
         before do
@@ -162,8 +199,24 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         end
 
         its(:count) { is_expected.to eq(80) }
-        its(:first) { is_expected.to eq(version_class.new("1.0")) }
-        its(:last) { is_expected.to eq(version_class.new("20040616")) }
+
+        describe "the first version" do
+          subject { versions.first }
+
+          its([:version]) { is_expected.to eq(version_class.new("1.0")) }
+          its([:source_url]) do
+            is_expected.to eq("https://repo.maven.apache.org/maven2")
+          end
+        end
+
+        describe "the last version" do
+          subject { versions.last }
+
+          its([:version]) { is_expected.to eq(version_class.new("20040616")) }
+          its([:source_url]) do
+            is_expected.to eq("https://repo.maven.apache.org/maven2")
+          end
+        end
       end
     end
   end

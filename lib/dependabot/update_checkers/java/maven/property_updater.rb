@@ -23,7 +23,9 @@ module Dependabot
                 VersionFinder.new(
                   dependency: dep,
                   dependency_files: dependency_files
-                ).versions.include?(target_version)
+                ).versions.
+                  map { |v| v.fetch(:version) }.
+                  include?(target_version)
               end
           end
 
