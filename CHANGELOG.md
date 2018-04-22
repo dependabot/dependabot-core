@@ -1,3 +1,7 @@
+## v0.54.40, 22 April 2018
+
+- Java: Check custom repositories when lookin for property declarations
+
 ## v0.54.39, 22 April 2018
 
 - Java: Handle custom repositories in MetadataFinder
