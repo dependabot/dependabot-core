@@ -50,7 +50,7 @@ module Dependabot
 
           artifact_id = dependency.name.split(":").last
           response = Excon.get(
-            "#{maven_repo_dependency_url}"\
+            "#{maven_repo_dependency_url}/"\
             "#{dependency.version}/"\
             "#{artifact_id}-#{dependency.version}.pom",
             idempotent: true,
@@ -69,7 +69,7 @@ module Dependabot
             source&.fetch("url") ||
             FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
 
-          "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"
+          "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
         end
       end
     end
