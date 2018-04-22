@@ -16,32 +16,54 @@ module Dependabot
             @dependency_files = dependency_files
           end
 
-          def latest_release
-            return if maven_central_latest_version.nil?
-            Utils::Java::Version.new(maven_central_latest_version)
+          def latest_version
+            possible_versions = versions
+
+            unless wants_prerelease?
+              possible_versions = possible_versions.reject(&:prerelease?)
+            end
+
+            unless wants_date_based_version?
+              possible_versions =
+                possible_versions.reject { |v| v > version_class.new(1900) }
+            end
+
+            possible_versions.last
           end
 
           def versions
             repository_urls.
               map { |url| dependency_metadata(url).css("versions > version") }.
               flatten.
-              select { |node| Utils::Java::Version.correct?(node.content) }.
-              map { |node| Utils::Java::Version.new(node.content) }.sort
+              select { |node| version_class.correct?(node.content) }.
+              map { |node| version_class.new(node.content) }.sort
           end
 
           private
 
           attr_reader :dependency, :dependency_files
 
+          def wants_prerelease?
+            return false unless dependency.version
+            return false unless version_class.correct?(dependency.version)
+            version_class.new(dependency.version).prerelease?
+          end
+
+          def wants_date_based_version?
+            # Alternatively, we could hit the index URL for the package
+            # and parse the messy HTML to get the updated at for each version.
+            # The below saves a request, and is probably cleaner.
+            return false unless dependency.version
+            return false unless version_class.correct?(dependency.version)
+            version_class.new(dependency.version) >= version_class.new(100)
+          end
+
           def maven_central_latest_version
             repository_urls.
               map { |url| dependency_metadata(url).at_css("release")&.content }.
               max_by do |v|
-                if Utils::Java::Version.correct?(v)
-                  Utils::Java::Version.new(v)
-                else
-                  Utils::Java::Version.new("0")
-                end
+                next version_class.new(v) if version_class.correct?(v)
+                version_class.new("0")
               end
           end
 
@@ -77,6 +99,10 @@ module Dependabot
             "#{group_id.tr('.', '/')}/"\
             "#{artifact_id}/"\
             "maven-metadata.xml"
+          end
+
+          def version_class
+            Utils::Java::Version
           end
         end
       end

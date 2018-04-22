@@ -13,15 +13,7 @@ module Dependabot
         require_relative "maven/property_updater"
 
         def latest_version
-          @latest_version ||=
-            begin
-              versions = version_finder.versions
-              versions = versions.reject(&:prerelease?) unless wants_prerelease?
-              unless wants_date_based_version?
-                versions = versions.reject { |v| v > version_class.new(1900) }
-              end
-              versions.last
-            end
+          @latest_version ||= version_finder.latest_version
         end
 
         def latest_resolvable_version
@@ -80,22 +72,6 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           property_updater.updated_dependencies
-        end
-
-        def wants_prerelease?
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
-          version_class.new(dependency.version).prerelease?
-        end
-
-        def wants_date_based_version?
-          # Alternatively, we could hit the index URL for the package
-          # (i.e., ?filepath=<dependency_name>/) and parse the messy HTML to
-          # get the updated at for each version. The below saves a request, and
-          # is probably cleaner.
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
-          version_class.new(dependency.version) >= version_class.new(100)
         end
 
         def numeric_version_up_to_date?

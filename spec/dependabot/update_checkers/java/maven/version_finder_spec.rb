@@ -41,29 +41,39 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
+  let(:maven_central_releases) do
+    fixture("java", "maven_central_metadata", "with_release.xml")
+  end
 
   before do
     stub_request(:get, maven_central_metadata_url).
-      to_return(
-        status: 200,
-        body: fixture("java", "maven_central_metadata", "with_release.xml")
-      )
+      to_return(status: 200, body: maven_central_releases)
   end
 
-  describe "#latest_release" do
-    subject { finder.latest_release }
+  describe "#latest_version" do
+    subject { finder.latest_version }
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
-    context "when Maven Central doesn't return a release tag" do
-      before do
-        stub_request(:get, maven_central_metadata_url).
-          to_return(
-            status: 200,
-            body: fixture("java", "maven_central_metadata", "no_release.xml")
-          )
-      end
+    context "when the user wants a pre-release" do
+      let(:dependency_version) { "18.0-beta" }
+      it { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+    end
 
-      it { is_expected.to be_nil }
+    context "when there are date-based versions" do
+      let(:maven_central_releases) do
+        fixture("java", "maven_central_metadata", "with_date_releases.xml")
+      end
+      it { is_expected.to eq(version_class.new("3.2.2")) }
+
+      context "and that's what we're using" do
+        let(:dependency_version) { "20030418" }
+        it { is_expected.to eq(version_class.new("20040616")) }
+      end
+    end
+
+    context "when the current version isn't normal" do
+      let(:dependency_version) { "RELEASE802" }
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
     context "with a custom repository" do
