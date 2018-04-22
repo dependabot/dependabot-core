@@ -8,6 +8,16 @@ RSpec.describe Dependabot::Utils::Elixir::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 
+  describe ".new" do
+    subject { described_class.new(requirement_string) }
+
+    context "with an == specifier" do
+      let(:requirement_string) { "== 1.0.0" }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.0.0")) }
+      it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.0.1")) }
+    end
+  end
+
   describe "#satisfied_by?" do
     subject { requirement.satisfied_by?(version) }
 

@@ -9,6 +9,7 @@ module Dependabot
         AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
+        # Override the version pattern to allow a 'v' prefix
         quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
         version_pattern = "v?#{Gem::Version::VERSION_PATTERN}"
 

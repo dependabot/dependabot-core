@@ -6,6 +6,7 @@ module Dependabot
   module Utils
     module Elixir
       class Requirement < Gem::Requirement
+        # Add the double-equality matcher to the list of allowed operations
         OPS["=="] = ->(v, r) { v == r }
 
         # Override the version pattern to allow local versions
