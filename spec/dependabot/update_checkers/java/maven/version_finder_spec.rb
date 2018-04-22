@@ -24,7 +24,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
   let(:dependency_version) { "23.3-jre" }
 
   let(:maven_central_metadata_url) do
-    "https://search.maven.org/remotecontent?filepath="\
+    "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
 

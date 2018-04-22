@@ -115,7 +115,7 @@ module Dependabot
           end
 
           def remote_pom_url(group_id, artifact_id, version)
-            "https://search.maven.org/remotecontent?filepath="\
+            "https://repo.maven.apache.org/maven2/"\
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
             "#{artifact_id}-#{version}.pom"
           end

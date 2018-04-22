@@ -38,7 +38,7 @@ module Dependabot
             @maven_central_dependency_metadata ||=
               begin
                 response = Excon.get(
-                  "#{maven_central_dependency_url}maven-metadata.xml",
+                  maven_central_dependency_metadata_url,
                   idempotent: true,
                   middlewares: SharedHelpers.excon_middleware
                 )
@@ -46,10 +46,10 @@ module Dependabot
               end
           end
 
-          def maven_central_dependency_url
+          def maven_central_dependency_metadata_url
             group_id, artifact_id = dependency.name.split(":")
-            "https://search.maven.org/remotecontent?filepath="\
-            "#{group_id.tr('.', '/')}/#{artifact_id}/"
+            "https://repo.maven.apache.org/maven2/"\
+            "#{group_id.tr('.', '/')}/#{artifact_id}/maven-metadata.xml"
           end
         end
       end

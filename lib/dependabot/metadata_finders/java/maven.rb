@@ -61,7 +61,7 @@ module Dependabot
 
         def maven_central_dependency_url
           group_id, artifact_id = dependency.name.split(":")
-          "https://search.maven.org/remotecontent?filepath="\
+          "https://repo.maven.apache.org/maven2/"\
           "#{group_id.tr('.', '/')}/#{artifact_id}/"
         end
       end

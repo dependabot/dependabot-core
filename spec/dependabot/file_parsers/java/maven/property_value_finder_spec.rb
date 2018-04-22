@@ -64,11 +64,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       let(:callsite_pom) { base_pom }
 
       let(:struts_apps_maven_url) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
       end
       let(:struts_parent_maven_url) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
       end
       let(:struts_apps_maven_response) do

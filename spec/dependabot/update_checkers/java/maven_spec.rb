@@ -11,7 +11,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
   it_behaves_like "an update checker"
 
   let(:maven_central_metadata_url) do
-    "https://search.maven.org/remotecontent?filepath="\
+    "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
   let(:version_class) { Dependabot::Utils::Java::Version }
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     context "when the version comes from a property" do
       let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
       let(:maven_central_metadata_url) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     context "when the version comes from a property" do
       let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
       let(:maven_central_metadata_url) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       context "for a repeated dependency" do
         let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
         let(:maven_central_metadata_url) do
-          "https://search.maven.org/remotecontent?filepath="\
+          "https://repo.maven.apache.org/maven2/"\
           "org/apache/maven/plugins/maven-javadoc-plugin/maven-metadata.xml"
         end
         let(:dependency_name) do
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         let(:dependency_name) { "org.springframework:spring-aop" }
         let(:dependency_version) { "2.5.6" }
         let(:maven_central_metadata_url) do
-          "https://search.maven.org/remotecontent?filepath="\
+          "https://repo.maven.apache.org/maven2/"\
           "org/springframework/spring-aop/maven-metadata.xml"
         end
 
@@ -336,11 +336,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
       let(:maven_central_metadata_url_beans) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
       end
       let(:maven_central_metadata_url_context) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-context/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -391,11 +391,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
       let(:maven_central_metadata_url_beans) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
       end
       let(:maven_central_metadata_url_context) do
-        "https://search.maven.org/remotecontent?filepath="\
+        "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-context/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -530,11 +530,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         let(:pom_body) { fixture("java", "poms", "remote_parent_pom.xml") }
 
         let(:struts_apps_maven_url) do
-          "https://search.maven.org/remotecontent?filepath="\
+          "https://repo.maven.apache.org/maven2/"\
           "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
         end
         let(:struts_parent_maven_url) do
-          "https://search.maven.org/remotecontent?filepath="\
+          "https://repo.maven.apache.org/maven2/"\
           "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
         end
         let(:struts_apps_maven_response) do

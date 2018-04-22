@@ -44,12 +44,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
   let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
 
   let(:maven_central_metadata_url_beans) do
-    "https://search.maven.org/remotecontent?filepath="\
+    "https://repo.maven.apache.org/maven2/"\
     "org/springframework/spring-beans/maven-metadata.xml"
   end
 
   let(:maven_central_metadata_url_context) do
-    "https://search.maven.org/remotecontent?filepath="\
+    "https://repo.maven.apache.org/maven2/"\
     "org/springframework/spring-context/maven-metadata.xml"
   end
 

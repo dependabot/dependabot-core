@@ -40,7 +40,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:maven_url) do
-      "https://search.maven.org/remotecontent?filepath=com/google/guava/"\
+      "https://repo.maven.apache.org/maven2/com/google/guava/"\
       "guava/23.3-jre/guava-23.3-jre.pom"
     end
     let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
