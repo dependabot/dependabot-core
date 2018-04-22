@@ -5,6 +5,8 @@ require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 
+# The best Maven documentation is at:
+# - http://maven.apache.org/pom.html
 module Dependabot
   module FileParsers
     module Java
@@ -12,8 +14,17 @@ module Dependabot
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "maven/property_value_finder"
 
-        DEPENDENCY_SELECTOR = "parent, dependencies > dependency,
-                               plugins > plugin"
+        # The following "dependencies" are candidates for updating:
+        # - The project's parent
+        # - Any dependencies (incl. those in dependencyManagement or plugins)
+        # - Any plugins (incl. those in pluginManagement)
+        # - Any extensions
+        DEPENDENCY_SELECTOR = "project > parent, "\
+                              "dependencies > dependency, "\
+                              "plugins > plugin, "\
+                              "extensions > extension"\
+
+        # Regex to get the property name from a declaration that uses a property
         PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
         def parse
