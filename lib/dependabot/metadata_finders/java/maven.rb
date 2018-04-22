@@ -3,6 +3,7 @@
 require "nokogiri"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_parsers/java/maven"
+require "dependabot/file_parsers/java/maven/repositories_finder"
 
 module Dependabot
   module MetadataFinders
@@ -49,7 +50,7 @@ module Dependabot
 
           artifact_id = dependency.name.split(":").last
           response = Excon.get(
-            "#{maven_central_dependency_url}"\
+            "#{maven_repo_dependency_url}"\
             "#{dependency.version}/"\
             "#{artifact_id}-#{dependency.version}.pom",
             idempotent: true,
@@ -59,10 +60,16 @@ module Dependabot
           @pom_file = Nokogiri::XML(response.body)
         end
 
-        def maven_central_dependency_url
+        def maven_repo_dependency_url
           group_id, artifact_id = dependency.name.split(":")
-          "https://repo.maven.apache.org/maven2/"\
-          "#{group_id.tr('.', '/')}/#{artifact_id}/"
+          source = dependency.requirements.
+                   find { |r| r&.fetch(:source) }&.fetch(:source)
+          maven_repo_url =
+            source&.fetch(:url, nil) ||
+            source&.fetch("url") ||
+            FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+
+          "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"
         end
       end
     end

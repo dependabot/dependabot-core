@@ -34,7 +34,7 @@ module Dependabot
               # just do a `gsub` on anything that looks like a version
               new_req =
                 req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
-              req.merge(requirement: new_req, source: { url: source_url })
+              req.merge(requirement: new_req, source: updated_source)
             end
           end
 
@@ -44,6 +44,10 @@ module Dependabot
 
           def version_class
             Utils::Java::Version
+          end
+
+          def updated_source
+            { type: "maven_repo", url: source_url }
           end
         end
       end

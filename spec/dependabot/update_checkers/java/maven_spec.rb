@@ -313,7 +313,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
               file: "pom.xml",
               requirement: "23.6-jre",
               groups: [],
-              source: { url: "https://repo.maven.apache.org/maven2" }
+              source: {
+                type: "maven_repo",
+                url: "https://repo.maven.apache.org/maven2"
+              }
             }
           ]
         )
@@ -452,7 +455,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: { url: "https://repo.maven.apache.org/maven2" }
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  }
                 }
               ],
               previous_requirements: [
@@ -474,7 +480,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "23.6-jre.1",
                   groups: [],
-                  source: { url: "https://repo.maven.apache.org/maven2" }
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  }
                 }
               ],
               previous_requirements: [
