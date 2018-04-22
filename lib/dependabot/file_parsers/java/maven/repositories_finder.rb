@@ -29,17 +29,19 @@ module Dependabot
           end
 
           # Collect all repository URLs from this POM and its parents
-          def repository_urls(pom:)
-            repository_urls_for_this_pom =
+          def repository_urls(pom:, exclude_inherited: false)
+            repo_urls_in_pom =
               Nokogiri::XML(pom.content).
               css(REPOSITORY_SELECTOR).
               map { |node| node.at_css("url").content.strip.gsub(%r{/$}, "") }
 
-            unless (parent = parent_pom(pom, repository_urls_for_this_pom))
-              return repository_urls_for_this_pom + [CENTRAL_REPO_URL]
+            return repo_urls_in_pom + [CENTRAL_REPO_URL] if exclude_inherited
+
+            unless (parent = parent_pom(pom, repo_urls_in_pom))
+              return repo_urls_in_pom + [CENTRAL_REPO_URL]
             end
 
-            repository_urls_for_this_pom + repository_urls(pom: parent)
+            repo_urls_in_pom + repository_urls(pom: parent)
           end
 
           private
@@ -97,7 +99,7 @@ module Dependabot
 
               @maven_responses ||= {}
               @maven_responses[url] ||= Excon.get(
-                remote_pom_url(group_id, artifact_id, version, base_url),
+                url,
                 idempotent: true,
                 middlewares: SharedHelpers.excon_middleware
               )

@@ -85,6 +85,33 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
           to_return(status: 200, body: struts_parent_maven_response)
       end
       its([:value]) { is_expected.to eq("2.7") }
+
+      context "that is a custom repo" do
+        let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
+
+        let(:scala_plugins_maven_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "org/scala-tools/maven-scala-plugin/2.15.2/"\
+          "maven-scala-plugin-2.15.2.pom"
+        end
+        let(:scala_plugins_jboss_url) do
+          "http://child-repository.jboss.org/maven2/"\
+          "org/scala-tools/maven-scala-plugin/2.15.2/"\
+          "maven-scala-plugin-2.15.2.pom"
+        end
+        let(:scala_plugins_jboss_response) do
+          fixture("java", "poms", "struts2-parent-2.5.10.pom")
+        end
+
+        before do
+          stub_request(:get, scala_plugins_maven_url).
+            to_return(status: 404, body: "")
+          stub_request(:get, scala_plugins_jboss_url).
+            to_return(status: 200, body: scala_plugins_jboss_response)
+        end
+
+        its([:value]) { is_expected.to eq("2.7") }
+      end
     end
   end
 end

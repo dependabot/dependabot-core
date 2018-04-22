@@ -14,6 +14,8 @@ module Dependabot
     module Java
       class Maven
         class PropertyValueFinder
+          require_relative "repositories_finder"
+
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
@@ -98,27 +100,51 @@ module Dependabot
               return internal_dependency_poms[name]
             end
 
-            fetch_remote_parent_pom(group_id, artifact_id, version)
+            fetch_remote_parent_pom(group_id, artifact_id, version, pom)
           end
 
-          def fetch_remote_parent_pom(group_id, artifact_id, version)
-            maven_response = Excon.get(
-              remote_pom_url(group_id, artifact_id, version),
-              idempotent: true,
-              middlewares: SharedHelpers.excon_middleware
-            )
-            return unless maven_response.status == 200
-
-            DependencyFile.new(
-              name: "remote_pom.xml",
-              content: maven_response.body
+          def parent_repository_urls(pom)
+            repositories_finder.repository_urls(
+              pom: pom,
+              exclude_inherited: true
             )
           end
 
-          def remote_pom_url(group_id, artifact_id, version)
-            "https://repo.maven.apache.org/maven2/"\
+          def repositories_finder
+            @repositories_finder ||=
+              RepositoriesFinder.new(dependency_files: dependency_files)
+          end
+
+          def fetch_remote_parent_pom(group_id, artifact_id, version, pom)
+            parent_repository_urls(pom).each do |base_url|
+              url = remote_pom_url(group_id, artifact_id, version, base_url)
+
+              @maven_responses ||= {}
+              @maven_responses[url] ||= Excon.get(
+                url,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+              next unless @maven_responses[url].status == 200
+              next unless pom?(@maven_responses[url].body)
+
+              dependency_file = DependencyFile.new(
+                name: "remote_pom.xml",
+                content: @maven_responses[url].body
+              )
+
+              return dependency_file
+            end
+          end
+
+          def remote_pom_url(group_id, artifact_id, version, base_repo_url)
+            "#{base_repo_url}/"\
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
             "#{artifact_id}-#{version}.pom"
+          end
+
+          def pom?(content)
+            !Nokogiri::XML(content).at_css("project > artifactId").nil?
           end
         end
       end

@@ -76,6 +76,18 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
               )
             )
           end
+
+          context "when asked to exclude inherited repos" do
+            it "excludes the declarations in the parent" do
+              expect(finder.repository_urls(pom: pom, exclude_inherited: true)).
+                to match_array(
+                  %w(
+                    http://child-repository.jboss.org/maven2
+                    https://repo.maven.apache.org/maven2
+                  )
+                )
+            end
+          end
         end
 
         context "when the parent has to be fetched remotely" do
