@@ -92,18 +92,21 @@ module Dependabot
           end
 
           def fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
-            (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_repo_url|
-              maven_response = Excon.get(
-                remote_pom_url(group_id, artifact_id, version, base_repo_url),
+            (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
+              url = remote_pom_url(group_id, artifact_id, version, base_url)
+
+              @maven_responses ||= {}
+              @maven_responses[url] ||= Excon.get(
+                remote_pom_url(group_id, artifact_id, version, base_url),
                 idempotent: true,
                 middlewares: SharedHelpers.excon_middleware
               )
-              next unless maven_response.status == 200
-              next unless pom?(maven_response.body)
+              next unless @maven_responses[url].status == 200
+              next unless pom?(@maven_responses[url].body)
 
               dependency_file = DependencyFile.new(
                 name: "remote_pom.xml",
-                content: maven_response.body
+                content: @maven_responses[url].body
               )
 
               return dependency_file

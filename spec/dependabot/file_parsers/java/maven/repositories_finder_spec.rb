@@ -112,6 +112,14 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
                 )
               )
             end
+
+            it "caches the call" do
+              finder.repository_urls(pom: pom)
+              finder.repository_urls(pom: pom)
+
+              expect(WebMock).to have_requested(:get, central_url).once
+              expect(WebMock).to have_requested(:get, custom_url).once
+            end
           end
 
           context "from the custom repo" do
