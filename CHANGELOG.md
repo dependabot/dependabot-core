@@ -1,3 +1,8 @@
+## v0.54.45, 23 April 2018
+
+- Java: Stricter property finding (tighter XPaths)
+- Java: Evaluate properties whenever values are taken from POM
+
 ## v0.54.44, 23 April 2018
 
 - Allow metadata key in dependency requirements
