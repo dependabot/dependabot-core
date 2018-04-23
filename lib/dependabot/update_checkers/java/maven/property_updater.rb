@@ -74,9 +74,12 @@ module Dependabot
           end
 
           def version_string(dep)
+            declaring_requirement =
+              dep.requirements.find { |r| r.dig(:metadata, :property_name) }
+
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency: dep,
-              declaring_requirement: dep.requirements.first,
+              declaring_requirement: declaring_requirement,
               dependency_files: dependency_files
             ).declaration_node.at_css("version")&.content
           end

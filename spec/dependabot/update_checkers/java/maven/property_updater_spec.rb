@@ -31,15 +31,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
   end
 
   let(:dependency_requirements) do
-    [
-      {
-        file: "pom.xml",
-        requirement: "4.3.12.RELEASE",
-        groups: [],
-        source: nil,
-        metadata: { property_name: "springframework.version" }
-      }
-    ]
+    [{
+      file: "pom.xml",
+      requirement: "4.3.12.RELEASE",
+      groups: [],
+      source: nil,
+      metadata: { property_name: "springframework.version" }
+    }]
   end
   let(:dependency_name) { "org.springframework:spring-beans" }
   let(:dependency_version) { "4.3.12.RELEASE" }
@@ -105,54 +103,46 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
             name: "org.springframework:spring-beans",
             version: "23.6-jre",
             previous_version: "4.3.12.RELEASE",
-            requirements: [
-              {
-                file: "pom.xml",
-                requirement: "23.6-jre",
-                groups: [],
-                source: {
-                  type: "maven_repo",
-                  url: "https://repo.maven.apache.org/maven2"
-                },
-                metadata: { property_name: "springframework.version" }
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE",
-                groups: [],
-                source: nil,
-                metadata: { property_name: "springframework.version" }
-              }
-            ],
+            requirements: [{
+              file: "pom.xml",
+              requirement: "23.6-jre",
+              groups: [],
+              source: {
+                type: "maven_repo",
+                url: "https://repo.maven.apache.org/maven2"
+              },
+              metadata: { property_name: "springframework.version" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "4.3.12.RELEASE",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "springframework.version" }
+            }],
             package_manager: "maven"
           ),
           Dependabot::Dependency.new(
             name: "org.springframework:spring-context",
             version: "23.6-jre.1",
             previous_version: "4.3.12.RELEASE.1",
-            requirements: [
-              {
-                file: "pom.xml",
-                requirement: "23.6-jre.1",
-                groups: [],
-                source: {
-                  type: "maven_repo",
-                  url: "https://repo.maven.apache.org/maven2"
-                },
-                metadata: { property_name: "springframework.version" }
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE.1",
-                groups: [],
-                source: nil,
-                metadata: { property_name: "springframework.version" }
-              }
-            ],
+            requirements: [{
+              file: "pom.xml",
+              requirement: "23.6-jre.1",
+              groups: [],
+              source: {
+                type: "maven_repo",
+                url: "https://repo.maven.apache.org/maven2"
+              },
+              metadata: { property_name: "springframework.version" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "4.3.12.RELEASE.1",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "springframework.version" }
+            }],
             package_manager: "maven"
           )
         ]
@@ -163,13 +153,124 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
       before do
         body = fixture("java", "maven_central_metadata", "missing_latest.xml")
         stub_request(:get, maven_central_metadata_url_context).
-          to_return(
-            status: 200,
-            body: body
-          )
+          to_return(status: 200, body: body)
       end
 
       specify { expect { updated_dependencies }.to raise_error(/not possible/) }
+    end
+
+    context "when one dependency has other declarations" do
+      let(:pom_body) do
+        fixture("java", "poms", "repeated_multi_property_pom2.xml")
+      end
+
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-M2",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "junit-platform.version" }
+        }]
+      end
+      let(:dependency_name) do
+        "org.junit.platform:junit-platform-surefire-provider"
+      end
+      let(:dependency_version) { "1.0.0-M2" }
+
+      let(:maven_central_metadata_url_runner) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/junit/platform/junit-platform-runner/maven-metadata.xml"
+      end
+
+      let(:maven_central_metadata_url_surefire_provider) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/junit/platform/junit-platform-surefire-provider/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url_runner).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_surefire_provider).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "updates both dependencies" do
+        expect(updated_dependencies).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "org.junit.platform:junit-platform-runner",
+              version: "23.6-jre",
+              previous_version: "1.0.0-M2",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: nil,
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: { property_name: "junit-platform.version" }
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: nil,
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "1.0.0-M2",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "junit-platform.version" }
+                }
+              ],
+              package_manager: "maven"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.junit.platform:junit-platform-surefire-provider",
+              version: "23.6-jre",
+              previous_version: "1.0.0-M2",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                },
+                metadata: { property_name: "junit-platform.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "1.0.0-M2",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "junit-platform.version" }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        )
+      end
     end
   end
 end
