@@ -1,3 +1,10 @@
+## v0.54.42, 23 April 2018
+
+- Java: Better title for multi-dependency PRs
+- Java: Cache DeclarationFinder in FileUpdater to avoid repeated calls to
+  repositories
+- Java: Use Java DeclarationFinder to get property name consistently everywhere
+
 ## v0.54.41, 23 April 2018
 
 - Java: Handle cases where parent POMs can't be fetched
