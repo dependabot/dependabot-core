@@ -32,14 +32,15 @@ module Dependabot
           property_name = source_url.match(regex).named_captures["property"]
           doc = pom_file.dup
           doc.remove_namespaces!
-          temp_name = property_name
+          temp_name = property_name.sub(/^pom\./, "").sub(/^project\./, "")
           property_value =
-            while temp_name.include?(".")
+            loop do
+              candidate_node =
+                doc.at_xpath("/project/#{temp_name}") ||
+                doc.at_xpath("/project/properties/#{temp_name}")
+              break candidate_node.content if candidate_node
+              break unless temp_name.include?(".")
               temp_name = temp_name.sub(".", "/")
-              node =
-                doc.at_xpath("//#{temp_name}") ||
-                doc.at_xpath("//properties/#{temp_name}")
-              break node.content if node
             end
 
           source_url.gsub("${#{property_name}}", property_value)

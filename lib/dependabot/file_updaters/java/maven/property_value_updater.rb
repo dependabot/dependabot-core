@@ -46,9 +46,8 @@ module Dependabot
 
           def property_value_finder
             @property_value_finder ||=
-              FileParsers::Java::Maven::PropertyValueFinder.new(
-                dependency_files: dependency_files
-              )
+              FileParsers::Java::Maven::PropertyValueFinder.
+              new(dependency_files: dependency_files)
           end
         end
       end

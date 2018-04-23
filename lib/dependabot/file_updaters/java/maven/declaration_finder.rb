@@ -27,6 +27,7 @@ module Dependabot
           end
 
           def declaration_node
+            return unless declaration_string
             Nokogiri::XML(declaration_string)
           end
 
@@ -47,10 +48,14 @@ module Dependabot
             deep_find_declarations(declaring_pom.content).find do |nd|
               node = Nokogiri::XML(nd)
               node.remove_namespaces!
+              next false unless node.at_xpath("./*/groupId")
+              next false unless node.at_xpath("./*/artifactId")
+
               node_name = [
-                node.at_xpath("./*/groupId")&.content&.strip,
-                node.at_xpath("./*/artifactId")&.content&.strip
+                evaluated_value(node.at_xpath("./*/groupId").content.strip),
+                evaluated_value(node.at_xpath("./*/artifactId").content.strip)
               ].compact.join(":")
+
               next false unless node_name == dependency_name
               next true unless declaring_requirement.fetch(:requirement)
               dependency_requirement_for_node(node) ==
@@ -66,25 +71,32 @@ module Dependabot
 
           def dependency_requirement_for_node(dependency_node)
             return unless dependency_node.at_css("version")
-            version = dependency_node.at_css("version").content.strip
+            evaluated_value(dependency_node.at_css("version").content.strip)
+          end
 
-            unless version.match?(FileParsers::Java::Maven::PROPERTY_REGEX)
-              return version
+          def evaluated_value(value)
+            unless value.match?(FileParsers::Java::Maven::PROPERTY_REGEX)
+              return value
             end
 
             property_name =
-              version.match(FileParsers::Java::Maven::PROPERTY_REGEX).
+              value.match(FileParsers::Java::Maven::PROPERTY_REGEX).
               named_captures.fetch("property")
 
-            prop_value =
-              FileParsers::Java::Maven::PropertyValueFinder.
-              new(dependency_files: dependency_files).
+            property_value =
+              property_value_finder.
               property_details(
                 property_name: property_name,
                 callsite_pom: declaring_pom
               ).fetch(:value)
 
-            version.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, prop_value)
+            value.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, property_value)
+          end
+
+          def property_value_finder
+            @property_value_finder ||=
+              FileParsers::Java::Maven::PropertyValueFinder.
+              new(dependency_files: dependency_files)
           end
         end
       end

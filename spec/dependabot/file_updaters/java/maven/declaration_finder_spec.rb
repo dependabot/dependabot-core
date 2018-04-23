@@ -136,6 +136,43 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
     end
 
+    context "with a groupId property" do
+      let(:dependency_files) { [pom, child_pom] }
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("java", "poms", "sigtran.pom")
+        )
+      end
+      let(:child_pom) do
+        Dependabot::DependencyFile.new(
+          name: "map/pom.xml",
+          content: fixture("java", "poms", "sigtran-map.pom")
+        )
+      end
+      let(:dependency_name) { "uk.me.lwood.sigtran:sigtran-tcap" }
+      let(:dependency_version) { "0.9-SNAPSHOT" }
+      let(:declaring_requirement) do
+        {
+          requirement: dependency_version,
+          file: "map/pom.xml",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "project.version" }
+        }
+      end
+
+      it "finds the declaration" do
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).
+          to eq("${project.version}")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("sigtran-tcap")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("${project.groupId}")
+      end
+    end
+
     context "with an inherited property" do
       let(:dependency_files) { [pom, child_pom, grandchild_pom] }
       let(:pom) do
