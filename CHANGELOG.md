@@ -1,3 +1,9 @@
+## v0.54.44, 23 April 2018
+
+- Allow metadata key in dependency requirements
+- Java: Store property name when parsing dependencies
+- Java: Use stored property name everywhere
+
 ## v0.54.43, 23 April 2018
 
 - Java: Fix typo in PropertyUpdater
