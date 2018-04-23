@@ -86,6 +86,15 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       end
       its([:value]) { is_expected.to eq("2.7") }
 
+      context "that can't be found" do
+        before do
+          stub_request(:get, struts_apps_maven_url).
+            to_return(status: 404, body: "")
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "that is a custom repo" do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 

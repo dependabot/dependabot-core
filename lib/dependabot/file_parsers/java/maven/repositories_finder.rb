@@ -113,6 +113,9 @@ module Dependabot
 
               return dependency_file
             end
+
+            # If a parent POM couldn't be found, return `nil`
+            nil
           end
 
           def remote_pom_url(group_id, artifact_id, version, base_repo_url)

@@ -132,6 +132,24 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
               expect(WebMock).to have_requested(:get, central_url).once
               expect(WebMock).to have_requested(:get, custom_url).once
             end
+
+            context "and can't be found" do
+              before do
+                stub_request(:get, central_url).
+                  to_return(status: 200, body: "some rubbish")
+                stub_request(:get, custom_url).
+                  to_return(status: 200, body: "some rubbish")
+              end
+
+              it "returns the repositories relevant to the child" do
+                expect(repository_urls).to match_array(
+                  %w(
+                    http://child-repository.jboss.org/maven2
+                    https://repo.maven.apache.org/maven2
+                  )
+                )
+              end
+            end
           end
 
           context "from the custom repo" do
