@@ -1,3 +1,8 @@
+## v0.54.49, 23 April 2018
+
+- Java: Fix PropertyUpdater bug caused by incorrect declaration requirement
+  selection
+
 ## v0.54.48, 23 April 2018
 
 - Ruby: Update gemspec to latest resolvable version if using equality matcher
