@@ -113,21 +113,27 @@ module Dependabot
         end
 
         def updating_a_property?(dependency, requirement)
-          old_req = original_pom_requirement(dependency, requirement)
-          DeclarationFinder.new(
-            dependency: dependency,
-            declaring_requirement: old_req,
-            dependency_files: dependency_files
-          ).version_comes_from_property?
+          declaration_finder(dependency, requirement).
+            version_comes_from_property?
         end
 
         def original_pom_declaration(dependency, requirement)
-          original_req = original_pom_requirement(dependency, requirement)
-          DeclarationFinder.new(
-            dependency: dependency,
-            declaring_requirement: original_req,
-            dependency_files: dependency_files
-          ).declaration_string
+          declaration_finder(dependency, requirement).declaration_string
+        end
+
+        # The declaration finder may need to make remote calls (to get parent
+        # POMs if it's searching for the value of a property), so we cache it.
+        def declaration_finder(dependency, requirement)
+          @declaration_finders ||= {}
+          @declaration_finders[dependency.hash + requirement.hash] ||=
+            begin
+              original_req = original_pom_requirement(dependency, requirement)
+              DeclarationFinder.new(
+                dependency: dependency,
+                declaring_requirement: original_req,
+                dependency_files: dependency_files
+              )
+            end
         end
 
         def updated_pom_declaration(dependency, requirement)
