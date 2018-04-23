@@ -33,7 +33,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "23.3-jre",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -57,7 +58,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "23.3-jre",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -83,7 +85,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "23.3-jre",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -108,7 +111,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -143,7 +147,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -167,7 +172,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "4.3.12.RELEASE",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { property_name: "springframework.version" }
             }]
           )
         end
@@ -185,7 +191,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "4.3.12.RELEASE.1",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { property_name: "springframework.version" }
             }]
           )
         end
@@ -209,7 +216,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                   requirement: "0.0.2-RELEASE",
                   file: "pom.xml",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "project.version" }
                 }
               ]
             )
@@ -237,7 +245,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "1.5.9.RELEASE",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -261,7 +270,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "[23.3-jre,)",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -285,7 +295,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "[23.3-jre]",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -309,7 +320,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: nil,
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -335,13 +347,15 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                 requirement: "3.0.0-M1",
                 file: "pom.xml",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "maven-javadoc-plugin.version" }
               },
               {
                 requirement: "2.10.4",
                 file: "pom.xml",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: nil
               }
             ]
           )
@@ -366,7 +380,8 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               requirement: "23.3-jre",
               file: "pom.xml",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -444,13 +459,15 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                 requirement: "23.0-jre",
                 file: "pom.xml",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "guava.version" }
               },
               {
                 requirement: nil,
                 file: "util/pom.xml",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: nil
               }
             ]
           )

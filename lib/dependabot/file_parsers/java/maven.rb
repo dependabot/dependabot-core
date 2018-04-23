@@ -42,6 +42,7 @@ module Dependabot
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             next unless (name = dependency_name(dependency_node))
             next if internal_dependency_names.include?(name)
+            property = property_name(dependency_node)
 
             dependency_set <<
               Dependency.new(
@@ -52,7 +53,8 @@ module Dependabot
                   requirement: dependency_requirement(pom, dependency_node),
                   file: pom.name,
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: property ? { property_name: property } : nil
                 }]
               )
           end
@@ -87,11 +89,21 @@ module Dependabot
 
           return version_content unless version_content.match?(PROPERTY_REGEX)
 
-          prop_name = version_content.match(PROPERTY_REGEX).
-                      named_captures.fetch("property")
+          property_name = property_name(dependency_node)
 
-          property_value = value_for_property(prop_name, pom)
+          property_value = value_for_property(property_name, pom)
           version_content.gsub(PROPERTY_REGEX, property_value)
+        end
+
+        def property_name(dependency_node)
+          return unless dependency_node.at_css("version")
+          version_content = dependency_node.at_css("version").content.strip
+
+          return unless version_content.match?(PROPERTY_REGEX)
+
+          version_content.
+            match(PROPERTY_REGEX).
+            named_captures.fetch("property")
         end
 
         def value_for_property(property_name, pom)
