@@ -53,7 +53,7 @@ module Dependabot
           dependency: dependencies.first,
           declaring_requirement: dependencies.first.requirements.first,
           dependency_files: files
-        ).declaration_node.at_css("version").content.strip[2..-2]
+        ).property_name
       end
 
       def sanitized_requirement(dependency)

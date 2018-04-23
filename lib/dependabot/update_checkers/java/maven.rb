@@ -47,12 +47,7 @@ module Dependabot
 
         def requirements_unlocked_or_can_be?
           declarations_using_a_property.none? do |requirement|
-            version_content = declaration_finder(requirement).
-                              declaration_node.at_css("version").content
-
-            prop_regex = FileParsers::Java::Maven::PROPERTY_REGEX
-            prop_name = version_content.match(prop_regex).
-                        named_captures.fetch("property")
+            prop_name = declaration_finder(requirement).property_name
             pom = dependency_files.find { |f| f.name == requirement[:file] }
 
             declaration_pom_name =

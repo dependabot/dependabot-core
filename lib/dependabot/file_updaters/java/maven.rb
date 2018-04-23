@@ -2,7 +2,6 @@
 
 require "nokogiri"
 require "dependabot/file_updaters/base"
-require "dependabot/file_parsers/java/maven"
 
 module Dependabot
   module FileUpdaters
@@ -70,12 +69,7 @@ module Dependabot
         end
 
         def update_pomfiles_for_property_change(pomfiles, dependency, req)
-          declaration_string =
-            Nokogiri::XML(original_pom_declaration(dependency, req)).
-            at_css("version").content
-          property_name =
-            declaration_string.match(FileParsers::Java::Maven::PROPERTY_REGEX).
-            named_captures.fetch("property")
+          property_name = declaration_finder(dependency, req).property_name
 
           PropertyValueUpdater.new(dependency_files: pomfiles).
             update_pomfiles_for_property_change(

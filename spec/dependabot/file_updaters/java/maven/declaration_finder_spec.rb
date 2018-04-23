@@ -227,4 +227,21 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       it { is_expected.to eq(true) }
     end
   end
+
+  describe "property_name" do
+    subject { finder.property_name }
+
+    let(:pom_content) { fixture("java", "poms", "property_pom.xml") }
+
+    context "with a non-property dependency" do
+      let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
+      it { is_expected.to be_nil }
+    end
+
+    context "with a property dependency" do
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:dependency_version) { "4.3.12.RELEASE" }
+      it { is_expected.to eq("springframework.version") }
+    end
+  end
 end
