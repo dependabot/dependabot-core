@@ -174,13 +174,9 @@ module Dependabot
       end
 
       def java_property_name
-        require "dependabot/file_updaters/java/maven/declaration_finder"
-
-        @property_name ||= FileUpdaters::Java::Maven::DeclarationFinder.new(
-          dependency: dependencies.first,
-          declaring_requirement: dependencies.first.previous_requirements.first,
-          dependency_files: files
-        ).property_name
+        @property_name ||= dependencies.first.requirements.
+                           find { |r| r.dig(:metadata, :property_name) }&.
+                           dig(:metadata, :property_name)
 
         raise "No property name!" unless @property_name
         @property_name

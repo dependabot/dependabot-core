@@ -30,21 +30,6 @@ module Dependabot
             Nokogiri::XML(declaration_string)
           end
 
-          def version_comes_from_property?
-            return false unless declaration_node.at_css("version")
-
-            declaration_node.at_css("version").content.strip.
-              match?(FileParsers::Java::Maven::PROPERTY_REGEX)
-          end
-
-          def property_name
-            return unless version_comes_from_property?
-
-            declaration_node.at_css("version").content.strip.
-              match(FileParsers::Java::Maven::PROPERTY_REGEX).
-              named_captures.fetch("property")
-          end
-
           private
 
           def declaring_pom

@@ -49,12 +49,9 @@ module Dependabot
 
             next if req == previous_req
 
-            if updating_a_property?(dependency, req)
-              updated_pomfiles = update_pomfiles_for_property_change(
-                updated_pomfiles,
-                dependency,
-                req
-              )
+            if req.dig(:metadata, :property_name)
+              updated_pomfiles =
+                update_pomfiles_for_property_change(updated_pomfiles, req)
               pom = updated_pomfiles.find { |f| f.name == req.fetch(:file) }
               updated_pomfiles[updated_pomfiles.index(pom)] =
                 remove_property_version_suffix_in_pom(dependency, pom, req)
@@ -68,8 +65,8 @@ module Dependabot
           updated_pomfiles
         end
 
-        def update_pomfiles_for_property_change(pomfiles, dependency, req)
-          property_name = declaration_finder(dependency, req).property_name
+        def update_pomfiles_for_property_change(pomfiles, req)
+          property_name = req.fetch(:metadata).fetch(:property_name)
 
           PropertyValueUpdater.new(dependency_files: pomfiles).
             update_pomfiles_for_property_change(
@@ -104,11 +101,6 @@ module Dependabot
             end
 
           updated_file(file: pom, content: updated_content)
-        end
-
-        def updating_a_property?(dependency, requirement)
-          declaration_finder(dependency, requirement).
-            version_comes_from_property?
         end
 
         def original_pom_declaration(dependency, requirement)

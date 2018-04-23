@@ -24,12 +24,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
   end
   let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
   let(:dependency_version) { "4.5.3" }
+  let(:dependency_metadata) { nil }
   let(:declaring_requirement) do
     {
       requirement: dependency_version,
       file: "pom.xml",
       groups: [],
-      source: nil
+      source: nil,
+      metadata: dependency_metadata
     }
   end
   let(:dependency_files) { [pom] }
@@ -156,6 +158,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
       let(:dependency_name) { "org.springframework:spring-aop" }
       let(:dependency_version) { "2.5.6" }
+      let(:dependency_metadata) { { property_name: "spring.version" } }
       let(:declaring_requirement) do
         {
           requirement: dependency_version,
@@ -174,74 +177,6 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         expect(declaration_node.at_css("groupId").content).
           to eq("org.springframework")
       end
-    end
-  end
-
-  describe "version_comes_from_property?" do
-    subject { finder.version_comes_from_property? }
-
-    let(:pom_content) { fixture("java", "poms", "property_pom.xml") }
-
-    context "with a non-property dependency" do
-      let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
-      it { is_expected.to eq(false) }
-    end
-
-    context "with a property dependency" do
-      let(:dependency_name) { "org.springframework:spring-beans" }
-      let(:dependency_version) { "4.3.12.RELEASE" }
-      it { is_expected.to eq(true) }
-    end
-
-    context "with an inherited property" do
-      let(:dependency_files) { [pom, child_pom, grandchild_pom] }
-      let(:pom) do
-        Dependabot::DependencyFile.new(
-          name: "pom.xml",
-          content: fixture("java", "poms", "multimodule_pom.xml")
-        )
-      end
-      let(:child_pom) do
-        Dependabot::DependencyFile.new(
-          name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
-        )
-      end
-      let(:grandchild_pom) do
-        Dependabot::DependencyFile.new(
-          name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
-        )
-      end
-      let(:dependency_name) { "org.springframework:spring-aop" }
-      let(:dependency_version) { "2.5.6" }
-      let(:declaring_requirement) do
-        {
-          requirement: dependency_version,
-          file: "legacy/some-spring-project/pom.xml",
-          groups: [],
-          source: nil
-        }
-      end
-
-      it { is_expected.to eq(true) }
-    end
-  end
-
-  describe "property_name" do
-    subject { finder.property_name }
-
-    let(:pom_content) { fixture("java", "poms", "property_pom.xml") }
-
-    context "with a non-property dependency" do
-      let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
-      it { is_expected.to be_nil }
-    end
-
-    context "with a property dependency" do
-      let(:dependency_name) { "org.springframework:spring-beans" }
-      let(:dependency_version) { "4.3.12.RELEASE" }
-      it { is_expected.to eq("springframework.version") }
     end
   end
 end

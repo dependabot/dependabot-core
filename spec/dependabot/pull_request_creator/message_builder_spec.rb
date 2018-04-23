@@ -120,13 +120,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   file: "pom.xml",
                   requirement: "4.3.15.RELEASE",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }],
                 previous_requirements: [{
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }]
               )
             end
@@ -879,13 +881,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 file: "pom.xml",
                 requirement: "4.3.15.RELEASE",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }]
             )
           end
@@ -899,13 +903,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 file: "pom.xml",
                 requirement: "4.3.15.RELEASE",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }]
             )
           end

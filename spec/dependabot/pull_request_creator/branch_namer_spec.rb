@@ -124,7 +124,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
                   file: "pom.xml",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               previous_requirements: [
@@ -132,7 +133,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               package_manager: "maven"
@@ -146,7 +148,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
                   file: "pom.xml",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               previous_requirements: [
@@ -154,7 +157,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               package_manager: "maven"
