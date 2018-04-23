@@ -58,17 +58,18 @@ module Dependabot
                 dependency_files: dependency_files,
                 repo: nil
               ).parse.select do |dep|
-                version_string(dep).to_s.include?(property_name)
+                dep.requirements.any? do |r|
+                  r.dig(:metadata, :property_name) == property_name
+                end
               end
           end
 
           def property_name
-            @property_name ||= version_string(dependency)
+            @property_name ||= dependency.requirements.
+                               find { |r| r.dig(:metadata, :property_name) }&.
+                               dig(:metadata, :property_name)
 
-            unless @property_name.start_with?("${")
-              raise "Version '#{@property_name}' doesn't look like a property!"
-            end
-
+            raise "No requirement with a property name!" unless @property_name
             @property_name
           end
 
@@ -85,7 +86,7 @@ module Dependabot
           end
 
           def updated_version(dep)
-            version_string(dep).gsub(property_name, target_version.to_s)
+            version_string(dep).gsub("${#{property_name}}", target_version.to_s)
           end
 
           def updated_requirements(dep)

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
-require "dependabot/file_updaters/java/maven/declaration_finder"
 require "dependabot/file_parsers/java/maven/property_value_finder"
 
 module Dependabot
@@ -47,7 +46,7 @@ module Dependabot
 
         def requirements_unlocked_or_can_be?
           declarations_using_a_property.none? do |requirement|
-            prop_name = declaration_finder(requirement).property_name
+            prop_name = requirement.dig(:metadata, :property_name)
             pom = dependency_files.find { |f| f.name == requirement[:file] }
 
             declaration_pom_name =
@@ -110,32 +109,31 @@ module Dependabot
 
         def version_comes_from_multi_dependency_property?
           declarations_using_a_property.any? do |requirement|
-            property = declaration_finder(requirement).
-                       declaration_node.at_css("version").content
+            property_name = requirement.fetch(:metadata).fetch(:property_name)
 
-            property_regex = /#{Regexp.escape(property)}/
-            property_use_count =
-              dependency_files.sum { |f| f.content.scan(property_regex).count }
-            property_use_count >
-              dependency.requirements.select { |r| r == requirement }.count
+            all_property_based_dependencies.any? do |dep|
+              next false if dep.name == dependency.name
+              dep.requirements.any? do |req|
+                req.dig(:metadata, :property_name) == property_name
+              end
+            end
           end
         end
 
         def declarations_using_a_property
           @declarations_using_a_property ||=
-            dependency.requirements.select do |requirement|
-              declaration_finder(requirement).version_comes_from_property?
-            end
+            dependency.requirements.
+            select { |req| req.dig(:metadata, :property_name) }
         end
 
-        def declaration_finder(requirement)
-          @declaration_finder ||= {}
-          @declaration_finder[requirement.hash] ||=
-            FileUpdaters::Java::Maven::DeclarationFinder.new(
-              dependency: dependency,
-              declaring_requirement: requirement,
-              dependency_files: dependency_files
-            )
+        def all_property_based_dependencies
+          @all_property_based_dependencies ||=
+            FileParsers::Java::Maven.new(
+              dependency_files: dependency_files,
+              repo: nil
+            ).parse.select do |dep|
+              dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            end
         end
       end
     end

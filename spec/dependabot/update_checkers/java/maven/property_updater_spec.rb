@@ -36,7 +36,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
         file: "pom.xml",
         requirement: "4.3.12.RELEASE",
         groups: [],
-        source: nil
+        source: nil,
+        metadata: { property_name: "springframework.version" }
       }
     ]
   end
@@ -112,7 +113,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 source: {
                   type: "maven_repo",
                   url: "https://repo.maven.apache.org/maven2"
-                }
+                },
+                metadata: { property_name: "springframework.version" }
               }
             ],
             previous_requirements: [
@@ -120,7 +122,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }
             ],
             package_manager: "maven"
@@ -137,7 +140,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 source: {
                   type: "maven_repo",
                   url: "https://repo.maven.apache.org/maven2"
-                }
+                },
+                metadata: { property_name: "springframework.version" }
               }
             ],
             previous_requirements: [
@@ -145,7 +149,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE.1",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { property_name: "springframework.version" }
               }
             ],
             package_manager: "maven"

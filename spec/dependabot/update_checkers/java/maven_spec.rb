@@ -129,16 +129,19 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           file: "pom.xml",
           requirement: "4.3.12.RELEASE",
           groups: [],
-          source: nil
+          source: nil,
+          metadata: metadata
         }]
       end
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
+      let(:metadata) { nil }
 
       it { is_expected.to eq(version_class.new("23.6-jre")) }
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        let(:metadata) { { property_name: "springframework.version" } }
         it { is_expected.to be_nil }
       end
 
@@ -157,7 +160,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
               file: "pom.xml",
               requirement: "3.0.0-M1",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: metadata
             },
             {
               file: "pom.xml",
@@ -173,6 +177,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           let(:pom_body) do
             fixture("java", "poms", "repeated_multi_property_pom.xml")
           end
+          let(:metadata) { { property_name: "maven-plugins.version" } }
           it { is_expected.to be_nil }
         end
 
@@ -353,7 +358,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             file: "pom.xml",
             requirement: "4.3.12.RELEASE",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { property_name: "springframework.version" }
           }
         ]
       end
@@ -411,7 +417,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             file: "pom.xml",
             requirement: "4.3.12.RELEASE",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { property_name: "springframework.version" }
           }
         ]
       end
@@ -458,7 +465,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   source: {
                     type: "maven_repo",
                     url: "https://repo.maven.apache.org/maven2"
-                  }
+                  },
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               previous_requirements: [
@@ -466,7 +474,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               package_manager: "maven"
@@ -483,7 +492,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   source: {
                     type: "maven_repo",
                     url: "https://repo.maven.apache.org/maven2"
-                  }
+                  },
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               previous_requirements: [
@@ -491,7 +501,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE.1",
                   groups: [],
-                  source: nil
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
                 }
               ],
               package_manager: "maven"
@@ -537,7 +548,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           file: "pom.xml",
           requirement: "4.3.12.RELEASE.1",
           groups: [],
-          source: nil
+          source: nil,
+          metadata: { property_name: "springframework.version" }
         }]
       end
       it { is_expected.to eq(true) }
@@ -570,7 +582,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
         let(:dependency_version) { "2.7" }
         let(:dependency_requirements) do
-          [{ file: "pom.xml", requirement: "2.7", groups: [], source: nil }]
+          [{
+            file: "pom.xml",
+            requirement: "2.7",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "log4j2.version" }
+          }]
         end
 
         it { is_expected.to eq(false) }
