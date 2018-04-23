@@ -236,7 +236,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
-    context "for version inherited from a parent pom" do
+    context "for a version inherited from a parent pom" do
       let(:pom_body) { fixture("java", "poms", "pom_with_parent.xml") }
 
       its(:length) { is_expected.to eq(8) }
@@ -260,6 +260,22 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
             }]
           )
         end
+      end
+    end
+
+    context "for a groupId inherited from a parent pom" do
+      let(:files) { [pom, child_pom] }
+      let(:pom_body) { fixture("java", "poms", "sigtran.pom") }
+      let(:child_pom) do
+        Dependabot::DependencyFile.new(
+          name: "sigtran-map/pom.xml",
+          content: fixture("java", "poms", "sigtran-map.pom")
+        )
+      end
+
+      it "fills in the property value correctly" do
+        expect(dependencies.map(&:name)).
+          to include("uk.me.lwood.sigtran:sigtran-tcap")
       end
     end
 

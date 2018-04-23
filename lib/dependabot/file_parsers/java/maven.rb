@@ -41,9 +41,9 @@ module Dependabot
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            next unless (name = dependency_name(dependency_node))
+            next unless (name = dependency_name(dependency_node, pom))
             next if internal_dependency_names.include?(name)
-            property = property_name(dependency_node)
+            property = version_property_name(dependency_node)
 
             dependency_set <<
               Dependency.new(
@@ -63,13 +63,19 @@ module Dependabot
           dependency_set
         end
 
-        def dependency_name(dependency_node)
+        def dependency_name(dependency_node, pom)
           return unless dependency_node.at_xpath("./groupId")
           return unless dependency_node.at_xpath("./artifactId")
 
           [
-            dependency_node.at_xpath("./groupId").content.strip,
-            dependency_node.at_xpath("./artifactId").content.strip
+            evaluated_value(
+              dependency_node.at_xpath("./groupId").content.strip,
+              pom
+            ),
+            evaluated_value(
+              dependency_node.at_xpath("./artifactId").content.strip,
+              pom
+            )
           ].join(":")
         end
 
@@ -88,15 +94,10 @@ module Dependabot
           return unless dependency_node.at_xpath("./version")
           version_content = dependency_node.at_xpath("./version").content.strip
 
-          return version_content unless version_content.match?(PROPERTY_REGEX)
-
-          property_name = property_name(dependency_node)
-
-          property_value = value_for_property(property_name, pom)
-          version_content.gsub(PROPERTY_REGEX, property_value)
+          evaluated_value(version_content, pom)
         end
 
-        def property_name(dependency_node)
+        def version_property_name(dependency_node)
           return unless dependency_node.at_xpath("./version")
           version_content = dependency_node.at_xpath("./version").content.strip
 
@@ -107,14 +108,31 @@ module Dependabot
             named_captures.fetch("property")
         end
 
+        def evaluated_value(value, pom)
+          return value unless value.match?(PROPERTY_REGEX)
+
+          property_name = value.match(PROPERTY_REGEX).
+                          named_captures.fetch("property")
+          property_value = value_for_property(property_name, pom)
+
+          value.gsub(PROPERTY_REGEX, property_value)
+        end
+
         def value_for_property(property_name, pom)
           value =
-            PropertyValueFinder.new(dependency_files: dependency_files).
+            property_value_finder.
             property_details(property_name: property_name, callsite_pom: pom)&.
             fetch(:value)
 
           raise "Property not found: #{property_name}" unless value
           value
+        end
+
+        # Cached, since this can makes calls to the registry (to get property
+        # values from parent POMs)
+        def property_value_finder
+          @property_value_finder ||=
+            PropertyValueFinder.new(dependency_files: dependency_files)
         end
 
         def pomfiles
