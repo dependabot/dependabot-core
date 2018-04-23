@@ -108,6 +108,44 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "with two dependencies" do
           let(:dependencies) { [dependency, dependency] }
           it { is_expected.to eq("Bump business and business") }
+
+          context "for Maven" do
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "4.3.15.RELEASE",
+                previous_version: "4.3.12.RELEASE",
+                package_manager: "maven",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.15.RELEASE",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+            let(:pom) do
+              Dependabot::DependencyFile.new(
+                name: "pom.xml",
+                content: fixture("java", "poms", "property_pom.xml")
+              )
+            end
+            let(:files) { [pom] }
+
+            it "has the right name" do
+              expect(pr_name).
+                to eq(
+                  "Bump springframework.version "\
+                  "from 4.3.12.RELEASE to 4.3.15.RELEASE"
+                )
+            end
+          end
         end
 
         context "with three dependencies" do
@@ -749,22 +787,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             version: "1.7.0",
             previous_version: "1.6.0",
             package_manager: "bundler",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.7",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.6",
-                groups: [],
-                source: nil
-              }
-            ]
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.7",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.6",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -832,6 +866,81 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "</details>\n"\
               "<br />"
             )
+        end
+
+        context "for Maven" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-beans",
+              version: "4.3.15.RELEASE",
+              previous_version: "4.3.12.RELEASE",
+              package_manager: "maven",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.15.RELEASE",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-context",
+              version: "4.3.15.RELEASE",
+              previous_version: "4.3.12.RELEASE",
+              package_manager: "maven",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.15.RELEASE",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+
+          let(:spring_beans_maven_url) do
+            "https://repo.maven.apache.org/maven2/org/springframework/"\
+            "spring-beans/4.3.15.RELEASE/spring-beans-4.3.15.RELEASE.pom"
+          end
+          let(:spring_context_maven_url) do
+            "https://repo.maven.apache.org/maven2/org/springframework/"\
+            "spring-context/4.3.15.RELEASE/spring-context-4.3.15.RELEASE.pom"
+          end
+          let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
+          let(:pom) do
+            Dependabot::DependencyFile.new(
+              name: "pom.xml",
+              content: fixture("java", "poms", "property_pom.xml")
+            )
+          end
+          let(:files) { [pom] }
+
+          before do
+            stub_request(:get, spring_beans_maven_url).
+              to_return(status: 200, body: maven_response)
+            stub_request(:get, spring_context_maven_url).
+              to_return(status: 200, body: maven_response)
+          end
+
+          it "has the right intro" do
+            expect(pr_message).
+              to start_with(
+                "Bumps `springframework.version` "\
+                "from 4.3.12.RELEASE to 4.3.15.RELEASE.\n\n"
+              )
+          end
         end
       end
     end

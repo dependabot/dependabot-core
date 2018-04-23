@@ -72,17 +72,8 @@ module Dependabot
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def library_pr_name
-        pr_name = ""
-        if using_semantic_commit_messages?
-          pr_name += "build: "
-          pr_name += "[security] " if includes_security_fixes?
-          pr_name += "update "
-        else
-          pr_name += "[Security] " if includes_security_fixes?
-          pr_name += "Update "
-        end
+        pr_name = pr_name_prefix
 
         pr_name +=
           if dependencies.count == 1
@@ -97,24 +88,18 @@ module Dependabot
 
         pr_name + " in #{files.first.directory}"
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def application_pr_name
-        pr_name = ""
-        if using_semantic_commit_messages?
-          pr_name += "build: "
-          pr_name += "[security] " if includes_security_fixes?
-          pr_name += "bump "
-        else
-          pr_name += "[Security] " if includes_security_fixes?
-          pr_name += "Bump "
-        end
+        pr_name = pr_name_prefix
 
         pr_name +=
           if dependencies.count == 1
             dependency = dependencies.first
             "#{dependency.name} from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          elsif package_manager == "maven"
+            dependency = dependencies.first
+            "#{java_property_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
@@ -125,7 +110,18 @@ module Dependabot
 
         pr_name + " in #{files.first.directory}"
       end
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      def pr_name_prefix
+        pr_name = ""
+        if using_semantic_commit_messages?
+          pr_name += "build: "
+          pr_name += "[security] " if includes_security_fixes?
+          pr_name + (library? ? "update " : "bump ")
+        else
+          pr_name += "[Security] " if includes_security_fixes?
+          pr_name + (library? ? "Update " : "Bump ")
+        end
+      end
 
       def requirement_commit_message_intro
         msg = "Updates the requirements on "
@@ -141,11 +137,11 @@ module Dependabot
       end
 
       def version_commit_message_intro
-        if dependencies.count > 1
-          return "Bumps #{dependency_links[0..-2].join(', ')} "\
-                 "and #{dependency_links[-1]}. These "\
-                 "dependencies needed to be updated together."
+        if dependencies.count > 1 && package_manager == "maven"
+          return multidependency_java_intro
         end
+
+        return multidependency_intro if dependencies.count > 1
 
         dependency = dependencies.first
         msg = "Bumps #{dependency_links.first} "\
@@ -161,6 +157,33 @@ module Dependabot
         end
 
         msg
+      end
+
+      def multidependency_java_intro
+        dependency = dependencies.first
+
+        "Bumps `#{java_property_name}` "\
+        "from #{previous_version(dependency)} "\
+        "to #{new_version(dependency)}."
+      end
+
+      def multidependency_intro
+        "Bumps #{dependency_links[0..-2].join(', ')} "\
+        "and #{dependency_links[-1]}. These "\
+        "dependencies needed to be updated together."
+      end
+
+      def java_property_name
+        require "dependabot/file_updaters/java/maven/declaration_finder"
+
+        @property_name ||= FileUpdaters::Java::Maven::DeclarationFinder.new(
+          dependency: dependencies.first,
+          declaring_requirement: dependencies.first.previous_requirements.first,
+          dependency_files: files
+        ).property_name
+
+        raise "No property name!" unless @property_name
+        @property_name
       end
 
       def dependency_links
@@ -509,6 +532,10 @@ module Dependabot
           map(&:commit).
           map(&:message).
           compact
+      end
+
+      def package_manager
+        @package_manager ||= dependencies.first.package_manager
       end
     end
   end
