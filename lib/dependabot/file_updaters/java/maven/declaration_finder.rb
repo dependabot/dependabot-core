@@ -44,11 +44,12 @@ module Dependabot
           end
 
           def find_pom_declaration_string
-            deep_find_declarations(declaring_pom.content).find do |node|
-              node = Nokogiri::XML(node)
+            deep_find_declarations(declaring_pom.content).find do |nd|
+              node = Nokogiri::XML(nd)
+              node.remove_namespaces!
               node_name = [
-                node.at_css("groupId")&.content&.strip,
-                node.at_css("artifactId")&.content&.strip
+                node.at_xpath("./*/groupId")&.content&.strip,
+                node.at_xpath("./*/artifactId")&.content&.strip
               ].compact.join(":")
               next false unless node_name == dependency_name
               next true unless declaring_requirement.fetch(:requirement)
