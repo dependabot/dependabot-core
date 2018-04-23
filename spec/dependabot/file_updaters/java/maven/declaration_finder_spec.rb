@@ -104,6 +104,22 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
     end
 
+    context "with a dependency in the extensions node" do
+      let(:pom_content) do
+        fixture("java", "poms", "extension_dependencies_pom.xml")
+      end
+      let(:dependency_name) { "org.jacoco:jacoco-maven-extension" }
+      let(:dependency_version) { "0.7.9" }
+
+      it "finds the declaration" do
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).to eq("0.7.9")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("jacoco-maven-extension")
+        expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
+      end
+    end
+
     context "with a dependency in the pluginManagement node" do
       let(:pom_content) do
         fixture("java", "poms", "plugin_management_dependencies_pom.xml")

@@ -137,6 +137,34 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
+    context "for extension dependencies" do
+      let(:pom_body) do
+        fixture("java", "poms", "extension_dependencies_pom.xml")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.springframework.boot:spring-boot-maven-extension")
+          expect(dependency.version).to eq("1.5.8.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.5.8.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "for pluginManagement dependencies" do
       let(:pom_body) do
         fixture("java", "poms", "plugin_management_dependencies_pom.xml")

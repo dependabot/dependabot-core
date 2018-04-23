@@ -12,7 +12,7 @@ module Dependabot
         class DeclarationFinder
           DECLARATION_REGEX =
             %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-               <plugin>.*?</plugin>}mx
+               <plugin>.*?</plugin>|<extension>.*?</extension>}mx
 
           attr_reader :dependency, :declaring_requirement, :dependency_files
 
