@@ -1,3 +1,7 @@
+## v0.54.41, 23 April 2018
+
+- Java: Handle cases where parent POMs can't be fetched
+
 ## v0.54.40, 22 April 2018
 
 - Java: Check custom repositories when lookin for property declarations
