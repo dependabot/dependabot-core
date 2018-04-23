@@ -158,10 +158,15 @@ module Dependabot
           end
 
           def fixed_requirements(req)
-            op = req.requirements.first.first
+            op, version = req.requirements.first
 
             case op
-            when "=", nil then [Gem::Requirement.new("#{op} #{latest_version}")]
+            when "=", nil
+              if version < latest_resolvable_version
+                [Gem::Requirement.new("#{op} #{latest_resolvable_version}")]
+              else
+                req
+              end
             when "<", "<=" then [update_greatest_version(req, latest_version)]
             when "~>" then convert_twidle_to_range(req, latest_version)
             when "!=" then []
@@ -171,11 +176,15 @@ module Dependabot
           end
 
           def fixed_development_requirements(req)
-            op = req.requirements.first.first
+            op, version = req.requirements.first
 
             case op
             when "=", nil
-              [Gem::Requirement.new("#{op} #{latest_resolvable_version}")]
+              if version < latest_resolvable_version
+                [Gem::Requirement.new("#{op} #{latest_resolvable_version}")]
+              else
+                req
+              end
             when "~>"
               [update_twiddle_version(req, latest_resolvable_version)]
             when "<", "<=" then [update_greatest_version(req, latest_version)]

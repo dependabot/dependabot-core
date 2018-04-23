@@ -238,12 +238,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
         context "when an = specifier was used" do
           let(:gemspec_requirement_string) { "= 1.4.0" }
-          its([:requirement]) { is_expected.to eq("= 1.8.0") }
+          its([:requirement]) { is_expected.to eq("= 1.5.0") }
+
+          context "and the version is greater" do
+            let(:gemspec_requirement_string) { "1.7.0" }
+            its([:requirement]) { is_expected.to eq("= 1.7.0") }
+          end
         end
 
         context "when no specifier was used" do
           let(:gemspec_requirement_string) { "1.4.0" }
-          its([:requirement]) { is_expected.to eq("= 1.8.0") }
+          its([:requirement]) { is_expected.to eq("= 1.5.0") }
         end
 
         context "when a < specifier was used" do
