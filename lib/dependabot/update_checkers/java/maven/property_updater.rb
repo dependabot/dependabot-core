@@ -92,7 +92,7 @@ module Dependabot
             @updated_requirements ||= {}
             @updated_requirements[dep.name] ||=
               RequirementsUpdater.new(
-                requirements: dependency.requirements,
+                requirements: dep.requirements,
                 latest_version: updated_version(dep),
                 source_url: source_url
               ).updated_requirements

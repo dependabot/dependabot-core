@@ -49,11 +49,14 @@ module Dependabot
       def java_property_name
         require "dependabot/file_updaters/java/maven/declaration_finder"
 
-        FileUpdaters::Java::Maven::DeclarationFinder.new(
+        @property_name ||= FileUpdaters::Java::Maven::DeclarationFinder.new(
           dependency: dependencies.first,
           declaring_requirement: dependencies.first.requirements.first,
           dependency_files: files
         ).property_name
+
+        raise "No property name!" unless @property_name
+        @property_name
       end
 
       def sanitized_requirement(dependency)
