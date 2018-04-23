@@ -1,3 +1,7 @@
+## v0.54.43, 23 April 2018
+
+- Java: Fix typo in PropertyUpdater
+
 ## v0.54.42, 23 April 2018
 
 - Java: Better title for multi-dependency PRs
