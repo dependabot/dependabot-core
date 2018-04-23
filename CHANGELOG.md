@@ -1,3 +1,7 @@
+## v0.54.48, 23 April 2018
+
+- Ruby: Update gemspec to latest resolvable version if using equality matcher
+
 ## v0.54.47, 23 April 2018
 
 - JavaScript: Return the latest pre-release if it is specified in a latest tag
