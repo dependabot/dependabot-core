@@ -30,8 +30,9 @@ module Dependabot
             temp_name = sanitize_property_name(property_name)
             node =
               loop do
-                candidate_node = doc.at_xpath("//#{temp_name}") ||
-                                 doc.at_xpath("//properties/#{temp_name}")
+                candidate_node =
+                  doc.at_xpath("/project/#{temp_name}") ||
+                  doc.at_xpath("/project/properties/#{temp_name}")
                 break candidate_node if candidate_node
                 break unless temp_name.include?(".")
                 temp_name = temp_name.sub(".", "/")
@@ -89,9 +90,10 @@ module Dependabot
           def parent_pom(pom)
             doc = Nokogiri::XML(pom.content)
             doc.remove_namespaces!
-            group_id = doc.at_xpath("//parent/groupId")&.content&.strip
-            artifact_id = doc.at_xpath("//parent/artifactId")&.content&.strip
-            version = doc.at_xpath("//parent/version")&.content&.strip
+            group_id = doc.at_xpath("/project/parent/groupId")&.content&.strip
+            artifact_id =
+              doc.at_xpath("/project/parent/artifactId")&.content&.strip
+            version = doc.at_xpath("/project/parent/version")&.content&.strip
 
             return unless group_id && artifact_id
             name = [group_id, artifact_id].join(":")
