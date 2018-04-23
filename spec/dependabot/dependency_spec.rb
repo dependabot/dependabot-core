@@ -10,21 +10,62 @@ RSpec.describe Dependabot::Dependency do
     let(:args) do
       {
         name: "dep",
-        requirements: [
-          {
-            "file" => "a.rb",
-            "requirement" => ">= 0",
-            "groups" => [],
-            source: nil
-          }
-        ],
+        requirements: requirements,
         package_manager: "bundler"
       }
+    end
+    let(:requirements) do
+      [{
+        "file" => "a.rb",
+        "requirement" => ">= 0",
+        "groups" => [],
+        source: nil
+      }]
     end
 
     it "converts string keys to symbols" do
       expect(dependency.requirements).
         to eq([{ file: "a.rb", requirement: ">= 0", groups: [], source: nil }])
+    end
+
+    context "with an invalid requirement key" do
+      let(:requirements) do
+        [{
+          "file" => "a.rb",
+          "requirement" => ">= 0",
+          "groups" => [],
+          source: nil,
+          unknown: "key"
+        }]
+      end
+
+      specify { expect { dependency }.to raise_error(/required keys/) }
+    end
+
+    context "with a missing requirement key" do
+      let(:requirements) do
+        [{
+          "file" => "a.rb",
+          "requirement" => ">= 0",
+          source: nil
+        }]
+      end
+
+      specify { expect { dependency }.to raise_error(/required keys/) }
+    end
+
+    context "with a missing requirement key" do
+      let(:requirements) do
+        [{
+          file: "a.rb",
+          requirement: ">= 0",
+          groups: [],
+          source: nil,
+          metadata: {}
+        }]
+      end
+
+      specify { expect { dependency }.to_not raise_error }
     end
   end
 

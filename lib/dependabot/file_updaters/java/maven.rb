@@ -144,6 +144,8 @@ module Dependabot
         def original_pom_requirement(dependency, requirement)
           dependency.
             previous_requirements.
+            # Wouldn't be updating this requirement if it was nil!
+            reject { |f| f.fetch(:requirement).nil? }.
             find { |f| f.fetch(:file) == requirement.fetch(:file) }
         end
 
