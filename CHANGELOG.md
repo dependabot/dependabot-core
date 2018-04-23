@@ -1,3 +1,7 @@
+## v0.54.46, 23 April 2018
+
+- Java: Handle extensions in FileUpdater
+
 ## v0.54.45, 23 April 2018
 
 - Java: Stricter property finding (tighter XPaths)
