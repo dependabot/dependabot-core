@@ -125,6 +125,16 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
         its(:length) { is_expected.to eq(0) }
       end
+
+      context "with a groupId buried in a configuration" do
+        # This groupId doesn't belong to the plugin, and should not be used
+        let(:pom_body) { fixture("java", "poms", "powerunit_pom.xml") }
+
+        it "doesn't include the plugin" do
+          expect(dependencies.map(&:name)).
+            to_not include("${project.groupId}:maven-install-plugin")
+        end
+      end
     end
 
     context "for pluginManagement dependencies" do

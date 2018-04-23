@@ -39,6 +39,7 @@ module Dependabot
           dependency_set = DependencySet.new
 
           doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             next unless (name = dependency_name(dependency_node))
             next if internal_dependency_names.include?(name)
@@ -63,12 +64,12 @@ module Dependabot
         end
 
         def dependency_name(dependency_node)
-          return unless dependency_node.at_css("groupId")
-          return unless dependency_node.at_css("artifactId")
+          return unless dependency_node.at_xpath("./groupId")
+          return unless dependency_node.at_xpath("./artifactId")
 
           [
-            dependency_node.at_css("groupId").content.strip,
-            dependency_node.at_css("artifactId").content.strip
+            dependency_node.at_xpath("./groupId").content.strip,
+            dependency_node.at_xpath("./artifactId").content.strip
           ].join(":")
         end
 
@@ -84,8 +85,8 @@ module Dependabot
         end
 
         def dependency_requirement(pom, dependency_node)
-          return unless dependency_node.at_css("version")
-          version_content = dependency_node.at_css("version").content.strip
+          return unless dependency_node.at_xpath("./version")
+          version_content = dependency_node.at_xpath("./version").content.strip
 
           return version_content unless version_content.match?(PROPERTY_REGEX)
 
@@ -96,8 +97,8 @@ module Dependabot
         end
 
         def property_name(dependency_node)
-          return unless dependency_node.at_css("version")
-          version_content = dependency_node.at_css("version").content.strip
+          return unless dependency_node.at_xpath("./version")
+          version_content = dependency_node.at_xpath("./version").content.strip
 
           return unless version_content.match?(PROPERTY_REGEX)
 
