@@ -1,3 +1,8 @@
+## v0.54.47, 23 April 2018
+
+- JavaScript: Return the latest pre-release if it is specified in a latest tag
+  and the user wants prereleases
+
 ## v0.54.46, 23 April 2018
 
 - Java: Handle extensions in FileUpdater
