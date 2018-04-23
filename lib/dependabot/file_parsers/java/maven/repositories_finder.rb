@@ -56,9 +56,10 @@ module Dependabot
           def parent_pom(pom, repo_urls)
             doc = Nokogiri::XML(pom.content)
             doc.remove_namespaces!
-            group_id = doc.at_xpath("//parent/groupId")&.content&.strip
-            artifact_id = doc.at_xpath("//parent/artifactId")&.content&.strip
-            version = doc.at_xpath("//parent/version")&.content&.strip
+            group_id = doc.at_xpath("/project/parent/groupId")&.content&.strip
+            artifact_id =
+              doc.at_xpath("/project/parent/artifactId")&.content&.strip
+            version = doc.at_xpath("/project/parent/version")&.content&.strip
 
             return unless group_id && artifact_id
             name = [group_id, artifact_id].join(":")
