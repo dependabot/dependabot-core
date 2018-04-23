@@ -451,6 +451,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           )
         end
 
+        # Note: this is the dist-tag latest version, *not* the latest prerelease
         it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
         context "but only says so in their requirements (with a .)" do

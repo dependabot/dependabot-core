@@ -86,19 +86,17 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
         it "updates the source" do
           expect(updater.updated_requirements).
             to eq(
-              [
-                {
-                  file: "package.json",
-                  requirement: nil,
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/jonschlinkert/is-number",
-                    branch: nil,
-                    ref: "2.1.0"
-                  }
+              [{
+                file: "package.json",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "2.1.0"
                 }
-              ]
+              }]
             )
         end
 
@@ -108,14 +106,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           it "updates the source and requirement" do
             expect(updater.updated_requirements).
               to eq(
-                [
-                  {
-                    file: "package.json",
-                    requirement: "^1.5.0",
-                    groups: [],
-                    source: nil
-                  }
-                ]
+                [{
+                  file: "package.json",
+                  requirement: "^1.5.0",
+                  groups: [],
+                  source: nil
+                }]
               )
           end
         end
@@ -149,14 +145,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           it "updates the source and requirement" do
             expect(updater.updated_requirements).
               to eq(
-                [
-                  {
-                    file: "package.json",
-                    requirement: "~1.5.0",
-                    groups: [],
-                    source: nil
-                  }
-                ]
+                [{
+                  file: "package.json",
+                  requirement: "~1.5.0",
+                  groups: [],
+                  source: nil
+                }]
               )
           end
         end

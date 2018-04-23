@@ -101,8 +101,7 @@ module Dependabot
           end
 
           def wants_latest_dist_tag?(latest_version)
-            return false if wants_prerelease?
-            return false if latest_version.prerelease?
+            return false if wants_prerelease? ^ latest_version.prerelease?
             return false if current_version_greater_than?(latest_version)
             return false if current_requirement_greater_than?(latest_version)
             return false if yanked?(latest_version)
