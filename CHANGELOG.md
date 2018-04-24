@@ -1,3 +1,7 @@
+## v0.54.53, 24 April 2018
+
+- Python: Handle private registries in MetadataFinder
+
 ## v0.54.52, 24 April 2018
 
 - Python: Handle private sources in Pipfile
