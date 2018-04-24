@@ -23,6 +23,7 @@ module Dependabot
           fetched_files = []
           fetched_files << pom
           fetched_files += child_poms
+          fetched_files += relative_path_parents(fetched_files)
           fetched_files
         end
 
@@ -32,6 +33,13 @@ module Dependabot
 
         def child_poms
           recursively_fetch_child_poms(pom, fetched_filenames: ["pom.xml"])
+        end
+
+        def relative_path_parents(fetched_files)
+          recursively_fetch_relative_path_parents(
+            pom,
+            fetched_filenames: fetched_files.map(&:name)
+          )
         end
 
         def recursively_fetch_child_poms(pom, fetched_filenames:)
@@ -49,7 +57,7 @@ module Dependabot
 
             next [] if fetched_filenames.include?(path)
 
-            child_pom = fetch_file_from_host(File.join(*name_parts))
+            child_pom = fetch_file_from_host(path)
             fetched_filenames += [child_pom.name]
             [
               child_pom,
@@ -59,6 +67,52 @@ module Dependabot
               )
             ].flatten
           end
+        end
+
+        def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
+          path = parent_path_for_pom(pom)
+
+          if fetched_filenames.include?(path) ||
+             fetched_filenames.include?(path.gsub("pom.xml", "pom_parent.xml"))
+            return []
+          end
+
+          full_path_parts =
+            [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
+
+          full_path = Pathname.new(File.join(*full_path_parts)).
+                      cleanpath.to_path
+
+          return [] if full_path.start_with?("..")
+
+          parent_pom = fetch_file_from_host(path)
+          parent_pom.name = parent_pom.name.gsub("pom.xml", "pom_parent.xml")
+
+          [
+            parent_pom,
+            recursively_fetch_relative_path_parents(
+              parent_pom,
+              fetched_filenames: fetched_filenames + [parent_pom.name]
+            )
+          ].flatten
+        rescue Dependabot::DependencyFileNotFound
+          []
+        end
+
+        def parent_path_for_pom(pom)
+          doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
+
+          relative_parent_path =
+            doc.at_xpath("/project/parent/relativePath")&.content&.strip || ".."
+
+          name_parts = [
+            pom.name.gsub(/pom\.xml$/, ""),
+            relative_parent_path,
+            relative_parent_path.end_with?("pom.xml") ? nil : "pom.xml"
+          ].compact.reject(&:empty?)
+
+          Pathname.new(File.join(*name_parts)).cleanpath.to_path
         end
       end
     end

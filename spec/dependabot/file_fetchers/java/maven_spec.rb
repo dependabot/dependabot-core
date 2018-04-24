@@ -8,8 +8,13 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
 
   let(:source) { { host: "github", repo: "gocardless/bump" } }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      directory: directory
+    )
   end
+  let(:directory) { "/" }
   let(:github_url) { "https://api.github.com/" }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
@@ -81,6 +86,16 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
         to match_array(
           %w(pom.xml util/pom.xml business-app/pom.xml legacy/pom.xml)
         )
+    end
+
+    context "when asked to fetch only a subdirectory" do
+      let(:directory) { "/legacy" }
+
+      it "fetches the relevant poms" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pom.xml ../pom_parent.xml))
+      end
     end
 
     context "with a nested multimodule pom" do
