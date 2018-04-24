@@ -1,3 +1,7 @@
+## v0.54.55, 24 April 2018
+
+- Java: Handle repeated dependencies in FileUpdater robustly
+
 ## v0.54.54, 24 April 2018
 
 - Python: Raise PrivateSourceNotReachable for Pipfiles with environment
