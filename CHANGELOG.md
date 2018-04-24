@@ -1,3 +1,7 @@
+## v0.54.52, 24 April 2018
+
+- Python: Handle private sources in Pipfile
+
 ## v0.54.51, 24 April 2018
 
 - Java: Download parent POMs, when present, to allow property evaluation
