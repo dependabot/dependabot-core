@@ -80,6 +80,7 @@ module Dependabot
             content = remove_python_requirement(content)
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content)
+            content = add_private_sources(content)
             content
           end
 
@@ -124,6 +125,22 @@ module Dependabot
                   updated_version_requirement_string
               end
             end
+
+            TomlRB.dump(pipfile_object)
+          end
+
+          def add_private_sources(pipfile_content)
+            pipfile_object = TomlRB.parse(pipfile_content)
+
+            original_sources = pipfile_object["source"].map(&:dup)
+            env_sources = original_sources.
+                          select { |h| h["url"].include?("${") }
+
+            updated_sources = original_sources -
+                              env_sources +
+                              config_variable_sources
+
+            pipfile_object["source"] = updated_sources
 
             TomlRB.dump(pipfile_object)
           end
@@ -177,6 +194,13 @@ module Dependabot
               raw_response,
               command
             )
+          end
+
+          def config_variable_sources
+            @config_variable_sources ||=
+              credentials.
+              select { |cred| cred["index-url"] }.
+              map { |cred| { "url" => cred["index-url"] } }
           end
         end
       end
