@@ -28,13 +28,11 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_name) { "luigi" }
   let(:version) { "1.0" }
@@ -55,6 +53,42 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
       it "caches the call to pypi" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
+      end
+    end
+
+    context "with a private index" do
+      let(:credentials) do
+        [
+          {
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "index-url" => "https://username:password@pypi.posrip.com/pypi/"
+          }
+        ]
+      end
+      before do
+        private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
+        stub_request(:get, pypi_url).to_return(status: 404, body: "")
+        stub_request(:get, private_url).
+          with(basic_auth: %w(username password)).
+          to_return(status: 200, body: pypi_response)
+      end
+      let(:pypi_response) { fixture("python", "pypi_response.json") }
+
+      it { is_expected.to eq("https://github.com/spotify/luigi") }
+
+      context "that isn't used" do
+        before do
+          private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
+          stub_request(:get, private_url).to_return(status: 404, body: "")
+          stub_request(:get, pypi_url).
+            to_return(status: 200, body: pypi_response)
+        end
+
+        it { is_expected.to eq("https://github.com/spotify/luigi") }
       end
     end
 

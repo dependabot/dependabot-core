@@ -8,6 +8,8 @@ module Dependabot
   module MetadataFinders
     module Python
       class Pip < Dependabot::MetadataFinders::Base
+        MAIN_PYPI_URL = "https://pypi.python.org/pypi"
+
         def homepage_url
           pypi_listing.dig("info", "home_page") || super
         end
@@ -47,13 +49,30 @@ module Dependabot
           return @pypi_listing unless @pypi_listing.nil?
           return @pypi_listing = {} if dependency.version.include?("+")
 
-          response = Excon.get(
-            "https://pypi.python.org/pypi/#{dependency.name}/json",
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
+          possible_listing_urls.each do |url|
+            response = Excon.get(
+              url,
+              idempotent: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
+            next unless response.status == 200
 
-          @pypi_listing = JSON.parse(response.body)
+            @pypi_listing = JSON.parse(response.body)
+            return @pypi_listing
+          end
+
+          @pypi_listing = {} # No listing found
+        end
+
+        def possible_listing_urls
+          credential_urls =
+            credentials.
+            select { |cred| cred["index-url"] }.
+            map { |cred| cred["index-url"].gsub(%r{/$}, "") }
+
+          (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
+            base_url + "/#{dependency.name}/json"
+          end
         end
       end
     end
