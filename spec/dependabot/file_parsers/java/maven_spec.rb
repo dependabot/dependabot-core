@@ -304,6 +304,26 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       it "fills in the property value correctly" do
         expect(dependencies.map(&:name)).
           to include("uk.me.lwood.sigtran:sigtran-tcap")
+        expect(dependencies.map(&:name)).
+          to include("junit:junit")
+      end
+
+      context "when the parent was downloaded only as a supporting POM" do
+        let(:files) { [pom, parent_pom] }
+        let(:pom_body) { fixture("java", "poms", "sigtran-map.pom") }
+        let(:parent_pom) do
+          Dependabot::DependencyFile.new(
+            name: "../pom_parent.xml",
+            content: fixture("java", "poms", "sigtran.pom")
+          )
+        end
+
+        it "excludes parent dependencies" do
+          expect(dependencies.map(&:name)).
+            to include("uk.me.lwood.sigtran:sigtran-tcap")
+          expect(dependencies.map(&:name)).
+            to_not include("junit:junit")
+        end
       end
     end
 

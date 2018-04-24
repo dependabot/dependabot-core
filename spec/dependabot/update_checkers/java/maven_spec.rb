@@ -554,6 +554,30 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       end
       it { is_expected.to eq(true) }
 
+      context "that inherits from a parent POM downloaded for support" do
+        let(:dependency_files) { [pom, parent_pom] }
+        let(:pom_body) { fixture("java", "poms", "sigtran-map.pom") }
+        let(:parent_pom) do
+          Dependabot::DependencyFile.new(
+            name: "../pom_parent.xml",
+            content: fixture("java", "poms", "sigtran.pom")
+          )
+        end
+        let(:dependency_name) { "uk.me.lwood.sigtran:sigtran-tcap" }
+        let(:dependency_version) { "0.9-SNAPSHOT" }
+        let(:dependency_requirements) do
+          [{
+            file: "pom.xml",
+            requirement: "0.9-SNAPSHOT",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "project.version" }
+          }]
+        end
+
+        it { is_expected.to eq(false) }
+      end
+
       context "that inherits from a remote POM" do
         let(:pom_body) { fixture("java", "poms", "remote_parent_pom.xml") }
 

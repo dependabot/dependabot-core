@@ -136,13 +136,14 @@ module Dependabot
         end
 
         def pomfiles
+          # Note: this (correctly) excludes any parent POMs that were downloaded
           @pomfiles ||=
             dependency_files.select { |f| f.name.end_with?("pom.xml") }
         end
 
         def internal_dependency_names
           @internal_dependency_names ||=
-            pomfiles.map do |pom|
+            dependency_files.map do |pom|
               doc = Nokogiri::XML(pom.content)
               group_id    = doc.at_css("project > groupId") ||
                             doc.at_css("project > parent > groupId")

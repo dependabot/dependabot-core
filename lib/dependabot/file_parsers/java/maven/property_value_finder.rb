@@ -55,16 +55,11 @@ module Dependabot
 
           attr_reader :dependency_files
 
-          def pomfiles
-            @pomfiles ||=
-              dependency_files.select { |f| f.name.end_with?("pom.xml") }
-          end
-
           def internal_dependency_poms
             return @internal_dependency_poms if @internal_dependency_poms
 
             @internal_dependency_poms = {}
-            pomfiles.each do |pom|
+            dependency_files.each do |pom|
               doc = Nokogiri::XML(pom.content)
               group_id    = doc.at_css("project > groupId") ||
                             doc.at_css("project > parent > groupId")
