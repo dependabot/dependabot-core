@@ -1,3 +1,7 @@
+## v0.54.51, 24 April 2018
+
+- Java: Download parent POMs, when present, to allow property evaluation
+
 ## v0.54.50, 24 April 2018
 
 - Python: Better error for requirement files that use an unrecognised option
