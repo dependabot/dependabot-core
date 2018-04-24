@@ -31,6 +31,9 @@ module Dependabot
           updated_files = updated_files.reject { |f| pomfiles.include?(f) }
 
           raise "No files changed!" if updated_files.none?
+          if updated_files.any? { |f| f.name.end_with?("pom_parent.xml") }
+            raise "Updated a supporting POM!"
+          end
           updated_files
         end
 
