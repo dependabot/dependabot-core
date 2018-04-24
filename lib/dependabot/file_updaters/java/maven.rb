@@ -22,9 +22,9 @@ module Dependabot
           # to other languages because Java has property inheritance across
           # files
           dependencies.each do |dependency|
-            updated_files = updated_pomfiles_for_dependency(
-              updated_files,
-              dependency
+            updated_files = update_pomfiles_for_dependency(
+              pomfiles: updated_files,
+              dependency: dependency
             )
           end
 
@@ -43,29 +43,31 @@ module Dependabot
           raise "No pom.xml!" unless get_original_file("pom.xml")
         end
 
-        def updated_pomfiles_for_dependency(pomfiles, dependency)
-          updated_pomfiles = pomfiles.dup
+        def update_pomfiles_for_dependency(pomfiles:, dependency:)
+          files = pomfiles.dup
 
-          dependency.requirements.each do |req|
-            previous_req = dependency.previous_requirements.
-                           find { |pr| pr.fetch(:file) == req.fetch(:file) }
+          # The UpdateChecker ensures the order of requirements is preserved
+          # when updating, so we can zip them together in new/old pairs.
+          reqs = dependency.requirements.zip(dependency.previous_requirements).
+                 reject { |new_req, old_req| new_req == old_req }
 
-            next if req == previous_req
+          # Loop through each changed requirement and update the pomfiles
+          reqs.each do |new_req, old_req|
+            raise "Bad req match" unless new_req[:file] == old_req[:file]
 
-            if req.dig(:metadata, :property_name)
-              updated_pomfiles =
-                update_pomfiles_for_property_change(updated_pomfiles, req)
-              pom = updated_pomfiles.find { |f| f.name == req.fetch(:file) }
-              updated_pomfiles[updated_pomfiles.index(pom)] =
-                remove_property_version_suffix_in_pom(dependency, pom, req)
+            if new_req.dig(:metadata, :property_name)
+              files = update_pomfiles_for_property_change(files, new_req)
+              pom = files.find { |f| f.name == new_req.fetch(:file) }
+              files[files.index(pom)] =
+                remove_property_suffix_in_pom(dependency, pom, old_req)
             else
-              pom = updated_pomfiles.find { |f| f.name == req.fetch(:file) }
-              updated_pomfiles[updated_pomfiles.index(pom)] =
-                update_version_in_pom(dependency, pom, req)
+              pom = files.find { |f| f.name == new_req.fetch(:file) }
+              files[files.index(pom)] =
+                update_version_in_pom(dependency, pom, old_req, new_req)
             end
           end
 
-          updated_pomfiles
+          files
         end
 
         def update_pomfiles_for_property_change(pomfiles, req)
@@ -79,18 +81,18 @@ module Dependabot
             )
         end
 
-        def update_version_in_pom(dependency, pom, requirement)
+        def update_version_in_pom(dependency, pom, previous_req, requirement)
           updated_content =
             pom.content.gsub(
-              original_pom_declaration(dependency, requirement),
-              updated_pom_declaration(dependency, requirement)
+              original_pom_declaration(dependency, previous_req),
+              updated_pom_declaration(dependency, previous_req, requirement)
             )
 
           raise "Expected content to change!" if updated_content == pom.content
           updated_file(file: pom, content: updated_content)
         end
 
-        def remove_property_version_suffix_in_pom(dep, pom, req)
+        def remove_property_suffix_in_pom(dep, pom, req)
           updated_content =
             pom.content.gsub(original_pom_declaration(dep, req)) do |old_dec|
               version_string =
@@ -116,32 +118,21 @@ module Dependabot
           @declaration_finders ||= {}
           @declaration_finders[dependency.hash + requirement.hash] ||=
             begin
-              original_req = original_pom_requirement(dependency, requirement)
               DeclarationFinder.new(
                 dependency: dependency,
-                declaring_requirement: original_req,
+                declaring_requirement: requirement,
                 dependency_files: dependency_files
               )
             end
         end
 
-        def updated_pom_declaration(dependency, requirement)
-          original_req_string =
-            original_pom_requirement(dependency, requirement).
-            fetch(:requirement)
+        def updated_pom_declaration(dependency, previous_req, requirement)
+          original_req_string = previous_req.fetch(:requirement)
 
-          original_pom_declaration(dependency, requirement).gsub(
+          original_pom_declaration(dependency, previous_req).gsub(
             %r{<version>\s*#{Regexp.quote(original_req_string)}\s*</version>},
             "<version>#{requirement.fetch(:requirement)}</version>"
           )
-        end
-
-        def original_pom_requirement(dependency, requirement)
-          dependency.
-            previous_requirements.
-            # Wouldn't be updating this requirement if it was nil!
-            reject { |f| f.fetch(:requirement).nil? }.
-            find { |f| f.fetch(:file) == requirement.fetch(:file) }
         end
 
         def pomfiles

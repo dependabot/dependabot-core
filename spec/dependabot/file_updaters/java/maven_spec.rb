@@ -107,6 +107,52 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         its(:content) { is_expected.to include "<version>[23.3-jre]</version>" }
       end
 
+      context "with a repeated dependency" do
+        let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.plugins:maven-javadoc-plugin",
+            version: "3.0.0-M2",
+            requirements: [
+              {
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "maven-javadoc-plugin.version" }
+              },
+              {
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "pom.xml",
+                requirement: "3.0.0-M1",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "maven-javadoc-plugin.version" }
+              },
+              {
+                file: "pom.xml",
+                requirement: "2.10.4",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }
+            ],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) { is_expected.to include "plugin.version>3.0.0-M2" }
+        its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
+      end
+
       context "with multiple dependencies to be updated" do
         let(:dependencies) do
           [

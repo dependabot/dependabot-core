@@ -25,6 +25,9 @@ module Dependabot
           def updated_requirements
             return requirements unless latest_version
 
+            # Note: Order is important here. The FileUpdater needs the updated
+            # requirement at index `i` to correspond to the previous requirement
+            # at the same index.
             requirements.map do |req|
               next req if req.fetch(:requirement).nil?
               next req unless req.fetch(:requirement).match?(/\d/)
