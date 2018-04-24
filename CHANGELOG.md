@@ -1,3 +1,8 @@
+## v0.54.54, 24 April 2018
+
+- Python: Raise PrivateSourceNotReachable for Pipfiles with environment
+  variables but no config
+
 ## v0.54.53, 24 April 2018
 
 - Python: Handle private registries in MetadataFinder
