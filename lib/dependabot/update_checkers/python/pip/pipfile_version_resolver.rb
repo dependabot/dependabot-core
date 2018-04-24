@@ -3,6 +3,7 @@
 require "dependabot/file_parsers/python/pip"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/utils/python/version"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -136,6 +137,8 @@ module Dependabot
             env_sources = original_sources.
                           select { |h| h["url"].include?("${") }
 
+            check_env_sources_included_in_config_variables(env_sources)
+
             updated_sources = original_sources -
                               env_sources +
                               config_variable_sources
@@ -194,6 +197,23 @@ module Dependabot
               raw_response,
               command
             )
+          end
+
+          def check_env_sources_included_in_config_variables(env_sources)
+            config_variable_source_urls =
+              config_variable_sources.map { |s| s["url"] }
+
+            env_sources.each do |source|
+              url = source["url"]
+              known_parts = url.split(/\$\{.*?\}/).reject(&:empty?).compact
+
+              # If the whole URL is an environment variable we can't do a check
+              next if known_parts.none?
+
+              regex = known_parts.map { |p| Regexp.quote(p) }.join(".*?")
+              next if config_variable_source_urls.any? { |s| s.match?(regex) }
+              raise PrivateSourceNotReachable, url
+            end
           end
 
           def config_variable_sources

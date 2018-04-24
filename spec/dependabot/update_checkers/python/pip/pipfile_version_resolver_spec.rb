@@ -90,6 +90,58 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with an environment variable source" do
+      let(:pipfile_fixture_name) { "environment_variable_source" }
+      let(:lockfile_fixture_name) { "environment_variable_source.lock" }
+
+      context "with no credentials" do
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}")
+            end
+        end
+      end
+
+      context "with a non-matching credential" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "index-url" => "https://pypi.gemfury.com/secret_codes/"
+            }
+          ]
+        end
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}")
+            end
+        end
+      end
+
+      context "with a matching credential" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "index-url" => "https://pypi.python.org/simple"
+            }
+          ]
+        end
+
+        it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      end
+    end
+
     context "with a `nil` requirement" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
