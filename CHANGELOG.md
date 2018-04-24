@@ -1,3 +1,7 @@
+## v0.54.50, 24 April 2018
+
+- Python: Better error for requirement files that use an unrecognised option
+
 ## v0.54.49, 23 April 2018
 
 - Java: Fix PropertyUpdater bug caused by incorrect declaration requirement
