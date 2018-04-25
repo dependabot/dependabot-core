@@ -1,3 +1,7 @@
+## v0.54.61, 25 April 2018
+
+- Python: Handle private indexes timing out for requirements.txt dependencies
+
 ## v0.54.60, 25 April 2018
 
 - Python: Raise PrivateSourceNotReachable errors for Pipfile sources that can't
