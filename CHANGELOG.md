@@ -1,3 +1,7 @@
+## v0.54.63, 25 April 2018
+
+- Java: Ignore repositories that aren't URLs
+
 ## v0.54.62, 25 April 2018
 
 - Java: More robust file fetching
