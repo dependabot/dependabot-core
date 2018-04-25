@@ -89,6 +89,16 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
         end
 
         it { is_expected.to eq("https://github.com/spotify/luigi") }
+
+        context "because it doesn't return json" do
+          before do
+            private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
+            stub_request(:get, private_url).
+              to_return(status: 200, body: "<!DOCTYPE html>")
+          end
+
+          it { is_expected.to eq("https://github.com/spotify/luigi") }
+        end
       end
     end
 

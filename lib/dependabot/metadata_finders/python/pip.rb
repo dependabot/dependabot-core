@@ -59,6 +59,8 @@ module Dependabot
 
             @pypi_listing = JSON.parse(response.body)
             return @pypi_listing
+          rescue JSON::ParserError
+            next
           end
 
           @pypi_listing = {} # No listing found
