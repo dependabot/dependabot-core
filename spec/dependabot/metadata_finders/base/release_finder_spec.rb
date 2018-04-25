@@ -264,6 +264,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:dependency_version) { "1.9.0" }
           let(:dependency_previous_version) { "1.8.0" }
           it { is_expected.to be_nil }
+
+          context "and neither is the previous version" do
+            let(:dependency_version) { "1.7.2" }
+            let(:dependency_previous_version) { "1.7.1" }
+            it { is_expected.to be_nil }
+          end
         end
 
         context "when the release has a bad name" do
