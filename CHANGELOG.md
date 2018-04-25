@@ -1,3 +1,7 @@
+## v0.54.58, 25 April 2018
+
+- Python: Handle html index responses in MetadataFinder
+
 ## v0.54.57, 25 April 2018
 
 - Java: Handle updates where the dependency appears multiple times, and one case
