@@ -88,16 +88,6 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
         )
     end
 
-    context "when asked to fetch only a subdirectory" do
-      let(:directory) { "/legacy" }
-
-      it "fetches the relevant poms" do
-        expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(pom.xml ../pom_parent.xml))
-      end
-    end
-
     context "with a nested multimodule pom" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha")).
@@ -142,6 +132,16 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
               util/util/pom.xml util/legacy/pom.xml util/business-app/pom.xml
             )
           )
+      end
+
+      context "when asked to fetch only a subdirectory" do
+        let(:directory) { "/util/util" }
+
+        it "fetches the relevant poms" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(pom.xml ../pom_parent.xml ../../pom_parent.xml))
+        end
       end
 
       context "where multiple poms require the same file" do

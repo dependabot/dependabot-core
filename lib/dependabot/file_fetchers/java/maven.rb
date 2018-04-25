@@ -24,7 +24,7 @@ module Dependabot
           fetched_files << pom
           fetched_files += child_poms
           fetched_files += relative_path_parents(fetched_files)
-          fetched_files
+          fetched_files.uniq
         end
 
         def pom
@@ -36,10 +36,12 @@ module Dependabot
         end
 
         def relative_path_parents(fetched_files)
-          recursively_fetch_relative_path_parents(
-            pom,
-            fetched_filenames: fetched_files.map(&:name)
-          )
+          fetched_files.flat_map do |file|
+            recursively_fetch_relative_path_parents(
+              file,
+              fetched_filenames: fetched_files.map(&:name)
+            )
+          end
         end
 
         def recursively_fetch_child_poms(pom, fetched_filenames:)
@@ -107,7 +109,7 @@ module Dependabot
             doc.at_xpath("/project/parent/relativePath")&.content&.strip || ".."
 
           name_parts = [
-            pom.name.gsub(/pom\.xml$/, ""),
+            pom.name.gsub(/pom\.xml$/, "").gsub(/pom_parent\.xml$/, ""),
             relative_parent_path,
             relative_parent_path.end_with?("pom.xml") ? nil : "pom.xml"
           ].compact.reject(&:empty?)
