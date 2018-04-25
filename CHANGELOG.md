@@ -1,3 +1,8 @@
+## v0.54.57, 25 April 2018
+
+- Java: Handle updates where the dependency appears multiple times, and one case
+  is already up-to-date
+
 ## v0.54.56, 24 April 2018
 
 - JS: Use npm6 when end-user repository is
