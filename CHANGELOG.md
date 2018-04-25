@@ -1,3 +1,7 @@
+## v0.54.56, 24 April 2018
+
+- JS: Use npm6 when end-user repository is
+
 ## v0.54.55, 24 April 2018
 
 - Java: Handle repeated dependencies in FileUpdater robustly
