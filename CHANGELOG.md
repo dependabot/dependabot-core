@@ -1,3 +1,8 @@
+## v0.54.60, 25 April 2018
+
+- Python: Raise PrivateSourceNotReachable errors for Pipfile sources that can't
+  be reached
+
 ## v0.54.59, 25 April 2018
 
 - Ignore changelogs which don't contain any relevant versions
