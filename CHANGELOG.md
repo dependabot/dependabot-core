@@ -1,3 +1,7 @@
+## v0.54.62, 25 April 2018
+
+- Java: More robust file fetching
+
 ## v0.54.61, 25 April 2018
 
 - Python: Handle private indexes timing out for requirements.txt dependencies
