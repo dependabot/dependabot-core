@@ -39,10 +39,8 @@ module Dependabot
               if old_version_changelog_line < new_version_changelog_line
                 Range.new(old_version_changelog_line, -1)
               else
-                Range.new(
-                  new_version_changelog_line,
-                  old_version_changelog_line - 1
-                )
+                Range.new(new_version_changelog_line,
+                          old_version_changelog_line - 1)
               end
             elsif old_version_changelog_line
               return if old_version_changelog_line.zero?
@@ -53,6 +51,10 @@ module Dependabot
               # Assumes changelog is in descending order
               Range.new(new_version_changelog_line, -1)
             else
+              return unless changelog_contains_relevant_versions?
+
+              # If the changelog contains any relevant versions, return it in
+              # full. We could do better here by fully parsing the changelog
               Range.new(0, -1)
             end
 
@@ -156,6 +158,43 @@ module Dependabot
             next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
             false
           end
+        end
+
+        def changelog_contains_relevant_versions?
+          # Assume the changelog is relevant if we can't parse the new version
+          return true unless version_class.correct?(dependency.version)
+
+          # Assume the changelog is relevant if it mentions the new version
+          # anywhere
+          return true if full_changelog_text.include?(dependency.version)
+
+          # Otherwise check if any intermediate versions are included in headers
+          versions_in_changelog_headers.any? do |version|
+            next false unless version <= version_class.new(dependency.version)
+            next true unless dependency.previous_version
+            next true unless version_class.correct?(dependency.previous_version)
+            version > version_class.new(dependency.previous_version)
+          end
+        end
+
+        def versions_in_changelog_headers
+          changelog_lines = full_changelog_text.split("\n")
+          header_lines =
+            changelog_lines.select.with_index do |line, index|
+              next true if line.start_with?("#", "!")
+              next true if line.match?(/^v?\d\.\d/)
+              next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
+              false
+            end
+
+          versions = []
+          header_lines.each do |line|
+            cleaned_line = line.gsub(/^[^0-9]*/, "").gsub(/[\s,:].*/, "")
+            next if cleaned_line.empty? || !version_class.correct?(cleaned_line)
+            versions << version_class.new(cleaned_line)
+          end
+
+          versions
         end
 
         def upgrade_guide
@@ -274,6 +313,10 @@ module Dependabot
 
           dependency.version.split(".").first.to_i -
             dependency.previous_version.split(".").first.to_i >= 1
+        end
+
+        def version_class
+          Utils.version_class_for_package_manager(dependency.package_manager)
         end
 
         def gitlab_client

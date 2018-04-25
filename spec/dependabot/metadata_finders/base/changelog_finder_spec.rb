@@ -345,11 +345,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:changelog_body) do
             fixture("github", "changelog_contents_japanese.json")
           end
-          let(:expected_changelog) do
-            fixture("raw", "japanese_changelog.md").gsub(/\n*\z/, "")
-          end
+          let(:dependency_version) { "0.0.6" }
 
-          it { is_expected.to eq(expected_changelog) }
+          it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
         end
 
         context "that is in reverse order" do
@@ -375,6 +373,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it "gets the right content" do
             expect(changelog_text).to start_with("## 1.4.0 - December 24, 2014")
+            expect(changelog_text).to end_with("- Initial public release")
+          end
+        end
+
+        context "with no relevant versions" do
+          let(:dependency_version) { "1.13.0" }
+          let(:dependency_previous_version) { "1.12.0" }
+
+          it { is_expected.to be_nil }
+        end
+
+        context "with relevant releases but not exact match" do
+          let(:dependency_version) { "1.13.0" }
+          let(:dependency_previous_version) { "1.4.5" }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("## 1.11.1")
             expect(changelog_text).to end_with("- Initial public release")
           end
         end
