@@ -1,7 +1,8 @@
 {
   "name": "dependabot-core",
   "dependencies": {
-    "npm": "5.8.0",
+    "npm": "6.0.0",
+    "npm5": "file:./npm5",
     "semver": "^5.5.0"
   },
   "devDependencies": {

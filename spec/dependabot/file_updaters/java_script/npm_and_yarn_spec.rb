@@ -516,6 +516,28 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           parsed_lockfile = JSON.parse(updated_npm_lock.content)
           expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
             to eq("0.0.2")
+
+          expect(
+            parsed_lockfile.dig(
+              "dependencies", "fetch-factory", "requires", "es6-promise"
+            )
+          ).to eq("3.3.1")
+        end
+
+        context "for an npm6 lockfile" do
+          let(:npm_lock_fixture_name) { "npm6.json" }
+
+          it "has details of the updated item" do
+            parsed_lockfile = JSON.parse(updated_npm_lock.content)
+            expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+              to eq("0.0.2")
+
+            expect(
+              parsed_lockfile.dig(
+                "dependencies", "fetch-factory", "requires", "es6-promise"
+              )
+            ).to eq("^3.0.2")
+          end
         end
       end
     end
@@ -651,47 +673,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
-          end
-        end
-      end
-
-      context "with a git dependency that can't be cloned" do
-        let(:manifest_fixture_name) { "git_dependency_unreachable.json" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "lodash",
-            version: "1.3.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.3.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.2.1",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
-        end
-
-        context "with a package-json.lock" do
-          let(:files) { [package_json, package_lock] }
-          let(:npm_lock_fixture_name) { "git_dependency_unreachable.json" }
-
-          it "raises a helpful error" do
-            expect { updated_files }.
-              to raise_error do |error|
-                expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-                expect(error.dependency_urls).
-                  to eq(["https://github.com/greysteil/is-number.git"])
-              end
           end
         end
       end
