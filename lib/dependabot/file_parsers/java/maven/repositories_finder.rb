@@ -33,7 +33,8 @@ module Dependabot
             repo_urls_in_pom =
               Nokogiri::XML(pom.content).
               css(REPOSITORY_SELECTOR).
-              map { |node| node.at_css("url").content.strip.gsub(%r{/$}, "") }
+              map { |node| node.at_css("url").content.strip.gsub(%r{/$}, "") }.
+              select { |url| url.start_with?("http") }
 
             return repo_urls_in_pom + [CENTRAL_REPO_URL] if exclude_inherited
 

@@ -71,6 +71,16 @@ url>http://github.com/davidB/${project.artifactId}</url
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
     <repository>
+      <id>file-based-repository</id>
+      <name>File Based Repository</name>
+      <url>file:some/repository/store</url>
+    </repository>
+    <repository>
+      <id>s3-based-repository</id>
+      <name>S3 Based Repository</name>
+      <url>s3://some.s3.repository/store</url>
+    </repository>
+    <repository>
       <id>jboss.releases</id>
       <name>JBoss releases</name>
       <url>http://repository.jboss.org/maven2/</url>
