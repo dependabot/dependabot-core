@@ -22,10 +22,6 @@ module Dependabot
         # still better than nothing, though.
         class PipfileVersionResolver
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-          MAIN_PYPI_INDEXES = %w(
-            https://pypi.python.org/simple/
-            https://pypi.org/simple/
-          ).freeze
 
           attr_reader :dependency, :dependency_files, :credentials
 

@@ -12,7 +12,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/simple/luigi" }
+  let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
   let(:pypi_response) { fixture("python", "pypi_simple_response.html") }
   let(:checker) do
     described_class.new(
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "when the dependency name isn't normalised" do
       let(:dependency_name) { "Luigi_ext" }
-      let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext" }
+      let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext/" }
       let(:pypi_response) do
         fixture("python", "pypi_simple_response_underscore.html")
       end
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "with a custom index-url" do
       let(:pypi_url) do
-        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
       end
 
       context "set in a pip.conf file" do
@@ -191,7 +191,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "with an extra-index-url" do
       let(:extra_url) do
-        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi"
+        "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
       end
       let(:extra_response) do
         fixture("python", "pypi_simple_response_extra.html")
@@ -225,6 +225,20 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+
+        context "that times out" do
+          before do
+            stub_request(:get, extra_url).to_raise(Excon::Error::Timeout)
+          end
+
+          it "raises a helpful error" do
+            expect { subject }.
+              to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                expect(error.source).
+                  to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
+              end
+          end
+        end
       end
 
       context "set in credentials" do
@@ -238,6 +252,20 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+
+        context "that times out" do
+          before do
+            stub_request(:get, extra_url).to_raise(Excon::Error::Timeout)
+          end
+
+          it "raises a helpful error" do
+            expect { subject }.
+              to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                expect(error.source).
+                  to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
+              end
+          end
+        end
       end
     end
   end

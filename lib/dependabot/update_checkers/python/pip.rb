@@ -13,6 +13,11 @@ module Dependabot
         require_relative "pip/requirements_updater"
         require_relative "pip/pipfile_version_resolver"
 
+        MAIN_PYPI_INDEXES = %w(
+          https://pypi.python.org/simple/
+          https://pypi.org/simple/
+        ).freeze
+
         def latest_version
           @latest_version ||= fetch_latest_version
         end
@@ -94,11 +99,12 @@ module Dependabot
         # Simple Repository API we use here.
         def available_versions
           index_urls.flat_map do |index_url|
-            index_response = Excon.get(
-              Pathname.new(File.join(index_url, normalised_name)).to_s,
-              idempotent: true,
-              middlewares: SharedHelpers.excon_middleware
-            )
+            sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+            index_response = registry_response_for_dependency(index_url)
+
+            if index_response.status == 401 || index_response.status == 403
+              raise PrivateSourceNotReachable, sanitized_url
+            end
 
             index_response.body.
               scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
@@ -111,6 +117,9 @@ module Dependabot
                 next unless version_class.correct?(version)
                 version_class.new(version)
               end.compact
+          rescue Excon::Error::Timeout, Excon::Error::Socket
+            next if MAIN_PYPI_INDEXES.include?(index_url)
+            raise PrivateSourceNotReachable, sanitized_url
           end
         end
 
@@ -121,12 +130,27 @@ module Dependabot
             pip_conf_index_urls[:main] ||
             "https://pypi.python.org/simple/"
 
+          if main_index_url
+            main_index_url = main_index_url.strip.gsub(%r{/*$}, "") + "/"
+          end
+
           extra_index_urls =
             config_variable_index_urls[:extra] +
             requirement_file_index_urls[:extra] +
             pip_conf_index_urls[:extra]
 
-          ([main_index_url] + extra_index_urls).map(&:strip)
+          extra_index_urls =
+            extra_index_urls.map { |url| url.strip.gsub(%r{/*$}, "") + "/" }
+
+          [main_index_url] + extra_index_urls
+        end
+
+        def registry_response_for_dependency(index_url)
+          Excon.get(
+            index_url + normalised_name + "/",
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
         end
 
         def requirement_file_index_urls
