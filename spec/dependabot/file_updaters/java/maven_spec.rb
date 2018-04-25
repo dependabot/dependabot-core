@@ -151,6 +151,54 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
         its(:content) { is_expected.to include "plugin.version>3.0.0-M2" }
         its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
+
+        context "when both versions are hard-coded, and one is up-to-date" do
+          let(:pom_body) do
+            fixture("java", "poms", "repeated_no_property_pom.xml")
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "org.apache.maven.plugins:maven-javadoc-plugin",
+              version: "3.0.0-M2",
+              requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "3.0.0-M2",
+                  groups: [],
+                  source: { type: "maven_repo", url: "https://some.repo.com" },
+                  metadata: nil
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "3.0.0-M2",
+                  groups: [],
+                  source: { type: "maven_repo", url: "https://some.repo.com" },
+                  metadata: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "pom.xml",
+                  requirement: "3.0.0-M2",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "2.10.4",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                }
+              ],
+              package_manager: "maven"
+            )
+          end
+
+          its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
+          its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
+        end
       end
 
       context "with multiple dependencies to be updated" do
