@@ -1,3 +1,8 @@
+## v0.54.59, 25 April 2018
+
+- Ignore changelogs which don't contain any relevant versions
+- Reject blank tags / names during release finder lookup
+
 ## v0.54.58, 25 April 2018
 
 - Python: Handle html index responses in MetadataFinder
