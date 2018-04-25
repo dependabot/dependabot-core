@@ -90,6 +90,53 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with an unreachable private source" do
+      let(:pipfile_fixture_name) { "private_source" }
+      let(:lockfile_fixture_name) { "exact_version.lock" }
+
+      before do
+        stub_request(:get, "https://some.internal.registry.com/pypi/requests/").
+          to_raise(Excon::Error::Timeout)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            expect(error.source).
+              to eq("https://some.internal.registry.com/pypi/")
+          end
+      end
+
+      context "from credentials" do
+        let(:pipfile_fixture_name) { "exact_version" }
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "index-url" => "https://user:pass@pypi.gemfury.com/secret_codes/"
+            }
+          ]
+        end
+
+        before do
+          stub_request(:get, "https://pypi.gemfury.com/secret_codes/requests/").
+            to_raise(Excon::Error::Timeout)
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).
+                to eq("https://redacted@pypi.gemfury.com/secret_codes/")
+            end
+        end
+      end
+    end
+
     context "with an environment variable source" do
       let(:pipfile_fixture_name) { "environment_variable_source" }
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
@@ -98,7 +145,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
-              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}")
+              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
             end
         end
       end
@@ -119,7 +166,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
-              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}")
+              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
             end
         end
       end

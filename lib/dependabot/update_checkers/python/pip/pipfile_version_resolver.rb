@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "excon"
+
 require "dependabot/file_parsers/python/pip"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/utils/python/version"
@@ -20,6 +22,10 @@ module Dependabot
         # still better than nothing, though.
         class PipfileVersionResolver
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          MAIN_PYPI_INDEXES = %w(
+            https://pypi.python.org/simple/
+            https://pypi.org/simple/
+          ).freeze
 
           attr_reader :dependency, :dependency_files, :credentials
 
@@ -27,6 +33,8 @@ module Dependabot
             @dependency = dependency
             @dependency_files = dependency_files
             @credentials = credentials
+
+            check_private_sources_are_reachable
           end
 
           def latest_resolvable_version
@@ -133,19 +141,40 @@ module Dependabot
           def add_private_sources(pipfile_content)
             pipfile_object = TomlRB.parse(pipfile_content)
 
-            original_sources = pipfile_object["source"].map(&:dup)
-            env_sources = original_sources.
-                          select { |h| h["url"].include?("${") }
+            pipfile_object["source"] =
+              pipfile_sources.reject { |h| h["url"].include?("${") } +
+              config_variable_sources
+
+            TomlRB.dump(pipfile_object)
+          end
+
+          def check_private_sources_are_reachable
+            env_sources = pipfile_sources.select { |h| h["url"].include?("${") }
 
             check_env_sources_included_in_config_variables(env_sources)
 
-            updated_sources = original_sources -
-                              env_sources +
-                              config_variable_sources
+            sources_to_check =
+              pipfile_sources.reject { |h| h["url"].include?("${") } +
+              config_variable_sources
 
-            pipfile_object["source"] = updated_sources
+            sources_to_check.
+              map { |details| details["url"] }.
+              reject { |url| MAIN_PYPI_INDEXES.include?(url) }.
+              each do |url|
+                sanitized_url = url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
-            TomlRB.dump(pipfile_object)
+                response = Excon.get(
+                  url + dependency.name + "/",
+                  idempotent: true,
+                  middlewares: SharedHelpers.excon_middleware
+                )
+
+                if response.status == 401 || response.status == 403
+                  raise PrivateSourceNotReachable, sanitized_url
+                end
+              rescue Excon::Error::Timeout, Excon::Error::Socket
+                raise PrivateSourceNotReachable, sanitized_url
+              end
           end
 
           def updated_version_requirement_string
@@ -220,7 +249,13 @@ module Dependabot
             @config_variable_sources ||=
               credentials.
               select { |cred| cred["index-url"] }.
-              map { |cred| { "url" => cred["index-url"] } }
+              map { |h| { "url" => h["index-url"].gsub(%r{/*$}, "") + "/" } }
+          end
+
+          def pipfile_sources
+            @pipfile_sources ||=
+              TomlRB.parse(pipfile.content).fetch("source", []).
+              map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
           end
         end
       end
