@@ -28,6 +28,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def changelog_text
           return unless full_changelog_text
 
@@ -44,6 +45,8 @@ module Dependabot
                 )
               end
             elsif old_version_changelog_line
+              return if old_version_changelog_line.zero?
+
               # Assumes changelog is in descending order
               Range.new(0, old_version_changelog_line - 1)
             elsif new_version_changelog_line
@@ -56,6 +59,7 @@ module Dependabot
           changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def upgrade_guide_url
           upgrade_guide&.html_url

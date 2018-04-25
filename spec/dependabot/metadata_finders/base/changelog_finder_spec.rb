@@ -395,6 +395,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             expect(changelog_text).to start_with("## 1.11.1 - December 20")
             expect(changelog_text).to end_with("- Add 2015 holiday definitions")
           end
+
+          context "and the previous version is the latest in the changelog" do
+            let(:dependency_previous_version) { "1.11.1" }
+            it { is_expected.to be_nil }
+          end
         end
 
         context "for a git dependency" do
