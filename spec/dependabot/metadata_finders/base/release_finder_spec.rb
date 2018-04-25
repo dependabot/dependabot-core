@@ -265,9 +265,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:dependency_previous_version) { "1.8.0" }
           it { is_expected.to be_nil }
 
-          context "and neither is the previous version" do
-            let(:dependency_version) { "1.7.2" }
-            let(:dependency_previous_version) { "1.7.1" }
+          context "and there is a blank named release that needs excluding" do
+            let(:github_response) do
+              fixture("github", "releases_ember_cp.json")
+            end
+            let(:dependency_version) { "3.5.3" }
+            let(:dependency_previous_version) { "3.5.2" }
             it { is_expected.to be_nil }
           end
         end
