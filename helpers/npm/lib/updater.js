@@ -17,8 +17,10 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const npm = require("npm");
+const npm5 = require("npm5/node_modules/npm");
 const npmlog = require("npmlog");
-const { Installer } = require("npm/lib/install");
+const npm6installer = require("npm/lib/install");
+const npm5installer = require("npm5/node_modules/npm/lib/install");
 
 async function updateDependencyFiles(
   directory,
@@ -30,16 +32,18 @@ async function updateDependencyFiles(
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
+  await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
   const oldLockfile = JSON.parse(readFile("package-lock.json"));
+  const installer = installer_for_lockfile(oldLockfile);
 
   const dryRun = true;
   const args = install_args(depName, desiredVersion, requirements, oldLockfile);
-  const initial_installer = new Installer(directory, dryRun, args, {
+  const initial_installer = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanup_installer = new Installer(directory, dryRun, [], {
+  const cleanup_installer = new installer.Installer(directory, dryRun, [], {
     packageLockOnly: true
   });
 
@@ -96,6 +100,21 @@ function muteStderr() {
   return () => {
     process.stderr.write = original;
   };
+}
+
+function installer_for_lockfile(oldLockfile) {
+  var requireObjectsIncludeMatchers = Object.keys(
+    oldLockfile["dependencies"]
+  ).some(key => {
+    var requires = oldLockfile["dependencies"][key]["requires"] || {};
+    return Object.keys(requires).some(key2 => {
+      if (requires[key2].match(/^\^|~|\<|\>/)) {
+        return true;
+      }
+    });
+  });
+
+  return requireObjectsIncludeMatchers ? npm6installer : npm5installer;
 }
 
 module.exports = { updateDependencyFiles };
