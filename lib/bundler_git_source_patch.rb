@@ -10,7 +10,7 @@ module Bundler
         # no way for Dependabot to do so (it doesn't have any ssh keys).
         # Instead, we convert all `git@github.com:` URLs to use HTTPS.
         def configured_uri_for(uri)
-          uri = uri.gsub("git@github.com:", "https://github.com/")
+          uri = uri.gsub(/git@(.*?):/, 'https://\1/')
           if uri.match?(/https?:/)
             remote = URI(uri)
             config_auth =
