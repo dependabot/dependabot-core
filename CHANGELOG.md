@@ -1,3 +1,8 @@
+## v0.54.65, 25 April 2018
+
+- Python: Scrub updated source details from lockfile
+- Python: Raise DependencyFileNotParseable for TOML that Pipenv can't handle
+
 ## v0.54.64, 25 April 2018
 
 - Java: Find property versions in profile properties
