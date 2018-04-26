@@ -182,11 +182,13 @@ module Dependabot
             begin
               pipfile_hash = pipfile_hash_for(updated_pipfile_content)
               original_reqs = JSON.parse(lockfile.content)["_meta"]["requires"]
+              original_source = JSON.parse(lockfile.content)["_meta"]["sources"]
 
               updated_lockfile = updated_lockfile_content_for(prepared_pipfile)
               updated_lockfile_json = JSON.parse(updated_lockfile)
               updated_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
               updated_lockfile_json["_meta"]["requires"] = original_reqs
+              updated_lockfile_json["_meta"]["sources"] = original_source
 
               JSON.pretty_generate(updated_lockfile_json, indent: "    ").
                 gsub(/\{\n\s*\}/, "{}").

@@ -594,6 +594,11 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             to include("pypi.python.org/${ENV_VAR}")
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
+          expect(json_lockfile["_meta"]["sources"]).
+            to eq([{ "url" => "https://pypi.python.org/${ENV_VAR}",
+                     "verify_ssl" => true }])
+          expect(updated_lockfile.content).
+            to_not include("pypi.python.org/simple")
           expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
         end
       end

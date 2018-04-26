@@ -20,7 +20,7 @@
         "requires": {},
         "sources": [
             {
-                "url": "https://pypi.python.org/simple",
+                "url": "https://pypi.python.org/${ENV_VAR}",
                 "verify_ssl": true
             }
         ]
