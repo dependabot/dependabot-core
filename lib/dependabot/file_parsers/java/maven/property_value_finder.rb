@@ -27,15 +27,16 @@ module Dependabot
 
             # Loop through the paths that would satisfy this property name,
             # looking for one that exists in this POM
-            temp_name = sanitize_property_name(property_name)
+            nm = sanitize_property_name(property_name)
             node =
               loop do
                 candidate_node =
-                  doc.at_xpath("/project/#{temp_name}") ||
-                  doc.at_xpath("/project/properties/#{temp_name}")
+                  doc.at_xpath("/project/#{nm}") ||
+                  doc.at_xpath("/project/properties/#{nm}") ||
+                  doc.at_xpath("/project/profiles/profile/properties/#{nm}")
                 break candidate_node if candidate_node
-                break unless temp_name.include?(".")
-                temp_name = temp_name.sub(".", "/")
+                break unless nm.include?(".")
+                nm = nm.sub(".", "/")
               end
 
             # If we found a property, return it

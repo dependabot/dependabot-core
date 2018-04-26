@@ -35,6 +35,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
         let(:property_name) { "project.version" }
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
+
+      context "and the property is within a profile" do
+        let(:base_pom_fixture_name) { "profile_property_pom.xml" }
+        its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
+      end
     end
 
     context "when the property is declared in a parent pom" do
