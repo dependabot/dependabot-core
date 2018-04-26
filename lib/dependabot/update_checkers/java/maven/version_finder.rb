@@ -75,6 +75,11 @@ module Dependabot
                   middlewares: SharedHelpers.excon_middleware
                 )
                 Nokogiri::XML(response.body)
+              rescue Excon::Error::Socket, Excon::Error::Timeout
+                central =
+                  FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+                raise if repository_url == central
+                Nokogiri::XML("")
               end
           end
 

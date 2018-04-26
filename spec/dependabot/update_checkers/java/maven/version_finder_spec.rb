@@ -101,7 +101,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         stub_request(:get, maven_central_metadata_url).
           to_return(status: 404, body: "")
         stub_request(:get, scala_tools_metadata_url).
-          to_return(status: 404, body: "")
+          to_raise(Excon::Error::Timeout)
         stub_request(:get, jboss_metadata_url).
           to_return(
             status: 200,
