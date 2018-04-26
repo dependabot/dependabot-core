@@ -1,3 +1,8 @@
+## v0.54.64, 25 April 2018
+
+- Java: Find property versions in profile properties
+- Java: Handle inaccessible repositories in UpdateChecker
+
 ## v0.54.63, 25 April 2018
 
 - Java: Ignore repositories that aren't URLs
