@@ -1,3 +1,7 @@
+## v0.54.66, 25 April 2018
+
+- Ruby: Update all ssh URLs to use HTTPS
+
 ## v0.54.65, 25 April 2018
 
 - Python: Scrub updated source details from lockfile
