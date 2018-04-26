@@ -1,0 +1,12 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "==3.4.0"
+
+[packages]
+requests = "==2.18.0"
+
+[packages."discord.py"]
+git = "https://github.com/Rapptz/discord.py.git"

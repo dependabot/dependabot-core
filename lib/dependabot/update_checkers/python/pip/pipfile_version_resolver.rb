@@ -60,10 +60,17 @@ module Dependabot
                   "version"
                 ).gsub(/^==/, "")
               rescue SharedHelpers::HelperSubprocessFailed => error
-                raise unless error.message.include?("could not be resolved")
+                handle_pipenv_errors(error)
               end
             return unless @latest_resolvable_version_string
             Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def handle_pipenv_errors(error)
+            if error.message.include?("prettytoml.parser.errors.ParsingError")
+              raise DependencyFileNotParseable, pipfile.path
+            end
+            raise unless error.message.include?("could not be resolved")
           end
 
           def write_temporary_dependency_files
