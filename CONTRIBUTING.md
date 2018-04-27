@@ -1,6 +1,6 @@
 # Feedback and contributions to Dependabot
 
-👋 Want to give us feedback on Dependabot, or contribute to it? That's great! Here are a some quick guidelines that will help.
+👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
 
 #### Overview
 
