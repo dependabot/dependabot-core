@@ -8,6 +8,7 @@ Gemfile.lock
 /helpers/php/vendor
 /helpers/php/.php_cs.cache
 vendor
+.DS_Store
 *.pyc
 /helpers/elixir/deps
 /helpers/elixir/_build

@@ -17,6 +17,16 @@ RUN apt-get update \
       unzip \
       locales \
       openssh-client \
+      make \
+      libssl-dev \
+      libbz2-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      llvm \
+      libncurses5-dev \
+      libncursesw5-dev \
+      xz-utils \
+      tk-dev \
     && locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
@@ -34,10 +44,14 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 
 ### PYTHON
 
-# Install Python 3.6 and Pip
-RUN apt-get install -y python3.6 python3.6-dev \
-    && ln -s /usr/bin/python3.6 /usr/local/bin/python \
-    && curl -s https://bootstrap.pypa.io/get-pip.py | python
+# Install pyenv with Python 3.6
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv
+ENV PYENV_ROOT=/usr/local/.pyenv
+ENV PATH="$PYENV_ROOT/bin:$PATH"
+RUN eval "$(pyenv init -)" \
+    && echo 'eval "$(pyenv init -)"' >> ~/.bashrc \
+    && pyenv install 3.6.5 \
+    && pyenv global 3.6.5
 
 
 ### JAVASCRIPT

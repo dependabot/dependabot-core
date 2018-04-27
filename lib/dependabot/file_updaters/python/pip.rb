@@ -144,7 +144,8 @@ module Dependabot
 
         def package_hashes_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
-            command: "python3.6 #{python_helper_path}",
+            command: "eval \"$(pyenv init -)\" && "\
+                     "python #{python_helper_path}",
             function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
@@ -199,7 +200,6 @@ module Dependabot
         def prepared_pipfile
           content = updated_pipfile_content
           content = freeze_dependencies_being_updated(content)
-          content = remove_python_requirement(content)
           content = add_private_sources(content)
           content
         end
@@ -218,19 +218,6 @@ module Dependabot
           end
 
           TomlRB.dump(frozen_pipfile_json)
-        end
-
-        def remove_python_requirement(pipfile_content)
-          # TODO: It would be nice to handle this in Python, rather than here.
-          # We should submit a patch to Pipenv to allow us to ignore the
-          # required Python version there.
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          return pipfile_content unless pipfile_object["requires"]
-          pipfile_object["requires"].delete("python_full_version")
-          pipfile_object["requires"].delete("python_version")
-
-          TomlRB.dump(pipfile_object)
         end
 
         def add_private_sources(pipfile_content)
@@ -254,7 +241,8 @@ module Dependabot
             write_temporary_dependency_files(pipfile_content)
 
             SharedHelpers.run_helper_subprocess(
-              command: "python #{python_helper_path}",
+              command:  "eval \"$(pyenv init -)\" && "\
+                        "python #{python_helper_path}",
               function: "update_pipfile",
               args: [dir]
             )
@@ -279,7 +267,8 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
             SharedHelpers.run_helper_subprocess(
-              command: "python #{python_helper_path}",
+              command:  "eval \"$(pyenv init -)\" && "\
+                        "python #{python_helper_path}",
               function: "get_pipfile_hash",
               args: [dir]
             )

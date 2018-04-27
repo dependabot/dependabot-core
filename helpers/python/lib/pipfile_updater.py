@@ -2,9 +2,9 @@ import json
 import os
 
 def update(directory):
-   os.system("cd {0} && pipenv lock --keep-outdated 2>/dev/null".format(directory))
-   os.system("cd {0} && pipenv lock --keep-outdated --requirements > requirements.txt 2>/dev/null".format(directory))
-   os.system("cd {0} && pipenv lock --keep-outdated --dev > requirements-dev.txt 2>/dev/null".format(directory))
+   os.system("cd {0} && eval \"$(pyenv init -)\" && PIPENV_YES=true pipenv lock --keep-outdated >/dev/null 2>&1".format(directory))
+   os.system("cd {0} && eval \"$(pyenv init -)\" && PIPENV_YES=true pipenv lock --keep-outdated --requirements > requirements.txt >/dev/null 2>&1".format(directory))
+   os.system("cd {0} && eval \"$(pyenv init -)\" && PIPENV_YES=true pipenv lock --keep-outdated --dev > requirements-dev.txt >/dev/null 2>&1".format(directory))
 
    lockfile = open(directory + "/Pipfile.lock", "r").read()
    requirements = open(directory + "/requirements.txt", "r").read()
