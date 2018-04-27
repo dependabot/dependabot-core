@@ -1,3 +1,7 @@
+## v0.54.68, 27 April 2018
+
+- PHP: Handle errors caused by new npm-signature downloader type
+
 ## v0.54.67, 27 April 2018
 
 - Python: Upgrade Pipenv to 11.10.1. Fixes some parser errors.
