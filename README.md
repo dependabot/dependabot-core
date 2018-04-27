@@ -4,11 +4,11 @@ Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
 for updating dependencies.
 
 If you're looking to provide feedback on Dependabot's hosted service then we'd
-love to hear it! This repo is the right place to do so - please create an issue
+love to hear it. This repo is the right place to do so - please create an issue
 [here][issues].
 
 If you want to host your own automated dependency update bot then this repo
-should give you the tools you need! A reference implementation is available
+should give you the tools you need. A reference implementation is available
 [here][dependabot-script].
 
 ## What is this?
