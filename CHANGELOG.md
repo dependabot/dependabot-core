@@ -1,3 +1,8 @@
+## v0.54.69, 27 April 2018
+
+- Python: Write all dependency files when generating a new Pipfile.lock
+- Python: Handle logging in setup.py (who would do that?!?)
+
 ## v0.54.68, 27 April 2018
 
 - PHP: Handle errors caused by new npm-signature downloader type
