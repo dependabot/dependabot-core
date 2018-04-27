@@ -1,13 +1,17 @@
-## v0.54.66, 25 April 2018
+## v0.54.67, 27 April 2018
+
+- Python: Upgrade Pipenv to 11.10.1. Fixes some parser errors.
+
+## v0.54.66, 26 April 2018
 
 - Ruby: Update all ssh URLs to use HTTPS
 
-## v0.54.65, 25 April 2018
+## v0.54.65, 26 April 2018
 
 - Python: Scrub updated source details from lockfile
 - Python: Raise DependencyFileNotParseable for TOML that Pipenv can't handle
 
-## v0.54.64, 25 April 2018
+## v0.54.64, 26 April 2018
 
 - Java: Find property versions in profile properties
 - Java: Handle inaccessible repositories in UpdateChecker
