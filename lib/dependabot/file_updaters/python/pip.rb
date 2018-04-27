@@ -251,8 +251,7 @@ module Dependabot
 
         def updated_lockfile_content_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
-            File.write(File.join(dir, "Pipfile.lock"), lockfile.content)
-            File.write(File.join(dir, "Pipfile"), pipfile_content)
+            write_temporary_dependency_files(pipfile_content)
 
             SharedHelpers.run_helper_subprocess(
               command: "python #{python_helper_path}",
@@ -260,6 +259,20 @@ module Dependabot
               args: [dir]
             )
           end.fetch("Pipfile.lock")
+        end
+
+        def write_temporary_dependency_files(pipfile_content)
+          dependency_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
+
+          # Workaround for Pipenv bug
+          FileUtils.mkdir_p("python_package.egg-info")
+
+          # Overwrite the pipfile with updated content
+          File.write("Pipfile", pipfile_content)
         end
 
         def pipfile_hash_for(pipfile_content)
