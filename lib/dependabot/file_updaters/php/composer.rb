@@ -133,16 +133,19 @@ module Dependabot
             dependency_url =
               error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).
               named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise GitDependenciesNotReachable, dependency_url
           end
           if error.message.start_with?("Failed to clone")
             dependency_url =
               error.message.match(/Failed to clone (?<url>.*?) via/).
               named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise GitDependenciesNotReachable, dependency_url
           end
           if error.message.start_with?("Could not find a key for ACF PRO")
-            raise Dependabot::MissingEnvironmentVariable, "ACF_PRO_KEY"
+            raise MissingEnvironmentVariable, "ACF_PRO_KEY"
+          end
+          if error.message.start_with?("Unknown downloader type: npm-signature")
+            raise DependencyFileNotResolvable, error.message
           end
           raise error
         end
@@ -157,7 +160,7 @@ module Dependabot
             fetch("name")
 
           raise unless dependency_name
-          raise Dependabot::GitDependencyReferenceNotFound, dependency_name
+          raise GitDependencyReferenceNotFound, dependency_name
         end
 
         def replace_patches(updated_content)
