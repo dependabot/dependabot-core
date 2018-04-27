@@ -7,9 +7,7 @@
 * [Feedback workflow](#feedback-workflow)
 * [Contribution workflow](#contribution-workflow)
 * [Setup instructions](#setup-instructions)
-* [Localisation](#localisation)
-* [Reporting a bug](#reporting-a-bug)
-* [Additional info](#additional-info)
+* [Project layout](#project-layout)
 
 ## Feedback workflow
 
