@@ -90,16 +90,6 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
-    context "with a toml format that Pipenv can't handle" do
-      let(:pipfile_fixture_name) { "parser_bug" }
-      it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-            expect(error.file_path).to eq("/Pipfile")
-          end
-      end
-    end
-
     context "with an unreachable private source" do
       let(:pipfile_fixture_name) { "private_source" }
       let(:lockfile_fixture_name) { "exact_version.lock" }

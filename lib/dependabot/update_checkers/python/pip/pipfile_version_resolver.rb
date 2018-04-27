@@ -67,10 +67,6 @@ module Dependabot
           end
 
           def handle_pipenv_errors(error)
-            if error.message.include?("toml.parser.errors.ParsingError") ||
-               error.message.include?("toml.TomlDecodeError")
-              raise DependencyFileNotParseable, pipfile.path
-            end
             raise unless error.message.include?("could not be resolved")
           end
 
