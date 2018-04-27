@@ -1,6 +1,10 @@
 from setuptools import setup, find_packages
+from distutils import log
 
 print("Installing some files")
+
+log.set_verbosity(log.DEBUG)
+log.info("Installing some files")
 
 setup(name='python-package',
       version='0.0',
