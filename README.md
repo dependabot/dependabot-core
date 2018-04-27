@@ -8,8 +8,8 @@ love to hear it! This repo is the right place to do so - please create an issue
 [here][issues].
 
 If you want to host your own automated dependency update bot then this repo
-should give you with the tools you need! A reference implementation is
-available [here][dependabot-script].
+should give you the tools you need! A reference implementation is available
+[here][dependabot-script].
 
 ## What is this?
 
