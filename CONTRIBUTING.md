@@ -1,6 +1,6 @@
-# Feedback and contributing to Dependabot Core
+# Feedback and contributions to Dependabot
 
-Want to give us feedback on Dependabot, or contribute to it? That's great! Here are a couple of guidelines that will help you contribute.
+👋 Want to give us feedback on Dependabot, or contribute to it? That's great! Here are a some quick guidelines that will help.
 
 #### Overview
 
@@ -18,11 +18,10 @@ Want to give us feedback on Dependabot, or contribute to it? That's great! Here 
 
 ## Contribution workflow
 
- * Amazing! We love contributions!
  * Fork the project.
  * Make your feature addition or bug fix.
  * Add tests for it. This is important so we don't break it in a future version unintentionally.
- * Send a pull request.
+ * Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
 
 ## Setup instructions
 
