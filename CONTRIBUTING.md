@@ -36,4 +36,4 @@ Assuming you're working on a single language, the best thing to do is just to in
 
 ## Project layout
 
-There's a good description of the project's layout in our [README](README.md)
+There's a good description of the project's layout in our [README](README.md), but if you're struggling to understand how anything works please don't hesitate to create an issue.
