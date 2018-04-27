@@ -11,7 +11,7 @@ If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
 [here][dependabot-script].
 
-## What is this?
+## What's in this repo?
 
 Dependabot Core is a collection of helper classes for automating dependency
 updating in Ruby, JavaScript, Python, PHP, Elixir, Rust and Java. It can also
@@ -40,7 +40,7 @@ the helpers:
 5. `cd helpers/python && pip install -r requirements.txt && cd -`
 6. `cd helpers/elixir && mix deps.get && cd -`
 
-## Internals
+## Architecture
 
 Dependabot Core has helper classes for seven concerns. Where relevant, each
 concern will have a language-specific class.
