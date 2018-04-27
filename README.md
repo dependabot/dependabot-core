@@ -1,5 +1,15 @@
 # Dependabot Core
 
+Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
+for updating dependencies.
+
+If you're looking to host your own automated dependency update bot and can write
+a little Ruby, this repo will provide you with all the tools to do so. You can
+find a reference implemenation of a script to update a single dependency using
+Dependabot Core [here][dependabot-script].
+
+## What is this?
+
 Dependabot Core is a collection of helper classes for automating dependency
 updating in Ruby, JavaScript, Python, PHP, Elixir, Rust and Java. It can also
 update git submodules and Docker files. Highlights include:
@@ -9,8 +19,6 @@ update git submodules and Docker files. Highlights include:
   dependency resolution logic
 - Logic to generate updated manifest and lockfiles for a new dependency version
 - Logic to find changelogs, release notes, and commits for a dependency update
-
-Dependabot Core is used by [Dependabot][dependabot].
 
 ## Setup
 
@@ -80,6 +88,7 @@ GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
 [dependabot]: https://dependabot.com
+[dependabot-script]: https://github.com/dependabot/dependabot-script
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
