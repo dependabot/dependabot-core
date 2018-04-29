@@ -1,3 +1,9 @@
+## v0.55.0, 28 April 2018
+
+- BREAKING: Use pyenv to manage Python version. This requires an update to the
+  setup you use to run Dependabot Core - see the updated Dockerfile (basically
+  you have to have pyenv installed)
+
 ## v0.54.69, 27 April 2018
 
 - Python: Write all dependency files when generating a new Pipfile.lock

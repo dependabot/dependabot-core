@@ -37,7 +37,7 @@ the helpers:
 2. `cd helpers/yarn && yarn install && cd -`
 3. `cd helpers/npm && yarn install && cd -`
 4. `cd helpers/php && composer install && cd -`
-5. `cd helpers/python && pip install -r requirements.txt && cd -`
+5. `cd helpers/python && pyenv exec pip install -r requirements.txt && cd -`
 6. `cd helpers/elixir && mix deps.get && cd -`
 
 ## Architecture
