@@ -1,3 +1,9 @@
+## v0.55.2, 29 April 2018
+
+- Clearer links to changelogs / release notes
+- Minor improvement to changelog parsing
+- Java: Look everywhere in the POM for a GitHub URL
+
 ## v0.55.1, 29 April 2018
 
 - Python: Looks at package homepage if URL can't be found in PyPI data
