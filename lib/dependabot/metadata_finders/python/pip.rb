@@ -26,6 +26,7 @@ module Dependabot
 
           source_url = potential_source_urls.find { |url| Source.from_url(url) }
           source_url ||= source_from_description
+          source_url ||= source_from_homepage
 
           Source.from_url(source_url)
         end
@@ -43,6 +44,31 @@ module Dependabot
             repo = Source.from_url(url).repo
             repo.end_with?(dependency.name)
           end
+        end
+
+        def source_from_homepage
+          return unless (homepage_url = pypi_listing.dig("info", "home_page"))
+          return if homepage_url.include?("pypi.python.org")
+          return if homepage_url.include?("pypi.org")
+
+          @homepage_response ||= Excon.get(
+            homepage_url,
+            idempotent: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+          return unless @homepage_response.status == 200
+
+          github_urls = []
+          @homepage_response.body.scan(Source::SOURCE_REGEX) do
+            github_urls << Regexp.last_match.to_s
+          end
+
+          github_urls.find do |url|
+            repo = Source.from_url(url).repo
+            repo.end_with?(dependency.name)
+          end
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          nil
         end
 
         def pypi_listing

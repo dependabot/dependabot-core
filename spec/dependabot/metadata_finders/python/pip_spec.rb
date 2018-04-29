@@ -154,11 +154,42 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     context "when there is not a recognised source link in the pypi response" do
       let(:pypi_response) { fixture("python", "pypi_response_no_source.json") }
 
+      before do
+        stub_request(:get, "http://initd.org/psycopg/").
+          to_return(status: 200, body: "no details")
+      end
+
       it { is_expected.to be_nil }
 
       it "caches the call to pypi" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, pypi_url).once
+      end
+
+      it "caches the call to the homepage" do
+        2.times { source_url }
+        expect(WebMock).
+          to have_requested(:get, "http://initd.org/psycopg/").once
+      end
+
+      context "but there are details on the home page" do
+        before do
+          stub_request(:get, "http://initd.org/psycopg/").
+            to_return(
+              status: 200,
+              body: fixture("python", "psycopg_homepage.html")
+            )
+        end
+
+        context "for this dependency" do
+          let(:dependency_name) { "psycopg2" }
+          it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
+        end
+
+        context "for another dependency" do
+          let(:dependency_name) { "luigi" }
+          it { is_expected.to be_nil }
+        end
       end
     end
 

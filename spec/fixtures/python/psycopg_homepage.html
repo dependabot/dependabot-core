@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>PostgreSQL + Python | Psycopg</title>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <meta http-equiv="content-language" content="en-us" />
+  <meta name="description" content="Python adapter for PostgreSQL" />
+  <meta name="keywords" content="python, postgresql, adapter, driver, psycopg, psycopg2, database" />
+
+  <link rel="stylesheet" type="text/css" href="/psycopg/media/css/psycopg.css" />
+  <link rel="stylesheet" type="text/css" href="/psycopg/media/css/syntax.css" />
+
+
+  <link rel="alternate" type="application/atom+xml" title="Psycopg news"
+    href="/psycopg/articles/feeds/tag/news/atom/" />
+  <link rel="alternate" type="application/atom+xml" title="Psycopg articles"
+    href="/psycopg/articles/feeds/atom/" />
+  <script type="text/javascript">
+    /* <![CDATA[ */
+        (function() {
+          var s = document.createElement('script'), t = document.getElementsByTagName('script')[0];
+          s.type = 'text/javascript';
+          s.async = true;
+          s.src = 'http://api.flattr.com/js/0.6/load.js?mode=auto';
+          t.parentNode.insertBefore(s, t);
+        })();
+    /* ]]> */
+  </script>
+
+
+
+
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-19287248-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+
+</head>
+<body class="">
+
+<div id="header">
+  <div id="logoContainer">
+    <div id="logo"><h1><a href="/psycopg/">psycopg</a></h1></div>
+    <div class="clearLeft"></div>
+  </div>
+  <div id="menu">
+    <table cellpadding="0" cellspacing="0" border="0">
+      <tbody>
+        <tr>
+          <td>
+            <ul>
+              <li><a href="/psycopg/">Home</a></li>
+              <li><a href="/psycopg/download/">Download</a></li>
+              <li><a href="/psycopg/docs/install.html">Install</a></li>
+              <li><a href="/psycopg/docs/">Documentation</a></li>
+
+              <li><a href="/psycopg/articles/tag/news/">News</a></li>
+              <li><a href="/psycopg/articles/">Articles</a></li>
+              <li><a href="/psycopg/development/">Development</a></li>
+            </ul>
+            <div class="clearLeft"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="site">
+  <div id="content">
+
+<div class="teaser">
+<p><strong>Psycopg</strong> is the most popular <a class="reference external" href="http://www.postgresql.org/">PostgreSQL</a> adapter for the <a class="reference external" href="http://www.python.org/">Python programming language</a>.
+At its core it fully implements the <a class="reference external" href="http://www.python.org/dev/peps/pep-0249/">Python DB API 2.0</a> specifications. Several extensions allow access to many of the features offered by PostgreSQL.</p>
+
+</div>
+<div style="margin-bottom: 1em">
+<p>Psycopg is released under the terms of the <a class="reference external" href="/psycopg/license/">GNU Lesser General Public License</a>, allowing use from both free and proprietary software.</p>
+<ul class="simple">
+<li>Check the <a class="reference external" href="/psycopg/features/">features list</a> to see what Psycopg offers</li>
+<li>Read the <a class="reference external" href="/psycopg/docs/">Psycopg documentation</a>. Be sure to check the <a class="reference external" href="/psycopg/docs/faq.html">Frequently Asked Questions</a></li>
+<li><a class="reference external" href="/psycopg/download/">Download Psycopg</a>!</li>
+</ul>
+
+</div>
+
+
+
+  <div class="clearbox">
+  <h2><a href="/psycopg/articles/">Latest articles</a></h2>
+
+    <div class="article">
+      <h3><a href="/psycopg/articles/2018/02/08/psycopg-274-released/">Psycopg 2.7.4 released</a></h3>
+
+<p class="header">
+  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
+  on <span class="pub_date">February 8, 2018</span>
+
+
+    <br />Tagged as
+
+    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
+
+    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+
+
+</p>
+
+    </div>
+
+    <div class="article">
+      <h3><a href="/psycopg/articles/2017/10/24/psycopg-2732-released/">Psycopg 2.7.3.2 released</a></h3>
+
+<p class="header">
+  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
+  on <span class="pub_date">October 24, 2017</span>
+
+
+    <br />Tagged as
+
+    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
+
+    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+
+
+</p>
+
+    </div>
+
+    <div class="article">
+      <h3><a href="/psycopg/articles/2017/08/26/psycopg-2731-released/">Psycopg 2.7.3.1 released</a></h3>
+
+<p class="header">
+  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
+  on <span class="pub_date">August 26, 2017</span>
+
+
+</p>
+
+    </div>
+
+    <div class="article">
+      <h3><a href="/psycopg/articles/2017/07/24/psycopg-273-released/">Psycopg 2.7.3 released</a></h3>
+
+<p class="header">
+  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
+  on <span class="pub_date">July 24, 2017</span>
+
+
+    <br />Tagged as
+
+    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
+
+    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+
+
+</p>
+
+    </div>
+
+    <div class="article">
+      <h3><a href="/psycopg/articles/2017/07/22/psycopg-272-released/">Psycopg 2.7.2 released</a></h3>
+
+<p class="header">
+  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
+  on <span class="pub_date">July 22, 2017</span>
+
+
+    <br />Tagged as
+
+    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
+
+    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+
+
+</p>
+
+    </div>
+
+  </div>
+
+
+
+  </div>
+
+  <div id="sidebar">
+
+
+<div class="clearbox">
+  <h3>Donate</h3>
+  <a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.psycopg.org/"></a>
+  <noscript><a href="http://flattr.com/thing/390575/psycopg" target="_blank">
+  <img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript>
+</div>
+
+<div class="clearbox">
+  <h3>Quick links</h3>
+  <ul>
+    <li><a href="http://initd.org/psycopg/tarballs/PSYCOPG-2-7/psycopg2-2.7.4.tar.gz"
+      >Download stable release (2.7.4)</a></li>
+
+    <li><a href="http://www.stickpeople.com/projects/python/win-psycopg/">Windows download</a></li>
+    <li><a href="https://github.com/psycopg/psycopg2/issues">Report a bug</a></li>
+    <li><a href="https://lists.postgresql.org/">Mailing list</a></li>
+  </ul>
+</div>
+
+
+  </div>
+</div>
+
+<div class="clearBoth"></div>
+
+<div id="footer">
+  <p>&#169; 2010&#8212;2017 &#8212; Daniele Varrazzo (at gmail.com)
+</div>
+
+</body>
+</html>
