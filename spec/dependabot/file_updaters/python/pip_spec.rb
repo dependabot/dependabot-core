@@ -489,9 +489,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
 
       context "when the Pipfile specified a Python version" do
-        let(:pipfile_body) do
-          fixture("python", "pipfiles", "required_python")
-        end
+        let(:pipfile_body) { fixture("python", "pipfiles", "required_python") }
         let(:lockfile_body) do
           fixture("python", "lockfiles", "required_python.lock")
         end
@@ -529,12 +527,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           json_lockfile = JSON.parse(updated_lockfile.content)
 
           expect(updated_pipfile.content).
-            to include('python_full_version = "3.5.0"')
+            to include('python_full_version = "2.7.14"')
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
           expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
           expect(json_lockfile["_meta"]["requires"]).
             to eq(JSON.parse(lockfile_body)["_meta"]["requires"])
+          expect(json_lockfile["develop"]["funcsigs"]["markers"]).
+            to eq("python_version < '3.0'")
         end
       end
 
