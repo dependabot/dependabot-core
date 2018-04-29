@@ -17,7 +17,7 @@ jobs:
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
-      - run: cd helpers/python && eval "$(pyenv init -)" && pip install -r requirements.txt
+      - run: cd helpers/python && pyenv exec pip install -r requirements.txt
       - run: cd helpers/elixir && mix deps.get
 
       - save_cache:

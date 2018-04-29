@@ -144,8 +144,7 @@ module Dependabot
 
         def package_hashes_for(name:, version:, algorithm:)
           SharedHelpers.run_helper_subprocess(
-            command: "eval \"$(pyenv init -)\" && "\
-                     "python #{python_helper_path}",
+            command: "pyenv exec python #{python_helper_path}",
             function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
@@ -241,8 +240,7 @@ module Dependabot
             write_temporary_dependency_files(pipfile_content)
 
             SharedHelpers.run_helper_subprocess(
-              command:  "eval \"$(pyenv init -)\" && "\
-                        "python #{python_helper_path}",
+              command:  "pyenv exec python #{python_helper_path}",
               function: "update_pipfile",
               args: [dir]
             )
@@ -267,8 +265,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
             SharedHelpers.run_helper_subprocess(
-              command:  "eval \"$(pyenv init -)\" && "\
-                        "python #{python_helper_path}",
+              command:  "pyenv exec python #{python_helper_path}",
               function: "get_pipfile_hash",
               args: [dir]
             )
