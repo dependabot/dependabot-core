@@ -8,6 +8,7 @@ require "dependabot/github_client_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
@@ -144,6 +145,8 @@ module Dependabot
           changelog_line_for_version(new_version)
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def changelog_line_for_version(version)
           raise "No changelog text" unless full_changelog_text
           return nil unless version
@@ -155,10 +158,13 @@ module Dependabot
             next false unless line.include?(version)
             next true if line.start_with?("#", "!")
             next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
+            next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
             next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
             false
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_contains_relevant_versions?
           # Assume the changelog is relevant if we can't parse the new version
@@ -233,8 +239,10 @@ module Dependabot
 
           files += github_client.contents(source.repo)
 
-          if files.any? { |f| f.name == "docs" && f.type == "dir" }
-            files += github_client.contents(source.repo, path: "docs")
+          %w(doc docs).each do |dir_name|
+            if files.any? { |f| f.name == dir_name && f.type == "dir" }
+              files += github_client.contents(source.repo, path: dir_name)
+            end
           end
 
           files
@@ -340,3 +348,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
