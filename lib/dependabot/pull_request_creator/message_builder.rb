@@ -255,7 +255,7 @@ module Dependabot
         return "" unless releases_text(dep) && releases_url(dep)
 
         msg = "\n<details>\n<summary>Release notes</summary>\n\n"
-        msg += "*Sourced from #{dep.name}'s [releases](#{releases_url(dep)}).*"\
+        msg += "*Sourced from [#{dep.name}'s releases](#{releases_url(dep)}).*"\
                "\n\n"
         msg +=
           begin
@@ -275,8 +275,8 @@ module Dependabot
         return "" unless changelog_url(dep) && changelog_text(dep)
 
         msg = "\n<details>\n<summary>Changelog</summary>\n\n"
-        msg += "*Sourced from #{dep.name}'s "\
-               "[changelog](#{changelog_url(dep)}).*\n\n"
+        msg += "*Sourced from "\
+               "[#{dep.name}'s changelog](#{changelog_url(dep)}).*\n\n"
         msg +=
           begin
             changelog_lines = changelog_text(dep).split("\n").first(50)
@@ -293,8 +293,8 @@ module Dependabot
         return "" unless upgrade_url(dep) && upgrade_text(dep)
 
         msg = "\n<details>\n<summary>Upgrade guide</summary>\n\n"
-        msg += "*Sourced from #{dep.name}'s "\
-               "[upgrade guide](#{upgrade_url(dep)}).*\n\n"
+        msg += "*Sourced from "\
+               "[#{dep.name}'s upgrade guide](#{upgrade_url(dep)}).*\n\n"
         msg +=
           begin
             upgrade_lines = upgrade_text(dep).split("\n").first(50)

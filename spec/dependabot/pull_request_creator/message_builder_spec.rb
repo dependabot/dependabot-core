@@ -363,7 +363,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "from 1.4.0 to 1.5.0.\n"\
             "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
-            "*Sourced from business's [changelog](https://github.com/"\
+            "*Sourced from [business's changelog](https://github.com/"\
             "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
             "> ## 1.5.0 - June 2, 2015\n"\
             "> \n"\
@@ -452,7 +452,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "from v1.0.0 to v1.1.0.\n"\
                 "<details>\n"\
                 "<summary>Changelog</summary>\n\n"\
-                "*Sourced from business's [changelog](https://github.com/"\
+                "*Sourced from [business's changelog](https://github.com/"\
                 "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
                 "> ## 1.1.0 - September 30, 2014\n"\
                 "> \n"\
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "tagged commit.\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from business's [changelog](https://github.com/"\
+              "*Sourced from [business's changelog](https://github.com/"\
               "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
@@ -633,7 +633,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<details>\n"\
                 "<summary>Release notes</summary>\n"\
                 "\n"\
-                "*Sourced from business's [releases](https://github.com/"\
+                "*Sourced from [business's releases](https://github.com/"\
                 "gocardless/business/releases).*\n\n"\
                 "> ## v1.6.0\n"\
                 "> Mad props to [**greysteil**](https://github.com/greysteil) "\
@@ -741,7 +741,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "from 0.9.0 to 1.5.0.\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from business's [changelog](https://github.com/"\
+              "*Sourced from [business's changelog](https://github.com/"\
               "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
@@ -774,7 +774,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "</details>\n"\
               "<details>\n"\
               "<summary>Upgrade guide</summary>\n\n"\
-              "*Sourced from business's [upgrade guide](https://github.com/"\
+              "*Sourced from [business's upgrade guide](https://github.com/"\
               "gocardless/business/blob/master/UPGRADE.md).*\n\n"\
               "> UPGRADE GUIDE FROM 2.x to 3.0\n"
             )
@@ -844,7 +844,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from business's [changelog](https://github.com/"\
+              "*Sourced from [business's changelog](https://github.com/"\
               "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
@@ -855,7 +855,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from statesman's [changelog](https://github.com/"\
+              "*Sourced from [statesman's changelog](https://github.com/"\
               "gocardless/statesman/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.7.0 - January 18, 2017\n"\
               "> \n"\
@@ -968,7 +968,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "to permit the latest version.\n"\
             "<details>\n"\
             "<summary>Changelog</summary>\n\n"\
-            "*Sourced from business's [changelog](https://github.com/"\
+            "*Sourced from [business's changelog](https://github.com/"\
             "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
             "> ## 1.5.0 - June 2, 2015\n"\
             "> \n"\
@@ -1047,7 +1047,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `business` from 1.4.0 to 1.5.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from business's [changelog](https://github.com/"\
+              "*Sourced from [business's changelog](https://github.com/"\
               "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.5.0 - June 2, 2015\n"\
               "> \n"\
@@ -1058,7 +1058,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Updates `statesman` from 1.6.0 to 1.7.0\n"\
               "<details>\n"\
               "<summary>Changelog</summary>\n\n"\
-              "*Sourced from statesman's [changelog](https://github.com/"\
+              "*Sourced from [statesman's changelog](https://github.com/"\
               "gocardless/statesman/blob/master/CHANGELOG.md).*\n\n"\
               "> ## 1.7.0 - January 18, 2017\n"\
               "> \n"\
