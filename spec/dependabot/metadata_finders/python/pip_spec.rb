@@ -39,7 +39,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
-    let(:pypi_url) { "https://pypi.python.org/pypi/#{dependency_name}/json" }
+    let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do
       stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when the pypi link resolves to a redirect" do
-      let(:redirect_url) { "https://pypi.python.org/pypi/LuiGi/json" }
+      let(:redirect_url) { "https://pypi.org/pypi/LuiGi/json" }
       let(:pypi_response) { fixture("python", "pypi_response.json") }
 
       before do
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
-    let(:pypi_url) { "https://pypi.python.org/pypi/#{dependency_name}/json" }
+    let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do
       stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)

@@ -8,7 +8,7 @@ module Dependabot
   module MetadataFinders
     module Python
       class Pip < Dependabot::MetadataFinders::Base
-        MAIN_PYPI_URL = "https://pypi.python.org/pypi"
+        MAIN_PYPI_URL = "https://pypi.org/pypi"
 
         def homepage_url
           pypi_listing.dig("info", "home_page") || super
