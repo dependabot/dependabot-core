@@ -48,10 +48,26 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
     end
 
-    context "when there is no github link in the maven response" do
+    context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
 
-      it { is_expected.to eq(nil) }
+      it { is_expected.to eq("https://github.com/google/guava") }
+
+      it "caches the call to maven" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, maven_url).once
+      end
+    end
+
+    context "when there is no github link in the pom" do
+      let(:maven_response) do
+        fixture("java", "poms", "guava-23.3-jre.xml").gsub(
+          "https://github.com/google/guava/",
+          "https://github.com/google/random/"
+        )
+      end
+
+      it { is_expected.to be_nil }
 
       it "caches the call to maven" do
         2.times { source_url }
