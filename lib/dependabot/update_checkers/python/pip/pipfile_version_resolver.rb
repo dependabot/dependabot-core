@@ -51,7 +51,7 @@ module Dependabot
                 # Whilst calling `lock` avoids doing an install as part of the
                 # pipenv flow, an install is still done by pip-tools in order
                 # to resolve the dependencies. That means this is slow.
-                run_pipenv_command("pipenv lock")
+                run_pipenv_command("PIPENV_YES=true pyenv exec pipenv lock")
 
                 updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
                 updated_lockfile.dig(
@@ -86,24 +86,10 @@ module Dependabot
 
           def pipfile_content
             content = pipfile.content
-            content = remove_python_requirement(content)
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content)
             content = add_private_sources(content)
             content
-          end
-
-          def remove_python_requirement(pipfile_content)
-            # It's not idea to remove the Python version, but unless we start
-            # running multiple Python versions in production there's no
-            # alternative.
-            pipfile_object = TomlRB.parse(pipfile_content)
-
-            return pipfile_content unless pipfile_object["requires"]
-            pipfile_object["requires"].delete("python_full_version")
-            pipfile_object["requires"].delete("python_version")
-
-            TomlRB.dump(pipfile_object)
           end
 
           def freeze_other_dependencies(pipfile_content)

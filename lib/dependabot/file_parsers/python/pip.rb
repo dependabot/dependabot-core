@@ -142,7 +142,7 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(
-              command: "python3.6 #{python_helper_path}",
+              command: "pyenv exec python #{python_helper_path}",
               function: "parse_requirements",
               args: [Dir.pwd]
             )
@@ -159,7 +159,7 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(
-              command: "python3.6 #{python_helper_path}",
+              command: "pyenv exec python #{python_helper_path}",
               function: "parse_setup",
               args: [Dir.pwd]
             )
