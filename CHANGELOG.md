@@ -1,4 +1,9 @@
-## v0.55.0, 28 April 2018
+## v0.55.1, 29 April 2018
+
+- Python: Looks at package homepage if URL can't be found in PyPI data
+- Update PyPI URL for Warehouse
+
+## v0.55.0, 29 April 2018
 
 - BREAKING: Use pyenv to manage Python version. This requires an update to the
   setup you use to run Dependabot Core - see the updated Dockerfile (basically
