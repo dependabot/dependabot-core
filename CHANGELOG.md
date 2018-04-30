@@ -1,3 +1,7 @@
+## v0.55.3, 30 April 2018
+
+- Python: Source repo finding improvements
+
 ## v0.55.2, 29 April 2018
 
 - Clearer links to changelogs / release notes
