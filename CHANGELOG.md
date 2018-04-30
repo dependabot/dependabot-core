@@ -1,3 +1,7 @@
+## v0.55.6, 30 April 2018
+
+- Python: Handle version freezing for dependencies with extras more carefully
+
 ## v0.55.5, 30 April 2018
 
 - Python: Use keep-outdated as well as freezing
