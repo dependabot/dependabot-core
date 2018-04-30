@@ -14,11 +14,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: [dependency],
-      credentials: [{
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: credentials
     )
   end
   let(:dependency_files) { [requirements] }
@@ -51,6 +47,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       ],
       package_manager: "pip"
     )
+  end
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
 

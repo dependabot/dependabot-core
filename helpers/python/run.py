@@ -1,7 +1,7 @@
 import sys
 import json
 
-from lib import parser, pipfile_updater, hasher
+from lib import parser, hasher
 
 if __name__ == "__main__":
     args = json.loads(sys.stdin.read())
@@ -14,5 +14,3 @@ if __name__ == "__main__":
         print(hasher.get_dependency_hash(*args["args"]))
     elif args["function"] == "get_pipfile_hash":
         print(hasher.get_pipfile_hash(*args["args"]))
-    elif args["function"] == "update_pipfile":
-        print(pipfile_updater.update(*args["args"]))

@@ -4,6 +4,7 @@ require "toml-rb"
 
 require "python_requirement_parser"
 require "dependabot/file_updaters/base"
+require "dependabot/file_parsers/python/pip"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -181,8 +182,8 @@ module Dependabot
           @updated_lockfile_content ||=
             begin
               pipfile_hash = pipfile_hash_for(updated_pipfile_content)
-              original_reqs = JSON.parse(lockfile.content)["_meta"]["requires"]
-              original_source = JSON.parse(lockfile.content)["_meta"]["sources"]
+              original_reqs = parsed_lockfile["_meta"]["requires"]
+              original_source = parsed_lockfile["_meta"]["sources"]
 
               updated_lockfile = updated_lockfile_content_for(prepared_pipfile)
               updated_lockfile_json = JSON.parse(updated_lockfile)
@@ -198,9 +199,29 @@ module Dependabot
 
         def prepared_pipfile
           content = updated_pipfile_content
+          content = freeze_other_dependencies(content)
           content = freeze_dependencies_being_updated(content)
           content = add_private_sources(content)
           content
+        end
+
+        def freeze_other_dependencies(pipfile_content)
+          return pipfile_content unless lockfile
+          pipfile_object = TomlRB.parse(pipfile_content)
+
+          FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless pipfile_object[keys[:pipfile]]
+
+            pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
+              next if dependencies.map(&:name).include?(dep_name)
+              next unless dependency_version(dep_name, keys[:lockfile])
+
+              pipfile_object[keys[:pipfile]][dep_name] =
+                "==#{dependency_version(dep_name, keys[:lockfile])}"
+            end
+          end
+
+          TomlRB.dump(pipfile_object)
         end
 
         def freeze_dependencies_being_updated(pipfile_content)
@@ -238,13 +259,26 @@ module Dependabot
         def updated_lockfile_content_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             write_temporary_dependency_files(pipfile_content)
+            puts File.read("Pipfile")
+            run_pipenv_command("PIPENV_YES=true pyenv exec pipenv lock")
 
-            SharedHelpers.run_helper_subprocess(
-              command:  "pyenv exec python #{python_helper_path}",
-              function: "update_pipfile",
-              args: [dir]
-            )
-          end.fetch("Pipfile.lock")
+            File.read("Pipfile.lock")
+          end
+        end
+
+        def run_pipenv_command(command)
+          raw_response = nil
+          IO.popen(command, err: %i(child out)) do |process|
+            raw_response = process.read
+          end
+
+          # Raise an error with the output from the shell session if Pipenv
+          # returns a non-zero status
+          return if $CHILD_STATUS.success?
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            raw_response,
+            command
+          )
         end
 
         def write_temporary_dependency_files(pipfile_content)
@@ -275,6 +309,16 @@ module Dependabot
         def declaration_regex(dep)
           escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
           /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
+        end
+
+        def dependency_version(dep_name, group)
+          parsed_lockfile.
+            dig(group, dep_name, "version")&.
+            gsub(/^==/, "")
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
 
         def pipfile

@@ -12,3 +12,4 @@ vendor
 *.pyc
 /helpers/elixir/deps
 /helpers/elixir/_build
+/helpers/python/src
