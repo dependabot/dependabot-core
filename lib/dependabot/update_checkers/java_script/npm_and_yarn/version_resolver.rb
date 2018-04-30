@@ -41,6 +41,7 @@ module Dependabot
             end.compact
 
             (npm_details || {}).fetch("versions", {}).
+              reject { |_, details| details["deprecated"] }.
               keys.map { |v| version_class.new(v) }.
               reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
               find do |version|
@@ -125,6 +126,7 @@ module Dependabot
 
           def version_from_versions_array(npm_details)
             npm_details["versions"].
+              reject { |_, details| details["deprecated"] }.
               keys.map { |v| version_class.new(v) }.
               reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
               find { |version| !yanked?(version) }
