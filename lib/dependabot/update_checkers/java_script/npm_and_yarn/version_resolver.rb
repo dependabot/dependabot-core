@@ -26,7 +26,7 @@ module Dependabot
             return { version: dist_tag_version } if dist_tag_version
             return nil if specified_dist_tag_requirement?
 
-            { version: version_from_versions_array(npm_details) }
+            { version: version_from_versions_array }
           rescue Excon::Error::Socket, Excon::Error::Timeout
             raise if dependency_registry == "registry.npmjs.org"
             # Sometimes custom registries are flaky. We don't want to make that
@@ -34,16 +34,14 @@ module Dependabot
           end
 
           def latest_resolvable_version_with_no_unlock
+            return unless npm_details
+
             reqs = dependency.requirements.map do |r|
-              Utils::JavaScript::Requirement.requirements_array(
-                r.fetch(:requirement)
-              )
+              Utils::JavaScript::Requirement.
+                requirements_array(r.fetch(:requirement))
             end.compact
 
-            (npm_details || {}).fetch("versions", {}).
-              reject { |_, details| details["deprecated"] }.
-              keys.map { |v| version_class.new(v) }.
-              reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
+            npm_versions_array.
               find do |version|
                 reqs.all? { |r| r.any? { |opt| opt.satisfied_by?(version) } } &&
                   !yanked?(version)
@@ -81,16 +79,22 @@ module Dependabot
             wants_latest_dist_tag?(latest) ? latest : nil
           end
 
-          def wants_prerelease?
+          def related_to_current_pre?(version)
             current_version = dependency.version
             if current_version &&
                version_class.correct?(current_version) &&
-               version_class.new(current_version).prerelease?
+               version_class.new(current_version).prerelease? &&
+               version_class.new(current_version).release == version.release
               return true
             end
 
             dependency.requirements.any? do |req|
-              req[:requirement]&.match?(/\d-[A-Za-z]/)
+              next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
+              Utils::JavaScript::Requirement.
+                requirements_array(req.fetch(:requirement)).
+                any? do |r|
+                  r.requirements.any? { |a| a.last.release == version.release }
+                end
             end
           end
 
@@ -102,10 +106,11 @@ module Dependabot
           end
 
           def wants_latest_dist_tag?(latest_version)
-            return false if wants_prerelease? ^ latest_version.prerelease?
-            return false if current_version_greater_than?(latest_version)
-            return false if current_requirement_greater_than?(latest_version)
-            return false if yanked?(latest_version)
+            ver = latest_version
+            return false if related_to_current_pre?(ver) ^ ver.prerelease?
+            return false if current_version_greater_than?(ver)
+            return false if current_requirement_greater_than?(ver)
+            return false if yanked?(ver)
             true
           end
 
@@ -124,12 +129,16 @@ module Dependabot
             end
           end
 
-          def version_from_versions_array(npm_details)
-            npm_details["versions"].
+          def version_from_versions_array
+            npm_versions_array.find { |version| !yanked?(version) }
+          end
+
+          def npm_versions_array
+            npm_details.fetch("versions", {}).
               reject { |_, details| details["deprecated"] }.
               keys.map { |v| version_class.new(v) }.
-              reject { |v| v.prerelease? && !wants_prerelease? }.sort.reverse.
-              find { |version| !yanked?(version) }
+              reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
+              sort.reverse
           end
 
           def yanked?(version)

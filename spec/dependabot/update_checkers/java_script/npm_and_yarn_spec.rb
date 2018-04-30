@@ -434,19 +434,35 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
-      context "and the user wants pre-release versions" do
+      context "and the user is on an old pre-release" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.7.0.beta1",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
+
+      context "and the user is on a pre-release for this version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "2.0.0.alpha",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
