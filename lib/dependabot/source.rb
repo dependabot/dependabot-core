@@ -5,8 +5,8 @@ module Dependabot
     SOURCE_REGEX = %r{
       (?<host>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
       (?:\.com|\.org)[/:]
-      (?<repo>[^/\s]+/(?:(?!\.git)[^/\s#])+)[\./]?
-      (?:(?:tree|blob|src)/master/(?<directory>.*)[\#|/])?
+      (?<repo>[^/\s]+/(?:(?!\.git|.\s)[^/\s#"',])+)
+      (?:(?:/tree|/blob|/src)/master/(?<directory>.*)[\#|/])?
     }x
 
     attr_reader :host, :repo, :directory

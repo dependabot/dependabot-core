@@ -42,33 +42,44 @@ module Dependabot
 
           github_urls.find do |url|
             repo = Source.from_url(url).repo
-            repo.end_with?(dependency.name)
+            repo.downcase.end_with?(dependency.name)
           end
         end
 
         def source_from_homepage
-          return unless (homepage_url = pypi_listing.dig("info", "home_page"))
-          return if homepage_url.include?("pypi.python.org")
-          return if homepage_url.include?("pypi.org")
-
-          @homepage_response ||= Excon.get(
-            homepage_url,
-            idempotent: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
-          return unless @homepage_response.status == 200
+          return unless homepage_body
 
           github_urls = []
-          @homepage_response.body.scan(Source::SOURCE_REGEX) do
+          homepage_body.scan(Source::SOURCE_REGEX) do
             github_urls << Regexp.last_match.to_s
           end
 
           github_urls.find do |url|
             repo = Source.from_url(url).repo
-            repo.end_with?(dependency.name)
+            repo.downcase.end_with?(dependency.name)
           end
-        rescue Excon::Error::Socket, Excon::Error::Timeout
-          nil
+        end
+
+        def homepage_body
+          homepage_url = pypi_listing.dig("info", "home_page")
+
+          return unless homepage_url
+          return if homepage_url.include?("pypi.python.org")
+          return if homepage_url.include?("pypi.org")
+
+          @homepage_response ||=
+            begin
+              Excon.get(
+                homepage_url,
+                idempotent: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+            rescue Excon::Error::Timeout, Excon::Error::Socket
+              nil
+            end
+
+          return unless @homepage_response&.status == 200
+          @homepage_response.body
         end
 
         def pypi_listing

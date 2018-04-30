@@ -27,6 +27,27 @@ RSpec.describe Dependabot::Source do
         its(:directory) { is_expected.to be_nil }
       end
 
+      context "with a trailing ." do
+        let(:url) { "https://github.com/org/abc. " }
+        its(:host) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing /" do
+        let(:url) { "https://github.com/org/abc/" }
+        its(:host) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing quote" do
+        let(:url) { "<a href=\"https://github.com/org/abc\">" }
+        its(:host) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
       context "with no directory" do
         let(:url) { "https://github.com/org/abc/tree/master/readme.md" }
         its(:host) { is_expected.to eq("github") }
