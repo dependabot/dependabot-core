@@ -11,6 +11,8 @@ module Dependabot
   module FileUpdaters
     module Python
       class Pip < Dependabot::FileUpdaters::Base
+        require_relative "pip/pipfile_preparer"
+
         def self.updated_files_regex
           [
             /^Pipfile$/,
@@ -206,22 +208,9 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pipfile_content)
-          return pipfile_content unless lockfile
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
-            next unless pipfile_object[keys[:pipfile]]
-
-            pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
-              next if dependencies.map(&:name).include?(dep_name)
-              next unless dependency_version(dep_name, keys[:lockfile])
-
-              pipfile_object[keys[:pipfile]][dep_name] =
-                "==#{dependency_version(dep_name, keys[:lockfile])}"
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
+          PipfilePreparer.
+            new(pipfile_content: pipfile_content).
+            freeze_top_level_dependencies_except(dependencies, lockfile)
         end
 
         def freeze_dependencies_being_updated(pipfile_content)
@@ -230,10 +219,20 @@ module Dependabot
           dependencies.each do |dep|
             name = dep.name
             if frozen_pipfile_json.dig("packages", name)
-              frozen_pipfile_json["packages"][name] = "==#{dep.version}"
+              if frozen_pipfile_json["packages"][name].is_a?(Hash)
+                frozen_pipfile_json["packages"][name]["version"] =
+                  "==#{dep.version}"
+              else
+                frozen_pipfile_json["packages"][name] = "==#{dep.version}"
+              end
             end
             if frozen_pipfile_json.dig("dev-packages", name)
-              frozen_pipfile_json["dev-packages"][name] = "==#{dep.version}"
+              if frozen_pipfile_json["dev-packages"][name].is_a?(Hash)
+                frozen_pipfile_json["dev-packages"][name]["version"] =
+                  "==#{dep.version}"
+              else
+                frozen_pipfile_json["dev-packages"][name] = "==#{dep.version}"
+              end
             end
           end
 
@@ -241,23 +240,15 @@ module Dependabot
         end
 
         def add_private_sources(pipfile_content)
-          pipfile_object = TomlRB.parse(pipfile_content)
-
-          original_sources = pipfile_object["source"].map(&:dup)
-          env_sources = original_sources.select { |h| h["url"].include?("${") }
-
-          updated_sources = original_sources - env_sources + config_sources
-          pipfile_object["source"] = updated_sources
-
-          TomlRB.dump(pipfile_object)
+          PipfilePreparer.
+            new(pipfile_content: pipfile_content).
+            replace_sources(credentials)
         end
 
         def updated_lockfile_content_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(pipfile_content)
-            run_pipenv_command(
-              "PIPENV_YES=true pyenv exec pipenv lock --keep-outdated"
-            )
+            run_pipenv_command("PIPENV_YES=true pyenv exec pipenv lock")
             File.read("Pipfile.lock")
           end
         end
@@ -302,10 +293,6 @@ module Dependabot
           /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
         end
 
-        def dependency_version(dep_name, group)
-          parsed_lockfile.dig(group, dep_name, "version")&.gsub(/^==/, "")
-        end
-
         def parsed_lockfile
           @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
@@ -316,13 +303,6 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Pipfile.lock")
-        end
-
-        def config_sources
-          @config_sources ||=
-            credentials.
-            select { |cred| cred["index-url"] }.
-            map { |cred| { "url" => cred["index-url"] } }
         end
       end
     end

@@ -658,6 +658,46 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               to eq("==3.4.0")
           end
         end
+
+        describe "with a subdependency from an extra" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "raven",
+              version: "6.7.0",
+              previous_version: "5.27.1",
+              package_manager: "pip",
+              requirements: [
+                {
+                  requirement: "==6.7.0",
+                  file: "Pipfile",
+                  source: nil,
+                  groups: ["default"]
+                }
+              ],
+              previous_requirements: [
+                {
+                  requirement: "==5.27.1",
+                  file: "Pipfile",
+                  source: nil,
+                  groups: ["default"]
+                }
+              ]
+            )
+          end
+          let(:pipfile_body) do
+            fixture("python", "pipfiles", "extra_subdependency")
+          end
+          let(:lockfile_body) do
+            fixture("python", "lockfiles", "extra_subdependency.lock")
+          end
+
+          it "doesn't remove the subdependency" do
+            expect(json_lockfile["default"]["raven"]["version"]).
+              to eq("==6.7.0")
+            expect(json_lockfile["default"]["blinker"]["version"]).
+              to eq("==1.4")
+          end
+        end
       end
     end
   end

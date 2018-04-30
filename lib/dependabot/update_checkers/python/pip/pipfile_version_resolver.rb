@@ -3,6 +3,7 @@
 require "excon"
 
 require "dependabot/file_parsers/python/pip"
+require "dependabot/file_updaters/python/pip/pipfile_preparer"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/utils/python/version"
 require "dependabot/errors"
@@ -93,29 +94,21 @@ module Dependabot
           end
 
           def freeze_other_dependencies(pipfile_content)
-            return pipfile_content unless lockfile
-            pipfile_object = TomlRB.parse(pipfile_content)
-
-            FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
-              next unless pipfile_object[keys[:pipfile]]
-
-              pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
-                next if dep_name == dependency.name
-                next unless dependency_version(dep_name, keys[:lockfile])
-
-                pipfile_object[keys[:pipfile]][dep_name] =
-                  "==#{dependency_version(dep_name, keys[:lockfile])}"
-              end
-            end
-
-            TomlRB.dump(pipfile_object)
+            FileUpdaters::Python::Pip::PipfilePreparer.
+              new(pipfile_content: pipfile_content).
+              freeze_top_level_dependencies_except([dependency], lockfile)
           end
 
           def unlock_target_dependency(pipfile_content)
             pipfile_object = TomlRB.parse(pipfile_content)
 
             %w(packages dev-packages).each do |type|
-              if pipfile_object.dig(type, dependency.name)
+              next unless pipfile_object.dig(type, dependency.name)
+
+              if pipfile_object.dig(type, dependency.name).is_a?(Hash)
+                pipfile_object[type][dependency.name]["version"] =
+                  updated_version_requirement_string
+              else
                 pipfile_object[type][dependency.name] =
                   updated_version_requirement_string
               end
@@ -125,13 +118,9 @@ module Dependabot
           end
 
           def add_private_sources(pipfile_content)
-            pipfile_object = TomlRB.parse(pipfile_content)
-
-            pipfile_object["source"] =
-              pipfile_sources.reject { |h| h["url"].include?("${") } +
-              config_variable_sources
-
-            TomlRB.dump(pipfile_object)
+            FileUpdaters::Python::Pip::PipfilePreparer.
+              new(pipfile_content: pipfile_content).
+              replace_sources(credentials)
           end
 
           def check_private_sources_are_reachable

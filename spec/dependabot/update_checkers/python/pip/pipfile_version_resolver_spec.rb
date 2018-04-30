@@ -90,6 +90,14 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with extra requirements" do
+      let(:dependency_name) { "raven" }
+      let(:dependency_version) { "5.27.1" }
+      let(:pipfile_fixture_name) { "extra_subdependency" }
+      let(:lockfile_fixture_name) { "extra_subdependency.lock" }
+      it { is_expected.to be >= Gem::Version.new("6.7.0") }
+    end
+
     context "with an unreachable private source" do
       let(:pipfile_fixture_name) { "private_source" }
       let(:lockfile_fixture_name) { "exact_version.lock" }
