@@ -1,3 +1,7 @@
+## v0.55.7, 30 April 2018
+
+- JS: Exclude deprecated versions when looking for updates
+
 ## v0.55.6, 30 April 2018
 
 - Python: Handle version freezing for dependencies with extras more carefully
