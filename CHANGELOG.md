@@ -1,3 +1,7 @@
+## v0.55.8, 30 April 2018
+
+- JS: Ignore deprecated versions when looking for source URL
+
 ## v0.55.7, 30 April 2018
 
 - JS: Exclude deprecated versions when looking for updates
