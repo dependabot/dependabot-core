@@ -244,41 +244,30 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
 
           original_sources = pipfile_object["source"].map(&:dup)
-          env_sources = original_sources.
-                        select { |h| h["url"].include?("${") }
+          env_sources = original_sources.select { |h| h["url"].include?("${") }
 
-          updated_sources = original_sources -
-                            env_sources +
-                            config_variable_sources
-
+          updated_sources = original_sources - env_sources + config_sources
           pipfile_object["source"] = updated_sources
 
           TomlRB.dump(pipfile_object)
         end
 
         def updated_lockfile_content_for(pipfile_content)
-          SharedHelpers.in_a_temporary_directory do |dir|
+          SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(pipfile_content)
-            puts File.read("Pipfile")
             run_pipenv_command("PIPENV_YES=true pyenv exec pipenv lock")
-
             File.read("Pipfile.lock")
           end
         end
 
         def run_pipenv_command(command)
           raw_response = nil
-          IO.popen(command, err: %i(child out)) do |process|
-            raw_response = process.read
-          end
+          IO.popen(command, err: %i(child out)) { |p| raw_response = p.read }
 
           # Raise an error with the output from the shell session if Pipenv
           # returns a non-zero status
           return if $CHILD_STATUS.success?
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            raw_response,
-            command
-          )
+          raise SharedHelpers::HelperSubprocessFailed.new(raw_response, command)
         end
 
         def write_temporary_dependency_files(pipfile_content)
@@ -312,9 +301,7 @@ module Dependabot
         end
 
         def dependency_version(dep_name, group)
-          parsed_lockfile.
-            dig(group, dep_name, "version")&.
-            gsub(/^==/, "")
+          parsed_lockfile.dig(group, dep_name, "version")&.gsub(/^==/, "")
         end
 
         def parsed_lockfile
@@ -329,8 +316,8 @@ module Dependabot
           @lockfile ||= get_original_file("Pipfile.lock")
         end
 
-        def config_variable_sources
-          @config_variable_sources ||=
+        def config_sources
+          @config_sources ||=
             credentials.
             select { |cred| cred["index-url"] }.
             map { |cred| { "url" => cred["index-url"] } }
