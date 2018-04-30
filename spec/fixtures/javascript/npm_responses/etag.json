@@ -940,7 +940,7 @@
                 "index.js"
             ],
             "gitHead": "a511f5c8c930fd9546dbd88acb080f96bc788cfc",
-            "homepage": "https://github.com/jshttp/etag",
+            "homepage": "https://github.com/totally-deprecated/etag",
             "keywords": [
                 "etag",
                 "http",
@@ -956,7 +956,7 @@
             "name": "etag",
             "repository": {
                 "type": "git",
-                "url": "https://github.com/jshttp/etag"
+                "url": "https://github.com/totally-deprecated/etag"
             },
             "scripts": {
                 "bench": "node benchmark/index.js",

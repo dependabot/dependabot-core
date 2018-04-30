@@ -66,6 +66,7 @@ module Dependabot
           return [] if npm_listing["versions"].nil?
 
           npm_listing["versions"].
+            reject { |_, details| details["deprecated"] }.
             sort_by { |version, _| Utils::JavaScript::Version.new(version) }.
             reverse
         end
