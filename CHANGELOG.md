@@ -1,3 +1,7 @@
+## v0.55.4, 30 April 2018
+
+- Python: Freeze dependencies manually, rather than with keep-outdated
+
 ## v0.55.3, 30 April 2018
 
 - Python: Source repo finding improvements
