@@ -255,7 +255,9 @@ module Dependabot
         def updated_lockfile_content_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(pipfile_content)
-            run_pipenv_command("PIPENV_YES=true pyenv exec pipenv lock")
+            run_pipenv_command(
+              "PIPENV_YES=true pyenv exec pipenv lock --keep-outdated"
+            )
             File.read("Pipfile.lock")
           end
         end
