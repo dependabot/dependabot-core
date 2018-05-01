@@ -350,6 +350,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
         end
 
+        context "that is an image" do
+          let(:changelog_body) { fixture("github", "contents_image.json") }
+          it { is_expected.to be_nil }
+        end
+
         context "that is in reverse order" do
           let(:changelog_body) do
             fixture("github", "changelog_contents_reversed.json")

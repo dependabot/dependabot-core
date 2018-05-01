@@ -87,6 +87,7 @@ module Dependabot
               ).body
             end
 
+          return unless @upgrade_guide_text.valid_encoding?
           @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
@@ -130,6 +131,7 @@ module Dependabot
                 middlewares: SharedHelpers.excon_middleware
               ).body
             end
+          return unless @full_changelog_text.valid_encoding?
           @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
