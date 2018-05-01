@@ -1,3 +1,8 @@
+## v0.55.11, 01 May 2018
+
+- Handle very bad changelog encodings
+- Python: More robust handling of bad index page responses
+
 ## v0.55.10, 01 May 2018
 
 - Python: Handle bad URLs in metadata lookup
