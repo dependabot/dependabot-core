@@ -4,6 +4,7 @@ require "dependabot/file_fetchers/ruby/bundler"
 require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require "dependabot/file_fetchers/java/maven"
+require "dependabot/file_fetchers/java/gradle"
 require "dependabot/file_fetchers/php/composer"
 require "dependabot/file_fetchers/git/submodules"
 require "dependabot/file_fetchers/docker/docker"
@@ -18,6 +19,7 @@ module Dependabot
       when "bundler" then FileFetchers::Ruby::Bundler
       when "npm_and_yarn" then FileFetchers::JavaScript::NpmAndYarn
       when "maven" then FileFetchers::Java::Maven
+      when "gradle" then FileFetchers::Java::Gradle
       when "pip" then FileFetchers::Python::Pip
       when "composer" then FileFetchers::Php::Composer
       when "submodules" then FileFetchers::Git::Submodules
