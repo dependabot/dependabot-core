@@ -47,11 +47,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
   describe "latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
-    it { is_expected.to eq(Gem::Version.new("0.2.10")) }
+    it { is_expected.to be >= Gem::Version.new("0.2.10") }
 
     context "without a lockfile" do
       let(:dependency_files) { [manifest] }
-      it { is_expected.to eq(Gem::Version.new("0.2.10")) }
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
     context "with an optional dependency" do
