@@ -1,3 +1,7 @@
+## v0.55.10, 01 May 2018
+
+- Python: Handle bad URLs in metadata lookup
+
 ## v0.55.9, 30 April 2018
 
 - JS: Don't jump across pre-release versions
