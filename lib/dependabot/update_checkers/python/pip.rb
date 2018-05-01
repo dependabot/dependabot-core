@@ -108,6 +108,7 @@ module Dependabot
 
             index_response.body.
               scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
+              select { |n| n.match?(name_regex) }.
               map do |filename|
                 version =
                   filename.

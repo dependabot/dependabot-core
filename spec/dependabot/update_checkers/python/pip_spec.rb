@@ -104,8 +104,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
 
     context "when the pypi link resolves to a 'Not Found' page" do
-      let(:pypi_response) { "Not Found (no releases)" }
-
+      let(:pypi_response) { "Not Found (no releases)<a href='#'>123</a>" }
       it { is_expected.to be_nil }
     end
 
