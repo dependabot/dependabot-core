@@ -22,6 +22,7 @@ module Dependabot
       case package_manager
       when "bundler", "submodules", "docker" then Gem::Version
       when "maven" then Utils::Java::Version
+      when "gradle" then Utils::Java::Version
       when "npm_and_yarn" then Utils::JavaScript::Version
       when "pip" then Utils::Python::Version
       when "composer" then Utils::Php::Version
@@ -35,6 +36,7 @@ module Dependabot
       case package_manager
       when "submodules", "docker" then Gem::Requirement
       when "maven" then Utils::Java::Requirement
+      when "gradle" then Utils::Java::Requirement
       when "bundler" then Utils::Ruby::Requirement
       when "npm_and_yarn" then Utils::JavaScript::Requirement
       when "pip" then Utils::Python::Requirement
