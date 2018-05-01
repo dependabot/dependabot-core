@@ -17,7 +17,7 @@ module Dependabot
       case package_manager
       when "bundler" then MetadataFinders::Ruby::Bundler
       when "npm_and_yarn" then MetadataFinders::JavaScript::NpmAndYarn
-      when "maven" then MetadataFinders::Java::Maven
+      when "maven", "gradle" then MetadataFinders::Java::Maven
       when "pip" then MetadataFinders::Python::Pip
       when "composer" then MetadataFinders::Php::Composer
       when "submodules" then MetadataFinders::Git::Submodules
