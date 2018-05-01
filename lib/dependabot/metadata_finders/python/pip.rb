@@ -74,7 +74,7 @@ module Dependabot
                 idempotent: true,
                 middlewares: SharedHelpers.excon_middleware
               )
-            rescue Excon::Error::Timeout, Excon::Error::Socket
+            rescue Excon::Error::Timeout, Excon::Error::Socket, ArgumentError
               nil
             end
 
