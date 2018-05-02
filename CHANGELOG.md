@@ -1,3 +1,7 @@
+## v0.55.18, 02 May 2018
+
+- Ruby: Allow Gemfiles and gemspecs to include files with require_relative
+
 ## v0.55.17, 02 May 2018
 
 - Sanitize branch names that would include dot-directories
