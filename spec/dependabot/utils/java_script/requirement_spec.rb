@@ -23,22 +23,27 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with a ~ version specified" do
       let(:requirement_string) { "~1.5.1" }
-      it { is_expected.to eq(described_class.new("~> 1.5.1")) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
     end
 
     context "with a ~> version specified" do
       let(:requirement_string) { "~>1.5.1" }
-      it { is_expected.to eq(described_class.new("~> 1.5.1")) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
+
+      context "specified to 2 places" do
+        let(:requirement_string) { "~> 0.5" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 0.5.0")) }
+      end
     end
 
     context "with only a *" do
       let(:requirement_string) { "*" }
-      it { is_expected.to eq(described_class.new("~> 0")) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 0")) }
     end
 
     context "with a *" do
       let(:requirement_string) { "1.*" }
-      it { is_expected.to eq(described_class.new("~> 1.0")) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
     end
 
     context "with an x" do

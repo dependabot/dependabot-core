@@ -436,6 +436,20 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("*") }
         end
 
+        context "and a ~> was previously specified" do
+          let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
+
+          context "that the latest version satisfies" do
+            let(:package_json_req_string) { "~>2.5.1" }
+            its([:requirement]) { is_expected.to eq("~>2.5.1") }
+          end
+
+          context "that the latest version does not satisfy" do
+            let(:package_json_req_string) { "~>2.4.1" }
+            its([:requirement]) { is_expected.to eq("~>2.5.3") }
+          end
+        end
+
         context "and a tilda was previously specified" do
           let(:latest_resolvable_version) { Gem::Version.new("2.5.3") }
 
