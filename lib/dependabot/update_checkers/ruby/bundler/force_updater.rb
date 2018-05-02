@@ -149,14 +149,12 @@ module Dependabot
               ).parse
           end
 
-          # rubocop:disable Metrics/AbcSize
           def dependencies_from(updated_deps, specs)
             updated_deps.map do |dep|
               original_dep =
                 original_dependencies.find { |d| d.name == dep.name }
               spec = specs.find { |d| d.name == dep.name }
 
-              next if spec.version.to_s == original_dep.version
               Dependency.new(
                 name: dep.name,
                 version: spec.version.to_s,
@@ -172,9 +170,8 @@ module Dependabot
                 previous_requirements: original_dep.requirements,
                 package_manager: original_dep.package_manager
               )
-            end.compact
+            end
           end
-          # rubocop:enable Metrics/AbcSize
 
           def source_for(dependency)
             dependency.requirements.
