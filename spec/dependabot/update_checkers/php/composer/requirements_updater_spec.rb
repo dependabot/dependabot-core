@@ -76,8 +76,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
             context "when the requirement is not satisfied" do
               let(:composer_json_req_string) { "dev-master || ^0.9.0" }
-              # We can do better than this: we want to keep the || parts
-              its([:requirement]) { is_expected.to eq("^1.5.0") }
+              its([:requirement]) { is_expected.to eq("^1.5.0 || dev-master") }
             end
           end
         end

@@ -43,23 +43,28 @@ module Dependabot
 
           attr_reader :requirements, :latest_version, :latest_resolvable_version
 
-          # rubocop:disable PerceivedComplexity
           def updated_requirement(req)
-            return req unless req[:requirement].match?(/\d/)
-            if ruby_requirements(req[:requirement]).count == 1 &&
-               req[:requirement].strip.start_with?("dev-")
-              return req
-            end
-            return updated_alias(req) if req[:requirement].match?(ALIAS_REGEX)
-            return req if req_satisfied_by_latest_resolvable?(req[:requirement])
+            req_string = req[:requirement].strip
+            or_string_reqs = req_string.split(OR_SEPARATOR)
+            numeric_or_string_reqs = or_string_reqs.
+                                     reject { |r| r.start_with?("dev-") }
+            branch_or_string_reqs = or_string_reqs.
+                                    select { |r| r.start_with?("dev-") }
 
-            if library?
-              updated_library_requirement(req)
-            else
-              updated_app_requirement(req)
-            end
+            return req unless req_string.match?(/\d/)
+            return req if numeric_or_string_reqs.none?
+            return updated_alias(req) if req_string.match?(ALIAS_REGEX)
+            return req if req_satisfied_by_latest_resolvable?(req_string)
+
+            new_req =
+              if library? then updated_library_requirement(req)
+              else updated_app_requirement(req)
+              end
+
+            new_req_string =
+              [new_req[:requirement], *branch_or_string_reqs].join(" || ")
+            new_req.merge(requirement: new_req_string)
           end
-          # rubocop:enable PerceivedComplexity
 
           def updated_alias(req)
             req_string = req[:requirement]
