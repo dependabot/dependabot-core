@@ -65,6 +65,13 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
         context "and a branch was previously specified" do
           let(:composer_json_req_string) { "dev-long-line-fixers2" }
           its([:requirement]) { is_expected.to eq("dev-long-line-fixers2") }
+
+          context "in an or requirement" do
+            let(:composer_json_req_string) { "^1.0.0 || dev-master" }
+            # We could do better than this. Ideally we would update the version
+            # string but leave the dev branch option.
+            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+          end
         end
 
         context "and a commit sha was previously specified" do
