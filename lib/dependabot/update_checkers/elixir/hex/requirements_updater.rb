@@ -72,14 +72,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              ruby_requirements =
-                req_string.strip.split(AND_SEPARATOR).map do |r_string|
-                  requirement_class.new(r_string)
-                end
-
-              requirement_class.new(ruby_requirements.map(&:to_s))
-            end
+            requirement_class.requirements_array(requirement_string)
           end
 
           def update_exact_version(previous_req, new_version)
