@@ -1,3 +1,7 @@
+## v0.55.15, 02 May 2018
+
+- Ruby: Raise error for unfetchable gemspec paths
+
 ## v0.55.14, 02 May 2018
 
 - Elixir: Move requirements array logic into requirements class
