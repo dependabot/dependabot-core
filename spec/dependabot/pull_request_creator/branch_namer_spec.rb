@@ -55,18 +55,28 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         Dependabot::DependencyFile.new(
           name: "Gemfile",
           content: fixture("ruby", "gemfiles", "Gemfile"),
-          directory: "directory"
+          directory: directory
         )
       end
       let(:gemfile_lock) do
         Dependabot::DependencyFile.new(
           name: "Gemfile.lock",
           content: fixture("ruby", "lockfiles", "Gemfile.lock"),
-          directory: "directory"
+          directory: directory
         )
       end
+      let(:directory) { "directory" }
 
       it { is_expected.to eq("dependabot/bundler/directory/business-1.5.0") }
+
+      context "that starts with a dot" do
+        let(:directory) { ".directory" }
+
+        it "santizes the dot" do
+          expect(new_branch_name).
+            to eq("dependabot/bundler/dot-directory/business-1.5.0")
+        end
+      end
     end
 
     context "with a target branch" do

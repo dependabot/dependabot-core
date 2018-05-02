@@ -28,7 +28,7 @@ module Dependabot
             "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
           end
 
-        File.join(prefixes, @name)
+        File.join(prefixes, @name).gsub(%r{/\.}, "/dot-")
       end
 
       private
