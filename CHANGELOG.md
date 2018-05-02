@@ -1,3 +1,7 @@
+## v0.55.17, 02 May 2018
+
+- Sanitize branch names that would include dot-directories
+
 ## v0.55.16, 02 May 2018
 
 - Ruby: Don't exclude updated dependencies from force updater
