@@ -1,3 +1,7 @@
+## v0.55.12, 02 May 2018
+
+- Java: Initial Gradle support (very basic)
+
 ## v0.55.11, 01 May 2018
 
 - Handle very bad changelog encodings
