@@ -1,3 +1,8 @@
+## v0.55.14, 02 May 2018
+
+- Elixir: Move requirements array logic into requirements class
+- PHP: Better requirement updating (preserve dev branches in or requirements)
+
 ## v0.55.13, 02 May 2018
 
 - Bump pipenv version
