@@ -1,3 +1,7 @@
+## v0.55.16, 02 May 2018
+
+- Ruby: Don't exclude updated dependencies from force updater
+
 ## v0.55.15, 02 May 2018
 
 - Ruby: Raise error for unfetchable gemspec paths
