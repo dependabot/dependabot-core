@@ -21,19 +21,49 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    context "for top-level dependencies" do
-      its(:length) { is_expected.to eq(16) }
+    its(:length) { is_expected.to eq(16) }
+
+    describe "the first dependency" do
+      subject(:dependency) { dependencies.first }
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("co.aikar:acf-paper")
+        expect(dependency.version).to eq("0.5.0-SNAPSHOT")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.5.0-SNAPSHOT",
+            file: "build.gradle",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "specified in short form" do
+      let(:buildfile_fixture_name) { "shortform_build.gradle" }
+
+      # TODO: This would be higher if dependencies within `buildscript` were
+      # supported, too.
+      its(:length) { is_expected.to eq(5) }
+
+      it "doesn't include property dependencies" do
+        # TODO: Support property dependencies
+        expect(dependencies.map(&:name)).
+          to_not include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+      end
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("co.aikar:acf-paper")
-          expect(dependency.version).to eq("0.5.0-SNAPSHOT")
+          expect(dependency.name).to eq("com.sparkjava:spark-core")
+          expect(dependency.version).to eq("2.5.4")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "0.5.0-SNAPSHOT",
+              requirement: "2.5.4",
               file: "build.gradle",
               groups: [],
               source: nil
