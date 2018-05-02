@@ -67,10 +67,18 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("dev-long-line-fixers2") }
 
           context "in an or requirement" do
-            let(:composer_json_req_string) { "^1.0.0 || dev-master" }
-            # We could do better than this. Ideally we would update the version
-            # string but leave the dev branch option.
-            its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+            context "when the requirement is satisfied" do
+              let(:composer_json_req_string) { "^1.5.0 || dev-master" }
+              its([:requirement]) do
+                is_expected.to eq(composer_json_req_string)
+              end
+            end
+
+            context "when the requirement is not satisfied" do
+              let(:composer_json_req_string) { "dev-master || ^0.9.0" }
+              # We can do better than this: we want to keep the || parts
+              its([:requirement]) { is_expected.to eq("^1.5.0") }
+            end
           end
         end
 

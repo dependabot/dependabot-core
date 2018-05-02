@@ -7,17 +7,19 @@ module Dependabot
     module Php
       class Requirement < Gem::Requirement
         AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
 
         def self.parse(obj)
           new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
           super(new_obj)
         end
 
-        # For consistency with other langauges, we define a requirements array.
-        # PHP doesn't have an `OR` separator for requirements, so it always
-        # contains a single element.
+        # Returns an array of requirements. At least one requirement from the
+        # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)
-          [new(requirement_string)]
+          requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+            new(req_string)
+          end
         end
 
         def initialize(*requirements)
@@ -31,8 +33,13 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def convert_php_constraint_to_ruby_constraint(req_string)
           req_string = req_string.gsub(/v(?=\d)/, "")
+
+          # Return an unlikely version if a dev requirement is specified. This
+          # ensures that the dev-requirement doesn't match anything.
+          return "0-dev-branch-match" if req_string.strip.start_with?("dev-")
 
           if req_string.start_with?("*") then ">= 0"
           elsif req_string.include?("*") then convert_wildcard_req(req_string)
@@ -42,6 +49,7 @@ module Dependabot
           else req_string
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def convert_wildcard_req(req_string)
           version = req_string.gsub(/^~/, "").gsub(/(?:\.|^)\*/, "")

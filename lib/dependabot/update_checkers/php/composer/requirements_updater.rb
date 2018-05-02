@@ -35,12 +35,16 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/CyclomaticComplexity
           def updated_requirements
             return requirements unless latest_resolvable_version
 
             requirements.map do |req|
               next req unless req[:requirement].match?(/\d/)
-              next req if req[:requirement].match?(/(^|#{OR_SEPARATOR})dev-/)
+              if ruby_requirements(req[:requirement]).count == 1 &&
+                 req[:requirement].strip.start_with?("dev-")
+                next req
+              end
               next updated_alias(req) if req[:requirement].match?(ALIAS_REGEX)
               next req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
@@ -52,6 +56,7 @@ module Dependabot
             end
           end
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/CyclomaticComplexity
 
           private
 
@@ -132,9 +137,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-              Utils::Php::Requirement.new(req_string)
-            end
+            Utils::Php::Requirement.requirements_array(requirement_string)
           end
 
           def update_caret_requirement(req_string)
