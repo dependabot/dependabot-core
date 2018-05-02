@@ -20,16 +20,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     )
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:github_token) { "token" }
+  let(:directory) { "/" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -48,13 +47,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   let(:gemfile) do
     Dependabot::DependencyFile.new(
       content: fixture("ruby", "gemfiles", gemfile_fixture_name),
-      name: "Gemfile"
+      name: "Gemfile",
+      directory: directory
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       content: fixture("ruby", "lockfiles", lockfile_fixture_name),
-      name: "Gemfile.lock"
+      name: "Gemfile.lock",
+      directory: directory
     )
   end
   let(:gemspec) do
@@ -105,15 +106,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       end
 
       context "with a Gemfile that includes a file with require_relative" do
-        let(:files) { [gemfile, lockfile, required_file] }
+        let(:dependency_files) { [gemfile, lockfile, required_file] }
         let(:gemfile_fixture_name) { "includes_require_relative" }
         let(:lockfile_fixture_name) { "Gemfile.lock" }
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5"
+            content: "SOME_CONTANT = 5",
+            directory: directory
           )
         end
+        let(:directory) { "app/" }
 
         it { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end

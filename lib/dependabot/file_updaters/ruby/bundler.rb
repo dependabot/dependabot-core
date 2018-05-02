@@ -199,8 +199,9 @@ module Dependabot
         end
 
         def build_updated_lockfile
+          base_directory = dependency_files.first.directory
           lockfile_body =
-            SharedHelpers.in_a_temporary_directory do |tmp_dir|
+            SharedHelpers.in_a_temporary_directory(base_directory) do |tmp_dir|
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do

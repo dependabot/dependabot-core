@@ -105,8 +105,9 @@ module Dependabot
         end
 
         def parsed_gemfile
+          base_directory = dependency_files.first.directory
           @parsed_gemfile ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do

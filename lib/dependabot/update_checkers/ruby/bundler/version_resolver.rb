@@ -250,7 +250,8 @@ module Dependabot
           #########################
 
           def in_a_temporary_bundler_context(error_handling: true)
-            SharedHelpers.in_a_temporary_directory do
+            base_directory = dependency_files.first.directory
+            SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do

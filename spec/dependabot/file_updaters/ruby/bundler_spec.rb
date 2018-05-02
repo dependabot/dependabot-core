@@ -30,15 +30,24 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
   let(:dependencies) { [dependency] }
   let(:dependency_files) { [gemfile, lockfile] }
   let(:gemfile) do
-    Dependabot::DependencyFile.new(name: "Gemfile", content: gemfile_body)
+    Dependabot::DependencyFile.new(
+      name: "Gemfile",
+      content: gemfile_body,
+      directory: directory
+    )
   end
   let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: lockfile_body)
+    Dependabot::DependencyFile.new(
+      name: "Gemfile.lock",
+      content: lockfile_body,
+      directory: directory
+    )
   end
   let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
   let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
   let(:gemfile_fixture_name) { "Gemfile" }
   let(:lockfile_fixture_name) { "Gemfile.lock" }
+  let(:directory) { "/" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -595,15 +604,17 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       end
 
       context "with a Gemfile that includes a file with require_relative" do
-        let(:files) { [gemfile, lockfile, required_file] }
+        let(:dependency_files) { [gemfile, lockfile, required_file] }
         let(:gemfile_fixture_name) { "includes_require_relative" }
         let(:lockfile_fixture_name) { "Gemfile.lock" }
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5"
+            content: "SOME_CONTANT = 5",
+            directory: directory
           )
         end
+        let(:directory) { "app/" }
 
         it "locks the updated gem to the latest version" do
           expect(file.content).to include("business (1.5.0)")
