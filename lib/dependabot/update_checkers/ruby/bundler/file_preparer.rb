@@ -75,7 +75,7 @@ module Dependabot
             end
 
             # No editing required for lockfile or Ruby version file
-            files += [lockfile, ruby_version_file].compact
+            files += [lockfile, ruby_version_file, *imported_ruby_files].compact
           end
           # rubocop:enable Metrics/AbcSize
           # rubocop:enable Metrics/MethodLength
@@ -123,6 +123,10 @@ module Dependabot
           def path_gemspecs
             all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
             all - top_level_gemspecs
+          end
+
+          def imported_ruby_files
+            dependency_files.select { |f| f.name.end_with?(".rb") }
           end
 
           def gemfile_content_for_update_check(file)

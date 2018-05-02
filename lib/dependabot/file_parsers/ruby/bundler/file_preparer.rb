@@ -24,8 +24,13 @@ module Dependabot
               )
             end
 
-            files +=
-              [gemfile, *evaled_gemfiles, lockfile, ruby_version_file].compact
+            files += [
+              gemfile,
+              *evaled_gemfiles,
+              lockfile,
+              ruby_version_file,
+              *imported_ruby_files
+            ].compact
           end
 
           private
@@ -54,6 +59,10 @@ module Dependabot
 
           def ruby_version_file
             dependency_files.find { |f| f.name == ".ruby-version" }
+          end
+
+          def imported_ruby_files
+            dependency_files.select { |f| f.name.end_with?(".rb") }
           end
 
           def sanitize_gemspec_content(gemspec_content)

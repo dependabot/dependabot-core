@@ -361,6 +361,20 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "with a Gemfile that includes a file with require_relative" do
+      let(:files) { [gemfile, lockfile, required_file] }
+      let(:gemfile_fixture_name) { "includes_require_relative" }
+      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:required_file) do
+        Dependabot::DependencyFile.new(
+          name: "../some_other_file.rb",
+          content: "SOME_CONTANT = 5"
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with a Gemfile that imports a gemspec" do
       let(:files) { [gemfile, lockfile, gemspec] }
       let(:gemspec) do

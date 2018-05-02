@@ -10,6 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/base"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module Ruby
@@ -259,6 +260,7 @@ module Dependabot
 
           write_ruby_version_file
           write_path_gemspecs
+          write_imported_ruby_files
 
           evaled_gemfiles.each do |file|
             path = file.name
@@ -282,9 +284,21 @@ module Dependabot
           end
         end
 
+        def write_imported_ruby_files
+          imported_ruby_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
+        end
+
         def path_gemspecs
           all = dependency_files.select { |f| f.name.end_with?(".gemspec") }
           all - top_level_gemspecs
+        end
+
+        def imported_ruby_files
+          dependency_files.select { |f| f.name.end_with?(".rb") }
         end
 
         def top_level_gemspecs
@@ -328,3 +342,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

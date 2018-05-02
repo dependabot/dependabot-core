@@ -125,6 +125,68 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
     end
   end
 
+  context "with a file included with require_relative" do
+    let(:file_fetcher_instance) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        directory: "/Library/Homebrew/test"
+      )
+    end
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/Library/"\
+      "Homebrew/test"
+    end
+    let(:imported_file_url) do
+      "https://api.github.com/repos/gocardless/bump/contents/Library/"\
+      "Homebrew/constants.rb"
+    end
+
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "/Gemfile?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_with_require_relative.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "/Gemfile.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    context "that has a fetchable path" do
+      before do
+        stub_request(:get, imported_file_url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "gemfile_lock_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("../constants.rb")
+      end
+    end
+  end
+
   context "with a path dependency" do
     before do
       stub_request(:get, url + "?ref=sha").

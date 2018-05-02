@@ -131,6 +131,11 @@ module Dependabot
           @parsed_gemspecs[file.name] ||=
             SharedHelpers.in_a_temporary_directory do
               File.write(file.name, file.content)
+              imported_ruby_files.each do |f|
+                path = f.name
+                FileUtils.mkdir_p(Pathname.new(path).dirname)
+                File.write(path, updated_gemfile_content(f))
+              end
 
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
@@ -262,6 +267,10 @@ module Dependabot
           @gemspecs ||= prepared_dependency_files.select do |file|
             file.name.match?(%r{^[^/]*\.gemspec$})
           end
+        end
+
+        def imported_ruby_files
+          dependency_files.select { |f| f.name.end_with? ".rb" }
         end
       end
     end
