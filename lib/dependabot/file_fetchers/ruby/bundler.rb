@@ -99,6 +99,8 @@ module Dependabot
             # none were found for this path
             gemspec_files += gemspecs_at_path
             unfetchable_gems << path.basename.to_s if gemspecs_at_path.empty?
+          rescue Octokit::NotFound, Gitlab::Error::NotFound
+            unfetchable_gems << path.basename.to_s
           end
 
           if unfetchable_gems.any?

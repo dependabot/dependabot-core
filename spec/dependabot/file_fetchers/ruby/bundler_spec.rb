@@ -266,7 +266,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
       end
     end
 
-    context "that has an unfetchable path" do
+    context "that has no gemspecs in the path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha").
           with(headers: { "Authorization" => "token token" }).
@@ -275,6 +275,23 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
             body: "[]",
             headers: { "content-type" => "application/json" }
           )
+      end
+
+      it "raises a PathDependenciesNotReachable error with details" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: " \
+            "bump-core"
+          )
+      end
+    end
+
+    context "that has an unfetchable directory path" do
+      before do
+        stub_request(:get, url + "plugins/bump-core?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
       end
 
       it "raises a PathDependenciesNotReachable error with details" do
