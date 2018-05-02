@@ -150,6 +150,13 @@ module Dependabot
           end
 
           def dependencies_from(updated_deps, specs)
+            # You might think we'd want to remove dependencies whose version
+            # hadn't changed from this array. We don't. We still need to unlock
+            # them to get Bundler to resolve, because unlocking them is what
+            # updates their subdependencies.
+            #
+            # This is kind of a bug in Bundler, and we should try to fix it,
+            # but resolving it won't necessarily be easy.
             updated_deps.map do |dep|
               original_dep =
                 original_dependencies.find { |d| d.name == dep.name }
