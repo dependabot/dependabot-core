@@ -97,8 +97,11 @@ RSpec.describe namespace::PipfileVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to include("Could not find a version")
-            expect(error.message).to include("Was <redacted> reachable?")
+            expect(error.message).to eq(
+              "Could not find a version that matches pytest3.4.0\n"\
+              "Tried: (no version found at all)\n"\
+              "Was <redacted> reachable?"
+            )
           end
       end
     end
