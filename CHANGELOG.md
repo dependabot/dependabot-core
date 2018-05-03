@@ -1,3 +1,7 @@
+## v0.55.21, 03 May 2018
+
+- Python: Raise error for unresolvable Pipfiles
+
 ## v0.55.20, 03 May 2018
 
 - Ruby: Restrict force updates to pareto improvements
