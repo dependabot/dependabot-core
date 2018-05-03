@@ -44,25 +44,28 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "specified in short form" do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
-      its(:length) { is_expected.to eq(6) }
+      its(:length) { is_expected.to eq(8) }
 
-      it "doesn't include property dependencies" do
-        # TODO: Support property dependencies
+      it "includes property dependencies" do
         expect(dependencies.map(&:name)).
-          to_not include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+          to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
       end
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+      context "the property dependency" do
+        subject(:dependency) do
+          dependencies.find do |dep|
+            dep.name == "org.jetbrains.kotlin:kotlin-stdlib-jre8"
+          end
+        end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).
-            to eq("com.github.jengelman.gradle.plugins:shadow")
-          expect(dependency.version).to eq("2.0.2")
+            to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
+          expect(dependency.version).to eq("1.1.4-3")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "2.0.2",
+              requirement: "1.1.4-3",
               file: "build.gradle",
               groups: [],
               source: nil
@@ -125,7 +128,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "various different specifications" do
       let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
 
-      its(:length) { is_expected.to eq(15) }
+      its(:length) { is_expected.to eq(37) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }

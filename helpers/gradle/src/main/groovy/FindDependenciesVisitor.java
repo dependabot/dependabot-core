@@ -9,8 +9,8 @@ import org.codehaus.groovy.ast.expr.ClosureExpression;
 import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.ast.expr.MapEntryExpression;
 import org.codehaus.groovy.ast.expr.MapExpression;
-import org.codehaus.groovy.ast.expr.MethodCallExpression;
 import org.codehaus.groovy.ast.expr.ConstantExpression;
+import org.codehaus.groovy.ast.expr.GStringExpression;
 
 /**
  * @author Lovett Li
@@ -18,23 +18,7 @@ import org.codehaus.groovy.ast.expr.ConstantExpression;
 public class FindDependenciesVisitor extends CodeVisitorSupport
 {
 
-    private int dependenceLineNum = -1;
-    private int columnNum = -1;
     private List<GradleDependency> dependencies = new ArrayList<>();
-
-    @Override
-    public void visitMethodCallExpression( MethodCallExpression call )
-    {
-        if( call.getMethodAsString().equals( "dependencies" ) )
-        {
-            if( dependenceLineNum == -1 )
-            {
-                dependenceLineNum = call.getLastLineNumber();
-            }
-        }
-
-        super.visitMethodCallExpression( call );
-    }
 
     @Override
     public void visitArgumentlistExpression( ArgumentListExpression ale )
@@ -43,7 +27,7 @@ public class FindDependenciesVisitor extends CodeVisitorSupport
 
         if( expressions.size() == 1 || (expressions.size() == 2 && expressions.get( 1 ).getClass() == ClosureExpression.class ) )
         {
-            if ( expressions.get( 0 ).getClass() == ConstantExpression.class )
+            if ( expressions.get( 0 ).getClass() == ConstantExpression.class || expressions.get( 0 ).getClass() == GStringExpression.class)
             {
                 String depStr = expressions.get( 0 ).getText();
                 String[] deps = depStr.split( ":" );
@@ -59,45 +43,24 @@ public class FindDependenciesVisitor extends CodeVisitorSupport
     }
 
     @Override
-    public void visitClosureExpression( ClosureExpression expression )
-    {
-        if( dependenceLineNum != -1 && expression.getLineNumber() == expression.getLastLineNumber() )
-        {
-            columnNum = expression.getLastColumnNumber();
-        }
-
-        super.visitClosureExpression( expression );
-    }
-
-    @Override
     public void visitMapExpression( MapExpression expression )
     {
         List<MapEntryExpression> mapEntryExpressions = expression.getMapEntryExpressions();
-        Map<String, String> dependenceMap = new HashMap<String, String>();
+        Map<String, String> dependencyMap = new HashMap<String, String>();
 
         for( MapEntryExpression mapEntryExpression : mapEntryExpressions )
         {
             String key = mapEntryExpression.getKeyExpression().getText();
             String value = mapEntryExpression.getValueExpression().getText();
-            dependenceMap.put( key, value );
+            dependencyMap.put( key, value );
         }
 
-        if( dependenceMap.get( "name" ) != null )
+        if( dependencyMap.get( "name" ) != null )
         {
-            dependencies.add( new GradleDependency( dependenceMap ) );
+            dependencies.add( new GradleDependency( dependencyMap ) );
         }
 
         super.visitMapExpression( expression );
-    }
-
-    public int getDependenceLineNum()
-    {
-        return dependenceLineNum;
-    }
-
-    public int getColumnNum()
-    {
-        return columnNum;
     }
 
     public List<GradleDependency> getDependencies()

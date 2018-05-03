@@ -13,23 +13,29 @@ module Dependabot
       class Gradle < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
 
-        REQUIRED_ATTRS = %w(name group version).freeze
+        ATTRS = %w(name group version).freeze
+        PROPERTY_REGEX =
+          /
+            (?:\$\{property\((?<property_name>.*?)\)\})|
+            (?:\$\{(?<property_name>.*?)\})|
+            (?:\$(?<property_name>.*))
+          /x
 
         def parse
           dependency_set = DependencySet.new
-          buildfiles.each { |b| dependency_set += buildfile_dependencies(b) }
+          dependency_set += buildfile_dependencies
           dependency_set.dependencies
         end
 
         private
 
-        def buildfile_dependencies(file)
+        def buildfile_dependencies
           dependency_set = DependencySet.new
 
-          parsed_buildfile = parsed_buildfile(file)
           parsed_buildfile["dependencies"].each do |dep|
-            next if REQUIRED_ATTRS.any? { |a| dep[a].nil? || dep[a].empty? }
-            next if REQUIRED_ATTRS.any? { |a| dep[a].include?("$") }
+            next if dep.values_at(*ATTRS).any? { |v| v.nil? || v.empty? }
+            dep = interpolate_property_values(dep)
+            next if dep.values_at(*ATTRS).any? { |v| v.include?("$") }
 
             dependency_set <<
               Dependency.new(
@@ -38,9 +44,10 @@ module Dependabot
                 requirements: [
                   {
                     requirement: dep["version"],
-                    file: file.name,
+                    file: buildfile.name,
                     source: nil,
                     groups: []
+                    # TODO: Include details of property here
                   }
                 ],
                 package_manager: "gradle"
@@ -50,11 +57,27 @@ module Dependabot
           dependency_set
         end
 
-        def parsed_buildfile(file)
+        def interpolate_property_values(details)
+          details = details.dup
+          details.each do |key, value|
+            next unless value.match?(PROPERTY_REGEX)
+            details[key] =
+              value.gsub(PROPERTY_REGEX) do |match_string|
+                property = match_string.
+                           match(PROPERTY_REGEX).
+                           named_captures["property_name"]
+                properties[property] || match_string
+              end
+          end
+
+          details
+        end
+
+        def parsed_buildfile
           @parsed_buildfile ||=
             Dir.chdir("helpers/gradle/") do
               FileUtils.mkdir("target") unless Dir.exist?("target")
-              File.write("target/build.gradle", file.content)
+              File.write("target/build.gradle", buildfile.content)
 
               raw_response = nil
               IO.popen("java -jar build/libs/gradle.jar") do |process|
@@ -68,9 +91,16 @@ module Dependabot
             end
         end
 
-        def buildfiles
-          @buildfiles ||=
-            dependency_files.select { |f| f.name.end_with?("build.gradle") }
+        def properties
+          @properties ||=
+            parsed_buildfile["properties"].each_with_object({}) do |prop, hash|
+              hash[prop.fetch("name")] = prop.fetch("value")
+            end
+        end
+
+        def buildfile
+          @buildfile ||=
+            dependency_files.find { |f| f.name == "build.gradle" }
         end
 
         def check_required_files
