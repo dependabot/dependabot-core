@@ -97,6 +97,31 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       end
     end
 
+    context "with a nested constraint" do
+      let(:buildfile_fixture_name) { "nested_constraint_build.gradle" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.springframework:spring-web")
+          expect(dependency.version).to eq("5.0.2.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "5.0.2.RELEASE",
+              file: "build.gradle",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "various different specifications" do
       let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
 
