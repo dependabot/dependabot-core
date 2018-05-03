@@ -68,6 +68,10 @@ module Dependabot
           end
 
           def handle_pipenv_errors(error)
+            if error.message.include?("no version found at all")
+              msg = error.message.gsub(/http.*?(?=\s)/, "<redacted>")
+              raise DependencyFileNotResolvable, msg
+            end
             raise unless error.message.include?("could not be resolved")
           end
 

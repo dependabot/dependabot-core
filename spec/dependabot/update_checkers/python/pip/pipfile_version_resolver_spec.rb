@@ -90,6 +90,19 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
     end
 
+    context "with an unfetchable requirement" do
+      let(:dependency_files) { [pipfile] }
+      let(:pipfile_fixture_name) { "bad_requirement" }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("Could not find a version")
+            expect(error.message).to include("Was <redacted> reachable?")
+          end
+      end
+    end
+
     context "with extra requirements" do
       let(:dependency_name) { "raven" }
       let(:dependency_version) { "5.27.1" }
