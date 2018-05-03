@@ -1,3 +1,8 @@
+## v0.55.19, 02 May 2018
+
+- Ruby: Fix typo
+- Create directory structure in temporary directories if required
+
 ## v0.55.18, 02 May 2018
 
 - Ruby: Allow Gemfiles and gemspecs to include files with require_relative
