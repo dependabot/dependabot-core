@@ -41,7 +41,7 @@ public class FindDependenciesVisitor extends CodeVisitorSupport
     {
         List<Expression> expressions = ale.getExpressions();
 
-        if( expressions.size() == 1 )
+        if( expressions.size() == 1 || (expressions.size() == 2 && expressions.get( 1 ).getClass() == ClosureExpression.class ) )
         {
             if ( expressions.get( 0 ).getClass() == ConstantExpression.class )
             {

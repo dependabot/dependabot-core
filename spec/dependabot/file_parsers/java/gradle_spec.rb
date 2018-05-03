@@ -75,7 +75,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "specified as implementations" do
       let(:buildfile_fixture_name) { "android_build.gradle" }
 
-      its(:length) { is_expected.to eq(23) }
+      its(:length) { is_expected.to eq(24) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -83,11 +83,11 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).
-            to eq("com.android.support:multidex")
-          expect(dependency.version).to eq("1.0.0")
+            to eq("com.google.zxing:core")
+          expect(dependency.version).to eq("3.3.0")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "1.0.0",
+              requirement: "3.3.0",
               file: "build.gradle",
               groups: [],
               source: nil
