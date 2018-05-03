@@ -20,7 +20,6 @@ public class GradleDependencyParser
 
     private List<ASTNode> nodes;
     private File file;
-    private List<String> gradleFileContents;
 
     public GradleDependencyParser( File inputfile ) throws MultipleCompilationErrorsException, IOException
     {
@@ -48,11 +47,6 @@ public class GradleDependencyParser
         {
             node.visit( visitor );
         }
-    }
-
-    public List<String> getGradleFileContents()
-    {
-        return gradleFileContents;
     }
 
 }
