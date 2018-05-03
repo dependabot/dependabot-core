@@ -13,6 +13,8 @@ module Dependabot
       class Gradle < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
 
+        REQUIRED_ATTRS = %w(name group version).freeze
+
         def parse
           dependency_set = DependencySet.new
           buildfiles.each { |b| dependency_set += buildfile_dependencies(b) }
@@ -24,10 +26,10 @@ module Dependabot
         def buildfile_dependencies(file)
           dependency_set = DependencySet.new
 
+          parsed_buildfile = parsed_buildfile(file)
           parsed_buildfile["dependencies"].each do |dep|
-            next unless dep["name"] && !dep["name"].empty?
-            next unless dep["group"] && !dep["group"].empty?
-            next unless dep["version"] && !dep["version"].empty?
+            next if REQUIRED_ATTRS.any? { |a| dep[a].nil? || dep[a].empty? }
+            next if REQUIRED_ATTRS.any? { |a| dep[a].include?("$") }
 
             dependency_set <<
               Dependency.new(
@@ -48,25 +50,21 @@ module Dependabot
           dependency_set
         end
 
-        def parsed_buildfile
+        def parsed_buildfile(file)
           @parsed_buildfile ||=
-            SharedHelpers.in_a_temporary_directory do
-              buildfiles.each do |file|
-                path = file.name
-                FileUtils.mkdir_p(Pathname.new(path).dirname)
-                File.write(file.name, file.content)
+            Dir.chdir("helpers/gradle/") do
+              FileUtils.mkdir("target") unless Dir.exist?("target")
+              File.write("target/build.gradle", file.content)
+
+              raw_response = nil
+              IO.popen("java -jar build/libs/gradle.jar") do |process|
+                raw_response = process.read
               end
+              raise unless $CHILD_STATUS.success?
 
-              project_root = File.join(File.dirname(__FILE__), "../../../..")
-              helper_path = File.join(project_root, "helpers/gradle/bin/run.js")
-
-              parsed_file = SharedHelpers.run_helper_subprocess(
-                command: "node #{helper_path}",
-                function: "parse",
-                args: [Dir.pwd]
-              )
-
-              JSON.parse(parsed_file)
+              result = File.read("target/output.json")
+              FileUtils.rm_rf("target")
+              JSON.parse(result)
             end
         end
 

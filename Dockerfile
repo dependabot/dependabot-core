@@ -84,8 +84,32 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && d
 ENV PATH="$PATH:/usr/local/elixir/bin"
 RUN mix local.hex --force
 
+
 ### Rust
 
 ENV RUSTUP_HOME=/opt/rust
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="${PATH}:/opt/rust/bin"
+
+
+### Java, Groovy and Gradle
+
+RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections \
+    && echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu artful main" > /etc/apt/sources.list.d/webupd8team-java-trusty.list \
+    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886 \
+    && apt-get update \
+    && apt-get install -y oracle-java8-installer oracle-java8-set-default \
+    && cd /tmp \
+    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.4.15.zip \
+    && unzip apache-groovy-binary-2.4.15.zip \
+    && mv groovy-2.4.15 /usr/local/groovy \
+    && rm -f apache-groovy-binary-2.4.15.zip \
+    && cd /tmp \
+    && wget https://services.gradle.org/distributions/gradle-4.7-bin.zip \
+    && unzip gradle-4.7-bin.zip \
+    && mv gradle-4.7 /usr/local/gradle \
+    && rm -f gradle-4.7-bin.zip
+ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle
+ENV GROOVY_HOME=/usr/local/groovy
+ENV GRADLE_HOME=/usr/local/gradle
+ENV PATH=$GROOVY_HOME/bin/:$GRADLE_HOME/bin:$PATH

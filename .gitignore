@@ -5,7 +5,9 @@
 Gemfile.lock
 /helpers/yarn/node_modules
 /helpers/npm/node_modules
-/helpers/gradle/node_modules
+/helpers/gradle/.gradle
+/helpers/gradle/build
+/helpers/gradle/target
 /helpers/php/vendor
 /helpers/php/.php_cs.cache
 vendor
