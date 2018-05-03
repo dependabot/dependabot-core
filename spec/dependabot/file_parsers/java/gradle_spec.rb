@@ -21,7 +21,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(16) }
+    its(:length) { is_expected.to eq(19) }
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
@@ -44,9 +44,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "specified in short form" do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
-      # TODO: This would be higher if dependencies within `buildscript` were
-      # supported, too.
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       it "doesn't include property dependencies" do
         # TODO: Support property dependencies
@@ -59,11 +57,12 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.sparkjava:spark-core")
-          expect(dependency.version).to eq("2.5.4")
+          expect(dependency.name).
+            to eq("com.github.jengelman.gradle.plugins:shadow")
+          expect(dependency.version).to eq("2.0.2")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "2.5.4",
+              requirement: "2.0.2",
               file: "build.gradle",
               groups: [],
               source: nil
