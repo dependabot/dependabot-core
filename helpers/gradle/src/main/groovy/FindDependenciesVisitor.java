@@ -10,6 +10,7 @@ import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.ast.expr.MapEntryExpression;
 import org.codehaus.groovy.ast.expr.MapExpression;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
+import org.codehaus.groovy.ast.expr.ConstantExpression;
 
 /**
  * @author Lovett Li
@@ -42,12 +43,15 @@ public class FindDependenciesVisitor extends CodeVisitorSupport
 
         if( expressions.size() == 1 )
         {
-            String depStr = expressions.get( 0 ).getText();
-            String[] deps = depStr.split( ":" );
-
-            if( deps.length == 3 )
+            if ( expressions.get( 0 ).getClass() == ConstantExpression.class )
             {
-                dependencies.add( new GradleDependency( deps[0], deps[1], deps[2] ) );
+                String depStr = expressions.get( 0 ).getText();
+                String[] deps = depStr.split( ":" );
+
+                if( deps.length == 3 )
+                {
+                    dependencies.add( new GradleDependency( deps[0], deps[1], deps[2] ) );
+                }
             }
         }
 
