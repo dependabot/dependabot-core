@@ -1,4 +1,8 @@
-## v0.55.19, 02 May 2018
+## v0.55.20, 03 May 2018
+
+- Ruby: Restrict force updates to pareto improvements
+
+## v0.55.19, 03 May 2018
 
 - Ruby: Fix typo
 - Create directory structure in temporary directories if required
