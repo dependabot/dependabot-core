@@ -135,7 +135,7 @@ module Dependabot
               imported_ruby_files.each do |f|
                 path = f.name
                 FileUtils.mkdir_p(Pathname.new(path).dirname)
-                File.write(path, updated_gemfile_content(f))
+                File.write(path, f.content)
               end
 
               SharedHelpers.in_a_forked_process do
