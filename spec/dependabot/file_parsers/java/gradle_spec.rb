@@ -96,5 +96,52 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
         end
       end
     end
+
+    context "various different specifications" do
+      let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
+
+      its(:length) { is_expected.to eq(15) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("com.squareup.leakcanary:leakcanary-android")
+          expect(dependency.version).to eq("1.5.4")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.5.4",
+              file: "build.gradle",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the repeated dependency" do
+        subject(:dependency) do
+          dependencies.
+            find { |d| d.name == "com.nhaarman:mockito-kotlin-kt1.1" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("com.nhaarman:mockito-kotlin-kt1.1")
+          expect(dependency.version).to eq("1.5.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.5.0",
+              file: "build.gradle",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
   end
 end
