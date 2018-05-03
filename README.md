@@ -25,8 +25,11 @@ update git submodules and Docker files. Highlights include:
 
 ## Setup
 
-To run Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node and Rust
-installed. The main library is written in Ruby, while JavaScript, Python, PHP,
+To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node,
+Java and Rust installed. However, if you just wish to run it for a single
+language you can get away with just having that language and Ruby.
+
+The main library is written in Ruby, while JavaScript, Python, PHP, Java,
 Elixir and Rust are required for dealing with updates for their respective
 languages.
 
@@ -39,6 +42,7 @@ the helpers:
 4. `cd helpers/php && composer install && cd -`
 5. `cd helpers/python && pyenv exec pip install -r requirements.txt && cd -`
 6. `cd helpers/elixir && mix deps.get && cd -`
+7. `cd helpers/gradle && gradle jar && cd -`
 
 ## Architecture
 
