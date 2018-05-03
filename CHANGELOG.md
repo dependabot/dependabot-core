@@ -1,3 +1,7 @@
+## v0.55.22, 03 May 2018
+
+- Python: Improve error message when Pipfile can't be resolved
+
 ## v0.55.21, 03 May 2018
 
 - Python: Raise error for unresolvable Pipfiles
