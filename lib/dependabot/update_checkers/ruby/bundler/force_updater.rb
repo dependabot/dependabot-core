@@ -78,6 +78,13 @@ module Dependabot
                   )
                 end
 
+                # Only allow upgrades. Othewise it's unlikely that this
+                # resolution will be found by the FileUpdater
+                ::Bundler.settings.set_command_option(
+                  "only_update_to_newer_versions",
+                  true
+                )
+
                 yield
               end
             end
