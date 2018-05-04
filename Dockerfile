@@ -112,4 +112,4 @@ RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true
 ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle \
     GROOVY_HOME=/usr/local/groovy \
     GRADLE_HOME=/usr/local/gradle \
-    PATH=$GROOVY_HOME/bin/:$GRADLE_HOME/bin:$PATH
+    PATH=/usr/local/groovy/bin/:/usr/local/gradle/bin:$PATH
