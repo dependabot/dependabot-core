@@ -163,7 +163,7 @@ module Dependabot
                 check_npm_response(npm_response)
 
                 JSON.parse(npm_response.body)
-              rescue JSON::ParserError
+              rescue JSON::ParserError, Excon::Error::Timeout
                 @retry_count ||= 0
                 @retry_count += 1
                 if @retry_count > 2
