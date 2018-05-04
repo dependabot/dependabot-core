@@ -94,7 +94,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
 
       let(:google_metadata_url) do
         "https://maven.google.com/"\
-        "com/google/guava/guava/maven-metadata.xml"
+        "com/google/guava/group-index.xml"
       end
 
       before do
@@ -105,11 +105,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         stub_request(:get, google_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("java", "google_metadata", "com_google_guava.xml")
           )
       end
 
-      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:version]) { is_expected.to eq(version_class.new("27.1.1")) }
       its([:source_url]) do
         is_expected.to eq("https://maven.google.com")
       end
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
 
       let(:google_metadata_url) do
         "https://maven.google.com/"\
-        "com/google/guava/guava/maven-metadata.xml"
+        "com/google/guava/group-index.xml"
       end
 
       before do
@@ -164,14 +164,14 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         stub_request(:get, google_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("java", "google_metadata", "com_google_guava.xml")
           )
       end
 
       describe "the first version" do
         subject { versions.first }
 
-        its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+        its([:version]) { is_expected.to eq(version_class.new("18.0.0")) }
         its([:source_url]) do
           is_expected.to eq("https://maven.google.com")
         end
@@ -180,7 +180,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
       describe "the last version" do
         subject { versions.last }
 
-        its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+        its([:version]) do
+          is_expected.to eq(version_class.new("28.0.0-alpha1"))
+        end
         its([:source_url]) do
           is_expected.to eq("https://maven.google.com")
         end
