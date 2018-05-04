@@ -89,11 +89,8 @@ module Dependabot
 
               command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
               raw_response = nil
-              IO.popen(command) do |process|
-                raw_response = process.read
-              end
-              # Raise an error with the output from the shell session if Pipenv
-              # returns a non-zero status
+              IO.popen(command) { |process| raw_response = process.read }
+
               unless $CHILD_STATUS.success?
                 raise SharedHelpers::HelperSubprocessFailed.new(
                   raw_response,
