@@ -1,3 +1,7 @@
+## v0.56.1, 04 May 2018
+
+- PHP: Bump Composer version
+
 ## v0.56.0, 04 May 2018
 
 - BREAKING: Use Groovy to parse Gradle files. Please update the container you

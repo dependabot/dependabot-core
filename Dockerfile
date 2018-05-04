@@ -109,7 +109,7 @@ RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true
     && unzip gradle-4.7-bin.zip \
     && mv gradle-4.7 /usr/local/gradle \
     && rm -f gradle-4.7-bin.zip
-ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle
-ENV GROOVY_HOME=/usr/local/groovy
-ENV GRADLE_HOME=/usr/local/gradle
-ENV PATH=$GROOVY_HOME/bin/:$GRADLE_HOME/bin:$PATH
+ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle \
+    GROOVY_HOME=/usr/local/groovy \
+    GRADLE_HOME=/usr/local/gradle \
+    PATH=$GROOVY_HOME/bin/:$GRADLE_HOME/bin:$PATH
