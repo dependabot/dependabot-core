@@ -88,11 +88,19 @@ module Dependabot
               FileUtils.mkdir("target") unless Dir.exist?("target")
               File.write("target/build.gradle", buildfile.content)
 
+              command = "java -jar build/libs/gradle.jar"
               raw_response = nil
-              IO.popen("java -jar build/libs/gradle.jar") do |process|
+              IO.popen(command) do |process|
                 raw_response = process.read
               end
-              raise unless $CHILD_STATUS.success?
+              # Raise an error with the output from the shell session if Pipenv
+              # returns a non-zero status
+              unless $CHILD_STATUS.success?
+                raise SharedHelpers::HelperSubprocessFailed.new(
+                  raw_response,
+                  command
+                )
+              end
 
               result = File.read("target/output.json")
               FileUtils.rm_rf("target")
