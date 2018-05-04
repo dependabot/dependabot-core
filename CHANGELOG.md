@@ -1,3 +1,9 @@
+## v0.56.3, 04 May 2018
+
+- Gradle: Handle buildfiles with import statements
+- Gradle: Upgrade groovy-all version
+- Gradle: Better error messages when parsing fails
+
 ## v0.56.2, 04 May 2018
 
 - Gradle: Fix helper path
