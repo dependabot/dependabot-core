@@ -85,10 +85,7 @@ module Dependabot
         def parsed_buildfile
           @parsed_buildfile ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write(
-                "build.gradle",
-                prepared_buildfile_content(buildfile.content)
-              )
+              write_temporary_files
 
               command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
               raw_response = nil
@@ -107,6 +104,13 @@ module Dependabot
               result = File.read("result.json")
               JSON.parse(result)
             end
+        end
+
+        def write_temporary_files
+          File.write(
+            "build.gradle",
+            prepared_buildfile_content(buildfile.content)
+          )
         end
 
         def gradle_parser_path
