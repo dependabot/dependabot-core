@@ -1,3 +1,7 @@
+## v0.56.4, 04 May 2018
+
+- Gradle: Handle custom repositories
+
 ## v0.56.3, 04 May 2018
 
 - Gradle: Handle buildfiles with import statements
