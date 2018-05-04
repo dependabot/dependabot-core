@@ -74,6 +74,73 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
         )
       end
       its(:content) { is_expected.to include "version: '4.2.0'" }
+
+      context "with a dependency version defined by a property" do
+        let(:buildfile_fixture_name) { "shortform_build.gradle" }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
+              version: "23.6-jre",
+              previous_version: "1.1.4-3",
+              requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "1.1.4-3",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              package_manager: "gradle"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
+              version: "23.6-jre",
+              previous_version: "1.1.4-3",
+              requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "1.1.4-3",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        it "updates the version in the build.gradle" do
+          expect(updated_buildfile.content).
+            to include("ext.kotlin_version = '23.6-jre'")
+        end
+      end
     end
   end
 end

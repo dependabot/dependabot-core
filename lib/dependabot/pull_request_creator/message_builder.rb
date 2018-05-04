@@ -7,6 +7,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
+      JAVA_PMS = %w(maven gradle).freeze
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
       ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s),.:]|$)/
@@ -97,7 +98,7 @@ module Dependabot
             dependency = dependencies.first
             "#{dependency.name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
-          elsif package_manager == "maven"
+          elsif JAVA_PMS.include?(package_manager)
             dependency = dependencies.first
             "#{java_property_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
@@ -137,7 +138,7 @@ module Dependabot
       end
 
       def version_commit_message_intro
-        if dependencies.count > 1 && package_manager == "maven"
+        if dependencies.count > 1 && JAVA_PMS.include?(package_manager)
           return multidependency_java_intro
         end
 

@@ -6,6 +6,8 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
+      JAVA_PMS = %w(maven gradle).freeze
+
       attr_reader :dependencies, :files, :target_branch
 
       def initialize(dependencies:, files:, target_branch:)
@@ -16,7 +18,7 @@ module Dependabot
 
       def new_branch_name
         @name ||=
-          if dependencies.count > 1 && package_manager == "maven"
+          if dependencies.count > 1 && JAVA_PMS.include?(package_manager)
             java_property_name
           elsif dependencies.count > 1
             dependencies.map(&:name).join("-and-").tr(":", "-")

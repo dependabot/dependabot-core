@@ -51,15 +51,41 @@ module Dependabot
             next if new_req[:requirement] == old_req[:requirement]
 
             buildfile = files.find { |f| f.name == new_req.fetch(:file) }
-            files[files.index(buildfile)] =
-              update_version_in_buildfile(
-                dependency,
-                buildfile,
-                old_req,
-                new_req
-              )
+
+            if new_req.dig(:metadata, :property_name)
+              files =
+                update_buildfiles_for_property_change(files, old_req, new_req)
+            else
+              files[files.index(buildfile)] =
+                update_version_in_buildfile(
+                  dependency,
+                  buildfile,
+                  old_req,
+                  new_req
+                )
+            end
           end
 
+          files
+        end
+
+        def update_buildfiles_for_property_change(buildfiles, old_req, new_req)
+          files = buildfiles.dup
+          property_name = new_req.fetch(:metadata).fetch(:property_name)
+          buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+          old_version = old_req.fetch(:requirement)
+
+          # This is crude, but we don't expect to be only updating a single
+          # buildfile for long and can rewrite later.
+          regex =
+            /#{Regexp.quote(property_name)}.*=.*#{Regexp.quote(old_version)}/
+          updated_content =
+            buildfile.content.gsub(regex) do |match_string|
+              match_string.gsub(old_version, new_req.fetch(:requirement))
+            end
+
+          files[files.index(buildfile)] =
+            updated_file(file: buildfile, content: updated_content)
           files
         end
 
