@@ -1,3 +1,7 @@
+## v0.56.2, 04 May 2018
+
+- Gradle: Fix helper path
+
 ## v0.56.1, 04 May 2018
 
 - PHP: Bump Composer version
