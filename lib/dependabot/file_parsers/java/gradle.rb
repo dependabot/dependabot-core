@@ -84,7 +84,7 @@ module Dependabot
 
         def parsed_buildfile
           @parsed_buildfile ||=
-            Dir.chdir("helpers/gradle/") do
+            Dir.chdir(gradle_helper_path) do
               FileUtils.mkdir("target") unless Dir.exist?("target")
               File.write("target/build.gradle", buildfile.content)
 
@@ -98,6 +98,14 @@ module Dependabot
               FileUtils.rm_rf("target")
               JSON.parse(result)
             end
+        end
+
+        def gradle_helper_path
+          File.join(project_root, "helpers/gradle/")
+        end
+
+        def project_root
+          File.join(File.dirname(__FILE__), "../../../..")
         end
 
         def properties
