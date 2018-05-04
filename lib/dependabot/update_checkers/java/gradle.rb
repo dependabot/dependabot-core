@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/base"
+require "dependabot/file_parsers/java/gradle"
 
 module Dependabot
   module UpdateCheckers
@@ -8,6 +9,7 @@ module Dependabot
       class Gradle < Dependabot::UpdateCheckers::Base
         require_relative "maven/requirements_updater"
         require_relative "gradle/version_finder"
+        require_relative "gradle/property_updater"
 
         def latest_version
           latest_version_details&.fetch(:version)
@@ -19,11 +21,12 @@ module Dependabot
           #
           # The above is hard. Currently we just return the latest version and
           # hope (hence this package manager is in beta!)
+          return nil if version_comes_from_multi_dependency_property?
           latest_version
         end
 
         def latest_resolvable_version_with_no_unlock
-          # Irrelevant, since Gradle has a single dependency file (the pom.xml).
+          # Irrelevant, since Gradle has a single dependency file.
           #
           # For completeness we ought to resolve the build.gradle and return the
           # latest version that satisfies the current constraint AND any
@@ -41,16 +44,21 @@ module Dependabot
           ).updated_requirements
         end
 
+        def requirements_unlocked_or_can_be?
+          # If the dependency version come from a property we couldn't
+          # interpolate then there's nothing we can do.
+          !dependency.version.include?("$")
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't relevant for Gradle until we start
-          # updating property versions
-          false
+          return false unless version_comes_from_multi_dependency_property?
+          property_updater.update_possible?
         end
 
         def updated_dependencies_after_full_unlock
-          raise NotImplementedError
+          property_updater.updated_dependencies
         end
 
         def numeric_version_up_to_date?
@@ -73,6 +81,44 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files
             )
+        end
+
+        def property_updater
+          @property_updater ||=
+            PropertyUpdater.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              target_version_details: latest_version_details
+            )
+        end
+
+        def version_comes_from_multi_dependency_property?
+          declarations_using_a_property.any? do |requirement|
+            property_name = requirement.fetch(:metadata).fetch(:property_name)
+
+            all_property_based_dependencies.any? do |dep|
+              next false if dep.name == dependency.name
+              dep.requirements.any? do |req|
+                req.dig(:metadata, :property_name) == property_name
+              end
+            end
+          end
+        end
+
+        def declarations_using_a_property
+          @declarations_using_a_property ||=
+            dependency.requirements.
+            select { |req| req.dig(:metadata, :property_name) }
+        end
+
+        def all_property_based_dependencies
+          @all_property_based_dependencies ||=
+            FileParsers::Java::Gradle.new(
+              dependency_files: dependency_files,
+              repo: nil
+            ).parse.select do |dep|
+              dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            end
         end
       end
     end

@@ -35,7 +35,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
             requirement: "0.5.0-SNAPSHOT",
             file: "build.gradle",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: nil
           }]
         )
       end
@@ -68,7 +69,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               requirement: "1.1.4-3",
               file: "build.gradle",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { property_name: "kotlin_version" }
             }]
           )
         end
@@ -93,7 +95,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               requirement: "3.3.0",
               file: "build.gradle",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -118,7 +121,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               requirement: "5.0.2.RELEASE",
               file: "build.gradle",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -128,7 +132,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "various different specifications" do
       let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
 
-      its(:length) { is_expected.to eq(37) }
+      its(:length) { is_expected.to eq(38) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -143,7 +147,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               requirement: "1.5.4",
               file: "build.gradle",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end
@@ -165,7 +170,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               requirement: "1.5.0",
               file: "build.gradle",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: nil
             }]
           )
         end

@@ -34,43 +34,52 @@ module Dependabot
 
           parsed_buildfile["dependencies"].each do |dep|
             next if dep.values_at(*ATTRS).any? { |v| v.nil? || v.empty? }
-            dep = interpolate_property_values(dep)
-            next if dep.values_at(*ATTRS).any? { |v| v.include?("$") }
 
-            dependency_set <<
-              Dependency.new(
-                name: "#{dep['group']}:#{dep['name']}",
-                version: dep["version"],
-                requirements: [
-                  {
-                    requirement: dep["version"],
-                    file: buildfile.name,
-                    source: nil,
-                    groups: []
-                    # TODO: Include details of property here
-                  }
-                ],
-                package_manager: "gradle"
-              )
+            dependency_set << dependency_from(details_hash: dep)
           end
 
           dependency_set
         end
 
-        def interpolate_property_values(details)
-          details = details.dup
-          details.each do |key, value|
-            next unless value.match?(PROPERTY_REGEX)
-            details[key] =
-              value.gsub(PROPERTY_REGEX) do |match_string|
-                property = match_string.
-                           match(PROPERTY_REGEX).
-                           named_captures["property_name"]
-                properties[property] || match_string
-              end
-          end
+        def dependency_from(details_hash:)
+          dependency_name = [
+            evaluated_value(details_hash["group"]),
+            evaluated_value(details_hash["name"])
+          ].join(":")
 
-          details
+          version_property_name =
+            details_hash["version"].
+            match(PROPERTY_REGEX)&.
+            named_captures&.fetch("property_name")
+
+          Dependency.new(
+            name: dependency_name,
+            version: evaluated_value(details_hash["version"]),
+            requirements: [
+              {
+                requirement: evaluated_value(details_hash["version"]),
+                file: buildfile.name,
+                source: nil,
+                groups: [],
+                metadata:
+                  if version_property_name
+                    { property_name: version_property_name }
+                  end
+              }
+            ],
+            package_manager: "gradle"
+          )
+        end
+
+        def evaluated_value(value)
+          return value unless value.match?(PROPERTY_REGEX)
+
+          property_name  = value.match(PROPERTY_REGEX).
+                           named_captures.fetch("property_name")
+          property_value = properties.fetch(property_name, nil)
+
+          return value unless property_value
+          value.gsub(PROPERTY_REGEX, property_value)
         end
 
         def parsed_buildfile

@@ -88,11 +88,67 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
       let(:dependency_version) { "RELEASE802" }
       it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
+
+    context "when the version comes from a property" do
+      let(:buildfile_fixture_name) { "single_property_build.gradle" }
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "1.1.4-3",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "kotlin_version" }
+          }
+        ]
+      end
+      let(:dependency_name) { "org.jetbrains.kotlin:kotlin-stdlib-jre8" }
+      let(:dependency_version) { "1.1.4-3" }
+
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+      context "that affects multiple dependencies" do
+        let(:buildfile_fixture_name) { "shortform_build.gradle" }
+        it { is_expected.to eq(version_class.new("23.6-jre")) }
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
     it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    context "when the version comes from a property" do
+      let(:buildfile_fixture_name) { "single_property_build.gradle" }
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [
+          {
+            file: "pom.xml",
+            requirement: "1.1.4-3",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "kotlin_version" }
+          }
+        ]
+      end
+      let(:dependency_name) { "org.jetbrains.kotlin:kotlin-stdlib-jre8" }
+      let(:dependency_version) { "1.1.4-3" }
+
+      it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+      context "that affects multiple dependencies" do
+        let(:buildfile_fixture_name) { "shortform_build.gradle" }
+        it { is_expected.to be_nil }
+      end
+    end
   end
 
   describe "#updated_requirements" do
@@ -127,6 +183,189 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
             }
           ]
         )
+    end
+  end
+
+  describe "#latest_version_resolvable_with_full_unlock?" do
+    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+
+    context "with no latest version" do
+      before { allow(checker).to receive(:latest_version).and_return(nil) }
+      it { is_expected.to be_falsey }
+    end
+
+    context "with a non-property buildfile" do
+      let(:buildfile_fixture_name) { "basic_build.gradle" }
+      it { is_expected.to be_falsey }
+    end
+
+    context "with a property buildfile" do
+      let(:dependency_name) { "org.jetbrains.kotlin:kotlin-gradle-plugin" }
+      let(:buildfile_fixture_name) { "shortform_build.gradle" }
+      let(:dependency_version) { "1.1.4-3" }
+      let(:maven_central_metadata_url_gradle_plugin) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
+      end
+      let(:maven_central_metadata_url_stdlib) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "1.1.4-3",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "kotlin_version" }
+        }]
+      end
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(version_class.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_gradle_plugin).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_stdlib).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "delegates to the PropertyUpdater" do
+        expect(described_class::PropertyUpdater).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version_details: {
+              version: version_class.new("23.6-jre"),
+              source_url: "https://repo.maven.apache.org/maven2"
+            }
+          ).
+          and_call_original
+        expect(subject).to eq(true)
+      end
+    end
+  end
+
+  describe "#updated_dependencies_after_full_unlock" do
+    subject { checker.send(:updated_dependencies_after_full_unlock) }
+
+    context "with a property buildfile" do
+      let(:dependency_name) { "org.jetbrains.kotlin:kotlin-gradle-plugin" }
+      let(:buildfile_fixture_name) { "shortform_build.gradle" }
+      let(:dependency_version) { "1.1.4-3" }
+      let(:maven_central_metadata_url_gradle_plugin) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
+      end
+      let(:maven_central_metadata_url_stdlib) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "1.1.4-3",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "kotlin_version" }
+        }]
+      end
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(version_class.new("23.6-jre"))
+        stub_request(:get, maven_central_metadata_url_gradle_plugin).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, maven_central_metadata_url_stdlib).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "delegates to the PropertyUpdater" do
+        expect(described_class::PropertyUpdater).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            target_version_details: {
+              version: version_class.new("23.6-jre"),
+              source_url: "https://repo.maven.apache.org/maven2"
+            }
+          ).
+          and_call_original
+        expect(subject).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
+              version: "23.6-jre",
+              previous_version: "1.1.4-3",
+              requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "1.1.4-3",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              package_manager: "gradle"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
+              version: "23.6-jre",
+              previous_version: "1.1.4-3",
+              requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "23.6-jre",
+                  groups: [],
+                  source: {
+                    type: "maven_repo",
+                    url: "https://repo.maven.apache.org/maven2"
+                  },
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "1.1.4-3",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "kotlin_version" }
+                }
+              ],
+              package_manager: "gradle"
+            )
+          ]
+        )
+      end
     end
   end
 
