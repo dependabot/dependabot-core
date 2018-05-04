@@ -1,3 +1,10 @@
+## v0.56.0, 04 May 2018
+
+- BREAKING: Use Groovy to parse Gradle files. Please update the container you
+  run dependabot-core in to have Groovy available (e.g., use the latest
+  dependabot/dependabot-core container).
+- Gradle: Handle property version updates
+
 ## v0.55.22, 03 May 2018
 
 - Python: Improve error message when Pipfile can't be resolved
