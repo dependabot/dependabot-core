@@ -84,14 +84,13 @@ module Dependabot
 
         def parsed_buildfile
           @parsed_buildfile ||=
-            Dir.chdir(gradle_helper_path) do
-              FileUtils.mkdir("target") unless Dir.exist?("target")
+            SharedHelpers.in_a_temporary_directory do
               File.write(
-                "target/build.gradle",
+                "build.gradle",
                 prepared_buildfile_content(buildfile.content)
               )
 
-              command = "java -jar build/libs/gradle.jar"
+              command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
               raw_response = nil
               IO.popen(command) do |process|
                 raw_response = process.read
@@ -105,10 +104,13 @@ module Dependabot
                 )
               end
 
-              result = File.read("target/output.json")
-              FileUtils.rm_rf("target")
+              result = File.read("result.json")
               JSON.parse(result)
             end
+        end
+
+        def gradle_parser_path
+          "#{gradle_helper_path}/build/libs/gradle.jar"
         end
 
         def gradle_helper_path

@@ -7,7 +7,6 @@ Gemfile.lock
 /helpers/npm/node_modules
 /helpers/gradle/.gradle
 /helpers/gradle/build
-/helpers/gradle/target
 /helpers/php/vendor
 /helpers/php/.php_cs.cache
 vendor
