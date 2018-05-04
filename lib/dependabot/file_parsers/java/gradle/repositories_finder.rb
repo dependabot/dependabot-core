@@ -10,7 +10,7 @@ module Dependabot
         class RepositoriesFinder
           # The Central Repo doesn't have special status for Gradle, but until
           # we're confident we're selecting repos correctly it's wise to include
-          # it.
+          # it as a default.
           CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
           def initialize(dependency_files:)

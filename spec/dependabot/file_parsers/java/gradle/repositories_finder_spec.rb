@@ -25,15 +25,14 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
     end
 
     context "when there are repository declarations" do
-      let(:buildfile_fixture_name) { "shortform_build.gradle" }
+      let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
 
       it "includes the additional declarations" do
         expect(repository_urls).to match_array(
           %w(
-            https://repo.maven.apache.org/maven2
-            https://plugins.gradle.org/m2
-            https://jitpack.io
-            https://dl.bintray.com/kotlin/exposed
+            https://jcenter.bintray.com
+            https://dl.bintray.com/magnusja/maven
+            https://maven.google.com
           )
         )
       end

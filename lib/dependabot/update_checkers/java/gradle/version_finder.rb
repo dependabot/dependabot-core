@@ -2,7 +2,7 @@
 
 require "nokogiri"
 require "dependabot/shared_helpers"
-require "dependabot/file_parsers/java/maven/repositories_finder"
+require "dependabot/file_parsers/java/gradle/repositories_finder"
 require "dependabot/update_checkers/java/gradle"
 require "dependabot/utils/java/version"
 
@@ -73,18 +73,18 @@ module Dependabot
                 )
                 Nokogiri::XML(response.body)
               rescue Excon::Error::Socket, Excon::Error::Timeout
-                central =
-                  FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+                namespace = FileParsers::Java::Gradle::RepositoriesFinder
+                central = namespace::CENTRAL_REPO_URL
                 raise if repository_url == central
                 Nokogiri::XML("")
               end
           end
 
           def repository_urls
-            # In future we'll want to support other repositories
-            @repository_urls ||= [
-              FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
-            ]
+            @repository_urls ||=
+              FileParsers::Java::Gradle::RepositoriesFinder.new(
+                dependency_files: dependency_files
+              ).repository_urls
           end
 
           def pom

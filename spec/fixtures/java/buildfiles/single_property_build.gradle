@@ -6,7 +6,6 @@ buildscript {
 
     repositories {
         mavenCentral()
-        maven { url "https://plugins.gradle.org/m2/" }
     }
 }
 
@@ -15,8 +14,6 @@ apply plugin: "com.github.johnrengelman.shadow"
 
 repositories {
     mavenCentral()
-    maven { url "https://jitpack.io" }
-    maven { url  "https://dl.bintray.com/kotlin/exposed" }
 }
 
 dependencies {

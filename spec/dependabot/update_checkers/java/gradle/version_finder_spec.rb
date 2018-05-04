@@ -78,6 +78,42 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
       let(:dependency_version) { "RELEASE802" }
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
     end
+
+    context "with a custom repository" do
+      let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
+
+      let(:jcenter_metadata_url) do
+        "https://jcenter.bintray.com/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:magnusja_metadata_url) do
+        "https://dl.bintray.com/magnusja/maven/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:google_metadata_url) do
+        "https://maven.google.com/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, jcenter_metadata_url).
+          to_return(status: 404, body: "")
+        stub_request(:get, magnusja_metadata_url).
+          to_raise(Excon::Error::Timeout)
+        stub_request(:get, google_metadata_url).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("https://maven.google.com")
+      end
+    end
   end
 
   describe "#versions" do
@@ -99,6 +135,55 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
+      end
+    end
+
+    context "with a custom repository" do
+      let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
+
+      let(:jcenter_metadata_url) do
+        "https://jcenter.bintray.com/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:magnusja_metadata_url) do
+        "https://dl.bintray.com/magnusja/maven/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:google_metadata_url) do
+        "https://maven.google.com/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, jcenter_metadata_url).
+          to_return(status: 404, body: "")
+        stub_request(:get, magnusja_metadata_url).
+          to_raise(Excon::Error::Timeout)
+        stub_request(:get, google_metadata_url).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+        its([:source_url]) do
+          is_expected.to eq("https://maven.google.com")
+        end
+      end
+
+      describe "the last version" do
+        subject { versions.last }
+
+        its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+        its([:source_url]) do
+          is_expected.to eq("https://maven.google.com")
+        end
       end
     end
   end
