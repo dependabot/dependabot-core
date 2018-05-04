@@ -77,6 +77,13 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       end
     end
 
+    context "with an import" do
+      let(:buildfile_fixture_name) { "with_import_build.gradle" }
+
+      # Really we're testing that this parses at all
+      its(:length) { is_expected.to eq(4) }
+    end
+
     context "specified as implementations" do
       let(:buildfile_fixture_name) { "android_build.gradle" }
 

@@ -86,7 +86,10 @@ module Dependabot
           @parsed_buildfile ||=
             Dir.chdir(gradle_helper_path) do
               FileUtils.mkdir("target") unless Dir.exist?("target")
-              File.write("target/build.gradle", buildfile.content)
+              File.write(
+                "target/build.gradle",
+                prepared_buildfile_content(buildfile.content)
+              )
 
               command = "java -jar build/libs/gradle.jar"
               raw_response = nil
@@ -121,6 +124,10 @@ module Dependabot
             parsed_buildfile["properties"].each_with_object({}) do |prop, hash|
               hash[prop.fetch("name")] = prop.fetch("value")
             end
+        end
+
+        def prepared_buildfile_content(buildfile_content)
+          buildfile_content.gsub(/^\s*import\s.*$/, "")
         end
 
         def buildfile
