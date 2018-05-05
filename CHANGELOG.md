@@ -1,3 +1,9 @@
+## v0.56.5, 05 May 2018
+
+- Gradle: Special case Google version lookup
+- Python: Handle spaces before method calls
+- JS: Retry calls to registry if they timeout
+
 ## v0.56.4, 04 May 2018
 
 - Gradle: Handle custom repositories
