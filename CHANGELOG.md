@@ -1,3 +1,9 @@
+## v0.56.6, 05 May 2018
+
+- Python: Quietly ignore error when updating to a new version that has a bad
+  setup.py
+- Python: Bump Pipenv commit
+
 ## v0.56.5, 05 May 2018
 
 - Gradle: Special case Google version lookup
