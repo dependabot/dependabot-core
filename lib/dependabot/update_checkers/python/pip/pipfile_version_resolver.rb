@@ -84,6 +84,13 @@ module Dependabot
               raise DependencyFileNotResolvable, msg
             end
 
+            if error.message.include?('Command "python setup.py egg_info') &&
+               error.message.include?(dependency.name)
+              # The latest version of the dependency we're updating is borked
+              # (because it has an unevaluatable setup.py). Skip the update.
+              return nil
+            end
+
             raise unless error.message.include?("could not be resolved")
           end
 
