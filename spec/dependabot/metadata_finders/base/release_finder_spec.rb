@@ -228,7 +228,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                     "No release notes provided.\n"\
                     "\n"\
                     "## v1.6.0\n"\
-                    "Mad props to @greysteil for this"
+                    "Mad props to @greysteil for the @angular/scope work"
                   )
               end
             end
@@ -254,7 +254,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   "No release notes provided.\n"\
                   "\n"\
                   "## v1.6.0\n"\
-                  "Mad props to @greysteil for this"
+                  "Mad props to @greysteil for the @angular/scope work"
                 )
             end
           end
