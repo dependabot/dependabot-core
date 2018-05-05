@@ -1,3 +1,7 @@
+## v0.56.7, 05 May 2018
+
+- Don't attempt to sanitize mentions with a / in them (they're scopes!)
+
 ## v0.56.6, 05 May 2018
 
 - Python: Quietly ignore error when updating to a new version that has a bad
