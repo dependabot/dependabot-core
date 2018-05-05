@@ -97,9 +97,9 @@ def parse_setup(directory):
             content = open(directory + '/setup.py', 'r').read()
 
             # Remove `print`, `open`, `log` and import statements
-            content = content.replace("print(", "noop(")
-            content = re.sub(r"log(\.\w+)*\(", "noop(", content)
-            content = re.sub(r"\b(\w+\.)*(open|file)\(", "fake_open(", content)
+            content = re.sub(r"print\s*\(", "noop(", content)
+            content = re.sub(r"log\s*(\.\w+)*\(", "noop(", content)
+            content = re.sub(r"\b(\w+\.)*(open|file)\s*\(", "fake_open(", content)
             content = content.replace("parse_requirements(", "fake_parse(")
             version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
             content = re.sub(version_re, "", content)
