@@ -25,6 +25,10 @@ module Dependabot
         def buildfile
           @buildfile ||= fetch_file_from_host("build.gradle")
         end
+
+        def settings_file
+          @settings_file ||= fetch_file_from_host("settings.gradle")
+        end
       end
     end
   end

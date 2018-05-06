@@ -63,7 +63,7 @@ module Dependabot
           end
 
           def gradle_parser_path
-            "#{gradle_helper_path}/build/libs/gradle.jar"
+            "#{gradle_helper_path}/buildfile_parser.jar"
           end
 
           def gradle_helper_path

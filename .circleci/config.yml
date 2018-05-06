@@ -16,7 +16,7 @@ jobs:
       - run: bundle install --path vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
-      - run: cd helpers/gradle && gradle jar
+      - run: cd helpers/gradle/buildfile_parser && gradle jar && mv build/libs/buildfile_parser.jar ../
       - run: cd helpers/php && composer install
       - run: cd helpers/python && pyenv exec pip install -r requirements.txt
       - run: cd helpers/elixir && mix deps.get
