@@ -1,0 +1,27 @@
+apply plugin: 'groovy'
+apply plugin: 'application'
+
+mainClassName = "ParseApps"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.15'
+    compile 'commons-io:commons-io:2.6'
+}
+
+task parseDependencies (dependsOn: 'classes', type: JavaExec) {
+    main = 'ParseApps'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+jar {
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+  from { configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) } }
+
+  manifest {
+    attributes 'Main-Class': mainClassName
+  }
+}
