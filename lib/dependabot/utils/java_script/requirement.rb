@@ -53,7 +53,8 @@ module Dependabot
         def convert_js_constraint_to_ruby_constraint(req_string)
           req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")
 
-          if req_string.start_with?("~") then convert_tilde_req(req_string)
+          if req_string.empty? then ">= 0"
+          elsif req_string.start_with?("~") then convert_tilde_req(req_string)
           elsif req_string.start_with?("^") then convert_caret_req(req_string)
           elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
           elsif req_string.match?(/[<>]/) then req_string

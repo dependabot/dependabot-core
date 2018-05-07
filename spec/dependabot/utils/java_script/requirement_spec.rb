@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with only a *" do
       let(:requirement_string) { "*" }
-      it { is_expected.to eq(Gem::Requirement.new("~> 0")) }
+      it { is_expected.to eq(Gem::Requirement.new(">= 0")) }
     end
 
     context "with a *" do
