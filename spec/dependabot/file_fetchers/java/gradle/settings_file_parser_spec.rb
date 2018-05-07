@@ -19,10 +19,19 @@ RSpec.describe Dependabot::FileFetchers::Java::Gradle::SettingsFileParser do
     subject(:subproject_paths) { finder.subproject_paths }
 
     context "when there are subproject declarations" do
-      let(:buildfile_fixture_name) { "simple_settings.gradle" }
+      let(:fixture_name) { "simple_settings.gradle" }
 
       it "includes the additional declarations" do
         expect(subproject_paths).to match_array(%w(app))
+      end
+    end
+
+    context "with multiple subprojects" do
+      let(:fixture_name) { "multi_subproject_settings.gradle" }
+
+      it "includes the additional declarations" do
+        expect(subproject_paths).
+          to match_array(%w(../ganttproject ../biz.ganttproject.core))
       end
     end
   end
