@@ -1,3 +1,7 @@
+## v0.56.8, 07 May 2018
+
+- Handle Gradle projects with sub-projects
+
 ## v0.56.7, 05 May 2018
 
 - Don't attempt to sanitize mentions with a / in them (they're scopes!)
