@@ -1,3 +1,7 @@
+## v0.56.10, 07 May 2018
+
+- Python: Bump Pipenv to 11.10.2
+
 ## v0.56.9, 07 May 2018
 
 - JS: Fix conversion of `*` requirement
