@@ -1,7 +1,7 @@
 apply plugin: 'groovy'
 apply plugin: 'application'
 
-mainClassName = "ParseApps"
+mainClassName = "ParseSettings"
 
 repositories {
     mavenCentral()
@@ -13,7 +13,7 @@ dependencies {
 }
 
 task parseDependencies (dependsOn: 'classes', type: JavaExec) {
-    main = 'ParseApps'
+    main = 'ParseSettings'
     classpath = sourceSets.main.runtimeClasspath
 }
 

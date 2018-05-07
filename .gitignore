@@ -5,6 +5,7 @@
 Gemfile.lock
 /helpers/yarn/node_modules
 /helpers/npm/node_modules
+/helpers/gradle/.gradle
 /helpers/gradle/*/.gradle
 /helpers/gradle/*/build
 /helpers/gradle/*.jar
