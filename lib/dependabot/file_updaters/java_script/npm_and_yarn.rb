@@ -140,12 +140,16 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_updater_error(error)
+          handle_package_lock_updater_error(error)
         end
 
-        def handle_updater_error(error)
+        def handle_package_lock_updater_error(error)
           if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+          if error.message.include?("did not match any file(s) known to git")
+            msg = "Error while generating package-lock.json:\n#{error.message}"
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
           if error.message.include?("make sure you have the correct access") ||
              error.message.include?("Authentication failed")

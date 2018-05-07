@@ -676,6 +676,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
         end
       end
+
+      context "with a git reference that Yarn would find by npm wouldn't" do
+        let(:manifest_fixture_name) { "git_dependency_yarn_ref.json" }
+        let(:npm_lock_fixture_name) { "git_dependency_yarn_ref.json" }
+
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
     end
 
     #######################
