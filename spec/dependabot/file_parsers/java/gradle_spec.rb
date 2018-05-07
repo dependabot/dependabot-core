@@ -184,5 +184,45 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
         end
       end
     end
+
+    context "with multiple buildfiles" do
+      let(:files) { [buildfile, subproject_buildfile] }
+      let(:subproject_buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "app/build.gradle",
+          content: fixture("java", "buildfiles", buildfile_fixture_name)
+        )
+      end
+
+      its(:length) { is_expected.to eq(19) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("co.aikar:acf-paper")
+          expect(dependency.version).to eq("0.5.0-SNAPSHOT")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "0.5.0-SNAPSHOT",
+                file: "build.gradle",
+                groups: [],
+                source: nil,
+                metadata: nil
+              },
+              {
+                requirement: "0.5.0-SNAPSHOT",
+                file: "app/build.gradle",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }
+            ]
+          )
+        end
+      end
+    end
   end
 end

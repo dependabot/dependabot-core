@@ -23,28 +23,31 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += buildfile_dependencies
+          buildfiles.each do |buildfile|
+            dependency_set += buildfile_dependencies(buildfile)
+          end
           dependency_set.dependencies
         end
 
         private
 
-        def buildfile_dependencies
+        def buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          parsed_buildfile["dependencies"].each do |dep|
+          parsed_buildfile(buildfile)["dependencies"].each do |dep|
             next if dep.values_at(*ATTRS).any? { |v| v.nil? || v.empty? }
 
-            dependency_set << dependency_from(details_hash: dep)
+            dependency_set <<
+              dependency_from(details_hash: dep, buildfile: buildfile)
           end
 
           dependency_set
         end
 
-        def dependency_from(details_hash:)
+        def dependency_from(details_hash:, buildfile:)
           dependency_name = [
-            evaluated_value(details_hash["group"]),
-            evaluated_value(details_hash["name"])
+            evaluated_value(details_hash["group"], buildfile),
+            evaluated_value(details_hash["name"], buildfile)
           ].join(":")
 
           version_property_name =
@@ -54,38 +57,38 @@ module Dependabot
 
           Dependency.new(
             name: dependency_name,
-            version: evaluated_value(details_hash["version"]),
-            requirements: [
-              {
-                requirement: evaluated_value(details_hash["version"]),
-                file: buildfile.name,
-                source: nil,
-                groups: [],
-                metadata:
-                  if version_property_name
-                    { property_name: version_property_name }
-                  end
-              }
-            ],
+            version: evaluated_value(details_hash["version"], buildfile),
+            requirements: [{
+              requirement:
+                evaluated_value(details_hash["version"], buildfile),
+              file: buildfile.name,
+              source: nil,
+              groups: [],
+              metadata:
+                if version_property_name
+                  { property_name: version_property_name }
+                end
+            }],
             package_manager: "gradle"
           )
         end
 
-        def evaluated_value(value)
+        def evaluated_value(value, buildfile)
           return value unless value.match?(PROPERTY_REGEX)
 
           property_name  = value.match(PROPERTY_REGEX).
                            named_captures.fetch("property_name")
-          property_value = properties.fetch(property_name, nil)
+          property_value = properties(buildfile).fetch(property_name, nil)
 
           return value unless property_value
           value.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def parsed_buildfile
-          @parsed_buildfile ||=
+        def parsed_buildfile(buildfile)
+          @parsed_buildfile ||= {}
+          @parsed_buildfile[buildfile.name] ||=
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_files
+              write_temporary_files(buildfile)
 
               command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
               raw_response = nil
@@ -103,7 +106,7 @@ module Dependabot
             end
         end
 
-        def write_temporary_files
+        def write_temporary_files(buildfile)
           File.write(
             "build.gradle",
             prepared_buildfile_content(buildfile.content)
@@ -122,9 +125,10 @@ module Dependabot
           File.join(File.dirname(__FILE__), "../../../..")
         end
 
-        def properties
+        def properties(buildfile)
           @properties ||=
-            parsed_buildfile["properties"].each_with_object({}) do |prop, hash|
+            parsed_buildfile(buildfile)["properties"].
+            each_with_object({}) do |prop, hash|
               hash[prop.fetch("name")] = prop.fetch("value")
             end
         end
@@ -133,9 +137,9 @@ module Dependabot
           buildfile_content.gsub(/^\s*import\s.*$/, "")
         end
 
-        def buildfile
-          @buildfile ||=
-            dependency_files.find { |f| f.name == "build.gradle" }
+        def buildfiles
+          @buildfiles ||=
+            dependency_files.select { |f| f.name.end_with?("build.gradle") }
         end
 
         def check_required_files
