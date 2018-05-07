@@ -1,3 +1,7 @@
+## v0.56.9, 07 May 2018
+
+- JS: Fix conversion of `*` requirement
+
 ## v0.56.8, 07 May 2018
 
 - Handle Gradle projects with sub-projects
