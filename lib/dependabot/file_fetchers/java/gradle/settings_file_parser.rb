@@ -15,6 +15,7 @@ module Dependabot
           def subproject_paths
             parsed_settings_file.
               fetch("subproject_paths").
+              map { |path| path.gsub(%r{^/}, "") }.
               uniq
           end
 

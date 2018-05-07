@@ -22,7 +22,7 @@ RSpec.describe Dependabot::FileFetchers::Java::Gradle::SettingsFileParser do
       let(:buildfile_fixture_name) { "simple_settings.gradle" }
 
       it "includes the additional declarations" do
-        expect(subproject_paths).to match_array(%w(/app))
+        expect(subproject_paths).to match_array(%w(app))
       end
     end
   end
