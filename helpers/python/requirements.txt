@@ -1,4 +1,4 @@
 pip==10.0.1
 hashin==0.13.0
--e git://github.com/pypa/pipenv.git@c33f7b3ba1984a8d35553dbf36db5e0451e0f19d#egg=pipenv
+pipenv==11.10.2
 pipfile==0.0.2
