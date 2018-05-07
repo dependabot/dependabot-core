@@ -1,3 +1,8 @@
+## v0.56.11, 07 May 2018
+
+- JS: Raise resolvability error for npm lockfiles which can't be resolved
+- Python: Allow retries in Pipenv
+
 ## v0.56.10, 07 May 2018
 
 - Python: Bump Pipenv to 11.10.2
