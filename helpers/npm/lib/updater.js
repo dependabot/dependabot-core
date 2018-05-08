@@ -67,9 +67,10 @@ async function updateDependencyFiles(
 }
 
 function install_args(depName, desiredVersion, requirements, oldLockfile) {
-  const source = (requirements.find(req => {
-    return req.source;
-  }) || {}
+  const source = (
+    requirements.find(req => {
+      return req.source;
+    }) || {}
   ).source;
 
   if (source && source.type === "git") {
