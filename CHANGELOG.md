@@ -1,3 +1,8 @@
+## v0.56.16, 08 May 2018
+
+- Ruby: Don't include temporary path details in issue text
+- JS: Switch ssh git URLs for https during resolution
+
 ## v0.56.15, 08 May 2018
 
 - Rust: Set global credentials helper, with file in temporary directory
