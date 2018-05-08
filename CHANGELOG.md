@@ -1,3 +1,7 @@
+## v0.56.12, 08 May 2018
+
+- Rust: Set GitHub credentials when doing update runs
+
 ## v0.56.11, 07 May 2018
 
 - JS: Raise resolvability error for npm lockfiles which can't be resolved
