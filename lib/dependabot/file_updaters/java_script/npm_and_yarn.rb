@@ -87,7 +87,7 @@ module Dependabot
 
         def updated_yarn_lock_content
           return @updated_yarn_lock_content if @updated_yarn_lock_content
-          updated_yarn_lock_content ||=
+          new_content =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
@@ -105,8 +105,7 @@ module Dependabot
                 ]
               ).fetch("yarn.lock")
             end
-          @updated_yarn_lock_content =
-            post_process_yarn_lockfile(updated_yarn_lock_content)
+          @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
