@@ -1,3 +1,7 @@
+## v0.56.17, 08 May 2018
+
+- JS: Switch SSH for SSL in package-lock.json file updater
+
 ## v0.56.16, 08 May 2018
 
 - Ruby: Don't include temporary path details in issue text
