@@ -97,10 +97,11 @@ module Dependabot
           end
 
           def set_git_credentials
+            # This has to be global, otherwise Cargo doesn't pick it up
             run_shell_command(
               "git init && "\
-              "git config --local --replace-all credential.helper "\
-              "'store --file=git.store'"
+              "git config --global --replace-all credential.helper "\
+              "'store --file=#{Dir.pwd}/git.store'"
             )
             File.write(
               "git.store",
