@@ -98,7 +98,7 @@ module Dependabot
 
           def set_git_credentials
             run_shell_command(
-              "git config --local --replace-all credential.helper "\
+              "git config --global --replace-all credential.helper "\
               "'store --file=git.store'"
             )
             File.write(
