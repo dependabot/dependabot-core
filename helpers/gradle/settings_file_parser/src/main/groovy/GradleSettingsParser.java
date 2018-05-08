@@ -9,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.GroovyCodeVisitor;
 import org.codehaus.groovy.ast.builder.AstBuilder;
+import org.codehaus.groovy.ast.InnerClassNode;
 import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 
 
@@ -42,6 +43,10 @@ public class GradleSettingsParser
     {
         for(ASTNode node : nodes)
         {
+            if ( node instanceof InnerClassNode )
+            {
+                continue;
+            }
             node.visit(visitor);
         }
     }

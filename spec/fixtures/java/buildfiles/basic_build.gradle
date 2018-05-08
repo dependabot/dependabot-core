@@ -18,6 +18,12 @@ shadowJar {
     }
 }
 
+def devNull = new OutputStream() {
+  @Override
+  public void write(int b) {}
+}
+
+
 build.dependsOn shadowJar
 
 dependencies {
