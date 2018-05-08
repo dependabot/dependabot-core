@@ -558,7 +558,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
       it "raises a useful error" do
         expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+          to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+            # Test that the temporary path isn't included in the error message
+            expect(error.message).to_not include("dependabot_20")
+          end
       end
     end
 
@@ -569,7 +572,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "without a downloaded gemspec" do
         let(:dependency_files) { [gemfile, lockfile] }
 
-        it "raises a DependencyFileNotResolvable error" do
+        it "raises a PathDependenciesNotReachable error" do
           expect { subject }.
             to raise_error(Dependabot::PathDependenciesNotReachable)
         end
