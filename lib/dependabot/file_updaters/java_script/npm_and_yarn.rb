@@ -86,7 +86,8 @@ module Dependabot
         end
 
         def updated_yarn_lock_content
-          @updated_yarn_lock_content ||=
+          return @updated_yarn_lock_content if @updated_yarn_lock_content
+          updated_yarn_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
@@ -104,6 +105,8 @@ module Dependabot
                 ]
               ).fetch("yarn.lock")
             end
+          @updated_yarn_lock_content =
+            post_process_lockfile(updated_yarn_lock_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
@@ -134,9 +137,8 @@ module Dependabot
               )
 
               updated_content = updated_files.fetch("package-lock.json")
-              if package_lock.content == updated_content
-                raise "Expected content to change!"
-              end
+              updated_content = post_process_lockfile(updated_content)
+              raise "No change!" if package_lock.content == updated_content
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
@@ -173,6 +175,7 @@ module Dependabot
             # When updating a package-lock.json we have to manually lock all
             # git dependencies, otherwise npm will (unhelpfully) update them
             updated_content = lock_git_deps(updated_content) if lock_git_deps
+            updated_content = replace_ssh_sources(updated_content)
 
             updated_content = sanitized_package_json_content(updated_content)
             File.write(file.name, updated_content)
@@ -211,6 +214,53 @@ module Dependabot
             end
           end
           @git_dependencies_to_lock
+        end
+
+        def replace_ssh_sources(content)
+          updated_content = content
+
+          git_ssh_requirements_to_swap.each do |req|
+            updated_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
+            updated_content = updated_content.gsub(req, updated_req)
+          end
+
+          updated_content
+        end
+
+        def git_ssh_requirements_to_swap
+          return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
+
+          git_dependencies =
+            dependencies.
+            select do |dep|
+              dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
+            end
+
+          @git_ssh_requirements_to_swap = []
+
+          package_files.each do |file|
+            FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
+              JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
+                next unless git_dependencies.map(&:name).include?(nm)
+                next unless requirement.start_with?("git+ssh:")
+                req = requirement.split("#").first
+                @git_ssh_requirements_to_swap << req
+              end
+            end
+          end
+
+          @git_ssh_requirements_to_swap
+        end
+
+        def post_process_lockfile(lockfile_content)
+          updated_content = lockfile_content
+
+          git_ssh_requirements_to_swap.each do |req|
+            updated_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
+            updated_content = updated_content.gsub(updated_req, req)
+          end
+
+          updated_content
         end
 
         def npmrc_content

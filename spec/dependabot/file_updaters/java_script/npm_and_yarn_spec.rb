@@ -181,6 +181,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(updated_yarn_lock.content).to_not include("af885e2e890")
           end
 
+          context "that uses ssh" do
+            let(:manifest_fixture_name) { "git_dependency_ssh.json" }
+            let(:yarn_lock_fixture_name) { "git_dependency_ssh.lock" }
+            let(:npm_lock_fixture_name) { "git_dependency_ssh.json" }
+
+            it "only updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json yarn.lock))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              npm_lockfile_version =
+                parsed_package_lock["dependencies"]["is-number"]["version"]
+              expect(npm_lockfile_version).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+              expect(updated_yarn_lock.content).to include("is-number")
+              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).
+                to include("is-number@git+ssh://git@github.com:jonschlinkert")
+            end
+          end
+
           context "when updating another dependency" do
             let(:dependency) do
               Dependabot::Dependency.new(
