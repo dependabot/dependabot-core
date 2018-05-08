@@ -1,3 +1,7 @@
+## v0.56.15, 08 May 2018
+
+- Rust: Set global credentials helper, with file in temporary directory
+
 ## v0.56.14, 08 May 2018
 
 - Rust: Back to local config (init git repo first)
