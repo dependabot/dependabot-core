@@ -1,3 +1,8 @@
+## v0.56.18, 08 May 2018
+
+- Gradle: More accurate dependency parser
+- Gradle: Ignore InnerClassNodes during parsing
+
 ## v0.56.17, 08 May 2018
 
 - JS: Switch SSH for SSL in package-lock.json file updater
