@@ -75,6 +75,86 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
       end
       its(:content) { is_expected.to include "version: '4.2.0'" }
 
+      context "with multiple buildfiles" do
+        let(:dependency_files) { [buildfile, subproject_buildfile] }
+        let(:subproject_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/build.gradle",
+            content: fixture("java", "buildfiles", buildfile_fixture_name)
+          )
+        end
+
+        context "when only one file is affected" do
+          specify { expect(updated_files.count).to eq(1) }
+        end
+
+        context "when both buildfiles are affected" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "co.aikar:acf-paper",
+              version: "0.5.0-SNAPSHOT",
+              requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "0.6.0-SNAPSHOT",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                },
+                {
+                  file: "app/build.gradle",
+                  requirement: "0.6.0-SNAPSHOT",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "build.gradle",
+                  requirement: "0.5.0-SNAPSHOT",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                },
+                {
+                  file: "app/build.gradle",
+                  requirement: "0.5.0-SNAPSHOT",
+                  groups: [],
+                  source: nil,
+                  metadata: nil
+                }
+              ],
+              package_manager: "gradle"
+            )
+          end
+
+          describe "the build.gradle file" do
+            its(:content) do
+              is_expected.to include(
+                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "'0.6.0-SNAPSHOT', changing: true"
+              )
+            end
+            its(:content) { is_expected.to include "version: '4.2.0'" }
+          end
+
+          describe "the app/build.gradle file" do
+            subject(:updated_buildfile) do
+              updated_files.find { |f| f.name == "app/build.gradle" }
+            end
+
+            its(:content) do
+              is_expected.to include(
+                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "'0.6.0-SNAPSHOT', changing: true"
+              )
+            end
+            its(:content) { is_expected.to include "version: '4.2.0'" }
+          end
+        end
+      end
+
       context "with a dependency version defined by a property" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
         let(:dependencies) do
