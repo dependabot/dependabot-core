@@ -83,7 +83,7 @@ module Dependabot
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
               command = "cargo update -p #{dependency_spec}"
-              run_cargo_command(command)
+              run_shell_command(command)
 
               updated_lockfile = File.read("Cargo.lock")
 
@@ -124,7 +124,7 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
-        def run_cargo_command(command)
+        def run_shell_command(command)
           raw_response = nil
           IO.popen(command, err: %i(child out)) do |process|
             raw_response = process.read
@@ -156,7 +156,8 @@ module Dependabot
 
         def set_git_credentials
           run_shell_command(
-            "git config --global --replace-all credential.helper "\
+            "git init && "\
+            "git config --local --replace-all credential.helper "\
             "'store --file=git.store'"
           )
           File.write(
