@@ -1,3 +1,7 @@
+## v0.56.13, 08 May 2018
+
+- Rust: Set global, not local, credentials helper
+
 ## v0.56.12, 08 May 2018
 
 - Rust: Set GitHub credentials when doing update runs
