@@ -106,7 +106,7 @@ module Dependabot
               ).fetch("yarn.lock")
             end
           @updated_yarn_lock_content =
-            post_process_lockfile(updated_yarn_lock_content)
+            post_process_yarn_lockfile(updated_yarn_lock_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
@@ -137,7 +137,7 @@ module Dependabot
               )
 
               updated_content = updated_files.fetch("package-lock.json")
-              updated_content = post_process_lockfile(updated_content)
+              updated_content = post_process_npm_lockfile(updated_content)
               raise "No change!" if package_lock.content == updated_content
               updated_content
             end
@@ -252,12 +252,24 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_lockfile(lockfile_content)
+        def post_process_yarn_lockfile(lockfile_content)
           updated_content = lockfile_content
 
           git_ssh_requirements_to_swap.each do |req|
             updated_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
             updated_content = updated_content.gsub(updated_req, req)
+          end
+
+          updated_content
+        end
+
+        def post_process_npm_lockfile(lockfile_content)
+          updated_content = lockfile_content
+
+          git_ssh_requirements_to_swap.each do |req|
+            new_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
+            old_req = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
+            updated_content = updated_content.gsub(new_req, old_req)
           end
 
           updated_content

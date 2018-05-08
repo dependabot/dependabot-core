@@ -67,14 +67,17 @@ async function updateDependencyFiles(
 }
 
 function install_args(depName, desiredVersion, requirements, oldLockfile) {
-  const source = (
-    requirements.find(req => {
-      return req.source;
-    }) || {}
+  const source = (requirements.find(req => {
+    return req.source;
+  }) || {}
   ).source;
 
   if (source && source.type === "git") {
-    const originalVersion = oldLockfile["dependencies"][depName]["version"];
+    var originalVersion = oldLockfile["dependencies"][depName]["version"];
+    originalVersion = originalVersion.replace(
+      /git\+ssh:\/\/git@(.*?)[:/]/,
+      "git+https://$1/"
+    );
     return [`${originalVersion.replace(/#.*/, "")}#${desiredVersion}`];
   } else {
     return [`${depName}@${desiredVersion}`];
