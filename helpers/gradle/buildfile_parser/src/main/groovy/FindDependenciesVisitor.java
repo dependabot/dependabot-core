@@ -32,7 +32,7 @@ public class FindDependenciesVisitor extends CodeVisitorSupport
                 String depStr = expressions.get( 0 ).getText();
                 String[] deps = depStr.split( ":" );
 
-                if( deps.length == 3 )
+                if( deps.length == 3 && !depStr.contains("=") && !depStr.contains(",") )
                 {
                     dependencies.add( new GradleDependency( deps[0], deps[1], deps[2] ) );
                 }
