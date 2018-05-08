@@ -33,7 +33,8 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              requirements_to_unlock: :own
+              requirements_to_unlock: :own,
+              credentials: credentials
             ).latest_resolvable_version
         end
 
@@ -46,7 +47,8 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              requirements_to_unlock: :none
+              requirements_to_unlock: :none,
+              credentials: credentials
             ).latest_resolvable_version
         end
 

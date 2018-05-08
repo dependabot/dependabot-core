@@ -9,11 +9,19 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      requirements_to_unlock: requirements_to_unlock
+      requirements_to_unlock: requirements_to_unlock,
+      credentials: credentials
     )
   end
 
   let(:requirements_to_unlock) { :own }
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency_files) { [manifest, lockfile] }
   let(:manifest) do
     Dependabot::DependencyFile.new(

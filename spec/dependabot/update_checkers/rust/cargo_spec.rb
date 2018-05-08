@@ -26,13 +26,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
   end
 
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_files) do
     [

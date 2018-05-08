@@ -78,6 +78,7 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
+              set_git_credentials
 
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
@@ -153,6 +154,17 @@ module Dependabot
           File.write(lockfile.name, lockfile.content)
         end
 
+        def set_git_credentials
+          run_shell_command(
+            "git config --local --replace-all credential.helper "\
+            "'store --file=git.store'"
+          )
+          File.write(
+            "git.store",
+            "https://x-access-token:#{github_access_token}@github.com"
+          )
+        end
+
         def dummy_app_content
           %{fn main() {\nprintln!("Hello, world!");\n}}
         end
@@ -176,6 +188,12 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Cargo.lock")
+        end
+
+        def github_access_token
+          credentials.
+            find { |cred| cred["host"] == "github.com" }.
+            fetch("password")
         end
       end
     end

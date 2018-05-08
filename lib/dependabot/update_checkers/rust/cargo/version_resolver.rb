@@ -12,10 +12,11 @@ module Dependabot
       class Cargo
         class VersionResolver
           def initialize(dependency:, dependency_files:,
-                         requirements_to_unlock:)
+                         requirements_to_unlock:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
             @requirements_to_unlock = requirements_to_unlock
+            @credentials = credentials
           end
 
           def latest_resolvable_version
@@ -24,16 +25,18 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :requirements_to_unlock
+          attr_reader :dependency, :dependency_files, :requirements_to_unlock,
+                      :credentials
 
           def fetch_latest_resolvable_version
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
+              set_git_credentials
 
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
               command = "cargo update -p #{dependency_spec}"
-              run_cargo_command(command)
+              run_shell_command(command)
 
               updated_versions =
                 TomlRB.parse(File.read("Cargo.lock")).fetch("package").
@@ -63,7 +66,7 @@ module Dependabot
             spec
           end
 
-          def run_cargo_command(command)
+          def run_shell_command(command)
             raw_response = nil
             IO.popen(command, err: %i(child out)) do |process|
               raw_response = process.read
@@ -91,6 +94,17 @@ module Dependabot
             end
 
             File.write(lockfile.name, lockfile.content) if lockfile
+          end
+
+          def set_git_credentials
+            run_shell_command(
+              "git config --local --replace-all credential.helper "\
+              "'store --file=git.store'"
+            )
+            File.write(
+              "git.store",
+              "https://x-access-token:#{github_access_token}@github.com"
+            )
           end
 
           def handle_cargo_errors(error)
@@ -136,6 +150,12 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          end
+
+          def github_access_token
+            credentials.
+              find { |cred| cred["host"] == "github.com" }.
+              fetch("password")
           end
         end
       end
