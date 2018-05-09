@@ -1,3 +1,7 @@
+## v0.56.20, 09 May 2018
+
+- Support a `reviewers` option when creating PRs
+
 ## v0.56.19, 09 May 2018
 
 - PHP: Add support for path based dependencies
