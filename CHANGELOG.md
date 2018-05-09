@@ -1,3 +1,7 @@
+## v0.56.19, 09 May 2018
+
+- PHP: Add support for path based dependencies
+
 ## v0.56.18, 08 May 2018
 
 - Gradle: More accurate dependency parser
