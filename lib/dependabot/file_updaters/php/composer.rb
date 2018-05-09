@@ -59,8 +59,9 @@ module Dependabot
         end
 
         def updated_lockfile_content
+          base_directory = dependency_files.first.directory
           @updated_lockfile_content ||=
-            SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
 
               updated_content =

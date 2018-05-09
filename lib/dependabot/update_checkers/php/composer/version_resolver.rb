@@ -36,7 +36,8 @@ module Dependabot
           end
 
           def fetch_latest_resolvable_version_string
-            SharedHelpers.in_a_temporary_directory do
+            base_directory = dependency_files.first.directory
+            SharedHelpers.in_a_temporary_directory(base_directory) do
               File.write("composer.json", prepared_composer_json_content)
               File.write("composer.lock", lockfile.content) if lockfile
 

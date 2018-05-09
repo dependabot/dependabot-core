@@ -8,8 +8,13 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
   let(:source) { { host: "github", repo: "gocardless/bump" } }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      directory: directory
+    )
   end
+  let(:directory) { "/" }
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
@@ -100,6 +105,59 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
         to match_array(
           %w(composer.json composer.lock components/bump-core/composer.json)
         )
+    end
+
+    context "and a directory" do
+      let(:directory) { "my/app/" }
+      let(:base_url) do
+        "https://api.github.com/repos/gocardless/bump/contents/"
+      end
+      let(:url) { base_url + "my/app/" }
+
+      it "fetches the composer.json, composer.lock and the path dependency" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(composer.json composer.lock components/bump-core/composer.json)
+          )
+      end
+
+      context "when the path dependencies are relative to the root" do
+        before do
+          stub_request(:get, url + "components?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, base_url + "components?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "contents_ruby_nested_path_directory.json"),
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(
+            :get,
+            url + "components/bump-core/composer.json?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(
+            :get,
+            base_url + "components/bump-core/composer.json?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "composer_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the composer.json, composer.lock and the path dependency" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(
+              %w(composer.json composer.lock components/bump-core/composer.json)
+            )
+        end
+      end
     end
   end
 end

@@ -49,12 +49,11 @@ module Dependabot
               path_sources.each do |path|
                 directories = path.end_with?("*") ? expand_path(path) : [path]
 
-                directories.each do |directory|
-                  file = File.join(directory, "composer.json")
+                directories.each do |dir|
+                  file = File.join(dir, "composer.json")
 
                   begin
-                    composer_json_files <<
-                      fetch_file_from_host(file, type: "path_dependency")
+                    composer_json_files << fetch_file_with_root_fallback(file)
                   rescue Dependabot::DependencyFileNotFound
                     # Collected, but currently ignored
                     unfetchable_deps << file
@@ -70,6 +69,39 @@ module Dependabot
           repo_contents(dir: path.gsub(/\*$/, "")).
             select { |file| file.type == "dir" }.
             map { |f| path.gsub(/\*$/, f.name) }
+        rescue Octokit::NotFound, Gitlab::Error::NotFound
+          raise if directory == "/"
+
+          # If the directory isn't found at the full path, try looking for it
+          # at the root of the repository.
+          depth = directory.gsub(%r{^/}, "").gsub(%r{/$}, "").split("/").count
+          dir = "../" * depth + path.gsub(/\*$/, "")
+
+          repo_contents(dir: dir).
+            select { |file| file.type == "dir" }.
+            map { |f| path.gsub(/\*$/, f.name) }
+        end
+
+        def fetch_file_with_root_fallback(filename, type: "file")
+          path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+
+          begin
+            fetch_file_from_host(filename, type: type)
+          rescue Dependabot::DependencyFileNotFound
+            # If the file isn't found at the full path, try looking for it
+            # without considering the directory (i.e., check if the path should
+            # have been relevative to the root of the repository).
+            cleaned_filename = Pathname.new(filename).cleanpath.to_path
+
+            DependencyFile.new(
+              name: cleaned_filename,
+              content: fetch_file_content(cleaned_filename),
+              directory: directory,
+              type: type
+            )
+          end
+        rescue Octokit::NotFound, Gitlab::Error::NotFound
+          raise Dependabot::DependencyFileNotFound, path
         end
       end
     end
