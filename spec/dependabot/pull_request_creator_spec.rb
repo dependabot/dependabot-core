@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       dependencies: [dependency],
       files: files,
       credentials: credentials,
-      custom_labels: custom_labels
+      custom_labels: custom_labels,
+      reviewers: reviewers
     )
   end
 
@@ -33,6 +34,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     )
   end
   let(:custom_labels) { nil }
+  let(:reviewers) { nil }
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
@@ -541,7 +543,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       context "that doesn't exist" do
         let(:custom_labels) { ["non-existent"] }
 
-        # Alternatively we could create the label (current choise isn't fixed)
+        # Alternatively we could create the label (current choice isn't fixed)
         it "does not create any labels" do
           creator.create
 
@@ -558,6 +560,26 @@ RSpec.describe Dependabot::PullRequestCreator do
               "#{watched_repo_url}/issues/1347/labels"
             )
         end
+      end
+    end
+
+    context "when a reviewer has been requested" do
+      let(:reviewers) { ["greysteil"] }
+      before do
+        stub_request(
+          :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
+        ).to_return(status: 200,
+                    body: fixture("github", "create_pr.json"),
+                    headers: json_header)
+      end
+
+      it "adds the reviewer to the PR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(
+            :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
+          ).with(body: { reviewers: ["greysteil"] }.to_json)
       end
     end
   end

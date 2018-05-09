@@ -208,6 +208,8 @@ module Dependabot
           pull_request.number,
           reviewers
         )
+      rescue Octokit::UnprocessableEntity => error
+        raise unless error.message.include?("not a collaborator")
       end
 
       def create_pull_request
