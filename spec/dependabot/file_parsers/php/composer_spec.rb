@@ -117,6 +117,37 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
       end
     end
 
+    context "with a path dependency" do
+      let(:files) { [composer_json, lockfile, path_dep] }
+      let(:composer_json_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source" }
+      let(:path_dep) do
+        Dependabot::DependencyFile.new(
+          name: "components/path_dep/composer.json",
+          content: fixture("php", "composer_files", "path_dep")
+        )
+      end
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        it { is_expected.to be_production }
+        its(:name) { is_expected.to eq("path_dep/path_dep") }
+        its(:version) { is_expected.to eq("1.0.1") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: "1.0.*",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: { type: "path" }
+            }]
+          )
+        end
+      end
+    end
+
     context "without a lockfile" do
       let(:files) { [composer_json] }
 

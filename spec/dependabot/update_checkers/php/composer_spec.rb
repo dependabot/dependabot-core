@@ -19,13 +19,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "monolog/monolog",
-      version: "1.0.1",
-      requirements: [
-        { file: "composer.json", requirement: "1.0.*", groups: [], source: nil }
-      ],
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
       package_manager: "composer"
     )
+  end
+  let(:dependency_name) { "monolog/monolog" }
+  let(:dependency_version) { "1.0.1" }
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.0.*", groups: [], source: nil }]
   end
   let(:credentials) do
     [{
@@ -249,6 +252,37 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:lockfile_fixture_name) { "git_source_unreachable_git_url" }
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
     end
+
+    context "with a path source" do
+      let(:files) { [composer_file, lockfile, path_dep] }
+      let(:manifest_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source" }
+      let(:path_dep) do
+        Dependabot::DependencyFile.new(
+          name: "components/path_dep/composer.json",
+          content: fixture("php", "composer_files", "path_dep")
+        )
+      end
+
+      context "that is not the dependency we're checking" do
+        it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+      end
+
+      context "that is the dependency we're checking" do
+        let(:dependency_name) { "path_dep/path_dep" }
+        let(:current_version) { "1.0.1" }
+        let(:requirements) do
+          [{
+            requirement: "1.0.*",
+            file: "composer.json",
+            groups: ["runtime"],
+            source: { type: "path" }
+          }]
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -290,6 +324,37 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:manifest_fixture_name) { "development_dependencies" }
       let(:lockfile_fixture_name) { "development_dependencies" }
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    end
+
+    context "with a path source" do
+      let(:files) { [composer_file, lockfile, path_dep] }
+      let(:manifest_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source" }
+      let(:path_dep) do
+        Dependabot::DependencyFile.new(
+          name: "components/path_dep/composer.json",
+          content: fixture("php", "composer_files", "path_dep")
+        )
+      end
+
+      context "that is not the dependency we're checking" do
+        it { is_expected.to be >= Gem::Version.new("1.22.0") }
+      end
+
+      context "that is the dependency we're checking" do
+        let(:dependency_name) { "path_dep/path_dep" }
+        let(:current_version) { "1.0.1" }
+        let(:requirements) do
+          [{
+            requirement: "1.0.*",
+            file: "composer.json",
+            groups: ["runtime"],
+            source: { type: "path" }
+          }]
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a private registry" do

@@ -111,7 +111,15 @@ module Dependabot
           return unless lockfile
           key = lockfile_key(type)
           package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
-          return unless package&.dig("source", "type") == "git"
+
+          return unless package
+
+          if package["source"].nil? && package.dig("dist", "type") == "path"
+            return { type: "path" }
+          end
+
+          return unless package.dig("source", "type") == "git"
+
           {
             type: "git",
             url: package.dig("source", "url")

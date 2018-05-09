@@ -15,6 +15,8 @@ module Dependabot
         require_relative "composer/version_resolver"
 
         def latest_version
+          return nil if path_dependency?
+
           # Fall back to latest_resolvable_version if no listings found
           return latest_resolvable_version if registry_versions.empty?
 
@@ -28,6 +30,8 @@ module Dependabot
         end
 
         def latest_resolvable_version
+          return nil if path_dependency?
+
           @latest_resolvable_version ||=
             VersionResolver.new(
               credentials: credentials,
@@ -38,6 +42,8 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
+          return nil if path_dependency?
+
           @latest_resolvable_version_with_no_unlock ||=
             VersionResolver.new(
               credentials: credentials,
@@ -78,14 +84,8 @@ module Dependabot
           raise NotImplementedError
         end
 
-        def fetch_latest_resolvable_version(unlock_requirement:)
-          version = fetch_latest_resolvable_version_string(
-            unlock_requirement: unlock_requirement
-          )
-
-          return if version.nil?
-          return unless version_class.correct?(version)
-          version_class.new(version)
+        def path_dependency?
+          dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
         end
 
         def composer_file

@@ -53,11 +53,15 @@ module Dependabot
           @lockfile ||= get_original_file("composer.lock")
         end
 
+        def path_dependencies
+          @path_dependencies ||=
+            dependency_files.select { |f| f.name.end_with?("/composer.json") }
+        end
+
         def updated_lockfile_content
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("composer.json", updated_composer_json_content)
-              File.write("composer.lock", lockfile.content)
+              write_temporary_dependency_files
 
               updated_content =
                 SharedHelpers.run_helper_subprocess(
@@ -148,6 +152,17 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
           raise error
+        end
+
+        def write_temporary_dependency_files
+          path_dependencies.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(file.name, file.content)
+          end
+
+          File.write("composer.json", updated_composer_json_content)
+          File.write("composer.lock", lockfile.content)
         end
 
         def git_dependency_reference_error(error)

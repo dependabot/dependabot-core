@@ -38,6 +38,11 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
       )
   end
 
+  it "fetches the composer.json and composer.lock" do
+    expect(file_fetcher_instance.files.map(&:name)).
+      to match_array(%w(composer.json composer.lock))
+  end
+
   context "without a composer.lock" do
     before do
       stub_request(:get, url + "composer.lock?ref=sha").
@@ -60,6 +65,41 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
     it "raises a helpful error" do
       expect { file_fetcher_instance.files }.
         to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
+  context "with a path source" do
+    before do
+      stub_request(:get, url + "composer.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "composer_json_with_path_deps.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "components?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby_nested_path_directory.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "components/bump-core/composer.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "composer_json_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the composer.json, composer.lock and the path dependency" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(composer.json composer.lock components/bump-core/composer.json)
+        )
     end
   end
 end

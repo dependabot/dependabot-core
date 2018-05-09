@@ -346,14 +346,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: { type: "path" }
-              }
-            ]
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: { type: "path" }
+            }]
           end
 
           it { is_expected.to be_nil }
