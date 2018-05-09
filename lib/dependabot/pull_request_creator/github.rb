@@ -12,12 +12,12 @@ module Dependabot
       attr_reader :repo_name, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
-                  :custom_labels
+                  :custom_labels, :reviewers
 
       def initialize(repo_name:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
-                     custom_labels:)
+                     custom_labels:, reviewers:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -30,6 +30,7 @@ module Dependabot
         @author_details = author_details
         @signature_key  = signature_key
         @custom_labels  = custom_labels
+        @reviewers      = reviewers
       end
 
       def create
@@ -43,7 +44,9 @@ module Dependabot
 
         pull_request = create_pull_request
         return unless pull_request
-        add_label_to_pull_request(pull_request)
+
+        annotate_pull_request(pull_request)
+
         pull_request
       end
 
@@ -176,6 +179,11 @@ module Dependabot
         raise unless error.errors.first.fetch(:code) == "already_exists"
       end
 
+      def annotate_pull_request(pull_request)
+        add_label_to_pull_request(pull_request)
+        add_reviewers_to_pull_request(pull_request) if reviewers&.any?
+      end
+
       def add_label_to_pull_request(pull_request)
         # If a custom label is desired but doesn't exist, don't label the PR
         return if custom_labels && !dependencies_label_exists?
@@ -191,6 +199,14 @@ module Dependabot
           repo_name,
           pull_request.number,
           label_names
+        )
+      end
+
+      def add_reviewers_to_pull_request(pull_request)
+        github_client.request_pull_request_review(
+          repo_name,
+          pull_request.number,
+          reviewers
         )
       end
 
