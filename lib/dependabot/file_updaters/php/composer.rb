@@ -146,8 +146,7 @@ module Dependabot
               named_captures.fetch("url")
             raise GitDependenciesNotReachable, dependency_url
           end
-          if error.message.include?("connect.advancedcustomfields.com") &&
-             error.message.include?("400 Bad Request")
+          if error.message.start_with?("Could not find a key for ACF PRO")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
           end
           if error.message.start_with?("Unknown downloader type: npm-signature")

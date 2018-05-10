@@ -24,6 +24,10 @@ class Updater
         $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
+        $pm = new DependabotPluginManager($io, $composer, null, false);
+        $composer->setPluginManager($pm);
+        $pm->loadInstalledPlugins();
+
         if ($githubToken) {
             $httpBasicCredentials['github.com'] = [
                 'username' => 'x-access-token',
@@ -70,7 +74,6 @@ class Updater
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->disablePlugins()
             ->setIgnorePlatformRequirements(true);
 
         $install->run();
