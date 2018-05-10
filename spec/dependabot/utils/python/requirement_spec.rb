@@ -29,7 +29,19 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
 
     context "with a ==" do
       let(:requirement_string) { "== 1.3.0" }
-      it { is_expected.to eq(Gem::Requirement.new("= 1.3.0")) }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.0")) }
+      it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.3.1")) }
+    end
+
+    context "with a ===" do
+      let(:requirement_string) { "=== 1.3.0" }
+
+      it "implements arbitrary equality" do
+        expect(requirement).
+          to be_satisfied_by(Dependabot::Utils::Python::Version.new("1.3.0"))
+        expect(requirement).
+          to_not be_satisfied_by(Dependabot::Utils::Python::Version.new("1.3"))
+      end
     end
 
     context "with an *" do

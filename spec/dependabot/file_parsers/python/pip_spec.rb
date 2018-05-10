@@ -729,6 +729,32 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             its(:requirements) { is_expected.to eq(expected_requirements) }
           end
         end
+
+        context "using arbitrary equality" do
+          let(:pipfile_fixture_name) { "arbitrary_equality" }
+          let(:lockfile_fixture_name) { "arbitrary_equality.lock" }
+
+          describe "top level dependencies" do
+            subject(:dependencies) { parser.parse.select(&:top_level?) }
+
+            describe "the last dependency" do
+              subject { dependencies.last }
+              let(:expected_requirements) do
+                [{
+                  requirement: "===3.4.0",
+                  file: "Pipfile",
+                  source: nil,
+                  groups: ["develop"]
+                }]
+              end
+
+              it { is_expected.to be_a(Dependabot::Dependency) }
+              its(:name) { is_expected.to eq("pytest") }
+              its(:version) { is_expected.to eq("3.4.0") }
+              its(:requirements) { is_expected.to eq(expected_requirements) }
+            end
+          end
+        end
       end
 
       context "with only dev dependencies" do

@@ -88,7 +88,11 @@ module Dependabot
           def find_and_update_equality_match(requirement_strings)
             if requirement_strings.any? { |r| requirement_class.new(r).exact? }
               # True equality match
-              "==#{latest_resolvable_version}"
+              req = requirement_strings.find do |r|
+                requirement_class.new(r).exact?
+              end
+              op = requirement_class.new(req).requirements.first.first
+              "#{op}#{latest_resolvable_version}"
             else
               # Prefix match
               requirement_strings.find { |r| r.start_with?("==") }.

@@ -127,7 +127,7 @@ module Dependabot
               dependencies <<
                 Dependency.new(
                   name: dep_name,
-                  version: details["version"]&.gsub(/^==/, ""),
+                  version: details["version"]&.gsub(/^===?/, ""),
                   requirements: [],
                   package_manager: "pip"
                 )
@@ -185,7 +185,7 @@ module Dependabot
         def dependency_version(dep_name, group)
           parsed_lockfile.
             dig(group, normalised_name(dep_name), "version")&.
-            gsub(/^==/, "")
+            gsub(/^===?/, "")
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

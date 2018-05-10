@@ -6,7 +6,12 @@ module Dependabot
   module Utils
     module Python
       class Requirement < Gem::Requirement
-        quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+        # Add equality and arbitrary-equality matchers
+        OPS["=="] = ->(v, r) { v == r }
+        OPS["==="] = ->(v, r) { v.to_s == r.to_s }
+
+        quoted = OPS.keys.sort_by(&:length).reverse.
+                 map { |k| Regexp.quote(k) }.join("|")
         version_pattern = Utils::Python::Version::VERSION_PATTERN
 
         PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
@@ -46,12 +51,17 @@ module Dependabot
           super
         end
 
+        def exact?
+          return false unless @requirements.size == 1
+          %w(= == ===).include?(@requirements[0][0])
+        end
+
         private
 
         def convert_python_constraint_to_ruby_constraint(req_string)
           return nil if req_string.nil?
           return nil if req_string == "*"
-          req_string = req_string.gsub("~=", "~>").gsub(/===?/, "=")
+          req_string = req_string.gsub("~=", "~>")
           req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
           return req_string unless req_string.include?(".*")
 
@@ -62,7 +72,7 @@ module Dependabot
             first(req_string.split(".").index("*") + 1).
             join(".").
             tr("*", "0").
-            gsub(/^(?<!!)=/, "~>")
+            gsub(/^(?<!!)==?/, "~>")
         end
       end
     end
