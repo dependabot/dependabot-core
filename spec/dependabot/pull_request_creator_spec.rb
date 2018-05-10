@@ -564,7 +564,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "when a reviewer has been requested" do
-      let(:reviewers) { ["greysteil"] }
+      let(:reviewers) { { "reviewers" => ["greysteil"] } }
       before do
         stub_request(
           :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
@@ -579,7 +579,7 @@ RSpec.describe Dependabot::PullRequestCreator do
         expect(WebMock).
           to have_requested(
             :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
-          ).with(body: { reviewers: ["greysteil"] }.to_json)
+          ).with(body: { team_reviewers: [], reviewers: ["greysteil"] }.to_json)
       end
     end
   end

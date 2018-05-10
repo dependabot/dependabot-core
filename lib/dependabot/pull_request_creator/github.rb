@@ -203,10 +203,14 @@ module Dependabot
       end
 
       def add_reviewers_to_pull_request(pull_request)
+        reviewers_hash =
+          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+
         github_client.request_pull_request_review(
           repo_name,
           pull_request.number,
-          reviewers
+          reviewers_hash[:reviewers],
+          team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => error
         raise unless error.message.include?("not a collaborator")
