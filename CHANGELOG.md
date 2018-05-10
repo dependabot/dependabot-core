@@ -1,3 +1,7 @@
+## v0.56.26, 10 May 2018
+
+- Python: Handle arbitrary equality matcher
+
 ## v0.56.25, 10 May 2018
 
 - PHP: Better handling of PHP plugins (don't disable them all)
