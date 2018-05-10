@@ -1,3 +1,8 @@
+## v0.56.21, 10 May 2018
+
+- Handle reviewers hashes (rather than arrays)
+- JS: Bump npm to 6.0.1
+
 ## v0.56.20, 09 May 2018
 
 - Support a `reviewers` option when creating PRs
