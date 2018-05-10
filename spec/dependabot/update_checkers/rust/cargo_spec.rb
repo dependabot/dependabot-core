@@ -66,14 +66,14 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     end
 
     context "given an up-to-date dependency" do
-      let(:dependency_version) { "0.1.39" }
+      let(:dependency_version) { "0.1.40" }
       it { is_expected.to be_falsey }
     end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
-    it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
     context "when the crates.io link resolves to a redirect" do
       let(:redirect_url) { "https://crates.io/api/v1/crates/Time" }
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           to_return(status: 200, body: crates_response)
       end
 
-      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+      it { is_expected.to eq(Gem::Version.new("0.1.40")) }
     end
 
     context "when the crates.io link fails at first" do
@@ -95,10 +95,10 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           to_return(status: 200, body: crates_response)
       end
 
-      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+      it { is_expected.to eq(Gem::Version.new("0.1.40")) }
     end
 
-    context "when the pypi link resolves to a 'Not Found' page" do
+    context "when the crates link resolves to a 'Not Found' page" do
       before do
         stub_request(:get, crates_url).
           to_return(status: 404, body: crates_response)
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to receive(:new).
         and_call_original
       expect(checker.latest_resolvable_version).
-        to eq(Gem::Version.new("0.1.39"))
+        to eq(Gem::Version.new("0.1.40"))
     end
   end
 
@@ -231,8 +231,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to receive(:new).
         with(
           requirements: requirements,
-          latest_version: "0.1.39",
-          latest_resolvable_version: "0.1.39",
+          latest_version: "0.1.40",
+          latest_resolvable_version: "0.1.40",
           library: false
         ).
         and_call_original
@@ -241,7 +241,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           [
             {
               file: "Cargo.toml",
-              requirement: "0.1.39",
+              requirement: "0.1.40",
               groups: [],
               source: nil
             }

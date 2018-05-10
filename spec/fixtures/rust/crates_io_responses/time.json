@@ -1,9 +1,49 @@
 {
+    "categories": [],
     "crate": {
+        "badges": [
+            {
+                "attributes": {
+                    "branch": null,
+                    "id": null,
+                    "project_name": null,
+                    "repository": "alexcrichton/time",
+                    "service": null
+                },
+                "badge_type": "appveyor"
+            },
+            {
+                "attributes": {
+                    "branch": null,
+                    "repository": "rust-lang-deprecated/time"
+                },
+                "badge_type": "travis-ci"
+            }
+        ],
+        "categories": [],
+        "created_at": "2014-11-13T06:52:51.369245+00:00",
+        "description": "Utilities for working with time-related functions in Rust.\n",
+        "documentation": "https://doc.rust-lang.org/time",
+        "downloads": 3480517,
+        "exact_match": false,
+        "homepage": "https://github.com/rust-lang/time",
         "id": "time",
+        "keywords": [],
+        "links": {
+            "owner_team": "/api/v1/crates/time/owner_team",
+            "owner_user": "/api/v1/crates/time/owner_user",
+            "owners": "/api/v1/crates/time/owners",
+            "reverse_dependencies": "/api/v1/crates/time/reverse_dependencies",
+            "version_downloads": "/api/v1/crates/time/downloads",
+            "versions": null
+        },
+        "max_version": "0.1.40",
         "name": "time",
-        "updated_at": "2018-01-03T18:01:27.431449+00:00",
+        "recent_downloads": 478918,
+        "repository": "https://github.com/rust-lang/time",
+        "updated_at": "2018-05-10T19:25:59.151982+00:00",
         "versions": [
+            92243,
             76286,
             59020,
             51220,
@@ -46,812 +86,791 @@
             172,
             151,
             98
-        ],
-        "keywords": [],
-        "categories": [],
-        "badges": [
-            {
-                "badge_type": "appveyor",
-                "attributes": {
-                    "repository": "alexcrichton/time",
-                    "service": null,
-                    "project_name": null,
-                    "branch": null,
-                    "id": null
-                }
-            },
-            {
-                "badge_type": "travis-ci",
-                "attributes": {
-                    "branch": null,
-                    "repository": "rust-lang-deprecated/time"
-                }
-            }
-        ],
-        "created_at": "2014-11-13T06:52:51.369245+00:00",
-        "downloads": 3232652,
-        "recent_downloads": 424349,
-        "max_version": "0.1.39",
-        "description": "Utilities for working with time-related functions in Rust.\n",
-        "homepage": "https://github.com/rust-lang/time",
-        "documentation": "https://doc.rust-lang.org/time",
-        "repository": "https://github.com/rust-lang/time",
-        "links": {
-            "version_downloads": "/api/v1/crates/time/downloads",
-            "versions": null,
-            "owners": "/api/v1/crates/time/owners",
-            "owner_team": "/api/v1/crates/time/owner_team",
-            "owner_user": "/api/v1/crates/time/owner_user",
-            "reverse_dependencies": "/api/v1/crates/time/reverse_dependencies"
-        },
-        "exact_match": false
+        ]
     },
+    "keywords": [],
     "versions": [
         {
-            "id": 76286,
             "crate": "time",
-            "num": "0.1.39",
+            "created_at": "2018-05-10T19:25:59.151982+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.40/download",
+            "downloads": 1012,
+            "features": {},
+            "id": 92243,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.40/authors",
+                "dependencies": "/api/v1/crates/time/0.1.40/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.40/downloads"
+            },
+            "num": "0.1.40",
+            "readme_path": "/api/v1/crates/time/0.1.40/readme",
+            "updated_at": "2018-05-10T19:25:59.151982+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2018-01-03T18:01:27.431449+00:00",
             "dl_path": "/api/v1/crates/time/0.1.39/download",
+            "downloads": 474680,
+            "features": {},
+            "id": 76286,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.39/authors",
+                "dependencies": "/api/v1/crates/time/0.1.39/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.39/downloads"
+            },
+            "num": "0.1.39",
             "readme_path": "/api/v1/crates/time/0.1.39/readme",
             "updated_at": "2018-01-03T18:01:27.431449+00:00",
-            "created_at": "2018-01-03T18:01:27.431449+00:00",
-            "downloads": 285336,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.39/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.39/downloads",
-                "authors": "/api/v1/crates/time/0.1.39/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 59020,
             "crate": "time",
-            "num": "0.1.38",
+            "created_at": "2017-07-07T14:14:37.376635+00:00",
             "dl_path": "/api/v1/crates/time/0.1.38/download",
+            "downloads": 600894,
+            "features": {},
+            "id": 59020,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.38/authors",
+                "dependencies": "/api/v1/crates/time/0.1.38/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.38/downloads"
+            },
+            "num": "0.1.38",
             "readme_path": "/api/v1/crates/time/0.1.38/readme",
             "updated_at": "2017-11-30T03:31:07.823322+00:00",
-            "created_at": "2017-07-07T14:14:37.376635+00:00",
-            "downloads": 570675,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.38/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.38/downloads",
-                "authors": "/api/v1/crates/time/0.1.38/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 51220,
             "crate": "time",
-            "num": "0.1.37",
+            "created_at": "2017-04-24T20:40:09.532204+00:00",
             "dl_path": "/api/v1/crates/time/0.1.37/download",
+            "downloads": 302006,
+            "features": {},
+            "id": 51220,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.37/authors",
+                "dependencies": "/api/v1/crates/time/0.1.37/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.37/downloads"
+            },
+            "num": "0.1.37",
             "readme_path": "/api/v1/crates/time/0.1.37/readme",
             "updated_at": "2017-11-30T03:52:10.137787+00:00",
-            "created_at": "2017-04-24T20:40:09.532204+00:00",
-            "downloads": 297261,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.37/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.37/downloads",
-                "authors": "/api/v1/crates/time/0.1.37/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 42265,
             "crate": "time",
-            "num": "0.1.36",
+            "created_at": "2017-01-13T21:27:52.080435+00:00",
             "dl_path": "/api/v1/crates/time/0.1.36/download",
+            "downloads": 436799,
+            "features": {},
+            "id": 42265,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.36/authors",
+                "dependencies": "/api/v1/crates/time/0.1.36/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.36/downloads"
+            },
+            "num": "0.1.36",
             "readme_path": "/api/v1/crates/time/0.1.36/readme",
             "updated_at": "2017-11-30T03:08:10.320674+00:00",
-            "created_at": "2017-01-13T21:27:52.080435+00:00",
-            "downloads": 430414,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.36/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.36/downloads",
-                "authors": "/api/v1/crates/time/0.1.36/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 24887,
             "crate": "time",
-            "num": "0.1.35",
+            "created_at": "2016-04-01T20:00:19.575598+00:00",
             "dl_path": "/api/v1/crates/time/0.1.35/download",
+            "downloads": 1040773,
+            "features": {},
+            "id": 24887,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.35/authors",
+                "dependencies": "/api/v1/crates/time/0.1.35/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.35/downloads"
+            },
+            "num": "0.1.35",
             "readme_path": "/api/v1/crates/time/0.1.35/readme",
             "updated_at": "2017-11-30T03:54:57.190920+00:00",
-            "created_at": "2016-04-01T20:00:19.575598+00:00",
-            "downloads": 1025367,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.35/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.35/downloads",
-                "authors": "/api/v1/crates/time/0.1.35/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 17887,
             "crate": "time",
-            "num": "0.1.34",
+            "created_at": "2015-11-09T17:45:03.539322+00:00",
             "dl_path": "/api/v1/crates/time/0.1.34/download",
+            "downloads": 333411,
+            "features": {},
+            "id": 17887,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.34/authors",
+                "dependencies": "/api/v1/crates/time/0.1.34/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.34/downloads"
+            },
+            "num": "0.1.34",
             "readme_path": "/api/v1/crates/time/0.1.34/readme",
             "updated_at": "2017-11-30T03:02:49.541275+00:00",
-            "created_at": "2015-11-09T17:45:03.539322+00:00",
-            "downloads": 333044,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.34/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.34/downloads",
-                "authors": "/api/v1/crates/time/0.1.34/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 16918,
             "crate": "time",
-            "num": "0.1.33",
+            "created_at": "2015-10-19T21:49:59.652777+00:00",
             "dl_path": "/api/v1/crates/time/0.1.33/download",
+            "downloads": 32135,
+            "features": {},
+            "id": 16918,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.33/authors",
+                "dependencies": "/api/v1/crates/time/0.1.33/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.33/downloads"
+            },
+            "num": "0.1.33",
             "readme_path": "/api/v1/crates/time/0.1.33/readme",
             "updated_at": "2017-11-30T03:31:45.275375+00:00",
-            "created_at": "2015-10-19T21:49:59.652777+00:00",
-            "downloads": 32123,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.33/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.33/downloads",
-                "authors": "/api/v1/crates/time/0.1.33/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 13828,
             "crate": "time",
-            "num": "0.1.32",
+            "created_at": "2015-07-29T16:19:07.338316+00:00",
             "dl_path": "/api/v1/crates/time/0.1.32/download",
+            "downloads": 111865,
+            "features": {},
+            "id": 13828,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.32/authors",
+                "dependencies": "/api/v1/crates/time/0.1.32/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.32/downloads"
+            },
+            "num": "0.1.32",
             "readme_path": "/api/v1/crates/time/0.1.32/readme",
             "updated_at": "2017-11-30T03:46:54.060797+00:00",
-            "created_at": "2015-07-29T16:19:07.338316+00:00",
-            "downloads": 111833,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.32/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.32/downloads",
-                "authors": "/api/v1/crates/time/0.1.32/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 13148,
             "crate": "time",
-            "num": "0.1.31",
+            "created_at": "2015-07-14T13:47:26.577082+00:00",
             "dl_path": "/api/v1/crates/time/0.1.31/download",
+            "downloads": 15561,
+            "features": {},
+            "id": 13148,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.31/authors",
+                "dependencies": "/api/v1/crates/time/0.1.31/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.31/downloads"
+            },
+            "num": "0.1.31",
             "readme_path": "/api/v1/crates/time/0.1.31/readme",
             "updated_at": "2017-11-30T03:55:42.381026+00:00",
-            "created_at": "2015-07-14T13:47:26.577082+00:00",
-            "downloads": 15542,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.31/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.31/downloads",
-                "authors": "/api/v1/crates/time/0.1.31/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 12516,
             "crate": "time",
-            "num": "0.1.30",
+            "created_at": "2015-06-30T16:02:04.723457+00:00",
             "dl_path": "/api/v1/crates/time/0.1.30/download",
+            "downloads": 10466,
+            "features": {},
+            "id": 12516,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.30/authors",
+                "dependencies": "/api/v1/crates/time/0.1.30/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.30/downloads"
+            },
+            "num": "0.1.30",
             "readme_path": "/api/v1/crates/time/0.1.30/readme",
             "updated_at": "2017-11-30T03:26:23.087003+00:00",
-            "created_at": "2015-06-30T16:02:04.723457+00:00",
-            "downloads": 10454,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.30/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.30/downloads",
-                "authors": "/api/v1/crates/time/0.1.30/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 12467,
             "crate": "time",
-            "num": "0.1.29",
+            "created_at": "2015-06-29T23:33:02.633102+00:00",
             "dl_path": "/api/v1/crates/time/0.1.29/download",
+            "downloads": 563,
+            "features": {},
+            "id": 12467,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.29/authors",
+                "dependencies": "/api/v1/crates/time/0.1.29/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.29/downloads"
+            },
+            "num": "0.1.29",
             "readme_path": "/api/v1/crates/time/0.1.29/readme",
             "updated_at": "2017-11-30T03:55:46.925401+00:00",
-            "created_at": "2015-06-29T23:33:02.633102+00:00",
-            "downloads": 553,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.29/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.29/downloads",
-                "authors": "/api/v1/crates/time/0.1.29/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 12463,
             "crate": "time",
-            "num": "0.1.27",
+            "created_at": "2015-06-29T21:12:16.178487+00:00",
             "dl_path": "/api/v1/crates/time/0.1.27/download",
+            "downloads": 194,
+            "features": {},
+            "id": 12463,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.27/authors",
+                "dependencies": "/api/v1/crates/time/0.1.27/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.27/downloads"
+            },
+            "num": "0.1.27",
             "readme_path": "/api/v1/crates/time/0.1.27/readme",
             "updated_at": "2017-11-30T03:52:05.400598+00:00",
-            "created_at": "2015-06-29T21:12:16.178487+00:00",
-            "downloads": 184,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.27/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.27/downloads",
-                "authors": "/api/v1/crates/time/0.1.27/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 11237,
             "crate": "time",
-            "num": "0.1.26",
+            "created_at": "2015-06-03T06:42:57.632275+00:00",
             "dl_path": "/api/v1/crates/time/0.1.26/download",
+            "downloads": 25722,
+            "features": {},
+            "id": 11237,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.26/authors",
+                "dependencies": "/api/v1/crates/time/0.1.26/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.26/downloads"
+            },
+            "num": "0.1.26",
             "readme_path": "/api/v1/crates/time/0.1.26/readme",
             "updated_at": "2017-11-30T03:37:04.317716+00:00",
-            "created_at": "2015-06-03T06:42:57.632275+00:00",
-            "downloads": 25705,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.26/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.26/downloads",
-                "authors": "/api/v1/crates/time/0.1.26/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 9178,
             "crate": "time",
-            "num": "0.1.25",
+            "created_at": "2015-04-22T14:34:10.705084+00:00",
             "dl_path": "/api/v1/crates/time/0.1.25/download",
+            "downloads": 30305,
+            "features": {
+                "std-duration": []
+            },
+            "id": 9178,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.25/authors",
+                "dependencies": "/api/v1/crates/time/0.1.25/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.25/downloads"
+            },
+            "num": "0.1.25",
             "readme_path": "/api/v1/crates/time/0.1.25/readme",
             "updated_at": "2017-11-30T03:10:45.183317+00:00",
-            "created_at": "2015-04-22T14:34:10.705084+00:00",
-            "downloads": 30294,
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-04-03T01:08:55.106623+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.24/download",
+            "downloads": 11887,
             "features": {
                 "std-duration": []
             },
-            "yanked": false,
+            "id": 7846,
             "license": "MIT/Apache-2.0",
             "links": {
-                "dependencies": "/api/v1/crates/time/0.1.25/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.25/downloads",
-                "authors": "/api/v1/crates/time/0.1.25/authors"
-            }
-        },
-        {
-            "id": 7846,
-            "crate": "time",
+                "authors": "/api/v1/crates/time/0.1.24/authors",
+                "dependencies": "/api/v1/crates/time/0.1.24/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.24/downloads"
+            },
             "num": "0.1.24",
-            "dl_path": "/api/v1/crates/time/0.1.24/download",
             "readme_path": "/api/v1/crates/time/0.1.24/readme",
             "updated_at": "2017-11-30T03:55:46.921229+00:00",
-            "created_at": "2015-04-03T01:08:55.106623+00:00",
-            "downloads": 11878,
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-04-01T16:55:10.851804+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.23/download",
+            "downloads": 1035,
             "features": {
                 "std-duration": []
             },
-            "yanked": false,
+            "id": 7713,
             "license": "MIT/Apache-2.0",
             "links": {
-                "dependencies": "/api/v1/crates/time/0.1.24/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.24/downloads",
-                "authors": "/api/v1/crates/time/0.1.24/authors"
-            }
-        },
-        {
-            "id": 7713,
-            "crate": "time",
+                "authors": "/api/v1/crates/time/0.1.23/authors",
+                "dependencies": "/api/v1/crates/time/0.1.23/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.23/downloads"
+            },
             "num": "0.1.23",
-            "dl_path": "/api/v1/crates/time/0.1.23/download",
             "readme_path": "/api/v1/crates/time/0.1.23/readme",
             "updated_at": "2017-11-30T02:24:40.854821+00:00",
-            "created_at": "2015-04-01T16:55:10.851804+00:00",
-            "downloads": 1026,
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-03-27T21:54:40.970590+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.22/download",
+            "downloads": 3178,
             "features": {
                 "std-duration": []
             },
-            "yanked": false,
+            "id": 7376,
             "license": "MIT/Apache-2.0",
             "links": {
-                "dependencies": "/api/v1/crates/time/0.1.23/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.23/downloads",
-                "authors": "/api/v1/crates/time/0.1.23/authors"
-            }
-        },
-        {
-            "id": 7376,
-            "crate": "time",
+                "authors": "/api/v1/crates/time/0.1.22/authors",
+                "dependencies": "/api/v1/crates/time/0.1.22/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.22/downloads"
+            },
             "num": "0.1.22",
-            "dl_path": "/api/v1/crates/time/0.1.22/download",
             "readme_path": "/api/v1/crates/time/0.1.22/readme",
             "updated_at": "2017-11-30T03:01:42.054772+00:00",
-            "created_at": "2015-03-27T21:54:40.970590+00:00",
-            "downloads": 3168,
-            "features": {
-                "std-duration": []
-            },
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.22/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.22/downloads",
-                "authors": "/api/v1/crates/time/0.1.22/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 6709,
             "crate": "time",
-            "num": "0.1.21",
+            "created_at": "2015-03-22T17:45:58.960172+00:00",
             "dl_path": "/api/v1/crates/time/0.1.21/download",
+            "downloads": 2929,
+            "features": {},
+            "id": 6709,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.21/authors",
+                "dependencies": "/api/v1/crates/time/0.1.21/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.21/downloads"
+            },
+            "num": "0.1.21",
             "readme_path": "/api/v1/crates/time/0.1.21/readme",
             "updated_at": "2017-11-30T03:55:45.459127+00:00",
-            "created_at": "2015-03-22T17:45:58.960172+00:00",
-            "downloads": 2919,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.21/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.21/downloads",
-                "authors": "/api/v1/crates/time/0.1.21/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 6288,
             "crate": "time",
-            "num": "0.1.20",
+            "created_at": "2015-03-13T11:51:17.002343+00:00",
             "dl_path": "/api/v1/crates/time/0.1.20/download",
+            "downloads": 4078,
+            "features": {},
+            "id": 6288,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.20/authors",
+                "dependencies": "/api/v1/crates/time/0.1.20/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.20/downloads"
+            },
+            "num": "0.1.20",
             "readme_path": "/api/v1/crates/time/0.1.20/readme",
             "updated_at": "2017-11-30T03:55:45.455023+00:00",
-            "created_at": "2015-03-13T11:51:17.002343+00:00",
-            "downloads": 4069,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.20/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.20/downloads",
-                "authors": "/api/v1/crates/time/0.1.20/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 5629,
             "crate": "time",
-            "num": "0.1.19",
+            "created_at": "2015-02-26T02:47:10.352496+00:00",
             "dl_path": "/api/v1/crates/time/0.1.19/download",
+            "downloads": 8084,
+            "features": {},
+            "id": 5629,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.19/authors",
+                "dependencies": "/api/v1/crates/time/0.1.19/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.19/downloads"
+            },
+            "num": "0.1.19",
             "readme_path": "/api/v1/crates/time/0.1.19/readme",
             "updated_at": "2017-11-30T02:32:36.680831+00:00",
-            "created_at": "2015-02-26T02:47:10.352496+00:00",
-            "downloads": 8073,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.19/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.19/downloads",
-                "authors": "/api/v1/crates/time/0.1.19/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 5624,
             "crate": "time",
-            "num": "0.1.18",
+            "created_at": "2015-02-25T22:34:47.822666+00:00",
             "dl_path": "/api/v1/crates/time/0.1.18/download",
+            "downloads": 201,
+            "features": {},
+            "id": 5624,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.18/authors",
+                "dependencies": "/api/v1/crates/time/0.1.18/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.18/downloads"
+            },
+            "num": "0.1.18",
             "readme_path": "/api/v1/crates/time/0.1.18/readme",
             "updated_at": "2017-11-30T03:55:46.871614+00:00",
-            "created_at": "2015-02-25T22:34:47.822666+00:00",
-            "downloads": 192,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.18/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.18/downloads",
-                "authors": "/api/v1/crates/time/0.1.18/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 4882,
             "crate": "time",
-            "num": "0.1.17",
-            "dl_path": "/api/v1/crates/time/0.1.17/download",
-            "readme_path": "/api/v1/crates/time/0.1.17/readme",
-            "updated_at": "2017-11-30T03:43:18.590822+00:00",
             "created_at": "2015-02-12T00:21:14.282778+00:00",
-            "downloads": 5833,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.17/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.17/downloads",
-                "authors": "/api/v1/crates/time/0.1.17/authors"
-            }
-        },
-        {
-            "id": 4602,
-            "crate": "time",
-            "num": "0.1.16",
-            "dl_path": "/api/v1/crates/time/0.1.16/download",
-            "readme_path": "/api/v1/crates/time/0.1.16/readme",
-            "updated_at": "2017-11-30T03:55:46.859195+00:00",
-            "created_at": "2015-02-06T13:24:56.166858+00:00",
-            "downloads": 2308,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.16/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.16/downloads",
-                "authors": "/api/v1/crates/time/0.1.16/authors"
-            }
-        },
-        {
-            "id": 4001,
-            "crate": "time",
-            "num": "0.1.15",
-            "dl_path": "/api/v1/crates/time/0.1.15/download",
-            "readme_path": "/api/v1/crates/time/0.1.15/readme",
-            "updated_at": "2017-11-30T03:43:18.587244+00:00",
-            "created_at": "2015-01-28T15:58:42.110486+00:00",
-            "downloads": 3223,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.15/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.15/downloads",
-                "authors": "/api/v1/crates/time/0.1.15/authors"
-            }
-        },
-        {
-            "id": 3349,
-            "crate": "time",
-            "num": "0.1.14",
-            "dl_path": "/api/v1/crates/time/0.1.14/download",
-            "readme_path": "/api/v1/crates/time/0.1.14/readme",
-            "updated_at": "2017-11-30T03:55:46.855272+00:00",
-            "created_at": "2015-01-23T17:15:28.659914+00:00",
-            "downloads": 2564,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.14/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.14/downloads",
-                "authors": "/api/v1/crates/time/0.1.14/authors"
-            }
-        },
-        {
-            "id": 3331,
-            "crate": "time",
-            "num": "0.1.13",
-            "dl_path": "/api/v1/crates/time/0.1.13/download",
-            "readme_path": "/api/v1/crates/time/0.1.13/readme",
-            "updated_at": "2017-11-30T03:55:43.550517+00:00",
-            "created_at": "2015-01-23T16:26:07.464909+00:00",
-            "downloads": 168,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.13/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.13/downloads",
-                "authors": "/api/v1/crates/time/0.1.13/authors"
-            }
-        },
-        {
-            "id": 2610,
-            "crate": "time",
-            "num": "0.1.12",
-            "dl_path": "/api/v1/crates/time/0.1.12/download",
-            "readme_path": "/api/v1/crates/time/0.1.12/readme",
-            "updated_at": "2017-11-30T03:24:58.647661+00:00",
-            "created_at": "2015-01-09T15:34:24.473586+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.17/download",
             "downloads": 5843,
             "features": {},
-            "yanked": false,
+            "id": 4882,
             "license": "MIT/Apache-2.0",
             "links": {
-                "dependencies": "/api/v1/crates/time/0.1.12/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.12/downloads",
-                "authors": "/api/v1/crates/time/0.1.12/authors"
-            }
+                "authors": "/api/v1/crates/time/0.1.17/authors",
+                "dependencies": "/api/v1/crates/time/0.1.17/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.17/downloads"
+            },
+            "num": "0.1.17",
+            "readme_path": "/api/v1/crates/time/0.1.17/readme",
+            "updated_at": "2017-11-30T03:43:18.590822+00:00",
+            "yanked": false
         },
         {
-            "id": 2421,
             "crate": "time",
-            "num": "0.1.11",
+            "created_at": "2015-02-06T13:24:56.166858+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.16/download",
+            "downloads": 2320,
+            "features": {},
+            "id": 4602,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.16/authors",
+                "dependencies": "/api/v1/crates/time/0.1.16/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.16/downloads"
+            },
+            "num": "0.1.16",
+            "readme_path": "/api/v1/crates/time/0.1.16/readme",
+            "updated_at": "2017-11-30T03:55:46.859195+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-01-28T15:58:42.110486+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.15/download",
+            "downloads": 3232,
+            "features": {},
+            "id": 4001,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.15/authors",
+                "dependencies": "/api/v1/crates/time/0.1.15/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.15/downloads"
+            },
+            "num": "0.1.15",
+            "readme_path": "/api/v1/crates/time/0.1.15/readme",
+            "updated_at": "2017-11-30T03:43:18.587244+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-01-23T17:15:28.659914+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.14/download",
+            "downloads": 2573,
+            "features": {},
+            "id": 3349,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.14/authors",
+                "dependencies": "/api/v1/crates/time/0.1.14/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.14/downloads"
+            },
+            "num": "0.1.14",
+            "readme_path": "/api/v1/crates/time/0.1.14/readme",
+            "updated_at": "2017-11-30T03:55:46.855272+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-01-23T16:26:07.464909+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.13/download",
+            "downloads": 177,
+            "features": {},
+            "id": 3331,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.13/authors",
+                "dependencies": "/api/v1/crates/time/0.1.13/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.13/downloads"
+            },
+            "num": "0.1.13",
+            "readme_path": "/api/v1/crates/time/0.1.13/readme",
+            "updated_at": "2017-11-30T03:55:43.550517+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-01-09T15:34:24.473586+00:00",
+            "dl_path": "/api/v1/crates/time/0.1.12/download",
+            "downloads": 5852,
+            "features": {},
+            "id": 2610,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.12/authors",
+                "dependencies": "/api/v1/crates/time/0.1.12/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.12/downloads"
+            },
+            "num": "0.1.12",
+            "readme_path": "/api/v1/crates/time/0.1.12/readme",
+            "updated_at": "2017-11-30T03:24:58.647661+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "time",
+            "created_at": "2015-01-07T16:13:25.121542+00:00",
             "dl_path": "/api/v1/crates/time/0.1.11/download",
+            "downloads": 787,
+            "features": {},
+            "id": 2421,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.11/authors",
+                "dependencies": "/api/v1/crates/time/0.1.11/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.11/downloads"
+            },
+            "num": "0.1.11",
             "readme_path": "/api/v1/crates/time/0.1.11/readme",
             "updated_at": "2017-11-30T03:43:18.580920+00:00",
-            "created_at": "2015-01-07T16:13:25.121542+00:00",
-            "downloads": 778,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.11/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.11/downloads",
-                "authors": "/api/v1/crates/time/0.1.11/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 2301,
             "crate": "time",
-            "num": "0.1.10",
+            "created_at": "2015-01-06T10:34:14.049772+00:00",
             "dl_path": "/api/v1/crates/time/0.1.10/download",
+            "downloads": 648,
+            "features": {},
+            "id": 2301,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.10/authors",
+                "dependencies": "/api/v1/crates/time/0.1.10/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.10/downloads"
+            },
+            "num": "0.1.10",
             "readme_path": "/api/v1/crates/time/0.1.10/readme",
             "updated_at": "2017-11-30T02:28:52.801269+00:00",
-            "created_at": "2015-01-06T10:34:14.049772+00:00",
-            "downloads": 639,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.10/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.10/downloads",
-                "authors": "/api/v1/crates/time/0.1.10/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 2148,
             "crate": "time",
-            "num": "0.1.9",
+            "created_at": "2015-01-04T19:10:33.773635+00:00",
             "dl_path": "/api/v1/crates/time/0.1.9/download",
+            "downloads": 1370,
+            "features": {},
+            "id": 2148,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.9/authors",
+                "dependencies": "/api/v1/crates/time/0.1.9/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.9/downloads"
+            },
+            "num": "0.1.9",
             "readme_path": "/api/v1/crates/time/0.1.9/readme",
             "updated_at": "2017-11-30T03:24:33.417658+00:00",
-            "created_at": "2015-01-04T19:10:33.773635+00:00",
-            "downloads": 1360,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.9/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.9/downloads",
-                "authors": "/api/v1/crates/time/0.1.9/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 2146,
             "crate": "time",
-            "num": "0.1.8",
+            "created_at": "2015-01-04T18:59:35.823968+00:00",
             "dl_path": "/api/v1/crates/time/0.1.8/download",
+            "downloads": 168,
+            "features": {},
+            "id": 2146,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.8/authors",
+                "dependencies": "/api/v1/crates/time/0.1.8/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.8/downloads"
+            },
+            "num": "0.1.8",
             "readme_path": "/api/v1/crates/time/0.1.8/readme",
             "updated_at": "2017-11-30T02:31:09.983687+00:00",
-            "created_at": "2015-01-04T18:59:35.823968+00:00",
-            "downloads": 159,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.8/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.8/downloads",
-                "authors": "/api/v1/crates/time/0.1.8/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 2015,
             "crate": "time",
-            "num": "0.1.7",
+            "created_at": "2015-01-03T20:45:17.427337+00:00",
             "dl_path": "/api/v1/crates/time/0.1.7/download",
+            "downloads": 523,
+            "features": {},
+            "id": 2015,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.7/authors",
+                "dependencies": "/api/v1/crates/time/0.1.7/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.7/downloads"
+            },
+            "num": "0.1.7",
             "readme_path": "/api/v1/crates/time/0.1.7/readme",
             "updated_at": "2017-11-30T03:24:33.415850+00:00",
-            "created_at": "2015-01-03T20:45:17.427337+00:00",
-            "downloads": 514,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.7/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.7/downloads",
-                "authors": "/api/v1/crates/time/0.1.7/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 1953,
             "crate": "time",
-            "num": "0.1.6",
+            "created_at": "2015-01-02T20:34:23.158043+00:00",
             "dl_path": "/api/v1/crates/time/0.1.6/download",
+            "downloads": 495,
+            "features": {},
+            "id": 1953,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.6/authors",
+                "dependencies": "/api/v1/crates/time/0.1.6/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.6/downloads"
+            },
+            "num": "0.1.6",
             "readme_path": "/api/v1/crates/time/0.1.6/readme",
             "updated_at": "2017-11-30T03:01:21.527660+00:00",
-            "created_at": "2015-01-02T20:34:23.158043+00:00",
-            "downloads": 486,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.6/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.6/downloads",
-                "authors": "/api/v1/crates/time/0.1.6/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 1733,
             "crate": "time",
-            "num": "0.1.5",
+            "created_at": "2014-12-28T02:28:28.503362+00:00",
             "dl_path": "/api/v1/crates/time/0.1.5/download",
+            "downloads": 1839,
+            "features": {},
+            "id": 1733,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.5/authors",
+                "dependencies": "/api/v1/crates/time/0.1.5/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.5/downloads"
+            },
+            "num": "0.1.5",
             "readme_path": "/api/v1/crates/time/0.1.5/readme",
             "updated_at": "2017-11-30T03:40:16.158979+00:00",
-            "created_at": "2014-12-28T02:28:28.503362+00:00",
-            "downloads": 1830,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.5/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.5/downloads",
-                "authors": "/api/v1/crates/time/0.1.5/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 1565,
             "crate": "time",
-            "num": "0.1.4",
+            "created_at": "2014-12-23T16:10:13.805585+00:00",
             "dl_path": "/api/v1/crates/time/0.1.4/download",
+            "downloads": 1682,
+            "features": {},
+            "id": 1565,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.4/authors",
+                "dependencies": "/api/v1/crates/time/0.1.4/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.4/downloads"
+            },
+            "num": "0.1.4",
             "readme_path": "/api/v1/crates/time/0.1.4/readme",
             "updated_at": "2017-11-30T03:25:25.556069+00:00",
-            "created_at": "2014-12-23T16:10:13.805585+00:00",
-            "downloads": 1673,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.4/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.4/downloads",
-                "authors": "/api/v1/crates/time/0.1.4/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 1216,
             "crate": "time",
-            "num": "0.1.3",
+            "created_at": "2014-12-16T18:35:50.423459+00:00",
             "dl_path": "/api/v1/crates/time/0.1.3/download",
+            "downloads": 1443,
+            "features": {},
+            "id": 1216,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.3/authors",
+                "dependencies": "/api/v1/crates/time/0.1.3/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.3/downloads"
+            },
+            "num": "0.1.3",
             "readme_path": "/api/v1/crates/time/0.1.3/readme",
             "updated_at": "2017-11-30T03:01:12.917082+00:00",
-            "created_at": "2014-12-16T18:35:50.423459+00:00",
-            "downloads": 1434,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.3/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.3/downloads",
-                "authors": "/api/v1/crates/time/0.1.3/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 1105,
             "crate": "time",
-            "num": "0.1.2",
+            "created_at": "2014-12-13T22:28:09.105148+00:00",
             "dl_path": "/api/v1/crates/time/0.1.2/download",
+            "downloads": 537,
+            "features": {},
+            "id": 1105,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.2/authors",
+                "dependencies": "/api/v1/crates/time/0.1.2/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.2/downloads"
+            },
+            "num": "0.1.2",
             "readme_path": "/api/v1/crates/time/0.1.2/readme",
             "updated_at": "2017-11-30T03:37:01.434182+00:00",
-            "created_at": "2014-12-13T22:28:09.105148+00:00",
-            "downloads": 528,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.2/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.2/downloads",
-                "authors": "/api/v1/crates/time/0.1.2/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 886,
             "crate": "time",
-            "num": "0.1.1",
+            "created_at": "2014-12-06T22:39:44.885710+00:00",
             "dl_path": "/api/v1/crates/time/0.1.1/download",
+            "downloads": 892,
+            "features": {},
+            "id": 886,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.1/authors",
+                "dependencies": "/api/v1/crates/time/0.1.1/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.1/downloads"
+            },
+            "num": "0.1.1",
             "readme_path": "/api/v1/crates/time/0.1.1/readme",
             "updated_at": "2017-11-30T03:52:24.090925+00:00",
-            "created_at": "2014-12-06T22:39:44.885710+00:00",
-            "downloads": 883,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.1/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.1/downloads",
-                "authors": "/api/v1/crates/time/0.1.1/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 681,
             "crate": "time",
-            "num": "0.1.0",
+            "created_at": "2014-11-27T23:29:29.823442+00:00",
             "dl_path": "/api/v1/crates/time/0.1.0/download",
+            "downloads": 936,
+            "features": {},
+            "id": 681,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.1.0/authors",
+                "dependencies": "/api/v1/crates/time/0.1.0/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.1.0/downloads"
+            },
+            "num": "0.1.0",
             "readme_path": "/api/v1/crates/time/0.1.0/readme",
             "updated_at": "2017-11-30T03:00:59.309429+00:00",
-            "created_at": "2014-11-27T23:29:29.823442+00:00",
-            "downloads": 926,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.1.0/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.1.0/downloads",
-                "authors": "/api/v1/crates/time/0.1.0/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 172,
             "crate": "time",
-            "num": "0.0.3",
+            "created_at": "2014-11-20T19:16:07.224292+00:00",
             "dl_path": "/api/v1/crates/time/0.0.3/download",
+            "downloads": 1066,
+            "features": {},
+            "id": 172,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.0.3/authors",
+                "dependencies": "/api/v1/crates/time/0.0.3/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.0.3/downloads"
+            },
+            "num": "0.0.3",
             "readme_path": "/api/v1/crates/time/0.0.3/readme",
             "updated_at": "2017-11-30T03:52:24.080105+00:00",
-            "created_at": "2014-11-20T19:16:07.224292+00:00",
-            "downloads": 1055,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.0.3/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.0.3/downloads",
-                "authors": "/api/v1/crates/time/0.0.3/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 151,
             "crate": "time",
-            "num": "0.0.2",
+            "created_at": "2014-11-19T05:46:37.340501+00:00",
             "dl_path": "/api/v1/crates/time/0.0.2/download",
+            "downloads": 183,
+            "features": {},
+            "id": 151,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/time/0.0.2/authors",
+                "dependencies": "/api/v1/crates/time/0.0.2/dependencies",
+                "version_downloads": "/api/v1/crates/time/0.0.2/downloads"
+            },
+            "num": "0.0.2",
             "readme_path": "/api/v1/crates/time/0.0.2/readme",
             "updated_at": "2017-11-30T04:12:27.038813+00:00",
-            "created_at": "2014-11-19T05:46:37.340501+00:00",
-            "downloads": 174,
-            "features": {},
-            "yanked": false,
-            "license": "MIT/Apache-2.0",
-            "links": {
-                "dependencies": "/api/v1/crates/time/0.0.2/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.0.2/downloads",
-                "authors": "/api/v1/crates/time/0.0.2/authors"
-            }
+            "yanked": false
         },
         {
-            "id": 98,
             "crate": "time",
-            "num": "0.0.1",
-            "dl_path": "/api/v1/crates/time/0.0.1/download",
-            "readme_path": "/api/v1/crates/time/0.0.1/readme",
-            "updated_at": "2017-11-30T04:12:28.747139+00:00",
             "created_at": "2014-11-13T06:52:51.400588+00:00",
-            "downloads": 164,
+            "dl_path": "/api/v1/crates/time/0.0.1/download",
+            "downloads": 173,
             "features": {},
-            "yanked": false,
+            "id": 98,
             "license": "MIT/Apache-2.0",
             "links": {
+                "authors": "/api/v1/crates/time/0.0.1/authors",
                 "dependencies": "/api/v1/crates/time/0.0.1/dependencies",
-                "version_downloads": "/api/v1/crates/time/0.0.1/downloads",
-                "authors": "/api/v1/crates/time/0.0.1/authors"
-            }
+                "version_downloads": "/api/v1/crates/time/0.0.1/downloads"
+            },
+            "num": "0.0.1",
+            "readme_path": "/api/v1/crates/time/0.0.1/readme",
+            "updated_at": "2017-11-30T04:12:28.747139+00:00",
+            "yanked": false
         }
-    ],
-    "keywords": [],
-    "categories": []
+    ]
 }

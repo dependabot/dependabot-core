@@ -46,7 +46,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
     )
   end
   let(:dependency_name) { "time" }
-  let(:dependency_version) { "0.1.39" }
+  let(:dependency_version) { "0.1.40" }
   let(:dependency_previous_version) { "0.1.38" }
   let(:requirements) { previous_requirements }
   let(:previous_requirements) do
@@ -189,9 +189,9 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
 
       it "updates the dependency version in the lockfile" do
         expect(updated_lockfile_content).
-          to include(%(name = "time"\nversion = "0.1.39"))
+          to include(%(name = "time"\nversion = "0.1.40"))
         expect(updated_lockfile_content).to include(
-          "a15375f1df02096fb3317256ce2cee6a1f42fc84ea5ad5fc8c421cfe40c73098"
+          "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
         )
         expect(updated_lockfile_content).to_not include(
           "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
