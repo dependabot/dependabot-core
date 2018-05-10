@@ -351,6 +351,34 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to include("packages/package2/package.json")
       end
 
+      context "specified using a hash" do
+        before do
+          stub_request(:get, File.join(url, "package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_with_hash_workspaces.json"),
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(
+            :get,
+            File.join(url, "packages/other_package/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.count).to eq(5)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/package.json")
+        end
+      end
+
       context "in a directory" do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/etc"

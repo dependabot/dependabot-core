@@ -85,13 +85,13 @@ module Dependabot
           package_json_files = []
           unfetchable_deps = []
 
-          parsed_package_json["workspaces"].each do |path|
-            workspaces =
+          workspace_paths(parsed_package_json["workspaces"]).each do |path|
+            expanded_paths =
               if path.end_with?("*") then expand_workspaces(path)
               else [path]
               end
 
-            workspaces.each do |workspace|
+            expanded_paths.each do |workspace|
               file = File.join(workspace, "package.json")
 
               begin
@@ -107,6 +107,20 @@ module Dependabot
           end
 
           package_json_files
+        end
+
+        def workspace_paths(workspace_object)
+          if workspace_object.is_a?(Hash)
+            workspace_object.flat_map do |base_dir, v|
+              paths = workspace_paths(v)
+              paths.map { |path| File.join(base_dir, path) }
+            end
+          elsif workspace_object.is_a?(Array)
+            workspace_object.flat_map do |path|
+              path.is_a?(Hash) ? workspace_paths(path) : path
+            end
+          else raise "Unexpected workspace object"
+          end
         end
 
         def expand_workspaces(path)
