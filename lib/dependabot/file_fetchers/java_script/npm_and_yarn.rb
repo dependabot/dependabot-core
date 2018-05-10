@@ -85,20 +85,13 @@ module Dependabot
           package_json_files = []
           unfetchable_deps = []
 
-          workspace_paths(parsed_package_json["workspaces"]).each do |path|
-            expanded_paths =
-              if path.end_with?("*") then expand_workspaces(path)
-              else [path]
-              end
+          workspace_paths(parsed_package_json["workspaces"]).each do |workspace|
+            file = File.join(workspace, "package.json")
 
-            expanded_paths.each do |workspace|
-              file = File.join(workspace, "package.json")
-
-              begin
-                package_json_files << fetch_file_from_host(file)
-              rescue Dependabot::DependencyFileNotFound
-                unfetchable_deps << file
-              end
+            begin
+              package_json_files << fetch_file_from_host(file)
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_deps << file
             end
           end
 
@@ -110,16 +103,16 @@ module Dependabot
         end
 
         def workspace_paths(workspace_object)
-          if workspace_object.is_a?(Hash)
-            workspace_object.flat_map do |base_dir, v|
-              paths = workspace_paths(v)
-              paths.map { |path| File.join(base_dir, path) }
+          paths_array =
+            if workspace_object.is_a?(Hash) then workspace_object["packages"]
+            elsif workspace_object.is_a?(Array) then workspace_object
+            else raise "Unexpected workspace object"
             end
-          elsif workspace_object.is_a?(Array)
-            workspace_object.flat_map do |path|
-              path.is_a?(Hash) ? workspace_paths(path) : path
+
+          paths_array.flat_map do |path|
+            if path.end_with?("*") then expand_workspaces(path)
+            else path
             end
-          else raise "Unexpected workspace object"
           end
         end
 

@@ -360,16 +360,6 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
               body: fixture("github", "package_json_with_hash_workspaces.json"),
               headers: { "content-type" => "application/json" }
             )
-
-          stub_request(
-            :get,
-            File.join(url, "packages/other_package/package.json?ref=sha")
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "package_json_content.json"),
-              headers: { "content-type" => "application/json" }
-            )
         end
 
         it "fetches package.json from the workspace dependencies" do
