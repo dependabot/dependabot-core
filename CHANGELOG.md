@@ -1,3 +1,7 @@
+## v0.56.24, 10 May 2018
+
+- PHP: Disable plugins during install
+
 ## v0.56.23, 10 May 2018
 
 - JS: Correct handling of Yarn workspaces specified with an object
