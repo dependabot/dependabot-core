@@ -12,12 +12,12 @@ module Dependabot
       attr_reader :repo_name, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
-                  :custom_labels, :reviewers
+                  :custom_labels, :reviewers, :assignees
 
       def initialize(repo_name:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
-                     custom_labels:, reviewers:)
+                     custom_labels:, reviewers:, assignees:)
         @repo_name      = repo_name
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -31,6 +31,7 @@ module Dependabot
         @signature_key  = signature_key
         @custom_labels  = custom_labels
         @reviewers      = reviewers
+        @assignees      = assignees
       end
 
       def create
@@ -182,6 +183,7 @@ module Dependabot
       def annotate_pull_request(pull_request)
         add_label_to_pull_request(pull_request)
         add_reviewers_to_pull_request(pull_request) if reviewers&.any?
+        add_assignees_to_pull_request(pull_request) if assignees&.any?
       end
 
       def add_label_to_pull_request(pull_request)
@@ -214,6 +216,14 @@ module Dependabot
         )
       rescue Octokit::UnprocessableEntity => error
         raise unless error.message.include?("not a collaborator")
+      end
+
+      def add_assignees_to_pull_request(pull_request)
+        github_client.add_assignees(
+          repo_name,
+          pull_request.number,
+          assignees
+        )
       end
 
       def create_pull_request

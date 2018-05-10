@@ -15,7 +15,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       files: files,
       credentials: credentials,
       custom_labels: custom_labels,
-      reviewers: reviewers
+      reviewers: reviewers,
+      assignees: assignees
     )
   end
 
@@ -35,6 +36,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   end
   let(:custom_labels) { nil }
   let(:reviewers) { nil }
+  let(:assignees) { nil }
   let(:repo) { "gocardless/bump" }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
@@ -580,6 +582,26 @@ RSpec.describe Dependabot::PullRequestCreator do
           to have_requested(
             :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
           ).with(body: { team_reviewers: [], reviewers: ["greysteil"] }.to_json)
+      end
+    end
+
+    context "when an assignee has been requested" do
+      let(:assignees) { ["greysteil"] }
+      before do
+        stub_request(
+          :post, "#{watched_repo_url}/issues/1347/assignees"
+        ).to_return(status: 201,
+                    body: fixture("github", "create_pr.json"),
+                    headers: json_header)
+      end
+
+      it "adds the assignee to the PR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(
+            :post, "#{watched_repo_url}/issues/1347/assignees"
+          ).with(body: { assignees: ["greysteil"] }.to_json)
       end
     end
   end
