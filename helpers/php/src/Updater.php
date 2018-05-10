@@ -70,6 +70,7 @@ class Updater
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
+            ->disablePlugins()
             ->setIgnorePlatformRequirements(true);
 
         $install->run();

@@ -82,6 +82,12 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
     it { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(2) }
 
+    context "with a plugin that would cause errors" do
+      let(:manifest_fixture_name) { "plugin" }
+      let(:lockfile_fixture_name) { "plugin" }
+      its(:length) { is_expected.to eq(2) }
+    end
+
     describe "the updated composer_file" do
       subject(:updated_composer_file_content) do
         # Parse and marshal, so we know the formatting
