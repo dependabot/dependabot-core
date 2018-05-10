@@ -1,3 +1,7 @@
+## v0.56.25, 10 May 2018
+
+- PHP: Better handling of PHP plugins (don't disable them all)
+
 ## v0.56.24, 10 May 2018
 
 - PHP: Disable plugins during install
