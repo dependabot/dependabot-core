@@ -1,3 +1,7 @@
+## v0.56.27, 10 May 2018
+
+- Support adding assignees to PRs
+
 ## v0.56.26, 10 May 2018
 
 - Python: Handle arbitrary equality matcher
