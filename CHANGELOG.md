@@ -1,3 +1,7 @@
+## v0.56.23, 10 May 2018
+
+- JS: Correct handling of Yarn workspaces specified with an object
+
 ## v0.56.22, 10 May 2018
 
 - JS: Handle Yarn workspace specification that uses objects instead of arrays
