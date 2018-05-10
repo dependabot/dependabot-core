@@ -1,3 +1,7 @@
+## v0.56.22, 10 May 2018
+
+- JS: Handle Yarn workspace specification that uses objects instead of arrays
+
 ## v0.56.21, 10 May 2018
 
 - Handle reviewers hashes (rather than arrays)
