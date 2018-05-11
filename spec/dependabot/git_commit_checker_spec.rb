@@ -36,11 +36,16 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:credentials) do
-    [{
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+    [
+      {
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      },
+      {
+        "some" => "irrelevant credential"
+      }
+    ]
   end
 
   describe "#git_dependency?" do

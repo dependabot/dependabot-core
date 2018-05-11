@@ -120,7 +120,8 @@ module Dependabot
     def fetch_upload_pack_for(uri)
       original_uri = uri
       bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
-      cred = credentials.find { |c| bare_uri.start_with?(c["host"]) }
+      cred = credentials.
+             find { |c| c["host"] && bare_uri.start_with?(c["host"]) }
 
       uri =
         if cred
