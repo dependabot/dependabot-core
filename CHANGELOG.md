@@ -1,3 +1,7 @@
+## v0.56.29, 11 May 2018
+
+- Stop relying on being passed a credential type
+
 ## v0.56.28, 11 May 2018
 
 - Update GitCommitChecker to auth with non-GitHub sources
