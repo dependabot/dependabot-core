@@ -1,3 +1,9 @@
+## v0.56.31, 11 May 2018
+
+- Prioritize longer credentials when looking for a match
+- Handle redirects from http to https more robustly by excluding the default
+  port
+
 ## v0.56.30, 11 May 2018
 
 - Check if credentials have a host before trying to match on it
