@@ -5,6 +5,7 @@ require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
 require "dependabot/utils"
+require "dependabot/source"
 
 module Dependabot
   class GitCommitChecker
@@ -192,11 +193,13 @@ module Dependabot
     end
 
     def listing_source_hosted_on_github?
-      listing_source_url.start_with?(github_client.web_endpoint)
+      return unless listing_source_url
+      Source.from_url(listing_source_url)&.host == "github"
     end
 
     def listing_source_repo
-      listing_source_url.gsub(github_client.web_endpoint, "")
+      return unless listing_source_url
+      Source.from_url(listing_source_url)&.repo
     end
 
     def listing_tag_for_version(version)
@@ -206,6 +209,7 @@ module Dependabot
     end
 
     def listing_tags
+      return [] unless listing_source_hosted_on_github?
       @listing_tags ||= github_client.tags(listing_source_repo, per_page: 100)
     rescue Octokit::NotFound
       []
@@ -220,11 +224,13 @@ module Dependabot
     end
 
     def local_source_hosted_on_github?
-      local_source_url.start_with?(github_client.web_endpoint)
+      return unless local_source_url
+      Source.from_url(local_source_url)&.host == "github"
     end
 
     def local_source_repo
-      local_source_url.gsub(github_client.web_endpoint, "")
+      return unless local_source_url
+      Source.from_url(local_source_url)&.repo
     end
 
     def local_tags

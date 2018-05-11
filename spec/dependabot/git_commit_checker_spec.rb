@@ -63,13 +63,24 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to eq(true) }
+
+      context "hosted on bitbucket" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://bitbucket.org/gocardless/business",
+            branch: nil,
+            ref: nil
+          }
+        end
+
+        it { is_expected.to eq(true) }
+      end
     end
   end
 
   describe "#branch_or_ref_in_release?" do
-    subject do
-      checker.branch_or_ref_in_release?(Gem::Version.new("1.5.0"))
-    end
+    subject { checker.branch_or_ref_in_release?(Gem::Version.new("1.5.0")) }
 
     context "with a non-git dependency" do
       let(:source) { nil }
@@ -154,6 +165,18 @@ RSpec.describe Dependabot::GitCommitChecker do
               fixture("github", "commit_compare_behind.json")
             end
             it { is_expected.to eq(true) }
+
+            context "even though this fork is not on GitHub" do
+              let(:source) do
+                {
+                  type: "git",
+                  url: "https://bitbucket.org/gocardless/business",
+                  branch: "master",
+                  ref: "df9f605"
+                }
+              end
+              it { is_expected.to eq(true) }
+            end
           end
 
           context "with an unpinned dependency" do
@@ -236,9 +259,9 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "and a reference that does not match the version" do
+        let(:repo_url) { "https://github.com/gocardless/business.git" }
         before do
-          git_url = "https://github.com/gocardless/business.git"
-          stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          stub_request(:get, repo_url + "/info/refs?service=git-upload-pack").
             to_return(
               status: 200,
               body: fixture("git", "upload_packs", "manifesto"),
@@ -256,6 +279,21 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "and does match a branch names" do
           let(:ref) { "master" }
           it { is_expected.to eq(false) }
+        end
+
+        context "with a bitbucket source" do
+          let(:source) do
+            {
+              type: "git",
+              url: "https://bitbucket.org/gocardless/business",
+              branch: branch,
+              ref: ref
+            }
+          end
+          let(:repo_url) { "https://bitbucket.org/gocardless/business.git" }
+
+          let(:ref) { "my_ref" }
+          it { is_expected.to eq(true) }
         end
 
         context "when the source is unreachable" do
@@ -383,6 +421,54 @@ RSpec.describe Dependabot::GitCommitChecker do
         it "raises a helpful error" do
           expect { checker.head_commit_for_current_branch }.
             to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+
+      context "with a bitbucket source" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://bitbucket.org/gocardless/business",
+            branch: "master",
+            ref: "master"
+          }
+        end
+        let(:git_url) do
+          "https://bitbucket.org/gocardless/business.git" \
+          "/info/refs?service=git-upload-pack"
+        end
+
+        context "that needs credentials to succeed" do
+          before do
+            stub_request(:get, git_url).to_return(status: 403)
+            stub_request(:get, git_url).
+              with(headers: { "Authorization" => auth_header }).
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "business"),
+                headers: git_header
+              )
+          end
+
+          context "and doesn't have them" do
+            it "raises a helpful error" do
+              expect { checker.head_commit_for_current_branch }.
+                to raise_error(Dependabot::GitDependenciesNotReachable)
+            end
+          end
+
+          context "and has them" do
+            let(:credentials) do
+              [{
+                "type" => "git",
+                "host" => "bitbucket.org",
+                "username" => "x-access-token",
+                "password" => "token"
+              }]
+            end
+
+            it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+          end
         end
       end
     end
