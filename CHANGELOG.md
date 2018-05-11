@@ -1,3 +1,7 @@
+## v0.56.32, 11 May 2018
+
+- Ruby: Handle version assignment to a variable in gemspec sanitizer
+
 ## v0.56.31, 11 May 2018
 
 - Prioritize longer credentials when looking for a match
