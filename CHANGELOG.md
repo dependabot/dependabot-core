@@ -1,3 +1,7 @@
+## v0.56.33, 11 May 2018
+
+- Use Bitbucket credentials in metadata lookup if present
+
 ## v0.56.32, 11 May 2018
 
 - Ruby: Handle version assignment to a variable in gemspec sanitizer
