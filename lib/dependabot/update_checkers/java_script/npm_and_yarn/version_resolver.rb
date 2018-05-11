@@ -146,6 +146,7 @@ module Dependabot
               dependency_url + "/#{version}",
               headers: registry_auth_headers,
               idempotent: true,
+              omit_default_port: true,
               middlewares: SharedHelpers.excon_middleware
             ).status == 404
           end
@@ -157,6 +158,7 @@ module Dependabot
                   dependency_url,
                   headers: registry_auth_headers,
                   idempotent: true,
+                  omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 )
 

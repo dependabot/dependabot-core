@@ -78,6 +78,7 @@ module Dependabot
                 response = Excon.get(
                   dependency_metadata_url,
                   idempotent: true,
+                  omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 )
                 Nokogiri::XML(response.body)
@@ -100,6 +101,7 @@ module Dependabot
                 response = Excon.get(
                   dependency_metadata_url(repository_url),
                   idempotent: true,
+                  omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 )
                 Nokogiri::XML(response.body)

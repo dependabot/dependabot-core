@@ -57,6 +57,7 @@ module Dependabot
           response = Excon.get(
             "https://hex.pm/api/packages/#{dependency.name}",
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

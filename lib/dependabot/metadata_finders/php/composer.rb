@@ -53,6 +53,7 @@ module Dependabot
           response = Excon.get(
             "https://packagist.org/p/#{dependency.name.downcase}.json",
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

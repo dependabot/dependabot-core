@@ -165,6 +165,7 @@ module Dependabot
                 response = Excon.get(
                   url + dependency.name + "/",
                   idempotent: true,
+                  omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 )
 

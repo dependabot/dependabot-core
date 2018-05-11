@@ -69,6 +69,7 @@ module Dependabot
             "#{dependency.version}/"\
             "#{artifact_id}-#{dependency.version}.pom",
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

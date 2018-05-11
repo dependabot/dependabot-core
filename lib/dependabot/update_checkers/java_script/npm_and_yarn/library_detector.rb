@@ -39,6 +39,7 @@ module Dependabot
             @project_npm_response ||= Excon.get(
               "https://registry.npmjs.org/#{escaped_project_name}",
               idempotent: true,
+              omit_default_port: true,
               middlewares: SharedHelpers.excon_middleware
             )
 

@@ -146,6 +146,7 @@ module Dependabot
           response = Excon.get(
             url,
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
           return [] if response.status >= 300
@@ -178,6 +179,7 @@ module Dependabot
           response = Excon.get(
             url,
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
           return [] if response.status >= 300

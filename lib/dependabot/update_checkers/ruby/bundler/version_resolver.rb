@@ -57,6 +57,7 @@ module Dependabot
             response = Excon.get(
               "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
               idempotent: true,
+              omit_default_port: true,
               middlewares: SharedHelpers.excon_middleware
             )
 
@@ -75,6 +76,7 @@ module Dependabot
             response = Excon.get(
               RUBYGEMS_API + "versions/#{dependency.name}.json",
               idempotent: true,
+              omit_default_port: true,
               middlewares: SharedHelpers.excon_middleware
             )
 
@@ -210,6 +212,7 @@ module Dependabot
             versions = Excon.get(
               "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
               idempotent: true,
+              omit_default_port: true,
               middlewares: SharedHelpers.excon_middleware
             )
 
@@ -377,6 +380,7 @@ module Dependabot
                     Excon.get(
                       uri,
                       idempotent: true,
+                      omit_default_port: true,
                       middlewares: SharedHelpers.excon_middleware
                     ).status == 200
                   rescue Excon::Error::Socket, Excon::Error::Timeout

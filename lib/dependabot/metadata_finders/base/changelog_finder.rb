@@ -83,6 +83,7 @@ module Dependabot
               Excon.get(
                 upgrade_guide.download_url,
                 idempotent: true,
+                omit_default_port: true,
                 middlewares: SharedHelpers.excon_middleware
               ).body
             end
@@ -128,6 +129,7 @@ module Dependabot
               Excon.get(
                 changelog.download_url,
                 idempotent: true,
+                omit_default_port: true,
                 middlewares: SharedHelpers.excon_middleware
               ).body
             end
@@ -258,6 +260,7 @@ module Dependabot
           response = Excon.get(
             url,
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
           return [] if response.status >= 300

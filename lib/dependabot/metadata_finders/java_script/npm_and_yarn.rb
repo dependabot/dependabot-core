@@ -78,6 +78,7 @@ module Dependabot
             dependency_url,
             headers: registry_auth_headers,
             idempotent: true,
+            omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
           )
 

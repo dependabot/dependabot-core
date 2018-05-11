@@ -44,6 +44,7 @@ module Dependabot
                   write_timeout: 5,
                   read_timeout: 5,
                   idempotent: true,
+                  omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 ).status < 400
               rescue Excon::Error::Timeout

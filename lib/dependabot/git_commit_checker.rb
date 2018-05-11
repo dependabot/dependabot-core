@@ -120,8 +120,7 @@ module Dependabot
     def fetch_upload_pack_for(uri)
       original_uri = uri
       bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
-      cred = credentials.
-             select { |c| c["host"] }.
+      cred = credentials.select { |c| c["host"] }.
              sort_by { |c| c["host"].length * -1 }.
              find { |c| bare_uri.start_with?(c["host"]) }
 
@@ -129,8 +128,7 @@ module Dependabot
         if cred
           auth = cred["token"] || "#{cred['username']}:#{cred['password']}"
           "https://#{auth}@#{bare_uri}"
-        else
-          "https://#{bare_uri}"
+        else "https://#{bare_uri}"
         end
 
       uri = uri.gsub(%r{/$}, "")
@@ -140,6 +138,7 @@ module Dependabot
       response = Excon.get(
         uri,
         idempotent: true,
+        omit_default_port: true,
         middlewares: SharedHelpers.excon_middleware
       )
 
