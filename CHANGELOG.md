@@ -1,3 +1,7 @@
+## v0.56.28, 11 May 2018
+
+- Update GitCommitChecker to auth with non-GitHub sources
+
 ## v0.56.27, 10 May 2018
 
 - Support adding assignees to PRs
