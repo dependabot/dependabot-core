@@ -20,7 +20,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   let(:files) { [package_json, yarn_lock, package_lock] }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

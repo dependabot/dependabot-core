@@ -39,7 +39,6 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
   end
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

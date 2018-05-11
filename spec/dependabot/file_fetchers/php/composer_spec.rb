@@ -18,7 +18,6 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

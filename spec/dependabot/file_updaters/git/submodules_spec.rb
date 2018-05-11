@@ -14,7 +14,6 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
       dependency_files: [gitmodules, submodule],
       dependencies: [dependency],
       credentials: [{
-        "type" => "git",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"

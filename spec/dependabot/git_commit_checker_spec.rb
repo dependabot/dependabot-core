@@ -37,7 +37,6 @@ RSpec.describe Dependabot::GitCommitChecker do
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -460,7 +459,6 @@ RSpec.describe Dependabot::GitCommitChecker do
           context "and has them" do
             let(:credentials) do
               [{
-                "type" => "git",
                 "host" => "bitbucket.org",
                 "username" => "x-access-token",
                 "password" => "token"

@@ -12,7 +12,6 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
       dependency_files: files,
       credentials: [
         {
-          "type" => "git",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"

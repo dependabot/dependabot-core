@@ -14,7 +14,6 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
       dependency_files: dependency_files,
       dependencies: dependencies,
       credentials: [{
-        "type" => "git",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"

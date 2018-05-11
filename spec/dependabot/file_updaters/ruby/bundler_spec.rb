@@ -20,7 +20,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
       dependencies: dependencies,
       credentials: [
         {
-          "type" => "git",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"
@@ -691,7 +690,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             dependencies: [dependency],
             credentials: [
               {
-                "type" => "git",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"

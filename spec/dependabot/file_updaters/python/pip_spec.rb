@@ -50,7 +50,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
   end
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -552,7 +551,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         let(:credentials) do
           [
             {
-              "type" => "git",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"

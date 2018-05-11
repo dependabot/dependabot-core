@@ -15,7 +15,6 @@ RSpec.describe tested_module::RegistryFinder do
   let(:npmrc_file) { nil }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

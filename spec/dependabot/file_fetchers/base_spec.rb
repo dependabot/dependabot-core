@@ -9,7 +9,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
   let(:repo) { "gocardless/bump" }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

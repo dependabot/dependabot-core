@@ -17,7 +17,6 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
 
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

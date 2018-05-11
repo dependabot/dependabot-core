@@ -28,7 +28,6 @@ RSpec.describe Dependabot::MetadataFinders::Rust::Cargo do
   end
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

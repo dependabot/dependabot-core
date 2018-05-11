@@ -14,7 +14,6 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       dependency_files: files,
       dependencies: [dependency],
       credentials: [{
-        "type" => "git",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"

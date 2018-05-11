@@ -19,7 +19,6 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -216,7 +215,6 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
               dependencies: [dependency],
               credentials: [
                 {
-                  "type" => "git",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
@@ -361,7 +359,6 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           let(:credentials) do
             [
               {
-                "type" => "git",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"

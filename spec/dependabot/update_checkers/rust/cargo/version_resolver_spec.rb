@@ -17,7 +17,6 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
   let(:requirements_to_unlock) { :own }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

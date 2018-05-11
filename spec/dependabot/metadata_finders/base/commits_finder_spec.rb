@@ -36,7 +36,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   let(:dependency_previous_version) { "1.0.0" }
   let(:credentials) do
     [{
-      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
