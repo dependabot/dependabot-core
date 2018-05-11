@@ -10,9 +10,9 @@ module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
 
-    def initialize(dependency:, github_access_token:)
+    def initialize(dependency:, credentials:)
       @dependency = dependency
-      @github_access_token = github_access_token
+      @credentials = credentials
     end
 
     def git_dependency?
@@ -73,7 +73,7 @@ module Dependabot
 
     private
 
-    attr_reader :dependency, :github_access_token
+    attr_reader :dependency, :credentials
 
     def pinned_ref_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
@@ -250,12 +250,10 @@ module Dependabot
       Utils.version_class_for_package_manager(dependency.package_manager)
     end
 
-    def credentials
-      [{
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => github_access_token
-      }]
+    def github_access_token
+      credentials.
+        find { |cred| cred["host"] == "github.com" }.
+        fetch("password")
     end
   end
 end

@@ -41,16 +41,10 @@ module Dependabot
         def fetch_latest_version
           git_commit_checker = GitCommitChecker.new(
             dependency: dependency,
-            github_access_token: github_access_token
+            credentials: credentials
           )
 
           git_commit_checker.head_commit_for_current_branch
-        end
-
-        def github_access_token
-          credentials.
-            find { |cred| cred["host"] == "github.com" }.
-            fetch("password")
         end
       end
     end

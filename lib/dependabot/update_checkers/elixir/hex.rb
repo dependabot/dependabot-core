@@ -240,14 +240,8 @@ module Dependabot
           @git_commit_checker ||=
             GitCommitChecker.new(
               dependency: dependency,
-              github_access_token: github_access_token
+              credentials: credentials
             )
-        end
-
-        def github_access_token
-          credentials.
-            find { |cred| cred["host"] == "github.com" }.
-            fetch("password")
         end
       end
     end

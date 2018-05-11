@@ -251,7 +251,7 @@ module Dependabot
           @git_commit_checker ||=
             GitCommitChecker.new(
               dependency: dependency,
-              github_access_token: github_access_token
+              credentials: credentials
             )
         end
 
@@ -280,12 +280,6 @@ module Dependabot
             remove_git_source: remove_git_source,
             unlock_requirement: unlock_requirement
           ).prepared_dependency_files
-        end
-
-        def github_access_token
-          credentials.
-            find { |cred| cred["host"] == "github.com" }.
-            fetch("password")
         end
       end
     end

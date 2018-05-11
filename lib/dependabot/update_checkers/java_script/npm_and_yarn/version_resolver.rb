@@ -229,14 +229,8 @@ module Dependabot
           def git_dependency?
             GitCommitChecker.new(
               dependency: dependency,
-              github_access_token: github_access_token
+              credentials: credentials
             ).git_dependency?
-          end
-
-          def github_access_token
-            credentials.
-              find { |cred| cred["host"] == "github.com" }.
-              fetch("password")
           end
         end
       end

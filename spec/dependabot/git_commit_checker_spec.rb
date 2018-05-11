@@ -8,7 +8,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      github_access_token: github_access_token
+      credentials: credentials
     )
   end
 
@@ -35,7 +35,13 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
-  let(:github_access_token) { "token" }
+  let(:credentials) do
+    [{
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
 
   describe "#git_dependency?" do
     subject { checker.git_dependency? }
