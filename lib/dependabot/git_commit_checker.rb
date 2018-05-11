@@ -122,13 +122,13 @@ module Dependabot
       bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
       cred = credentials.
              select { |c| c["host"] }.
+             sort_by { |c| c["host"].length * -1 }.
              find { |c| bare_uri.start_with?(c["host"]) }
 
       uri =
         if cred
-          auth_details = cred["token"] ||
-                         "#{cred['username']}:#{cred['password']}"
-          "https://#{auth_details}@#{bare_uri}"
+          auth = cred["token"] || "#{cred['username']}:#{cred['password']}"
+          "https://#{auth}@#{bare_uri}"
         else
           "https://#{bare_uri}"
         end
