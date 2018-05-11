@@ -121,7 +121,8 @@ module Dependabot
       original_uri = uri
       bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
       cred = credentials.
-             find { |c| c["host"] && bare_uri.start_with?(c["host"]) }
+             select { |c| c["host"] }.
+             find { |c| bare_uri.start_with?(c["host"]) }
 
       uri =
         if cred
