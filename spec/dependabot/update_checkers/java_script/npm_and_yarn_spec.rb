@@ -207,19 +207,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           with(basic_auth: ["x-access-token", "token"]).
           to_return(
             status: 200,
-            body: fixture("git", "upload_packs", "is-number"),
+            body: fixture("git", "upload_packs", upload_pack_fixture),
             headers: git_header
           )
         stub_request(:get, registry_listing_url + "/4.0.0").
           to_return(status: 200)
 
         repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-        stub_request(:get, repo_url + "/tags?per_page=100").
-          to_return(
-            status: 200,
-            body: fixture("github", "is_number_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
         stub_request(:get, repo_url + "/compare/4.0.0...#{ref}").
           to_return(
             status: 200,
@@ -227,6 +221,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             headers: { "Content-Type" => "application/json" }
           )
       end
+      let(:upload_pack_fixture) { "is-number" }
       let(:commit_compare_response) do
         fixture("github", "commit_compare_diverged.json")
       end
@@ -304,31 +299,14 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       context "with a ref that looks like a version" do
         let(:ref) { "2.0.0" }
         let(:req) { nil }
-        before do
-          repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-          stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
-            to_return(
-              status: 200,
-              body: fixture("github", "ref.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
 
         it "fetches the latest SHA-1 hash of the latest version tag" do
           expect(checker.latest_version).
-            to eq("1a5c15a88bc10cd47f67a09506399dfc9ddc075d")
+            to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
         context "but there are no tags" do
-          before do
-            repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-            stub_request(:get, repo_url + "/tags?per_page=100").
-              to_return(
-                status: 200,
-                body: [].to_json,
-                headers: { "Content-Type" => "application/json" }
-              )
-          end
+          let(:upload_pack_fixture) { "no_tags" }
 
           it "returns the current version" do
             expect(checker.latest_version).to eq(current_version)
@@ -339,37 +317,14 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       context "with a requirement" do
         let(:ref) { "master" }
         let(:req) { "^2.0.0" }
-        before do
-          repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-          stub_request(:get, repo_url + "/tags?per_page=100").
-            to_return(
-              status: 200,
-              body: fixture("github", "is_number_tags.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-          stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
-            to_return(
-              status: 200,
-              body: fixture("github", "ref.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
 
         it "fetches the latest SHA-1 hash of the latest version tag" do
           expect(checker.latest_version).
-            to eq("1a5c15a88bc10cd47f67a09506399dfc9ddc075d")
+            to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
         context "but there are no tags" do
-          before do
-            repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-            stub_request(:get, repo_url + "/tags?per_page=100").
-              to_return(
-                status: 200,
-                body: [].to_json,
-                headers: { "Content-Type" => "application/json" }
-              )
-          end
+          let(:upload_pack_fixture) { "no_tags" }
 
           it "returns the current version" do
             expect(checker.latest_version).to eq(current_version)
@@ -1166,18 +1121,6 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             headers: git_header
           )
         repo_url = "https://api.github.com/repos/jonschlinkert/is-number"
-        stub_request(:get, repo_url + "/tags?per_page=100").
-          to_return(
-            status: 200,
-            body: fixture("github", "is_number_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-        stub_request(:get, repo_url + "/git/refs/tags/4.0.0").
-          to_return(
-            status: 200,
-            body: fixture("github", "ref.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
         stub_request(:get, repo_url + "/compare/4.0.0...master").
           to_return(
             status: 200,

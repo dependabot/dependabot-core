@@ -209,7 +209,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           it "fetches the latest SHA-1 hash" do
             expect(checker.latest_version).
-              to eq("d31e445215b5af70c1604715d97dd953e868380e")
+              to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
           end
         end
 
@@ -288,36 +288,27 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
               stub_request(:get, rubygems_url).
                 to_return(status: 404, body: "This rubygem could not be found.")
-              repo_url = "https://api.github.com/repos/gocardless/business"
-              stub_request(:get, repo_url + "/tags?per_page=100").
+              url = "https://github.com/gocardless/business.git"
+              git_header = {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+              stub_request(:get, url + "/info/refs?service=git-upload-pack").
+                with(basic_auth: ["x-access-token", "token"]).
                 to_return(
                   status: 200,
-                  body: fixture("github", "business_tags.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "ref.json"),
-                  headers: { "Content-Type" => "application/json" }
+                  body: fixture("git", "upload_packs", upload_pack_fixture),
+                  headers: git_header
                 )
             end
+            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_version).
-                to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+                to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
             context "but there are no tags" do
-              before do
-                repo_url = "https://api.github.com/repos/gocardless/business"
-                stub_request(:get, repo_url + "/tags?per_page=100").
-                  to_return(
-                    status: 200,
-                    body: [].to_json,
-                    headers: { "Content-Type" => "application/json" }
-                  )
-              end
+              let(:upload_pack_fixture) { "no_tags" }
 
               it "returns the current version" do
                 expect(checker.latest_version).to eq(current_version)
@@ -723,36 +714,27 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
               stub_request(:get, rubygems_url).
                 to_return(status: 404, body: "This rubygem could not be found.")
-              repo_url = "https://api.github.com/repos/gocardless/business"
-              stub_request(:get, repo_url + "/tags?per_page=100").
+              url = "https://github.com/gocardless/business.git"
+              git_header = {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+              stub_request(:get, url + "/info/refs?service=git-upload-pack").
+                with(basic_auth: ["x-access-token", "token"]).
                 to_return(
                   status: 200,
-                  body: fixture("github", "business_tags.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "ref.json"),
-                  headers: { "Content-Type" => "application/json" }
+                  body: fixture("git", "upload_packs", upload_pack_fixture),
+                  headers: git_header
                 )
             end
+            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_resolvable_version).
-                to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+                to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
             context "but there are no tags" do
-              before do
-                repo_url = "https://api.github.com/repos/gocardless/business"
-                stub_request(:get, repo_url + "/tags?per_page=100").
-                  to_return(
-                    status: 200,
-                    body: [].to_json,
-                    headers: { "Content-Type" => "application/json" }
-                  )
-              end
+              let(:upload_pack_fixture) { "no_tags" }
 
               it "returns the current version" do
                 expect(checker.latest_resolvable_version).to eq(current_version)
@@ -785,19 +767,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                     body: fixture("git", "upload_packs", "onfido"),
                     headers: git_header
                   )
-                github_url = "https://api.github.com/repos/hvssle/onfido"
-                stub_request(:get, github_url + "/tags?per_page=100").
-                  to_return(
-                    status: 200,
-                    body: fixture("github", "onfido_tags.json"),
-                    headers: { "Content-Type" => "application/json" }
-                  )
-                stub_request(:get, github_url + "/git/refs/tags/v0.8.2").
-                  to_return(
-                    status: 200,
-                    body: fixture("github", "ref.json"),
-                    headers: { "Content-Type" => "application/json" }
-                  )
               end
 
               let(:dependency_name) { "onfido" }
@@ -806,19 +775,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
 
               let(:requirements) do
-                [
-                  {
-                    file: "Gemfile",
-                    requirement: ">= 0",
-                    groups: [],
-                    source: {
-                      type: "git",
-                      url: "https://github.com/hvssle/onfido",
-                      branch: "master",
-                      ref: "v0.4.0"
-                    }
+                [{
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/hvssle/onfido",
+                    branch: "master",
+                    ref: "v0.4.0"
                   }
-                ]
+                }]
               end
 
               it { is_expected.to eq(dependency.version) }
@@ -1395,38 +1362,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the release looks like a version" do
             let(:requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    branch: "master",
-                    ref: "v1.0.0"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.0.0"
                 }
-              ]
-            end
-
-            before do
-              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
-              stub_request(:get, rubygems_url).
-                to_return(status: 404, body: "This rubygem could not be found.")
-              repo_url = "https://api.github.com/repos/gocardless/business"
-              stub_request(:get, repo_url + "/tags?per_page=100").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "business_tags.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
-              stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "ref.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
+              }]
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
@@ -1440,7 +1386,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                     type: "git",
                     url: "https://github.com/gocardless/business",
                     branch: "master",
-                    ref: "v1.6.0"
+                    ref: "v1.13.0"
                   }
                 ).and_call_original
 
@@ -1465,12 +1411,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               )
 
               repo_url = "https://api.github.com/repos/gocardless/business"
-              stub_request(:get, repo_url + "/tags?per_page=100").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "business_tags.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
               stub_request(:get, repo_url + "/compare/v1.5.0...a1b78a9").
                 to_return(
                   status: 200,

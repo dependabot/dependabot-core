@@ -110,21 +110,19 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         )
       end
       before do
-        repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
-        stub_request(:get, repo_url + "/tags?per_page=100").
+        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
           to_return(
             status: 200,
-            body: fixture("github", "phoenix_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-        stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
-          to_return(
-            status: 200,
-            body: fixture("github", "ref.json"),
-            headers: { "Content-Type" => "application/json" }
+            body: fixture("git", "upload_packs", "phoenix"),
+            headers: git_header
           )
       end
-      it { is_expected.to eq("5d83459c539f7f4172e9a76355e7a86b70bc537b") }
+      it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
     end
   end
 
@@ -309,18 +307,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           let(:ref) { "v1.2.0" }
 
           before do
-            repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
-            stub_request(:get, repo_url + "/tags?per_page=100").
+            git_url = "https://github.com/phoenixframework/phoenix.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+              with(basic_auth: ["x-access-token", "token"]).
               to_return(
                 status: 200,
-                body: fixture("github", "phoenix_tags.json"),
-                headers: { "Content-Type" => "application/json" }
-              )
-            stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
-              to_return(
-                status: 200,
-                body: fixture("github", "ref.json"),
-                headers: { "Content-Type" => "application/json" }
+                body: fixture("git", "upload_packs", "phoenix"),
+                headers: git_header
               )
           end
 
@@ -332,7 +328,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
               fixture("elixir", "lockfiles", "git_source_tag_can_update")
             end
 
-            it { is_expected.to eq("5d83459c539f7f4172e9a76355e7a86b70bc537b") }
+            it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
           end
 
           context "that can't update (because of resolvability)" do
@@ -573,18 +569,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       end
 
       before do
-        repo_url = "https://api.github.com/repos/phoenixframework/phoenix"
-        stub_request(:get, repo_url + "/tags?per_page=100").
+        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
           to_return(
             status: 200,
-            body: fixture("github", "phoenix_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-        stub_request(:get, repo_url + "/git/refs/tags/v1.3.0").
-          to_return(
-            status: 200,
-            body: fixture("github", "ref.json"),
-            headers: { "Content-Type" => "application/json" }
+            body: fixture("git", "upload_packs", "phoenix"),
+            headers: git_header
           )
       end
 
@@ -597,7 +591,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
               type: "git",
               url: "https://github.com/phoenixframework/phoenix.git",
               branch: "master",
-              ref: "v1.3.0"
+              ref: "v1.3.2"
             },
             latest_resolvable_version: "1.6.0"
           ).
@@ -613,7 +607,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
                   type: "git",
                   url: "https://github.com/phoenixframework/phoenix.git",
                   branch: "master",
-                  ref: "v1.3.0"
+                  ref: "v1.3.2"
                 }
               }
             ]

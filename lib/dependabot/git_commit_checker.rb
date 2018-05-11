@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "gitlab"
 require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
@@ -81,7 +82,6 @@ module Dependabot
 
       return false unless pinned?
       return false if listing_source_url.nil?
-      return false unless listing_source_hosted_on_github?
 
       tag = listing_tag_for_version(version.to_s)
       return false unless tag
@@ -98,7 +98,6 @@ module Dependabot
 
       return false if ref_or_branch.nil?
       return false if listing_source_url.nil?
-      return false unless listing_source_hosted_on_github?
 
       tag = listing_tag_for_version(version.to_s)
       return false unless tag
@@ -187,15 +186,72 @@ module Dependabot
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)
       status =
-        github_client.compare(
-          listing_source_repo,
-          tag,
-          commit
-        ).status
+        case Source.from_url(listing_source_url)&.host
+        when "github" then github_commit_comparison_status(tag, commit)
+        when "gitlab" then gitlab_commit_comparison_status(tag, commit)
+        when "bitbucket" then bitbucket_commit_comparison_status(tag, commit)
+        else raise "Unknown source"
+        end
+
       return true if status == "behind"
       allow_identical && status == "identical"
-    rescue Octokit::NotFound
+    rescue Octokit::NotFound, Gitlab::Error::NotFound
       false
+    end
+
+    def github_commit_comparison_status(ref1, ref2)
+      access_token = credentials.
+                     find { |cred| cred["host"] == "github.com" }.
+                     fetch("password")
+
+      client = GithubClientWithRetries.new(access_token: access_token)
+      client.compare(listing_source_repo, ref1, ref2).status
+    end
+
+    def gitlab_commit_comparison_status(ref1, ref2)
+      access_token = credentials.
+                     find { |cred| cred["host"] == "gitlab.com" }&.
+                     fetch("token")
+
+      client = Gitlab.client(endpoint: "https://gitlab.com/api/v4",
+                             private_token: access_token.to_s)
+
+      comparison = client.compare(listing_source_repo, ref1, ref2)
+
+      if comparison.commits.none? then "behind"
+      elsif comparison.compare_same_ref then "identical"
+      else "ahead"
+      end
+    end
+
+    def bitbucket_commit_comparison_status(ref1, ref2)
+      token = credentials.
+              find { |cred| cred["host"] == "bitbucket.org" }&.
+              fetch("token")
+
+      auth_header =
+        if token.nil? then {}
+        elsif token.include?(":")
+          encoded_token = Base64.encode64(token).chomp
+          { "Authorization" => "Basic #{encoded_token}" }
+        else { "Authorization" => "Bearer #{token}" }
+        end
+
+      url = "https://api.bitbucket.org/2.0/repositories/"\
+            "#{listing_source_repo}/commits/?"\
+            "include=#{ref2}&exclude=#{ref1}"
+
+      response = Excon.get(url,
+                           headers: auth_header,
+                           idempotent: true,
+                           omit_default_port: true,
+                           middlewares: SharedHelpers.excon_middleware)
+
+      # Conservatively assume that ref2 is ahead in the equality case, of
+      # if we get an unexpected format (e.g., due to a 404)
+      if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
+      else "ahead"
+      end
     end
 
     def dependency_source_details
@@ -231,11 +287,6 @@ module Dependabot
         end
     end
 
-    def listing_source_hosted_on_github?
-      return unless listing_source_url
-      Source.from_url(listing_source_url)&.host == "github"
-    end
-
     def listing_source_repo
       return unless listing_source_url
       Source.from_url(listing_source_url)&.repo
@@ -259,24 +310,12 @@ module Dependabot
       @listing_upload_pack ||= fetch_upload_pack_for(listing_source_url)
     end
 
-    def github_client
-      @github_client ||=
-        Dependabot::GithubClientWithRetries.
-        new(access_token: github_access_token)
-    end
-
     def version_class
       Utils.version_class_for_package_manager(dependency.package_manager)
     end
 
     def sha_for_update_pack_line(line)
       line.split(" ").first.chars.last(40).join
-    end
-
-    def github_access_token
-      credentials.
-        find { |cred| cred["host"] == "github.com" }.
-        fetch("password")
     end
   end
 end

@@ -115,13 +115,6 @@ RSpec.describe Dependabot::GitCommitChecker do
         it { is_expected.to eq(false) }
       end
 
-      context "with source code not hosted on GitHub" do
-        let(:rubygems_response) do
-          fixture("ruby", "rubygems_response_bitbucket.json")
-        end
-        it { is_expected.to eq(false) }
-      end
-
       context "with source code hosted on GitHub" do
         let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
@@ -214,6 +207,70 @@ RSpec.describe Dependabot::GitCommitChecker do
               it { is_expected.to eq(false) }
             end
           end
+        end
+      end
+
+      context "with source code not hosted on GitHub" do
+        let(:rubygems_response) do
+          fixture("ruby", "rubygems_response_bitbucket.json")
+        end
+        let(:service_pack_url) do
+          "https://bitbucket.org/gocardless/business.git/info/refs"\
+          "?service=git-upload-pack"
+        end
+        let(:bitbucket_url) do
+          "https://api.bitbucket.org/2.0/repositories/"\
+          "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
+        end
+        before do
+          stub_request(:get, service_pack_url).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", upload_pack_fixture),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+        let(:upload_pack_fixture) { "business" }
+
+        context "when not included in a release" do
+          before do
+            stub_request(:get, bitbucket_url).
+              to_return(
+                status: 200,
+                body: fixture("bitbucket", "business_compare_commits.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it { is_expected.to eq(false) }
+        end
+
+        context "when bitbucket 404s" do
+          before do
+            stub_request(:get, bitbucket_url).
+              to_return(
+                status: 404,
+                body: { "type" => "error" }.to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it { is_expected.to eq(false) }
+        end
+
+        context "when bitbucket 404s" do
+          before do
+            stub_request(:get, bitbucket_url).
+              to_return(
+                status: 200,
+                body: { "pagelen" => 30, "values" => [] }.to_json,
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it { is_expected.to eq(true) }
         end
       end
     end
