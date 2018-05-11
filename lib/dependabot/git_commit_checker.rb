@@ -51,7 +51,7 @@ module Dependabot
       branch_ref = ref_or_branch ? "refs/heads/#{ref_or_branch}" : "HEAD"
       line = local_upload_pack.lines.find { |l| l.include?(branch_ref) }
 
-      return line.split(" ").first.chars.last(40).join if line
+      return sha_for_update_pack_line(line) if line
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
@@ -67,8 +67,8 @@ module Dependabot
       return unless tag
       {
         tag: tag.name,
-        commit_sha: tag.commit.sha,
-        tag_sha: local_tag_sha(tag.name)
+        commit_sha: tag.commit_sha,
+        tag_sha: tag.tag_sha
       }
     end
 
@@ -115,6 +115,43 @@ module Dependabot
     def local_upload_pack
       @local_upload_pack ||=
         fetch_upload_pack_for(dependency_source_details.fetch(:url))
+    end
+
+    def local_tags
+      return [] unless local_upload_pack
+      tags_for_upload_pack(local_upload_pack)
+    end
+
+    def tags_for_upload_pack(upload_pack)
+      peeled_lines = []
+      unpeeled_lines = []
+
+      upload_pack.lines.each do |line|
+        next unless line.split(" ").last.start_with?("refs/tags")
+
+        if line.strip.end_with?("^{}") then peeled_lines << line
+        else unpeeled_lines << line
+        end
+      end
+
+      unpeeled_lines.map do |line|
+        tag_name    = line.split(" refs/tags/").last.strip
+        tag_sha     = sha_for_update_pack_line(line)
+        peeled_line = peeled_lines.find do |pl|
+          pl.split(" refs/tags/").last.strip == "#{tag_name}^{}"
+        end
+
+        commit_sha =
+          if peeled_line then sha_for_update_pack_line(peeled_line)
+          else tag_sha
+          end
+
+        OpenStruct.new(
+          name: tag_name,
+          tag_sha: tag_sha,
+          commit_sha: commit_sha
+        )
+      end
     end
 
     def fetch_upload_pack_for(uri)
@@ -211,47 +248,15 @@ module Dependabot
     end
 
     def listing_tags
-      return [] unless listing_source_hosted_on_github?
-      @listing_tags ||= github_client.tags(listing_source_repo, per_page: 100)
-    rescue Octokit::NotFound
+      return [] unless listing_upload_pack
+      tags_for_upload_pack(listing_upload_pack)
+    rescue GitDependenciesNotReachable
       []
     end
 
-    def local_source_url
-      @local_source_url ||=
-        MetadataFinders.
-        for_package_manager(dependency.package_manager).
-        new(dependency: dependency, credentials: credentials).
-        source_url
-    end
-
-    def local_source_hosted_on_github?
-      return unless local_source_url
-      Source.from_url(local_source_url)&.host == "github"
-    end
-
-    def local_source_repo
-      return unless local_source_url
-      Source.from_url(local_source_url)&.repo
-    end
-
-    def local_tags
-      return [] unless local_source_url
-      return [] unless local_source_hosted_on_github?
-      @local_tags ||= github_client.tags(local_source_repo, per_page: 100)
-    rescue Octokit::NotFound
-      []
-    end
-
-    def local_tag_sha(tag)
-      @local_tag_shas ||= {}
-      @local_tag_shas[tag] ||= {}
-      if @local_tag_shas[tag][:lookup_attempted]
-        return @local_tag_shas[tag][:sha]
-      end
-      @local_tag_shas[tag][:lookup_attempted] = true
-      @local_tag_shas[tag][:sha] =
-        github_client.ref(local_source_repo, "tags/#{tag}").object.sha
+    def listing_upload_pack
+      return unless listing_source_url
+      @listing_upload_pack ||= fetch_upload_pack_for(listing_source_url)
     end
 
     def github_client
@@ -262,6 +267,10 @@ module Dependabot
 
     def version_class
       Utils.version_class_for_package_manager(dependency.package_manager)
+    end
+
+    def sha_for_update_pack_line(line)
+      line.split(" ").first.chars.last(40).join
     end
 
     def github_access_token

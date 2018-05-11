@@ -125,28 +125,34 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with source code hosted on GitHub" do
         let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
-        let(:tags_url) { repo_url + "/tags?per_page=100" }
-        before do
-          stub_request(:get, tags_url).to_return(
-            status: 200,
-            body: tags_response,
-            headers: { "Content-Type" => "application/json" }
-          )
+        let(:service_pack_url) do
+          "https://github.com/gocardless/business.git/info/refs"\
+          "?service=git-upload-pack"
         end
+        before do
+          stub_request(:get, service_pack_url).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", upload_pack_fixture),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+        let(:upload_pack_fixture) { "no_tags" }
 
         context "but no tags on GitHub" do
-          let(:tags_response) { [].to_json }
+          let(:upload_pack_fixture) { "no_tags" }
           it { is_expected.to eq(false) }
         end
 
         context "but GitHub returns a 404" do
-          before { stub_request(:get, tags_url).to_return(status: 404) }
-          let(:tags_response) { "unused" }
+          before { stub_request(:get, service_pack_url).to_return(status: 404) }
           it { is_expected.to eq(false) }
         end
 
         context "with tags on GitHub" do
-          let(:tags_response) { fixture("github", "business_tags.json") }
+          let(:upload_pack_fixture) { "business" }
           let(:comparison_url) { repo_url + "/compare/v1.5.0...df9f605" }
           before do
             stub_request(:get, comparison_url).
@@ -376,7 +382,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             )
         end
 
-        it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+        it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
 
         context "with no branch specified" do
           let(:source) do
@@ -388,13 +394,13 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           end
 
-          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+          it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
         end
 
         context "specified with an SSH URL" do
           before { source.merge!(url: "git@github.com:gocardless/business") }
 
-          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+          it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
         end
 
         context "specified with a git URL" do
@@ -402,7 +408,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             source.merge!(url: "git://github.com/gocardless/business.git")
           end
 
-          it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+          it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
         end
 
         context "but doesn't have details of the current branch" do
@@ -470,7 +476,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               }]
             end
 
-            it { is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e") }
+            it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
           end
         end
       end
@@ -543,76 +549,48 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   describe "#local_tag_for_latest_version" do
     subject { checker.local_tag_for_latest_version }
-    let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
-    let(:tags_url) { repo_url + "/tags?per_page=100" }
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
-      stub_request(:get, tags_url).to_return(
-        status: 200,
-        body: tags_response,
-        headers: { "Content-Type" => "application/json" }
-      )
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
     end
+    let(:upload_pack_fixture) { "no_tags" }
 
     context "with no tags on GitHub" do
-      let(:tags_response) { [].to_json }
-      it { is_expected.to eq(nil) }
-    end
-
-    context "with a non-GitHub URL" do
-      before { source.merge(url: "https://example.com") }
-      let(:tags_response) { [].to_json }
       it { is_expected.to eq(nil) }
     end
 
     context "but GitHub returns a 404" do
-      before { stub_request(:get, tags_url).to_return(status: 404) }
-      let(:tags_response) { "unused" }
-      it { is_expected.to eq(nil) }
+      before { stub_request(:get, service_pack_url).to_return(status: 404) }
+
+      it "raises a helpful error" do
+        expect { checker.local_tag_for_latest_version }.
+          to raise_error(Dependabot::GitDependenciesNotReachable)
+      end
     end
 
     context "with tags on GitHub" do
       context "but no version tags" do
-        let(:tags_response) do
-          fixture("github", "business_tags_no_versions.json")
-        end
+        let(:upload_pack_fixture) { "no_versions" }
         it { is_expected.to eq(nil) }
       end
 
       context "with version tags" do
-        let(:tags_response) { fixture("github", "business_tags.json") }
-        before do
-          stub_request(:get, repo_url + "/git/refs/tags/v1.6.0").
-            to_return(
-              status: 200,
-              body: fixture("github", "ref.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
-        its([:tag]) { is_expected.to eq("v1.6.0") }
-        its([:commit_sha]) do
-          is_expected.to eq("66d39bf3042fac0b770bca2bfb200cfdffcd0175")
-        end
-        its([:tag_sha]) do
-          is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
-        end
-      end
+        let(:upload_pack_fixture) { "business" }
 
-      context "with prefixed tags" do
-        let(:tags_response) { fixture("github", "prefixed_tags.json") }
-        before do
-          stub_request(:get, repo_url + "/git/refs/tags/business-21.4.0").
-            to_return(
-              status: 200,
-              body: fixture("github", "ref.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
-        its([:tag]) { is_expected.to eq("business-21.4.0") }
+        its([:tag]) { is_expected.to eq("v1.13.0") }
         its([:commit_sha]) do
-          is_expected.to eq("55d39bf3042fac0b770bca2bfb200cfdffcd0175")
+          is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
         end
         its([:tag_sha]) do
-          is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd")
+          is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
         end
       end
     end
