@@ -265,6 +265,29 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                     headers: { "Content-Type" => "application/json" })
       end
 
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "host" => "bitbucket.org",
+              "token" => "greysteil:secret_token"
+            }
+          ]
+        end
+
+        it "uses the credentials" do
+          finder.changelog_url
+          expect(WebMock).
+            to have_requested(:get, bitbucket_url).
+            with(basic_auth: %w(greysteil secret_token))
+        end
+      end
+
       it "gets the right URL" do
         is_expected.to eq(
           "https://bitbucket.org/org/business/src/master/CHANGELOG.md"
@@ -543,6 +566,32 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       it { is_expected.to eq(expected_pruned_changelog) }
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "host" => "bitbucket.org",
+              "token" => "greysteil:secret_token"
+            }
+          ]
+        end
+
+        it "uses the credentials" do
+          finder.changelog_text
+          expect(WebMock).
+            to have_requested(:get, bitbucket_url).
+            with(basic_auth: %w(greysteil secret_token))
+          expect(WebMock).
+            to have_requested(:get, bitbucket_raw_changelog_url).
+            with(basic_auth: %w(greysteil secret_token))
+        end
+      end
     end
 
     context "without a source" do

@@ -337,6 +337,29 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                     headers: { "Content-Type" => "application/json" })
       end
 
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "host" => "bitbucket.org",
+              "token" => "greysteil:secret_token"
+            }
+          ]
+        end
+
+        it "uses the credentials" do
+          builder.commits_url
+          expect(WebMock).
+            to have_requested(:get, bitbucket_url).
+            with(basic_auth: %w(greysteil secret_token))
+        end
+      end
+
       context "with old and new tags" do
         let(:dependency_previous_version) { "1.3.0" }
 

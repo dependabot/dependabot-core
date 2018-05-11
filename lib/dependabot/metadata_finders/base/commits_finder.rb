@@ -145,6 +145,7 @@ module Dependabot
                 "#{source.repo}/refs/tags?pagelen=100"
           response = Excon.get(
             url,
+            headers: bitbucket_auth_header,
             idempotent: true,
             omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
@@ -178,6 +179,7 @@ module Dependabot
                 "include=#{new_tag}&exclude=#{previous_tag}"
           response = Excon.get(
             url,
+            headers: bitbucket_auth_header,
             idempotent: true,
             omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
@@ -224,6 +226,21 @@ module Dependabot
 
           @github_client ||=
             Dependabot::GithubClientWithRetries.new(access_token: access_token)
+        end
+
+        def bitbucket_auth_header
+          token =
+            credentials.
+            find { |cred| cred["host"] == "bitbucket.org" }&.
+            fetch("token")
+          return {} unless token
+
+          if token.include?(":")
+            encoded_token = Base64.encode64(token).chomp
+            { "Authorization" => "Basic #{encoded_token}" }
+          else
+            { "Authorization" => "Bearer #{token}" }
+          end
         end
       end
     end
