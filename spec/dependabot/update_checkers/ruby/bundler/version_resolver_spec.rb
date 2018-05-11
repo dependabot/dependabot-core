@@ -14,6 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       dependency_files: dependency_files,
       credentials: [
         {
+          "type" => "git",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"

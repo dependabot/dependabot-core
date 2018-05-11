@@ -19,6 +19,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
   end
   let(:credentials) do
     [{
+      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

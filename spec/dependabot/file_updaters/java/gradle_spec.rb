@@ -13,13 +13,12 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:dependency_files) { [buildfile] }

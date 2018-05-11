@@ -13,13 +13,12 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
     described_class.new(
       dependency_files: [gitmodules, submodule],
       dependencies: [dependency],
-      credentials: [
-        {
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:gitmodules) do

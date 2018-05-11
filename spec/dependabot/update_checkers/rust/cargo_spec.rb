@@ -27,6 +27,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
 
   let(:credentials) do
     [{
+      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

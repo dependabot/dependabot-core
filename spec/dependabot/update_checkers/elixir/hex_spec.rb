@@ -19,13 +19,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   end
 
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -205,6 +204,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:credentials) do
           [
             {
+              "type" => "git",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -223,6 +223,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:credentials) do
           [
             {
+              "type" => "git",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -244,13 +245,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
       context "with no credentials" do
         let(:credentials) do
-          [
-            {
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ]
+          [{
+            "type" => "git",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
         end
 
         # The Elixir process hangs waiting for input in this case. This spec

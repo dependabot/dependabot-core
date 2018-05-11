@@ -38,6 +38,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:files) { [gemfile, gemfile_lock] }
   let(:credentials) do
     [{
+      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

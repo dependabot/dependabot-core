@@ -27,13 +27,12 @@ RSpec.describe Dependabot::MetadataFinders::Rust::Cargo do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_name) { "bitflags" }
   let(:dependency_source) { nil }

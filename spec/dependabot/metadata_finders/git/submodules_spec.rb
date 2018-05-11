@@ -38,13 +38,12 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
 
   describe "#source_url" do

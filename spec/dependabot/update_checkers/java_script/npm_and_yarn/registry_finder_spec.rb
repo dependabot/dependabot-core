@@ -14,13 +14,12 @@ RSpec.describe tested_module::RegistryFinder do
   end
   let(:npmrc_file) { nil }
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency) do
     Dependabot::Dependency.new(

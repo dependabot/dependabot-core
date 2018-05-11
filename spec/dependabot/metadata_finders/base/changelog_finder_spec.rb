@@ -16,13 +16,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     )
   end
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:source) do
     Dependabot::Source.new(

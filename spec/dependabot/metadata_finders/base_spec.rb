@@ -28,13 +28,12 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   before { allow(finder).to receive(:source).and_return(source) }
   let(:source) do

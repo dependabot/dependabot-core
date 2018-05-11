@@ -117,12 +117,18 @@ module Dependabot
     end
 
     def fetch_upload_pack_for(uri)
-      authed_host = "https://x-access-token:#{github_access_token}@github.com/"
       original_uri = uri
-      uri = uri.gsub("git@github.com:", authed_host)
-      uri = uri.gsub("git://github.com/", authed_host)
-      uri = uri.gsub("https://github.com/", authed_host)
-      uri = uri.gsub("http://github.com/", authed_host)
+      bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
+      cred = credentials.
+             find { |c| c["type"] == "git" && bare_uri.start_with?(c["host"]) }
+
+      uri =
+        if cred
+          "https://#{cred['username']}:#{cred['password']}@#{bare_uri}"
+        else
+          "https://#{bare_uri}"
+        end
+
       uri = uri.gsub(%r{/$}, "")
       uri += ".git" unless uri.end_with?(".git")
       uri += "/info/refs?service=git-upload-pack"

@@ -30,13 +30,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:credentials) do
-    [
-      {
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:source) do
     Dependabot::Source.new(

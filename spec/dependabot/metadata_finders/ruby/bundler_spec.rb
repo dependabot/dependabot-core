@@ -27,6 +27,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
   end
   let(:credentials) do
     [{
+      "type" => "git",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -76,6 +77,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         let(:credentials) do
           [
             {
+              "type" => "git",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
