@@ -22,7 +22,8 @@ require 'dependabot/file_parsers'
 files = fetcher.files
 
 parser_class = Dependabot::FileParsers::Ruby::Bundler
-parser = parser_class.new(dependency_files: files, repo: "gocardless/business")
+source = Dependabot::Source.new(provider: 'github', repo: "gocardless/business")
+parser = parser_class.new(dependency_files: files, source: source)
 
 dependencies = parser.parse
 
