@@ -9,7 +9,7 @@ require "dependabot/pull_request_creator"
 RSpec.describe Dependabot::PullRequestCreator do
   subject(:creator) do
     described_class.new(
-      repo: repo,
+      source: source,
       base_commit: base_commit,
       dependencies: [dependency],
       files: files,
@@ -37,7 +37,9 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:custom_labels) { nil }
   let(:reviewers) { nil }
   let(:assignees) { nil }
-  let(:repo) { "gocardless/bump" }
+  let(:source) do
+    Dependabot::Source.new(host: "github", repo: "gocardless/bump")
+  end
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
@@ -62,7 +64,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
-  let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
+  let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
   let(:branch_name) { "dependabot/bundler/business-1.5.0" }
 
@@ -294,7 +296,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with author details" do
       subject(:creator) do
         described_class.new(
-          repo: repo,
+          source: source,
           base_commit: base_commit,
           dependencies: [dependency],
           files: files,
@@ -322,7 +324,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       context "with a signature key" do
         subject(:creator) do
           described_class.new(
-            repo: repo,
+            source: source,
             base_commit: base_commit,
             dependencies: [dependency],
             files: files,
@@ -434,7 +436,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with a target branch" do
       subject(:creator) do
         described_class.new(
-          repo: repo,
+          source: source,
           base_commit: base_commit,
           target_branch: "my_branch",
           dependencies: [dependency],

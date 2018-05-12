@@ -9,16 +9,16 @@ require "dependabot/pull_request_creator/commit_signer"
 module Dependabot
   class PullRequestCreator
     class Github
-      attr_reader :repo_name, :branch_name, :base_commit, :credentials,
+      attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
                   :custom_labels, :reviewers, :assignees
 
-      def initialize(repo_name:, branch_name:, base_commit:, credentials:,
+      def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
                      custom_labels:, reviewers:, assignees:)
-        @repo_name      = repo_name
+        @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
         @target_branch  = target_branch
@@ -64,7 +64,7 @@ module Dependabot
       end
 
       def branch_exists?
-        @branch_ref ||= github_client.ref(repo_name, "heads/#{branch_name}")
+        @branch_ref ||= github_client.ref(source.repo, "heads/#{branch_name}")
         if @branch_ref.is_a?(Array)
           @branch_ref.any? { |r| r.ref == "refs/heads/#{branch_name}" }
         else
@@ -76,8 +76,8 @@ module Dependabot
 
       def pull_request_exists?
         github_client.pull_requests(
-          repo_name,
-          head: "#{repo_name.split('/').first}:#{branch_name}",
+          source.repo,
+          head: "#{source.repo.split('/').first}:#{branch_name}",
           state: "all"
         ).any?
       end
@@ -93,7 +93,7 @@ module Dependabot
         end
 
         github_client.create_commit(
-          repo_name,
+          source.repo,
           commit_message,
           tree.sha,
           base_commit,
@@ -121,7 +121,7 @@ module Dependabot
         end
 
         github_client.create_tree(
-          repo_name,
+          source.repo,
           file_trees,
           base_tree: base_commit
         )
@@ -133,7 +133,7 @@ module Dependabot
 
       def create_branch(commit)
         github_client.create_ref(
-          repo_name,
+          source.repo,
           "heads/#{branch_name}",
           commit.sha
         )
@@ -151,7 +151,7 @@ module Dependabot
 
       def update_branch(commit)
         github_client.update_ref(
-          repo_name,
+          source.repo,
           "heads/#{branch_name}",
           commit.sha,
           true
@@ -167,13 +167,13 @@ module Dependabot
       def labels
         @labels ||=
           github_client.
-          labels(repo_name, per_page: 100).
+          labels(source.repo, per_page: 100).
           map(&:name)
       end
 
       def create_label
         github_client.add_label(
-          repo_name, "dependencies", "0025ff",
+          source.repo, "dependencies", "0025ff",
           description: "Pull requests that update a dependency file"
         )
       rescue Octokit::UnprocessableEntity => error
@@ -198,7 +198,7 @@ module Dependabot
           end
 
         github_client.add_labels_to_an_issue(
-          repo_name,
+          source.repo,
           pull_request.number,
           label_names
         )
@@ -209,7 +209,7 @@ module Dependabot
           Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
 
         github_client.request_pull_request_review(
-          repo_name,
+          source.repo,
           pull_request.number,
           reviewers_hash[:reviewers],
           team_reviewers: reviewers_hash[:team_reviewers] || []
@@ -220,7 +220,7 @@ module Dependabot
 
       def add_assignees_to_pull_request(pull_request)
         github_client.add_assignees(
-          repo_name,
+          source.repo,
           pull_request.number,
           assignees
         )
@@ -228,7 +228,7 @@ module Dependabot
 
       def create_pull_request
         github_client.create_pull_request(
-          repo_name,
+          source.repo,
           target_branch || default_branch,
           branch_name,
           pr_name,
@@ -240,7 +240,7 @@ module Dependabot
       end
 
       def default_branch
-        @default_branch ||= github_client.repository(repo_name).default_branch
+        @default_branch ||= github_client.repository(source.repo).default_branch
       end
 
       def commit_signature(tree, author_details_with_date)

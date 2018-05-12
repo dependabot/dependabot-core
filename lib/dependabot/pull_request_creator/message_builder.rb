@@ -13,15 +13,15 @@ module Dependabot
       ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s),.:]|$)/
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
-      attr_reader :repo_name, :dependencies, :files, :credentials,
+      attr_reader :source, :dependencies, :files, :credentials,
                   :pr_message_footer, :author_details, :vulnerabilities_fixed
 
-      def initialize(repo_name:, dependencies:, files:, credentials:,
+      def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_footer: nil, author_details: nil,
                      vulnerabilities_fixed: {})
         @dependencies          = dependencies
         @files                 = files
-        @repo_name             = repo_name
+        @source                = source
         @credentials           = credentials
         @pr_message_footer     = pr_message_footer
         @author_details        = author_details
@@ -525,7 +525,7 @@ module Dependabot
 
       def recent_commit_messages
         @recent_commit_messages ||=
-          github_client.commits(repo_name).
+          github_client.commits(source.repo).
           reject { |c| c.author&.type == "Bot" }.
           map(&:commit).
           map(&:message).

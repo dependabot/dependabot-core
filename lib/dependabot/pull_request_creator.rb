@@ -8,17 +8,17 @@ module Dependabot
     require "dependabot/pull_request_creator/message_builder"
     require "dependabot/pull_request_creator/branch_namer"
 
-    attr_reader :repo_name, :dependencies, :files, :base_commit,
+    attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :target_branch,
                 :author_details, :signature_key, :custom_labels,
                 :vulnerabilities_fixed, :reviewers, :assignees
 
-    def initialize(repo:, base_commit:, dependencies:, files:, credentials:,
+    def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, target_branch: nil,
                    custom_labels: nil, author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, vulnerabilities_fixed: {})
       @dependencies          = dependencies
-      @repo_name             = repo
+      @source                = source
       @base_commit           = base_commit
       @files                 = files
       @credentials           = credentials
@@ -44,7 +44,7 @@ module Dependabot
 
     def create
       Github.new(
-        repo_name: repo_name,
+        source: source,
         branch_name: branch_namer.new_branch_name,
         base_commit: base_commit,
         target_branch: target_branch,
@@ -66,7 +66,7 @@ module Dependabot
     def message_builder
       @message_builder ||
         MessageBuilder.new(
-          repo_name: repo_name,
+          source: source,
           dependencies: dependencies,
           files: files,
           credentials: credentials,

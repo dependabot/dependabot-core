@@ -5,13 +5,13 @@ require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestUpdater
-    attr_reader :watched_repo, :files, :base_commit, :credentials,
+    attr_reader :source, :files, :base_commit, :credentials,
                 :pull_request_number, :author_details, :signature_key
 
-    def initialize(repo:, base_commit:, files:, credentials:,
+    def initialize(source:, base_commit:, files:, credentials:,
                    pull_request_number:, author_details: nil,
                    signature_key: nil)
-      @watched_repo        = repo
+      @source              = source
       @base_commit         = base_commit
       @files               = files
       @credentials         = credentials
@@ -41,11 +41,11 @@ module Dependabot
 
     def pull_request
       @pull_request ||=
-        github_client.pull_request(watched_repo, pull_request_number)
+        github_client.pull_request(source.repo, pull_request_number)
     end
 
     def branch_exists?
-      github_client.branch(watched_repo, pull_request.head.ref)
+      github_client.branch(source.repo, pull_request.head.ref)
     rescue Octokit::NotFound
       false
     end
@@ -61,7 +61,7 @@ module Dependabot
       end
 
       github_client.create_commit(
-        watched_repo,
+        source.repo,
         commit_message,
         tree.sha,
         base_commit,
@@ -91,7 +91,7 @@ module Dependabot
       end
 
       github_client.create_tree(
-        watched_repo,
+        source.repo,
         file_trees,
         base_tree: base_commit
       )
@@ -99,7 +99,7 @@ module Dependabot
 
     def update_branch(commit)
       github_client.update_ref(
-        watched_repo,
+        source.repo,
         "heads/" + pull_request.head.ref,
         commit.sha,
         true
@@ -114,7 +114,7 @@ module Dependabot
     end
 
     def commit_message
-      github_client.git_commit(watched_repo, pull_request.head.sha).message
+      github_client.git_commit(source.repo, pull_request.head.sha).message
     end
 
     def commit_signature(tree, author_details_with_date)

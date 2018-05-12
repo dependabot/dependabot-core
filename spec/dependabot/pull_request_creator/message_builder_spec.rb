@@ -9,7 +9,7 @@ require "dependabot/pull_request_creator/message_builder"
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   subject(:builder) do
     described_class.new(
-      repo_name: repo,
+      source: source,
       dependencies: dependencies,
       files: files,
       credentials: credentials,
@@ -19,7 +19,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     )
   end
 
-  let(:repo) { "gocardless/bump" }
+  let(:source) do
+    Dependabot::Source.new(host: "github", repo: "gocardless/bump")
+  end
   let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -61,7 +63,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
-  let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
+  let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
 
   def commits_details(base:, head:)
     "<details>\n"\

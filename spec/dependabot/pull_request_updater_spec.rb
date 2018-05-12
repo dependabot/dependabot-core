@@ -8,14 +8,16 @@ require "dependabot/pull_request_updater"
 
 RSpec.describe Dependabot::PullRequestUpdater do
   subject(:updater) do
-    Dependabot::PullRequestUpdater.new(repo: repo,
+    Dependabot::PullRequestUpdater.new(source: source,
                                        base_commit: base_commit,
                                        files: files,
                                        credentials: credentials,
                                        pull_request_number: pull_request_number)
   end
 
-  let(:repo) { "gocardless/bump" }
+  let(:source) do
+    Dependabot::Source.new(host: "github", repo: "gocardless/bump")
+  end
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
   let(:pull_request_number) { 1 }
@@ -43,7 +45,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
-  let(:watched_repo_url) { "https://api.github.com/repos/#{repo}" }
+  let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
   let(:branch_url) { watched_repo_url + "/branches/" + branch_name }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
@@ -174,7 +176,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
     context "with author details" do
       subject(:updater) do
         Dependabot::PullRequestUpdater.new(
-          repo: repo,
+          source: source,
           base_commit: base_commit,
           files: files,
           credentials: credentials,
@@ -202,7 +204,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
       context "with a signature key" do
         subject(:updater) do
           described_class.new(
-            repo: repo,
+            source: source,
             base_commit: base_commit,
             files: files,
             credentials: credentials,
