@@ -1,3 +1,12 @@
+## v0.57.0, 12 May 2018
+
+- BREAKING: Expect a Dependabot::Source object as a FileFetcher argument
+- BREAKING: Require Dependabot::Source to be passed to FileParsers
+  (not repo string)
+- BREAKING: Require Dependabot::Source as an argument to PR creator and updater
+- Python: Bump pipenv from 11.10.4 to 2018.5.18
+- Allow Dependabot::Source objects to be created with a custom API endpoint
+
 ## v0.56.34, 12 May 2018
 
 - Make GitCommitChecker agnostic between GitHub, Gitlab and Bitbucket
