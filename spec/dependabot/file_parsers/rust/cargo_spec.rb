@@ -7,7 +7,14 @@ require_relative "../shared_examples_for_file_parsers"
 RSpec.describe Dependabot::FileParsers::Rust::Cargo do
   it_behaves_like "a dependency file parser"
 
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   let(:files) { [manifest, lockfile] }
   let(:manifest) do

@@ -29,7 +29,14 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
   let(:gitmodules_body) do
     fixture("git", "gitmodules", ".gitmodules")
   end
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -95,7 +102,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
             file: ".gitmodules",
             source: {
               type: "git",
-              url: "https://github.com/org/such-relative.git",
+              url: "https://github.com/gocardless/such-relative.git",
               branch: nil,
               ref: nil
             },

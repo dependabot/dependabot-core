@@ -16,7 +16,14 @@ RSpec.describe Dependabot::FileParsers::Base do
     end
   end
   let(:parser_instance) do
-    child_class.new(dependency_files: files, repo: "gocardless/business")
+    child_class.new(dependency_files: files, source: source)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
   end
 
   let(:gemfile) do

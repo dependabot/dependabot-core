@@ -16,7 +16,14 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

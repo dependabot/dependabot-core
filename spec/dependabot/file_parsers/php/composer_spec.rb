@@ -27,7 +27,14 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
   let(:lockfile_body) { fixture("php", "lockfiles", lockfile_fixture_name) }
   let(:composer_json_fixture_name) { "minor_version" }
   let(:lockfile_fixture_name) { "minor_version" }
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

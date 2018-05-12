@@ -23,7 +23,14 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
   end
   let(:mixfile_fixture_name) { "minor_version" }
   let(:lockfile_fixture_name) { "minor_version" }
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

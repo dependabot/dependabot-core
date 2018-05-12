@@ -15,7 +15,14 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: lockfile_body)
   end
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
   let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
   let(:gemfile_fixture_name) { "version_specified" }

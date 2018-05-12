@@ -16,7 +16,14 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
     fixture("docker", "dockerfiles", dockerfile_fixture_name)
   end
   let(:dockerfile_fixture_name) { "tag" }
-  let(:parser) { described_class.new(dependency_files: files, repo: "org/nm") }
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -229,7 +236,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
               described_class.new(
                 dependency_files: files,
                 credentials: credentials,
-                repo: "org/nm"
+                source: source
               )
             end
             let(:credentials) do
