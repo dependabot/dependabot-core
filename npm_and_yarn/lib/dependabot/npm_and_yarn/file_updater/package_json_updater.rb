@@ -164,6 +164,21 @@ module Dependabot
             )
           end
 
+          if original_line.match?(/#[\^~=<>]|semver:/)
+            return update_git_semver_requirement(
+              original_line: original_line,
+              old_req: old_req,
+              new_req: new_req
+            )
+          end
+
+          original_line.gsub(
+            %(\##{old_req.dig(:source, :ref)}"),
+            %(\##{new_req.dig(:source, :ref)}")
+          )
+        end
+
+        def update_git_semver_requirement(original_line:, old_req:, new_req:)
           if original_line.include?("semver:")
             return original_line.gsub(
               %(semver:#{old_req.fetch(:requirement)}"),
@@ -171,9 +186,11 @@ module Dependabot
             )
           end
 
+          raise "Not a semver req!" unless original_line.match?(/#[\^~=<>]/)
+
           original_line.gsub(
-            %(\##{old_req.dig(:source, :ref)}"),
-            %(\##{new_req.dig(:source, :ref)}")
+            %(##{old_req.fetch(:requirement)}"),
+            %(##{new_req.fetch(:requirement)}")
           )
         end
 
