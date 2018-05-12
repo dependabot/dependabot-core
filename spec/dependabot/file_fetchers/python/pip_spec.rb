@@ -46,7 +46,14 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   end
 
   describe "#files" do
-    let(:source) { { host: "github", repo: "gocardless/bump" } }
+    let(:source) do
+      Dependabot::Source.new(
+        host: "github",
+        repo: "gocardless/bump",
+        directory: directory
+      )
+    end
+    let(:directory) { "/" }
     let(:file_fetcher_instance) do
       described_class.new(source: source, credentials: credentials)
     end

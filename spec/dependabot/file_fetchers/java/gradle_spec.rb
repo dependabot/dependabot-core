@@ -6,13 +6,15 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Java::Gradle do
   it_behaves_like "a dependency file fetcher"
 
-  let(:source) { { host: "github", repo: "gocardless/bump" } }
-  let(:file_fetcher_instance) do
-    described_class.new(
-      source: source,
-      credentials: credentials,
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
       directory: directory
     )
+  end
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
   end
   let(:directory) { "/" }
   let(:github_url) { "https://api.github.com/" }

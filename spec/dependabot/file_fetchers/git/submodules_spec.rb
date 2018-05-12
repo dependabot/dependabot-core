@@ -6,7 +6,13 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Git::Submodules do
   it_behaves_like "a dependency file fetcher"
 
-  let(:source) { { host: "github", repo: "gocardless/bump" } }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
@@ -25,7 +31,13 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
     end
 
     context "with a GitHub source" do
-      let(:source) { { host: "github", repo: "gocardless/bump" } }
+      let(:source) do
+        Dependabot::Source.new(
+          host: "github",
+          repo: "gocardless/bump",
+          directory: "/"
+        )
+      end
 
       before do
         stub_request(:get, url + ".gitmodules?ref=sha").
@@ -91,7 +103,13 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
     end
 
     context "with a GitLab source" do
-      let(:source) { { host: "gitlab", repo: "gocardless/bump" } }
+      let(:source) do
+        Dependabot::Source.new(
+          host: "gitlab",
+          repo: "gocardless/bump",
+          directory: "/"
+        )
+      end
       let(:url) do
         "https://gitlab.com/api/v4/projects/gocardless%2Fbump/repository/files/"
       end

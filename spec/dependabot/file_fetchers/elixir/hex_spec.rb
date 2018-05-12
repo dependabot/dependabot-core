@@ -6,7 +6,13 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
   it_behaves_like "a dependency file fetcher"
 
-  let(:source) { { host: "github", repo: "gocardless/bump" } }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end

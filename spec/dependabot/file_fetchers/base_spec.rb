@@ -2,10 +2,14 @@
 
 require "octokit"
 require "spec_helper"
+require "dependabot/source"
 require "dependabot/file_fetchers/ruby/bundler"
 
 RSpec.describe Dependabot::FileFetchers::Base do
-  let(:source) { { host: "github", repo: repo } }
+  let(:source) do
+    Dependabot::Source.new(host: "github", repo: repo, directory: directory)
+  end
+  let(:directory) { "/" }
   let(:repo) { "gocardless/bump" }
   let(:credentials) do
     [{
@@ -95,7 +99,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitLab source" do
-      let(:source) { { host: "gitlab", repo: repo } }
+      let(:source) do
+        Dependabot::Source.new(host: "gitlab", repo: repo, directory: directory)
+      end
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
       let(:branch_url) { project_url + "/repository/branches/master" }
@@ -176,11 +182,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "with a directory specified" do
         let(:file_fetcher_instance) do
-          child_class.new(
-            source: source,
-            credentials: credentials,
-            directory: directory
-          )
+          child_class.new(source: source, credentials: credentials)
         end
 
         context "that ends in a slash" do
@@ -234,7 +236,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitLab source" do
-      let(:source) { { host: "gitlab", repo: repo } }
+      let(:source) do
+        Dependabot::Source.new(host: "gitlab", repo: repo, directory: directory)
+      end
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
 
@@ -271,11 +275,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "with a directory specified" do
         let(:file_fetcher_instance) do
-          child_class.new(
-            source: source,
-            credentials: credentials,
-            directory: directory
-          )
+          child_class.new(source: source, credentials: credentials)
         end
 
         context "that ends in a slash" do
@@ -333,11 +333,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     context "with an interesting filename" do
       let(:file_fetcher_instance) do
-        child_class.new(
-          source: source,
-          credentials: credentials,
-          directory: directory
-        )
+        child_class.new(source: source, credentials: credentials)
       end
 
       before do

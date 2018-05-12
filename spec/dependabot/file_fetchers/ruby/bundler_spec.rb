@@ -6,7 +6,14 @@ require_relative "../shared_examples_for_file_fetchers"
 RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   it_behaves_like "a dependency file fetcher"
 
-  let(:source) { { host: "github", repo: "gocardless/bump" } }
+  let(:source) do
+    Dependabot::Source.new(
+      host: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+  let(:directory) { "/" }
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
@@ -23,13 +30,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with a directory" do
-    let(:file_fetcher_instance) do
-      described_class.new(
-        source: source,
-        credentials: credentials,
-        directory: "/test"
-      )
-    end
+    let(:directory) { "/test" }
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/test" }
 
     before do
@@ -126,13 +127,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   end
 
   context "with a file included with require_relative" do
-    let(:file_fetcher_instance) do
-      described_class.new(
-        source: source,
-        credentials: credentials,
-        directory: "/Library/Homebrew/test"
-      )
-    end
+    let(:directory) { "/Library/Homebrew/test" }
     let(:url) do
       "https://api.github.com/repos/gocardless/bump/contents/Library/"\
       "Homebrew/test"
