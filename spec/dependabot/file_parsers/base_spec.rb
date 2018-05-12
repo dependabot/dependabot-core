@@ -20,7 +20,7 @@ RSpec.describe Dependabot::FileParsers::Base do
   end
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: "/"
     )

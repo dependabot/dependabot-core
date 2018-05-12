@@ -8,7 +8,7 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: directory
     )

@@ -38,7 +38,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   end
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/#{dependency_name}"
     )
   end
@@ -55,7 +55,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     context "with a gitlab source" do
       let(:source) do
         Dependabot::Source.new(
-          host: "gitlab",
+          provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
       end
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       end
       let(:source) do
         Dependabot::Source.new(
-          host: "gitlab",
+          provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
       end

@@ -48,7 +48,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
   describe "#files" do
     let(:source) do
       Dependabot::Source.new(
-        host: "github",
+        provider: "github",
         repo: "gocardless/bump",
         directory: directory
       )

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "octokit"
+require "dependabot/github_client_with_retries"
 require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
@@ -29,23 +30,26 @@ module Dependabot
 
     private
 
-    def github_client
+    def github_client_for_source
       access_token =
         credentials.
         find { |cred| cred["host"] == "github.com" }&.
         fetch("password")
 
-      @github_client ||=
-        Dependabot::GithubClientWithRetries.new(access_token: access_token)
+      @github_client_for_source ||=
+        Dependabot::GithubClientWithRetries.new(
+          access_token: access_token,
+          api_endpoint: source.api_endpoint
+        )
     end
 
     def pull_request
       @pull_request ||=
-        github_client.pull_request(source.repo, pull_request_number)
+        github_client_for_source.pull_request(source.repo, pull_request_number)
     end
 
     def branch_exists?
-      github_client.branch(source.repo, pull_request.head.ref)
+      github_client_for_source.branch(source.repo, pull_request.head.ref)
     rescue Octokit::NotFound
       false
     end
@@ -60,7 +64,7 @@ module Dependabot
         options[:signature] = commit_signature(tree, options[:author])
       end
 
-      github_client.create_commit(
+      github_client_for_source.create_commit(
         source.repo,
         commit_message,
         tree.sha,
@@ -90,7 +94,7 @@ module Dependabot
         end
       end
 
-      github_client.create_tree(
+      github_client_for_source.create_tree(
         source.repo,
         file_trees,
         base_tree: base_commit
@@ -98,7 +102,7 @@ module Dependabot
     end
 
     def update_branch(commit)
-      github_client.update_ref(
+      github_client_for_source.update_ref(
         source.repo,
         "heads/" + pull_request.head.ref,
         commit.sha,
@@ -114,7 +118,9 @@ module Dependabot
     end
 
     def commit_message
-      github_client.git_commit(source.repo, pull_request.head.sha).message
+      github_client_for_source.
+        git_commit(source.repo, pull_request.head.sha).
+        message
     end
 
     def commit_signature(tree, author_details_with_date)

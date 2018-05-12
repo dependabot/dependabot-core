@@ -8,7 +8,7 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
 
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: directory
     )

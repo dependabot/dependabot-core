@@ -18,7 +18,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: "/"
     )

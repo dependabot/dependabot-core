@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/github_client_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 
@@ -47,14 +48,17 @@ module Dependabot
 
       private
 
-      def github_client
+      def github_client_for_source
         access_token =
           credentials.
           find { |cred| cred["host"] == "github.com" }&.
           fetch("password")
 
-        @github_client ||=
-          Dependabot::GithubClientWithRetries.new(access_token: access_token)
+        @github_client_for_source ||=
+          Dependabot::GithubClientWithRetries.new(
+            access_token: access_token,
+            api_endpoint: source.api_endpoint
+          )
       end
 
       def commit_message_intro
@@ -525,7 +529,7 @@ module Dependabot
 
       def recent_commit_messages
         @recent_commit_messages ||=
-          github_client.commits(source.repo).
+          github_client_for_source.commits(source.repo).
           reject { |c| c.author&.type == "Bot" }.
           map(&:commit).
           map(&:message).

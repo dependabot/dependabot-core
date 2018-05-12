@@ -38,7 +38,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:reviewers) { nil }
   let(:assignees) { nil }
   let(:source) do
-    Dependabot::Source.new(host: "github", repo: "gocardless/bump")
+    Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
   end
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }

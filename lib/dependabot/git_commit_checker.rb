@@ -186,7 +186,7 @@ module Dependabot
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)
       status =
-        case Source.from_url(listing_source_url)&.host
+        case Source.from_url(listing_source_url)&.provider
         when "github" then github_commit_comparison_status(tag, commit)
         when "gitlab" then gitlab_commit_comparison_status(tag, commit)
         when "bitbucket" then bitbucket_commit_comparison_status(tag, commit)

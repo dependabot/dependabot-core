@@ -72,7 +72,7 @@ module Dependabot
           return unless upgrade_guide
 
           @upgrade_guide_text ||=
-            if source.host == "github"
+            if source.provider == "github"
               # Hitting the download URL directly causes encoding problems
               raw_content = github_client.contents(
                 source.repo,
@@ -119,7 +119,7 @@ module Dependabot
           return unless changelog
 
           @full_changelog_text ||=
-            if source.host == "github"
+            if source.provider == "github"
               # Hitting the download URL directly causes encoding problems
               raw_content = github_client.contents(
                 source.repo,
@@ -228,11 +228,11 @@ module Dependabot
         end
 
         def fetch_dependency_file_list
-          case source.host
+          case source.provider
           when "github" then fetch_github_file_list
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
-          else raise "Unexpected repo host '#{source.host}'"
+          else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
 

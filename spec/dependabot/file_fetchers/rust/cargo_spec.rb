@@ -8,7 +8,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
 
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: "/"
     )
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
       context "with a directory" do
         let(:source) do
           Dependabot::Source.new(
-            host: "github",
+            provider: "github",
             repo: "gocardless/bump",
             directory: "my_dir/"
           )

@@ -30,10 +30,6 @@ module Dependabot
         source.repo
       end
 
-      def host
-        source.host
-      end
-
       def directory
         source.directory || "/"
       end
@@ -46,12 +42,12 @@ module Dependabot
         branch = target_branch || default_branch_for_repo
 
         @commit ||=
-          case host
+          case source.provider
           when "github"
-            github_client.ref(repo, "heads/#{branch}").object.sha
+            github_client_for_source.ref(repo, "heads/#{branch}").object.sha
           when "gitlab"
             gitlab_client.branch(repo, branch).commit.id
-          else raise "Unsupported host '#{host}'."
+          else raise "Unsupported provider '#{source.provider}'."
           end
       rescue Octokit::NotFound
         raise Dependabot::BranchNotFound, branch
@@ -61,10 +57,12 @@ module Dependabot
 
       def default_branch_for_repo
         @default_branch_for_repo ||=
-          case host
-          when "github" then github_client.repository(repo).default_branch
-          when "gitlab" then gitlab_client.project(repo).default_branch
-          else raise "Unsupported host '#{host}'."
+          case source.provider
+          when "github"
+            github_client_for_source.repository(repo).default_branch
+          when "gitlab"
+            gitlab_client.project(repo).default_branch
+          else raise "Unsupported provider '#{source.provider}'."
           end
       end
 
@@ -100,23 +98,24 @@ module Dependabot
 
         @repo_contents ||= {}
         @repo_contents[dir] ||=
-          case host
+          case source.provider
           when "github" then github_repo_contents(path)
           when "gitlab" then gitlab_repo_contents(path)
-          else raise "Unsupported host '#{host}'."
+          else raise "Unsupported provider '#{source.provider}'."
           end
       end
 
       def github_repo_contents(path)
-        github_response = github_client.contents(repo, path: path, ref: commit)
+        github_response = github_client_for_source.
+                          contents(repo, path: path, ref: commit)
 
         if github_response.respond_to?(:type) &&
            github_response.type == "submodule"
           @submodule_directories[path] = github_response
 
           sub_source = Source.from_url(github_response.submodule_git_url)
-          github_response =
-            github_client.contents(sub_source.repo, ref: github_response.sha)
+          github_response = github_client_for_source.
+                            contents(sub_source.repo, ref: github_response.sha)
         end
 
         github_response.map do |f|
@@ -144,14 +143,14 @@ module Dependabot
           return fetch_submodule_file_content(path)
         end
 
-        case host
+        case source.provider
         when "github"
-          tmp = github_client.contents(repo, path: path, ref: commit)
+          tmp = github_client_for_source.contents(repo, path: path, ref: commit)
           Base64.decode64(tmp.content).force_encoding("UTF-8").encode
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
-        else raise "Unsupported host '#{host}'."
+        else raise "Unsupported provider '#{source.provider}'."
         end
       end
 
@@ -160,30 +159,33 @@ module Dependabot
         dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
         submodule = @submodule_directories[dir]
 
-        host = Source.from_url(submodule.submodule_git_url).host
+        provider = Source.from_url(submodule.submodule_git_url).provider
         repo = Source.from_url(submodule.submodule_git_url).repo
         commit = submodule.sha
         path = path.gsub("#{dir}/", "")
 
-        case host
+        case provider
         when "github"
-          tmp = github_client.contents(repo, path: path, ref: commit)
+          tmp = github_client_for_source.contents(repo, path: path, ref: commit)
           Base64.decode64(tmp.content).force_encoding("UTF-8").encode
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
-        else raise "Unsupported host '#{host}'."
+        else raise "Unsupported provider '#{provider}'."
         end
       end
 
-      def github_client
+      def github_client_for_source
         access_token =
           credentials.
           find { |cred| cred["host"] == "github.com" }&.
           fetch("password")
 
-        @github_client ||=
-          Dependabot::GithubClientWithRetries.new(access_token: access_token)
+        @github_client_for_source ||=
+          Dependabot::GithubClientWithRetries.new(
+            access_token: access_token,
+            api_endpoint: source.api_endpoint
+          )
       end
 
       def gitlab_client

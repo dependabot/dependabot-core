@@ -20,11 +20,11 @@ module Dependabot
 
         def releases_url
           return unless source
-          case source.host
+          case source.provider
           when "github" then "#{source.url}/releases"
           when "gitlab" then "#{source.url}/tags"
           when "bitbucket" then nil
-          else raise "Unexpected repo host '#{source.host}'"
+          else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
 
@@ -158,11 +158,11 @@ module Dependabot
         def fetch_dependency_releases
           return [] unless source
 
-          case source.host
+          case source.provider
           when "github" then fetch_github_releases
           when "bitbucket" then [] # Bitbucket doesn't support releases
           when "gitlab" then fetch_gitlab_releases
-          else raise "Unexpected repo host '#{source.host}'"
+          else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
 

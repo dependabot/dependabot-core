@@ -24,11 +24,11 @@ module Dependabot
           return unless source
 
           path =
-            case source.host
+            case source.provider
             when "github" then github_compare_path(new_tag, previous_tag)
             when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
             when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
-            else raise "Unexpected repo host '#{source.host}'"
+            else raise "Unexpected source provider '#{source.provider}'"
             end
 
           "#{source.url}/#{path}"
@@ -38,11 +38,11 @@ module Dependabot
           return [] unless source
           return [] unless new_tag && previous_tag
 
-          case source.host
+          case source.provider
           when "github" then fetch_github_commits
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
-          else raise "Unexpected repo host '#{source.host}'"
+          else raise "Unexpected source provider '#{source.provider}'"
           end
         end
 
@@ -97,14 +97,14 @@ module Dependabot
         def fetch_dependency_tags
           return [] unless source
 
-          case source.host
+          case source.provider
           when "github"
             github_client.tags(source.repo, per_page: 100).map(&:name)
           when "bitbucket"
             fetch_bitbucket_tags
           when "gitlab"
             gitlab_client.tags(source.repo).map(&:name)
-          else raise "Unexpected repo host '#{source.host}'"
+          else raise "Unexpected source provider '#{source.provider}'"
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound
           []

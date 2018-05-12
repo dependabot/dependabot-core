@@ -37,7 +37,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   before { allow(finder).to receive(:source).and_return(source) }
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/#{dependency_name}"
     )
   end
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     context "with a bitbucket source" do
       let(:source) do
         Dependabot::Source.new(
-          host: "bitbucket",
+          provider: "bitbucket",
           repo: "org/#{dependency_name}"
         )
       end

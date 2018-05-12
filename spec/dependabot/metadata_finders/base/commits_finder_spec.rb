@@ -43,7 +43,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   end
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/#{dependency_name}"
     )
   end
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
       let(:source) do
         Dependabot::Source.new(
-          host: "gitlab",
+          provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
       end
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:bitbucket_response) { fixture("bitbucket", "business_tags.json") }
       let(:source) do
         Dependabot::Source.new(
-          host: "bitbucket",
+          provider: "bitbucket",
           repo: "org/#{dependency_name}"
         )
       end
@@ -517,7 +517,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
         let(:source) do
           Dependabot::Source.new(
-            host: "bitbucket",
+            provider: "bitbucket",
             repo: "org/#{dependency_name}"
           )
         end
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
         let(:source) do
           Dependabot::Source.new(
-            host: "gitlab",
+            provider: "gitlab",
             repo: "org/#{dependency_name}"
           )
         end

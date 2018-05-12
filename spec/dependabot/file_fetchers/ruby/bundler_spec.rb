@@ -8,7 +8,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
 
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: directory
     )

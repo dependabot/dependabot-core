@@ -8,7 +8,7 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
 
   let(:source) do
     Dependabot::Source.new(
-      host: "github",
+      provider: "github",
       repo: "gocardless/bump",
       directory: "/"
     )
@@ -33,7 +33,7 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
     context "with a GitHub source" do
       let(:source) do
         Dependabot::Source.new(
-          host: "github",
+          provider: "github",
           repo: "gocardless/bump",
           directory: "/"
         )
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::FileFetchers::Git::Submodules do
     context "with a GitLab source" do
       let(:source) do
         Dependabot::Source.new(
-          host: "gitlab",
+          provider: "gitlab",
           repo: "gocardless/bump",
           directory: "/"
         )

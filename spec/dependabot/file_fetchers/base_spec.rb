@@ -7,7 +7,7 @@ require "dependabot/file_fetchers/ruby/bundler"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
-    Dependabot::Source.new(host: "github", repo: repo, directory: directory)
+    Dependabot::Source.new(provider: "github", repo: repo, directory: directory)
   end
   let(:directory) { "/" }
   let(:repo) { "gocardless/bump" }
@@ -100,7 +100,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     context "with a GitLab source" do
       let(:source) do
-        Dependabot::Source.new(host: "gitlab", repo: repo, directory: directory)
+        Dependabot::Source.new(
+          provider: "gitlab",
+          repo: repo,
+          directory: directory
+        )
       end
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
@@ -237,7 +241,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
     context "with a GitLab source" do
       let(:source) do
-        Dependabot::Source.new(host: "gitlab", repo: repo, directory: directory)
+        Dependabot::Source.new(
+          provider: "gitlab",
+          repo: repo,
+          directory: directory
+        )
       end
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }

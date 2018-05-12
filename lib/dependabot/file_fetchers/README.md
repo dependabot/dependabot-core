@@ -24,9 +24,10 @@ An integration might look as follows:
 ```ruby
 require 'octokit'
 require 'dependabot/file_fetchers'
+require 'dependabot/source'
 
 target_repo_name = 'dependabot/dependabot-core'
-source = { host: 'github', repo: target_repo_name }
+source = Dependabot::Source.new(provider: 'github', repo: target_repo_name)
 
 client = Octokit::Client.new
 fetcher_class = Dependabot::FileFetchers::Ruby::Bundler

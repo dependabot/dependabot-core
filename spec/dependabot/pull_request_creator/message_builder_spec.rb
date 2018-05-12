@@ -20,7 +20,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   end
 
   let(:source) do
-    Dependabot::Source.new(host: "github", repo: "gocardless/bump")
+    Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
   end
   let(:dependencies) { [dependency] }
   let(:dependency) do

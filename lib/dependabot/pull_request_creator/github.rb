@@ -53,18 +53,22 @@ module Dependabot
 
       private
 
-      def github_client
+      def github_client_for_source
         access_token =
           credentials.
           find { |cred| cred["host"] == "github.com" }&.
           fetch("password")
 
-        @github_client ||=
-          Dependabot::GithubClientWithRetries.new(access_token: access_token)
+        @github_client_for_source ||=
+          Dependabot::GithubClientWithRetries.new(
+            access_token: access_token,
+            api_endpoint: source.api_endpoint
+          )
       end
 
       def branch_exists?
-        @branch_ref ||= github_client.ref(source.repo, "heads/#{branch_name}")
+        @branch_ref ||=
+          github_client_for_source.ref(source.repo, "heads/#{branch_name}")
         if @branch_ref.is_a?(Array)
           @branch_ref.any? { |r| r.ref == "refs/heads/#{branch_name}" }
         else
@@ -75,7 +79,7 @@ module Dependabot
       end
 
       def pull_request_exists?
-        github_client.pull_requests(
+        github_client_for_source.pull_requests(
           source.repo,
           head: "#{source.repo.split('/').first}:#{branch_name}",
           state: "all"
@@ -92,7 +96,7 @@ module Dependabot
           options[:signature] = commit_signature(tree, options[:author])
         end
 
-        github_client.create_commit(
+        github_client_for_source.create_commit(
           source.repo,
           commit_message,
           tree.sha,
@@ -120,7 +124,7 @@ module Dependabot
           end
         end
 
-        github_client.create_tree(
+        github_client_for_source.create_tree(
           source.repo,
           file_trees,
           base_tree: base_commit
@@ -132,7 +136,7 @@ module Dependabot
       end
 
       def create_branch(commit)
-        github_client.create_ref(
+        github_client_for_source.create_ref(
           source.repo,
           "heads/#{branch_name}",
           commit.sha
@@ -150,7 +154,7 @@ module Dependabot
       end
 
       def update_branch(commit)
-        github_client.update_ref(
+        github_client_for_source.update_ref(
           source.repo,
           "heads/#{branch_name}",
           commit.sha,
@@ -166,13 +170,13 @@ module Dependabot
 
       def labels
         @labels ||=
-          github_client.
+          github_client_for_source.
           labels(source.repo, per_page: 100).
           map(&:name)
       end
 
       def create_label
-        github_client.add_label(
+        github_client_for_source.add_label(
           source.repo, "dependencies", "0025ff",
           description: "Pull requests that update a dependency file"
         )
@@ -197,7 +201,7 @@ module Dependabot
           else ["dependencies"]
           end
 
-        github_client.add_labels_to_an_issue(
+        github_client_for_source.add_labels_to_an_issue(
           source.repo,
           pull_request.number,
           label_names
@@ -208,7 +212,7 @@ module Dependabot
         reviewers_hash =
           Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
 
-        github_client.request_pull_request_review(
+        github_client_for_source.request_pull_request_review(
           source.repo,
           pull_request.number,
           reviewers_hash[:reviewers],
@@ -219,7 +223,7 @@ module Dependabot
       end
 
       def add_assignees_to_pull_request(pull_request)
-        github_client.add_assignees(
+        github_client_for_source.add_assignees(
           source.repo,
           pull_request.number,
           assignees
@@ -227,7 +231,7 @@ module Dependabot
       end
 
       def create_pull_request
-        github_client.create_pull_request(
+        github_client_for_source.create_pull_request(
           source.repo,
           target_branch || default_branch,
           branch_name,
@@ -240,7 +244,8 @@ module Dependabot
       end
 
       def default_branch
-        @default_branch ||= github_client.repository(source.repo).default_branch
+        @default_branch ||=
+          github_client_for_source.repository(source.repo).default_branch
       end
 
       def commit_signature(tree, author_details_with_date)
