@@ -1,3 +1,7 @@
+## v0.56.34, 12 May 2018
+
+- Make GitCommitChecker agnostic between GitHub, Gitlab and Bitbucket
+
 ## v0.56.33, 11 May 2018
 
 - Use Bitbucket credentials in metadata lookup if present
