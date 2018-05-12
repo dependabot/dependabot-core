@@ -130,7 +130,7 @@ module Dependabot
           @all_property_based_dependencies ||=
             FileParsers::Java::Maven.new(
               dependency_files: dependency_files,
-              repo: nil
+              source: nil
             ).parse.select do |dep|
               dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
             end

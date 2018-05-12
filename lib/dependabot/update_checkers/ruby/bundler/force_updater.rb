@@ -157,7 +157,7 @@ module Dependabot
               FileParsers::Ruby::Bundler.new(
                 dependency_files: dependency_files,
                 credentials: credentials,
-                repo: nil
+                source: nil
               ).parse
           end
 

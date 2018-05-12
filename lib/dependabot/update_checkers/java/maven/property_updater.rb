@@ -56,7 +56,7 @@ module Dependabot
             @dependencies_using_property ||=
               FileParsers::Java::Maven.new(
                 dependency_files: dependency_files,
-                repo: nil
+                source: nil
               ).parse.select do |dep|
                 dep.requirements.any? do |r|
                   r.dig(:metadata, :property_name) == property_name
