@@ -152,6 +152,38 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         it { is_expected.to be_nil }
       end
 
+      context "without credentials" do
+        let(:github_response) { fixture("github", "business_files.json") }
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "bitbucket.org",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
+        end
+
+        context "when authentication fails" do
+          before { stub_request(:get, github_url).to_return(status: 404) }
+          it { is_expected.to be_nil }
+        end
+
+        context "when authentication succeeds" do
+          before do
+            stub_request(:get, github_url).
+              to_return(status: github_status,
+                        body: github_response,
+                        headers: { "Content-Type" => "application/json" })
+          end
+
+          it "gets the right URL" do
+            expect(subject).
+              to eq("https://github.com/gocardless/business/blob/master/"\
+                    "CHANGELOG.md")
+          end
+        end
+      end
+
       context "for a git dependency" do
         let(:github_response) { fixture("github", "business_files.json") }
         let(:dependency_requirements) do

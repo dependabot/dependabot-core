@@ -43,7 +43,7 @@ module Dependabot
           # which we want to expand out into a full URL if present.
           return url unless url.start_with?("../", "./")
           path = Pathname.new(File.join(source.repo, url))
-          "https://github.com/#{path.cleanpath}"
+          "https://#{source.hostname}/#{path.cleanpath}"
         end
 
         def submodule_sha(path)

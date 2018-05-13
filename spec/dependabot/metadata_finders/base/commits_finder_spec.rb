@@ -235,6 +235,52 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                   "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
         end
 
+        context "without credentials" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "bitbucket.org",
+              "username" => "greysteil",
+              "password" => "secret_token"
+            }]
+          end
+
+          context "when authentication fails" do
+            before do
+              stub_request(
+                :get,
+                "https://api.github.com/repos/gocardless/business/tags"\
+                "?per_page=100"
+              ).to_return(status: 404)
+            end
+
+            it do
+              is_expected.
+                to eq("https://github.com/gocardless/business/commits")
+            end
+          end
+
+          context "when authentication succeeds" do
+            before do
+              stub_request(
+                :get,
+                "https://api.github.com/repos/gocardless/business/tags"\
+                "?per_page=100"
+              ).to_return(
+                status: 200,
+                body: fixture("github", "business_tags.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+            end
+
+            it do
+              is_expected.
+                to eq("https://github.com/gocardless/business/compare/"\
+                      "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
+            end
+          end
+        end
+
         context "without a previous version" do
           let(:dependency_previous_version) { nil }
 

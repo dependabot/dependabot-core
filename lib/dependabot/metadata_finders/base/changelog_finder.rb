@@ -82,7 +82,8 @@ module Dependabot
             else
               Excon.get(
                 upgrade_guide.download_url,
-                headers: bitbucket_auth_header,
+                user: bitbucket_credential&.fetch("username"),
+                password: bitbucket_credential&.fetch("password"),
                 idempotent: true,
                 omit_default_port: true,
                 middlewares: SharedHelpers.excon_middleware
@@ -129,7 +130,8 @@ module Dependabot
             else
               Excon.get(
                 changelog.download_url,
-                headers: bitbucket_auth_header,
+                user: bitbucket_credential&.fetch("username"),
+                password: bitbucket_credential&.fetch("password"),
                 idempotent: true,
                 omit_default_port: true,
                 middlewares: SharedHelpers.excon_middleware
