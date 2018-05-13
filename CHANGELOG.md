@@ -1,3 +1,7 @@
+## v0.58.1, 13 May 2018
+
+- Fix Dependabot::Source error when a string hostname was provided
+
 ## v0.58.0, 13 May 2018
 
 - BREAKING: Require a type attribute for git source credentials
