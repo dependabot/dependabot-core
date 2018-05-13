@@ -43,15 +43,18 @@ module Dependabot
         def fetch_submodule_ref_from_host(submodule_path)
           path = Pathname.new(File.join(directory, submodule_path)).
                  cleanpath.to_path.gsub(%r{^/*}, "")
-          sha = case source.provider
-                when "github"
-                  github_client_for_source.
-                    contents(repo, path: path, ref: commit).sha
-                when "gitlab"
-                  tmp_path = path.gsub(%r{^/*}, "")
-                  gitlab_client.get_file(repo, tmp_path, commit).blob_id
-                else raise "Unsupported provider '#{source.provider}'."
-                end
+          sha =  case source.provider
+                 when "github"
+                   github_client_for_source.contents(
+                     repo,
+                     path: path,
+                     ref: commit
+                   ).sha
+                 when "gitlab"
+                   tmp_path = path.gsub(%r{^/*}, "")
+                   gitlab_client.get_file(repo, tmp_path, commit).blob_id
+                 else raise "Unsupported provider '#{source.provider}'."
+                 end
 
           DependencyFile.new(
             name: Pathname.new(submodule_path).cleanpath.to_path,
