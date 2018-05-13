@@ -9,7 +9,7 @@ module Dependabot
       (?:(?:/tree|/blob|/src)/master/(?<directory>.*)[\#|/])?
     }x
 
-    attr_reader :provider, :repo, :directory, :api_endpoint
+    attr_reader :provider, :repo, :directory, :hostname, :api_endpoint
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -23,10 +23,19 @@ module Dependabot
       )
     end
 
-    def initialize(provider:, repo:, directory: nil, api_endpoint: nil)
+    def initialize(provider:, repo:, directory: nil, hostname: nil,
+                   api_endpoint: nil)
+      if hostname ^ api_endpoint
+        msg = "Both hostname and api_endpoint must be specified if either "\
+              "are. Alternatively, both may be left blank to use the "\
+              "provider's defaults."
+        raise msg
+      end
+
       @provider = provider
       @repo = repo
       @directory = directory
+      @hostname = hostname || default_hostname(provider)
       @api_endpoint = api_endpoint || default_api_endpoint(provider)
     end
 
@@ -40,6 +49,15 @@ module Dependabot
     end
 
     private
+
+    def default_hostname(provider)
+      case provider
+      when "github" then "github.com"
+      when "bitbucket" then "bitbucket.org"
+      when "gitlab" then "gitlab.com"
+      else raise "Unexpected provider '#{provider}'"
+      end
+    end
 
     def default_api_endpoint(provider)
       case provider
