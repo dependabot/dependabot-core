@@ -1,7 +1,8 @@
 # Dependabot Core
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies.
+for updating dependencies on GitHub or GitHub Enterprise (we plan to support
+Bitbucket and Gitlab in future, too).
 
 If you're looking to provide feedback on Dependabot's hosted service then we'd
 love to hear it. This repo is the right place to do so - please create an issue
