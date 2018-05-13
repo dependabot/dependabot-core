@@ -1,5 +1,11 @@
 ## v0.58.1, 13 May 2018
 
+- Expect git_source credentials to have a username and password (not a token)
+- Add tests that all requests to the public GitHub instance can handle not
+  having credentials (since they may not do for Enterprise installs)
+
+## v0.58.1, 13 May 2018
+
 - Fix Dependabot::Source error when a string hostname was provided
 
 ## v0.58.0, 13 May 2018
