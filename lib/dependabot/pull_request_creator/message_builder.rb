@@ -51,7 +51,7 @@ module Dependabot
       def github_client_for_source
         access_token =
           credentials.
-          find { |cred| cred["host"] == "github.com" }&.
+          find { |cred| cred["host"] == source.hostname }&.
           fetch("password")
 
         @github_client_for_source ||=

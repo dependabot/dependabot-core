@@ -11,6 +11,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       dependency_files: [],
       credentials: [
         {
+          "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"

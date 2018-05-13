@@ -20,6 +20,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
   let(:directory) { "/" }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

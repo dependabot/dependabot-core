@@ -20,6 +20,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -201,6 +202,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -219,6 +221,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -241,6 +244,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       context "with no credentials" do
         let(:credentials) do
           [{
+            "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"

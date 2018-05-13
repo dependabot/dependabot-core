@@ -15,6 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
   let(:dependency_files) { [package_json, yarn_lock] }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -98,6 +99,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -114,6 +116,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           let(:credentials) do
             [
               {
+                "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
@@ -152,6 +155,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           let(:credentials) do
             [
               {
+                "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
@@ -168,6 +172,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             let(:credentials) do
               [
                 {
+                  "type" => "git_source",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
@@ -196,6 +201,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           let(:credentials) do
             [
               {
+                "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
@@ -267,6 +273,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -300,6 +307,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           let(:credentials) do
             [
               {
+                "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"
@@ -316,6 +324,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             let(:credentials) do
               [
                 {
+                  "type" => "git_source",
                   "host" => "github.com",
                   "username" => "x-access-token",
                   "password" => "token"
@@ -344,6 +353,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           let(:credentials) do
             [
               {
+                "type" => "git_source",
                 "host" => "github.com",
                 "username" => "x-access-token",
                 "password" => "token"

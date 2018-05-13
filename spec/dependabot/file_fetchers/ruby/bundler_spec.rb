@@ -21,6 +21,7 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

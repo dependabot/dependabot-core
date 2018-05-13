@@ -103,10 +103,19 @@ module Dependabot
               "git config --global --replace-all credential.helper "\
               "'store --file=#{Dir.pwd}/git.store'"
             )
-            File.write(
-              "git.store",
-              "https://x-access-token:#{github_access_token}@github.com"
-            )
+
+            git_store_content = ""
+            credentials.each do |cred|
+              next unless cred["type"] == "git_source"
+
+              authenticated_url =
+                "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
+                "@#{cred.fetch('host')}"
+
+              git_store_content += authenticated_url + "\n"
+            end
+
+            File.write("git.store", git_store_content)
           end
 
           def handle_cargo_errors(error)
@@ -152,12 +161,6 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
-          end
-
-          def github_access_token
-            credentials.
-              find { |cred| cred["host"] == "github.com" }.
-              fetch("password")
           end
         end
       end

@@ -23,6 +23,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:pull_request_number) { 1 }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

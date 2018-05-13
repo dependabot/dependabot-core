@@ -15,6 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
       dependencies: [dependency],
       credentials: [
         {
+          "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"

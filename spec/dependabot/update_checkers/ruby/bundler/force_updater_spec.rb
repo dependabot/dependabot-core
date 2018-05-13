@@ -17,6 +17,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       target_version: target_version,
       credentials: [
         {
+          "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"

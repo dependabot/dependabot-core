@@ -14,6 +14,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       dependency_files: dependency_files,
       dependencies: dependencies,
       credentials: [{
+        "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"

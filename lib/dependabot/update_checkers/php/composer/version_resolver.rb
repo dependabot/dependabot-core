@@ -47,7 +47,7 @@ module Dependabot
                 args: [
                   Dir.pwd,
                   dependency.name.downcase,
-                  github_access_token,
+                  git_credentials,
                   registry_credentials
                 ]
               )
@@ -137,10 +137,9 @@ module Dependabot
               dependency_files.find { |f| f.name == "composer.lock" }
           end
 
-          def github_access_token
+          def git_credentials
             credentials.
-              find { |cred| cred["host"] == "github.com" }.
-              fetch("password")
+              select { |cred| cred["type"] == "git_source" }
           end
 
           def registry_credentials

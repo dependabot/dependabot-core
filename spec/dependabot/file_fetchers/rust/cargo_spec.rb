@@ -19,6 +19,7 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"

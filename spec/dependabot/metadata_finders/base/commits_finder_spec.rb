@@ -36,6 +36,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   let(:dependency_previous_version) { "1.0.0" }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -341,6 +342,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"

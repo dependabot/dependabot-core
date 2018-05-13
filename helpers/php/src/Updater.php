@@ -11,7 +11,7 @@ class Updater
 {
     public static function update(array $args): array
     {
-        [$workingDirectory, $dependencyName, $dependencyVersion, $githubToken, $registry_credentials] = $args;
+        [$workingDirectory, $dependencyName, $dependencyVersion, $gitCredentials, $registryCredentials] = $args;
 
         // Change working directory to the one provided, this ensures that we
         // install dependencies into the working dir, rather than a vendor folder
@@ -28,14 +28,14 @@ class Updater
         $composer->setPluginManager($pm);
         $pm->loadInstalledPlugins();
 
-        if ($githubToken) {
-            $httpBasicCredentials['github.com'] = [
-                'username' => 'x-access-token',
-                'password' => $githubToken,
+        foreach ($gitCredentials as &$cred) {
+            $httpBasicCredentials[$cred['host']] = [
+                'username' => $cred['username'],
+                'password' => $cred['password'],
             ];
         }
 
-        foreach ($registry_credentials as &$cred) {
+        foreach ($registryCredentials as &$cred) {
             $httpBasicCredentials[$cred['registry']] = [
                 'username' => $cred['username'],
                 'password' => $cred['password'],

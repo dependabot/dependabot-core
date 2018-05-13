@@ -17,6 +17,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   end
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
@@ -269,6 +270,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"
@@ -571,6 +573,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:credentials) do
           [
             {
+              "type" => "git_source",
               "host" => "github.com",
               "username" => "x-access-token",
               "password" => "token"

@@ -44,6 +44,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
     [{
+      "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
