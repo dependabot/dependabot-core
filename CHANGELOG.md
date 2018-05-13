@@ -1,3 +1,13 @@
+## v0.58.0, 13 May 2018
+
+- BREAKING: Require a type attribute for git source credentials
+- BREAKING: Require a hostname when specifying an api_endpoint for a
+            Dependabot::Source
+- PHP: Set credentials for all known git sources (means private Bitbucket and
+  Gitlab repos are now supported)
+- Rust: Set credentials for all known git sources (means private Bitbucket and
+  Gitlab repos are now supported)
+
 ## v0.57.0, 12 May 2018
 
 - BREAKING: Expect a Dependabot::Source object as a FileFetcher argument
