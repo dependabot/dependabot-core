@@ -289,6 +289,47 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               )
           end
         end
+
+        context "without GitHub credentials" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "bitbucket.org",
+              "username" => "greysteil",
+              "password" => "secret_token"
+            }]
+          end
+
+          context "when authentication fails" do
+            before { stub_request(:get, github_url).to_return(status: 404) }
+            it { is_expected.to be_nil }
+          end
+
+          context "when authentication succeeds" do
+            before do
+              stub_request(:get, github_url).
+                to_return(status: github_status,
+                          body: github_response,
+                          headers: { "Content-Type" => "application/json" })
+            end
+
+            let(:github_response) do
+              fixture("github", "business_releases.json")
+            end
+
+            let(:dependency_version) { "1.8.0" }
+            let(:dependency_previous_version) { "1.7.0" }
+
+            it "gets the right text" do
+              expect(subject).
+                to eq(
+                  "## v1.8.0\n"\
+                  "- Add 2018-2027 TARGET holiday defintions\n"\
+                  "- Add 2018-2027 Bankgirot holiday defintions"
+                )
+            end
+          end
+        end
       end
     end
 
