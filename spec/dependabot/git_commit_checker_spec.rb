@@ -181,6 +181,18 @@ RSpec.describe Dependabot::GitCommitChecker do
               end
               it { is_expected.to eq(true) }
             end
+
+            context "when there is no github.com credential" do
+              let(:credentials) do
+                [{
+                  "type" => "git_source",
+                  "host" => "bitbucket.org",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }]
+              end
+              it { is_expected.to eq(true) }
+            end
           end
 
           context "with an unpinned dependency" do
@@ -528,6 +540,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           context "and has them" do
             let(:credentials) do
               [{
+                "type" => "git_source",
                 "host" => "bitbucket.org",
                 "username" => "x-access-token",
                 "password" => "token"

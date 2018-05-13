@@ -145,7 +145,8 @@ module Dependabot
                 "#{source.repo}/refs/tags?pagelen=100"
           response = Excon.get(
             url,
-            headers: bitbucket_auth_header,
+            user: bitbucket_credential&.fetch("username"),
+            password: bitbucket_credential&.fetch("password"),
             idempotent: true,
             omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
@@ -179,7 +180,8 @@ module Dependabot
                 "include=#{new_tag}&exclude=#{previous_tag}"
           response = Excon.get(
             url,
-            headers: bitbucket_auth_header,
+            user: bitbucket_credential&.fetch("username"),
+            password: bitbucket_credential&.fetch("password"),
             idempotent: true,
             omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
@@ -211,10 +213,15 @@ module Dependabot
         end
 
         def gitlab_client
+          access_token =
+            credentials.
+            find { |cred| cred["host"] == "gitlab.com" }&.
+            fetch("password")
+
           @gitlab_client ||=
             Gitlab.client(
               endpoint: "https://gitlab.com/api/v4",
-              private_token: ""
+              private_token: access_token || ""
             )
         end
 
@@ -228,19 +235,8 @@ module Dependabot
             Dependabot::GithubClientWithRetries.new(access_token: access_token)
         end
 
-        def bitbucket_auth_header
-          token =
-            credentials.
-            find { |cred| cred["host"] == "bitbucket.org" }&.
-            fetch("token")
-          return {} unless token
-
-          if token.include?(":")
-            encoded_token = Base64.encode64(token).chomp
-            { "Authorization" => "Basic #{encoded_token}" }
-          else
-            { "Authorization" => "Bearer #{token}" }
-          end
+        def bitbucket_credential
+          credentials.find { |cred| cred["host"] == "bitbucket.org" }
         end
       end
     end

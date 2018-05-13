@@ -203,10 +203,15 @@ module Dependabot
         end
 
         def gitlab_client
+          access_token =
+            credentials.
+            find { |cred| cred["host"] == "gitlab.com" }&.
+            fetch("password")
+
           @gitlab_client ||=
             Gitlab.client(
               endpoint: "https://gitlab.com/api/v4",
-              private_token: ""
+              private_token: access_token || ""
             )
         end
 

@@ -156,14 +156,13 @@ module Dependabot
     def fetch_upload_pack_for(uri)
       original_uri = uri
       bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
-      cred = credentials.select { |c| c["host"] }.
-             sort_by { |c| c["host"].length * -1 }.
+      cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| bare_uri.start_with?(c["host"]) }
 
       uri =
         if cred
-          auth = cred["token"] || "#{cred['username']}:#{cred['password']}"
-          "https://#{auth}@#{bare_uri}"
+          auth_string = "#{cred.fetch('username')}:#{cred.fetch('password')}"
+          "https://#{auth_string}@#{bare_uri}"
         else "https://#{bare_uri}"
         end
 
@@ -201,7 +200,7 @@ module Dependabot
 
     def github_commit_comparison_status(ref1, ref2)
       access_token = credentials.
-                     find { |cred| cred["host"] == "github.com" }.
+                     find { |cred| cred["host"] == "github.com" }&.
                      fetch("password")
 
       client = GithubClientWithRetries.new(access_token: access_token)

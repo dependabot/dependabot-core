@@ -348,8 +348,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               "password" => "token"
             },
             {
+              "type" => "git_source",
               "host" => "bitbucket.org",
-              "token" => "greysteil:secret_token"
+              "username" => "greysteil",
+              "password" => "secret_token"
             }
           ]
         end
