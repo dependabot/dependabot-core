@@ -25,7 +25,7 @@ module Dependabot
 
     def initialize(provider:, repo:, directory: nil, hostname: nil,
                    api_endpoint: nil)
-      if hostname ^ api_endpoint
+      if hostname.nil? ^ api_endpoint.nil?
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
               "provider's defaults."

@@ -4,6 +4,52 @@ require "spec_helper"
 require "dependabot/source"
 
 RSpec.describe Dependabot::Source do
+  describe ".new" do
+    subject { described_class.new(**attrs) }
+
+    context "without a hostname or api_endpoint" do
+      let(:attrs) { { provider: "github", repo: "my/repo" } }
+      its(:url) { is_expected.to eq("https://github.com/my/repo") }
+    end
+
+    context "with a hostname and an api_endpoint" do
+      let(:attrs) do
+        {
+          provider: "github",
+          repo: "my/repo",
+          api_endpoint: "https://my.private.insance/api/v3/",
+          hostname: "my.private.insance"
+        }
+      end
+
+      specify { expect { subject }.to_not raise_error }
+    end
+
+    context "with a hostname but no api_endpoint" do
+      let(:attrs) do
+        {
+          provider: "github",
+          repo: "my/repo",
+          hostname: "my.private.insance"
+        }
+      end
+
+      specify { expect { subject }.to raise_error(/hostname and api_endpoint/) }
+    end
+
+    context "with an api_endpoint but no hostname" do
+      let(:attrs) do
+        {
+          provider: "github",
+          repo: "my/repo",
+          api_endpoint: "https://my.private.insance/api/v3/"
+        }
+      end
+
+      specify { expect { subject }.to raise_error(/hostname and api_endpoint/) }
+    end
+  end
+
   describe ".from_url" do
     subject { described_class.from_url(url) }
 
