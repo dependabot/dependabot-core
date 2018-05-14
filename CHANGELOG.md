@@ -1,3 +1,10 @@
+## v0.58.5, 14 May 2018
+
+- Ruby: Better gemspec filename lookup
+- Rust: Add basic git dependency handling to FileUpdater
+- Rust: Add basic git dependency handling to UpdateChecker
+- Ruby: Use fetch when getting host from credentials
+
 ## v0.58.4, 14 May 2018
 
 - Filter credentials on type everywhere
