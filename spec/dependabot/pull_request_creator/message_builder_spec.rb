@@ -239,6 +239,22 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it { is_expected.to start_with("build: [security] bump") }
         end
       end
+
+      context "that uses gitmoji commits" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits").
+            to_return(status: 200,
+                      body: fixture("github", "commits_gitmoji.json"),
+                      headers: json_header)
+        end
+
+        it { is_expected.to eq(":arrow_up: Bump business from 1.4.0 to 1.5.0") }
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with(":arrow_up: :lock: Bump") }
+        end
+      end
     end
 
     context "for a library" do

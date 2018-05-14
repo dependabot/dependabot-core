@@ -1,0 +1,2282 @@
+[
+  {
+    "sha": "22d3bf07452ad5d6865b2e5820e4b4ec20054958",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-04-13T20:40:10Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-04-13T20:40:10Z"
+      },
+      "message": ":lipstick: Update colors",
+      "tree": {
+        "sha": "f97d07bda9ea4397efb6deffc8d5a6613a7b6ec2",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/f97d07bda9ea4397efb6deffc8d5a6613a7b6ec2"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/22d3bf07452ad5d6865b2e5820e4b4ec20054958",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlrRFasACgkQYcQukpG9\n+v0/Pg/+LAyTOluoKYoasC2KEBo4FHtVfN+uarojCMcPgK8dHJmkKquXcnseqpZo\nS6XclmOT3RWu2p72EjZAkaPWYWSkDk6Ac7o5aT8dzk7JSVVDnJSuVBg1cne+6Gr0\n/waTEyDh+Hcj78qFdBjU0tWA4f8TchrfWsG/bqjXGIvklRsucNod6suJWIYSHfxo\nensTvqkswhVMnpD7kZRo4Qd0xoyPdPdln08VhzygcfFKN7W47pzOd8S1l1HAlceh\njF33Iwd/9iSuegLdNK33VDq/wAS9F4PywN1bT5dup+rDGgHnZiVM3q7VGtCBFqDh\nIu2J/8E15rI5HvQFI4ebVlMN9doCHdSorxI36nn1moCm4WB/mTKXsVUiAnzQcdql\nmwO6ZhDBnAMdkxUPbDC9T70Lrhk2UG/7CcrpfvcW3TmrsJ1YjA43tLxnmIPl3E2a\nWZKady1b2UjNBY4xUU5FsDeQVm9ip8NWv9DsskMhgmTY4AIKoP7ZeJMAUPp514Z4\ngHcXLDlAWHozwP20u76kDSjwKZK0lES8pvmTy0tVeeCA5GPUzeDSgr4q9XET+yW5\nsK9TLDu02MwBzVah4j1NnzN98kXAvm4bHhzbUY+fZswW1Bt6BFuiikPX/kFAxMvI\n1bKD1Et3n8VFi4JUe25DfCyI6JAzXHfF/olT3CsLi6Y1kiystYA=\n=eQVb\n-----END PGP SIGNATURE-----",
+        "payload": "tree f97d07bda9ea4397efb6deffc8d5a6613a7b6ec2\nparent 3edc1fa6a6f6184b6fdf1f81d10594010bbfd842\nauthor Carlos Cuesta <carloscuesta@me.com> 1523652010 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1523652010 +0200\n\n:lipstick: Update colors\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/22d3bf07452ad5d6865b2e5820e4b4ec20054958",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/22d3bf07452ad5d6865b2e5820e4b4ec20054958",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/22d3bf07452ad5d6865b2e5820e4b4ec20054958/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842"
+      }
+    ]
+  },
+  {
+    "sha": "3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+    "commit": {
+      "author": {
+        "name": "Eric Wilson",
+        "email": "eawww0@gmail.com",
+        "date": "2018-04-13T20:35:03Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-04-13T20:35:03Z"
+      },
+      "message": "✨ Add 📸 (#206)\n\nFixes #204",
+      "tree": {
+        "sha": "7500f634c8b5bb80fb34dbee9ecceef1e8ef1358",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/7500f634c8b5bb80fb34dbee9ecceef1e8ef1358"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3edc1fa6a6f6184b6fdf1f81d10594010bbfd842/comments",
+    "author": {
+      "login": "eawww",
+      "id": 9022825,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/9022825?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/eawww",
+      "html_url": "https://github.com/eawww",
+      "followers_url": "https://api.github.com/users/eawww/followers",
+      "following_url": "https://api.github.com/users/eawww/following{/other_user}",
+      "gists_url": "https://api.github.com/users/eawww/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/eawww/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/eawww/subscriptions",
+      "organizations_url": "https://api.github.com/users/eawww/orgs",
+      "repos_url": "https://api.github.com/users/eawww/repos",
+      "events_url": "https://api.github.com/users/eawww/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/eawww/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5f67191c577da9856b0c5ba067c25fd97e383164",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5f67191c577da9856b0c5ba067c25fd97e383164",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/5f67191c577da9856b0c5ba067c25fd97e383164"
+      }
+    ]
+  },
+  {
+    "sha": "5f67191c577da9856b0c5ba067c25fd97e383164",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T21:22:46Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T21:22:46Z"
+      },
+      "message": ":wrench: Fix .travis deployments",
+      "tree": {
+        "sha": "0bde3b5be25a98c003e61662f06ef6a70b71eed6",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/0bde3b5be25a98c003e61662f06ef6a70b71eed6"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/5f67191c577da9856b0c5ba067c25fd97e383164",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlqkTKYACgkQYcQukpG9\n+v1BVg//Zn/kcXvS1PBcvINH+CpHqHSy0nb4GIj7vGZlDbg0zRK2//WIH7pAXYzN\nmFTQL+7iYDdCZW1wANkC1NTWhofL5CrVmP6ZwL+wFAvUjoqJRJBsEAQT9rS8TUhg\nhb8yN57ly3mGvjwjYPuvN9KHGVQwsjDKV/pqzfp5DNYViSKsvBn7ws3NRCH+mHMD\nxyjHU6kW6Yx+tAK2ZfDWqIUAWpwQi40vjF3GtCej3j99UGCDU1P1VixZhYXeZ8Mk\nUKTnQ0UXgc+6bAoJQl/VvIfpI239tgxMstH7g2uQM5P6d2lWRwdtwhJKEEdMsrVk\n/IW+0G54FbiiB2mV++kSP4Bc/TGEivEn2Hz8v5xVdStNPbKTXZ0GHFWAL++dPCbp\nvkxAvRpk30LFYNj3GdkP5X4RFDAyP2fX3l6ZQn/zQ1NtTw+PYCzyVVFIYSwUONv/\nOLzg+xrs/eF0XyE8Cd37XaEQ1Bdua9mpyMLrQD6FdgB96LUlIhaaO8HMtwUPUivD\niRDWRGPNFkD9UJNWSx6DNdy2bTH6g5pFaVHWpKWbgnkT732Kqy+ZZ5xAtTtNyVpo\nGy4KqN3Dsyu1akaLig6Ft0W9FquHLQ+4zvg9MtOBjegyJGy/wbOgonI//y1k8J5a\nc/I5CV9Lz9FK50Ng4QWAojmM8bkI5XaVVTfFw2htAoYz8Q0PMhc=\n=nJUf\n-----END PGP SIGNATURE-----",
+        "payload": "tree 0bde3b5be25a98c003e61662f06ef6a70b71eed6\nparent f0ed3695b3e77ff10823f757019aa31f7ca00271\nauthor Carlos Cuesta <carloscuesta@me.com> 1520716966 +0100\ncommitter Carlos Cuesta <carloscuesta@me.com> 1520716966 +0100\n\n:wrench: Fix .travis deployments\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5f67191c577da9856b0c5ba067c25fd97e383164",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/5f67191c577da9856b0c5ba067c25fd97e383164",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5f67191c577da9856b0c5ba067c25fd97e383164/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f0ed3695b3e77ff10823f757019aa31f7ca00271",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/f0ed3695b3e77ff10823f757019aa31f7ca00271",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/f0ed3695b3e77ff10823f757019aa31f7ca00271"
+      }
+    ]
+  },
+  {
+    "sha": "f0ed3695b3e77ff10823f757019aa31f7ca00271",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T21:17:30Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T21:17:30Z"
+      },
+      "message": ":lipstick: Update colors",
+      "tree": {
+        "sha": "3f40d33f8a18c092434da7c84091f30cefd267d6",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/3f40d33f8a18c092434da7c84091f30cefd267d6"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/f0ed3695b3e77ff10823f757019aa31f7ca00271",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlqkS2oACgkQYcQukpG9\n+v1Vqg//cYLiDBEHHKuOu2lERsxk3XOtmXVnsJZ9sUUNTkkAY5ynZQwiFOpq6N81\nuBvt6/wt7RNUErhgMKEZakb44NnvKv9cnPUcAQ+HWCYY2MB3/qFoB5LE1pCVJHae\nrG0i0TDMNR0R0bIaEih+z7JUybieqho29YKjeTUgxuLtcZW8DMLb/jLe6c6v5NQU\nCJUM/AFWMf8Rh4TAdwNHFckN8TSN8vEhTKQOyCiKVny3gh9JRiFTSlUpWxgFSEMX\n+6TgE7xsib+ytZGsAAfq3WMRfXDi4A7cXfkBzCepeCiXPZ88WcLPJi9tRHfxSuEn\nzSOF+PDeEC05dvkd45U8+9Ux3wVVG218Yfs138SW4PYjGVyneTdB54mfgL9DavAv\nmsyaEbgOK4o9NCUOyhWNvNIUm5+qGr9XapBEiCA2cVhSgO+XREMfzT3fRf/3R2nn\nFym165lYfm55DOPgEpBlKrjkXVYfVo7yp1CiQ/rlx/2P3nRcJXsLvfmkrlkyDdBE\nyl7j9yIEY+QDBJq2cGc4wdcokJu8+H5bhVMsGzM0yyglB/2bbIwE+8Vr/7qNutFm\nPTqadWjGjBVVOZX+IZokH4WgU2zx2z6eGRcx69AdWJALkSd16TtXPJBGykF0O84B\nE7HhgDbfyKUBo1SyiVo5dGZxnzKCHA4ziquvyBmr87tCeGlfd/g=\n=fvDo\n-----END PGP SIGNATURE-----",
+        "payload": "tree 3f40d33f8a18c092434da7c84091f30cefd267d6\nparent 8da10e4e70bcde10d9e42966a1d8c3f8d5384123\nauthor Carlos Cuesta <carloscuesta@me.com> 1520716650 +0100\ncommitter Carlos Cuesta <carloscuesta@me.com> 1520716650 +0100\n\n:lipstick: Update colors\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/f0ed3695b3e77ff10823f757019aa31f7ca00271",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/f0ed3695b3e77ff10823f757019aa31f7ca00271",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/f0ed3695b3e77ff10823f757019aa31f7ca00271/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/8da10e4e70bcde10d9e42966a1d8c3f8d5384123"
+      }
+    ]
+  },
+  {
+    "sha": "8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+    "commit": {
+      "author": {
+        "name": "Tyler Lugger",
+        "email": "tlugger@n.io",
+        "date": "2018-03-10T21:13:52Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T21:13:52Z"
+      },
+      "message": "✨ Add 🙈 (#193)\n\n* :sparkles: add :see_no_evil: for gitignore\r\n\r\n* :art: Indentation\r\n\r\n* :art:",
+      "tree": {
+        "sha": "46f714ef9526df18f891107baaa74efa2092621f",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/46f714ef9526df18f891107baaa74efa2092621f"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/8da10e4e70bcde10d9e42966a1d8c3f8d5384123",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/8da10e4e70bcde10d9e42966a1d8c3f8d5384123/comments",
+    "author": {
+      "login": "tlugger",
+      "id": 10581772,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/10581772?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/tlugger",
+      "html_url": "https://github.com/tlugger",
+      "followers_url": "https://api.github.com/users/tlugger/followers",
+      "following_url": "https://api.github.com/users/tlugger/following{/other_user}",
+      "gists_url": "https://api.github.com/users/tlugger/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/tlugger/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/tlugger/subscriptions",
+      "organizations_url": "https://api.github.com/users/tlugger/orgs",
+      "repos_url": "https://api.github.com/users/tlugger/repos",
+      "events_url": "https://api.github.com/users/tlugger/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/tlugger/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6abf0033940fcee5d4c29c623417012560520d14",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/6abf0033940fcee5d4c29c623417012560520d14",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/6abf0033940fcee5d4c29c623417012560520d14"
+      }
+    ]
+  },
+  {
+    "sha": "6abf0033940fcee5d4c29c623417012560520d14",
+    "commit": {
+      "author": {
+        "name": "Wouter De Schuyter",
+        "email": "wouter.de.schuyter@gmail.com",
+        "date": "2018-03-10T20:57:25Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-03-10T20:57:25Z"
+      },
+      "message": ":sparkles: Add :egg: (#189)\n\n* :sparkles: Emoji for easter egg\r\n\r\n* :pencil2: Changed :gift: to :egg: after feedback\r\n\r\n* :bug: Forgot about the html entity",
+      "tree": {
+        "sha": "2b90c3dd06d55a530eac895f8b44d9aab3f1275a",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/2b90c3dd06d55a530eac895f8b44d9aab3f1275a"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/6abf0033940fcee5d4c29c623417012560520d14",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/6abf0033940fcee5d4c29c623417012560520d14",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/6abf0033940fcee5d4c29c623417012560520d14",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/6abf0033940fcee5d4c29c623417012560520d14/comments",
+    "author": {
+      "login": "wouterds",
+      "id": 1210628,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1210628?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/wouterds",
+      "html_url": "https://github.com/wouterds",
+      "followers_url": "https://api.github.com/users/wouterds/followers",
+      "following_url": "https://api.github.com/users/wouterds/following{/other_user}",
+      "gists_url": "https://api.github.com/users/wouterds/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/wouterds/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/wouterds/subscriptions",
+      "organizations_url": "https://api.github.com/users/wouterds/orgs",
+      "repos_url": "https://api.github.com/users/wouterds/repos",
+      "events_url": "https://api.github.com/users/wouterds/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/wouterds/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "67c6a25b4a621de6455b13bc932b33b35d0233e3",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/67c6a25b4a621de6455b13bc932b33b35d0233e3",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/67c6a25b4a621de6455b13bc932b33b35d0233e3"
+      }
+    ]
+  },
+  {
+    "sha": "67c6a25b4a621de6455b13bc932b33b35d0233e3",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-14T11:16:40Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-14T11:51:07Z"
+      },
+      "message": ":sparkles: Automate deployments (#181)\n\n* :sparkles: Add build script\n* :rocket: Automate deployments with Travis\n* :wrench: Remove node_js 4 from Travis.yml\n* :zap: Use yarn on Travis\n* :wrench: Use before_deploy insteead of after_success hook\n\nFixes #180\n\nfixup! :sparkles: Automate deployments (#181)",
+      "tree": {
+        "sha": "5fc914aebe96deac4d0f5c0d723b6a4f59c33a97",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/5fc914aebe96deac4d0f5c0d723b6a4f59c33a97"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/67c6a25b4a621de6455b13bc932b33b35d0233e3",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlpbRDAACgkQYcQukpG9\n+v0cyw//Wd6KWaoNtwudaqBF3uWmz3d2iZq9Dbszg8G+7A6Y+lPHG04FUpqYEiHC\ng8lOxcVsyyuTvD54idThvnPNgol4TBa6BFX5Gn5OoWlhx3abTc2lIF8hJQn9mrXA\nvR2gokfh0jIPmSTliout6IYYbiZ2WWMEhmFeGao4GyNZZZGeA9XaSagBrg3Rtrqc\nGrfCIAHJpNhAVMULexWgMuTjVS86YPpV8/B0F69fvQPAIkDuiIT2OreSsmc5y1LM\nDKcZPgFNczy1fc2NLSTT3Zuas4nLg7A19JgGeH60oHILwR3adwVVdbwiOwTpHek7\nkuFWGKbKiyZonekUpXaZJFH/M0hqtr2Nz8r+Fnj3GgoJjhl0N9yJFoqWaRSRdfTP\n8u6wATMdxGXfR1u/oa3EY9C5yM1qrwEB4oCkgSsoMhGGrGeC3pkkqY8o3RyB/6Aq\n+dLaAtnOAIbkHda6tBkYvWtd1ZvRpW5sfh+2RAejFr4mQFynpHh43BQjedZy566K\nZqU0XuSPjwm4+hd98EPCeQjJaOnWRs9CtC33HeVoDw3RB7/MrXofFq6fM7jeVVqJ\nvpBJdVOCFvepbM1Bi/vNI8mle2xb3MUtoM+mdL1ECe1zJKHMN9vHj3sJJ1sNNhBh\nWLF+d2zHkP4ecMeEnUBdB+HTDCuXscyVbH6V97aTKCjlkROonOk=\n=EWwb\n-----END PGP SIGNATURE-----",
+        "payload": "tree 5fc914aebe96deac4d0f5c0d723b6a4f59c33a97\nparent b73a6d6e6e943afc092808e8b00ff67123b1892a\nauthor Carlos Cuesta <carloscuesta@me.com> 1515928600 +0100\ncommitter Carlos Cuesta <carloscuesta@me.com> 1515930667 +0100\n\n:sparkles: Automate deployments (#181)\n\n* :sparkles: Add build script\n* :rocket: Automate deployments with Travis\n* :wrench: Remove node_js 4 from Travis.yml\n* :zap: Use yarn on Travis\n* :wrench: Use before_deploy insteead of after_success hook\n\nFixes #180\n\nfixup! :sparkles: Automate deployments (#181)\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/67c6a25b4a621de6455b13bc932b33b35d0233e3",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/67c6a25b4a621de6455b13bc932b33b35d0233e3",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/67c6a25b4a621de6455b13bc932b33b35d0233e3/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b73a6d6e6e943afc092808e8b00ff67123b1892a",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/b73a6d6e6e943afc092808e8b00ff67123b1892a",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/b73a6d6e6e943afc092808e8b00ff67123b1892a"
+      }
+    ]
+  },
+  {
+    "sha": "b73a6d6e6e943afc092808e8b00ff67123b1892a",
+    "commit": {
+      "author": {
+        "name": "Charles-Henri GUERIN",
+        "email": "charleshenri.guerin@me.com",
+        "date": "2018-01-12T14:39:36Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-12T14:39:36Z"
+      },
+      "message": ":sparkles: Add :clown_face: (#177)",
+      "tree": {
+        "sha": "76dd4e231dbad0686ab7c0c2a560ca8a1590490c",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/76dd4e231dbad0686ab7c0c2a560ca8a1590490c"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/b73a6d6e6e943afc092808e8b00ff67123b1892a",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/b73a6d6e6e943afc092808e8b00ff67123b1892a",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/b73a6d6e6e943afc092808e8b00ff67123b1892a",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/b73a6d6e6e943afc092808e8b00ff67123b1892a/comments",
+    "author": {
+      "login": "charlyx",
+      "id": 481446,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/481446?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/charlyx",
+      "html_url": "https://github.com/charlyx",
+      "followers_url": "https://api.github.com/users/charlyx/followers",
+      "following_url": "https://api.github.com/users/charlyx/following{/other_user}",
+      "gists_url": "https://api.github.com/users/charlyx/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/charlyx/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/charlyx/subscriptions",
+      "organizations_url": "https://api.github.com/users/charlyx/orgs",
+      "repos_url": "https://api.github.com/users/charlyx/repos",
+      "events_url": "https://api.github.com/users/charlyx/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/charlyx/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e2a5257e814350b42666ad0448de842d9132224a",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e2a5257e814350b42666ad0448de842d9132224a",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/e2a5257e814350b42666ad0448de842d9132224a"
+      }
+    ]
+  },
+  {
+    "sha": "e2a5257e814350b42666ad0448de842d9132224a",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-05T21:53:25Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2018-01-05T21:53:25Z"
+      },
+      "message": "✨Add📱(#174)\n\n* :sparkles: Add :iphone:\r\n\r\n* :art: Tabs format\r\n\r\n* fixup! :art: Tabs format",
+      "tree": {
+        "sha": "1360c6fdae43fec66a29d8ba1015e4d05090fea2",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/1360c6fdae43fec66a29d8ba1015e4d05090fea2"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/e2a5257e814350b42666ad0448de842d9132224a",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaT/PVCRBK7hj4Ov3rIwAAdHIIAJdvjY4NiE/xZn7YGOFxNWw+\ne1Uhl6sNTAZ/yKCy+1uZuDKiaCM0yQepvhm04LwsFi0LMrc4gywbUF5bZ/vsH6Bo\nsS+2RjqneHxKJfq5Oqt8IYIiYerjVHx8q8uSxKWfkhZpQg/zTgmN4MiNejO2Vj3I\naJPFC9EHOzAFoGTw+NCRwpvX9i14CuT/zK6QpeU3QBcp7EAHqID+qtzF+P1OtS5T\n0lyorOHlWsF1TOdDk9Hsc6TWY8sLipoL8xFTwzSkEUHu7hjE8B0YXvZxaG87Tpa7\n+scLYV6FAAfrtCI1Tw0Df+ulCgfnEV3bS+W2109zUgG7x1ZwotMGEpLO7H+uyZs=\n=p+JJ\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 1360c6fdae43fec66a29d8ba1015e4d05090fea2\nparent bed0f9fb128f3b0a01305576f393aed5b73a82aa\nauthor Carlos Cuesta <carloscuesta@me.com> 1515189205 +0100\ncommitter GitHub <noreply@github.com> 1515189205 +0100\n\n✨Add📱(#174)\n\n* :sparkles: Add :iphone:\r\n\r\n* :art: Tabs format\r\n\r\n* fixup! :art: Tabs format\r\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e2a5257e814350b42666ad0448de842d9132224a",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/e2a5257e814350b42666ad0448de842d9132224a",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e2a5257e814350b42666ad0448de842d9132224a/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/bed0f9fb128f3b0a01305576f393aed5b73a82aa"
+      }
+    ]
+  },
+  {
+    "sha": "bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-01T12:09:19Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2018-01-01T12:09:19Z"
+      },
+      "message": ":page_facing_up: Update LICENSE",
+      "tree": {
+        "sha": "875a93e65d0bb760102eb45297253049f78a8fec",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/875a93e65d0bb760102eb45297253049f78a8fec"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlpKJO8ACgkQYcQukpG9\n+v3dDA//UvySW3KQLiAHe69tglLvHu2SyD5oNIi5cxAFOWWwZkgoMY22lDnextNO\nsgpm6j+LOjy3sMHYrSJHH/SN1FWmVUXFAMVbwzNL/K8zLFSQfLdcVAbgBKcCQt6r\nnppkDTdB6mYQzIDJ9ka1G3Sf6g659SqEkn7fcr/vkQt8capFlGJMPSHyh54Bh12b\ngEnyfObD/ABNHzESsNx4b+npI/gnBaQlWG0Yj8YlEP4mjCfp1+A8Whqy3js16i0h\nIdEeR1R9IC/li6V9aKoM5r+1D1q+hRG2AXEhMq4YQl5g9bXb/5vdZuHNw1xXIdnr\naRo/QApKRKqteWGHilhYlr4ylHkM3UTNb8qzrvNjKgc/IOImbk83kP2vQGYp0VWs\nNGredaBJWweOVNTIauVSunjqqU7S8xMUSBFBElFxfoiOWHpMjQlBiZteGOM4zHmh\nQHwTJ5qF0IO9KRxeIx50qtvuh9BKR+uQ0pG7KO7j1FBXYvMrKOsq3HR8KcGHiU8j\nEIk2bRjn6clBKCBQ809UNS7X/VdO2k4PXMC75T6yzK0gX2KQ9gew5jtsdcCGGOwv\nFXaHjFQrTojW9+pBUddhR/Gm2vrtMUMF7kemij9Sps3f+Tjilka4Vm+3BOPXcbkK\nR2QVZL5QWfUbDLgaMfzCw35b8gVs/+uMcyZ/cesiJXV31ifN1B8=\n=e50E\n-----END PGP SIGNATURE-----",
+        "payload": "tree 875a93e65d0bb760102eb45297253049f78a8fec\nparent 08762371d415f8ba9cbb18fd56ddb9ca371b70ce\nauthor Carlos Cuesta <carloscuesta@me.com> 1514808559 +0100\ncommitter Carlos Cuesta <carloscuesta@me.com> 1514808559 +0100\n\n:page_facing_up: Update LICENSE\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/bed0f9fb128f3b0a01305576f393aed5b73a82aa",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/bed0f9fb128f3b0a01305576f393aed5b73a82aa/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/08762371d415f8ba9cbb18fd56ddb9ca371b70ce"
+      }
+    ]
+  },
+  {
+    "sha": "08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+    "commit": {
+      "author": {
+        "name": "Peter Schmidt",
+        "email": "peter@peterjs.com",
+        "date": "2017-12-09T12:34:52Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-09T12:34:52Z"
+      },
+      "message": "✨ Add 🏗 (#164)\n\n* ✨ Add 🏗\r\n\r\nThis would resolve #159\r\n\r\n* :pencil2: Update emoji description\r\n\r\n* :lipstick: Update emoji color\r\n\r\nFixes #159",
+      "tree": {
+        "sha": "21403657f2b858ec9d18a8c73ae361295f1a8a3a",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/21403657f2b858ec9d18a8c73ae361295f1a8a3a"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/08762371d415f8ba9cbb18fd56ddb9ca371b70ce",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/08762371d415f8ba9cbb18fd56ddb9ca371b70ce/comments",
+    "author": {
+      "login": "pzrq",
+      "id": 1217010,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1217010?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/pzrq",
+      "html_url": "https://github.com/pzrq",
+      "followers_url": "https://api.github.com/users/pzrq/followers",
+      "following_url": "https://api.github.com/users/pzrq/following{/other_user}",
+      "gists_url": "https://api.github.com/users/pzrq/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/pzrq/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/pzrq/subscriptions",
+      "organizations_url": "https://api.github.com/users/pzrq/orgs",
+      "repos_url": "https://api.github.com/users/pzrq/repos",
+      "events_url": "https://api.github.com/users/pzrq/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/pzrq/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/921bf7c9f931df8e3a9dcee6ad598d39224dcee7"
+      }
+    ]
+  },
+  {
+    "sha": "921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-09T12:26:32Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-09T12:26:32Z"
+      },
+      "message": "⬆️ Update dependencies (#165)\n\n* :arrow_up: Set babel-core to devDependencies\r\n\r\n* :arrow_up: Upgrade dependencies",
+      "tree": {
+        "sha": "4a93f13ba50dab5d7c6e00d1a856ea86f3a4693f",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/4a93f13ba50dab5d7c6e00d1a856ea86f3a4693f"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaK9Z4CRBK7hj4Ov3rIwAAdHIIAHGHqCE2zkmHgcQKIQQwlH5P\nJaRmT3miE7jf/x4TtCOtdHgaVOCzFLqnEwJCUO+jCLPnO2m9FC6AQ8Pwo/uARuTv\nz1n7FUi1HJqGC1xQz/Td/G3zBUHu09d51/gAzOjiFIdy6zc4TMHp88Z3mNoJqnZW\nMvLWMttlBd69iDGPSrNBkRBkdeCuJKNJX1u8L0SJkSMDPvavDZ3Oc7lJkVcuhyv+\nXqPmRGOJoEouV6kY61dHmSWl9QtScFzv1NzJngRERe2gDwLcQoA9Mw9YyNAKAoG/\nzSp9U/l5GvCUkzPWxC8Z3ge9O5yldW/fr8C1sviNUE0iSsJebNivAl8RHT9FVF8=\n=qzpc\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 4a93f13ba50dab5d7c6e00d1a856ea86f3a4693f\nparent 22ea50b8aa19a408fdbe3c0a02262db2b63f5448\nauthor Carlos Cuesta <carloscuesta@me.com> 1512822392 +0100\ncommitter GitHub <noreply@github.com> 1512822392 +0100\n\n⬆️ Update dependencies (#165)\n\n* :arrow_up: Set babel-core to devDependencies\r\n\r\n* :arrow_up: Upgrade dependencies\r\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/921bf7c9f931df8e3a9dcee6ad598d39224dcee7",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/921bf7c9f931df8e3a9dcee6ad598d39224dcee7/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/22ea50b8aa19a408fdbe3c0a02262db2b63f5448"
+      }
+    ]
+  },
+  {
+    "sha": "22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-06T14:18:12Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-06T14:18:12Z"
+      },
+      "message": ":lipstick: Update colors",
+      "tree": {
+        "sha": "595d7497d5bebe0d4ba13e18f7f457d57646f272",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/595d7497d5bebe0d4ba13e18f7f457d57646f272"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlon/CQACgkQYcQukpG9\n+v1jEBAAnz3LEMA8UJqktLSEX2Mn6CUgT0+1lEbkyUk0oeukNEF1RLVnNUAnGQrM\nXoNoc7fgOCoYfPAepsvmJqZqbBMG/3RPPKmx+Dj5jIUJLqI7/OZM4AwupEj9N1Ag\nDZXZXHzTkCPt9BPROQvWRqHWn+4RP8Ji+0aZ5sPX+61XMkkLHJ3A+b3OCimfG90v\ntdS3v+UA2MxHj8nqfjeoUrqPfoat/3G5xQz87lGXSTyxWZPlVZe4CZ92cvdp+z8+\niqyCiPdRmabhhJiee2w2FWYacd3HUt6mxssjyceWjSksvAEWn4m6dgAhF821+oye\n95G//Kn+B1xQbCgQLkQRt1PFHiesjQKBaK22gbZKzUDywics6e60KDUNFi1QMMNU\nGYexqprXE99OQfVWljdhAIH66S9U1SpBuvuhpnhlGbZz0S1OjaB2G5l/YTsijO84\ncW9rOWICPV5eXZh1OYQfnIYJt+XuikyTdAEQiqHMQ6VdnEve5aFQrhNqjtacA0ZK\nrMqeJ77WnGdaKfsn0PiCrOSmrDLSBWcNRgGu6ROKBdNCav0Owy2lAK7jD3697MO2\n9iTedj/v4sLv0yHLcd6ufmt+lWMPmp/+qBvLinbuXL4zmqMutBzvT0Nk7FfdYuyC\nggZR7iHTHJpfMrq6r9PnYsNKAXmwVY+eX/bWuhGTh7uGr16mHJ8=\n=TGXS\n-----END PGP SIGNATURE-----",
+        "payload": "tree 595d7497d5bebe0d4ba13e18f7f457d57646f272\nparent d1982113be2ba324211e1b77c956b2d282dec21c\nauthor Carlos Cuesta <carloscuesta@me.com> 1512569892 +0100\ncommitter Carlos Cuesta <carloscuesta@me.com> 1512569892 +0100\n\n:lipstick: Update colors\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/22ea50b8aa19a408fdbe3c0a02262db2b63f5448",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/22ea50b8aa19a408fdbe3c0a02262db2b63f5448/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d1982113be2ba324211e1b77c956b2d282dec21c",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/d1982113be2ba324211e1b77c956b2d282dec21c",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/d1982113be2ba324211e1b77c956b2d282dec21c"
+      }
+    ]
+  },
+  {
+    "sha": "d1982113be2ba324211e1b77c956b2d282dec21c",
+    "commit": {
+      "author": {
+        "name": "Heiko Mathes",
+        "email": "heiko.mathes@gmail.com",
+        "date": "2017-12-06T14:12:38Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-06T14:12:38Z"
+      },
+      "message": "✨ Add 📌 (#163)\n\n* :sparkles: add :pushpin:\r\n\r\n* :ok_hand: add entity-field to :pushpin:-emoji\r\n\r\nFixes #156",
+      "tree": {
+        "sha": "5b936aabb88f562943db9b311c429642c3a9bf17",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/5b936aabb88f562943db9b311c429642c3a9bf17"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/d1982113be2ba324211e1b77c956b2d282dec21c",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/d1982113be2ba324211e1b77c956b2d282dec21c",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/d1982113be2ba324211e1b77c956b2d282dec21c",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/d1982113be2ba324211e1b77c956b2d282dec21c/comments",
+    "author": {
+      "login": "heikomat",
+      "id": 20770029,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/20770029?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/heikomat",
+      "html_url": "https://github.com/heikomat",
+      "followers_url": "https://api.github.com/users/heikomat/followers",
+      "following_url": "https://api.github.com/users/heikomat/following{/other_user}",
+      "gists_url": "https://api.github.com/users/heikomat/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/heikomat/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/heikomat/subscriptions",
+      "organizations_url": "https://api.github.com/users/heikomat/orgs",
+      "repos_url": "https://api.github.com/users/heikomat/repos",
+      "events_url": "https://api.github.com/users/heikomat/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/heikomat/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/4a9d5478804b778f58c5249dacf8f7df679b6ff1"
+      }
+    ]
+  },
+  {
+    "sha": "4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-12-02T09:35:09Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-02T09:35:09Z"
+      },
+      "message": ":sparkles: Add :recycle: (#162)",
+      "tree": {
+        "sha": "0f01ba987fb8b5c85bd957f4e80edde0087227d6",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/0f01ba987fb8b5c85bd957f4e80edde0087227d6"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaInPNCRBK7hj4Ov3rIwAAdHIIAFGSiS3QyC49BVE5pNPQIDwx\nbbDZsbskXUpCq/nhIkiT2axdLtuJocCBGDEXGNyfCVIXHKzMsNiItKuvKoBakQG/\npTGp4A4FFlFQHsL7tGdc/goFURfJPgib8POAIYZuKs1z5bUYvSdHVyLsODzcZ34C\nWJTyfr3WRt7NbPKKncIsGhu2oZfG3PYN0Dl18y1ptqY/3oID7MJ344FVpjyZKvJb\nSLJhCxAm0Rf/gmF/P2XLagRcpIoTfItdSjKTo0mUzWWX+SQm2MhWF6sj0HWnkojJ\ndKhvFqd28AZ9X1ZG0m25yiNpJwbwK70SJzj4y7SH2thjq/qmPErTuZMSyfC1tbo=\n=jT4j\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 0f01ba987fb8b5c85bd957f4e80edde0087227d6\nparent 2e9735041da5c1254c8c952fb96c310977dd6f36\nauthor Carlos Cuesta <carloscuesta@me.com> 1512207309 +0100\ncommitter GitHub <noreply@github.com> 1512207309 +0100\n\n:sparkles: Add :recycle: (#162)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/4a9d5478804b778f58c5249dacf8f7df679b6ff1",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/4a9d5478804b778f58c5249dacf8f7df679b6ff1/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "2e9735041da5c1254c8c952fb96c310977dd6f36",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/2e9735041da5c1254c8c952fb96c310977dd6f36",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/2e9735041da5c1254c8c952fb96c310977dd6f36"
+      }
+    ]
+  },
+  {
+    "sha": "2e9735041da5c1254c8c952fb96c310977dd6f36",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-11-28T21:31:49Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-11-28T21:31:49Z"
+      },
+      "message": ":memo: Update README",
+      "tree": {
+        "sha": "2c9d31146be8d8799a98ae794c755e5b7147b15b",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/2c9d31146be8d8799a98ae794c755e5b7147b15b"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/2e9735041da5c1254c8c952fb96c310977dd6f36",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaHdXFCRBK7hj4Ov3rIwAAdHIIAF78kqS96nYiz36PWjhnbPSg\nnrAERaiIqhtE1mHFBzzYl4tGshRwsCcaICTQrUyq0+7ddodKqgV3GDKx2QEr9ldu\n5h3EZSYvODunLFCdCx5atoqa6N4g93b440sQ35MG9cKCqREx6IvI+bRmggzcjCsT\nsrduFhG8I3VFzM9UZ8AOFKHe6TrRMUSy7ax6uO5MQoXYo7qUaKv3Os8ctSTJRmtO\n5TahcjMWeJbe6EtPIXMvDRuj6+79xvShMGhVv3VK3DInVuXjup8P22OvTlehv0c8\nsJMvfB73Or3I7RsILe44yHF3xHwowoxSLyj7MYnk9f3ho/hvjnSVovFF/5YYKUw=\n=LxFM\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 2c9d31146be8d8799a98ae794c755e5b7147b15b\nparent 3eb9138daf5da74d6393b86bb931ce94f42313cb\nauthor Carlos Cuesta <carloscuesta@me.com> 1511904709 +0100\ncommitter GitHub <noreply@github.com> 1511904709 +0100\n\n:memo: Update README"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/2e9735041da5c1254c8c952fb96c310977dd6f36",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/2e9735041da5c1254c8c952fb96c310977dd6f36",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/2e9735041da5c1254c8c952fb96c310977dd6f36/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3eb9138daf5da74d6393b86bb931ce94f42313cb",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3eb9138daf5da74d6393b86bb931ce94f42313cb",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/3eb9138daf5da74d6393b86bb931ce94f42313cb"
+      }
+    ]
+  },
+  {
+    "sha": "3eb9138daf5da74d6393b86bb931ce94f42313cb",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-10-12T13:21:57Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-10-12T13:21:57Z"
+      },
+      "message": ":memo: Update README",
+      "tree": {
+        "sha": "c4490152631c553d8ec79e47fe64f793f7c03839",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/c4490152631c553d8ec79e47fe64f793f7c03839"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/3eb9138daf5da74d6393b86bb931ce94f42313cb",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlnfbHUACgkQYcQukpG9\n+v0BWxAAlqrp0Fq6t5brl0xZXKz9NUOL5L8sGk0nhWa4+mNp1cr0FK6LM2nvNpBv\naZLdFtT2RxzGRq+Z3WtBJEiau8tS0QU25UtwQz8p7OoFfjfEu74R/zzBnIwJGnro\neQkuuOjPGfIvQ9fB77GCCRKnTk+6JGFauIB5OqvWTzCImY3RWf/v+sXccYF34dQb\n3crEgGtOjbb2GJ56s6tGyj7j2HL61WdfxzkQKm4DmTzJecT8EBOp2XCrB9UOHc4K\nAb20mGytWRwuJg73eBbNWUWJ7mjZu4iEOpyxBjvCl2ii2lK4c6IUwCZgdbBJxf+w\nvavKK4lr03QEiB83Dk34GZgKn7kCPwKpGa3E9/AR9I0iOtEO1oiQvD98Ngp5Eope\nmyDb0qJLjqYnS0y0I+I+fWBW2pU3t8soDwHH4nQSuEfdcQw6syiyTjt/dU7ELVVV\nd2olfRF+Wjooa5B/w9Xt2bo1vHztCJxkj6hRllvAygSN0syq65rNfYQ13CqlxIB4\njLYuNsXrtHHDDoYxrEdEabGdcHyVQroLMta9Qoyg1/38w2wu4vcCjKhnggo1A3Kl\nkRhiMPwTAgSnZYhrcl7dRAfXutDraj06wAtl/53H838IkhBicWmW9Q92cjEGdCjZ\n1NzuNhVqqLyrcc+PKTgcDsEywfNYvddfoPcTGOgR449F32ZCp5Y=\n=GH5g\n-----END PGP SIGNATURE-----",
+        "payload": "tree c4490152631c553d8ec79e47fe64f793f7c03839\nparent ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea\nauthor Carlos Cuesta <carloscuesta@me.com> 1507814517 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1507814517 +0200\n\n:memo: Update README\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3eb9138daf5da74d6393b86bb931ce94f42313cb",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/3eb9138daf5da74d6393b86bb931ce94f42313cb",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3eb9138daf5da74d6393b86bb931ce94f42313cb/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea"
+      }
+    ]
+  },
+  {
+    "sha": "ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+    "commit": {
+      "author": {
+        "name": "Yoann Prot",
+        "email": "taranys@users.noreply.github.com",
+        "date": "2017-10-12T08:21:28Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-10-12T08:21:28Z"
+      },
+      "message": "✨ Add 🚸 (#150)\n\n* ✨ Add 🚸 for ux commits\r\n\r\n✨ feature #149 for ux / usability\r\n\r\n* :lipstick: Update childrenCrossing color\r\n\r\nCloses #149",
+      "tree": {
+        "sha": "2c9d31146be8d8799a98ae794c755e5b7147b15b",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/2c9d31146be8d8799a98ae794c755e5b7147b15b"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ba55afa6ec8e808a2a9bbbe3c57ddcf58e9248ea/comments",
+    "author": {
+      "login": "Taranys",
+      "id": 4621525,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/4621525?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Taranys",
+      "html_url": "https://github.com/Taranys",
+      "followers_url": "https://api.github.com/users/Taranys/followers",
+      "following_url": "https://api.github.com/users/Taranys/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Taranys/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Taranys/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Taranys/subscriptions",
+      "organizations_url": "https://api.github.com/users/Taranys/orgs",
+      "repos_url": "https://api.github.com/users/Taranys/repos",
+      "events_url": "https://api.github.com/users/Taranys/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Taranys/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/ea789a2678ec094eb68a2b93da2ae5daa56decf5"
+      }
+    ]
+  },
+  {
+    "sha": "ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-20T20:38:14Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-20T20:38:14Z"
+      },
+      "message": ":busts_in_silhouette: Update contributors",
+      "tree": {
+        "sha": "3d21d6927eb2dce14b90fbcd325712d2b8d1e6d2",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/3d21d6927eb2dce14b90fbcd325712d2b8d1e6d2"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlnC0bYACgkQYcQukpG9\n+v0HOQ//eCtAdjJ3v1OoYPCnSGp459RqsO+iPN8rYwup9COHIPRS2GLNViK7cbPi\n8hCvetGJd+xxdT92J00K3Y7lhXLJNErazrKd33k93hCymH9tpxu7xYr5be2jNaMT\n+OBqvhN8Ph4R/ajehiOQGoYZVD1KEGEe8G9J8hxNXlUpZSFBr68arxD5VS+6ULL+\nXVyWkQdqF1Z3QPdhqg9fhBAEwVGVxbl6NUKO5OWGuiDj4EZcDKJR1s8APtsrY+Kk\njl3h5wOoLq3A0juVyC5t/9C1RRazUQYfXc807vm1o7A/tE6/fxzLpyouODeONxPE\nfCPAf2RGuHT/HQYZBzWHU+hgq5oyraboby7IajiO0cioTKbcwWEvXjIr5BVrTG3D\n7rHBlWW21Vvgy3DC0IbcYF2a+5DA9sge2vp3mm01a9MtobK3c2WKVBQZ48su9kNK\nGx7vZrvnTjyOdS9FkbYu9S9zLbCNgEeF0rzEi5eRB4caNbLKxcGh1nkUVThP9zVY\ntwhhlUcwduE/VDPXko4SZsWhWw8KWZZPoA/DFJsIFKItfOmJqpryeY3HiiaxrV2v\nIo2ZRb5pNuNoC0WmOWx5GN0nIR6izz3LLBx5P78WItoF1ZjFVso7ieMDW/+/thCv\nH2HQzaQ1MWdx7vB9jnif6t8QP9wRLKydgVujggDJOJl8O5fLK44=\n=ujPs\n-----END PGP SIGNATURE-----",
+        "payload": "tree 3d21d6927eb2dce14b90fbcd325712d2b8d1e6d2\nparent 1919e0b9f25007d75f2a9847ef47df4ff7c44e14\nauthor Carlos Cuesta <carloscuesta@me.com> 1505939894 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1505939894 +0200\n\n:busts_in_silhouette: Update contributors\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/ea789a2678ec094eb68a2b93da2ae5daa56decf5",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/ea789a2678ec094eb68a2b93da2ae5daa56decf5/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/1919e0b9f25007d75f2a9847ef47df4ff7c44e14"
+      }
+    ]
+  },
+  {
+    "sha": "1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-20T20:35:40Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-20T20:35:40Z"
+      },
+      "message": ":lipstick: Styles enhancements and fixes",
+      "tree": {
+        "sha": "e1b85864cba3ba6a26e37d250f883f91789b69e8",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/e1b85864cba3ba6a26e37d250f883f91789b69e8"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlnC0R0ACgkQYcQukpG9\n+v2xKhAAlyAnJXEZcCFS3Gs9VuoR+fHrd8AmRsYoaA48tm6XXU5vfMpeSUF+ZNqa\nahMPXqTwJP4sTbgdKsTaVoy40FD7eW9u0cRROiv08J8Cn15U6+R++tEm9YdPvF3T\n1EUtZmtO+2q6+WcZMIasJpRfYx5FNN3HJfJuG4h3A+47R+gGVd9F71/mmCfKbapa\nxNn13Ip6P9EClYKF7LlfO9aS8d2lqUwxtr7QIdTkk/12AgzLt8FHdDruQDu3vX3Z\nn1ImPo99VqCCWaBldP3eA+HQ/l1FJTom1IArIoN/XBRt3X4/RgXjWfMYVkNyexI6\nZ4oCMuY4DbZwDwG04sghOxEgZ1ewPIxJSOl/I7cgJRcKt7fH15yqGRDqetnYEI6b\nAKjJhIPdolkr23mAvqzSD0DCWLnvrUbBnUeUC+xj97snBGWrqUZsqD7DVPwof6Hb\nebFBwUHCjxCNDiykNF/s0tIH7LmP2sD7f6gddeecGKZongE4hv2qCZehfsuyQQe9\nOPWsCBhz6f4oiH916pqd1BOneTYuAKwAMIRPRXw2iQAn3XSW7COXol+Iq1XPJK4S\nJ8xgIDQdLBZ9/VqU7NvOs1xFTBCVQMIUM+97H+Z2Oh4ZgQjaWREIT/t5/JzKEu2U\nPwntR187rm5mjhO4UJV5G20hQ4yKCmwEL6PP5Nz6eYwr4CFPScU=\n=QSmb\n-----END PGP SIGNATURE-----",
+        "payload": "tree e1b85864cba3ba6a26e37d250f883f91789b69e8\nparent 5acd39c15c6c24090309e01e8c3eb52bd1a27576\nauthor Carlos Cuesta <carloscuesta@me.com> 1505939740 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1505939740 +0200\n\n:lipstick: Styles enhancements and fixes\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/1919e0b9f25007d75f2a9847ef47df4ff7c44e14",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/1919e0b9f25007d75f2a9847ef47df4ff7c44e14/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/5acd39c15c6c24090309e01e8c3eb52bd1a27576"
+      }
+    ]
+  },
+  {
+    "sha": "5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-03T16:09:20Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-03T16:09:20Z"
+      },
+      "message": ":wrench: Add deploy as npm script",
+      "tree": {
+        "sha": "d2912ed5e51db4a36646d31e697a6c96010b93e0",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/d2912ed5e51db4a36646d31e697a6c96010b93e0"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAlmsKTAACgkQYcQukpG9\n+v3zyg/8DjOw6Oi15IABXFdol3ksXo9dlsawq3V9IAoDeWGh1mtEQkPHIDc4hdJ5\nriDZVAlfWMm3BtHj22qcOUlsYVG/6I4Z7T46QY9qvlOPiVBgh7zg0dFxJkJnCzGx\nBlO9vJwgDvaF3yoRsXrEaNoWrJ6tdJvkQ6+CewpQV+0P/Yvn0ECtRI2HoQ340ood\nOwyrz2218dmg5mn/mhiH+wM35irOcRbDmN4Y5CUucdyfa8rC0JFHERst89w+tNPf\nWh2l8WdRd6v+RODvAmR4ks4hLqwLvt015cFjSV730p5D+a7QCal9ypamEKGRrD3u\nfpT4DuIwrTYoV4W34JSOboWymuwd6YCWZ+ddhto+LrxHvdGq/YYX7ThfORhGyuzg\nxPieNhmsqe9ZBHbBrllXjfNyLGtmMnxnnLzwfZM6kgrmrjv4n0QRlnDpx3NFmH9i\nNHVLBhEfGiYNEEJ1cylyqp37Ptc314x10pKJEo7WqQYNrC7GojBmPfYSIGhWw7Xy\nlbvIxerTgA/YiyBlItYinYYxOnWHc93hWxF447oNTFqcfFN8SlCYPPelcwIsCTwb\nxn2BThqCenhE2wfbHLDnXvmIfORd+KRcTTe6UN18gh7qi8m5pRhC6WrhVCYJwL86\n3gVOyaQxtAcIYXPd4AJFD02mtJPtCks9lGY0ppPYrbqfUQVXG/s=\n=5snM\n-----END PGP SIGNATURE-----",
+        "payload": "tree d2912ed5e51db4a36646d31e697a6c96010b93e0\nparent 3e0f259e4a2080a69cde3d720b2574d9471fdcb1\nauthor Carlos Cuesta <carloscuesta@me.com> 1504454960 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1504454960 +0200\n\n:wrench: Add deploy as npm script\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/5acd39c15c6c24090309e01e8c3eb52bd1a27576",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5acd39c15c6c24090309e01e8c3eb52bd1a27576/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/3e0f259e4a2080a69cde3d720b2574d9471fdcb1"
+      }
+    ]
+  },
+  {
+    "sha": "3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+    "commit": {
+      "author": {
+        "name": "Fabien JUIF",
+        "email": "fabien.juif@zenika.com",
+        "date": "2017-09-03T16:06:56Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-09-03T16:06:56Z"
+      },
+      "message": ":sparkles: Add 👥  (#142)\n\nFixes #135",
+      "tree": {
+        "sha": "3a780bbea26a2f2283caddc48c9e74ee4f521a3e",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/3a780bbea26a2f2283caddc48c9e74ee4f521a3e"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/3e0f259e4a2080a69cde3d720b2574d9471fdcb1",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3e0f259e4a2080a69cde3d720b2574d9471fdcb1/comments",
+    "author": {
+      "login": "fabienjuif",
+      "id": 17828231,
+      "avatar_url": "https://avatars0.githubusercontent.com/u/17828231?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/fabienjuif",
+      "html_url": "https://github.com/fabienjuif",
+      "followers_url": "https://api.github.com/users/fabienjuif/followers",
+      "following_url": "https://api.github.com/users/fabienjuif/following{/other_user}",
+      "gists_url": "https://api.github.com/users/fabienjuif/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/fabienjuif/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/fabienjuif/subscriptions",
+      "organizations_url": "https://api.github.com/users/fabienjuif/orgs",
+      "repos_url": "https://api.github.com/users/fabienjuif/repos",
+      "events_url": "https://api.github.com/users/fabienjuif/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/fabienjuif/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e3d63ec861f610839b53c2b43781007fac5fe294",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e3d63ec861f610839b53c2b43781007fac5fe294",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/e3d63ec861f610839b53c2b43781007fac5fe294"
+      }
+    ]
+  },
+  {
+    "sha": "e3d63ec861f610839b53c2b43781007fac5fe294",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-07-23T09:55:42Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-07-23T09:55:42Z"
+      },
+      "message": ":lipstick: Update gitmoji colors",
+      "tree": {
+        "sha": "f04505df07e763e74e98b91c25b73256268f8a57",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/f04505df07e763e74e98b91c25b73256268f8a57"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/e3d63ec861f610839b53c2b43781007fac5fe294",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAll0cp8ACgkQYcQukpG9\n+v2KNw//V2I8BTv99Tg9oQL0N9hnYewIbctLYsGNNzB6NnUtxQA/Mo8ysbJZRuvj\nTNqvBatOGwFQlhyM8OW71a04qR063wY0umg1zCcggCtZcptdW421Bj3B9zVBbSgQ\ntT1GzAW3w0flGa8YB6y/ZwS1ZuH/5421EgejOPRHKjFHAJq1wHq/9k1TG6rNIqHa\nKgXcepfFBb9hCkQ8yLazOjFcxoTi6fJv/38LKM9wKNtoZ46SgHm2irofHmHOcFBS\nToVL3IdcBKNc7lymUznSFMp1EMHE3s5LpaJ20Monc5jZZmdlmu/WwQoKb+3wf/0m\nuAGD2wRmX+eO2cqdbjyNJnVQaMo8/XKdUhgjiW2CEUl5lwSLALUPPFbjKTHkvDsR\n5NA004nTOJ17rUnQK8RSWW3oSc9RwtIPtB2+vE2Zo0HHKHQpunWwwdi4ooJjooX3\nR7rc1wcLq8LZJ1oofB4bXYQPtB9fvDg89lj8BJlLBZ/oDdfSvWms7NSX2EcaFxOO\n74H5ktl6zbJvcZpvh5L4MWb5D4yypIslT67LdAu9LqplCNPHJBfaYTHX4jbTkBPy\nAK5V9dXQu4vSafxvKvAFi62Bd71BGzafBNM0YkgJ9jmSHbfTzapr7fINOFrJHBNI\nqTLDAItUWFM/Qvc6roCS+1gAHG7c2DQvPnqH1Nh9GT4JKJJ5j2w=\n=VNb3\n-----END PGP SIGNATURE-----",
+        "payload": "tree f04505df07e763e74e98b91c25b73256268f8a57\nparent 3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548\nauthor Carlos Cuesta <carloscuesta@me.com> 1500803742 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1500803742 +0200\n\n:lipstick: Update gitmoji colors\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e3d63ec861f610839b53c2b43781007fac5fe294",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/e3d63ec861f610839b53c2b43781007fac5fe294",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e3d63ec861f610839b53c2b43781007fac5fe294/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548"
+      }
+    ]
+  },
+  {
+    "sha": "3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+    "commit": {
+      "author": {
+        "name": "Dylan Broussard",
+        "email": "deraw@outlook.fr",
+        "date": "2017-07-23T09:45:24Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-07-23T09:45:24Z"
+      },
+      "message": "✨ Add 🔇 & 🔊 (#129)\n\n* :sparkles: Add :mute:\r\n\r\n* Add :mute: for removing logs (fixes #128)\r\n\r\n* :sparkles: Add :loud_sound:\r\n\r\n* Add :loud_sound: for adding logs (fixes #128)\r\n\r\n* :bug: Fix emoji code\r\n\r\nRemove duplicate \":\"",
+      "tree": {
+        "sha": "59dc5ccc5a48520a012b6ac60c9a78afb19538d8",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/59dc5ccc5a48520a012b6ac60c9a78afb19538d8"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/3d4db45b1f3f2ca05f202c2cbf07f3782c7ce548/comments",
+    "author": {
+      "login": "Deraw-",
+      "id": 10298932,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/10298932?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Deraw-",
+      "html_url": "https://github.com/Deraw-",
+      "followers_url": "https://api.github.com/users/Deraw-/followers",
+      "following_url": "https://api.github.com/users/Deraw-/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Deraw-/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Deraw-/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Deraw-/subscriptions",
+      "organizations_url": "https://api.github.com/users/Deraw-/orgs",
+      "repos_url": "https://api.github.com/users/Deraw-/repos",
+      "events_url": "https://api.github.com/users/Deraw-/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Deraw-/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda"
+      }
+    ]
+  },
+  {
+    "sha": "96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-06-18T15:10:16Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-06-18T15:10:16Z"
+      },
+      "message": ":lipstick: Add colors for new gitmojis",
+      "tree": {
+        "sha": "6833661de8a4af031e1cedf77399b7beb05b37af",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/6833661de8a4af031e1cedf77399b7beb05b37af"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAllGl9kACgkQYcQukpG9\n+v0Qsw/+OukUhSLDC5OM3ML2ROEPXGI8etvYuoOdm3bg2TS+OActFaCVA/2XJ+HJ\ni5O6VZvGYUNlg358CII/b0Yxz3uaI8EhlOA6iTk+/B75A6AqSjdnoGQAzBrXOYyG\nAYkJjb6oQEp/rdM/PxyVSmYGNc/YQgIjgrK1z3Ql5czd7vdK8S4zjNgEWo5KTAlS\nAzTGYqiI0dQRcN0DRTuwuaXJh0TXF3dRAtHy0tOHnLeY7yBrWn31TR3bXka2437U\nKXwwJWcWyXDdjBClQ84u1T/dELBUqmqlnljyz6oHHRgRw+DlGOQVzny5a34exHdy\nDd6cppLLSIpyCxQQj6hJMVpRryk49IgkUaY9U6EJYfjfZtkVapQnpXqEmmapzqbA\n74l+F2QSzZCMOPFjHjCMZ2xBSd4VOdbE5VlLTaEweVLGNcTEkZdBG56PMipeIJQ2\nBRvZBfoutac5X73q0PnpVKcDHRs4AlyOpLMdMCzPcfDUpJI3u3i9XjRHyuXDFp6a\nEuWn7bEgPEA/zy7fZb5Rqkj2jVe1uG+x5cYxdc+LyquVvhCgk1qXvj9fc1R2uZzN\nKs1UHQz0IQyu4Xlhji7QOd+IiuiiEWmIvlefrYhGAq1Z0yypmponxnhZ8HG41m+Q\nzrUuws3dJpuCGhYjTJpITfb7IISBYNUOdwWq/AkHyugyHMmgqUA=\n=jr/Z\n-----END PGP SIGNATURE-----",
+        "payload": "tree 6833661de8a4af031e1cedf77399b7beb05b37af\nparent e865c572f3bd06302079e9c5109ed6b1a63eb3af\nauthor Carlos Cuesta <carloscuesta@me.com> 1497798616 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1497798616 +0200\n\n:lipstick: Add colors for new gitmojis\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/96a2ecd7d7c03d6c64a2e724db874a0d7e90bfda/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/e865c572f3bd06302079e9c5109ed6b1a63eb3af"
+      }
+    ]
+  },
+  {
+    "sha": "e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+    "commit": {
+      "author": {
+        "name": "Frank Bouwens",
+        "email": "frankkie12345@gmail.com",
+        "date": "2017-06-18T15:04:56Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-06-18T15:04:56Z"
+      },
+      "message": ":sparkles: Add :robot: & :green_apple: (#126)",
+      "tree": {
+        "sha": "64c59cc9def028af27d44cd3f0e575fed47f1f8d",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/64c59cc9def028af27d44cd3f0e575fed47f1f8d"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/e865c572f3bd06302079e9c5109ed6b1a63eb3af",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e865c572f3bd06302079e9c5109ed6b1a63eb3af/comments",
+    "author": {
+      "login": "frankkienl",
+      "id": 1552295,
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1552295?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/frankkienl",
+      "html_url": "https://github.com/frankkienl",
+      "followers_url": "https://api.github.com/users/frankkienl/followers",
+      "following_url": "https://api.github.com/users/frankkienl/following{/other_user}",
+      "gists_url": "https://api.github.com/users/frankkienl/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/frankkienl/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/frankkienl/subscriptions",
+      "organizations_url": "https://api.github.com/users/frankkienl/orgs",
+      "repos_url": "https://api.github.com/users/frankkienl/repos",
+      "events_url": "https://api.github.com/users/frankkienl/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/frankkienl/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5db148df5685670c40cc0db2bef19fc9efdafb83",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5db148df5685670c40cc0db2bef19fc9efdafb83",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/5db148df5685670c40cc0db2bef19fc9efdafb83"
+      }
+    ]
+  },
+  {
+    "sha": "5db148df5685670c40cc0db2bef19fc9efdafb83",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-06-18T08:18:58Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-06-18T08:18:58Z"
+      },
+      "message": ":sparkles: Add :card_file_box:\n\nCloses  #70",
+      "tree": {
+        "sha": "0e0fb0fc4ad23e09ac91591bed076c9979456b05",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/0e0fb0fc4ad23e09ac91591bed076c9979456b05"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/5db148df5685670c40cc0db2bef19fc9efdafb83",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCAAdFiEE1LeAPyuGGQrtU7SKYcQukpG9+v0FAllGN3IACgkQYcQukpG9\n+v048w//YhfNYgsjTSMhqy3JjeUDo+VDJt74y6LP8lRUmIJCjwlsk9rj5Kycz7wm\nxah8QK/QZMJKap3gNKkKfdartcPekpSkkEXgjfuQvy+gg+9704GHldzEloGReN8z\ntjf0WXth2FV7YDgYhwrVV7iWK98osvD45mHfWrQEUL1ueP6MmDaM9aLCyvyDS2lC\nh/v0i9dH5oiU2nRlU+ZBJQu9lIM+6AEYZUVVZtprOYswnKvJHV8GaJ0+Ka1afy1c\nU40cVCDsd69hQ5atCpbb1AEir0cqBwcf7sWL7QgSHro4gMbTJNwTKljOFjue/j+2\nZgh7AIAg5M4MjewJ+PNnFvJDnidwaMCrD+jDgEoHd9TWjm8xKtt/k/3i8/V44SVk\nr0KNi/CeJNtmObtjbsg0/Y6BX1nWzfRMycUMaluPMMgobyN1bSjFHkVKE4j4OP03\nHyMyfSafM5Is50g3kzHwx9IPVSyFLaRIkf+ceLC4hhfX/d1ZHk+jXJTx4rlGmtV5\n9xQ3zYCW+i/jpw1XoYMIP7E2HzDS8jB1XgGoy7BoaldFEGSHd8I2yqJNs6VCARZ6\nhyRIzmLHZG9WrMLRGgdx1O0t3FobDZw5YI64brInZN7TRZn+idDiwuh+2CmEpbLB\nVH196Qm5B98NOuuE/zuh8+N6V6tk1d/by3belzHrvyClRx25a0Y=\n=+bCk\n-----END PGP SIGNATURE-----",
+        "payload": "tree 0e0fb0fc4ad23e09ac91591bed076c9979456b05\nparent e110eb3d825b6c1fdc41b3be5bceeff530bf11d1\nauthor Carlos Cuesta <carloscuesta@me.com> 1497773938 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1497773938 +0200\n\n:sparkles: Add :card_file_box:\n\nCloses  #70\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5db148df5685670c40cc0db2bef19fc9efdafb83",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/5db148df5685670c40cc0db2bef19fc9efdafb83",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/5db148df5685670c40cc0db2bef19fc9efdafb83/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1"
+      }
+    ]
+  },
+  {
+    "sha": "e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-04-17T10:30:59Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-04-17T10:30:59Z"
+      },
+      "message": ":hammer: Move gitmojis array to vars\n\nSigned-off-by: Carlos Cuesta <carloscuesta@me.com>",
+      "tree": {
+        "sha": "6a24525c691f266ff0f4ea5014a64c606a36122f",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/6a24525c691f266ff0f4ea5014a64c606a36122f"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\nVersion: GnuPG v2\n\niQIcBAABCAAGBQJY9JljAAoJEGHELpKRvfr98lMQAJJcnKBCUnJSQSbjRaunemS4\niWj1h4npr/uFVmXCAuJppYTXb9IPL0fDWPZ6n8v/3iV7zrsGhDHwnsjfSKl62kps\nxxejXGdgXzLlOz8tQyc76WLxYJFjbcYNP2NX4C2rS8Di9gn8aZv2FdWIPpVs+jsv\npHm18qKs8llDeYwEOYNOcxG3FUUSWldzgd4p0Mb/iQW+yN4Jne4gTZiU2au2HM0m\nhRQRfMpl+swuWE6AoLgNaieMWH9MBueuokFWUCQ4rFViZGf5RT0nCxcyfPB/k+4a\nBqyB0CzWxcpflVa1CTv+JdRfzGyuhJcpiOT8MjvY/Actnwu6zeXVLZbDsdS0fpdW\nyQvgwBGxKlXg8ndtfrNoagB/PrnQo/QJE+FCdpBe/HsQPahqgLWFn1u9dhjwTtNa\nMpKT94IW6xgqN4bOetUpiaGBOMrNZzcx/B3GvtUhHzGO2hoILPYzzi+bw7aXznwZ\nJFYv2j+TC9ykpJlhoSVn1rrpLB08UIITZ0FI/i8qiihJtxd3PuFnEVHlaeamDU3y\nD1W4oP1LsDrqNQkF9KJ1Wa214K77XLggCpYOJ2TiO3VQ85xRIlM7LtfRvQS3DvaZ\n/SVhb+ve4q3n0/ZfOvKJ2Z3R5Zlq33UOnLN71fqTp4w7pNFbc8hX23KijREK3fI1\nYqMrzgE5V46j+uoVMjNz\n=rntJ\n-----END PGP SIGNATURE-----",
+        "payload": "tree 6a24525c691f266ff0f4ea5014a64c606a36122f\nparent 48e52e3154959fab16ca588eb951ab4547c5241e\nauthor Carlos Cuesta <carloscuesta@me.com> 1492425059 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1492425059 +0200\n\n:hammer: Move gitmojis array to vars\n\nSigned-off-by: Carlos Cuesta <carloscuesta@me.com>\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/e110eb3d825b6c1fdc41b3be5bceeff530bf11d1/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "48e52e3154959fab16ca588eb951ab4547c5241e",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/48e52e3154959fab16ca588eb951ab4547c5241e",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/48e52e3154959fab16ca588eb951ab4547c5241e"
+      }
+    ]
+  },
+  {
+    "sha": "48e52e3154959fab16ca588eb951ab4547c5241e",
+    "commit": {
+      "author": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-04-17T10:17:39Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-04-17T10:17:39Z"
+      },
+      "message": ":sparkles: Add :speech_balloon:\n\n #81\n\nSigned-off-by: Carlos Cuesta <carloscuesta@me.com>",
+      "tree": {
+        "sha": "d7288a581df2833e33d32ccb74a7b7d827faf487",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/d7288a581df2833e33d32ccb74a7b7d827faf487"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/48e52e3154959fab16ca588eb951ab4547c5241e",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\nVersion: GnuPG v2\n\niQIcBAABCAAGBQJY9JZEAAoJEGHELpKRvfr9proQAJEsiKPj15ei7gbdCz+Vs9/t\ny7JXv7/rIO1ieyG5B/LZS28JsLWoYY3uPb+cX0PfAsnIgN/v+K7NkaGvH9mHvEep\nxPLaAcHkQ50tNEAsai6YGVbosWOpMn0ob0zNdeHEXb/IhQ1exm0PiV9slM4CBNLL\ni0tCp62J4TgtbVe0TUpu0++fYKJrq3BV5y2ds0AoUUjveJUaDVWvQgShbq3HiiIl\n8C0yHnO8VlImPGJVwYZ91sWKWJKyFmbtjzsXyYgguJbpZ1EJUMcS9Eba0iPD7JZS\nOeQ/hsW6730amtdPlyHx90/txneLr6cyRL2Q9RNc5FuVnn3Kb2IrKClXajPzu81T\nieKPA6JHD0sxvmgZMOUxYmmJG3z/lpWBLjm5NAz8J0rIUCxUdOo0mqwPfY+pVn+T\nVPiyxbrZGXcZSvh5oIb/4hqAcAzfTVHFq+vR557IHk/BcXs3Dv9HSI30aA4MgPIx\npQJmFqE+uxvcWtyquay7c5ixwUBszVrbbKBDhlk1wEq20QbTq4QXsmtNZkm7UpzV\nDymNFWS7Q4oTHy+G0Kg1Nd6YR/mlKc3B1FImYLzIv2TxVni1hjvxA/Mzd5UTPZAC\nbqsGaI0zDLfXh5yNgAbeh+1AYIM53X+AIEfSl/cL1BSpu4d0TMhGo2XIT/5P2XT6\n66GO+atSPt9JGNR9r5Hv\n=c0Nc\n-----END PGP SIGNATURE-----",
+        "payload": "tree d7288a581df2833e33d32ccb74a7b7d827faf487\nparent 0190108d7d42a3340d8058abdb960580db1068d0\nauthor Carlos Cuesta <carloscuesta@me.com> 1492424259 +0200\ncommitter Carlos Cuesta <carloscuesta@me.com> 1492424259 +0200\n\n:sparkles: Add :speech_balloon:\n\n #81\n\nSigned-off-by: Carlos Cuesta <carloscuesta@me.com>\n"
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/48e52e3154959fab16ca588eb951ab4547c5241e",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/48e52e3154959fab16ca588eb951ab4547c5241e",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/48e52e3154959fab16ca588eb951ab4547c5241e/comments",
+    "author": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "0190108d7d42a3340d8058abdb960580db1068d0",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/0190108d7d42a3340d8058abdb960580db1068d0",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/0190108d7d42a3340d8058abdb960580db1068d0"
+      }
+    ]
+  },
+  {
+    "sha": "0190108d7d42a3340d8058abdb960580db1068d0",
+    "commit": {
+      "author": {
+        "name": "Peter Gundel",
+        "email": "cynektix@users.noreply.github.com",
+        "date": "2017-04-13T15:08:32Z"
+      },
+      "committer": {
+        "name": "Carlos Cuesta",
+        "email": "carloscuesta@me.com",
+        "date": "2017-04-13T15:08:31Z"
+      },
+      "message": "✨ Add 🍻\n\n* ✨ Adds 🍻 for drunkenly written code\r\n\r\n* :fire: Remove greenkeeper\r\n\r\n* :sparkles: Update :beers: description\r\n\r\n* :lipstick: Update beers color",
+      "tree": {
+        "sha": "96ab54a70362bc941a11783bcd852d1b5519b0a4",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/trees/96ab54a70362bc941a11783bcd852d1b5519b0a4"
+      },
+      "url": "https://api.github.com/repos/carloscuesta/gitmoji/git/commits/0190108d7d42a3340d8058abdb960580db1068d0",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/0190108d7d42a3340d8058abdb960580db1068d0",
+    "html_url": "https://github.com/carloscuesta/gitmoji/commit/0190108d7d42a3340d8058abdb960580db1068d0",
+    "comments_url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/0190108d7d42a3340d8058abdb960580db1068d0/comments",
+    "author": {
+      "login": "cynektix",
+      "id": 35950934,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/35950934?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/cynektix",
+      "html_url": "https://github.com/cynektix",
+      "followers_url": "https://api.github.com/users/cynektix/followers",
+      "following_url": "https://api.github.com/users/cynektix/following{/other_user}",
+      "gists_url": "https://api.github.com/users/cynektix/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/cynektix/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/cynektix/subscriptions",
+      "organizations_url": "https://api.github.com/users/cynektix/orgs",
+      "repos_url": "https://api.github.com/users/cynektix/repos",
+      "events_url": "https://api.github.com/users/cynektix/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/cynektix/received_events",
+      "type": "Organization",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "carloscuesta",
+      "id": 7629661,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/7629661?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/carloscuesta",
+      "html_url": "https://github.com/carloscuesta",
+      "followers_url": "https://api.github.com/users/carloscuesta/followers",
+      "following_url": "https://api.github.com/users/carloscuesta/following{/other_user}",
+      "gists_url": "https://api.github.com/users/carloscuesta/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/carloscuesta/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/carloscuesta/subscriptions",
+      "organizations_url": "https://api.github.com/users/carloscuesta/orgs",
+      "repos_url": "https://api.github.com/users/carloscuesta/repos",
+      "events_url": "https://api.github.com/users/carloscuesta/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/carloscuesta/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "32bb0bf8d1ddc1d9a6f95c06d7fa4b1af3c94c34",
+        "url": "https://api.github.com/repos/carloscuesta/gitmoji/commits/32bb0bf8d1ddc1d9a6f95c06d7fa4b1af3c94c34",
+        "html_url": "https://github.com/carloscuesta/gitmoji/commit/32bb0bf8d1ddc1d9a6f95c06d7fa4b1af3c94c34"
+      }
+    ]
+  }
+]
