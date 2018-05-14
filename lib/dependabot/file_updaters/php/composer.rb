@@ -212,18 +212,19 @@ module Dependabot
 
         def credentials_env
           credentials.
-            select { |cred| cred.key?("env-key") }.
+            select { |cred| cred.fetch("type") == "php_environment_variable" }.
             map { |cred| [cred["env-key"], cred["env-value"]] }.
             to_h
         end
 
         def git_credentials
           credentials.
-            select { |cred| cred["type"] == "git_source" }
+            select { |cred| cred.fetch("type") == "git_source" }
         end
 
         def registry_credentials
-          credentials.select { |cred| cred.key?("registry") }
+          credentials.
+            select { |cred| cred.fetch("type") == "composer_repository" }
         end
       end
     end

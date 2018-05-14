@@ -116,7 +116,7 @@ module Dependabot
           end
 
           def registry_credentials
-            credentials.select { |cred| cred.key?("registry") }
+            credentials.select { |cred| cred.fetch("type") == "npm_registry" }
           end
 
           def parsed_package_lock

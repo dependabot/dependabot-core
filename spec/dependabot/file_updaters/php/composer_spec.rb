@@ -367,6 +367,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
                 "password" => "token"
               },
               {
+                "type" => "composer_repository",
                 "registry" => "php.fury.io",
                 "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
                 "password" => ""

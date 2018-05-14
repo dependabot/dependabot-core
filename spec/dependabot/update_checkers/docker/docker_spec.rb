@@ -227,6 +227,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
               "password" => "token"
             },
             {
+              "type" => "docker_registry",
               "registry" => "registry-host.io:5000",
               "username" => "grey",
               "password" => "pa55word"

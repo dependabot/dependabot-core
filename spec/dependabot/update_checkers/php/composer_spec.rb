@@ -233,6 +233,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
               "password" => "token"
             },
             {
+              "type" => "composer_repository",
               "registry" => "php.fury.io",
               "username" => "user",
               "password" => "pass"
@@ -390,6 +391,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
               "password" => "token"
             },
             {
+              "type" => "composer_repository",
               "registry" => "php.fury.io",
               "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
               "password" => ""
@@ -410,6 +412,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
               "password" => "token"
             },
             {
+              "type" => "composer_repository",
               "registry" => "php.fury.io",
               "username" => "bad",
               "password" => ""

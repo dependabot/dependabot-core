@@ -106,6 +106,7 @@ module Dependabot
 
                 npmrc_file&.content.to_s.scan(AUTH_TOKEN_REGEX) do
                   registries << {
+                    "type" => "npm_registry",
                     "registry" => Regexp.last_match[:registry],
                     "token" => Regexp.last_match[:token]
                   }
