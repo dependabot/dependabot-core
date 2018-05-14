@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+require "dependabot/git_commit_checker"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
 
@@ -114,13 +116,26 @@ module Dependabot
 
         def dependency_spec
           spec = dependency.name
-          if dependency.previous_version
+
+          if git_dependency?
+            spec += ":#{git_previous_version}" if git_previous_version
+          elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
           end
+
           spec
         end
 
+        def git_previous_version
+          TomlRB.parse(lockfile.content).
+            fetch("package", []).
+            select { |p| p["name"] == dependency.name }.
+            find { |p| p["source"].end_with?(dependency.previous_version) }.
+            fetch("version")
+        end
+
         def desired_lockfile_content
+          return dependency.version if git_dependency?
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
@@ -190,6 +205,13 @@ module Dependabot
             (?:(?!^\[).)+
             (?<requirement_declaration>version\s*=.*)$
           /mx
+        end
+
+        def git_dependency?
+          GitCommitChecker.new(
+            dependency: dependency,
+            credentials: credentials
+          ).git_dependency?
         end
 
         def manifest_files

@@ -42,7 +42,7 @@ module Dependabot
               updated_version = get_version_from_lockfile(new_lockfile_content)
 
               return if updated_version.nil?
-              return updated_version if git_commit_checker.git_dependency?
+              return updated_version if git_dependency?
               version_class.new(updated_version)
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
@@ -60,7 +60,7 @@ module Dependabot
                 versions.min_by { |p| version_class.new(p.fetch("version")) }
               end
 
-            if git_commit_checker.git_dependency?
+            if git_dependency?
               updated_version.fetch("source").split("#").last
             else
               updated_version.fetch("version")
@@ -70,7 +70,7 @@ module Dependabot
           def dependency_spec
             spec = dependency.name
 
-            if git_commit_checker.git_dependency?
+            if git_dependency?
               spec += ":#{git_dependency_version}" if git_dependency_version
             elsif dependency.version
               spec += ":#{dependency.version}"
@@ -161,11 +161,11 @@ module Dependabot
           end
 
           def temporary_requirement_for_resolution
-            if git_commit_checker.git_dependency? && git_dependency_version
+            if git_dependency? && git_dependency_version
               ">= #{git_dependency_version}"
-            elsif !git_commit_checker.git_dependency? && dependency.version
+            elsif !git_dependency? && dependency.version
               ">= #{dependency.version}"
-            elsif !git_commit_checker.git_dependency?
+            elsif !git_dependency?
               ">= 0"
             end
           end
@@ -193,12 +193,11 @@ module Dependabot
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
           end
 
-          def git_commit_checker
-            @git_commit_checker ||=
-              GitCommitChecker.new(
-                dependency: dependency,
-                credentials: credentials
-              )
+          def git_dependency?
+            GitCommitChecker.new(
+              dependency: dependency,
+              credentials: credentials
+            ).git_dependency?
           end
 
           def version_class

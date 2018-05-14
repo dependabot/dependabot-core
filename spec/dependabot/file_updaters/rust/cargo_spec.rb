@@ -217,6 +217,36 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
         end
       end
 
+      context "with a git dependency" do
+        let(:manifest_fixture_name) { "git_dependency" }
+        let(:lockfile_fixture_name) { "git_dependency" }
+
+        let(:dependency_name) { "utf8-ranges" }
+        let(:dependency_version) { "47afd3c09c6583afdf4083fc9644f6f64172c8f8" }
+        let(:dependency_previous_version) do
+          "83141b376b93484341c68fbca3ca110ae5cd2708"
+        end
+        let(:requirements) { previous_requirements }
+        let(:previous_requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: nil
+            }
+          }]
+        end
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include("utf8-ranges#47afd3c09c6583afdf4083fc9644f6f64172c8f8")
+        end
+      end
+
       context "when there is a path dependency" do
         let(:files) { [manifest, lockfile, path_dependency_file] }
         let(:manifest_fixture_name) { "path_dependency" }
