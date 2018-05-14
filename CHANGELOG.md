@@ -1,3 +1,8 @@
+## v0.58.7, 14 May 2018
+
+- Use gitmoji commit messages if repo uses them (thanks @mockersf)
+- Rust: Update git tags if they look like versions
+
 ## v0.58.6, 14 May 2018
 
 - Ruby: Rescue from unevaluatable gemspecs
