@@ -1,3 +1,7 @@
+## v0.58.6, 14 May 2018
+
+- Ruby: Rescue from unevaluatable gemspecs
+
 ## v0.58.5, 14 May 2018
 
 - Ruby: Better gemspec filename lookup
