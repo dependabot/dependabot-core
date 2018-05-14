@@ -11,6 +11,19 @@ module Dependabot
       JAVA_PMS = %w(maven gradle).freeze
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
+      GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
+                            lipstick tada white_check_mark lock apple penguin
+                            checkered_flag robot green_apple bookmark
+                            rotating_light construction green_heart arrow_down
+                            arrow_up pushpin construction_worker
+                            chart_with_upwards_trend recycle heavy_minus_sign
+                            whale heavy_plus_sign wrench globe_with_meridians
+                            pencil2 hankey rewind twisted_rightwards_arrows
+                            package alien truck page_facing_up boom bento
+                            ok_hand wheelchair bulb beers speech_balloon
+                            card_file_box loud_sound mute busts_in_silhouette
+                            children_crossing building_construction iphone
+                            clown_face egg see_no_evil camera_flash).freeze
       ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s),.:]|$)/
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
@@ -117,17 +130,25 @@ module Dependabot
         pr_name + " in #{files.first.directory}"
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def pr_name_prefix
         pr_name = ""
         if using_semantic_commit_messages?
           pr_name += "build: "
           pr_name += "[security] " if includes_security_fixes?
           pr_name + (library? ? "update " : "bump ")
+        elsif using_gitmoji_commit_messages?
+          pr_name += ":arrow_up: "
+          pr_name += ":lock: " if includes_security_fixes?
+          pr_name + (library? ? "Update " : "Bump ")
         else
           pr_name += "[Security] " if includes_security_fixes?
           pr_name + (library? ? "Update " : "Bump ")
         end
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def requirement_commit_message_intro
         msg = "Updates the requirements on "
@@ -526,6 +547,16 @@ module Dependabot
         end
 
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
+      def using_gitmoji_commit_messages?
+        return false if recent_commit_messages.none?
+
+        gitmoji_messages = recent_commit_messages.select do |message|
+          GITMOJI_PREFIXES.any? { |pre| message.match?(/:#{pre}:/i) }
+        end
+
+        gitmoji_messages.count.to_f / recent_commit_messages.count > 0.3
       end
 
       def recent_commit_messages
