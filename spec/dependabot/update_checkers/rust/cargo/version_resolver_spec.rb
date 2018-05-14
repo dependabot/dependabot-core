@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/update_checkers/rust/cargo/file_preparer"
 require "dependabot/update_checkers/rust/cargo/version_resolver"
 
 RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
@@ -9,12 +10,10 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      requirements_to_unlock: requirements_to_unlock,
       credentials: credentials
     )
   end
 
-  let(:requirements_to_unlock) { :own }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -23,7 +22,14 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       "password" => "token"
     }]
   end
-  let(:dependency_files) { [manifest, lockfile] }
+  let(:dependency_files) do
+    Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer.new(
+      dependency_files: unprepared_dependency_files,
+      dependency: dependency,
+      unlock_requirement: true
+    ).prepared_dependency_files
+  end
+  let(:unprepared_dependency_files) { [manifest, lockfile] }
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Cargo.toml",
@@ -65,7 +71,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     it { is_expected.to be >= Gem::Version.new("0.2.10") }
 
     context "without a lockfile" do
-      let(:dependency_files) { [manifest] }
+      let(:unprepared_dependency_files) { [manifest] }
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
@@ -174,7 +180,9 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     end
 
     context "when there is a workspace" do
-      let(:dependency_files) { [manifest, lockfile, workspace_child] }
+      let(:unprepared_dependency_files) do
+        [manifest, lockfile, workspace_child]
+      end
       let(:manifest_fixture_name) { "workspace_root" }
       let(:lockfile_fixture_name) { "workspace" }
       let(:workspace_child) do
@@ -199,8 +207,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     end
 
     context "when not unlocking" do
-      let(:requirements_to_unlock) { :none }
-
+      let(:dependency_files) { unprepared_dependency_files }
       it { is_expected.to eq(Gem::Version.new("0.1.80")) }
     end
   end

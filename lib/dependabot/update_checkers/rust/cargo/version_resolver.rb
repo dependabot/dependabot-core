@@ -11,11 +11,9 @@ module Dependabot
     module Rust
       class Cargo
         class VersionResolver
-          def initialize(dependency:, dependency_files:,
-                         requirements_to_unlock:, credentials:)
+          def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
-            @requirements_to_unlock = requirements_to_unlock
             @credentials = credentials
           end
 
@@ -25,8 +23,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :requirements_to_unlock,
-                      :credentials
+          attr_reader :dependency, :dependency_files, :credentials
 
           def fetch_latest_resolvable_version
             SharedHelpers.in_a_temporary_directory do
@@ -99,7 +96,7 @@ module Dependabot
               path = file.name
               dir = Pathname.new(path).dirname
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(file.name, updated_manifest_file_content(file))
+              File.write(file.name, file.content)
 
               FileUtils.mkdir_p(File.join(dir, "src"))
               File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -138,36 +135,6 @@ module Dependabot
               return nil
             end
             raise error
-          end
-
-          # Note: We don't need to care about formatting in this method, since
-          # we're only using the manifest to find the latest resolvable version
-          def updated_manifest_file_content(file)
-            return file.content if requirements_to_unlock == :none
-            parsed_manifest = TomlRB.parse(file.content)
-
-            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
-              next unless (req = parsed_manifest.dig(type, dependency.name))
-              updated_req = temporary_requirement_for_resolution
-
-              if req.is_a?(Hash)
-                parsed_manifest[type][dependency.name]["version"] = updated_req
-              else
-                parsed_manifest[type][dependency.name] = updated_req
-              end
-            end
-
-            TomlRB.dump(parsed_manifest)
-          end
-
-          def temporary_requirement_for_resolution
-            if git_dependency? && git_dependency_version
-              ">= #{git_dependency_version}"
-            elsif !git_dependency? && dependency.version
-              ">= #{dependency.version}"
-            elsif !git_dependency?
-              ">= 0"
-            end
           end
 
           def git_dependency_version

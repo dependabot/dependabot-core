@@ -10,6 +10,7 @@ module Dependabot
       class Cargo < Dependabot::UpdateCheckers::Base
         require_relative "cargo/requirements_updater"
         require_relative "cargo/version_resolver"
+        require_relative "cargo/file_preparer"
 
         def latest_version
           return if path_dependency?
@@ -42,10 +43,15 @@ module Dependabot
             if git_dependency?
               latest_resolvable_commit_with_unchanged_git_source
             else
+              prepared_files = FilePreparer.new(
+                dependency_files: dependency_files,
+                dependency: dependency,
+                unlock_requirement: false
+              ).prepared_dependency_files
+
               VersionResolver.new(
                 dependency: dependency,
-                dependency_files: dependency_files,
-                requirements_to_unlock: :none,
+                dependency_files: prepared_files,
                 credentials: credentials
               ).latest_resolvable_version
             end
@@ -116,10 +122,15 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
+          prepared_files = FilePreparer.new(
+            dependency_files: dependency_files,
+            dependency: dependency,
+            unlock_requirement: true
+          ).prepared_dependency_files
+
           VersionResolver.new(
             dependency: dependency,
-            dependency_files: dependency_files,
-            requirements_to_unlock: :own,
+            dependency_files: prepared_files,
             credentials: credentials
           ).latest_resolvable_version
         end
