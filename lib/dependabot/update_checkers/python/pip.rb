@@ -186,7 +186,8 @@ module Dependabot
         def config_variable_index_urls
           urls = { main: nil, extra: [] }
 
-          index_url_creds = credentials.select { |cred| cred["index-url"] }
+          index_url_creds = credentials.
+                            select { |cred| cred["type"] == "python_index" }
           urls[:main] =
             index_url_creds.
             find { |cred| cred["replaces-base"] }&.

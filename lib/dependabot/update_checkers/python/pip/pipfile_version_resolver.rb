@@ -248,7 +248,7 @@ module Dependabot
           def config_variable_sources
             @config_variable_sources ||=
               credentials.
-              select { |cred| cred["index-url"] }.
+              select { |cred| cred["type"] == "python_index" }.
               map { |h| { "url" => h["index-url"].gsub(%r{/*$}, "") + "/" } }
           end
 

@@ -138,13 +138,11 @@ module Dependabot
           end
 
           def git_credentials
-            credentials.
-              select { |cred| cred["type"] == "git_source" }
+            credentials.select { |cred| cred["type"] == "git_source" }
           end
 
           def registry_credentials
-            credentials.
-              select { |cred| cred.key?("registry") }
+            credentials.select { |cred| cred["type"] == "composer_repository" }
           end
         end
       end

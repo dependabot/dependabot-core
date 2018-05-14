@@ -208,6 +208,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
               "password" => "token"
             },
             {
+              "type" => "hex_organization",
               "organization" => "dependabot",
               "token" => "855f6cbeffc6e14c6a884f0111caff3e"
             }
@@ -227,6 +228,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
               "password" => "token"
             },
             {
+              "type" => "hex_organization",
               "organization" => "dependabot",
               "token" => "111f6cbeffc6e14c6a884f0111caff3e"
             }

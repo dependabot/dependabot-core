@@ -65,7 +65,7 @@ module Dependabot
           def config_variable_sources(credentials)
             @config_variable_sources ||=
               credentials.
-              select { |cred| cred["index-url"] }.
+              select { |cred| cred["type"] == "python_index" }.
               map { |cred| { "url" => cred["index-url"] } }
           end
         end

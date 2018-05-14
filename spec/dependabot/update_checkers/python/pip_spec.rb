@@ -179,6 +179,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         let(:credentials) do
           [
             {
+              "type" => "python_index",
               "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
               "replaces-base" => "true"
             }
@@ -245,6 +246,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         let(:credentials) do
           [
             {
+              "type" => "python_index",
               "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
               "replaces-base" => "false"
             }

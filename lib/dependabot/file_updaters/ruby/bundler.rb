@@ -210,7 +210,7 @@ module Dependabot
                 ::Gem::Specification.all = []
 
                 # Set auth details
-                credentials.each do |cred|
+                relevant_credentials.each do |cred|
                   ::Bundler.settings.set_command_option(
                     cred["host"],
                     cred["token"] || "#{cred['username']}:#{cred['password']}"
@@ -338,6 +338,14 @@ module Dependabot
           return "0.0.1" unless gem_name
           spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
           spec&.version || "0.0.1"
+        end
+
+        def relevant_credentials
+          credentials.select do |cred|
+            next true if cred["type"] == "git_source"
+            next true if cred["type"] == "rubygems_server"
+            false
+          end
         end
       end
     end

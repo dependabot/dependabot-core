@@ -113,7 +113,7 @@ module Dependabot
 
             SharedHelpers.in_a_forked_process do
               # Set auth details
-              credentials.each do |cred|
+              relevant_credentials.each do |cred|
                 ::Bundler.settings.set_command_option(
                   cred["host"],
                   cred["token"] || "#{cred['username']}:#{cred['password']}"
@@ -269,7 +269,7 @@ module Dependabot
                 ::Gem::Specification.all = []
 
                 # Set auth details
-                credentials.each do |cred|
+                relevant_credentials.each do |cred|
                   ::Bundler.settings.set_command_option(
                     cred["host"],
                     cred["token"] || "#{cred['username']}:#{cred['password']}"
@@ -403,6 +403,14 @@ module Dependabot
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)
+            end
+          end
+
+          def relevant_credentials
+            credentials.select do |cred|
+              next true if cred["type"] == "git_source"
+              next true if cred["type"] == "rubygems_server"
+              false
             end
           end
         end

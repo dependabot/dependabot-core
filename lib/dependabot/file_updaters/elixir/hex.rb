@@ -178,7 +178,7 @@ module Dependabot
         end
 
         def organization_credentials
-          credentials.select { |cred| cred.key?("organization") }.
+          credentials.select { |cred| cred["type"] == "hex_organization" }.
             flat_map { |cred| [cred["organization"], cred["token"]] }
         end
       end

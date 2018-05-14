@@ -200,6 +200,7 @@ module Dependabot
 
     def github_commit_comparison_status(ref1, ref2)
       access_token = credentials.
+                     select { |cred| cred["type"] == "git_source" }.
                      find { |cred| cred["host"] == "github.com" }&.
                      fetch("password")
 
@@ -209,6 +210,7 @@ module Dependabot
 
     def gitlab_commit_comparison_status(ref1, ref2)
       access_token = credentials.
+                     select { |cred| cred["type"] == "git_source" }.
                      find { |cred| cred["host"] == "gitlab.com" }&.
                      fetch("token")
 
@@ -225,6 +227,7 @@ module Dependabot
 
     def bitbucket_commit_comparison_status(ref1, ref2)
       token = credentials.
+              select { |cred| cred["type"] == "git_source" }.
               find { |cred| cred["host"] == "bitbucket.org" }&.
               fetch("token")
 

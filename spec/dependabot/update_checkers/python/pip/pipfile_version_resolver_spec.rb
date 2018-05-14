@@ -143,6 +143,7 @@ RSpec.describe namespace::PipfileVersionResolver do
               "password" => "token"
             },
             {
+              "type" => "python_index",
               "index-url" => "https://user:pass@pypi.gemfury.com/secret_codes/"
             }
           ]
@@ -186,6 +187,7 @@ RSpec.describe namespace::PipfileVersionResolver do
               "password" => "token"
             },
             {
+              "type" => "python_index",
               "index-url" => "https://pypi.gemfury.com/secret_codes/"
             }
           ]
@@ -208,6 +210,7 @@ RSpec.describe namespace::PipfileVersionResolver do
               "password" => "token"
             },
             {
+              "type" => "python_index",
               "index-url" => "https://pypi.python.org/simple"
             }
           ]

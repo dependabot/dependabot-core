@@ -67,6 +67,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
             "password" => "token"
           },
           {
+            "type" => "python_index",
             "index-url" => "https://username:password@pypi.posrip.com/pypi/"
           }
         ]

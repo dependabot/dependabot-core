@@ -558,6 +558,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               "password" => "token"
             },
             {
+              "type" => "python_index",
               "index-url" => "https://pypi.python.org/simple"
             }
           ]

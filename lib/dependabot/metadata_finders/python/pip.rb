@@ -108,7 +108,7 @@ module Dependabot
         def possible_listing_urls
           credential_urls =
             credentials.
-            select { |cred| cred["index-url"] }.
+            select { |cred| cred["type"] == "python_index" }.
             map { |cred| cred["index-url"].gsub(%r{/$}, "") }
 
           (credential_urls + [MAIN_PYPI_URL]).map do |base_url|

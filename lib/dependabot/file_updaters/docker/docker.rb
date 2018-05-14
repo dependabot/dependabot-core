@@ -100,7 +100,9 @@ module Dependabot
         end
 
         def private_registry_credentials
-          credentials.find { |cred| cred["registry"] == private_registry_url }
+          credentials.
+            select { |cred| cred["type"] == "docker_registry" }.
+            find { |cred| cred["registry"] == private_registry_url }
         end
 
         def registry_client
