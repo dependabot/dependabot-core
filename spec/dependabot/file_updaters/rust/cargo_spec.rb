@@ -135,6 +135,51 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
             end
           end
 
+          context "with a git dependency" do
+            context "with an updated tag" do
+              let(:manifest_fixture_name) { "git_dependency_with_tag" }
+              let(:lockfile_fixture_name) { "git_dependency_with_tag" }
+              let(:dependency_name) { "utf8-ranges" }
+              let(:dependency_version) do
+                "83141b376b93484341c68fbca3ca110ae5cd2708"
+              end
+              let(:dependency_previous_version) do
+                "d5094c7e9456f2965dec20de671094a98c6929c2"
+              end
+              let(:requirements) do
+                [{
+                  file: "Cargo.toml",
+                  requirement: nil,
+                  groups: ["dependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/BurntSushi/utf8-ranges",
+                    branch: nil,
+                    ref: "1.0.0"
+                  }
+                }]
+              end
+              let(:previous_requirements) do
+                [{
+                  file: "Cargo.toml",
+                  requirement: nil,
+                  groups: ["dependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/BurntSushi/utf8-ranges",
+                    branch: nil,
+                    ref: "0.1.3"
+                  }
+                }]
+              end
+
+              it "updates the dependency version in the lockfile" do
+                expect(updated_manifest_content).
+                  to include(', tag = "1.0.0" }')
+              end
+            end
+          end
+
           context "with a feature dependency" do
             let(:manifest_fixture_name) { "feature_dependency" }
             let(:lockfile_fixture_name) { "feature_dependency" }
@@ -244,6 +289,48 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).
             to include("utf8-ranges#47afd3c09c6583afdf4083fc9644f6f64172c8f8")
+        end
+
+        context "with an updated tag" do
+          let(:manifest_fixture_name) { "git_dependency_with_tag" }
+          let(:lockfile_fixture_name) { "git_dependency_with_tag" }
+          let(:dependency_version) do
+            "83141b376b93484341c68fbca3ca110ae5cd2708"
+          end
+          let(:dependency_previous_version) do
+            "d5094c7e9456f2965dec20de671094a98c6929c2"
+          end
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "1.0.0"
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "0.1.3"
+              }
+            }]
+          end
+
+          it "updates the dependency version in the lockfile" do
+            expect(updated_lockfile_content).
+              to include("?tag=1.0.0#83141b376b93484341c68fbca3ca110ae5cd2708")
+          end
         end
       end
 
