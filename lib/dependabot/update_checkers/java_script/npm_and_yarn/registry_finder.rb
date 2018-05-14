@@ -47,7 +47,7 @@ module Dependabot
                   omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
                 ).status < 400
-              rescue Excon::Error::Timeout
+              rescue Excon::Error::Timeout, Excon::Error::Socket
                 nil
               end&.fetch("registry")
 
@@ -101,7 +101,8 @@ module Dependabot
             @known_registries ||=
               begin
                 registries = []
-                registries += credentials.select { |cred| cred["registry"] }
+                registries += credentials.
+                              select { |cred| cred["type"] == "npm_registry" }
 
                 npmrc_file&.content.to_s.scan(AUTH_TOKEN_REGEX) do
                   registries << {

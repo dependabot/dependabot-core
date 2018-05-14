@@ -105,6 +105,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
               "password" => "token"
             },
             {
+              "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "my_token"
             }
@@ -122,6 +123,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                 "password" => "token"
               },
               {
+                "type" => "npm_registry",
                 "registry" => "registry.npmjs.org",
                 "token" => "my:token"
               }
@@ -161,6 +163,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                 "password" => "token"
               },
               {
+                "type" => "npm_registry",
                 "registry" => "registry.npmjs.org",
                 "token" => "my_token"
               }
@@ -178,6 +181,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                   "password" => "token"
                 },
                 {
+                  "type" => "npm_registry",
                   "registry" => "npm.fury.io/dependabot",
                   "token" => "my_token"
                 }
@@ -207,6 +211,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                 "password" => "token"
               },
               {
+                "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "my_token"
               }
@@ -279,6 +284,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
               "password" => "token"
             },
             {
+              "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "my_token"
             }
@@ -313,6 +319,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                 "password" => "token"
               },
               {
+                "type" => "npm_registry",
                 "registry" => "registry.npmjs.org",
                 "token" => "my_token"
               }
@@ -330,6 +337,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                   "password" => "token"
                 },
                 {
+                  "type" => "npm_registry",
                   "registry" => "npm.fury.io/dependabot",
                   "token" => "my_token"
                 }
@@ -359,6 +367,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                 "password" => "token"
               },
               {
+                "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "my_token"
               }

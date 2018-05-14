@@ -242,6 +242,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             let(:credentials) do
               [
                 {
+                  "type" => "docker_registry",
                   "registry" => "registry-host.io:5000",
                   "username" => "grey",
                   "password" => "pa55word"

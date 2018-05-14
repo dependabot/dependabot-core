@@ -46,6 +46,7 @@ RSpec.describe tested_module::RegistryFinder do
     context "with credentials for a private registry" do
       before do
         credentials << {
+          "type" => "npm_registry",
           "registry" => "npm.fury.io/dependabot",
           "token" => "secret_token"
         }
@@ -113,6 +114,7 @@ RSpec.describe tested_module::RegistryFinder do
     context "with credentials for a private registry" do
       before do
         credentials << {
+          "type" => "npm_registry",
           "registry" => "npm.fury.io/dependabot",
           "token" => "secret_token"
         }

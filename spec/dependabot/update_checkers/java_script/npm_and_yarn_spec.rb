@@ -490,6 +490,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               "password" => "token"
             },
             {
+              "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
             }
@@ -529,6 +530,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               "password" => "token"
             },
             {
+              "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret:token"
             }
@@ -589,6 +591,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               "password" => "token"
             },
             {
+              "type" => "npm_registry",
               "registry" => "npm.fury.io/dependabot",
               "token" => "secret_token"
             }

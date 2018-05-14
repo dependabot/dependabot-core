@@ -449,7 +449,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         let(:credentials) do
-          [{ "registry" => "registry.npmjs.org", "token" => "secret_token" }]
+          [{
+            "type" => "npm_registry",
+            "registry" => "registry.npmjs.org",
+            "token" => "secret_token"
+          }]
         end
 
         it "updates the files" do
