@@ -3,6 +3,7 @@
 require "toml-rb"
 require "dependabot/git_commit_checker"
 require "dependabot/file_updaters/base"
+require "dependabot/file_parsers/rust/cargo"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -214,7 +215,7 @@ module Dependabot
             path = file.name
             dir = Pathname.new(path).dirname
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(file.name, updated_manifest_file_content(file))
+            File.write(file.name, prepared_manifest_content(file))
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -222,6 +223,26 @@ module Dependabot
           end
 
           File.write(lockfile.name, lockfile.content)
+        end
+
+        def prepared_manifest_content(file)
+          updated_content = updated_manifest_file_content(file)
+          return updated_content if git_dependency?
+
+          parsed_manifest = TomlRB.parse(updated_content)
+
+          FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+            next unless (req = parsed_manifest.dig(type, dependency.name))
+            updated_req = "=#{dependency.version}"
+
+            if req.is_a?(Hash)
+              parsed_manifest[type][dependency.name]["version"] = updated_req
+            else
+              parsed_manifest[type][dependency.name] = updated_req
+            end
+          end
+
+          TomlRB.dump(parsed_manifest)
         end
 
         def set_git_credentials
