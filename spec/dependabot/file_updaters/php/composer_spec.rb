@@ -222,6 +222,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
                   "password" => "token"
                 },
                 {
+                  "type" => "php_environment_variable",
                   "env-key" => "ACF_PRO_KEY",
                   "env-value" => "example_key"
                 }

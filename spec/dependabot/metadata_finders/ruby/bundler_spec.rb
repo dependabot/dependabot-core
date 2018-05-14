@@ -83,6 +83,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               "password" => "token"
             },
             {
+              "type" => "rubygems_server",
               "host" => "gems.greysteil.com",
               "token" => "secret:token"
             }
