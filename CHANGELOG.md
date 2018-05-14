@@ -1,3 +1,7 @@
+## v0.58.4, 14 May 2018
+
+- Filter credentials on type everywhere
+
 ## v0.58.3, 14 May 2018
 
 - JS: Handle socket errors when looking for registries
