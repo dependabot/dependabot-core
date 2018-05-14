@@ -13,5 +13,10 @@ RSpec.describe module_to_test::GemspecDependencyNameFinder do
     subject(:dependency_name) { finder.dependency_name }
 
     it { is_expected.to eq("example") }
+
+    context "with an unevaluatable gemspec name" do
+      let(:gemspec_content) { fixture("ruby", "gemspecs", "function_name") }
+      it { is_expected.to be_nil }
+    end
   end
 end

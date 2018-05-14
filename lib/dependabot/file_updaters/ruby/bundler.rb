@@ -23,6 +23,10 @@ module Dependabot
 
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
+        GEMSPEC_SOURCES = [
+          ::Bundler::Source::Path,
+          ::Bundler::Source::Gemspec
+        ].freeze
 
         def self.updated_files_regex
           [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
@@ -330,14 +334,17 @@ module Dependabot
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
-          parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+          gemspec_specs =
+            ::Bundler::LockfileParser.new(lockfile.content).specs.
+            select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
+
           gem_name =
             GemspecDependencyNameFinder.new(gemspec_content: gemspec_content).
             dependency_name
 
-          return "0.0.1" unless gem_name
-          spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
-          spec&.version || "0.0.1"
+          return gemspec_specs.first&.version || "0.0.1" unless gem_name
+          spec = gemspec_specs.find { |s| s.name == gem_name }
+          spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
 
         def relevant_credentials

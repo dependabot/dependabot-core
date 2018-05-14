@@ -20,7 +20,11 @@ module Dependabot
             dependency_name_node = find_dependency_name_node(ast)
             return unless dependency_name_node
 
-            eval(dependency_name_node.children[2].loc.expression.source)
+            begin
+              eval(dependency_name_node.children[2].loc.expression.source)
+            rescue StandardError
+              nil # If we can't evaluate the expression just return nil
+            end
           end
           # rubocop:enable Security/Eval
 

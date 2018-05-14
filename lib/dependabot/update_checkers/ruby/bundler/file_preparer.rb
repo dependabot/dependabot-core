@@ -25,6 +25,10 @@ module Dependabot
         #   version range
         class FilePreparer
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          GEMSPEC_SOURCES = [
+            ::Bundler::Source::Path,
+            ::Bundler::Source::Gemspec
+          ].freeze
 
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
@@ -208,15 +212,18 @@ module Dependabot
           def replacement_version_for_gemspec(gemspec_content)
             return "0.0.1" unless lockfile
 
-            parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+            gemspec_specs =
+              ::Bundler::LockfileParser.new(lockfile.content).specs.
+              select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
+
             gem_name =
               FileUpdaters::Ruby::Bundler::GemspecDependencyNameFinder.
               new(gemspec_content: gemspec_content).
               dependency_name
 
-            return "0.0.1" unless gem_name
-            spec = parsed_lockfile.specs.find { |s| s.name == gem_name }
-            spec&.version || "0.0.1"
+            return gemspec_specs.first&.version || "0.0.1" unless gem_name
+            spec = gemspec_specs.find { |s| s.name == gem_name }
+            spec&.version || gemspec_specs.first&.version || "0.0.1"
           end
         end
       end
