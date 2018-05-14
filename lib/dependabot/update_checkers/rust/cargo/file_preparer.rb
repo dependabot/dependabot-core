@@ -13,10 +13,12 @@ module Dependabot
         # in UpdateCheckers::Rust::Cargo.
         class FilePreparer
           def initialize(dependency_files:, dependency:,
-                         unlock_requirement: true)
+                         unlock_requirement: true,
+                         replacement_git_pin: nil)
             @dependency_files = dependency_files
             @dependency = dependency
             @unlock_requirement = unlock_requirement
+            @replacement_git_pin = replacement_git_pin
           end
 
           def prepared_dependency_files
@@ -24,7 +26,7 @@ module Dependabot
             files += manifest_files.map do |file|
               DependencyFile.new(
                 name: file.name,
-                content: updated_manifest_file_content(file),
+                content: manifest_content_for_update_check(file),
                 directory: file.directory
               )
             end
@@ -34,17 +36,29 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files, :dependency
+          attr_reader :dependency_files, :dependency, :replacement_git_pin
 
           def unlock_requirement?
             @unlock_requirement
           end
 
+          def replace_git_pin?
+            !replacement_git_pin.nil?
+          end
+
+          def manifest_content_for_update_check(file)
+            content = file.content
+
+            content = relax_version(file.content) if unlock_requirement?
+            content = replace_git_pin(content) if replace_git_pin?
+
+            content
+          end
+
           # Note: We don't need to care about formatting in this method, since
           # we're only using the manifest to find the latest resolvable version
-          def updated_manifest_file_content(file)
-            return file.content unless unlock_requirement?
-            parsed_manifest = TomlRB.parse(file.content)
+          def relax_version(content)
+            parsed_manifest = TomlRB.parse(content)
 
             FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
               next unless (req = parsed_manifest.dig(type, dependency.name))
@@ -54,6 +68,28 @@ module Dependabot
                 parsed_manifest[type][dependency.name]["version"] = updated_req
               else
                 parsed_manifest[type][dependency.name] = updated_req
+              end
+            end
+
+            TomlRB.dump(parsed_manifest)
+          end
+
+          def replace_git_pin(content)
+            parsed_manifest = TomlRB.parse(content)
+
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+              next unless (req = parsed_manifest.dig(type, dependency.name))
+              next unless req.is_a?(Hash)
+              next unless [req["tag"], req["rev"]].compact.uniq.count == 1
+
+              if req["tag"]
+                parsed_manifest[type][dependency.name]["tag"] =
+                  replacement_git_pin
+              end
+
+              if req["rev"]
+                parsed_manifest[type][dependency.name]["rev"] =
+                  replacement_git_pin
               end
             end
 

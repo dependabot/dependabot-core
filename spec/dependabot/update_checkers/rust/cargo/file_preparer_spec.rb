@@ -9,12 +9,14 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
     described_class.new(
       dependency_files: dependency_files,
       dependency: dependency,
-      unlock_requirement: unlock_requirement
+      unlock_requirement: unlock_requirement,
+      replacement_git_pin: replacement_git_pin
     )
   end
 
   let(:dependency_files) { [manifest, lockfile] }
   let(:unlock_requirement) { true }
+  let(:replacement_git_pin) { nil }
 
   let(:manifest) do
     Dependabot::DependencyFile.new(
@@ -94,11 +96,53 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
             }
           end
 
-          it "doesn't update the requirement" do
+          it "updates the requirement" do
             expect(prepared_manifest_file.content).
               to include('git = "https://github.com/BurntSushi/utf8-ranges"')
             expect(prepared_manifest_file.content).
               to include('version = ">= 1.0.0"')
+          end
+
+          context "with a tag" do
+            let(:manifest_fixture_name) { "git_dependency_with_tag" }
+            let(:lockfile_fixture_name) { "git_dependency_with_tag" }
+            let(:dependency_version) do
+              "d5094c7e9456f2965dec20de671094a98c6929c2"
+            end
+            let(:source) do
+              {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "0.1.3"
+              }
+            end
+
+            context "without a replacement tag" do
+              let(:replacement_git_pin) { nil }
+
+              it "updates the requirement but not the tag" do
+                expect(prepared_manifest_file.content).
+                  to include('"https://github.com/BurntSushi/utf8-ranges"')
+                expect(prepared_manifest_file.content).
+                  to include('version = ">= 0.1.3"')
+                expect(prepared_manifest_file.content).
+                  to include('tag = "0.1.3"')
+              end
+            end
+
+            context "with a replacement tag" do
+              let(:replacement_git_pin) { "1.0.0" }
+
+              it "updates the requirement and the tag" do
+                expect(prepared_manifest_file.content).
+                  to include('"https://github.com/BurntSushi/utf8-ranges"')
+                expect(prepared_manifest_file.content).
+                  to include('version = ">= 0.1.3"')
+                expect(prepared_manifest_file.content).
+                  to include('tag = "1.0.0"')
+              end
+            end
           end
         end
       end
