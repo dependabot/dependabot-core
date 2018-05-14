@@ -19,24 +19,26 @@ module Dependabot
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
 
-          def initialize(requirements:, library:, latest_version:,
-                         latest_resolvable_version:)
+          def initialize(requirements:, library:, updated_source:,
+                         latest_version:, latest_resolvable_version:)
             @requirements = requirements
             @library = library
+            @updated_source = updated_source
 
-            if latest_version
-              @latest_version = Utils::Rust::Version.new(latest_version)
+            if latest_version && version_class.correct?(latest_version)
+              @latest_version = version_class.new(latest_version)
             end
 
             return unless latest_resolvable_version
+            return unless version_class.correct?(latest_resolvable_version)
             @latest_resolvable_version =
-              Utils::Rust::Version.new(latest_resolvable_version)
+              version_class.new(latest_resolvable_version)
           end
 
           def updated_requirements
-            return requirements unless latest_resolvable_version
-
             requirements.map do |req|
+              req = req.merge(source: updated_source)
+              next req unless latest_resolvable_version
               next req if req[:requirement].nil?
 
               if library?
@@ -49,7 +51,8 @@ module Dependabot
 
           private
 
-          attr_reader :requirements, :latest_version, :latest_resolvable_version
+          attr_reader :requirements, :latest_version, :updated_source,
+                      :latest_resolvable_version
 
           def library?
             @library
@@ -132,7 +135,7 @@ module Dependabot
           end
 
           def update_greatest_version(old_version, version_to_be_permitted)
-            version = Utils::Rust::Version.new(old_version)
+            version = version_class.new(old_version)
             version = version.release if version.prerelease?
 
             index_to_update =
@@ -146,6 +149,10 @@ module Dependabot
               else 0
               end
             end.join(".")
+          end
+
+          def version_class
+            Utils::Rust::Version
           end
         end
       end

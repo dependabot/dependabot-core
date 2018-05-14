@@ -285,7 +285,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           }
         end
 
-        it { is_expected.to eq(dependency_version) }
+        # The SHA of the next version tag
+        it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
       end
 
       context "when the latest version is blocked" do
@@ -401,6 +402,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to receive(:new).
         with(
           requirements: requirements,
+          updated_source: nil,
           latest_version: "0.1.40",
           latest_resolvable_version: "0.1.40",
           library: false

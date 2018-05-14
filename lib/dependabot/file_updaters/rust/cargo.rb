@@ -55,25 +55,63 @@ module Dependabot
           dependencies.
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
-              updated_requirement =
-                dep.requirements.
-                find { |r| r[:file] == file.name }.
-                fetch(:requirement)
-
-              old_req =
-                dep.previous_requirements.
-                find { |r| r[:file] == file.name }.
-                fetch(:requirement)
-
-              updated_content = update_manifest_content(
-                content: content,
-                dep: dep,
-                old_req: old_req,
-                new_req: updated_requirement
+              updated_content = content
+              updated_content = update_requirement(
+                content: updated_content,
+                filename: file.name,
+                dependency: dep
               )
+              updated_content = update_git_pin(
+                content: updated_content,
+                filename: file.name,
+                dependency: dep
+              )
+
               raise "Expected content to change!" if content == updated_content
               updated_content
             end
+        end
+
+        def update_requirement(content:, filename:, dependency:)
+          updated_requirement =
+            dependency.requirements.
+            find { |r| r[:file] == filename }.
+            fetch(:requirement)
+
+          old_req =
+            dependency.previous_requirements.
+            find { |r| r[:file] == filename }.
+            fetch(:requirement)
+
+          return content unless old_req
+
+          update_manifest_req(
+            content: content,
+            dep: dependency,
+            old_req: old_req,
+            new_req: updated_requirement
+          )
+        end
+
+        def update_git_pin(content:, filename:, dependency:)
+          updated_pin =
+            dependency.requirements.
+            find { |r| r[:file] == filename }&.
+            dig(:source, :ref)
+
+          old_pin =
+            dependency.previous_requirements.
+            find { |r| r[:file] == filename }&.
+            dig(:source, :ref)
+
+          return content unless old_pin
+
+          update_manifest_pin(
+            content: content,
+            dep: dependency,
+            old_pin: old_pin,
+            new_pin: updated_pin
+          )
         end
 
         def updated_lockfile_content
@@ -97,16 +135,33 @@ module Dependabot
             end
         end
 
-        def update_manifest_content(content:, dep:, old_req:, new_req:)
+        def update_manifest_req(content:, dep:, old_req:, new_req:)
           if content.match?(declaration_regex(dep))
             content.gsub(declaration_regex(dep)) do |line|
               line.gsub(old_req, new_req)
             end
-          elsif content.match?(feature_declaration_regex(dep))
-            content.gsub(feature_declaration_regex(dep)) do |part|
-              line = content.match(feature_declaration_regex(dep)).
-                     named_captures.fetch("requirement_declaration")
+          elsif content.match?(feature_declaration_version_regex(dep))
+            content.gsub(feature_declaration_version_regex(dep)) do |part|
+              line = content.match(feature_declaration_version_regex(dep)).
+                     named_captures.fetch("version_declaration")
               new_line = line.gsub(old_req, new_req)
+              part.gsub(line, new_line)
+            end
+          else
+            content
+          end
+        end
+
+        def update_manifest_pin(content:, dep:, old_pin:, new_pin:)
+          if content.match?(declaration_regex(dep))
+            content.gsub(declaration_regex(dep)) do |line|
+              line.gsub(old_pin, new_pin)
+            end
+          elsif content.match?(feature_declaration_pin_regex(dep))
+            content.gsub(feature_declaration_pin_regex(dep)) do |part|
+              line = content.match(feature_declaration_pin_regex(dep)).
+                     named_captures.fetch("pin_declaration")
+              new_line = line.gsub(old_pin, new_pin)
               part.gsub(line, new_line)
             end
           else
@@ -199,11 +254,19 @@ module Dependabot
           /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
         end
 
-        def feature_declaration_regex(dep)
+        def feature_declaration_version_regex(dep)
           /
             #{Regexp.quote("[dependencies.#{dep.name}]")}
             (?:(?!^\[).)+
-            (?<requirement_declaration>version\s*=.*)$
+            (?<version_declaration>version\s*=.*)$
+          /mx
+        end
+
+        def feature_declaration_pin_regex(dep)
+          /
+            #{Regexp.quote("[dependencies.#{dep.name}]")}
+            (?:(?!^\[).)+
+            (?<pin_declaration>(?:tag|rev)\s*=.*)$
           /mx
         end
 
