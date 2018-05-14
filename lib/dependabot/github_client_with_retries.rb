@@ -24,7 +24,7 @@ module Dependabot
       args = DEFAULT_CLIENT_ARGS.merge(args)
 
       @max_retries = max_retries || 1
-      @client = Octokit::Client.new(**args)
+      @client = Octokit::Client.new(args)
     end
 
     def method_missing(method_name, *args, &block)
