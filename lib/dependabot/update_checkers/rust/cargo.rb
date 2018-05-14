@@ -50,6 +50,7 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
+            updated_source: updated_source,
             latest_resolvable_version: latest_resolvable_version&.to_s,
             latest_version: latest_version&.to_s,
             library: dependency.version.nil?
@@ -157,6 +158,30 @@ module Dependabot
             dependency_files: prepared_files,
             credentials: credentials
           ).latest_resolvable_version
+        end
+
+        def updated_source
+          # Never need to update source, unless a git_dependency
+          return dependency_source_details unless git_dependency?
+
+          # Update the git tag if updating a pinned version
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             latest_git_tag_is_resolvable?
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          end
+
+          # Otherwise return the original source
+          dependency_source_details
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def wants_prerelease?

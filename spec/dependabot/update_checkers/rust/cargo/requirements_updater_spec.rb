@@ -8,6 +8,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       library: library,
+      updated_source: updated_source,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -41,8 +42,39 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
     end
 
     context "with no requirement string (e.g., for a git dependency)" do
-      let(:req_string) { nil }
-      its([:requirement]) { is_expected.to eq(nil) }
+      let(:requirements) { [cargo_req] }
+
+      let(:latest_resolvable_version) do
+        "aa218f56b14c9653891f9e74264a383fa43fefbd"
+      end
+      let(:cargo_req) do
+        {
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: "master",
+            ref: nil
+          }
+        }
+      end
+      let(:updated_source) do
+        {
+          type: "git",
+          url: "https://github.com/BurntSushi/utf8-ranges",
+          branch: "master",
+          ref: nil
+        }
+      end
+      it { is_expected.to eq(cargo_req) }
+
+      context "when asked to update the source" do
+        let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+        before { cargo_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
+        its([:source]) { is_expected.to eq(updated_source) }
+      end
     end
 
     context "for an app requirement" do
