@@ -1,4 +1,4 @@
-## v0.58.1, 13 May 2018
+## v0.58.2, 13 May 2018
 
 - Expect git_source credentials to have a username and password (not a token)
 - Add tests that all requests to the public GitHub instance can handle not
