@@ -130,6 +130,8 @@ module Dependabot
         pr_name + " in #{files.first.directory}"
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def pr_name_prefix
         pr_name = ""
         if using_semantic_commit_messages?
@@ -145,6 +147,8 @@ module Dependabot
           pr_name + (library? ? "Update " : "Bump ")
         end
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def requirement_commit_message_intro
         msg = "Updates the requirements on "
