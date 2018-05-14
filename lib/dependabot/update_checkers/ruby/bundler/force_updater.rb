@@ -73,7 +73,7 @@ module Dependabot
                 # Set auth details
                 relevant_credentials.each do |cred|
                   ::Bundler.settings.set_command_option(
-                    cred["host"],
+                    cred.fetch("host"),
                     cred["token"] || "#{cred['username']}:#{cred['password']}"
                   )
                 end
