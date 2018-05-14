@@ -25,31 +25,30 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # TODO: Handle git dependencies
-          return if git_dependency?
           return if path_dependency?
 
           @latest_resolvable_version ||=
-            VersionResolver.new(
-              dependency: dependency,
-              dependency_files: dependency_files,
-              requirements_to_unlock: :own,
-              credentials: credentials
-            ).latest_resolvable_version
+            if git_dependency?
+              latest_resolvable_version_for_git_dependency
+            else
+              fetch_latest_resolvable_version
+            end
         end
 
         def latest_resolvable_version_with_no_unlock
-          # TODO: Handle git dependencies
-          return if git_dependency?
           return if path_dependency?
 
           @latest_resolvable_version_with_no_unlock ||=
-            VersionResolver.new(
-              dependency: dependency,
-              dependency_files: dependency_files,
-              requirements_to_unlock: :none,
-              credentials: credentials
-            ).latest_resolvable_version
+            if git_dependency?
+              latest_resolvable_commit_with_unchanged_git_source
+            else
+              VersionResolver.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                requirements_to_unlock: :none,
+                credentials: credentials
+              ).latest_resolvable_version
+            end
         end
 
         def updated_requirements
@@ -94,6 +93,35 @@ module Dependabot
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
           dependency.version
+        end
+
+        def latest_resolvable_version_for_git_dependency
+          # If the gem isn't pinned, the latest version is just the latest
+          # commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return latest_resolvable_commit_with_unchanged_git_source
+          end
+
+          # If the dependency is pinned then there's nothing we can do.
+          dependency.version
+        end
+
+        def latest_resolvable_commit_with_unchanged_git_source
+          fetch_latest_resolvable_version
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          # Resolution may fail, as Elixir updates straight to the tip of the
+          # branch. Just return `nil` if it does (so no update).
+          return if error.message.include?("versions conflict")
+          raise error
+        end
+
+        def fetch_latest_resolvable_version
+          VersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            requirements_to_unlock: :own,
+            credentials: credentials
+          ).latest_resolvable_version
         end
 
         def wants_prerelease?

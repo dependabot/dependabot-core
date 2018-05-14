@@ -38,26 +38,33 @@ module Dependabot
               command = "cargo update -p #{dependency_spec}"
               run_shell_command(command)
 
-              updated_versions =
-                TomlRB.parse(File.read("Cargo.lock")).fetch("package").
-                select { |p| p["name"] == dependency.name }
+              new_lockfile_content = File.read("Cargo.lock")
+              updated_version = get_version_from_lockfile(new_lockfile_content)
 
-              updated_version =
-                if dependency.top_level?
-                  updated_versions.
-                    max_by { |p| Utils::Rust::Version.new(p.fetch("version")) }.
-                    fetch("version")
-                else
-                  updated_versions.
-                    min_by { |p| Utils::Rust::Version.new(p.fetch("version")) }.
-                    fetch("version")
-                end
-
-              return updated_version if updated_version.nil?
-              Utils::Rust::Version.new(updated_version)
+              return if updated_version.nil?
+              return updated_version if git_commit_checker.git_dependency?
+              version_class.new(updated_version)
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_cargo_errors(error)
+          end
+
+          def get_version_from_lockfile(lockfile_content)
+            versions = TomlRB.parse(lockfile_content).fetch("package").
+                       select { |p| p["name"] == dependency.name }
+
+            updated_version =
+              if dependency.top_level?
+                versions.max_by { |p| version_class.new(p.fetch("version")) }
+              else
+                versions.min_by { |p| version_class.new(p.fetch("version")) }
+              end
+
+            if git_commit_checker.git_dependency?
+              updated_version.fetch("source").split("#").last
+            else
+              updated_version.fetch("version")
+            end
           end
 
           def dependency_spec
@@ -192,6 +199,10 @@ module Dependabot
                 dependency: dependency,
                 credentials: credentials
               )
+          end
+
+          def version_class
+            Utils::Rust::Version
           end
         end
       end
