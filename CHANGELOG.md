@@ -1,3 +1,9 @@
+## v0.58.3, 14 May 2018
+
+- JS: Handle socket errors when looking for registries
+- Rust: Handle git dependencies in version resolver
+- Rust: Add support for getting latest version of git dependencies
+
 ## v0.58.2, 13 May 2018
 
 - Expect git_source credentials to have a username and password (not a token)
