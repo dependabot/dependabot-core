@@ -8,7 +8,7 @@ dependencies = [
 [[package]]
 name = "utf8-ranges"
 version = "1.0.0"
-source = "git+https://github.com/BurntSushi/utf8-ranges#47afd3c09c6583afdf4083fc9644f6f64172c8f8"
+source = "git+https://github.com/BurntSushi/utf8-ranges#83141b376b93484341c68fbca3ca110ae5cd2708"
 
 [metadata]
 "checksum utf8-ranges 1.0.0 (git+https://github.com/BurntSushi/utf8-ranges)" = "<none>"

@@ -135,6 +135,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     end
 
     context "with a git dependency" do
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
       let(:requirements) do
         [{
           file: "Cargo.toml",
@@ -149,7 +151,60 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         }]
       end
 
-      it { is_expected.to be_nil }
+      before do
+        git_url = "https://github.com/BurntSushi/utf8-ranges.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "utf8-ranges"),
+            headers: git_header
+          )
+      end
+
+      it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+
+      context "with a version-like tag" do
+        let(:dependency_version) { "d5094c7e9456f2965dec20de671094a98c6929c2" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: "0.1.3"
+            }
+          }]
+        end
+
+        # The SHA of the next version tag
+        it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
+      end
+
+      context "with a non-version tag" do
+        let(:dependency_version) { "gitsha" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: "something"
+            }
+          }]
+        end
+
+        it { is_expected.to eq(dependency_version) }
+      end
     end
 
     context "with a path dependency" do

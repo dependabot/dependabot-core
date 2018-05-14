@@ -12,12 +12,12 @@ module Dependabot
         require_relative "cargo/version_resolver"
 
         def latest_version
-          # TODO: Handle git dependencies
-          return if git_dependency?
           return if path_dependency?
 
           @latest_version =
-            begin
+            if git_dependency?
+              latest_version_for_git_dependency
+            else
               versions = available_versions
               versions.reject!(&:prerelease?) unless wants_prerelease?
               versions.max
@@ -70,6 +70,30 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def latest_version_for_git_dependency
+          latest_git_version_sha
+        end
+
+        def latest_git_version_sha
+          # If the gem isn't pinned, the latest version is just the latest
+          # commit for the specified branch.
+          unless git_commit_checker.pinned?
+            return git_commit_checker.head_commit_for_current_branch
+          end
+
+          # If the dependency is pinned to a tag that looks like a version then
+          # we want to update that tag. The latest version will then be the SHA
+          # of the latest tag that looks like a version.
+          if git_commit_checker.pinned_ref_looks_like_version?
+            latest_tag = git_commit_checker.local_tag_for_latest_version
+            return latest_tag&.fetch(:commit_sha) || dependency.version
+          end
+
+          # If the dependency is pinned to a tag that doesn't look like a
+          # version then there's nothing we can do.
+          dependency.version
         end
 
         def wants_prerelease?
