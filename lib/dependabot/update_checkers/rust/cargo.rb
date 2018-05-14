@@ -32,7 +32,7 @@ module Dependabot
             if git_dependency?
               latest_resolvable_version_for_git_dependency
             else
-              fetch_latest_resolvable_version
+              fetch_latest_resolvable_version(unlock_requirement: true)
             end
         end
 
@@ -43,17 +43,7 @@ module Dependabot
             if git_dependency?
               latest_resolvable_commit_with_unchanged_git_source
             else
-              prepared_files = FilePreparer.new(
-                dependency_files: dependency_files,
-                dependency: dependency,
-                unlock_requirement: false
-              ).prepared_dependency_files
-
-              VersionResolver.new(
-                dependency: dependency,
-                dependency_files: prepared_files,
-                credentials: credentials
-              ).latest_resolvable_version
+              fetch_latest_resolvable_version(unlock_requirement: false)
             end
         end
 
@@ -108,12 +98,46 @@ module Dependabot
             return latest_resolvable_commit_with_unchanged_git_source
           end
 
+          # If the dependency is pinned to a tag that looks like a version then
+          # we want to update that tag. The latest version will then be the SHA
+          # of the latest tag that looks like a version.
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             latest_git_tag_is_resolvable?
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return new_tag.fetch(:commit_sha)
+          end
+
           # If the dependency is pinned then there's nothing we can do.
           dependency.version
         end
 
+        def latest_git_tag_is_resolvable?
+          return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+          @latest_git_tag_is_resolvable_checked = true
+
+          return false if git_commit_checker.local_tag_for_latest_version.nil?
+          replacement_tag = git_commit_checker.local_tag_for_latest_version
+
+          prepared_files = FilePreparer.new(
+            dependency_files: dependency_files,
+            dependency: dependency,
+            unlock_requirement: true,
+            replacement_git_pin: replacement_tag.fetch(:tag)
+          ).prepared_dependency_files
+
+          VersionResolver.new(
+            dependency: dependency,
+            dependency_files: prepared_files,
+            credentials: credentials
+          ).latest_resolvable_version
+          @git_tag_resolvable = true
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise error unless error.message.include?("versions conflict")
+          @git_tag_resolvable = false
+        end
+
         def latest_resolvable_commit_with_unchanged_git_source
-          fetch_latest_resolvable_version
+          fetch_latest_resolvable_version(unlock_requirement: false)
         rescue SharedHelpers::HelperSubprocessFailed => error
           # Resolution may fail, as Elixir updates straight to the tip of the
           # branch. Just return `nil` if it does (so no update).
@@ -121,11 +145,11 @@ module Dependabot
           raise error
         end
 
-        def fetch_latest_resolvable_version
+        def fetch_latest_resolvable_version(unlock_requirement:)
           prepared_files = FilePreparer.new(
             dependency_files: dependency_files,
             dependency: dependency,
-            unlock_requirement: true
+            unlock_requirement: unlock_requirement
           ).prepared_dependency_files
 
           VersionResolver.new(
