@@ -299,7 +299,7 @@ module Dependabot
               error.error_message.gsub(/#{path_regex}/, "/dependabot_tmp_dir")
 
             case error.error_class
-            when "Bundler::Dsl::DSLError"
+            when "Bundler::Dsl::DSLError", "Bundler::GemspecError"
               # We couldn't evaluate the Gemfile, let alone resolve it
               raise Dependabot::DependencyFileNotEvaluatable, msg
             when "Bundler::Source::Git::MissingGitRevisionError"
