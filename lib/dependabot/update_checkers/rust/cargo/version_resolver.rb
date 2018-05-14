@@ -62,7 +62,13 @@ module Dependabot
 
           def dependency_spec
             spec = dependency.name
-            spec += ":#{dependency.version}" if dependency.version
+
+            if git_commit_checker.git_dependency?
+              spec += ":#{git_dependency_version}" if git_dependency_version
+            elsif dependency.version
+              spec += ":#{dependency.version}"
+            end
+
             spec
           end
 
@@ -135,10 +141,7 @@ module Dependabot
 
             FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
               next unless (req = parsed_manifest.dig(type, dependency.name))
-              updated_req =
-                if dependency.version then ">= #{dependency.version}"
-                else ">= 0"
-                end
+              updated_req = temporary_requirement_for_resolution
 
               if req.is_a?(Hash)
                 parsed_manifest[type][dependency.name]["version"] = updated_req
@@ -148,6 +151,26 @@ module Dependabot
             end
 
             TomlRB.dump(parsed_manifest)
+          end
+
+          def temporary_requirement_for_resolution
+            if git_commit_checker.git_dependency? && git_dependency_version
+              ">= #{git_dependency_version}"
+            elsif !git_commit_checker.git_dependency? && dependency.version
+              ">= #{dependency.version}"
+            elsif !git_commit_checker.git_dependency?
+              ">= 0"
+            end
+          end
+
+          def git_dependency_version
+            return unless lockfile
+
+            TomlRB.parse(lockfile.content).
+              fetch("package", []).
+              select { |p| p["name"] == dependency.name }.
+              find { |p| p["source"].end_with?(dependency.version) }.
+              fetch("version")
           end
 
           def dummy_app_content
@@ -161,6 +184,14 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          end
+
+          def git_commit_checker
+            @git_commit_checker ||=
+              GitCommitChecker.new(
+                dependency: dependency,
+                credentials: credentials
+              )
           end
         end
       end

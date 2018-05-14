@@ -47,11 +47,17 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     )
   end
   let(:requirements) do
-    [{ file: "Cargo.toml", requirement: string_req, groups: [], source: nil }]
+    [{
+      file: "Cargo.toml",
+      requirement: string_req,
+      groups: [],
+      source: source
+    }]
   end
   let(:dependency_name) { "regex" }
   let(:dependency_version) { "0.1.41" }
   let(:string_req) { "0.1.41" }
+  let(:source) { nil }
 
   describe "latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
@@ -71,6 +77,60 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:string_req) { "0.1.3" }
 
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
+    end
+
+    context "with a git dependency" do
+      let(:manifest_fixture_name) { "git_dependency" }
+      let(:lockfile_fixture_name) { "git_dependency" }
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
+      let(:string_req) { nil }
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/BurntSushi/utf8-ranges",
+          branch: nil,
+          ref: nil
+        }
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.0.0")) }
+
+      context "with a tag" do
+        let(:manifest_fixture_name) { "git_dependency_with_tag" }
+        let(:lockfile_fixture_name) { "git_dependency_with_tag" }
+        let(:dependency_version) { "d5094c7e9456f2965dec20de671094a98c6929c2" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: nil,
+            ref: "0.1.3"
+          }
+        end
+
+        it { is_expected.to eq(Gem::Version.new("0.1.3")) }
+      end
+
+      context "when the latest version is blocked" do
+        let(:manifest_fixture_name) { "git_dependency_update_blocked" }
+        let(:lockfile_fixture_name) { "git_dependency_update_blocked" }
+        let(:dependency_name) { "elasticlunr-rs" }
+        let(:dependency_version) { "545c35c7625bee6c064e68094ecc8b18ea7079a5" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/mattico/elasticlunr-rs",
+            branch: nil,
+            ref: nil
+          }
+        end
+
+        it "raises a Dependabot::HelperSubprocessFailed error" do
+          expect { resolver.latest_resolvable_version }.
+            to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
     end
 
     context "with a feature dependency, when the feature has been removed" do
