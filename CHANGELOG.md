@@ -1,3 +1,8 @@
+## v0.58.8, 15 May 2018
+
+- Rust: Ensure correct versions are installed in FileUpdater by temporarily
+  specifying them in the Cargo.toml
+
 ## v0.58.7, 14 May 2018
 
 - Use gitmoji commit messages if repo uses them (thanks @mockersf)
