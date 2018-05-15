@@ -1,3 +1,7 @@
+## v0.58.12, 15 May 2018
+
+- Java (Maven & Gradle): Better metadata lookup (check parent for GitHub URLs)
+
 ## v0.58.11, 15 May 2018
 
 - Maven: Support custom maven_repositories passed as credentials
