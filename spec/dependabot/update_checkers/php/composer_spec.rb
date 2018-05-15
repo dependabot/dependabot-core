@@ -472,6 +472,27 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to be_nil }
     end
 
+    context "with a replaced direct dependency" do
+      let(:manifest_fixture_name) { "replaced_direct_dependency" }
+      let(:files) { [composer_file] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "neos/flow",
+          version: nil,
+          requirements: [
+            {
+              file: "composer.json",
+              requirement: "*",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "composer"
+        )
+      end
+      it { is_expected.to be_nil }
+    end
+
     context "with a PEAR dependency" do
       let(:manifest_fixture_name) { "pear" }
       let(:lockfile_fixture_name) { "pear" }

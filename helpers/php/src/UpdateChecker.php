@@ -83,6 +83,11 @@ class UpdateChecker
 
         // We didn't find the package in the list of updated packages. Check if
         // it was replaced by another package (in which case we can ignore).
+        foreach ($composer->getPackage()->getReplaces() as $link) {
+            if ($link->getTarget() == $dependencyName) {
+                return null;
+            }
+        }
         foreach ($installedPackages as $package) {
             foreach ($package->getReplaces() as $link) {
                 if ($link->getTarget() == $dependencyName) {
