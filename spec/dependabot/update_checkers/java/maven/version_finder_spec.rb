@@ -9,10 +9,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
-      dependency_files: dependency_files
+      dependency_files: dependency_files,
+      credentials: credentials
     )
   end
   let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:credentials) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -77,6 +79,35 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+    end
+
+    context "with a repository from credentials" do
+      let(:credentials) do
+        [{
+          "type" => "maven_repository",
+          "url" => "https://private.registry.org/repo/",
+          "username" => "dependabot",
+          "password" => "dependabotPassword"
+        }]
+      end
+
+      let(:private_registry_metadata_url) do
+        "https://private.registry.org/repo/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).
+          to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url).
+          with(basic_auth: %w(dependabot dependabotPassword)).
+          to_return(status: 200, body: maven_central_releases)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("https://private.registry.org/repo")
+      end
     end
 
     context "with a custom repository" do

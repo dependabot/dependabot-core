@@ -11,9 +11,10 @@ module Dependabot
     module Java
       class Maven
         class VersionFinder
-          def initialize(dependency:, dependency_files:)
+          def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
+            @credentials = credentials
           end
 
           def latest_version_details
@@ -36,8 +37,10 @@ module Dependabot
 
           def versions
             version_details =
-              repository_urls.map do |url|
-                dependency_metadata(url).css("versions > version").
+              repositories.map do |repository_details|
+                url = repository_details.fetch("url")
+                dependency_metadata(repository_details).
+                  css("versions > version").
                   select { |node| version_class.correct?(node.content) }.
                   map { |node| version_class.new(node.content) }.
                   map { |version| { version: version, source_url: url } }
@@ -48,7 +51,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files
+          attr_reader :dependency, :dependency_files, :credentials
 
           def wants_prerelease?
             return false unless dependency.version
@@ -62,12 +65,14 @@ module Dependabot
             version_class.new(dependency.version) >= version_class.new(100)
           end
 
-          def dependency_metadata(repository_url)
+          def dependency_metadata(repository_details)
             @dependency_metadata ||= {}
-            @dependency_metadata[repository_url] ||=
+            @dependency_metadata[repository_details.fetch("url")] ||=
               begin
                 response = Excon.get(
-                  dependency_metadata_url(repository_url),
+                  dependency_metadata_url(repository_details.fetch("url")),
+                  user: repository_details.fetch("username"),
+                  password: repository_details.fetch("password"),
                   idempotent: true,
                   omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
@@ -76,16 +81,36 @@ module Dependabot
               rescue Excon::Error::Socket, Excon::Error::Timeout
                 central =
                   FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
-                raise if repository_url == central
+                raise if repository_details.fetch("url") == central
                 Nokogiri::XML("")
               end
           end
 
-          def repository_urls
-            @repository_urls ||=
-              FileParsers::Java::Maven::RepositoriesFinder.new(
-                dependency_files: dependency_files
-              ).repository_urls(pom: pom)
+          def repositories
+            @repositories ||= pom_repository_details +
+                              credentials_repository_details
+          end
+
+          def pom_repository_details
+            @pom_repository_details ||=
+              FileParsers::Java::Maven::RepositoriesFinder.
+              new(dependency_files: dependency_files).
+              repository_urls(pom: pom).
+              map do |url|
+                { "url" => url, "username" => nil, "password" => nil }
+              end
+          end
+
+          def credentials_repository_details
+            credentials.
+              select { |cred| cred["type"] == "maven_repository" }.
+              map do |cred|
+                {
+                  "url" => cred.fetch("url").gsub(%r{/+$}, ""),
+                  "username" => cred.fetch("username"),
+                  "password" => cred.fetch("password")
+                }
+              end
           end
 
           def pom

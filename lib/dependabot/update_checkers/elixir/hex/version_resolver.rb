@@ -17,8 +17,7 @@ module Dependabot
           end
 
           def latest_resolvable_version
-            @latest_resolvable_version ||=
-              fetch_latest_resolvable_version
+            @latest_resolvable_version ||= fetch_latest_resolvable_version
           end
 
           private

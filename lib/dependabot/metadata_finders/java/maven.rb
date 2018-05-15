@@ -68,6 +68,7 @@ module Dependabot
             "#{maven_repo_dependency_url}/"\
             "#{dependency.version}/"\
             "#{artifact_id}-#{dependency.version}.pom",
+            headers: auth_details,
             idempotent: true,
             omit_default_port: true,
             middlewares: SharedHelpers.excon_middleware
@@ -76,16 +77,29 @@ module Dependabot
           @pom_file = Nokogiri::XML(response.body)
         end
 
-        def maven_repo_dependency_url
-          group_id, artifact_id = dependency.name.split(":")
+        def maven_repo_url
           source = dependency.requirements.
                    find { |r| r&.fetch(:source) }&.fetch(:source)
-          maven_repo_url =
-            source&.fetch(:url, nil) ||
+
+          source&.fetch(:url, nil) ||
             source&.fetch("url") ||
             FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+        end
+
+        def maven_repo_dependency_url
+          group_id, artifact_id = dependency.name.split(":")
 
           "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
+        end
+
+        def auth_details
+          cred = credentials.select { |c| c["type"] == "maven_repository" }.
+                 find { |c| c.fetch("url").gsub(%r{/+$}, "") == maven_repo_url }
+          return {} unless cred
+
+          token = cred.fetch("username") + ":" + cred.fetch("password")
+          encoded_token = Base64.encode64(token).chomp
+          { "Authorization" => "Basic #{encoded_token}" }
         end
       end
     end

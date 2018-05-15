@@ -117,6 +117,33 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
       end
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "type" => "maven_repository",
+              "url" => "https://custom.registry.org/maven2",
+              "username" => "dependabot",
+              "password" => "dependabotPassword"
+            }
+          ]
+        end
+        before do
+          stub_request(:get, maven_url).to_return(status: 404)
+          stub_request(:get, maven_url).
+            with(basic_auth: %w(dependabot dependabotPassword)).
+            to_return(status: 200, body: maven_response)
+        end
+
+        it { is_expected.to eq("https://github.com/mockito/mockito") }
+      end
     end
 
     context "when the Maven link resolves to a redirect" do
