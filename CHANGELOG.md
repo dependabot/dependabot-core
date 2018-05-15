@@ -1,3 +1,7 @@
+## v0.58.11, 15 May 2018
+
+- Maven: Support custom maven_repositories passed as credentials
+
 ## v0.58.10, 15 May 2018
 
 - PHP: Handle dependencies replaced in composer.json
