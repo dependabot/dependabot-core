@@ -1,3 +1,7 @@
+## v0.58.9, 15 May 2018
+
+- Rust: Raise resolvability error if the lockfile can't be parsed
+
 ## v0.58.8, 15 May 2018
 
 - Rust: Ensure correct versions are installed in FileUpdater by temporarily
