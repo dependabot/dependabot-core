@@ -943,6 +943,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "https://repo.maven.apache.org/maven2/org/springframework/"\
             "spring-context/4.3.15.RELEASE/spring-context-4.3.15.RELEASE.pom"
           end
+          let(:guava_parent_maven_url) do
+            "https://repo.maven.apache.org/maven2/com/google/guava/"\
+            "guava-parent/23.3-jre/guava-parent-23.3-jre.pom"
+          end
           let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
           let(:pom) do
             Dependabot::DependencyFile.new(
@@ -956,6 +960,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             stub_request(:get, spring_beans_maven_url).
               to_return(status: 200, body: maven_response)
             stub_request(:get, spring_context_maven_url).
+              to_return(status: 200, body: maven_response)
+            stub_request(:get, guava_parent_maven_url).
               to_return(status: 200, body: maven_response)
           end
 
