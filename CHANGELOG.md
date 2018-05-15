@@ -1,3 +1,7 @@
+## v0.58.10, 15 May 2018
+
+- PHP: Handle dependencies replaced in composer.json
+
 ## v0.58.9, 15 May 2018
 
 - Rust: Raise resolvability error if the lockfile can't be parsed
