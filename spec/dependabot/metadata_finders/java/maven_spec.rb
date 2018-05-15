@@ -11,10 +11,10 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
-      version: "23.3-jre",
+      version: dependency_version,
       requirements: [{
         file: "pom.xml",
-        requirement: "23.3-jre",
+        requirement: dependency_version,
         groups: [],
         source: dependency_source
       }],
@@ -33,6 +33,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     }]
   end
   let(:dependency_name) { "com.google.guava:guava" }
+  let(:dependency_version) { "23.3-jre" }
   let(:dependency_source) do
     { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
   end
@@ -61,18 +62,46 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     end
 
     context "when there is no github link in the pom" do
-      let(:maven_response) do
-        fixture("java", "poms", "guava-23.3-jre.xml").gsub(
-          "https://github.com/google/guava/",
-          "https://github.com/google/random/"
-        )
+      let(:maven_response) { fixture("java", "poms", "okhttp-3.10.0.xml") }
+      let(:dependency_name) { "com.squareup.okhttp3:okhttp" }
+      let(:dependency_version) { "3.10.0" }
+      let(:maven_url) do
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
+        "okhttp/3.10.0/okhttp-3.10.0.pom"
+      end
+      let(:parent_url) do
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
+        "parent/3.10.0/parent-3.10.0.pom"
       end
 
-      it { is_expected.to be_nil }
+      context "but there is in the parent" do
+        before do
+          stub_request(:get, parent_url).
+            to_return(
+              status: 200,
+              body: fixture("java", "poms", "parent-3.10.0.xml")
+            )
+        end
 
-      it "caches the call to maven" do
-        2.times { source_url }
-        expect(WebMock).to have_requested(:get, maven_url).once
+        it { is_expected.to eq("https://github.com/square/okhttp") }
+
+        it "caches the call to maven" do
+          2.times { source_url }
+          expect(WebMock).to have_requested(:get, maven_url).once
+        end
+      end
+
+      context "and there isn't in the parent, either" do
+        before do
+          stub_request(:get, parent_url).to_return(status: 404, body: "")
+        end
+
+        it { is_expected.to be_nil }
+
+        it "caches the call to maven" do
+          2.times { source_url }
+          expect(WebMock).to have_requested(:get, maven_url).once
+        end
       end
     end
 
