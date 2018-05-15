@@ -296,7 +296,7 @@ module Dependabot
               Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
             msg =
               error.error_class + " with message: " +
-              error.error_message.gsub(/#{path_regex}/, "/dependabot_tmp_dir")
+              error.error_message.gsub(/#{path_regex}/, "dependabot_tmp_dir")
 
             case error.error_class
             when "Bundler::Dsl::DSLError", "Bundler::GemspecError"

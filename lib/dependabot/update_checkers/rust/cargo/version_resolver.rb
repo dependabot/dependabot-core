@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/update_checkers/rust/cargo"
 require "dependabot/utils/rust/version"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
@@ -32,7 +33,7 @@ module Dependabot
 
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              command = "cargo update -p #{dependency_spec}"
+              command = "cargo update -p #{dependency_spec} --verbose"
               run_shell_command(command)
 
               new_lockfile_content = File.read("Cargo.lock")
@@ -129,10 +130,18 @@ module Dependabot
           end
 
           def handle_cargo_errors(error)
+            path_regex =
+              Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
+              Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
+            msg = error.message.gsub(/#{path_regex}/, "dependabot_tmp_dir")
+
             if error.message.include?("does not have these features")
               # TODO: Ideally we should update the declaration not to ask
               # for the specified features
               return nil
+            end
+            if error.message.include?("failed to parse lock")
+              raise Dependabot::DependencyFileNotResolvable, msg
             end
             raise error
           end
