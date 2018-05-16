@@ -1,3 +1,7 @@
+## v0.58.13, 16 May 2018
+
+- Maven: Exclude ignored versions when looking for version to update to
+
 ## v0.58.12, 15 May 2018
 
 - Java (Maven & Gradle): Better metadata lookup (check parent for GitHub URLs)
