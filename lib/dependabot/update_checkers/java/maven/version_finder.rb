@@ -11,10 +11,12 @@ module Dependabot
     module Java
       class Maven
         class VersionFinder
-          def initialize(dependency:, dependency_files:, credentials:)
-            @dependency = dependency
+          def initialize(dependency:, dependency_files:, credentials:,
+                         ignored_versions:)
+            @dependency       = dependency
             @dependency_files = dependency_files
-            @credentials = credentials
+            @credentials      = credentials
+            @ignored_versions = ignored_versions
           end
 
           def latest_version_details
@@ -51,7 +53,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :credentials
+          attr_reader :dependency, :dependency_files, :credentials,
+                      :ignored_versions
 
           def wants_prerelease?
             return false unless dependency.version

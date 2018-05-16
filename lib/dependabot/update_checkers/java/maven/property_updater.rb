@@ -10,11 +10,12 @@ module Dependabot
     module Java
       class Maven
         class PropertyUpdater
-          def initialize(dependency:, dependency_files:,
-                         target_version_details:, credentials:)
+          def initialize(dependency:, dependency_files:, credentials:,
+                         target_version_details:, ignored_versions:)
             @dependency       = dependency
             @dependency_files = dependency_files
             @credentials      = credentials
+            @ignored_versions = ignored_versions
             @target_version   = target_version_details&.fetch(:version)
             @source_url       = target_version_details&.fetch(:source_url)
           end
@@ -26,7 +27,8 @@ module Dependabot
                 VersionFinder.new(
                   dependency: dep,
                   dependency_files: dependency_files,
-                  credentials: credentials
+                  credentials: credentials,
+                  ignored_versions: ignored_versions
                 ).versions.
                   map { |v| v.fetch(:version) }.
                   include?(target_version)
@@ -52,7 +54,7 @@ module Dependabot
           private
 
           attr_reader :dependency, :dependency_files, :target_version,
-                      :source_url, :credentials
+                      :source_url, :credentials, :ignored_versions
 
           def dependencies_using_property
             @dependencies_using_property ||=

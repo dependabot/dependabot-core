@@ -10,10 +10,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
       dependency: dependency,
       dependency_files: dependency_files,
       target_version_details: target_version_details,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
 
+  let(:ignored_versions) { [] }
   let(:credentials) { [] }
   let(:version_class) { Dependabot::Utils::Java::Version }
   let(:target_version_details) do

@@ -10,11 +10,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
   let(:version_class) { Dependabot::Utils::Java::Version }
   let(:credentials) { [] }
+  let(:ignored_versions) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(

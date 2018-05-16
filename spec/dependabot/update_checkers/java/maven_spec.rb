@@ -387,6 +387,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
+            ignored_versions: [],
             target_version_details: {
               version: version_class.new("23.6-jre"),
               source_url: "https://repo.maven.apache.org/maven2"
@@ -447,6 +448,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
+            ignored_versions: [],
             target_version_details: {
               version: version_class.new("23.6-jre"),
               source_url: "https://repo.maven.apache.org/maven2"
