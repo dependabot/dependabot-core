@@ -39,7 +39,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.6 \
-    && gem install --no-ri --no-rdoc bundler -v 1.16.1
+    && gem install --no-ri --no-rdoc bundler -v 1.16.2
 
 
 ### PYTHON
@@ -78,7 +78,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.4/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.5/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip
 ENV PATH="$PATH:/usr/local/elixir/bin"
