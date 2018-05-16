@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/file_parsers/java/maven/repositories_finder"
 require "dependabot/update_checkers/java/maven"
 require "dependabot/utils/java/version"
+require "dependabot/utils/java/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -32,6 +33,13 @@ module Dependabot
               possible_versions =
                 possible_versions.
                 reject { |v| v.fetch(:version) > version_class.new(1900) }
+            end
+
+            ignored_versions.each do |req|
+              ignore_req = Utils::Java::Requirement.new(req.split(","))
+              possible_versions =
+                possible_versions.
+                reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
             end
 
             possible_versions.last

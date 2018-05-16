@@ -78,6 +78,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       end
     end
 
+    context "when the user has asked to ignore a major version" do
+      let(:ignored_versions) { [">= 23.0, < 24"] }
+      its([:version]) { is_expected.to eq(version_class.new("22.0-android")) }
+    end
+
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
