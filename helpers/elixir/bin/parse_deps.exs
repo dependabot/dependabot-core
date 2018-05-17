@@ -6,14 +6,11 @@ defmodule Parser do
   end
 
   defp build_dependency(nil, dep) do
-    req = if Regex.regex?(dep.requirement), do: Regex.source(dep.requirement), else: dep.requirement
-    req = if byte_size(req) == 0, do: nil, else: req
-
     %{
       name: dep.app,
       from: Path.relative_to_cwd(dep.from),
       groups: [],
-      requirement: req,
+      requirement: normalise_requirement(dep.requirement),
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
   end
@@ -21,8 +18,6 @@ defmodule Parser do
   defp build_dependency(lock, dep) do
     {version, checksum, source} = parse_lock(lock)
     groups = parse_groups(dep.opts[:only])
-    req = if Regex.regex?(dep.requirement), do: Regex.source(dep.requirement), else: dep.requirement
-    req = if byte_size(req) == 0, do: nil, else: req
 
     %{
       name: dep.app,
@@ -30,7 +25,7 @@ defmodule Parser do
       version: version,
       groups: groups,
       checksum: checksum,
-      requirement: req,
+      requirement: normalise_requirement(dep.requirement),
       source: source,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
@@ -79,6 +74,16 @@ defmodule Parser do
 
   defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies}),
     do: {version, checksum, nil}
+
+  defp normalise_requirement(req) do
+    req
+    |> maybe_regex_to_str()
+    |> empty_str_to_nil()
+  end
+
+  defp maybe_regex_to_str(s), do: if Regex.regex?(s), do: Regex.source(s), else: s
+  defp empty_str_to_nil(""), do: nil
+  defp empty_str_to_nil(s), do: s
 
   def git_source(repo_url, opts) do
     ref = opts[:ref] || opts[:tag]
