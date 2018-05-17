@@ -288,23 +288,6 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         # The SHA of the next version tag
         it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
       end
-
-      context "when the latest version is blocked" do
-        let(:manifest_fixture_name) { "git_dependency_update_blocked" }
-        let(:lockfile_fixture_name) { "git_dependency_update_blocked" }
-        let(:dependency_name) { "elasticlunr-rs" }
-        let(:dependency_version) { "545c35c7625bee6c064e68094ecc8b18ea7079a5" }
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/mattico/elasticlunr-rs",
-            branch: nil,
-            ref: nil
-          }
-        end
-
-        it { is_expected.to be_nil }
-      end
     end
   end
 
@@ -362,23 +345,6 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         end
 
         it { is_expected.to eq(dependency_version) }
-      end
-
-      context "when the latest version is blocked" do
-        let(:manifest_fixture_name) { "git_dependency_update_blocked" }
-        let(:lockfile_fixture_name) { "git_dependency_update_blocked" }
-        let(:dependency_name) { "elasticlunr-rs" }
-        let(:dependency_version) { "545c35c7625bee6c064e68094ecc8b18ea7079a5" }
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/mattico/elasticlunr-rs",
-            branch: nil,
-            ref: nil
-          }
-        end
-
-        it { is_expected.to be_nil }
       end
     end
 

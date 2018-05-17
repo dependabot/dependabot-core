@@ -19,6 +19,7 @@ module Dependabot
         class VersionResolver
           RUBYGEMS_API = "https://rubygems.org/api/v1/"
           GIT_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
+          GIT_REF_REGEX = /does not exist in the repository (?<path>[^\s]*)\./
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
           PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
@@ -303,7 +304,11 @@ module Dependabot
               # We couldn't evaluate the Gemfile, let alone resolve it
               raise Dependabot::DependencyFileNotEvaluatable, msg
             when "Bundler::Source::Git::MissingGitRevisionError"
-              raise GitDependencyReferenceNotFound, dependency.name
+              gem_name =
+                error.error_message.match(GIT_REF_REGEX).
+                named_captures["path"].
+                split("/").last
+              raise GitDependencyReferenceNotFound, gem_name
             when "Bundler::PathError"
               gem_name =
                 error.error_message.match(PATH_REGEX).

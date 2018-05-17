@@ -133,26 +133,6 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
 
         it { is_expected.to eq(dependency_version) }
       end
-
-      context "when the latest version is blocked" do
-        let(:manifest_fixture_name) { "git_dependency_update_blocked" }
-        let(:lockfile_fixture_name) { "git_dependency_update_blocked" }
-        let(:dependency_name) { "elasticlunr-rs" }
-        let(:dependency_version) { "545c35c7625bee6c064e68094ecc8b18ea7079a5" }
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/mattico/elasticlunr-rs",
-            branch: nil,
-            ref: nil
-          }
-        end
-
-        it "raises a Dependabot::HelperSubprocessFailed error" do
-          expect { resolver.latest_resolvable_version }.
-            to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
-        end
-      end
     end
 
     context "with a feature dependency, when the feature has been removed" do
@@ -162,7 +142,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:dependency_version) { "1.8.1" }
       let(:string_req) { "1.8" }
 
-      it { is_expected.to be_nil }
+      it { is_expected.to eq(Gem::Version.new("1.8.1")) }
     end
 
     context "with multiple versions available of the dependency" do
@@ -183,16 +163,6 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("0.10.13")) }
       end
-    end
-
-    context "when the latest version is blocked" do
-      let(:manifest_fixture_name) { "mdBook" }
-      let(:lockfile_fixture_name) { "mdBook" }
-      let(:dependency_name) { "elasticlunr-rs" }
-      let(:dependency_version) { "2.0.0" }
-      let(:string_req) { "2.0" }
-
-      it { is_expected.to eq(Gem::Version.new("2.0.0")) }
     end
 
     context "when there is a workspace" do
