@@ -1,3 +1,7 @@
+## v0.58.15, 17 May 2018
+
+- Elixir: Handle regex versions in FileParser
+
 ## v0.58.14, 17 May 2018
 
 - Test against updated Elixir, Rust and Bundler
