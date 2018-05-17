@@ -1,3 +1,7 @@
+## v0.58.17, 17 May 2018
+
+- If token is likely to be Basic auth, use Basic auth
+
 ## v0.58.16, 17 May 2018
 
 - Remove any "\n" characters from generated Basic auth tokens
