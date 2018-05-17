@@ -10,7 +10,7 @@ defmodule Parser do
       name: dep.app,
       from: Path.relative_to_cwd(dep.from),
       groups: [],
-      requirement: dep.requirement,
+      requirement: normalise_requirement(dep.requirement),
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
   end
@@ -25,7 +25,7 @@ defmodule Parser do
       version: version,
       groups: groups,
       checksum: checksum,
-      requirement: dep.requirement,
+      requirement: normalise_requirement(dep.requirement),
       source: source,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
@@ -74,6 +74,16 @@ defmodule Parser do
 
   defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies}),
     do: {version, checksum, nil}
+
+  defp normalise_requirement(req) do
+    req
+    |> maybe_regex_to_str()
+    |> empty_str_to_nil()
+  end
+
+  defp maybe_regex_to_str(s), do: if Regex.regex?(s), do: Regex.source(s), else: s
+  defp empty_str_to_nil(""), do: nil
+  defp empty_str_to_nil(s), do: s
 
   def git_source(repo_url, opts) do
     ref = opts[:ref] || opts[:tag]

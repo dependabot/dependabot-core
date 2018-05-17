@@ -132,6 +132,35 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       end
     end
 
+    context "with a regex requirement specified" do
+      let(:mixfile_fixture_name) { "regex_version" }
+      let(:lockfile_fixture_name) { "regex_version" }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("wsecli")
+          expect(dependency.version).
+            to eq("a89054cf71c5ee9e780998e5acb2a78fd3419dd9")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: ["test"],
+              source: {
+                type: "git",
+                url: "https://github.com/esl/wsecli.git",
+                branch: "master",
+                ref: nil
+              }
+            }]
+          )
+        end
+      end
+    end
+
     context "with a development dependency" do
       let(:mixfile_fixture_name) { "development_dependency" }
       let(:lockfile_fixture_name) { "development_dependency" }
