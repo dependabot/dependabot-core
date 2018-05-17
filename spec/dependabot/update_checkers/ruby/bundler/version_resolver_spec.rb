@@ -507,6 +507,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         end
       end
 
+      context "with JRuby" do
+        let(:gemfile_fixture_name) { "jruby" }
+        let(:lockfile_fixture_name) { "jruby.lock" }
+        let(:dependency_name) { "json" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
+      end
+
       context "when a gem has been yanked" do
         let(:gemfile_fixture_name) { "minor_version_specified" }
         let(:lockfile_fixture_name) { "yanked_gem.lock" }
