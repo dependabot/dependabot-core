@@ -80,10 +80,13 @@ module Dependabot
 
               lines << registry_scope(registry) if registry_scope(registry)
 
-              if cred.fetch("token").include?(":")
-                encoded_token = Base64.encode64(cred.fetch("token")).chomp.
-                                delete("\n")
+              token = cred.fetch("token")
+              if token.include?(":")
+                encoded_token = Base64.encode64(token).delete("\n")
                 lines << "//#{registry}/:_auth=#{encoded_token}"
+              elsif Base64.decode64(token).ascii_only? &&
+                    Base64.decode64(token).include?(":")
+                lines << %(//#{registry}/:_auth=#{token.delete("\n")})
               else
                 lines << "//#{registry}/:_authToken=#{cred.fetch('token')}"
               end

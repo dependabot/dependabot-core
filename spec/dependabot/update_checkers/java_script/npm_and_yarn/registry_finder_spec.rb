@@ -153,6 +153,20 @@ RSpec.describe tested_module::RegistryFinder do
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
+
+        context "with a token that is in encoded username:password format" do
+          before do
+            credentials.last["token"] = Base64.encode64("secret:token")
+            body = fixture("javascript", "gemfury_response_etag.json")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
+              to_return(status: 200, body: body)
+          end
+          it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
+        end
       end
     end
   end

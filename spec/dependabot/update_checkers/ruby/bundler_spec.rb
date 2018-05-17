@@ -962,8 +962,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_fixture_name) { "private_git_source" }
           let(:lockfile_fixture_name) { "private_git_source.lock" }
           let(:token) do
-            Base64.encode64("x-access-token:#{github_token}").strip.
-              delete("\n")
+            Base64.encode64("x-access-token:#{github_token}").delete("\n")
           end
           around { |example| capture_stderr { example.run } }
 
@@ -1104,8 +1103,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "given a gem with a private git source" do
         let(:gemfile_fixture_name) { "private_git_source" }
         let(:token) do
-          Base64.encode64("x-access-token:#{github_token}").strip.
-            delete("\n")
+          Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
         around { |example| capture_stderr { example.run } }
 
@@ -1131,7 +1129,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "given a gem with a private github source" do
         let(:gemfile_fixture_name) { "private_github_source" }
         let(:token) do
-          Base64.encode64("x-access-token:#{github_token}").strip.delete("\n")
+          Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
         around { |example| capture_stderr { example.run } }
 
@@ -1157,7 +1155,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "when the git request raises a timeout" do
         let(:gemfile_fixture_name) { "private_git_source" }
         let(:token) do
-          Base64.encode64("x-access-token:#{github_token}").strip.delete("\n")
+          Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
         around { |example| capture_stderr { example.run } }
 

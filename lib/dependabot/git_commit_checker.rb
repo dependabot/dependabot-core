@@ -226,25 +226,12 @@ module Dependabot
     end
 
     def bitbucket_commit_comparison_status(ref1, ref2)
-      token = credentials.
-              select { |cred| cred["type"] == "git_source" }.
-              find { |cred| cred["host"] == "bitbucket.org" }&.
-              fetch("token")
-
-      auth_header =
-        if token.nil? then {}
-        elsif token.include?(":")
-          encoded_token = Base64.encode64(token).chomp.delete("\n")
-          { "Authorization" => "Basic #{encoded_token}" }
-        else { "Authorization" => "Bearer #{token}" }
-        end
-
       url = "https://api.bitbucket.org/2.0/repositories/"\
             "#{listing_source_repo}/commits/?"\
             "include=#{ref2}&exclude=#{ref1}"
 
       response = Excon.get(url,
-                           headers: auth_header,
+                           headers: bitbucket_auth_header,
                            idempotent: true,
                            omit_default_port: true,
                            middlewares: SharedHelpers.excon_middleware)
@@ -253,6 +240,24 @@ module Dependabot
       # if we get an unexpected format (e.g., due to a 404)
       if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
       else "ahead"
+      end
+    end
+
+    def bitbucket_auth_header
+      token = credentials.
+              select { |cred| cred["type"] == "git_source" }.
+              find { |cred| cred["host"] == "bitbucket.org" }&.
+              fetch("token")
+
+      if token.nil? then {}
+      elsif token.include?(":")
+        encoded_token = Base64.encode64(token).delete("\n")
+        { "Authorization" => "Basic #{encoded_token}" }
+      elsif Base64.decode64(token).ascii_only? &&
+            Base64.decode64(token).include?(":")
+        { "Authorization" => "Basic #{token.delete("\n")}" }
+      else
+        { "Authorization" => "Bearer #{token}" }
       end
     end
 

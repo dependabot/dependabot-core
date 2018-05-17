@@ -132,7 +132,7 @@ module Dependabot
           return {} unless cred
 
           token = cred.fetch("username") + ":" + cred.fetch("password")
-          encoded_token = Base64.encode64(token).chomp.delete("\n")
+          encoded_token = Base64.encode64(token).delete("\n")
           { "Authorization" => "Basic #{encoded_token}" }
         end
       end
