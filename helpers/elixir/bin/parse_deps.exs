@@ -6,11 +6,14 @@ defmodule Parser do
   end
 
   defp build_dependency(nil, dep) do
+    req = if Regex.regex?(dep.requirement), do: Regex.source(dep.requirement), else: dep.requirement
+    req = if byte_size(req) == 0, do: nil, else: req
+
     %{
       name: dep.app,
       from: Path.relative_to_cwd(dep.from),
       groups: [],
-      requirement: dep.requirement,
+      requirement: req,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }
   end
@@ -18,6 +21,8 @@ defmodule Parser do
   defp build_dependency(lock, dep) do
     {version, checksum, source} = parse_lock(lock)
     groups = parse_groups(dep.opts[:only])
+    req = if Regex.regex?(dep.requirement), do: Regex.source(dep.requirement), else: dep.requirement
+    req = if byte_size(req) == 0, do: nil, else: req
 
     %{
       name: dep.app,
@@ -25,7 +30,7 @@ defmodule Parser do
       version: version,
       groups: groups,
       checksum: checksum,
-      requirement: dep.requirement,
+      requirement: req,
       source: source,
       top_level: dep.top_level || umbrella_top_level_dep?(dep)
     }

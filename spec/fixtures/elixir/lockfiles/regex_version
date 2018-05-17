@@ -1,0 +1,5 @@
+%{
+  "hamcrest": {:git, "https://github.com/basho/hamcrest-erlang.git", "98bc7aa19ea081478c816824aa05fc5a48acae66", [tag: "0.3.0-basho"]},
+  "wsecli": {:git, "https://github.com/esl/wsecli.git", "a89054cf71c5ee9e780998e5acb2a78fd3419dd9", [branch: "master"]},
+  "wsock": {:git, "https://github.com/esl/wsock", "251e18b80c018bb5a6e2f1bbd9bcfcc92e1d9383", [ref: "251e18b"]},
+}
