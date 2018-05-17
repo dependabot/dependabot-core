@@ -248,17 +248,59 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_requirements_folder.json"),
+            body: fixture("github", "contents_python_requirements_folder.json"),
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, url + "requirements/requirements-dev.txt?ref=sha").
+        stub_request(:get, url + "requirements/coverage.txt?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
             body: fixture("github", "requirements_content.json"),
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, url + "requirements/requirements-prod.txt?ref=sha").
+        stub_request(:get, url + "requirements/test.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/tools.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/typing.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/coverage.in?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/test.in?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/tools.in?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements/typing.in?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
@@ -268,14 +310,19 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       end
 
       it "fetches the right files file" do
-        expect(file_fetcher_instance.files.count).to eq(4)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
               requirements.txt
               setup.py
-              requirements/requirements-dev.txt
-              requirements/requirements-prod.txt
+              requirements/coverage.txt
+              requirements/test.txt
+              requirements/tools.txt
+              requirements/typing.txt
+              requirements/coverage.in
+              requirements/test.in
+              requirements/tools.in
+              requirements/typing.in
             )
           )
       end

@@ -30,19 +30,32 @@ module Dependabot
         def fetch_files
           fetched_files = []
 
-          fetched_files << setup_file unless setup_file.nil?
-          fetched_files << pip_conf unless pip_conf.nil?
-          fetched_files << pipfile unless pipfile.nil?
-          fetched_files << lockfile unless lockfile.nil?
+          fetched_files << setup_file if setup_file
+          fetched_files << pip_conf if pip_conf
+          fetched_files << pipfile if pipfile
+          fetched_files << lockfile if lockfile
 
-          if requirement_files.any?
-            fetched_files += requirement_files
+          if requirements_txt_files.any?
+            fetched_files += requirements_txt_files
             fetched_files += child_requirement_files
             fetched_files += constraints_files
             fetched_files += path_setup_files
           end
 
+          fetched_files += requirements_in_files
+
+          check_required_files_present
           fetched_files.uniq
+        end
+
+        def check_required_files_present
+          if requirements_txt_files.any? || setup_file || (pipfile && lockfile)
+            return
+          end
+
+          path = Pathname.new(File.join(directory, "requirements.txt")).
+                 cleanpath.to_path
+          raise Dependabot::DependencyFileNotFound, path
         end
 
         def setup_file
@@ -61,27 +74,26 @@ module Dependabot
           @lockfile ||= fetch_file_if_present("Pipfile.lock")
         end
 
-        def requirement_files
-          return @requirement_files if @requirement_files
-          @requirement_files = []
+        def requirements_txt_files
+          req_txt_and_in_files.select { |f| f.name.end_with?(".txt") }
+        end
+
+        def requirements_in_files
+          req_txt_and_in_files.select { |f| f.name.end_with?(".in") }
+        end
+
+        def req_txt_and_in_files
+          return @req_txt_and_in_files if @req_txt_and_in_files
+          @req_txt_and_in_files = []
 
           repo_contents.
             select { |f| f.type == "file" }.
             select { |f| f.name.match?(/requirements/x) }.
-            select { |f| f.name.end_with?(".txt") }.
-            each { |f| @requirement_files << fetch_file_from_host(f.name) }
+            select { |f| f.name.end_with?(".txt", ".in") }.
+            each { |f| @req_txt_and_in_files << fetch_file_from_host(f.name) }
 
-          @requirement_files += requirements_directory_files
-
-          if @requirement_files.any? || setup_file || (pipfile && lockfile)
-            return @requirement_files
-          end
-
-          # No setup.py and no requirements files, so we raise
-          path = Pathname.new(
-            File.join(directory, "requirements.txt")
-          ).cleanpath.to_path
-          raise Dependabot::DependencyFileNotFound, path
+          @req_txt_and_in_files += requirements_directory_files
+          @req_txt_and_in_files
         end
 
         def requirements_directory_files
@@ -98,13 +110,13 @@ module Dependabot
 
           repo_contents(dir: relative_requirements_directory).
             select { |f| f.type == "file" }.
-            select { |f| f.name.end_with?(".txt") }.
+            select { |f| f.name.end_with?(".txt", ".in") }.
             map { |f| fetch_file_from_host("requirements/#{f.name}") }
         end
 
         def child_requirement_files
           @child_requirement_files ||=
-            requirement_files.flat_map do |requirement_file|
+            requirements_txt_files.flat_map do |requirement_file|
               fetch_child_requirement_files(
                 file: requirement_file,
                 previously_fetched_files: []
@@ -133,7 +145,8 @@ module Dependabot
         end
 
         def constraints_files
-          all_requirement_files = requirement_files + child_requirement_files
+          all_requirement_files = requirements_txt_files +
+                                  child_requirement_files
 
           constraints_paths = all_requirement_files.map do |req_file|
             req_file.content.scan(/^-c\s?(?<path>\..*)/).flatten
@@ -162,7 +175,7 @@ module Dependabot
         end
 
         def path_setup_file_paths
-          (requirement_files + child_requirement_files).map do |req_file|
+          (requirements_txt_files + child_requirement_files).map do |req_file|
             req_file.content.scan(/^(?:-e\s)?(?<path>\..*?)(?=\[|#|$)/).flatten
           end.flatten
         end
