@@ -1,3 +1,9 @@
+## v0.58.14, 17 May 2018
+
+- Test against updated Elixir, Rust and Bundler
+- Fix Bundler 1.16.2 change and remove redundant Rust tests
+- Add test for JRuby support
+
 ## v0.58.13, 16 May 2018
 
 - Maven: Exclude ignored versions when looking for version to update to
