@@ -70,15 +70,14 @@ module Dependabot
 
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all")
-              # Pipenv outputs a lot of things the STDERR, so we need to clean
+              # Pipenv outputs a lot of things to STDERR, so we need to clean
               # up the error message
               msg_lines = error.message.lines
               msg = msg_lines.
                     drop_while { |l| !l.start_with?("Could not find") }.
                     join.strip
 
-              # We also need to redact any URLs, as they have have credentials
-              # in them
+              # We also need to redact any URLs, as they may include credentials
               msg = msg.gsub(/http.*?(?=\s)/, "<redacted>")
 
               raise if msg.empty?
