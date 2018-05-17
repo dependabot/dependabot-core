@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/python/pip"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -508,6 +509,32 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             )
           ]
         )
+      end
+    end
+
+    context "with a pip-compile file" do
+      let(:files) { [manifest_file, generated_file] }
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("python", "requirements", generated_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "unpinned.in" }
+      let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+
+      its(:length) { is_expected.to eq(13) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(5) }
       end
     end
 

@@ -30,7 +30,7 @@ module Dependabot
             dependency_set += pipfile_dependencies
             dependency_set += lockfile_dependencies
           else
-            dependency_set += requirement_file_dependencies
+            dependency_set += requirement_dependencies
           end
           dependency_set += setup_file_dependencies if setup_file
           dependency_set.dependencies
@@ -38,21 +38,25 @@ module Dependabot
 
         private
 
-        def requirement_file_dependencies
+        def requirement_dependencies
           dependencies = DependencySet.new
           parsed_requirement_files.each do |dep|
+            requirements =
+              if pip_compile_files.any? && !dep["file"].end_with?(".in") then []
+              else
+                [{
+                  requirement: dep["requirement"],
+                  file: Pathname.new(dep["file"]).cleanpath.to_path,
+                  source: nil,
+                  groups: []
+                }]
+              end
+
             dependencies <<
               Dependency.new(
                 name: dep["name"],
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
-                requirements: [
-                  {
-                    requirement: dep["requirement"],
-                    file: Pathname.new(dep["file"]).cleanpath.to_path,
-                    source: nil,
-                    groups: []
-                  }
-                ],
+                requirements: requirements,
                 package_manager: "pip"
               )
           end
@@ -219,6 +223,11 @@ module Dependabot
 
         def setup_file
           @setup_file ||= get_original_file("setup.py")
+        end
+
+        def pip_compile_files
+          @pip_compile_files ||=
+            dependency_files.select { |f| f.name.end_with?(".in") }
         end
       end
     end
