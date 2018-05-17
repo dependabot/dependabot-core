@@ -1,3 +1,7 @@
+## v0.58.16, 17 May 2018
+
+- Remove any "\n" characters from generated Basic auth tokens
+
 ## v0.58.15, 17 May 2018
 
 - Elixir: Handle regex versions in FileParser
