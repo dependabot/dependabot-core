@@ -234,7 +234,7 @@ module Dependabot
       auth_header =
         if token.nil? then {}
         elsif token.include?(":")
-          encoded_token = Base64.encode64(token).chomp
+          encoded_token = Base64.encode64(token).chomp.delete("\n")
           { "Authorization" => "Basic #{encoded_token}" }
         else { "Authorization" => "Bearer #{token}" }
         end
