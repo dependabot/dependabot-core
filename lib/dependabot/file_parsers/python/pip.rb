@@ -54,7 +54,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: dep["name"],
+                name: normalised_name(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: requirements,
                 package_manager: "pip"
@@ -70,7 +70,7 @@ module Dependabot
           parsed_setup_file.each do |dep|
             dependencies <<
               Dependency.new(
-                name: dep["name"],
+                name: normalised_name(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [
                   {

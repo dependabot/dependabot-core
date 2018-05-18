@@ -106,9 +106,9 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
 
-        it "has the right name" do
+        it "normalises the name" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("mypy_extensions")
+          expect(dependency.name).to eq("mypy-extensions")
         end
       end
     end

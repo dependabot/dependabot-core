@@ -7,10 +7,6 @@ module Dependabot
   module FileUpdaters
     module Python
       class Pip
-        # This class does version resolution for pip-compile. Its approach is:
-        # - Run `pip-compile` and see what the result is
-        #
-        # In future, we should ensure it unlocks the dependency first.
         class PipCompileFileUpdater
           attr_reader :dependencies, :dependency_files, :credentials
 
