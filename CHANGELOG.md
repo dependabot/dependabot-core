@@ -1,3 +1,7 @@
+## v0.58.21, 18 May 2018
+
+- Python: Unlock bounds in pip-config files when necessary to update
+
 ## v0.58.20, 18 May 2018
 
 - Python: Use normalised dependency names (rather than using the unnormalised
