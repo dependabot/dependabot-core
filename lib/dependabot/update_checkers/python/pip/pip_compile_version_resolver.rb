@@ -9,12 +9,10 @@ module Dependabot
     module Python
       class Pip
         # This class does version resolution for pip-compile. Its approach is:
-        # - Unlock the dependency we're checking in the requirement.in file
-        # - Freeze all of the other dependencies in the requirement.in
         # - Run `pip-compile` and see what the result is
+        #
+        # In future, we should ensure it unlocks the dependency first.
         class PipCompileVersionResolver
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-
           attr_reader :dependency, :dependency_files, :credentials
 
           def initialize(dependency:, dependency_files:, credentials:)

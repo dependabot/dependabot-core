@@ -12,6 +12,7 @@ module Dependabot
     module Python
       class Pip < Dependabot::FileUpdaters::Base
         require_relative "pip/pipfile_preparer"
+        require_relative "pip/pip_compile_file_updater"
 
         def self.updated_files_regex
           [
@@ -67,8 +68,11 @@ module Dependabot
         end
 
         def updated_pip_compile_based_files
-          # TODO: Write me!
-          updated_requirement_based_files
+          PipCompileFileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_dependency_files
         end
 
         def dependency

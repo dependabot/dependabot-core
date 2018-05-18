@@ -427,6 +427,35 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
     end
 
+    context "with a pip-compile file" do
+      let(:dependency_files) { [manifest_file, generated_file] }
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("python", "requirements", generated_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "unpinned.in" }
+      let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+
+      it "delegates to PipCompileFileUpdater" do
+        dummy_updater =
+          instance_double(described_class::PipCompileFileUpdater)
+        allow(described_class::PipCompileFileUpdater).to receive(:new).
+          and_return(dummy_updater)
+        expect(dummy_updater).
+          to receive(:updated_dependency_files).
+          and_return("updated files")
+        expect(updater.updated_dependency_files).to eq("updated files")
+      end
+    end
+
     context "with a Pipfile and Pipfile.lock" do
       let(:dependency_files) { [pipfile, lockfile] }
 
