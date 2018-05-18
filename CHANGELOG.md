@@ -1,3 +1,7 @@
+## v0.58.18, 18 May 2018
+
+- JS: Handle "402: Payment required" responses from npmjs
+
 ## v0.58.17, 17 May 2018
 
 - If token is likely to be Basic auth, use Basic auth
