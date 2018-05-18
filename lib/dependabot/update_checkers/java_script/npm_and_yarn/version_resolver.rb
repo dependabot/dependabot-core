@@ -199,7 +199,7 @@ module Dependabot
               return false
             end
 
-            [401, 403, 404].include?(npm_response.status)
+            [401, 402, 403, 404].include?(npm_response.status)
           end
 
           def dependency_url
