@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/python/pip"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -470,44 +471,81 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             Dependabot::Dependency.new(
               name: "requests",
               version: "2.4.1",
-              requirements: [
-                {
-                  requirement: "==2.4.1",
-                  file: "requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.4.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             ),
             Dependabot::Dependency.new(
               name: "luigi",
               version: "2.2.0",
-              requirements: [
-                {
-                  requirement: "==2.2.0",
-                  file: "more_requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.2.0",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             ),
             Dependabot::Dependency.new(
               name: "psycopg2",
               version: "2.6.1",
-              requirements: [
-                {
-                  requirement: "==2.6.1",
-                  file: "more_requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.6.1",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             )
           ]
         )
+      end
+    end
+
+    context "with a pip-compile file" do
+      let(:files) { [manifest_file, generated_file] }
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("python", "requirements", generated_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "unpinned.in" }
+      let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+
+      its(:length) { is_expected.to eq(13) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+        its(:length) { is_expected.to eq(5) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("attrs")
+            expect(dependency.version).to eq("17.4.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "requirements/test.in",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
 

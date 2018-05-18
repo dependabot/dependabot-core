@@ -12,6 +12,7 @@ module Dependabot
     module Python
       class Pip < Dependabot::FileUpdaters::Base
         require_relative "pip/pipfile_preparer"
+        require_relative "pip/pip_compile_file_updater"
 
         def self.updated_files_regex
           [
@@ -19,32 +20,18 @@ module Dependabot
             /^Pipfile\.lock$/,
             /requirements.*\.txt$/,
             /^constraints\.txt$/,
-            /^setup\.py$/
+            /^setup\.py$/,
+            /requirements.*\.in$/
           ]
         end
 
         def updated_dependency_files
           return updated_pipfile_based_files if pipfile && lockfile
+          return updated_pip_compile_based_files if pip_compile_files.any?
           updated_requirement_based_files
         end
 
         private
-
-        def updated_requirement_based_files
-          updated_files = []
-
-          changed_requirements =
-            dependency.requirements - dependency.previous_requirements
-
-          changed_requirements.each do |req|
-            updated_files << updated_file(
-              file: original_file(req.fetch(:file)),
-              content: updated_requirement_of_setup_file_content(req)
-            )
-          end
-
-          updated_files
-        end
 
         def updated_pipfile_based_files
           updated_files = []
@@ -62,6 +49,30 @@ module Dependabot
             updated_file(file: lockfile, content: updated_lockfile_content)
 
           updated_files
+        end
+
+        def updated_requirement_based_files
+          updated_files = []
+
+          changed_requirements =
+            dependency.requirements - dependency.previous_requirements
+
+          changed_requirements.each do |req|
+            updated_files << updated_file(
+              file: original_file(req.fetch(:file)),
+              content: updated_requirement_of_setup_file_content(req)
+            )
+          end
+
+          updated_files
+        end
+
+        def updated_pip_compile_based_files
+          PipCompileFileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_dependency_files
         end
 
         def dependency
@@ -304,6 +315,10 @@ module Dependabot
 
         def lockfile
           @lockfile ||= get_original_file("Pipfile.lock")
+        end
+
+        def pip_compile_files
+          dependency_files.select { |f| f.name.end_with?(".in") }
         end
       end
     end

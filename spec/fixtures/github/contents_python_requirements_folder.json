@@ -1,0 +1,130 @@
+[
+  {
+    "name": "coverage.in",
+    "path": "requirements/coverage.in",
+    "sha": "bcc1ab41d4c1861056758e95907c29412c2f1cae",
+    "size": 27,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/coverage.in?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/coverage.in",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/bcc1ab41d4c1861056758e95907c29412c2f1cae",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/coverage.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/coverage.in?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/bcc1ab41d4c1861056758e95907c29412c2f1cae",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/coverage.in"
+    }
+  },
+  {
+    "name": "coverage.txt",
+    "path": "requirements/coverage.txt",
+    "sha": "5c991f7f52b7736c7aea8083868ef7aa057eda28",
+    "size": 295,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/coverage.txt?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/coverage.txt",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/5c991f7f52b7736c7aea8083868ef7aa057eda28",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/coverage.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/coverage.txt?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/5c991f7f52b7736c7aea8083868ef7aa057eda28",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/coverage.txt"
+    }
+  },
+  {
+    "name": "test.in",
+    "path": "requirements/test.in",
+    "sha": "5b780009d805a6b9fd9e499528039dc4cf59db4d",
+    "size": 37,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/test.in?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/test.in",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/5b780009d805a6b9fd9e499528039dc4cf59db4d",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/test.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/test.in?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/5b780009d805a6b9fd9e499528039dc4cf59db4d",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/test.in"
+    }
+  },
+  {
+    "name": "test.txt",
+    "path": "requirements/test.txt",
+    "sha": "3d16646e3a2c7ea587b3283d0714bc299c2d0d76",
+    "size": 561,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/test.txt?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/test.txt",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/3d16646e3a2c7ea587b3283d0714bc299c2d0d76",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/test.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/test.txt?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/3d16646e3a2c7ea587b3283d0714bc299c2d0d76",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/test.txt"
+    }
+  },
+  {
+    "name": "tools.in",
+    "path": "requirements/tools.in",
+    "sha": "c55c0089c06bc3a9820369e00639caa8435a0205",
+    "size": 153,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/tools.in?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/tools.in",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/c55c0089c06bc3a9820369e00639caa8435a0205",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/tools.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/tools.in?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/c55c0089c06bc3a9820369e00639caa8435a0205",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/tools.in"
+    }
+  },
+  {
+    "name": "tools.txt",
+    "path": "requirements/tools.txt",
+    "sha": "984f8fff8331f8e4d245a4291528a53a40f07c59",
+    "size": 2490,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/tools.txt?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/tools.txt",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/984f8fff8331f8e4d245a4291528a53a40f07c59",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/tools.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/tools.txt?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/984f8fff8331f8e4d245a4291528a53a40f07c59",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/tools.txt"
+    }
+  },
+  {
+    "name": "typing.in",
+    "path": "requirements/typing.in",
+    "sha": "c997f364b496e17a0e44cf0e9d58835a02c16bdb",
+    "size": 7,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/typing.in?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/typing.in",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/c997f364b496e17a0e44cf0e9d58835a02c16bdb",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/typing.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/typing.in?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/c997f364b496e17a0e44cf0e9d58835a02c16bdb",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/typing.in"
+    }
+  },
+  {
+    "name": "typing.txt",
+    "path": "requirements/typing.txt",
+    "sha": "15a2c7ee76c23710281d57865320a3358d638dc5",
+    "size": 160,
+    "url": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/typing.txt?ref=master",
+    "html_url": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/typing.txt",
+    "git_url": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/15a2c7ee76c23710281d57865320a3358d638dc5",
+    "download_url": "https://raw.githubusercontent.com/HypothesisWorks/hypothesis/master/requirements/typing.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/HypothesisWorks/hypothesis/contents/requirements/typing.txt?ref=master",
+      "git": "https://api.github.com/repos/HypothesisWorks/hypothesis/git/blobs/15a2c7ee76c23710281d57865320a3358d638dc5",
+      "html": "https://github.com/HypothesisWorks/hypothesis/blob/master/requirements/typing.txt"
+    }
+  }
+]

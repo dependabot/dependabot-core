@@ -275,9 +275,39 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    context "without a Pipfile" do
+    context "without a Pipfile or pip-compile file" do
       let(:dependency_files) { [requirements_file] }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "with a pip-compile file" do
+      let(:dependency_files) { [manifest_file, generated_file] }
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("python", "requirements", generated_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "unpinned.in" }
+      let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+
+      it "delegates to PipCompileVersionResolver" do
+        dummy_resolver =
+          instance_double(described_class::PipCompileVersionResolver)
+        allow(described_class::PipCompileVersionResolver).to receive(:new).
+          and_return(dummy_resolver)
+        expect(dummy_resolver).
+          to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("2.5.0"))
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("2.5.0"))
+      end
     end
 
     context "with a Pipfile" do

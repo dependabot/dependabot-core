@@ -16,7 +16,11 @@ def parse_requirements(directory):
 
     requirement_files = glob.glob(os.path.join(directory, '*requirements*.txt')) \
                         + glob.glob(os.path.join(directory, 'requirements', '*.txt'))
-    for reqs_file in requirement_files:
+
+    pip_compile_files = glob.glob(os.path.join(directory, '*requirements*.in')) \
+                        + glob.glob(os.path.join(directory, 'requirements', '*.in'))
+
+    for reqs_file in requirement_files + pip_compile_files:
         try:
             requirements = pip._internal.req.req_file.parse_requirements(
                 reqs_file,
