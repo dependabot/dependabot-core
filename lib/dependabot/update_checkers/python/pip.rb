@@ -12,6 +12,7 @@ module Dependabot
       class Pip < Dependabot::UpdateCheckers::Base
         require_relative "pip/requirements_updater"
         require_relative "pip/pipfile_version_resolver"
+        require_relative "pip/pip_compile_version_resolver"
 
         MAIN_PYPI_INDEXES = %w(
           https://pypi.python.org/simple/
@@ -23,19 +24,25 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # pip doesn't (yet) do any dependency resolution. Mad but true.
-          # See https://github.com/pypa/pip/issues/988 for details. This should
-          # change in pip 10, due in August 2017.
-          return latest_version unless pipfile
-
-          # If we're using Pipenv, we can do better (eventually we should do
-          # this for cases where we don't have a Pipfile, too).
           @latest_resolvable_version ||=
-            PipfileVersionResolver.new(
-              dependency: dependency,
-              dependency_files: dependency_files,
-              credentials: credentials
-            ).latest_resolvable_version
+            if pipfile
+              PipfileVersionResolver.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                credentials: credentials
+              ).latest_resolvable_version
+            elsif pip_compile_files.any?
+              PipCompileVersionResolver.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                credentials: credentials
+              ).latest_resolvable_version
+            else
+              # pip doesn't (yet) do any dependency resolution, so if we don't
+              # have a Pipfile or a pip-conpile file, we just return the latest
+              # version.
+              latest_version
+            end
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -220,6 +227,10 @@ module Dependabot
 
         def requirements_files
           dependency_files.select { |f| f.name.match?(/requirements/x) }
+        end
+
+        def pip_compile_files
+          dependency_files.select { |f| f.name.end_with?(".in") }
         end
       end
     end

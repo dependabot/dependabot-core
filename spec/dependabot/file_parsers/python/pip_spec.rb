@@ -471,40 +471,34 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             Dependabot::Dependency.new(
               name: "requests",
               version: "2.4.1",
-              requirements: [
-                {
-                  requirement: "==2.4.1",
-                  file: "requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.4.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             ),
             Dependabot::Dependency.new(
               name: "luigi",
               version: "2.2.0",
-              requirements: [
-                {
-                  requirement: "==2.2.0",
-                  file: "more_requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.2.0",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             ),
             Dependabot::Dependency.new(
               name: "psycopg2",
               version: "2.6.1",
-              requirements: [
-                {
-                  requirement: "==2.6.1",
-                  file: "more_requirements.txt",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                requirement: "==2.6.1",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             )
           ]
@@ -533,8 +527,25 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
-
         its(:length) { is_expected.to eq(5) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("attrs")
+            expect(dependency.version).to eq("17.4.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "requirements/test.in",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
 

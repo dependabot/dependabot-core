@@ -5,6 +5,7 @@ require "excon"
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip/pipfile_preparer"
 require "dependabot/update_checkers/python/pip"
+require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
 require "dependabot/errors"
 
