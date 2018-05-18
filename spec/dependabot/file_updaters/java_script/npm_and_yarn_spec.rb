@@ -656,7 +656,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "has details of the updated item, but doesn't update everything" do
           # Updates the desired dependency
           expect(updated_yarn_lock.content).
-            to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
+            to include("babel-jest@^22.0.4:\n  version \"22.4.4\"")
 
           # Doesn't update unrelated dependencies
           expect(updated_yarn_lock.content).
