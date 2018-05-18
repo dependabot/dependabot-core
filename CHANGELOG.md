@@ -1,3 +1,8 @@
+## v0.58.22, 18 May 2018
+
+- Handle switches from numeric to git sources (happens when lockfile is
+  out-of-date)
+
 ## v0.58.21, 18 May 2018
 
 - Python: Unlock bounds in pip-config files when necessary to update
