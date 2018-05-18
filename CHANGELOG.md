@@ -1,3 +1,8 @@
+## v0.58.19, 18 May 2018
+
+- Python: Add support for pip-compile files (i.e., `requirements.in` and
+  friends). Initial support is very rough.
+
 ## v0.58.18, 18 May 2018
 
 - JS: Handle "402: Payment required" responses from npmjs
