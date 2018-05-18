@@ -8,6 +8,8 @@ module Dependabot
     module Python
       class Pip
         class PipCompileFileUpdater
+          require_relative "requirement_replacer"
+
           attr_reader :dependencies, :dependency_files, :credentials
 
           def initialize(dependencies:, dependency_files:, credentials:)
@@ -32,7 +34,7 @@ module Dependabot
 
           def fetch_updated_dependency_files
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+              write_updated_dependency_files
 
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
@@ -66,12 +68,30 @@ module Dependabot
             )
           end
 
-          def write_temporary_dependency_files
+          def write_updated_dependency_files
             dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, file.content)
+              File.write(path, update_dependency_requirement(file))
             end
+          end
+
+          def update_dependency_requirement(file)
+            return file.content unless file.name.end_with?(".in")
+            return file.content unless dependency.version
+
+            old_req = dependency.previous_requirements.
+                      find { |r| r[:file] == file.name }
+            new_req = dependency.requirements.
+                      find { |r| r[:file] == file.name }
+            return file.content unless old_req&.fetch(:requirement)
+
+            RequirementReplacer.new(
+              content: file.content,
+              dependency_name: dependency.name,
+              old_requirement: old_req[:requirement],
+              new_requirement: new_req[:requirement]
+            ).updated_content
           end
 
           def source_pip_config_file_name

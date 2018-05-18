@@ -61,5 +61,20 @@ RSpec.describe namespace::PipCompileVersionResolver do
     subject { resolver.latest_resolvable_version }
 
     it { is_expected.to be >= Gem::Version.new("18.1.0") }
+
+    context "with an upper bound" do
+      let(:manifest_fixture_name) { "bounded.in" }
+      let(:generated_fixture_name) { "pip_compile_bounded.txt" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=17.4.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("18.1.0") }
+    end
   end
 end

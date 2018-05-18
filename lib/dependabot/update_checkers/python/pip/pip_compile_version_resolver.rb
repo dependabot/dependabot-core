@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/python/pip"
+require "dependabot/file_updaters/python/pip/requirement_replacer"
 require "dependabot/utils/python/version"
 require "dependabot/shared_helpers"
 
@@ -9,9 +10,8 @@ module Dependabot
     module Python
       class Pip
         # This class does version resolution for pip-compile. Its approach is:
+        # - Unlock the dependency we're checking in the requirements.in file
         # - Run `pip-compile` and see what the result is
-        #
-        # In future, we should ensure it unlocks the dependency first.
         class PipCompileVersionResolver
           attr_reader :dependency, :dependency_files, :credentials
 
@@ -76,8 +76,23 @@ module Dependabot
             dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, file.content)
+              File.write(path, unlock_dependency(file))
             end
+          end
+
+          def unlock_dependency(file)
+            return file.content unless file.name.end_with?(".in")
+            return file.content unless dependency.version
+
+            req = dependency.requirements.find { |r| r[:file] == file.name }
+            return file.content unless req&.fetch(:requirement)
+
+            FileUpdaters::Python::Pip::RequirementReplacer.new(
+              content: file.content,
+              dependency_name: dependency.name,
+              old_requirement: req[:requirement],
+              new_requirement: ">=#{dependency.version}"
+            ).updated_content
           end
 
           def source_pip_config_file_name

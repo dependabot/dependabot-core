@@ -546,6 +546,29 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             )
           end
         end
+
+        context "with a version bound" do
+          let(:manifest_fixture_name) { "bounded.in" }
+          let(:generated_fixture_name) { "pip_compile_bounded.txt" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("attrs")
+              expect(dependency.version).to eq("17.4.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "<=17.4.0",
+                  file: "requirements/test.in",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
       end
     end
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
 require "dependabot/file_updaters/python/pip"
 require "dependabot/shared_helpers"
 

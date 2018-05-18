@@ -77,5 +77,33 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       expect(updated_files.count).to eq(1)
       expect(updated_files.first.content).to include("attrs==18.1.0")
     end
+
+    context "when the requirement.in file needs to be updated" do
+      let(:manifest_fixture_name) { "bounded.in" }
+      let(:generated_fixture_name) { "pip_compile_bounded.txt" }
+
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=18.1.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=17.4.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "updates the requirements.txt and the requirements.in" do
+        expect(updated_files.count).to eq(2)
+        expect(updated_files.first.content).to include("Attrs<=18.1.0")
+        expect(updated_files.last.content).to include("attrs==18.1.0")
+      end
+    end
   end
 end

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "toml-rb"
-
 require "python_requirement_parser"
 require "dependabot/file_updaters/base"
 require "dependabot/file_parsers/python/pip"
