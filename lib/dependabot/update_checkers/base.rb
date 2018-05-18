@@ -151,6 +151,12 @@ module Dependabot
 
       def numeric_version_up_to_date?
         return false unless latest_version
+
+        # If a lockfile isn't out of date and the package has switched to a git
+        # source then we'll get a numeric version switching to a git SHA. In
+        # this case we treat the verison as up-to-date so that it's ignored.
+        return true if latest_version.to_s.match?(/^[0-9a-f]{40}$/)
+
         latest_version <= version_class.new(dependency.version)
       end
 

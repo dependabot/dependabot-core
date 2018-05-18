@@ -74,6 +74,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
         it { is_expected.to be_falsey }
       end
+
+      context "but is switching to a git source" do
+        let(:latest_resolvable_version) { "a" * 40 }
+        it { is_expected.to be_falsey }
+      end
     end
 
     context "when the dependency is up-to-date" do
