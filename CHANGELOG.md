@@ -1,3 +1,8 @@
+## v0.58.20, 18 May 2018
+
+- Python: Use normalised dependency names (rather than using the unnormalised
+  name)
+
 ## v0.58.19, 18 May 2018
 
 - Python: Add support for pip-compile files (i.e., `requirements.in` and
