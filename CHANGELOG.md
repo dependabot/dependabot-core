@@ -1,3 +1,7 @@
+## v0.58.24, 19 May 2018
+
+- Python: Handle non-unlocking case properly
+
 ## v0.58.23, 19 May 2018
 
 - Python: Keep existing options when updating a requirements.txt file generated
