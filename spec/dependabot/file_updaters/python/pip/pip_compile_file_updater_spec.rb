@@ -76,6 +76,21 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
     it "updates the requirements.txt" do
       expect(updated_files.count).to eq(1)
       expect(updated_files.first.content).to include("attrs==18.1.0")
+      expect(updated_files.first.content).
+        to include("pbr==4.0.2                # via mock")
+      expect(updated_files.first.content).to include("# This file is autogen")
+      expect(updated_files.first.content).to_not include("--hash=sha")
+    end
+
+    context "with hashes" do
+      let(:generated_fixture_name) { "pip_compile_hashes.txt" }
+
+      it "updates the requirements.txt, keeping the hashes" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).to include("4b90b09eeeb9b88c35bc64")
+        expect(updated_files.first.content).to include("# This file is autogen")
+      end
     end
 
     context "when the requirement.in file needs to be updated" do
@@ -103,6 +118,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         expect(updated_files.count).to eq(2)
         expect(updated_files.first.content).to include("Attrs<=18.1.0")
         expect(updated_files.last.content).to include("attrs==18.1.0")
+        expect(updated_files.last.content).to_not include("# via mock")
       end
     end
   end
