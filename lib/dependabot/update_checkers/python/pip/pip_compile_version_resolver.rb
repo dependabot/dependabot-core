@@ -15,10 +15,12 @@ module Dependabot
         class PipCompileVersionResolver
           attr_reader :dependency, :dependency_files, :credentials
 
-          def initialize(dependency:, dependency_files:, credentials:)
+          def initialize(dependency:, dependency_files:, credentials:,
+                         unlock_requirement:)
             @dependency = dependency
             @dependency_files = dependency_files
             @credentials = credentials
+            @unlock_requirement = unlock_requirement
           end
 
           def latest_resolvable_version
@@ -29,6 +31,10 @@ module Dependabot
           end
 
           private
+
+          def unlock_requirement?
+            @unlock_requirement
+          end
 
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
@@ -83,6 +89,7 @@ module Dependabot
           def unlock_dependency(file)
             return file.content unless file.name.end_with?(".in")
             return file.content unless dependency.version
+            return file.content unless unlock_requirement?
 
             req = dependency.requirements.find { |r| r[:file] == file.name }
             return file.content unless req&.fetch(:requirement)

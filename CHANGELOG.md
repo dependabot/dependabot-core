@@ -320,7 +320,7 @@
 ## v0.55.13, 02 May 2018
 
 - Bump pipenv version
-- JS: Handle ~> requirement matcher (treat as ~, rather than as Ruby ~>)
+- JS: Handle `~>` requirement matcher (treat as `~`, rather than as Ruby `~>`)
 
 ## v0.55.12, 02 May 2018
 

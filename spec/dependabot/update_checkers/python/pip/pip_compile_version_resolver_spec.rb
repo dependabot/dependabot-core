@@ -11,7 +11,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      unlock_requirement: unlock_requirement
     )
   end
   let(:credentials) do
@@ -22,6 +23,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       "password" => "token"
     }]
   end
+  let(:unlock_requirement) { true }
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
     Dependabot::DependencyFile.new(
@@ -75,6 +77,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       it { is_expected.to be >= Gem::Version.new("18.1.0") }
+
+      context "when not unlocking requirements" do
+        it { is_expected.to be >= Gem::Version.new("17.4.0") }
+      end
     end
   end
 end

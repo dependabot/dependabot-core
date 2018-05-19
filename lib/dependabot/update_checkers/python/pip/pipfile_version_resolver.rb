@@ -27,10 +27,12 @@ module Dependabot
 
           attr_reader :dependency, :dependency_files, :credentials
 
-          def initialize(dependency:, dependency_files:, credentials:)
+          def initialize(dependency:, dependency_files:, credentials:,
+                         unlock_requirement:)
             @dependency = dependency
             @dependency_files = dependency_files
             @credentials = credentials
+            @unlock_requirement = unlock_requirement
 
             check_private_sources_are_reachable
           end
@@ -43,6 +45,10 @@ module Dependabot
           end
 
           private
+
+          def unlock_requirement?
+            @unlock_requirement
+          end
 
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
@@ -112,7 +118,7 @@ module Dependabot
           def pipfile_content
             content = pipfile.content
             content = freeze_other_dependencies(content)
-            content = unlock_target_dependency(content)
+            content = unlock_target_dependency(content) if unlock_requirement?
             content = add_private_sources(content)
             content
           end

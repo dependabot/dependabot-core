@@ -29,13 +29,15 @@ module Dependabot
               PipfileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
-                credentials: credentials
+                credentials: credentials,
+                unlock_requirement: true
               ).latest_resolvable_version
             elsif pip_compile_files.any?
               PipCompileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
-                credentials: credentials
+                credentials: credentials,
+                unlock_requirement: true
               ).latest_resolvable_version
             else
               # pip doesn't (yet) do any dependency resolution, so if we don't
@@ -46,19 +48,29 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          # Note: when pip has a resolver the logic here will need to change.
-          # Currently it gets the latest version that satisfies the existing
-          # constraint. In future, it will need to check resolvability, too.
           @latest_resolvable_version_with_no_unlock ||=
-            begin
+            if pipfile
+              PipfileVersionResolver.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                credentials: credentials,
+                unlock_requirement: false
+              ).latest_resolvable_version
+            elsif pip_compile_files.any?
+              PipCompileVersionResolver.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                credentials: credentials,
+                unlock_requirement: false
+              ).latest_resolvable_version
+            else
               versions = available_versions
               reqs = dependency.requirements.map do |r|
                 Utils::Python::Requirement.new(r.fetch(:requirement).split(","))
               end
               versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.sort.reverse.find do |v|
-                reqs.all? { |r| r.satisfied_by?(v) }
-              end
+              versions.sort.reverse.
+                find { |v| reqs.all? { |r| r.satisfied_by?(v) } }
             end
         end
 

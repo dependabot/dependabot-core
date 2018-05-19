@@ -11,7 +11,8 @@ RSpec.describe namespace::PipfileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      unlock_requirement: unlock_requirement
     )
   end
   let(:credentials) do
@@ -22,6 +23,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       "password" => "token"
     }]
   end
+  let(:unlock_requirement) { true }
   let(:dependency_files) { [pipfile, lockfile] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
@@ -63,6 +65,11 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:dependency_version) { "2.18.0" }
       it { is_expected.to be >= Gem::Version.new("2.18.4") }
+
+      context "when not unlocking the requirement" do
+        let(:unlock_requirement) { false }
+        it { is_expected.to be >= Gem::Version.new("2.18.0") }
+      end
     end
 
     context "without a lockfile" do
