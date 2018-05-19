@@ -1,3 +1,8 @@
+## v0.58.23, 19 May 2018
+
+- Python: Keep existing options when updating a requirements.txt file generated
+  by pip-compile
+
 ## v0.58.22, 18 May 2018
 
 - Handle switches from numeric to git sources (happens when lockfile is
