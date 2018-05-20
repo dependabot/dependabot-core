@@ -1,3 +1,7 @@
+## v0.58.26, 20 May 2018
+
+- Don't duplicate headers in release notes (check for them in release body)
+
 ## v0.58.25, 20 May 2018
 
 - Use emoji in PR title for gitmoji commits
