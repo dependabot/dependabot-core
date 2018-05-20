@@ -52,7 +52,7 @@ module Dependabot
       end
 
       def commit_message
-        message =  pr_name + "\n\n"
+        message = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:") + "\n\n"
         message += commit_message_intro
         message += metadata_links
         message += "\n\n" + signoff_message if signoff_message
@@ -139,8 +139,8 @@ module Dependabot
           pr_name += "[security] " if includes_security_fixes?
           pr_name + (library? ? "update " : "bump ")
         elsif using_gitmoji_commit_messages?
-          pr_name += ":arrow_up: "
-          pr_name += ":lock: " if includes_security_fixes?
+          pr_name += "⬆️ "
+          pr_name += "🔒 " if includes_security_fixes?
           pr_name + (library? ? "Update " : "Bump ")
         else
           pr_name += "[Security] " if includes_security_fixes?

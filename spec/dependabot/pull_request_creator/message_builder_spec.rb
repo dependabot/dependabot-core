@@ -248,11 +248,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                       headers: json_header)
         end
 
-        it { is_expected.to eq(":arrow_up: Bump business from 1.4.0 to 1.5.0") }
+        it { is_expected.to eq("⬆️ Bump business from 1.4.0 to 1.5.0") }
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with(":arrow_up: :lock: Bump") }
+          it { is_expected.to start_with("⬆️ 🔒 Bump") }
         end
       end
     end
@@ -1142,6 +1142,23 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it "includes a signoff line" do
         expect(commit_message).
           to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>")
+      end
+    end
+
+    context "for a repo that uses gitmoji commits" do
+      before do
+        allow(builder).to receive(:pr_name).and_call_original
+        stub_request(:get, watched_repo_url + "/commits").
+          to_return(status: 200,
+                    body: fixture("github", "commits_gitmoji.json"),
+                    headers: json_header)
+      end
+
+      it { is_expected.to start_with(":arrow_up: Bump ") }
+
+      context "with a security vulnerability fixed" do
+        let(:vulnerabilities_fixed) { { "business": [{}] } }
+        it { is_expected.to start_with(":arrow_up: :lock: Bump ") }
       end
     end
   end
