@@ -1,3 +1,8 @@
+## v0.58.25, 20 May 2018
+
+- Use emoji in PR title for gitmoji commits
+- Java (Maven and Gradle): Use short name for Java PRs
+
 ## v0.58.24, 19 May 2018
 
 - Python: Handle non-unlocking case properly
