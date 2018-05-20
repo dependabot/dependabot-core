@@ -61,6 +61,11 @@ module Dependabot
     # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity
 
+    def display_name
+      return name unless %w(maven gradle).include?(package_manager)
+      name.split(":").last
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end

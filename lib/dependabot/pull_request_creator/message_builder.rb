@@ -96,7 +96,7 @@ module Dependabot
 
         pr_name +=
           if dependencies.count == 1
-            "#{dependencies.first.name} requirement to "\
+            "#{dependencies.first.display_name} requirement to "\
             "#{new_library_requirement(dependencies.first)}"
           else
             names = dependencies.map(&:name)
@@ -114,7 +114,7 @@ module Dependabot
         pr_name +=
           if dependencies.count == 1
             dependency = dependencies.first
-            "#{dependency.name} from #{previous_version(dependency)} "\
+            "#{dependency.display_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           elsif JAVA_PMS.include?(package_manager)
             dependency = dependencies.first
@@ -212,11 +212,11 @@ module Dependabot
       def dependency_links
         dependencies.map do |dependency|
           if source_url(dependency)
-            "[#{dependency.name}](#{source_url(dependency)})"
+            "[#{dependency.display_name}](#{source_url(dependency)})"
           elsif homepage_url(dependency)
-            "[#{dependency.name}](#{homepage_url(dependency)})"
+            "[#{dependency.display_name}](#{homepage_url(dependency)})"
           else
-            dependency.name
+            dependency.display_name
           end
         end
       end
@@ -227,7 +227,7 @@ module Dependabot
         end
 
         dependencies.map do |dep|
-          "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
+          "\n\nUpdates `#{dep.display_name}` from #{previous_version(dep)} to "\
           "#{new_version(dep)}"\
           "#{metadata_links_for_dep(dep)}"
         end.join
@@ -248,8 +248,8 @@ module Dependabot
         end
 
         dependencies.map do |dep|
-          msg = "\n\nUpdates `#{dep.name}` from #{previous_version(dep)} to "\
-                "#{new_version(dep)}"
+          msg = "\n\nUpdates `#{dep.display_name}` from "\
+                "#{previous_version(dep)} to #{new_version(dep)}"
           if vulnerabilities_fixed[dep.name]&.any?
             msg += ". **This update includes security fixes.**"
           end
@@ -282,8 +282,8 @@ module Dependabot
         return "" unless releases_text(dep) && releases_url(dep)
 
         msg = "\n<details>\n<summary>Release notes</summary>\n\n"
-        msg += "*Sourced from [#{dep.name}'s releases](#{releases_url(dep)}).*"\
-               "\n\n"
+        msg += "*Sourced from [#{dep.display_name}'s releases]"\
+               "(#{releases_url(dep)}).*\n\n"
         msg +=
           begin
             release_note_lines = releases_text(dep).split("\n").first(50)
@@ -303,7 +303,7 @@ module Dependabot
 
         msg = "\n<details>\n<summary>Changelog</summary>\n\n"
         msg += "*Sourced from "\
-               "[#{dep.name}'s changelog](#{changelog_url(dep)}).*\n\n"
+               "[#{dep.display_name}'s changelog](#{changelog_url(dep)}).*\n\n"
         msg +=
           begin
             changelog_lines = changelog_text(dep).split("\n").first(50)
@@ -321,7 +321,8 @@ module Dependabot
 
         msg = "\n<details>\n<summary>Upgrade guide</summary>\n\n"
         msg += "*Sourced from "\
-               "[#{dep.name}'s upgrade guide](#{upgrade_url(dep)}).*\n\n"
+               "[#{dep.display_name}'s upgrade guide]"\
+               "(#{upgrade_url(dep)}).*\n\n"
         msg +=
           begin
             upgrade_lines = upgrade_text(dep).split("\n").first(50)
