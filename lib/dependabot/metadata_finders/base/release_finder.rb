@@ -32,17 +32,7 @@ module Dependabot
           return unless relevant_releases.any?
           return if relevant_releases.all? { |r| r.body.nil? || r.body == "" }
 
-          relevant_releases.map do |r|
-            title = "## #{r.name.to_s != '' ? r.name : r.tag_name}\n"
-            body =
-              if r.body.to_s.gsub(/\n*\z/m, "") == ""
-                "No release notes provided."
-              else
-                r.body.gsub(/\n*\z/m, "")
-              end
-
-            title + body
-          end.join("\n\n")
+          relevant_releases.map { |r| serialize_release(r) }.join("\n\n")
         end
 
         private
@@ -145,6 +135,23 @@ module Dependabot
           # Doing two loops looks inefficient, but it ensures consistency
           all_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||
             all_releases.find { |r| release_regex.match?(r.name.to_s) }
+        end
+
+        def serialize_release(release)
+          rel = release
+          title = "## #{rel.name.to_s != '' ? rel.name : rel.tag_name}\n"
+          body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
+                   "No release notes provided."
+                 else
+                   rel.body.gsub(/\n*\z/m, "")
+                 end
+
+          release_body_includes_title?(rel) ? body : title + body
+        end
+
+        def release_body_includes_title?(release)
+          title = release.name.to_s != "" ? release.name : release.tag_name
+          release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
         def version_regex(version)
