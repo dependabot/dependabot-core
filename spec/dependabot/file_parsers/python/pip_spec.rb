@@ -773,7 +773,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:lockfile_fixture_name) { "exact_version.lock" }
 
-        its(:length) { is_expected.to eq(10) }
+        its(:length) { is_expected.to eq(11) }
 
         describe "top level dependencies" do
           subject(:dependencies) { parser.parse.select(&:top_level?) }
