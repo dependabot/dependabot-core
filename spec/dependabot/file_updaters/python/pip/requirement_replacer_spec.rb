@@ -25,5 +25,15 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
 
     it { is_expected.to include("Attrs>=17.4.0\n") }
     it { is_expected.to include("mock\n") }
+
+    context "with multiple requirements" do
+      let(:dependency_name) { "django" }
+      let(:requirement_content) { "django>=1.11,<1.12" }
+      # Order swapped during file parsing
+      let(:old_requirement) { "<1.12,>=1.11" }
+      let(:new_requirement) { ">=1.11.5" }
+
+      it { is_expected.to eq("django>=1.11.5") }
+    end
   end
 end

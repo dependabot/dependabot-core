@@ -37,14 +37,14 @@ module Dependabot
 
           private
 
-          def original_dependency_declaration_string(old_requirement)
+          def original_dependency_declaration_string(old_req)
             regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
             matches = []
 
             content.scan(regex) { matches << Regexp.last_match }
             dec = matches.
                   select { |m| normalise(m[:name]) == dependency_name }.
-                  find { |m| m[:requirements] == old_requirement }
+                  find { |m| requirements_match(m[:requirements], old_req) }
             raise "Declaration not found for #{dependency_name}!" unless dec
             dec.to_s
           end
@@ -57,6 +57,11 @@ module Dependabot
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)
             name.downcase.tr("_", "-").tr(".", "-")
+          end
+
+          def requirements_match(req1, req2)
+            req1&.split(",")&.map(&:strip)&.sort ==
+              req2&.split(",")&.map(&:strip)&.sort
           end
         end
       end
