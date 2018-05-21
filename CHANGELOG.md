@@ -1,3 +1,7 @@
+## v0.58.31, 21 May 2018
+
+- Python: Consider ignored versions in UpdateChecker
+
 ## v0.58.30, 21 May 2018
 
 - Maven: Raise a DependencyFileNotParseable error for missing properties
