@@ -68,14 +68,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   let(:gemfile_fixture_name) { "Gemfile" }
   let(:lockfile_fixture_name) { "Gemfile.lock" }
   let(:gemspec_fixture_name) { "example" }
+  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   describe "#latest_version" do
     subject { checker.latest_version }
 
     context "with a rubygems source" do
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -90,7 +91,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, "https://rubygems.org/api/v1/versions/i18n.json").
+          stub_request(:get, rubygems_url + "versions/i18n.json").
             to_return(status: 200, body: rubygems_response)
         end
 
@@ -99,7 +100,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       context "when the gem isn't on Rubygems" do
         before do
-          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+          stub_request(:get, rubygems_url + "versions/business.json").
             to_return(status: 404, body: "This rubygem could not be found.")
         end
 
@@ -157,8 +158,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "git_source_no_ref" }
 
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -236,8 +237,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the gem isn't on Rubygems" do
             before do
-              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
-              stub_request(:get, rubygems_url).
+              stub_request(:get, rubygems_url + "versions/business.json").
                 to_return(status: 404, body: "This rubygem could not be found.")
             end
 
@@ -286,8 +286,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             end
 
             before do
-              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
-              stub_request(:get, rubygems_url).
+              stub_request(:get, rubygems_url + "versions/business.json").
                 to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/gocardless/business.git"
               git_header = {
@@ -325,8 +324,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:lockfile_fixture_name) { "path_source.lock" }
 
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -358,7 +357,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
     context "with no latest version" do
       before do
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 404, body: "This rubygem could not be found.")
       end
 
@@ -551,8 +550,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         before do
-          rubygems_response = fixture("ruby", "rubygems_response.json")
-          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(:get, rubygems_url + "versions/business.json").
             to_return(status: 200, body: rubygems_response)
         end
 
@@ -612,9 +611,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
-            rubygems_response = fixture("ruby", "rubygems_response.json")
-            stub_request(:get, "https://rubygems.org/api/v1/gems/prius.json").
-              to_return(status: 200, body: rubygems_response)
+            response = fixture("ruby", "rubygems_response_versions.json")
+            stub_request(:get, rubygems_url + "versions/prius.json").
+              to_return(status: 200, body: response)
           end
 
           before do
@@ -667,13 +666,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               allow_any_instance_of(Dependabot::GitCommitChecker).
                 to receive(:branch_or_ref_in_release?).
                 and_return(false)
-              stub_request(
-                :get,
-                "https://rubygems.org/api/v1/gems/business.json"
-              ).to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response.json")
-              )
+              stub_request(:get, rubygems_url + "versions/business.json").
+                to_return(
+                  status: 200,
+                  body: fixture("ruby", "rubygems_response_versions.json")
+                )
             end
 
             it "respects the pin" do
@@ -712,8 +709,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             end
 
             before do
-              rubygems_url = "https://rubygems.org/api/v1/gems/business.json"
-              stub_request(:get, rubygems_url).
+              stub_request(:get, rubygems_url + "versions/business.json").
                 to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/gocardless/business.git"
               git_header = {
@@ -749,10 +745,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
 
               before do
-                rubygems_response = fixture("ruby", "rubygems_response.json")
-                onfido_url = "https://rubygems.org/api/v1/gems/onfido.json"
-                stub_request(:get, onfido_url).
-                  to_return(status: 200, body: rubygems_response)
+                response = fixture("ruby", "rubygems_response_versions.json")
+                stub_request(:get, rubygems_url + "versions/onfido.json").
+                  to_return(status: 200, body: response)
 
                 allow_any_instance_of(Dependabot::GitCommitChecker).
                   to receive(:branch_or_ref_in_release?).
@@ -862,9 +857,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
-            rubygems_response = fixture("ruby", "rubygems_response.json")
-            stub_request(:get, "https://rubygems.org/api/v1/gems/prius.json").
-              to_return(status: 200, body: rubygems_response)
+            response = fixture("ruby", "rubygems_response_versions.json")
+            stub_request(:get, rubygems_url + "versions/prius.json").
+              to_return(status: 200, body: response)
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
@@ -902,9 +897,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           around { |example| capture_stderr { example.run } }
 
           before do
-            rubygems_response = fixture("ruby", "rubygems_response.json")
-            stub_request(:get, "https://rubygems.org/api/v1/gems/onfido.json").
-              to_return(status: 200, body: rubygems_response)
+            response = fixture("ruby", "rubygems_response_versions.json")
+            stub_request(:get, rubygems_url + "versions/onfido.json").
+              to_return(status: 200, body: response)
 
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
@@ -1055,9 +1050,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "when the Gemfile doesn't import the gemspec" do
         let(:gemfile_fixture_name) { "only_statesman" }
         before do
-          rubygems_response = fixture("ruby", "rubygems_response.json")
-          stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
-            to_return(status: 200, body: rubygems_response)
+          response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(:get, rubygems_url + "versions/business.json").
+            to_return(status: 200, body: response)
         end
 
         it "doesn't just fall back to latest_version" do
@@ -1219,8 +1214,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     end
 
     before do
-      stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
-        to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
+      stub_request(:get, rubygems_url + "versions/business.json").
+        to_return(
+          status: 200,
+          body: fixture("ruby", "rubygems_response_versions.json")
+        )
     end
 
     context "with a Gemfile and a Gemfile.lock" do
@@ -1262,7 +1260,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, "https://rubygems.org/api/v1/versions/i18n.json").
+          stub_request(:get, rubygems_url + "versions/i18n.json").
             to_return(status: 200, body: rubygems_response)
         end
 
@@ -1345,10 +1343,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the reference isn't included in the new version" do
             before do
-              stub_request(
-                :get,
-                "https://rubygems.org/api/v1/gems/business.json"
-              ).to_return(status: 404, body: "This rubygem could not be found.")
+              stub_request(:get, rubygems_url + "versions/business.json").
+                to_return(status: 404, body: "This rubygem could not be found.")
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
@@ -1409,13 +1405,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:branch_or_ref_in_release?).
                 and_return(true)
 
-              stub_request(
-                :get,
-                "https://rubygems.org/api/v1/gems/business.json"
-              ).to_return(
-                status: 200,
-                body: fixture("ruby", "rubygems_response.json")
-              )
+              stub_request(:get, rubygems_url + "versions/business.json").
+                to_return(
+                  status: 200,
+                  body: fixture("ruby", "rubygems_response_versions.json")
+                )
 
               repo_url = "https://api.github.com/repos/gocardless/business"
               stub_request(:get, repo_url + "/compare/v1.5.0...a1b78a9").

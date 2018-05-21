@@ -191,7 +191,8 @@ module Dependabot
           VersionResolver.new(
             dependency: dependency,
             dependency_files: prepared_files,
-            credentials: credentials
+            credentials: credentials,
+            ignored_versions: ignored_versions
           ).latest_resolvable_version_details
 
           @git_tag_resolvable = true
@@ -268,7 +269,8 @@ module Dependabot
               VersionResolver.new(
                 dependency: dependency,
                 dependency_files: prepared_dependency_files,
-                credentials: credentials
+                credentials: credentials,
+                ignored_versions: ignored_versions
               )
             end
         end

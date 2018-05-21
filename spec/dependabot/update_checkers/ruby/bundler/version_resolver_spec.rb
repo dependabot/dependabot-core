@@ -12,6 +12,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      ignored_versions: ignored_versions,
       credentials: [
         {
           "type" => "git_source",
@@ -23,7 +24,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
-  let(:github_token) { "token" }
+  let(:ignored_versions) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -69,15 +70,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:gemfile_fixture_name) { "Gemfile" }
   let(:lockfile_fixture_name) { "Gemfile.lock" }
   let(:gemspec_fixture_name) { "example" }
+  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   describe "#latest_version_details" do
     subject { resolver.latest_version_details }
 
     context "with a rubygems source" do
-      let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, rubygems_url).
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -86,16 +87,22 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       it "only hits Rubygems once" do
         resolver.latest_version_details
         resolver.latest_version_details
-        expect(WebMock).to have_requested(:get, rubygems_url).once
+        expect(WebMock).
+          to have_requested(:get, rubygems_url + "versions/business.json").once
       end
 
       context "when the gem isn't on Rubygems" do
         before do
-          stub_request(:get, rubygems_url).
+          stub_request(:get, rubygems_url + "versions/business.json").
             to_return(status: 404, body: "This rubygem could not be found.")
         end
 
         it { is_expected.to be_nil }
+      end
+
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
       end
 
       context "with a prerelease version specified" do
@@ -104,10 +111,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(
-            :get,
-            "https://rubygems.org/api/v1/versions/business.json"
-          ).to_return(status: 200, body: rubygems_response)
+          stub_request(:get, rubygems_url + "versions/business.json").
+            to_return(status: 200, body: rubygems_response)
         end
         its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
       end
@@ -139,9 +144,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
           let(:dependency_name) { "octokit" }
 
           before do
-            rubygems_response = fixture("ruby", "rubygems_response.json")
-            stub_request(:get, "https://rubygems.org/api/v1/gems/octokit.json").
-              to_return(status: 200, body: rubygems_response)
+            response = fixture("ruby", "rubygems_response_versions.json")
+            stub_request(:get, rubygems_url + "versions/octokit.json").
+              to_return(status: 200, body: response)
           end
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -185,6 +190,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
+
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
 
       context "that we don't have authentication details for" do
         before do
@@ -311,8 +321,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       let(:lockfile_fixture_name) { "git_source.lock" }
 
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -363,10 +373,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:dependency_name) { "statesman" }
 
         before do
-          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
+          stub_request(:get, rubygems_url + "versions/statesman.json").
             to_return(
               status: 200,
-              body: fixture("ruby", "rubygems_response.json")
+              body: fixture("ruby", "rubygems_response_versions.json")
             )
         end
 
@@ -386,8 +396,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       let(:lockfile_fixture_name) { "path_source.lock" }
 
       before do
-        rubygems_response = fixture("ruby", "rubygems_response.json")
-        stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
           to_return(status: 200, body: rubygems_response)
       end
 
@@ -483,9 +493,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
                 body: fixture("ruby", "rubygems-dependencies-public_suffix")
               )
 
-            versions_url =
-              "https://rubygems.org/api/v1/versions/public_suffix.json"
-            stub_request(:get, versions_url).
+            stub_request(:get, rubygems_url + "versions/public_suffix.json").
               to_return(status: 200, body: rubygems_versions)
           end
           let(:rubygems_versions) do

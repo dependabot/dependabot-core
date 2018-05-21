@@ -23,10 +23,12 @@ module Dependabot
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
           PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
-          def initialize(dependency:, dependency_files:, credentials:)
+          def initialize(dependency:, dependency_files:, credentials:,
+                         ignored_versions:)
             @dependency = dependency
             @dependency_files = dependency_files
             @credentials = credentials
+            @ignored_versions = ignored_versions
           end
 
           def latest_version_details
@@ -40,7 +42,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :credentials
+          attr_reader :dependency, :dependency_files, :credentials,
+                      :ignored_versions
 
           def fetch_latest_version_details
             case dependency_source
@@ -51,29 +54,6 @@ module Dependabot
           end
 
           def latest_rubygems_version_details
-            return latest_rubygems_version_details_with_pre if wants_prerelease?
-
-            # Rubygems excludes pre-releases from the `Gems.info` response,
-            # so no need to filter them out.
-            response = Excon.get(
-              "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
-              idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
-            )
-
-            latest_info = JSON.parse(response.body)
-            return nil if latest_info["version"].nil?
-
-            {
-              version: Gem::Version.new(latest_info["version"]),
-              sha: latest_info["sha"]
-            }
-          rescue JSON::ParserError
-            nil
-          end
-
-          def latest_rubygems_version_details_with_pre
             response = Excon.get(
               RUBYGEMS_API + "versions/#{dependency.name}.json",
               idempotent: true,
@@ -81,12 +61,20 @@ module Dependabot
               middlewares: SharedHelpers.excon_middleware
             )
 
-            latest_info = JSON.parse(response.body).
-                          max_by { |d| Gem::Version.new(d["number"]) }
+            relevant_versions =
+              JSON.parse(response.body).
+              reject do |d|
+                version = Gem::Version.new(d["number"])
+                next true if version.prerelease? && !wants_prerelease?
+                next true if ignore_reqs.any? { |r| r.satisfied_by?(version) }
+                false
+              end
+
+            dep = relevant_versions.max_by { |d| Gem::Version.new(d["number"]) }
 
             {
-              version: Gem::Version.new(latest_info["number"]),
-              sha: latest_info["sha"]
+              version: Gem::Version.new(dep["number"]),
+              sha: dep["sha"]
             }
           rescue JSON::ParserError
             nil
@@ -100,7 +88,10 @@ module Dependabot
                   fetcher.
                     specs_with_retry([dependency.name], dependency_source).
                     search_all(dependency.name).
-                    reject { |s| s.version.prerelease? && !wants_prerelease? }
+                    reject { |s| s.version.prerelease? && !wants_prerelease? }.
+                    reject do |s|
+                      ignore_reqs.any? { |r| r.satisfied_by?(s.version) }
+                    end
                 end.
                 max_by(&:version)
               spec.nil? ? nil : { version: spec.version }
@@ -140,15 +131,18 @@ module Dependabot
           end
 
           def wants_prerelease?
-            current_version = dependency.version
-            if current_version && Gem::Version.correct?(current_version) &&
-               Gem::Version.new(current_version).prerelease?
-              return true
-            end
+            @wants_prerelease ||=
+              begin
+                current_version = dependency.version
+                if current_version && Gem::Version.correct?(current_version) &&
+                   Gem::Version.new(current_version).prerelease?
+                  return true
+                end
 
-            dependency.requirements.any? do |req|
-              req[:requirement].match?(/[a-z]/i)
-            end
+                dependency.requirements.any? do |req|
+                  req[:requirement].match?(/[a-z]/i)
+                end
+              end
           end
 
           def fetch_latest_resolvable_version_details
@@ -393,6 +387,10 @@ module Dependabot
                   end
                 end
             end
+          end
+
+          def ignore_reqs
+            ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
           end
 
           def gemfile
