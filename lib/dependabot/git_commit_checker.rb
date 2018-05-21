@@ -141,31 +141,15 @@ module Dependabot
         end
 
         commit_sha =
-          if peeled_line then sha_for_update_pack_line(peeled_line)
-          else tag_sha
-          end
+          peeled_line ? sha_for_update_pack_line(peeled_line) : tag_sha
 
-        OpenStruct.new(
-          name: tag_name,
-          tag_sha: tag_sha,
-          commit_sha: commit_sha
-        )
+        OpenStruct.new(name: tag_name, tag_sha: tag_sha, commit_sha: commit_sha)
       end
     end
 
     def fetch_upload_pack_for(uri)
       original_uri = uri
-      bare_uri = uri.sub(%r{.*?://}, "").sub("git@", "").sub(":", "/")
-      cred = credentials.select { |c| c["type"] == "git_source" }.
-             find { |c| bare_uri.start_with?(c["host"]) }
-
-      uri =
-        if cred
-          auth_string = "#{cred.fetch('username')}:#{cred.fetch('password')}"
-          "https://#{auth_string}@#{bare_uri}"
-        else "https://#{bare_uri}"
-        end
-
+      uri = uri_with_auth(uri)
       uri = uri.gsub(%r{/$}, "")
       uri += ".git" unless uri.end_with?(".git")
       uri += "/info/refs?service=git-upload-pack"
@@ -181,6 +165,27 @@ module Dependabot
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
+    end
+
+    def uri_with_auth(uri)
+      bare_uri =
+        if uri.include?("git@") then uri.split("git@").last.sub(":", "/")
+        else uri.sub(%r{.*?://}, "")
+        end
+      cred = credentials.select { |c| c["type"] == "git_source" }.
+             find { |c| bare_uri.start_with?(c["host"]) }
+
+      if bare_uri.match?(%r{[^/]+:[^/]+@})
+        # URI already has authentication details
+        "https://#{bare_uri}"
+      elsif cred
+        # URI doesn't have authentication details, but we have credentials
+        auth_string = "#{cred.fetch('username')}:#{cred.fetch('password')}"
+        "https://#{auth_string}@#{bare_uri}"
+      else
+        # No credentials, so just return the https URI
+        "https://#{bare_uri}"
+      end
     end
 
     def commit_included_in_tag?(tag:, commit:, allow_identical: false)

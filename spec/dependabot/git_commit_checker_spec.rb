@@ -548,6 +548,22 @@ RSpec.describe Dependabot::GitCommitChecker do
             end
 
             it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
+
+            context "already encoded in the URL" do
+              let(:source) do
+                {
+                  type: "git",
+                  url: "https://x-access-token:token@bitbucket.org/gocardless/"\
+                       "business",
+                  branch: "master",
+                  ref: "master"
+                }
+              end
+
+              it do
+                is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
+              end
+            end
           end
         end
       end
