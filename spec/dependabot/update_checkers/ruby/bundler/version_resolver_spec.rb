@@ -13,14 +13,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       ignored_versions: ignored_versions,
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -37,14 +35,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:dependency_name) { "business" }
   let(:current_version) { "1.3" }
   let(:requirements) do
-    [
-      {
-        file: "Gemfile",
-        requirement: requirement_string,
-        groups: [],
-        source: source
-      }
-    ]
+    [{
+      file: "Gemfile",
+      requirement: requirement_string,
+      groups: [],
+      source: source
+    }]
   end
   let(:source) { nil }
   let(:requirement_string) { ">= 0" }
