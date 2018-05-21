@@ -1,3 +1,7 @@
+## v0.58.28, 21 May 2018
+
+- Python: Unlock dependencies with non-normalised names correctly
+
 ## v0.58.27, 21 May 2018
 
 - Python: Handle multiple-requirements that get reordered during file parsing
