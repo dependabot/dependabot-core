@@ -134,6 +134,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
     context "with no version specified" do
       let(:requirements_fixture_name) { "version_not_specified.txt" }
       its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements.first[:requirement]).to be_nil
+        end
+      end
     end
 
     context "with prefix matching specified" do

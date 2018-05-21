@@ -64,13 +64,7 @@ module Dependabot
                 unlock_requirement: false
               ).latest_resolvable_version
             else
-              versions = available_versions
-              reqs = dependency.requirements.map do |r|
-                Utils::Python::Requirement.new(r.fetch(:requirement).split(","))
-              end
-              versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.sort.reverse.
-                find { |v| reqs.all? { |r| r.satisfied_by?(v) } }
+              latest_pip_version_with_no_unlock
             end
         end
 
@@ -98,8 +92,21 @@ module Dependabot
 
         def fetch_latest_version
           versions = available_versions
+          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
           versions.reject!(&:prerelease?) unless wants_prerelease?
           versions.max
+        end
+
+        def latest_pip_version_with_no_unlock
+          versions = available_versions
+          reqs = dependency.requirements.map do |r|
+            reqs = (r.fetch(:requirement) || "").split(",").map(&:strip)
+            Utils::Python::Requirement.new(reqs)
+          end
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.sort.reverse.
+            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
+            find { |v| reqs.all? { |r| r.satisfied_by?(v) } }
         end
 
         def wants_prerelease?
@@ -217,6 +224,11 @@ module Dependabot
             map { |cred| cred["index-url"] }
 
           urls
+        end
+
+        def ignore_reqs
+          ignored_versions.
+            map { |req| Utils::Python::Requirement.new(req.split(",")) }
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

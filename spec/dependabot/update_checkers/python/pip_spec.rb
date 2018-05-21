@@ -18,7 +18,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
   let(:credentials) do
@@ -29,6 +30,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       "password" => "token"
     }]
   end
+  let(:ignored_versions) { [] }
   let(:dependency_files) { [requirements_file] }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
@@ -136,6 +138,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         }]
       end
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+    end
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.3.0")) }
     end
 
     context "and the current requirement has a pre-release requirement" do
@@ -278,6 +285,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     context "without a Pipfile or pip-compile file" do
       let(:dependency_files) { [requirements_file] }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
+        it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+      end
     end
 
     context "with a pip-compile file" do
@@ -346,6 +358,16 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     end
     let(:requirements) do
       [{ file: "req.txt", requirement: req_string, groups: [], source: nil }]
+    end
+
+    context "with no requirement" do
+      let(:req_string) { nil }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
+        it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+      end
     end
 
     context "with an equality string" do
