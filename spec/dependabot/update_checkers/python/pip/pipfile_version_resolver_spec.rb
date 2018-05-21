@@ -12,7 +12,8 @@ RSpec.describe namespace::PipfileVersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      unlock_requirement: unlock_requirement
+      unlock_requirement: unlock_requirement,
+      latest_allowable_version: latest_version
     )
   end
   let(:credentials) do
@@ -25,6 +26,7 @@ RSpec.describe namespace::PipfileVersionResolver do
   end
   let(:unlock_requirement) { true }
   let(:dependency_files) { [pipfile, lockfile] }
+  let(:latest_version) { Gem::Version.new("2.18.4") }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
@@ -64,7 +66,7 @@ RSpec.describe namespace::PipfileVersionResolver do
     context "with a lockfile" do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:dependency_version) { "2.18.0" }
-      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
         let(:unlock_requirement) { false }
@@ -75,7 +77,12 @@ RSpec.describe namespace::PipfileVersionResolver do
     context "without a lockfile" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
-      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
+    context "when the latest version isn't allowed" do
+      let(:latest_version) { Gem::Version.new("2.18.3") }
+      it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "with a path dependency" do
@@ -89,13 +96,13 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:setupfile_fixture_name) { "small.py" }
       let(:pipfile_fixture_name) { "path_dependency" }
       let(:lockfile_fixture_name) { "path_dependency.lock" }
-      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
     context "with a required python version" do
       let(:pipfile_fixture_name) { "required_python" }
       let(:lockfile_fixture_name) { "required_python.lock" }
-      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
     context "with an unfetchable requirement" do
@@ -117,6 +124,7 @@ RSpec.describe namespace::PipfileVersionResolver do
     context "with extra requirements" do
       let(:dependency_name) { "raven" }
       let(:dependency_version) { "5.27.1" }
+      let(:latest_version) { Gem::Version.new("7.0.0") }
       let(:pipfile_fixture_name) { "extra_subdependency" }
       let(:lockfile_fixture_name) { "extra_subdependency.lock" }
       it { is_expected.to be >= Gem::Version.new("6.7.0") }
@@ -223,7 +231,7 @@ RSpec.describe namespace::PipfileVersionResolver do
           ]
         end
 
-        it { is_expected.to be >= Gem::Version.new("2.18.4") }
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
     end
 
@@ -246,7 +254,7 @@ RSpec.describe namespace::PipfileVersionResolver do
           }
         ]
       end
-      it { is_expected.to be >= Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
     context "with a conflict at the latest version" do

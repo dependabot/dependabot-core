@@ -30,7 +30,8 @@ module Dependabot
                 dependency: dependency,
                 dependency_files: dependency_files,
                 credentials: credentials,
-                unlock_requirement: true
+                unlock_requirement: true,
+                latest_allowable_version: latest_version
               ).latest_resolvable_version
             elsif pip_compile_files.any?
               PipCompileVersionResolver.new(
@@ -54,7 +55,8 @@ module Dependabot
                 dependency: dependency,
                 dependency_files: dependency_files,
                 credentials: credentials,
-                unlock_requirement: false
+                unlock_requirement: false,
+                latest_allowable_version: latest_version
               ).latest_resolvable_version
             elsif pip_compile_files.any?
               PipCompileVersionResolver.new(
