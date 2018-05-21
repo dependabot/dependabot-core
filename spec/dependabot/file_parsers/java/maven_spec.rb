@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/java/maven"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -267,6 +268,15 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               ]
             )
           end
+        end
+      end
+
+      context "when the property is missing" do
+        let(:pom_body) { fixture("java", "poms", "missing_property.xml") }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotParseable)
         end
       end
     end

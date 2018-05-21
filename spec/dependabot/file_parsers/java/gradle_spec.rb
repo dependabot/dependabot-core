@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/java/gradle"
 require_relative "../shared_examples_for_file_parsers"
 

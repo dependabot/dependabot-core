@@ -4,6 +4,7 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/errors"
 
 # The best Maven documentation is at:
 # - http://maven.apache.org/pom.html
@@ -124,8 +125,10 @@ module Dependabot
             property_details(property_name: property_name, callsite_pom: pom)&.
             fetch(:value)
 
-          raise "Property not found: #{property_name}" unless value
-          value
+          return value if value
+
+          msg = "Property not found: #{property_name}"
+          raise DependencyFileNotParseable, msg
         end
 
         # Cached, since this can makes calls to the registry (to get property
