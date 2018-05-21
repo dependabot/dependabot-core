@@ -1,3 +1,7 @@
+## v0.58.33, 21 May 2018
+
+- Identify changelogs headers underlined with ====
+
 ## v0.58.32, 21 May 2018
 
 - Ruby: Consider ignored versions when determining latest version
