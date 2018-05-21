@@ -1,3 +1,7 @@
+## v0.58.30, 21 May 2018
+
+- Maven: Raise a DependencyFileNotParseable error for missing properties
+
 ## v0.58.29, 21 May 2018
 
 - Handle git URLs that already have credentials in GitCommitChecker
