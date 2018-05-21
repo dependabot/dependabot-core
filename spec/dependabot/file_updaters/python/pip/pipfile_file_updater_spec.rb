@@ -51,6 +51,44 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
     }]
   end
 
+  describe "#updated_dependency_files" do
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
+
+    context "with a capital letter" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [
+            {
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }
+          ]
+        )
+      end
+      let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
+      let(:lockfile_body) { fixture("python", "lockfiles", "hard_names.lock") }
+
+      it "updates the lockfiles successfully" do
+        expect(updated_dependency_files.last.content).
+          to include('"version": "==2.18.4"')
+      end
+    end
+  end
+
   describe "#updated_pipfile_content" do
     subject(:updated_pipfile_content) { updater.send(:updated_pipfile_content) }
 

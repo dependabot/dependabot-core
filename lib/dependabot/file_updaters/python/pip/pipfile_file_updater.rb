@@ -109,29 +109,24 @@ module Dependabot
           end
 
           def freeze_dependencies_being_updated(pipfile_content)
-            frozen_pipfile_json = TomlRB.parse(pipfile_content)
+            pipfile_object = TomlRB.parse(pipfile_content)
 
             dependencies.each do |dep|
-              name = dep.name
-              if frozen_pipfile_json.dig("packages", name)
-                if frozen_pipfile_json["packages"][name].is_a?(Hash)
-                  frozen_pipfile_json["packages"][name]["version"] =
+              %w(packages dev-packages).each do |type|
+                names = pipfile_object[type]&.keys || []
+                pkg_name = names.find { |nm| normalise(nm) == dep.name }
+                next unless pkg_name
+
+                if pipfile_object[type][pkg_name].is_a?(Hash)
+                  pipfile_object[type][pkg_name]["version"] =
                     "==#{dep.version}"
                 else
-                  frozen_pipfile_json["packages"][name] = "==#{dep.version}"
-                end
-              end
-              if frozen_pipfile_json.dig("dev-packages", name)
-                if frozen_pipfile_json["dev-packages"][name].is_a?(Hash)
-                  frozen_pipfile_json["dev-packages"][name]["version"] =
-                    "==#{dep.version}"
-                else
-                  frozen_pipfile_json["dev-packages"][name] = "==#{dep.version}"
+                  pipfile_object[type][pkg_name] = "==#{dep.version}"
                 end
               end
             end
 
-            TomlRB.dump(frozen_pipfile_json)
+            TomlRB.dump(pipfile_object)
           end
 
           def add_private_sources(pipfile_content)
@@ -209,6 +204,11 @@ module Dependabot
           def python_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
             File.join(project_root, "helpers/python/run.py")
+          end
+
+          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+          def normalise(name)
+            name.downcase.tr("_", "-").tr(".", "-")
           end
 
           def parsed_lockfile

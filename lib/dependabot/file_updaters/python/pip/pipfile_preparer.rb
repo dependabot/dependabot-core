@@ -33,10 +33,11 @@ module Dependabot
               next unless pipfile_object[keys[:pipfile]]
 
               pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
-                next if excluded_names.include?(dep_name)
-                locked_version = parsed_lockfile.
-                                 dig(keys[:lockfile], dep_name, "version")&.
-                                 gsub(/^==/, "")
+                next if excluded_names.include?(normalise(dep_name))
+                locked_version =
+                  parsed_lockfile.
+                  dig(keys[:lockfile], normalise(dep_name), "version")&.
+                  gsub(/^==/, "")
                 next unless locked_version
 
                 if pipfile_object[keys[:pipfile]][dep_name].is_a?(Hash)
@@ -55,6 +56,11 @@ module Dependabot
           private
 
           attr_reader :pipfile_content
+
+          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+          def normalise(name)
+            name.downcase.tr("_", "-").tr(".", "-")
+          end
 
           def pipfile_sources
             @pipfile_sources ||=

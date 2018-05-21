@@ -133,13 +133,15 @@ module Dependabot
             pipfile_object = TomlRB.parse(pipfile_content)
 
             %w(packages dev-packages).each do |type|
-              next unless pipfile_object.dig(type, dependency.name)
+              names = pipfile_object[type]&.keys || []
+              pkg_name = names.find { |nm| normalise(nm) == dependency.name }
+              next unless pkg_name
 
-              if pipfile_object.dig(type, dependency.name).is_a?(Hash)
-                pipfile_object[type][dependency.name]["version"] =
+              if pipfile_object.dig(type, pkg_name).is_a?(Hash)
+                pipfile_object[type][pkg_name]["version"] =
                   updated_version_requirement_string
               else
-                pipfile_object[type][dependency.name] =
+                pipfile_object[type][pkg_name] =
                   updated_version_requirement_string
               end
             end
@@ -249,6 +251,11 @@ module Dependabot
               next if config_variable_source_urls.any? { |s| s.match?(regex) }
               raise PrivateSourceNotReachable, url
             end
+          end
+
+          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+          def normalise(name)
+            name.downcase.tr("_", "-").tr(".", "-")
           end
 
           def config_variable_sources
