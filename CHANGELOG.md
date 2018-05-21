@@ -1,3 +1,7 @@
+## v0.58.27, 21 May 2018
+
+- Python: Handle multiple-requirements that get reordered during file parsing
+
 ## v0.58.26, 20 May 2018
 
 - Don't duplicate headers in release notes (check for them in release body)
