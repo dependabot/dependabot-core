@@ -1,3 +1,9 @@
+## v0.58.32, 21 May 2018
+
+- Ruby: Consider ignored versions when determining latest version
+- Python: Consider ignore conditions when calculating latest resolvable version
+  for Pipfile
+
 ## v0.58.31, 21 May 2018
 
 - Python: Consider ignored versions in UpdateChecker
