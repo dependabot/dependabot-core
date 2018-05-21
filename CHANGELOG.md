@@ -1,3 +1,7 @@
+## v0.58.34, 21 May 2018
+
+- Ruby: Handle cases where only pre-release versions exist
+
 ## v0.58.33, 21 May 2018
 
 - Identify changelogs headers underlined with ====
