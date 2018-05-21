@@ -1,3 +1,7 @@
+## v0.58.29, 21 May 2018
+
+- Handle git URLs that already have credentials in GitCommitChecker
+
 ## v0.58.28, 21 May 2018
 
 - Python: Unlock dependencies with non-normalised names correctly
