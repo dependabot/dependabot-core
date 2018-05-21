@@ -167,7 +167,7 @@ module Dependabot
             next true if line.start_with?("#", "!")
             next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
             next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
-            next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
+            next true if changelog_lines[index + 1]&.match?(/^[=-]+\s*$/)
             false
           end
         end
@@ -197,7 +197,7 @@ module Dependabot
             changelog_lines.select.with_index do |line, index|
               next true if line.start_with?("#", "!")
               next true if line.match?(/^v?\d\.\d/)
-              next true if changelog_lines[index + 1]&.match?(/^[=-]+$/)
+              next true if changelog_lines[index + 1]&.match?(/^[=-]+\s*$/)
               false
             end
 
