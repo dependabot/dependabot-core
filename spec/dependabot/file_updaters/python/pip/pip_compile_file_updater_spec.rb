@@ -121,5 +121,35 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         expect(updated_files.last.content).to_not include("# via mock")
       end
     end
+
+    context "when the upgrade requires Python 2.7" do
+      let(:manifest_fixture_name) { "legacy_python.in" }
+      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
+
+      let(:dependency_name) { "mysql-python" }
+      let(:dependency_version) { "1.2.5" }
+      let(:dependency_previous_version) { "1.2.4" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=1.2.5",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=1.2.5",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.last.content).to include("mysql-python==1.2.5")
+      end
+    end
   end
 end

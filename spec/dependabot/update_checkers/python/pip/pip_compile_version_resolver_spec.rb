@@ -79,8 +79,27 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
       context "when not unlocking requirements" do
-        it { is_expected.to be >= Gem::Version.new("17.4.0") }
+        let(:unlock_requirement) { false }
+        it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
+    end
+
+    context "with a Python 2.7 library" do
+      let(:manifest_fixture_name) { "legacy_python.in" }
+      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
+
+      let(:dependency_name) { "mysql-python" }
+      let(:dependency_version) { "1.2.4" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "<=1.2.5",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.2.5")) }
     end
   end
 end

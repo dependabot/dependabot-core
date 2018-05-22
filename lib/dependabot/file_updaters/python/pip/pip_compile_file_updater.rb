@@ -54,6 +54,7 @@ module Dependabot
           end
 
           def run_command(command)
+            command = command.dup
             raw_response = nil
             IO.popen(command, err: %i(child out)) do |process|
               raw_response = process.read
@@ -66,6 +67,13 @@ module Dependabot
               raw_response,
               command
             )
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            raise unless error.message.include?("InstallationError")
+            raise if command.start_with?("pyenv local 2.7.14 &&")
+            command = "pyenv local 2.7.14 && " +
+                      command +
+                      " && pyenv local --unset"
+            retry
           end
 
           def write_updated_dependency_files
@@ -85,6 +93,7 @@ module Dependabot
             new_req = dependency.requirements.
                       find { |r| r[:file] == file.name }
             return file.content unless old_req&.fetch(:requirement)
+            return file.content if old_req == new_req
 
             RequirementReplacer.new(
               content: file.content,

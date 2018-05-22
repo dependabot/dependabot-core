@@ -64,6 +64,7 @@ module Dependabot
           end
 
           def run_command(command)
+            command = command.dup
             raw_response = nil
             IO.popen(command, err: %i(child out)) do |process|
               raw_response = process.read
@@ -76,6 +77,13 @@ module Dependabot
               raw_response,
               command
             )
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            raise unless error.message.include?("InstallationError")
+            raise if command.start_with?("pyenv local 2.7.14 &&")
+            command = "pyenv local 2.7.14 && " +
+                      command +
+                      " && pyenv local --unset"
+            retry
           end
 
           def write_temporary_dependency_files
