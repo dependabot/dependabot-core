@@ -19,7 +19,7 @@ jobs:
       - run: cd helpers/gradle/buildfile_parser && gradle jar && mv build/libs/buildfile_parser.jar ../
       - run: cd helpers/gradle/settings_file_parser && gradle jar && mv build/libs/settings_file_parser.jar ../
       - run: cd helpers/php && composer install
-      - run: cd helpers/python && pyenv exec pip install -r requirements.txt
+      - run: cd helpers/python && pyenv exec pip install -r requirements.txt && pyenv local 2.7.14 && pyenv exec pip install -r requirements.txt && pyenv local --unset
       - run: cd helpers/elixir && mix deps.get
 
       - save_cache:
