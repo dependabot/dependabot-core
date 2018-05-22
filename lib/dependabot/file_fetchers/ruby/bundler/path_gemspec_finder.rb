@@ -65,7 +65,7 @@ module Dependabot
               path = Pathname.new(path).relative_path_from(base_path).to_s
             end
             path = File.join(current_dir, path) unless current_dir.nil?
-            Pathname.new(path).cleanpath.to_path
+            Pathname.new(path).cleanpath
           end
 
           # rubocop:disable Security/Eval
