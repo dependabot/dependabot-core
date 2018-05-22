@@ -13,13 +13,16 @@ module Dependabot
         # - Unlock the dependency we're checking in the requirements.in file
         # - Run `pip-compile` and see what the result is
         class PipCompileVersionResolver
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+
           attr_reader :dependency, :dependency_files, :credentials
 
           def initialize(dependency:, dependency_files:, credentials:,
-                         unlock_requirement:)
+                         unlock_requirement:, latest_allowable_version:)
             @dependency = dependency
             @dependency_files = dependency_files
             @credentials = credentials
+            @latest_allowable_version = latest_allowable_version
             @unlock_requirement = unlock_requirement
           end
 
@@ -31,6 +34,8 @@ module Dependabot
           end
 
           private
+
+          attr_reader :latest_allowable_version
 
           def unlock_requirement?
             @unlock_requirement
@@ -106,8 +111,34 @@ module Dependabot
               content: file.content,
               dependency_name: dependency.name,
               old_requirement: req[:requirement],
-              new_requirement: ">=#{dependency.version}"
+              new_requirement: updated_version_requirement_string
             ).updated_content
+          end
+
+          def updated_version_requirement_string
+            lower_bound =
+              if dependency.version
+                ">= #{dependency.version}"
+              else
+                version_for_requirement =
+                  dependency.requirements.map { |r| r[:requirement] }.compact.
+                  reject { |req_string| req_string.start_with?("<") }.
+                  select { |req_string| req_string.match?(VERSION_REGEX) }.
+                  map { |req_string| req_string.match(VERSION_REGEX) }.
+                  select { |version| Gem::Version.correct?(version) }.
+                  max_by { |version| Gem::Version.new(version) }
+
+                ">= #{version_for_requirement || 0}"
+              end
+
+            # Add the latest_allowable_version as an upper bound. This means
+            # ignore conditions are considered when checking for the latest
+            # resolvable version.
+            #
+            # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
+            # unresolvable then the `latest_allowable_version` will be v3, and
+            # we won't be ignoring v2.x releases like we should be.
+            lower_bound + ", <= #{latest_allowable_version}"
           end
 
           def source_pip_config_file_name

@@ -18,8 +18,6 @@ module Dependabot
             @dependency_name = dependency_name
             @old_requirement = old_requirement
             @new_requirement = new_requirement
-
-            raise "Nil requirements can't be updated" if old_requirement.nil?
           end
 
           def updated_content
@@ -38,20 +36,35 @@ module Dependabot
           private
 
           def original_dependency_declaration_string(old_req)
-            regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
             matches = []
 
-            content.scan(regex) { matches << Regexp.last_match }
-            dec = matches.
+            dec =
+              if old_req.nil?
+                regex = PythonRequirementParser::INSTALL_REQ_WITHOUT_REQUIREMENT
+                content.scan(regex) { matches << Regexp.last_match }
+                matches.find { |m| normalise(m[:name]) == dependency_name }
+              else
+                regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+                content.scan(regex) { matches << Regexp.last_match }
+                matches.
                   select { |m| normalise(m[:name]) == dependency_name }.
                   find { |m| requirements_match(m[:requirements], old_req) }
+              end
+
             raise "Declaration not found for #{dependency_name}!" unless dec
             dec.to_s
           end
 
           def updated_dependency_declaration_string(old_req, new_req)
-            original_dependency_declaration_string(old_req).
-              sub(PythonRequirementParser::REQUIREMENTS, new_req)
+            if old_req
+              original_dependency_declaration_string(old_req).
+                sub(PythonRequirementParser::REQUIREMENTS, new_req)
+            else
+              original_dependency_declaration_string(old_req).
+                sub(PythonRequirementParser::NAME_WITH_EXTRAS) do |nm|
+                  nm + new_req
+                end
+            end
           end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names

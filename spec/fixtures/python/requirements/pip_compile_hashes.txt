@@ -8,7 +8,7 @@ apipkg==1.4 \
     --hash=sha256:2e38399dbe842891fe85392601aab8f40a8f4cc5a9053c326de35a1cc0297ac6 \
     --hash=sha256:65d2aa68b28e7d31233bb2ba8eb31cda40e4671f8ac2d6b241e358c9652a74b9 \
     # via execnet
-attrs==17.4.0 \
+attrs==17.3.0 \
     --hash=sha256:1c7960ccfd6a005cd9f7ba884e6316b5e430a3f1a6c37c5f87d8b43f83b54ec9 \
     --hash=sha256:a17a9573a6f475c99b551c0e0a812707ddda1ec9653bed04c13841404ed6f450
 execnet==1.5.0 \

@@ -12,7 +12,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      unlock_requirement: unlock_requirement
+      unlock_requirement: unlock_requirement,
+      latest_allowable_version: latest_version
     )
   end
   let(:credentials) do
@@ -24,6 +25,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     }]
   end
   let(:unlock_requirement) { true }
+  let(:latest_version) { Gem::Version.new("18.1.0") }
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
     Dependabot::DependencyFile.new(
@@ -49,7 +51,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     )
   end
   let(:dependency_name) { "attrs" }
-  let(:dependency_version) { "17.4.0" }
+  let(:dependency_version) { "17.3.0" }
   let(:dependency_requirements) do
     [{
       file: "requirements/test.in",
@@ -80,6 +82,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       context "when not unlocking requirements" do
         let(:unlock_requirement) { false }
+        it { is_expected.to eq(Gem::Version.new("17.4.0")) }
+      end
+
+      context "when the latest version isn't allowed" do
+        let(:latest_version) { Gem::Version.new("18.0.0") }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
     end

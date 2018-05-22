@@ -5,7 +5,7 @@
 #    pip-compile --no-annotate --output-file requirements/text.txt requirements/test.in
 #
 apipkg==1.4
-attrs==17.4.0
+attrs==17.3.0
 execnet==1.5.0
 flaky==3.4.0
 mock==2.0.0

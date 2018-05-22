@@ -18,12 +18,12 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
   end
   let(:dependency_name) { "attrs" }
   let(:old_requirement) { "<=17.4.0" }
-  let(:new_requirement) { ">=17.4.0" }
+  let(:new_requirement) { ">=17.3.0" }
 
   describe "#updated_content" do
     subject(:updated_content) { replacer.updated_content }
 
-    it { is_expected.to include("Attrs>=17.4.0\n") }
+    it { is_expected.to include("Attrs>=17.3.0\n") }
     it { is_expected.to include("mock\n") }
 
     context "with multiple requirements" do
@@ -34,6 +34,15 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
       let(:new_requirement) { ">=1.11.5" }
 
       it { is_expected.to eq("django>=1.11.5") }
+    end
+
+    context "with no requirement" do
+      let(:dependency_name) { "pytest" }
+      let(:old_requirement) { nil }
+      let(:new_requirement) { "==1.11.5" }
+
+      it { is_expected.to include("pytest==1.11.5") }
+      it { is_expected.to include("pytest-xdist\n") }
     end
   end
 end
