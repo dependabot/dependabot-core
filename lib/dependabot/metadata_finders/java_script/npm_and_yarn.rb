@@ -90,6 +90,8 @@ module Dependabot
             raise unless non_standard_registry?
             @npm_listing = {}
           end
+        rescue Excon::Error::Timeout
+          @npm_listing = {}
         end
 
         def dependency_url
