@@ -33,6 +33,22 @@ module Dependabot
           end
 
           def fetch_updated_dependency_files
+            updated_requirement_files = fetch_updated_requirement_files
+
+            dependency_files.map do |file|
+              if updated_requirement_files.find { |f| f.name == file.name }
+                next updated_requirement_files.find { |f| f.name == file.name }
+              end
+
+              file = file.dup
+              updated_content = update_dependency_requirement(file)
+              next if updated_content == file.content
+              file.content = updated_content
+              file
+            end.compact
+          end
+
+          def fetch_updated_requirement_files
             SharedHelpers.in_a_temporary_directory do
               write_updated_dependency_files
 
@@ -43,6 +59,7 @@ module Dependabot
               run_command(cmd)
 
               dependency_files.map do |file|
+                next unless file.name.end_with?(".txt")
                 updated_content = File.read(file.name)
                 next if updated_content == file.content
 
@@ -80,13 +97,29 @@ module Dependabot
             dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, update_dependency_requirement(file))
+              File.write(path, freeze_dependency_requirement(file))
             end
+          end
+
+          def freeze_dependency_requirement(file)
+            return file.content unless file.name.end_with?(".in")
+
+            old_req = dependency.previous_requirements.
+                      find { |r| r[:file] == file.name }
+
+            return file.content unless old_req
+            return file.content if old_req == "==#{dependency.version}"
+
+            RequirementReplacer.new(
+              content: file.content,
+              dependency_name: dependency.name,
+              old_requirement: old_req[:requirement],
+              new_requirement: "==#{dependency.version}"
+            ).updated_content
           end
 
           def update_dependency_requirement(file)
             return file.content unless file.name.end_with?(".in")
-            return file.content unless dependency.version
 
             old_req = dependency.previous_requirements.
                       find { |r| r[:file] == file.name }

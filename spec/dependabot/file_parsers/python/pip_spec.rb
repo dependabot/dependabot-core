@@ -546,7 +546,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("attrs")
-            expect(dependency.version).to eq("17.4.0")
+            expect(dependency.version).to eq("17.3.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,
@@ -568,7 +568,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("attrs")
-              expect(dependency.version).to eq("17.4.0")
+              expect(dependency.version).to eq("17.3.0")
               expect(dependency.requirements).to eq(
                 [{
                   requirement: "<=17.4.0",

@@ -41,7 +41,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
   end
   let(:dependency_name) { "attrs" }
   let(:dependency_version) { "18.1.0" }
-  let(:dependency_previous_version) { "17.4.0" }
+  let(:dependency_previous_version) { "17.3.0" }
   let(:dependency_requirements) do
     [{
       file: "requirements/test.in",
@@ -90,6 +90,19 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).to include("4b90b09eeeb9b88c35bc64")
         expect(updated_files.first.content).to include("# This file is autogen")
+      end
+    end
+
+    context "targeting a non-latest version" do
+      let(:dependency_version) { "17.4.0" }
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==17.4.0")
+        expect(updated_files.first.content).
+          to include("pbr==4.0.2                # via mock")
+        expect(updated_files.first.content).to include("# This file is autogen")
+        expect(updated_files.first.content).to_not include("--hash=sha")
       end
     end
 

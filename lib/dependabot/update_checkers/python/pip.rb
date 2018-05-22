@@ -38,7 +38,8 @@ module Dependabot
                 dependency: dependency,
                 dependency_files: dependency_files,
                 credentials: credentials,
-                unlock_requirement: true
+                unlock_requirement: true,
+                latest_allowable_version: latest_version
               ).latest_resolvable_version
             else
               # pip doesn't (yet) do any dependency resolution, so if we don't
@@ -63,7 +64,8 @@ module Dependabot
                 dependency: dependency,
                 dependency_files: dependency_files,
                 credentials: credentials,
-                unlock_requirement: false
+                unlock_requirement: false,
+                latest_allowable_version: latest_version
               ).latest_resolvable_version
             else
               latest_pip_version_with_no_unlock

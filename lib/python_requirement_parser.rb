@@ -17,4 +17,16 @@ class PythonRequirementParser
       \s*\\?\s*(?<hashes>#{HASHES})?
       \s*#*\s*(?<comment>.+)?
     /x
+
+  INSTALL_REQ_WITHOUT_REQUIREMENT =
+    /^\s*\\?\s*(?<name>#{NAME})
+      \s*\\?\s*(\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
+      \s*\\?\s*(?<hashes>#{HASHES})?
+      \s*#*\s*(?<comment>.+)?$
+    /x
+
+  NAME_WITH_EXTRAS =
+    /\s*\\?\s*(?<name>#{NAME})
+      (\s*\\?\s*\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
+    /x
 end
