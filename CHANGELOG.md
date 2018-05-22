@@ -1,3 +1,8 @@
+## v0.58.35, 22 May 2018
+
+- JS: Handle 5xx responses from registry more gracefully in MetadataFinder
+- JS: Handle timeouts from the registry more gracefully
+
 ## v0.58.34, 21 May 2018
 
 - Ruby: Handle cases where only pre-release versions exist
