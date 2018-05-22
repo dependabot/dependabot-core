@@ -1,3 +1,8 @@
+## v0.59.2, 22 May 2018
+
+- Python: Consider ignored versions when determining updates for pip-compile
+  setups
+
 ## v0.59.1, 22 May 2018
 
 - Better presentation of vulnerability details in PR description
