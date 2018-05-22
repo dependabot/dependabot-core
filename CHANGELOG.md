@@ -1,3 +1,7 @@
+## v0.59.1, 22 May 2018
+
+- Better presentation of vulnerability details in PR description
+
 ## v0.59.0, 22 May 2018
 
 - BREAKING Python: Use Python 2.7 with pip-compile if required
