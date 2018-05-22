@@ -82,6 +82,8 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
+          return @npm_listing = {} if response.status >= 500
+
           begin
             @npm_listing = JSON.parse(response.body)
           rescue JSON::ParserError
