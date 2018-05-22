@@ -1,3 +1,8 @@
+## v0.59.0, 22 May 2018
+
+- BREAKING Python: Use Python 2.7 with pip-compile if required
+- Ruby: Augment lockfile path dependencies with gemfile ones
+
 ## v0.58.35, 22 May 2018
 
 - JS: Handle 5xx responses from registry more gracefully in MetadataFinder
