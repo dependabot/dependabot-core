@@ -692,8 +692,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "> A vulnerability that allows arbitrary code\n"\
               "> execution.\n"\
               "> \n"\
-              "> Patched versions: [\"> 1.5.0\"]\n"\
-              "> Unaffected versions: []\n"\
+              "> Patched versions: > 1.5.0\n"\
+              "> Unaffected versions: none\n"\
               "\n"\
               "</details>\n"
             )
