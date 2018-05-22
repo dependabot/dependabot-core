@@ -88,18 +88,18 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:manifest_fixture_name) { "legacy_python.in" }
       let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
 
-      let(:dependency_name) { "mysql-python" }
-      let(:dependency_version) { "1.2.4" }
+      let(:dependency_name) { "wsgiref" }
+      let(:dependency_version) { "0.1.1" }
       let(:dependency_requirements) do
         [{
           file: "requirements/test.in",
-          requirement: "<=1.2.5",
+          requirement: "<=0.1.2",
           groups: [],
           source: nil
         }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("1.2.5")) }
+      it { is_expected.to eq(Gem::Version.new("0.1.2")) }
     end
   end
 end
