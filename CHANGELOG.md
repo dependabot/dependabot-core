@@ -1,3 +1,8 @@
+## v0.59.3, 23 May 2018
+
+- Ruby: Switch back to just using lockfile path dependencies if a lockfile is
+  present (otherwise conditionals in the lockfile can cause problems)
+
 ## v0.59.2, 22 May 2018
 
 - Python: Consider ignored versions when determining updates for pip-compile
