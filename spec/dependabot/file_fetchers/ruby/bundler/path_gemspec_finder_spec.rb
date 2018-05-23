@@ -24,17 +24,17 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::PathGemspecFinder do
 
     context "when the file does include a path gemspec" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
-      it { is_expected.to eq([Pathname.new("plugins/example")]) }
+      it { is_expected.to eq(["plugins/example"]) }
 
       context "whose path must be eval-ed" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_eval") }
-        it { is_expected.to eq([Pathname.new("plugins/example")]) }
+        it { is_expected.to eq(["plugins/example"]) }
       end
 
       context "when this Gemfile is already in a nested directory" do
         let(:gemfile_name) { "nested/Gemfile" }
 
-        it { is_expected.to eq([Pathname.new("nested/plugins/example")]) }
+        it { is_expected.to eq(["nested/plugins/example"]) }
       end
 
       context "that is behind a conditional that is false" do
