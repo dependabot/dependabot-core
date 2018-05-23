@@ -1,3 +1,7 @@
+## v0.59.5, 23 May 2018
+
+- JS: More robust lookup of global registry
+
 ## v0.59.4, 23 May 2018
 
 - JS: Add workaround for Yarn workspaces bug
