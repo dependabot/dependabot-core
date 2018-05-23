@@ -332,9 +332,6 @@ module Dependabot
               # - the gem wasn't specified properly
               # - the gem was specified at an incompatible version
               raise Dependabot::DependencyFileNotResolvable, msg
-            when "RuntimeError"
-              raise unless error.error_message.include?("Unable to find a spec")
-              raise DependencyFileNotResolvable, msg
             when "Bundler::Fetcher::AuthenticationRequiredError"
               regex = /bundle config (?<source>.*) username:password/
               source = error.error_message.match(regex)[:source]
