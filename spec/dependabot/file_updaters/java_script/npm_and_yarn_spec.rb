@@ -873,6 +873,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           expect(lockfile.content).to_not include("workspace-aggregator")
 
           expect(package.content).to include("\"lodash\": \"^1.3.1\"")
+          expect(package.content).to include("\"./packages/*\",\n")
           expect(package1.content).to include("\"lodash\": \"^1.3.1\"")
           expect(other_package.content).to include("\"lodash\": \"^1.3.1\"")
         end

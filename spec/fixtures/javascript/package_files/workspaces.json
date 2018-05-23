@@ -21,7 +21,7 @@
     "lodash": "^1.2.0"
   },
   "workspaces": [
-    "packages/*",
+    "./packages/*",
     "other_package"
   ]
 }

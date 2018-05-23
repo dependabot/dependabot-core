@@ -176,6 +176,10 @@ module Dependabot
             updated_content = lock_git_deps(updated_content) if lock_git_deps
             updated_content = replace_ssh_sources(updated_content)
 
+            # A bug prevents Yarn recognising that a directory is part of a
+            # workspace if it is specified with a `./` prefix.
+            updated_content = remove_workspace_path_prefixes(updated_content)
+
             updated_content = sanitized_package_json_content(updated_content)
             File.write(file.name, updated_content)
           end
@@ -224,6 +228,22 @@ module Dependabot
           end
 
           updated_content
+        end
+
+        def remove_workspace_path_prefixes(content)
+          json = JSON.parse(content)
+          return content unless json.key?("workspaces")
+
+          workspace_object = json.fetch("workspaces")
+          paths_array =
+            if workspace_object.is_a?(Hash) then workspace_object["packages"]
+            elsif workspace_object.is_a?(Array) then workspace_object
+            else raise "Unexpected workspace object"
+            end
+
+          paths_array.each { |path| path.gsub!(%r{^\./}, "") }
+
+          json.to_json
         end
 
         def git_ssh_requirements_to_swap
