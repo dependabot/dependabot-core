@@ -1,3 +1,7 @@
+## v0.59.4, 23 May 2018
+
+- JS: Add workaround for Yarn workspaces bug
+
 ## v0.59.3, 23 May 2018
 
 - Ruby: Switch back to just using lockfile path dependencies if a lockfile is
