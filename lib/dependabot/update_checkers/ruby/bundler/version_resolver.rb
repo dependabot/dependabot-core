@@ -22,6 +22,12 @@ module Dependabot
           GIT_REF_REGEX = /does not exist in the repository (?<path>[^\s]*)\./
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
           PATH_REGEX = /The path `(?<path>.*)` does not exist/
+          RETRYABLE_PRIVATE_REGISTRY_ERRORS = %w(
+            Bundler::GemNotFound
+            Gem::InvalidSpecificationException
+            Bundler::VersionConflict
+            Bundler::HTTPError
+          ).freeze
 
           def initialize(dependency:, dependency_files:, credentials:,
                          ignored_versions:)
@@ -275,6 +281,13 @@ module Dependabot
               end
             end
           rescue SharedHelpers::ChildProcessFailed => error
+            if RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class) &&
+               private_registry_credentials.any? && !@retrying
+              @retrying = true
+              sleep(rand(1.0..5.0))
+              retry
+            end
+
             raise unless error_handling
 
             # Raise more descriptive errors
@@ -407,11 +420,15 @@ module Dependabot
           end
 
           def relevant_credentials
-            credentials.select do |cred|
-              next true if cred["type"] == "git_source"
-              next true if cred["type"] == "rubygems_server"
-              false
-            end
+            private_registry_credentials + git_source_credentials
+          end
+
+          def private_registry_credentials
+            credentials.select { |cred| cred["type"] == "rubygems_server" }
+          end
+
+          def git_source_credentials
+            credentials.select { |cred| cred["type"] == "git_source" }
           end
         end
       end
