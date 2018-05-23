@@ -40,7 +40,16 @@ module Dependabot
             global_registry =
               registry_credentials.find do |cred|
                 next false if CENTRAL_REGISTRIES.include?(cred["registry"])
-                dependency_urls.all? { |url| url.include?(cred["registry"]) }
+
+                # If all the URLs include this registry, it's global
+                if dependency_urls.all? { |url| url.include?(cred["registry"]) }
+                  next true
+                end
+
+                # If any unscoped URLs include this registry, it's global
+                dependency_urls.
+                  reject { |u| u.include?("@") || u.include?("%40") }.
+                  any? { |url| url.include?(cred["registry"]) }
               end
 
             return unless global_registry
