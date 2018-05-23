@@ -1,3 +1,8 @@
+## v0.59.6, 23 May 2018
+
+- Ruby: Retry version resolution if a private source may be to blame for a resolvability error
+- Ruby: Remove unnecessary RuntimeError handling
+
 ## v0.59.5, 23 May 2018
 
 - JS: More robust lookup of global registry
