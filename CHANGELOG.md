@@ -1,3 +1,9 @@
+## v0.59.11, 24 May 2018
+
+- Gradle: Fix property updater
+- Maven: Fix single-dependency property updating, and make RequirementsUpdater
+  clearer
+
 ## v0.59.10, 24 May 2018
 
 - Maven: Handle updating a dependency that is managed by multiple properties
