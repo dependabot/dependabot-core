@@ -1,3 +1,7 @@
+## v0.59.14, 24 May 2018
+
+- PHP: Unlock subdependencies when updating top-level ones
+
 ## v0.59.13, 24 May 2018
 
 - JS: Tailor authentication type for global registry based on credentials
