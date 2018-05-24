@@ -82,7 +82,8 @@ module Dependabot
               Maven::RequirementsUpdater.new(
                 requirements: dep.requirements,
                 latest_version: target_version.to_s,
-                source_url: source_url
+                source_url: source_url,
+                property_being_updated: property_name
               ).updated_requirements
           end
         end
