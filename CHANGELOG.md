@@ -1,3 +1,7 @@
+## v0.59.13, 24 May 2018
+
+- JS: Tailor authentication type for global registry based on credentials
+
 ## v0.59.12, 24 May 2018
 
 - Maven: Handle multiple identical declarations
