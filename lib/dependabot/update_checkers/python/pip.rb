@@ -241,8 +241,8 @@ module Dependabot
         end
 
         def name_regex
-          parts = dependency.name.split(/[\s_-]/).map { |n| Regexp.quote(n) }
-          /#{parts.join("[\s_-]")}/i
+          parts = dependency.name.split(/[\s_.-]/).map { |n| Regexp.quote(n) }
+          /#{parts.join("[\s_.-]")}/i
         end
 
         def pip_conf
