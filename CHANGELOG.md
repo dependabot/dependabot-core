@@ -1,3 +1,7 @@
+## v0.59.10, 24 May 2018
+
+- Maven: Handle updating a dependency that is managed by multiple properties
+
 ## v0.59.9, 24 May 2018
 
 - Maven: Preserve base directory when updating a property value
