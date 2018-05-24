@@ -1,3 +1,8 @@
+## v0.59.8, 24 May 2018
+
+- Maven: Make DeclarationFinder more discerning (don't confuse property versions
+  with straight declarations)
+
 ## v0.59.7, 24 May 2018
 
 - Python: Add full stops to name sanitization regex in UpdateChecker
