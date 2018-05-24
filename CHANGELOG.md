@@ -1,3 +1,8 @@
+## v0.59.15, 24 May 2018
+
+- JS: Raise unhandled error if FileUpdater fails to find the version we're
+  updating to
+
 ## v0.59.14, 24 May 2018
 
 - PHP: Unlock subdependencies when updating top-level ones
