@@ -1,3 +1,7 @@
+## v0.59.7, 24 May 2018
+
+- Python: Add full stops to name sanitization regex in UpdateChecker
+
 ## v0.59.6, 23 May 2018
 
 - Ruby: Retry version resolution if a private source may be to blame for a resolvability error
