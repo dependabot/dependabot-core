@@ -82,22 +82,18 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
           Dependabot::Dependency.new(
             name: "org.apache.httpcomponents:httpclient",
             version: "4.6.1",
-            requirements: [
-              {
-                file: "pom.xml",
-                requirement: "[4.6.1]",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "pom.xml",
-                requirement: "[4.5.3]",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "pom.xml",
+              requirement: "[4.6.1]",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "[4.5.3]",
+              groups: [],
+              source: nil
+            }],
             package_manager: "maven"
           )
         end
@@ -198,6 +194,36 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
           its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
         end
+
+        context "when both versions are hard-coded, and are identical" do
+          let(:pom_body) do
+            fixture("java", "poms", "repeated_pom_identical.xml")
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "org.apache.maven.plugins:maven-javadoc-plugin",
+              version: "3.0.0-M2",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: { type: "maven_repo", url: "https://some.repo.com" },
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "2.10.4",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              package_manager: "maven"
+            )
+          end
+
+          its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
+          its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
+        end
       end
 
       context "with multiple dependencies to be updated" do
@@ -206,43 +232,35 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             Dependabot::Dependency.new(
               name: "org.apache.httpcomponents:httpclient",
               version: "4.6.1",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.6.1",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.5.3",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "4.6.1",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.5.3",
+                groups: [],
+                source: nil
+              }],
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
               name: "com.google.guava:guava",
               version: "23.6-jre",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.3-jre",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "23.3-jre",
+                groups: [],
+                source: nil
+              }],
               package_manager: "maven"
             )
           ]
@@ -266,47 +284,39 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             Dependabot::Dependency.new(
               name: "org.springframework:spring-context",
               version: "5.0.0.RELEASE",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "5.0.0.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE.1",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "5.0.0.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE.1",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
               name: "org.springframework:spring-beans",
               version: "5.0.0.RELEASE",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "5.0.0.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "5.0.0.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
               package_manager: "maven"
             )
           ]
@@ -334,24 +344,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
                 version: "5.0.0.RELEASE",
-                requirements: [
-                  {
-                    file: "pom.xml",
-                    requirement: "5.0.0.RELEASE",
-                    groups: [],
-                    source: nil,
-                    metadata: { property_name: "springframework.version" }
-                  }
-                ],
-                previous_requirements: [
-                  {
-                    file: "pom.xml",
-                    requirement: "4.3.12.RELEASE.1",
-                    groups: [],
-                    source: nil,
-                    metadata: { property_name: "springframework.version" }
-                  }
-                ],
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "5.0.0.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE.1",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "springframework.version" }
+                }],
                 package_manager: "maven"
               )
             ]
