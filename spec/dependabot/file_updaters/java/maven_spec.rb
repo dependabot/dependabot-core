@@ -253,6 +253,13 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       end
 
       context "pom with dependency version defined by a property" do
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            content: pom_body,
+            name: "pom.xml",
+            directory: "/subdirectory"
+          )
+        end
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
         let(:dependencies) do
           [
@@ -310,6 +317,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             to include(
               "<springframework.version>5.0.0.RELEASE</springframework.version>"
             )
+          expect(updated_pom_file.directory).to eq("/subdirectory")
         end
 
         it "doesn't update the formatting of the POM" do
