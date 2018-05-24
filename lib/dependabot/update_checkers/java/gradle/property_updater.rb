@@ -83,7 +83,7 @@ module Dependabot
                 requirements: dep.requirements,
                 latest_version: target_version.to_s,
                 source_url: source_url,
-                property_being_updated: property_name
+                properties_to_update: [property_name]
               ).updated_requirements
           end
         end

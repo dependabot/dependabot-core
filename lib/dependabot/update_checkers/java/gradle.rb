@@ -37,10 +37,15 @@ module Dependabot
         end
 
         def updated_requirements
+          property_names =
+            declarations_using_a_property.
+            map { |req| req.dig(:metadata, :property_name) }
+
           Maven::RequirementsUpdater.new(
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
-            source_url: latest_version_details&.fetch(:source_url)
+            source_url: latest_version_details&.fetch(:source_url),
+            properties_to_update: property_names
           ).updated_requirements
         end
 

@@ -8,7 +8,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       latest_version: latest_version,
-      source_url: "new_url"
+      source_url: "new_url",
+      properties_to_update: []
     )
   end
 

@@ -308,7 +308,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         with(
           requirements: dependency_requirements,
           latest_version: "23.6-jre",
-          source_url: "https://repo.maven.apache.org/maven2"
+          source_url: "https://repo.maven.apache.org/maven2",
+          properties_to_update: []
         ).
         and_call_original
       expect(checker.updated_requirements).

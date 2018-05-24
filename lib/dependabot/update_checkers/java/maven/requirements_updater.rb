@@ -16,10 +16,10 @@ module Dependabot
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9\-]+)*/
 
           def initialize(requirements:, latest_version:, source_url:,
-                         property_being_updated: nil)
+                         properties_to_update:)
             @requirements = requirements
             @source_url = source_url
-            @property_being_updated = property_being_updated
+            @properties_to_update = properties_to_update
             return unless latest_version
             @latest_version = version_class.new(latest_version)
           end
@@ -34,8 +34,9 @@ module Dependabot
               next req if req.fetch(:requirement).nil?
               next req unless req.fetch(:requirement).match?(/\d/)
               next req if req.fetch(:requirement).include?(",")
-              if req.dig(:metadata, :property_name) &&
-                 req.dig(:metadata, :property_name) != property_being_updated
+
+              property_name = req.dig(:metadata, :property_name)
+              if property_name && !properties_to_update.include?(property_name)
                 next req
               end
 
@@ -50,7 +51,7 @@ module Dependabot
           private
 
           attr_reader :requirements, :latest_version, :source_url,
-                      :property_being_updated
+                      :properties_to_update
 
           def version_class
             Utils::Java::Version
