@@ -63,6 +63,7 @@ class UpdateChecker
             ->setUpdate(true)
             ->setDevMode(true)
             ->setUpdateWhitelist([$dependencyName])
+            ->setWhitelistTransitiveDependencies(true)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)

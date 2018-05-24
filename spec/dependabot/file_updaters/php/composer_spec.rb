@@ -535,18 +535,18 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
       end
 
-      context "when an old version of PHP is specified" do
-        let(:manifest_fixture_name) { "old_php_specified" }
-        let(:lockfile_fixture_name) { "old_php_specified" }
+      context "when a subdependency needs to be updated" do
+        let(:manifest_fixture_name) { "subdependency_update_required" }
+        let(:lockfile_fixture_name) { "subdependency_update_required" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
-            version: "v5.4.36",
+            version: "v5.6.23",
             requirements: [
               {
                 file: "composer.json",
-                requirement: "^5.4.36",
+                requirement: "^5.6.23",
                 groups: ["runtime"],
                 source: nil
               }
@@ -565,7 +565,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
 
         it "has details of the updated item" do
-          expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
+          expect(updated_lockfile_content).to include("\"version\":\"v5.6.23\"")
         end
       end
     end

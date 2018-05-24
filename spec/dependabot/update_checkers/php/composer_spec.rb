@@ -684,9 +684,9 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to be >= Gem::Version.new("5.2.30") }
     end
 
-    context "when an old version of PHP is specified" do
-      let(:manifest_fixture_name) { "old_php_specified" }
-      let(:lockfile_fixture_name) { "old_php_specified" }
+    context "when a sub-dependency would block the update" do
+      let(:manifest_fixture_name) { "subdependency_update_required" }
+      let(:lockfile_fixture_name) { "subdependency_update_required" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "illuminate/support",
@@ -703,10 +703,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         )
       end
 
-      it { is_expected.to be >= Gem::Version.new("5.4.36") }
-
-      # 5.5.0 series requires PHP 7
-      it { is_expected.to be < Gem::Version.new("5.5.0") }
+      # 5.5.0 series and up require an update to illuminate/contracts
+      it { is_expected.to be >= Gem::Version.new("5.6.23") }
     end
   end
 
