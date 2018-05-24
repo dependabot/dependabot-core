@@ -1,3 +1,8 @@
+## v0.59.12, 24 May 2018
+
+- Maven: Handle multiple identical declarations
+- JS: Use npm 6.1.0
+
 ## v0.59.11, 24 May 2018
 
 - Gradle: Fix property updater
