@@ -15,9 +15,11 @@ module Dependabot
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9\-]+)*/
 
-          def initialize(requirements:, latest_version:, source_url:)
+          def initialize(requirements:, latest_version:, source_url:,
+                         property_being_updated: nil)
             @requirements = requirements
             @source_url = source_url
+            @property_being_updated = property_being_updated
             return unless latest_version
             @latest_version = version_class.new(latest_version)
           end
@@ -32,6 +34,10 @@ module Dependabot
               next req if req.fetch(:requirement).nil?
               next req unless req.fetch(:requirement).match?(/\d/)
               next req if req.fetch(:requirement).include?(",")
+              if req.dig(:metadata, :property_name) &&
+                 req.dig(:metadata, :property_name) != property_being_updated
+                next req
+              end
 
               # Since range requirements are excluded by the line above we can
               # just do a `gsub` on anything that looks like a version
@@ -43,7 +49,8 @@ module Dependabot
 
           private
 
-          attr_reader :requirements, :latest_version, :source_url
+          attr_reader :requirements, :latest_version, :source_url,
+                      :property_being_updated
 
           def version_class
             Utils::Java::Version

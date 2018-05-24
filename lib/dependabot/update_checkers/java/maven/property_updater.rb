@@ -79,7 +79,8 @@ module Dependabot
 
           def version_string(dep)
             declaring_requirement =
-              dep.requirements.find { |r| r.dig(:metadata, :property_name) }
+              dep.requirements.
+              find { |r| r.dig(:metadata, :property_name) == property_name }
 
             FileUpdaters::Java::Maven::DeclarationFinder.new(
               dependency: dep,
@@ -102,7 +103,8 @@ module Dependabot
               RequirementsUpdater.new(
                 requirements: dep.requirements,
                 latest_version: updated_version(dep),
-                source_url: source_url
+                source_url: source_url,
+                property_being_updated: property_name
               ).updated_requirements
           end
         end

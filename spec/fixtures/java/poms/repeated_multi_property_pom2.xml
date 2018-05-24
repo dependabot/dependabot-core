@@ -53,6 +53,7 @@
         <junit-platform.version>1.0.0-M2</junit-platform.version>
         <junit-jupiter.version>5.0.0-M2</junit-jupiter.version>
         <slf4j.version>1.7.25</slf4j.version>
+        <another.version>1.0.0</another.version>
     </properties>
 
     <dependencies>
@@ -190,6 +191,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-runner</artifactId>
+                <version>${another.version}</version>
+            </plugin>
             <plugin>
                 <groupId>com.ning.maven.plugins</groupId>
                 <artifactId>maven-duplicate-finder-plugin</artifactId>

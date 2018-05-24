@@ -229,6 +229,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                     url: "https://repo.maven.apache.org/maven2"
                   },
                   metadata: { property_name: "junit-platform.version" }
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "1.0.0",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "another.version" }
                 }
               ],
               previous_requirements: [
@@ -245,6 +252,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   groups: [],
                   source: nil,
                   metadata: { property_name: "junit-platform.version" }
+                },
+                {
+                  file: "pom.xml",
+                  requirement: "1.0.0",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "another.version" }
                 }
               ],
               package_manager: "maven"
