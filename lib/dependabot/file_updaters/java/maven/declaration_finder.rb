@@ -57,9 +57,8 @@ module Dependabot
               ].compact.join(":")
 
               next false unless node_name == dependency_name
-              next true unless declaring_requirement.fetch(:requirement)
-              dependency_requirement_for_node(node) ==
-                declaring_requirement.fetch(:requirement)
+
+              declaring_requirement_matches?(node, declaring_requirement)
             end
           end
 
@@ -69,9 +68,24 @@ module Dependabot
             end
           end
 
-          def dependency_requirement_for_node(dependency_node)
-            return unless dependency_node.at_css("version")
-            evaluated_value(dependency_node.at_css("version").content.strip)
+          def declaring_requirement_matches?(node, dependency_requirement)
+            return true unless dependency_requirement.fetch(:requirement)
+
+            node_requirement = node.at_css("version")&.content&.strip
+
+            if declaring_requirement.dig(:metadata, :property_name)
+              return false unless node_requirement
+
+              property_name =
+                node_requirement.
+                match(FileParsers::Java::Maven::PROPERTY_REGEX)&.
+                named_captures&.
+                fetch("property")
+
+              property_name == declaring_requirement[:metadata][:property_name]
+            else
+              node_requirement == declaring_requirement.fetch(:requirement)
+            end
           end
 
           def evaluated_value(value)

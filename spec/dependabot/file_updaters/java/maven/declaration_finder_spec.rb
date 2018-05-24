@@ -140,6 +140,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       let(:pom_content) { fixture("java", "poms", "nested_dependency_pom.xml") }
       let(:dependency_name) { "com.puppycrawl.tools:checkstyle" }
       let(:dependency_version) { "8.2" }
+      let(:dependency_metadata) { { property_name: "checkstyle.version" } }
 
       it "finds the declaration" do
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
@@ -149,6 +150,24 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           to eq("checkstyle")
         expect(declaration_node.at_css("groupId").content).
           to eq("com.puppycrawl.tools")
+      end
+    end
+
+    context "with a repeated dependency" do
+      let(:pom_content) do
+        fixture("java", "poms", "repeated_pom_same_version.xml")
+      end
+      let(:dependency_name) { "org.apache.maven.plugins:maven-javadoc-plugin" }
+      let(:dependency_version) { "2.10.4" }
+
+      it "finds the declaration" do
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).
+          to eq("2.10.4")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("maven-javadoc-plugin")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("org.apache.maven.plugins")
       end
     end
 
@@ -217,7 +236,8 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           requirement: dependency_version,
           file: "legacy/some-spring-project/pom.xml",
           groups: [],
-          source: nil
+          source: nil,
+          metadata: dependency_metadata
         }
       end
 
