@@ -32,10 +32,7 @@ module Dependabot
 
             updated_pomfiles = dependency_files.dup
             updated_pomfiles[updated_pomfiles.index(pom_to_update)] =
-              Dependabot::DependencyFile.new(
-                name: pom_to_update.name,
-                content: updated_content
-              )
+              update_file(file: pom_to_update, content: updated_content)
 
             updated_pomfiles
           end
@@ -48,6 +45,12 @@ module Dependabot
             @property_value_finder ||=
               FileParsers::Java::Maven::PropertyValueFinder.
               new(dependency_files: dependency_files)
+          end
+
+          def update_file(file:, content:)
+            updated_file = file.dup
+            updated_file.content = content
+            updated_file
           end
         end
       end
