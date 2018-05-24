@@ -109,6 +109,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
+            raise if error.message.include?(%Q{"#{dependency.name}"})
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
           raise
@@ -145,6 +146,7 @@ module Dependabot
         end
 
         def handle_package_lock_updater_error(error)
+          raise if error.message.include?("#{dependency.name}@")
           if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end

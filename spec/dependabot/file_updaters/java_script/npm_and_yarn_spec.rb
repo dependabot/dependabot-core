@@ -680,6 +680,39 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
           end
+
+          context "because we're updating to a non-existant version" do
+            let(:yarn_lock_fixture_name) { "yarn.lock" }
+            let(:npm_lock_fixture_name) { "package-lock.json" }
+            let(:manifest_fixture_name) { "package.json" }
+
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "fetch-factory",
+                version: "5.0.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^5.0.2",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "package.json",
+                  requirement: "^0.0.1",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+
+            it "raises an unhandled error" do
+              expect { updated_files }.
+                to raise_error(
+                  Dependabot::SharedHelpers::HelperSubprocessFailed
+                )
+            end
+          end
         end
       end
 
