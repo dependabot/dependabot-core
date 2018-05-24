@@ -1,3 +1,7 @@
+## v0.59.9, 24 May 2018
+
+- Maven: Preserve base directory when updating a property value
+
 ## v0.59.8, 24 May 2018
 
 - Maven: Make DeclarationFinder more discerning (don't confuse property versions
