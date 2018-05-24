@@ -221,7 +221,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
           it "adds a global registry line, and auth details" do
             expect(npmrc_content).
               to eq("registry = https://npm.fury.io/dependabot\n"\
-                    "_auth = my_token\n"\
+                    "_authToken = my_token\n"\
                     "always-auth = true\n"\
                     "//npm.fury.io/dependabot/:_authToken=my_token")
           end
@@ -374,12 +374,39 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
             ]
           end
 
-          it "adds a global registry line, and auth details" do
+          it "adds a global registry line, and token auth details" do
             expect(npmrc_content).
               to eq("registry = https://npm.fury.io/dependabot\n"\
-                    "_auth = my_token\n"\
+                    "_authToken = my_token\n"\
                     "always-auth = true\n"\
                     "//npm.fury.io/dependabot/:_authToken=my_token")
+          end
+
+          context "with basic auth credentials" do
+            let(:credentials) do
+              [
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                },
+                {
+                  "type" => "npm_registry",
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "secret:token"
+                }
+              ]
+            end
+
+            it "adds a global registry line, and Basic auth details" do
+              expect(npmrc_content).
+                to eq("registry = https://npm.fury.io/dependabot\n"\
+                      "_auth = c2VjcmV0OnRva2Vu\n"\
+                      "always-auth = true\n"\
+                      "always-auth = true\n"\
+                      "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu")
+            end
           end
 
           context "and an npmrc file" do

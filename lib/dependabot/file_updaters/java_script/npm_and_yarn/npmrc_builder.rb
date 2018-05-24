@@ -36,8 +36,15 @@ module Dependabot
 
           def build_npmrc_content_from_lockfile
             return unless yarn_lock || package_lock
+            return unless global_registry
 
-            global_registry =
+            "registry = https://#{global_registry['registry']}\n"\
+            "#{global_registry_auth_line}\n"\
+            "always-auth = true"
+          end
+
+          def global_registry
+            @global_registry ||=
               registry_credentials.find do |cred|
                 next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
@@ -51,12 +58,20 @@ module Dependabot
                   reject { |u| u.include?("@") || u.include?("%40") }.
                   any? { |url| url.include?(cred["registry"]) }
               end
+          end
 
-            return unless global_registry
+          def global_registry_auth_line
+            token = global_registry.fetch("token")
 
-            "registry = https://#{global_registry['registry']}\n"\
-            "_auth = #{global_registry.fetch('token')}\n"\
-            "always-auth = true"
+            if token.include?(":")
+              encoded_token = Base64.encode64(token).delete("\n")
+              "_auth = #{encoded_token}"
+            elsif Base64.decode64(token).ascii_only? &&
+                  Base64.decode64(token).include?(":")
+              "_auth = #{token.delete("\n")}"
+            else
+              "_authToken = #{token}"
+            end
           end
 
           def dependency_urls
@@ -97,7 +112,7 @@ module Dependabot
                     Base64.decode64(token).include?(":")
                 lines << %(//#{registry}/:_auth=#{token.delete("\n")})
               else
-                lines << "//#{registry}/:_authToken=#{cred.fetch('token')}"
+                lines << "//#{registry}/:_authToken=#{token}"
               end
             end
 
