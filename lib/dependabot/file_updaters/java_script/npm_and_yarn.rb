@@ -109,7 +109,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
-            raise if error.message.include?(%Q{"#{dependency.name}"})
+            raise if error.message.include?(%("#{dependency.name}"))
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
           raise
