@@ -22,13 +22,14 @@ module Dependabot
             @declaring_requirement = declaring_requirement
           end
 
-          def declaration_string
-            @declaration_string ||= find_pom_declaration_string
+          def declaration_strings
+            @declaration_strings ||= fetch_pom_declaration_strings
           end
 
-          def declaration_node
-            return unless declaration_string
-            Nokogiri::XML(declaration_string)
+          def declaration_nodes
+            declaration_strings.map do |declaration_string|
+              Nokogiri::XML(declaration_string)
+            end
           end
 
           private
@@ -44,8 +45,8 @@ module Dependabot
             dependency.name
           end
 
-          def find_pom_declaration_string
-            deep_find_declarations(declaring_pom.content).find do |nd|
+          def fetch_pom_declaration_strings
+            deep_find_declarations(declaring_pom.content).select do |nd|
               node = Nokogiri::XML(nd)
               node.remove_namespaces!
               next false unless node.at_xpath("./*/groupId")
@@ -58,7 +59,7 @@ module Dependabot
 
               next false unless node_name == dependency_name
 
-              declaring_requirement_matches?(node, declaring_requirement)
+              declaring_requirement_matches?(node)
             end
           end
 
@@ -68,9 +69,7 @@ module Dependabot
             end
           end
 
-          def declaring_requirement_matches?(node, dependency_requirement)
-            return true unless dependency_requirement.fetch(:requirement)
-
+          def declaring_requirement_matches?(node)
             node_requirement = node.at_css("version")&.content&.strip
 
             if declaring_requirement.dig(:metadata, :property_name)

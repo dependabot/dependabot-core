@@ -83,19 +83,24 @@ module Dependabot
         end
 
         def update_version_in_pom(dependency, pom, previous_req, requirement)
-          updated_content =
-            pom.content.gsub(
-              original_pom_declaration(dependency, previous_req),
-              updated_pom_declaration(dependency, previous_req, requirement)
+          updated_content = pom.content
+
+          original_pom_declarations(dependency, previous_req).each do |old_dec|
+            updated_content = updated_content.gsub(
+              old_dec,
+              updated_pom_declaration(old_dec, previous_req, requirement)
             )
+          end
 
           raise "Expected content to change!" if updated_content == pom.content
           updated_file(file: pom, content: updated_content)
         end
 
         def remove_property_suffix_in_pom(dep, pom, req)
-          updated_content =
-            pom.content.gsub(original_pom_declaration(dep, req)) do |old_dec|
+          updated_content = pom.content
+
+          original_pom_declarations(dep, req).each do |old_declaration|
+            updated_content = updated_content.gsub(old_declaration) do |old_dec|
               version_string =
                 old_dec.match(%r{(?<=\<version\>).*(?=\</version\>)})
               cleaned_version_string = version_string.to_s.gsub(/(?<=\}).*/, "")
@@ -105,12 +110,13 @@ module Dependabot
                 "<version>#{cleaned_version_string}</version>"
               )
             end
+          end
 
           updated_file(file: pom, content: updated_content)
         end
 
-        def original_pom_declaration(dependency, requirement)
-          declaration_finder(dependency, requirement).declaration_string
+        def original_pom_declarations(dependency, requirement)
+          declaration_finder(dependency, requirement).declaration_strings
         end
 
         # The declaration finder may need to make remote calls (to get parent
@@ -127,10 +133,10 @@ module Dependabot
             end
         end
 
-        def updated_pom_declaration(dependency, previous_req, requirement)
+        def updated_pom_declaration(old_declaration, previous_req, requirement)
           original_req_string = previous_req.fetch(:requirement)
 
-          original_pom_declaration(dependency, previous_req).gsub(
+          old_declaration.gsub(
             %r{<version>\s*#{Regexp.quote(original_req_string)}\s*</version>},
             "<version>#{requirement.fetch(:requirement)}</version>"
           )

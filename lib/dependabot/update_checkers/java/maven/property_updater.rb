@@ -86,7 +86,7 @@ module Dependabot
               dependency: dep,
               declaring_requirement: declaring_requirement,
               dependency_files: dependency_files
-            ).declaration_node.at_css("version")&.content
+            ).declaration_nodes.first.at_css("version")&.content
           end
 
           def pom

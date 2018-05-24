@@ -36,16 +36,23 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
   end
   let(:dependency_files) { [pom] }
   let(:pom) do
-    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
+    Dependabot::DependencyFile.new(
+      name: "pom.xml",
+      content: fixture("java", "poms", pom_fixture_name)
+    )
   end
+  let(:pom_fixture_name) { "basic_pom.xml" }
 
-  describe "#declaration_node" do
-    subject(:declaration_node) { finder.declaration_node }
+  describe "#declaration_nodes" do
+    subject(:declaration_nodes) { finder.declaration_nodes }
 
     context "with a dependency in the dependencies node" do
-      let(:pom_content) { fixture("java", "poms", "basic_pom.xml") }
+      let(:pom_fixture_name) { "basic_pom.xml" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("4.5.3")
         expect(declaration_node.at_css("artifactId").content).
@@ -56,11 +63,12 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a dependency in the dependency management node" do
-      let(:pom_content) do
-        fixture("java", "poms", "dependency_management_pom.xml")
-      end
+      let(:pom_fixture_name) { "dependency_management_pom.xml" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("4.5.3")
         expect(declaration_node.at_css("artifactId").content).
@@ -71,13 +79,16 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a dependency in the parent node" do
-      let(:pom_content) { fixture("java", "poms", "pom_with_parent.xml") }
+      let(:pom_fixture_name) { "pom_with_parent.xml" }
       let(:dependency_name) do
         "org.springframework.boot:spring-boot-starter-parent"
       end
       let(:dependency_version) { "1.5.9.RELEASE" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).
           to eq("1.5.9.RELEASE")
@@ -89,13 +100,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a dependency in the plugins node" do
-      let(:pom_content) do
-        fixture("java", "poms", "plugin_dependencies_pom.xml")
-      end
+      let(:pom_fixture_name) { "plugin_dependencies_pom.xml" }
       let(:dependency_name) { "org.jacoco:jacoco-maven-plugin" }
       let(:dependency_version) { "0.7.9" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
         expect(declaration_node.at_css("artifactId").content).
@@ -105,13 +117,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a dependency in the extensions node" do
-      let(:pom_content) do
-        fixture("java", "poms", "extension_dependencies_pom.xml")
-      end
+      let(:pom_fixture_name) { "extension_dependencies_pom.xml" }
       let(:dependency_name) { "org.jacoco:jacoco-maven-extension" }
       let(:dependency_version) { "0.7.9" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
         expect(declaration_node.at_css("artifactId").content).
@@ -121,13 +134,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a dependency in the pluginManagement node" do
-      let(:pom_content) do
-        fixture("java", "poms", "plugin_management_dependencies_pom.xml")
-      end
+      let(:pom_fixture_name) { "plugin_management_dependencies_pom.xml" }
       let(:dependency_name) { "org.jacoco:jacoco-maven-plugin" }
       let(:dependency_version) { "0.7.9" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).to eq("0.7.9")
         expect(declaration_node.at_css("artifactId").content).
@@ -137,12 +151,15 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a nested dependency" do
-      let(:pom_content) { fixture("java", "poms", "nested_dependency_pom.xml") }
+      let(:pom_fixture_name) { "nested_dependency_pom.xml" }
       let(:dependency_name) { "com.puppycrawl.tools:checkstyle" }
       let(:dependency_version) { "8.2" }
       let(:dependency_metadata) { { property_name: "checkstyle.version" } }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).
           to eq("${checkstyle.version}")
@@ -154,13 +171,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
     end
 
     context "with a repeated dependency" do
-      let(:pom_content) do
-        fixture("java", "poms", "repeated_pom_same_version.xml")
-      end
+      let(:pom_fixture_name) { "repeated_pom_same_version.xml" }
       let(:dependency_name) { "org.apache.maven.plugins:maven-javadoc-plugin" }
       let(:dependency_version) { "2.10.4" }
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).
           to eq("2.10.4")
@@ -168,6 +186,25 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           to eq("maven-javadoc-plugin")
         expect(declaration_node.at_css("groupId").content).
           to eq("org.apache.maven.plugins")
+      end
+
+      context "where the versions are identical" do
+        let(:pom_fixture_name) { "repeated_pom_identical.xml" }
+
+        it "finds the declaration" do
+          expect(declaration_nodes.count).to eq(2)
+
+          expect(declaration_nodes.first.to_s).to include("dependency")
+          expect(declaration_nodes.last.to_s).to include("plugin")
+
+          expect(declaration_nodes.first).to be_a(Nokogiri::XML::Node)
+          expect(declaration_nodes.first.at_css("version").content).
+            to eq("2.10.4")
+          expect(declaration_nodes.first.at_css("artifactId").content).
+            to eq("maven-javadoc-plugin")
+          expect(declaration_nodes.first.at_css("groupId").content).
+            to eq("org.apache.maven.plugins")
+        end
       end
     end
 
@@ -198,6 +235,9 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).
           to eq("${project.version}")
@@ -242,6 +282,9 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
 
       it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
         expect(declaration_node).to be_a(Nokogiri::XML::Node)
         expect(declaration_node.at_css("version").content).
           to eq("${spring.version}")
