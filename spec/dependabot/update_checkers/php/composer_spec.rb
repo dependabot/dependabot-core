@@ -13,7 +13,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     described_class.new(
       dependency: dependency,
       dependency_files: files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
 
@@ -25,6 +26,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       package_manager: "composer"
     )
   end
+  let(:ignored_versions) { [] }
   let(:dependency_name) { "monolog/monolog" }
   let(:dependency_version) { "1.0.1" }
   let(:requirements) do
@@ -68,6 +70,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     end
 
     it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 1.22.0.a, < 1.23"] }
+      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+    end
 
     context "when using a pre-release" do
       let(:dependency) do

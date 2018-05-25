@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils/php/requirement"
 require "dependabot/errors"
 
 require "json"
@@ -26,6 +27,7 @@ module Dependabot
             map { |version| version_class.new(version.gsub(/^v/, "")) }
 
           versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
           versions.max
         end
 
@@ -144,6 +146,11 @@ module Dependabot
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
           listing.dig("packages", dependency.name.downcase).keys
+        end
+
+        def ignore_reqs
+          ignored_versions.
+            map { |req| Utils::Php::Requirement.new(req.split(",")) }
         end
 
         def library?
