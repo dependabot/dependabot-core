@@ -12,11 +12,12 @@ module Dependabot
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
           def initialize(credentials:, dependency:, dependency_files:,
-                         requirements_to_unlock:)
-            @credentials = credentials
-            @dependency = dependency
-            @dependency_files = dependency_files
-            @requirements_to_unlock = requirements_to_unlock
+                         requirements_to_unlock:, latest_allowable_version:)
+            @credentials              = credentials
+            @dependency               = dependency
+            @dependency_files         = dependency_files
+            @requirements_to_unlock   = requirements_to_unlock
+            @latest_allowable_version = latest_allowable_version
           end
 
           def latest_resolvable_version
@@ -26,7 +27,7 @@ module Dependabot
           private
 
           attr_reader :credentials, :dependency, :dependency_files,
-                      :requirements_to_unlock
+                      :requirements_to_unlock, :latest_allowable_version
 
           def fetch_latest_resolvable_version
             version = fetch_latest_resolvable_version_string
@@ -68,20 +69,39 @@ module Dependabot
             # composer.json to the user.
             content = content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
 
-            return content if requirements_to_unlock == :none
-
-            old_requirement = dependency.requirements.first&.fetch(:requirement)
-            new_requirement =
-              if dependency.version then ">= #{dependency.version}"
-              elsif old_requirement&.match?(VERSION_REGEX)
-                ">= #{old_requirement.match(VERSION_REGEX)}"
-              else "*"
-              end
-
             content.gsub(
               /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
-              %("#{dependency.name}": "#{new_requirement}")
+              %("#{dependency.name}": "#{updated_version_requirement_string}")
             )
+          end
+
+          def updated_version_requirement_string
+            lower_bound =
+              if requirements_to_unlock == :none
+                dependency.requirements.first&.fetch(:requirement)
+              elsif dependency.version
+                ">= #{dependency.version}"
+              else
+                version_for_requirement =
+                  dependency.requirements.map { |r| r[:requirement] }.compact.
+                  reject { |req_string| req_string.start_with?("<") }.
+                  select { |req_string| req_string.match?(VERSION_REGEX) }.
+                  map { |req_string| req_string.match(VERSION_REGEX) }.
+                  select { |version| Gem::Version.correct?(version) }.
+                  max_by { |version| Gem::Version.new(version) }
+
+                ">= #{version_for_requirement || 0}"
+              end
+
+            # Add the latest_allowable_version as an upper bound. This means
+            # ignore conditions are considered when checking for the latest
+            # resolvable version.
+            #
+            # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
+            # unresolvable then the `latest_allowable_version` will be v3, and
+            # we won't be ignoring v2.x releases like we should be.
+            return lower_bound unless latest_allowable_version
+            lower_bound + ", <= #{latest_allowable_version}"
           end
 
           # rubocop:disable Metrics/PerceivedComplexity

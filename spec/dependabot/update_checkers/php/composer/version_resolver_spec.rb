@@ -11,6 +11,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
       credentials: credentials,
       dependency: dependency,
       dependency_files: dependency_files,
+      latest_allowable_version: latest_allowable_version,
       requirements_to_unlock: requirements_to_unlock
     )
   end
@@ -55,6 +56,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
       source: nil
     }]
   end
+  let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
   let(:dependency_name) { "symfony/translation" }
   let(:dependency_version) { "4.0.7" }
   let(:string_req) { "^4.0" }

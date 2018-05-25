@@ -38,6 +38,10 @@ try {
             $latestVersion = UpdateChecker::getLatestResolvableVersion($request['args']);
             fwrite(STDOUT, json_encode(['result' => $latestVersion]));
             break;
+        case 'get_content_hash':
+            $content_hash = Hasher::getContentHash($request['args']);
+            fwrite(STDOUT, json_encode(['result' => $content_hash]));
+            break;
         default:
             fwrite(STDOUT, '{"error": "Invalid function ' . $request['function'] . '" }');
             exit(1);

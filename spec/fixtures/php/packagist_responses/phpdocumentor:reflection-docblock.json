@@ -1,0 +1,2025 @@
+{
+    "packages": {
+        "phpdocumentor/reflection-docblock": {
+            "1.0.0": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "2b05ea32215fffe542e11795ea33ad82def10c58",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/2b05ea32215fffe542e11795ea33ad82def10c58"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "2b05ea32215fffe542e11795ea33ad82def10c58",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-07-13T18:07:51+00:00",
+                "type": "library",
+                "uid": 15125,
+                "version": "1.0.0",
+                "version_normalized": "1.0.0.0"
+            },
+            "1.0.0-beta1": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor/Reflection": "src/phpDocumentor"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "fea7abe168dfd01d96f61daa4bc27891814b94f3",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/fea7abe168dfd01d96f61daa4bc27891814b94f3"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "fea7abe168dfd01d96f61daa4bc27891814b94f3",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-04-06T18:15:46+00:00",
+                "type": "library",
+                "uid": 11554,
+                "version": "1.0.0-beta1",
+                "version_normalized": "1.0.0.0-beta1"
+            },
+            "1.0.0-beta2": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/phpDocumentor"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "6a34cf123c10f9585d1d2453e7602c97db438979",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/6a34cf123c10f9585d1d2453e7602c97db438979"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "6a34cf123c10f9585d1d2453e7602c97db438979",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-04-06T18:39:59+00:00",
+                "type": "library",
+                "uid": 11555,
+                "version": "1.0.0-beta2",
+                "version_normalized": "1.0.0.0-beta2"
+            },
+            "1.0.0-beta3": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "3f8a4fca6dad3de99f76515c9a14222129f62b89",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/3f8a4fca6dad3de99f76515c9a14222129f62b89"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "3f8a4fca6dad3de99f76515c9a14222129f62b89",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-04-07T09:49:54+00:00",
+                "type": "library",
+                "uid": 11556,
+                "version": "1.0.0-beta3",
+                "version_normalized": "1.0.0.0-beta3"
+            },
+            "1.0.0-beta4": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "f0a2901e56721169a14915afb7afd52f7cc31f48",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/f0a2901e56721169a14915afb7afd52f7cc31f48"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "f0a2901e56721169a14915afb7afd52f7cc31f48",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-06-02T20:07:17+00:00",
+                "type": "library",
+                "uid": 13118,
+                "version": "1.0.0-beta4",
+                "version_normalized": "1.0.0.0-beta4"
+            },
+            "1.0.0-beta5": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "8f8cbd9ab6028e823c44444258788c386a457b0d",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/8f8cbd9ab6028e823c44444258788c386a457b0d"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "8f8cbd9ab6028e823c44444258788c386a457b0d",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-06-04T20:34:54+00:00",
+                "type": "library",
+                "uid": 13197,
+                "version": "1.0.0-beta5",
+                "version_normalized": "1.0.0.0-beta5"
+            },
+            "1.0.0-beta6": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "838fbfa43f3f4bb9081613514eb55535e9854cfd",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/838fbfa43f3f4bb9081613514eb55535e9854cfd"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "838fbfa43f3f4bb9081613514eb55535e9854cfd",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-06-21T21:03:48+00:00",
+                "type": "library",
+                "uid": 13897,
+                "version": "1.0.0-beta6",
+                "version_normalized": "1.0.0.0-beta6"
+            },
+            "1.0.0-beta7": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "cee3c0bc21d102762a81432d23f4bff9d5ef8658",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/cee3c0bc21d102762a81432d23f4bff9d5ef8658"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "cee3c0bc21d102762a81432d23f4bff9d5ef8658",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-06-30T11:38:18+00:00",
+                "type": "library",
+                "uid": 14439,
+                "version": "1.0.0-beta7",
+                "version_normalized": "1.0.0.0-beta7"
+            },
+            "1.0.1": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "c999e7d32a64ad69b91d16f7904a1c2793323feb",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/c999e7d32a64ad69b91d16f7904a1c2793323feb"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "c999e7d32a64ad69b91d16f7904a1c2793323feb",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-07-26T15:09:50+00:00",
+                "type": "library",
+                "uid": 15748,
+                "version": "1.0.1",
+                "version_normalized": "1.0.1.0"
+            },
+            "1.0.2": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor\\Reflection": "src/"
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "60ba10fad1cf05066872b953a8b8d0cd204de9ee",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/60ba10fad1cf05066872b953a8b8d0cd204de9ee"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "60ba10fad1cf05066872b953a8b8d0cd204de9ee",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-09-10T14:50:44+00:00",
+                "type": "library",
+                "uid": 18814,
+                "version": "1.0.2",
+                "version_normalized": "1.0.2.0"
+            },
+            "1.0.3": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "6b707f71668d15d14564fc3766e108551037f10e",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/6b707f71668d15d14564fc3766e108551037f10e"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "source": {
+                    "reference": "6b707f71668d15d14564fc3766e108551037f10e",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-11-03T21:14:43+00:00",
+                "type": "library",
+                "uid": 24106,
+                "version": "1.0.3",
+                "version_normalized": "1.0.3.0"
+            },
+            "2.0.0": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "66ae84e9d7c8ea85c979cb65977bd8e608baf0c5",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/66ae84e9d7c8ea85c979cb65977bd8e608baf0c5"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "66ae84e9d7c8ea85c979cb65977bd8e608baf0c5",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2013-08-07T11:04:22+00:00",
+                "type": "library",
+                "uid": 75143,
+                "version": "2.0.0",
+                "version_normalized": "2.0.0.0"
+            },
+            "2.0.0a1": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "841897062442e2a0e8b3def1518caa25f6498dfd",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/841897062442e2a0e8b3def1518caa25f6498dfd"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.2"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "*@stable"
+                },
+                "source": {
+                    "reference": "841897062442e2a0e8b3def1518caa25f6498dfd",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-11-27T17:52:28+00:00",
+                "type": "library",
+                "uid": 34801,
+                "version": "2.0.0a1",
+                "version_normalized": "2.0.0.0-alpha1"
+            },
+            "2.0.0a2": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "5d93f42598d6a8332433856fb5656606a4c1e1e3",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/5d93f42598d6a8332433856fb5656606a4c1e1e3"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "5d93f42598d6a8332433856fb5656606a4c1e1e3",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2012-12-02T20:26:45+00:00",
+                "type": "library",
+                "uid": 34802,
+                "version": "2.0.0a2",
+                "version_normalized": "2.0.0.0-alpha2"
+            },
+            "2.0.0a3": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "47d3f86c53985b16d80f9a211d639505ccc3824a",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/47d3f86c53985b16d80f9a211d639505ccc3824a"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "dflydev/markdown": "1.0.*",
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "47d3f86c53985b16d80f9a211d639505ccc3824a",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2013-04-16T14:22:15+00:00",
+                "type": "library",
+                "uid": 49190,
+                "version": "2.0.0a3",
+                "version_normalized": "2.0.0.0-alpha3"
+            },
+            "2.0.1": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "cfb3ebea556b24df8f8f3745d61478293cb5a166",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/cfb3ebea556b24df8f8f3745d61478293cb5a166"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "cfb3ebea556b24df8f8f3745d61478293cb5a166",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "1.0.*",
+                    "erusev/parsedown": "~0.7"
+                },
+                "time": "2013-12-05T08:16:55+00:00",
+                "type": "library",
+                "uid": 107309,
+                "version": "2.0.1",
+                "version_normalized": "2.0.1.0"
+            },
+            "2.0.2": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "0bca477a34baea39add016af90046f002a175619",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/0bca477a34baea39add016af90046f002a175619"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "0bca477a34baea39add016af90046f002a175619",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "1.0.*",
+                    "erusev/parsedown": "~0.7"
+                },
+                "time": "2014-03-28T09:21:30+00:00",
+                "type": "library",
+                "uid": 151063,
+                "version": "2.0.2",
+                "version_normalized": "2.0.2.0"
+            },
+            "2.0.3": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "38743b677965c48a637097b2746a281264ae2347",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/38743b677965c48a637097b2746a281264ae2347"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "3.7.*@stable"
+                },
+                "source": {
+                    "reference": "38743b677965c48a637097b2746a281264ae2347",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "1.0.*",
+                    "erusev/parsedown": "~0.7"
+                },
+                "time": "2014-08-09T10:27:07+00:00",
+                "type": "library",
+                "uid": 218937,
+                "version": "2.0.3",
+                "version_normalized": "2.0.3.0"
+            },
+            "2.0.4": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "d68dbdc53dc358a816f00b300704702b2eaff7b8",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/d68dbdc53dc358a816f00b300704702b2eaff7b8"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "~4.0"
+                },
+                "source": {
+                    "reference": "d68dbdc53dc358a816f00b300704702b2eaff7b8",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "~1.0",
+                    "erusev/parsedown": "~1.0"
+                },
+                "time": "2015-02-03T12:10:50+00:00",
+                "type": "library",
+                "uid": 320856,
+                "version": "2.0.4",
+                "version_normalized": "2.0.4.0"
+            },
+            "2.0.5": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "e6a969a640b00d8daa3c66518b0405fb41ae0c4b",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/e6a969a640b00d8daa3c66518b0405fb41ae0c4b"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "~4.0"
+                },
+                "source": {
+                    "reference": "e6a969a640b00d8daa3c66518b0405fb41ae0c4b",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "~1.0",
+                    "erusev/parsedown": "~1.0"
+                },
+                "time": "2016-01-25T08:17:30+00:00",
+                "type": "library",
+                "uid": 1412492,
+                "version": "2.0.5",
+                "version_normalized": "2.0.5.0"
+            },
+            "3.0.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "332c96dab8309293384505593ed7259c35a143e2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/332c96dab8309293384505593ed7259c35a143e2"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.1.5",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "332c96dab8309293384505593ed7259c35a143e2",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-01-28T12:45:51+00:00",
+                "type": "library",
+                "uid": 675244,
+                "version": "3.0.0",
+                "version_normalized": "3.0.0.0"
+            },
+            "3.0.1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "52723f0fb83d053be05c3f6b58ec45e5851c0e99",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/52723f0fb83d053be05c3f6b58ec45e5851c0e99"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.1.5",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "52723f0fb83d053be05c3f6b58ec45e5851c0e99",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-02-26T20:44:16+00:00",
+                "type": "library",
+                "uid": 714967,
+                "version": "3.0.1",
+                "version_normalized": "3.0.1.0"
+            },
+            "3.0.2": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "45ada3e3fd09789fbfbd6d65b3f0901f0030dc61",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/45ada3e3fd09789fbfbd6d65b3f0901f0030dc61"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.1.5",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "45ada3e3fd09789fbfbd6d65b3f0901f0030dc61",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-06-06T06:44:13+00:00",
+                "type": "library",
+                "uid": 851262,
+                "version": "3.0.2",
+                "version_normalized": "3.0.2.0"
+            },
+            "3.0.3": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "ea48fd2c79b68fba8693ae67a21cae5b5ee4cfb8",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/ea48fd2c79b68fba8693ae67a21cae5b5ee4cfb8"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.1.5",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "ea48fd2c79b68fba8693ae67a21cae5b5ee4cfb8",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-06-10T07:04:47+00:00",
+                "type": "library",
+                "uid": 857123,
+                "version": "3.0.3",
+                "version_normalized": "3.0.3.0"
+            },
+            "3.1.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "9270140b940ff02e58ec577c237274e92cd40cdd",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/9270140b940ff02e58ec577c237274e92cd40cdd"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.2.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "9270140b940ff02e58ec577c237274e92cd40cdd",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-06-10T09:48:41+00:00",
+                "type": "library",
+                "uid": 857356,
+                "version": "3.1.0",
+                "version_normalized": "3.1.0.0"
+            },
+            "3.1.1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "8331b5efe816ae05461b7ca1e721c01b46bafb3e",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/8331b5efe816ae05461b7ca1e721c01b46bafb3e"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.2.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "8331b5efe816ae05461b7ca1e721c01b46bafb3e",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2016-09-30T07:12:33+00:00",
+                "type": "library",
+                "uid": 1015732,
+                "version": "3.1.1",
+                "version_normalized": "3.1.1.0"
+            },
+            "3.2.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "46f7e8bb075036c92695b15a1ddb6971c751e585",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/46f7e8bb075036c92695b15a1ddb6971c751e585"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "46f7e8bb075036c92695b15a1ddb6971c751e585",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-07-15T11:38:20+00:00",
+                "type": "library",
+                "uid": 1501144,
+                "version": "3.2.0",
+                "version_normalized": "3.2.0.0"
+            },
+            "3.2.1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "183824db76118b9dddffc7e522b91fa175f75119",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/183824db76118b9dddffc7e522b91fa175f75119"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.3.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "183824db76118b9dddffc7e522b91fa175f75119",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-04T20:55:59+00:00",
+                "type": "library",
+                "uid": 1538638,
+                "version": "3.2.1",
+                "version_normalized": "3.2.1.0"
+            },
+            "3.2.2": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "4aada1f93c72c35e22fb1383b47fee43b8f1d157",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/4aada1f93c72c35e22fb1383b47fee43b8f1d157"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.3.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "4aada1f93c72c35e22fb1383b47fee43b8f1d157",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-08T06:39:58+00:00",
+                "type": "library",
+                "uid": 1542833,
+                "version": "3.2.2",
+                "version_normalized": "3.2.2.0"
+            },
+            "3.2.3": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "86e24012a3139b42a7b71155cfaa325389f00f1f",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/86e24012a3139b42a7b71155cfaa325389f00f1f"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "86e24012a3139b42a7b71155cfaa325389f00f1f",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-29T19:37:41+00:00",
+                "type": "library",
+                "uid": 1583498,
+                "version": "3.2.3",
+                "version_normalized": "3.2.3.0"
+            },
+            "3.3.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "48eb1f629d55621f03ca72195fe04d05d463b807",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/48eb1f629d55621f03ca72195fe04d05d463b807"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0.0",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "48eb1f629d55621f03ca72195fe04d05d463b807",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-09-11T18:06:56+00:00",
+                "type": "library",
+                "uid": 1605338,
+                "version": "3.3.0",
+                "version_normalized": "3.3.0.0"
+            },
+            "3.3.2": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "bf329f6c1aadea3299f08ee804682b7c45b326a2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/bf329f6c1aadea3299f08ee804682b7c45b326a2"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^5.6 || ^7.0",
+                    "phpdocumentor/reflection-common": "^1.0.0",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "bf329f6c1aadea3299f08ee804682b7c45b326a2",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-11-10T14:09:06+00:00",
+                "type": "library",
+                "uid": 1738687,
+                "version": "3.3.2",
+                "version_normalized": "3.3.2.0"
+            },
+            "4.0.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "3c8d2425b563012ec50ffc8c59fe76247ac6e03e",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/3c8d2425b563012ec50ffc8c59fe76247ac6e03e"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "3c8d2425b563012ec50ffc8c59fe76247ac6e03e",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-04T21:25:06+00:00",
+                "type": "library",
+                "uid": 1538650,
+                "version": "4.0.0",
+                "version_normalized": "4.0.0.0"
+            },
+            "4.0.1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "a8d791f8c91ea5fb91580d48f2c7903849271ba7",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/a8d791f8c91ea5fb91580d48f2c7903849271ba7"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "a8d791f8c91ea5fb91580d48f2c7903849271ba7",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-08T06:43:50+00:00",
+                "type": "library",
+                "uid": 1542837,
+                "version": "4.0.1",
+                "version_normalized": "4.0.1.0"
+            },
+            "4.1.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "125c8b15c80827dbcd32facc9f85c8a603617d87",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/125c8b15c80827dbcd32facc9f85c8a603617d87"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "125c8b15c80827dbcd32facc9f85c8a603617d87",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-18T21:01:43+00:00",
+                "type": "library",
+                "uid": 1562780,
+                "version": "4.1.0",
+                "version_normalized": "4.1.0.0"
+            },
+            "4.1.1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "2d3d238c433cf69caeb4842e97a3223a116f94b2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/2d3d238c433cf69caeb4842e97a3223a116f94b2"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0@dev",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "2d3d238c433cf69caeb4842e97a3223a116f94b2",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-08-30T18:51:59+00:00",
+                "type": "library",
+                "uid": 1583501,
+                "version": "4.1.1",
+                "version_normalized": "4.1.1.0"
+            },
+            "4.2.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "66465776cfc249844bde6d117abff1d22e06c2da",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/66465776cfc249844bde6d117abff1d22e06c2da"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "4.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0.0",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "doctrine/instantiator": "~1.0.5",
+                    "mockery/mockery": "^1.0",
+                    "phpunit/phpunit": "^6.4"
+                },
+                "source": {
+                    "reference": "66465776cfc249844bde6d117abff1d22e06c2da",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-11-27T17:38:31+00:00",
+                "type": "library",
+                "uid": 1750511,
+                "version": "4.2.0",
+                "version_normalized": "4.2.0.0"
+            },
+            "4.3.0": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "94fd0001232e47129dd3504189fa1c7225010d08",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/94fd0001232e47129dd3504189fa1c7225010d08"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "4.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^7.0",
+                    "phpdocumentor/reflection-common": "^1.0.0",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "doctrine/instantiator": "~1.0.5",
+                    "mockery/mockery": "^1.0",
+                    "phpunit/phpunit": "^6.4"
+                },
+                "source": {
+                    "reference": "94fd0001232e47129dd3504189fa1c7225010d08",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-11-30T07:14:17+00:00",
+                "type": "library",
+                "uid": 1871351,
+                "version": "4.3.0",
+                "version_normalized": "4.3.0.0"
+            },
+            "5.0.0-alpha1": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": "src"
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "6946f85e19ea3342353e22b83b4e2e59414c1a2f",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/6946f85e19ea3342353e22b83b4e2e59414c1a2f"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "4.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=7.1",
+                    "phpdocumentor/type-resolver": "^0",
+                    "webmozart/assert": "^1"
+                },
+                "require-dev": {
+                    "doctrine/instantiator": "^1",
+                    "mockery/mockery": "^1"
+                },
+                "source": {
+                    "reference": "6946f85e19ea3342353e22b83b4e2e59414c1a2f",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2018-01-31T20:23:19+00:00",
+                "type": "library",
+                "uid": 1882933,
+                "version": "5.0.0-alpha1",
+                "version_normalized": "5.0.0.0-alpha1"
+            },
+            "dev-_before-history-rewrite": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "9304b75a61d8aa9ce34d679408a8b41d46d24663",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/9304b75a61d8aa9ce34d679408a8b41d46d24663"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "3.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.5",
+                    "phpdocumentor/reflection-common": "^0.1",
+                    "phpdocumentor/type-resolver": "^0.1.1",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "4.4"
+                },
+                "source": {
+                    "reference": "9304b75a61d8aa9ce34d679408a8b41d46d24663",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2015-06-22T06:12:13+00:00",
+                "type": "library",
+                "uid": 450330,
+                "version": "dev-_before-history-rewrite",
+                "version_normalized": "dev-_before-history-rewrite"
+            },
+            "dev-master": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": "src"
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "6537078c5e43d87931eebce7b2a07c50460a3fde",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/6537078c5e43d87931eebce7b2a07c50460a3fde"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "5.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=7.1",
+                    "phpdocumentor/type-resolver": "^0",
+                    "webmozart/assert": "^1"
+                },
+                "require-dev": {
+                    "doctrine/instantiator": "^1",
+                    "mockery/mockery": "^1"
+                },
+                "source": {
+                    "reference": "6537078c5e43d87931eebce7b2a07c50460a3fde",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2018-04-19T08:00:57+00:00",
+                "type": "library",
+                "uid": 11557,
+                "version": "dev-master",
+                "version_normalized": "9999999-dev"
+            },
+            "dev-release/2.x": {
+                "authors": [
+                    {
+                        "email": "mike.vanriel@naenius.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "phpDocumentor": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "",
+                "dist": {
+                    "reference": "e6a969a640b00d8daa3c66518b0405fb41ae0c4b",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/e6a969a640b00d8daa3c66518b0405fb41ae0c4b"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "~4.0"
+                },
+                "source": {
+                    "reference": "e6a969a640b00d8daa3c66518b0405fb41ae0c4b",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "suggest": {
+                    "dflydev/markdown": "~1.0",
+                    "erusev/parsedown": "~1.0"
+                },
+                "time": "2016-01-25T08:17:30+00:00",
+                "type": "library",
+                "uid": 613204,
+                "version": "dev-release/2.x",
+                "version_normalized": "dev-release/2.x"
+            },
+            "dev-release/3.x": {
+                "authors": [
+                    {
+                        "email": "me@mikevanriel.com",
+                        "name": "Mike van Riel"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "phpDocumentor\\Reflection\\": [
+                            "src/"
+                        ]
+                    }
+                },
+                "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
+                "dist": {
+                    "reference": "bf329f6c1aadea3299f08ee804682b7c45b326a2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/bf329f6c1aadea3299f08ee804682b7c45b326a2"
+                },
+                "homepage": "",
+                "keywords": [],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpdocumentor/reflection-docblock",
+                "require": {
+                    "php": "^5.6 || ^7.0",
+                    "phpdocumentor/reflection-common": "^1.0.0",
+                    "phpdocumentor/type-resolver": "^0.4.0",
+                    "webmozart/assert": "^1.0"
+                },
+                "require-dev": {
+                    "mockery/mockery": "^0.9.4",
+                    "phpunit/phpunit": "^4.4"
+                },
+                "source": {
+                    "reference": "bf329f6c1aadea3299f08ee804682b7c45b326a2",
+                    "type": "git",
+                    "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git"
+                },
+                "time": "2017-11-10T14:09:06+00:00",
+                "type": "library",
+                "uid": 1542820,
+                "version": "dev-release/3.x",
+                "version_normalized": "dev-release/3.x"
+            }
+        }
+    }
+}

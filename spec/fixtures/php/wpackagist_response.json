@@ -1,0 +1,39 @@
+{
+    "packages": [],
+    "provider-includes": {
+        "p/providers-2011$%hash%.json": {
+            "sha256": "5a7cd3329908dfe6268759a3266fc46c3413c4f511d7849400e233d9ba008586"
+        },
+        "p/providers-2012$%hash%.json": {
+            "sha256": "14d9a1585f9d81abae3189d5c9eee6f3c4a10fef22a463391bc018051aab6be9"
+        },
+        "p/providers-2013$%hash%.json": {
+            "sha256": "b33c91c8c07c913eb030ffda4a77a9e1507b677db0d6bbb947d1600af96e69a7"
+        },
+        "p/providers-2014$%hash%.json": {
+            "sha256": "319ad153ff8003f6db9ac6367dacb04c18d552c61edbaf473f926b6dee55ca69"
+        },
+        "p/providers-2015$%hash%.json": {
+            "sha256": "f729a478639cb9d2238eff2707a0456bd6f1e30bd7bf018ed0fd49e94dca6cca"
+        },
+        "p/providers-2016$%hash%.json": {
+            "sha256": "532996e51771e0eff1e1a3d596d9d088607caa4d408c7446bc1880433563323b"
+        },
+        "p/providers-2017$%hash%.json": {
+            "sha256": "aa5b9edbb163eef3c2f092d92a2653549b8a8571b5d773594e036cc3c2e24cc7"
+        },
+        "p/providers-2018-03$%hash%.json": {
+            "sha256": "9b058277cd1ccd643c795abd3dd2122f8acab14e28acc298baccc065e78e3214"
+        },
+        "p/providers-2018-06$%hash%.json": {
+            "sha256": "8b5f31ccf212f027a5033e2ab0bb48bf8d137cd665a1f2481bf353f20edd07af"
+        },
+        "p/providers-old$%hash%.json": {
+            "sha256": "033ebeaca9efa1e2f471e1e7d646c8daec48b9f07488b2ee18e9b56569e2a20e"
+        },
+        "p/providers-this-week$%hash%.json": {
+            "sha256": "5012b9d3e6fddd6aef9378c03e850def0434a925d26df21c4a1b7e189d5b713b"
+        }
+    },
+    "providers-url": "/p/%package%$%hash%.json"
+}

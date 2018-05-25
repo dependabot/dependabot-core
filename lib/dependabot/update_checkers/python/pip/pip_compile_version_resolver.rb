@@ -19,11 +19,11 @@ module Dependabot
 
           def initialize(dependency:, dependency_files:, credentials:,
                          unlock_requirement:, latest_allowable_version:)
-            @dependency = dependency
-            @dependency_files = dependency_files
-            @credentials = credentials
+            @dependency               = dependency
+            @dependency_files         = dependency_files
+            @credentials              = credentials
             @latest_allowable_version = latest_allowable_version
-            @unlock_requirement = unlock_requirement
+            @unlock_requirement       = unlock_requirement
           end
 
           def latest_resolvable_version

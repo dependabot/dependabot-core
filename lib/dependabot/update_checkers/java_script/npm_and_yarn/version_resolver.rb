@@ -14,8 +14,8 @@ module Dependabot
       class NpmAndYarn
         class VersionResolver
           def initialize(dependency:, credentials:, dependency_files:)
-            @dependency = dependency
-            @credentials = credentials
+            @dependency       = dependency
+            @credentials      = credentials
             @dependency_files = dependency_files
           end
 
