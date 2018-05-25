@@ -13,10 +13,12 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class VersionResolver
-          def initialize(dependency:, credentials:, dependency_files:)
+          def initialize(dependency:, credentials:, dependency_files:,
+                         ignored_versions:)
             @dependency       = dependency
             @credentials      = credentials
             @dependency_files = dependency_files
+            @ignored_versions = ignored_versions
           end
 
           def latest_version_details_from_registry
@@ -29,7 +31,7 @@ module Dependabot
             { version: version_from_versions_array }
           rescue Excon::Error::Socket, Excon::Error::Timeout
             raise if dependency_registry == "registry.npmjs.org"
-            # Sometimes custom registries are flaky. We don't want to make that
+            # Custom registries can be flaky. We don't want to make that
             # our problem, so we quietly return `nil` here.
           end
 
@@ -54,7 +56,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :credentials, :dependency_files
+          attr_reader :dependency, :credentials, :dependency_files,
+                      :ignored_versions
 
           def version_from_dist_tags(npm_details)
             dist_tags = npm_details["dist-tags"].keys
@@ -110,6 +113,7 @@ module Dependabot
             return false if related_to_current_pre?(ver) ^ ver.prerelease?
             return false if current_version_greater_than?(ver)
             return false if current_requirement_greater_than?(ver)
+            return false if ignore_reqs.any? { |r| r.satisfied_by?(ver) }
             return false if yanked?(ver)
             true
           end
@@ -138,6 +142,7 @@ module Dependabot
               reject { |_, details| details["deprecated"] }.
               keys.map { |v| version_class.new(v) }.
               reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
+              reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
               sort.reverse
           end
 
@@ -221,6 +226,11 @@ module Dependabot
                 credentials: credentials,
                 npmrc_file: dependency_files.find { |f| f.name == ".npmrc" }
               )
+          end
+
+          def ignore_reqs
+            ignored_versions.
+              map { |req| Utils::JavaScript::Requirement.new(req.split(",")) }
           end
 
           def version_class

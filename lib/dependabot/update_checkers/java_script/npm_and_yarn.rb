@@ -108,7 +108,8 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               credentials: credentials,
-              dependency_files: dependency_files
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions
             )
         end
 
