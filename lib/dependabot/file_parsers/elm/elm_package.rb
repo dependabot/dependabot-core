@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/elm/elm_package"
@@ -9,14 +8,13 @@ module Dependabot
   module FileParsers
     module Elm
       class ElmPackage < Dependabot::FileParsers::Base
+        MAX_VERSION = 99999
         require "dependabot/file_parsers/base/dependency_set"
 
         def parse
           dependency_set = DependencySet.new
 
           dependency_details.each do |dep|
-            git_dependency = dep["source"]&.fetch("type") == "git"
-
             dependency_set <<
               Dependency.new(
                 name: dep[:name],
@@ -34,35 +32,38 @@ module Dependabot
           dependency_set.dependencies.sort_by(&:name)
         end
 
-        def check_required_files
-          raise "No elm-package.json!" unless elm_package
-        end
-
         private
 
+        def check_required_files
+          raise "No elm-package.json!" unless elm_package_file
+        end
+
         def dependency_details
-          json = JSON.parse(elm_package)
+          json = JSON.parse elm_package_file.content
           json['dependencies'].
             map {|k,v| {name: k, requirement: v, file: "elm-package.json", max_version: max_of(v)}}
         end
 
         def max_of(version_requirement)
-          _, maybe_equals, *major_minor_patch = /\<(=)? (\d)\.(\d)\.(\d)$/.match(version_requirement)
+          _, maybe_equals, *major_minor_patch = /<(=)? (\d)\.(\d)\.(\d)$/.match(version_requirement).to_a
           major, minor, patch = major_minor_patch.map(&:to_i)
           if maybe_equals != "="
             if patch > 0
               patch-=1
             elsif minor > 0
+              patch = MAX_VERSION # SORRY NOT SORRY
               minor-=1
-            elsif major > 0
+            elsif major > 1
+              minor = MAX_VERSION
+              patch = MAX_VERSION
               major-=1
             end
           end
           [major, minor, patch]
         end
 
-        def elm_package
-          @elm_package ||= get_original_file("elm-package.json")
+        def elm_package_file
+          @elm_package_file ||= get_original_file("elm-package.json")
         end
       end
     end
