@@ -24,9 +24,11 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
+  let(:ignored_versions) { [] }
   let(:dependency_files) { [package_json] }
   let(:package_json) do
     Dependabot::DependencyFile.new(
@@ -171,6 +173,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     it "only hits the registry once" do
       checker.latest_version
       expect(WebMock).to have_requested(:get, registry_listing_url).once
+    end
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 1.7.0.a, < 1.8"] }
+      before do
+        stub_request(:get, registry_listing_url + "/1.6.0").
+          to_return(status: 200)
+      end
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
     context "with a git dependency" do

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
+require "dependabot/utils/php/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -170,6 +171,7 @@ module Dependabot
           dependencies.
             reduce(updated_composer_json_content.dup) do |content, dep|
               updated_req = dep.version
+              next content unless Utils::Php::Version.correct?(updated_req)
 
               old_req =
                 dep.requirements.find { |r| r[:file] == "composer.json" }.

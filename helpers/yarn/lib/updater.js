@@ -4,7 +4,7 @@
  *  - directory containing a package.json and a yarn.lock
  *  - dependency name
  *  - new dependency version
- *  - previous requirements for this dependency
+ *  - new requirements for this dependency
  *
  * Outputs:
  *  - updated package.json and yarn.lock files
@@ -23,6 +23,7 @@ const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const fixDuplicates = require("./fix-duplicates");
+const replaceDeclaration = require("./replace-lockfile-declaration");
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
@@ -163,11 +164,6 @@ async function updateDependencyFile(
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
-  // Find the old dependency range from the package.json, so we can construct
-  // a new range that contains the new version but maintains the old format
-  const currentRange = (await allDependencyRanges(config))[depName];
-  const currentPattern = `${depName}@${currentRange}`;
-
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
@@ -178,40 +174,31 @@ async function updateDependencyFile(
   // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
 
-  // Repeat the process to set the right range in the lockfile
-  // TODO: REFACTOR ME!
-  const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const args2 = install_args_with_req(depName, currentRange, requirements);
-  const dep = {
-    name: depName,
-    wanted: "",
-    latest: "",
-    url: "",
-    hint: "",
-    range: "",
-    current: "",
-    upgradeTo: currentPattern,
-    workspaceName: "",
-    workspaceLoc: ""
-  };
-  const install = new LightweightInstall(flags, config, reporter, lockfile2);
-  const { requests: packagePatterns } = await install.fetchRequestFromCwd();
-  cleanLockfile(lockfile2, [dep], packagePatterns, reporter);
-  const add2 = new LightweightAdd(args2, flags, config, reporter, lockfile2);
-  await add2.init();
+  // Dedupe the updated lockfile, and replace the version requirement in it
+  // (which will currently be an exact version, not a requirement range)
   const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"), depName);
+  const replacedDeclarationYarnLock = replaceDeclaration(
+    originalYarnLock,
+    dedupedYarnLock,
+    depName,
+    requirements.requirement
+  );
 
   // Do a normal install to ensure the lockfile doesn't change when we do
-  fs.writeFileSync(path.join(directory, "yarn.lock"), dedupedYarnLock);
+  fs.writeFileSync(
+    path.join(directory, "yarn.lock"),
+    replacedDeclarationYarnLock
+  );
   fs.writeFileSync(path.join(directory, "package.json"), originalPackageJson);
-  const lockfile3 = await Lockfile.fromDirectory(directory, reporter);
-  const install2 = new LightweightInstall(flags, config, reporter, lockfile3);
+  const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
+  const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
   await install2.init();
+  var updatedYarnLock = readFile("yarn.lock");
 
-  const updatedYarnLock = readFile("yarn.lock");
+  updatedYarnLock = recoverVersionComments(originalYarnLock, updatedYarnLock);
 
   return {
-    "yarn.lock": recoverVersionComments(originalYarnLock, updatedYarnLock)
+    "yarn.lock": updatedYarnLock
   };
 }
 

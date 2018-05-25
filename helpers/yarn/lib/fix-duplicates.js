@@ -11,7 +11,6 @@ module.exports = (data, includePackages = []) => {
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
   const packages = {};
-  const result = [];
   const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(json).forEach(([name, pkg]) => {
