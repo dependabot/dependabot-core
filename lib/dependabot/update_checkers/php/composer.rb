@@ -19,16 +19,7 @@ module Dependabot
           return nil if path_dependency?
 
           # Fall back to latest_resolvable_version if no listings found
-          return latest_resolvable_version if registry_versions.empty?
-
-          versions =
-            registry_versions.
-            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
-            map { |version| version_class.new(version.gsub(/^v/, "")) }
-
-          versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          versions.max
+          latest_version_from_registry || latest_resolvable_version
         end
 
         def latest_resolvable_version
@@ -39,6 +30,7 @@ module Dependabot
               credentials: credentials,
               dependency: dependency,
               dependency_files: dependency_files,
+              latest_allowable_version: latest_version_from_registry,
               requirements_to_unlock: :own
             ).latest_resolvable_version
         end
@@ -51,6 +43,7 @@ module Dependabot
               credentials: credentials,
               dependency: dependency,
               dependency_files: dependency_files,
+              latest_allowable_version: latest_version_from_registry,
               requirements_to_unlock: :none
             ).latest_resolvable_version
         end
@@ -69,6 +62,17 @@ module Dependabot
         def latest_version_resolvable_with_full_unlock?
           # Full unlock checks aren't implemented for Composer (yet)
           false
+        end
+
+        def latest_version_from_registry
+          versions =
+            registry_versions.
+            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
+            map { |version| version_class.new(version.gsub(/^v/, "")) }
+
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          versions.max
         end
 
         def wants_prerelease?

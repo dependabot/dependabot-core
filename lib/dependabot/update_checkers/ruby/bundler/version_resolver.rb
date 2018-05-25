@@ -31,9 +31,9 @@ module Dependabot
 
           def initialize(dependency:, dependency_files:, credentials:,
                          ignored_versions:)
-            @dependency = dependency
+            @dependency       = dependency
             @dependency_files = dependency_files
-            @credentials = credentials
+            @credentials      = credentials
             @ignored_versions = ignored_versions
           end
 

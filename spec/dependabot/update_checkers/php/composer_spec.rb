@@ -56,6 +56,13 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
   let(:manifest_fixture_name) { "exact_version" }
   let(:lockfile_fixture_name) { "exact_version" }
 
+  before do
+    sanitized_name = dependency_name.downcase.tr("/", ":")
+    fixture = fixture("php", "packagist_responses", "#{sanitized_name}.json")
+    url = "https://packagist.org/p/#{dependency_name.downcase}.json"
+    stub_request(:get, url).to_return(status: 200, body: fixture)
+  end
+
   describe "#latest_version" do
     subject { checker.latest_version }
 
@@ -273,6 +280,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           content: fixture("php", "composer_files", "path_dep")
         )
       end
+      before do
+        stub_request(:get, "https://packagist.org/p/path_dep/path_dep.json").
+          to_return(status: 404)
+      end
 
       context "that is not the dependency we're checking" do
         it { is_expected.to eq(Gem::Version.new("1.22.1")) }
@@ -304,27 +315,26 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+    end
+
     context "without a lockfile" do
       let(:files) { [composer_file] }
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
       context "when there are conflicts at the version specified" do
         let(:manifest_fixture_name) { "conflicts" }
-
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "phpdocumentor/reflection-docblock",
-            version: nil,
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "^4.3",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "composer"
-          )
+        let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+        let(:dependency_version) { nil }
+        let(:requirements) do
+          [{
+            file: "composer.json",
+            requirement: "^4.3",
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be >= Gem::Version.new("4.3.0") }
       end
@@ -345,6 +355,10 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           name: "components/path_dep/composer.json",
           content: fixture("php", "composer_files", "path_dep")
         )
+      end
+      before do
+        stub_request(:get, "https://packagist.org/p/path_dep/path_dep.json").
+          to_return(status: 404)
       end
 
       context "that is not the dependency we're checking" do
@@ -372,20 +386,21 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:lockfile_fixture_name) { "private_registry" }
       before { `composer clear-cache --quiet` }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "dependabot/dummy-pkg-a",
-          version: nil,
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { nil }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "*",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      before do
+        url = "https://php.fury.io/dependabot-throwaway/packages.json"
+        stub_request(:get, url).
+          to_return(status: 200, body: fixture("php", "gemfury_response.json"))
       end
 
       context "with good credentials" do
@@ -438,14 +453,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
       context "with no credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
         end
 
         it "raises a helpful error message" do
@@ -461,20 +474,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "with a replaced dependency" do
       let(:manifest_fixture_name) { "replaced_dependency" }
       let(:lockfile_fixture_name) { "replaced_dependency" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "illuminate/console",
-          version: nil,
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "5.5.*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "illuminate/console" }
+      let(:dependency_version) { nil }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "5.5.*",
+          groups: [],
+          source: nil
+        }]
       end
       it { is_expected.to be_nil }
     end
@@ -482,20 +490,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "with a replaced direct dependency" do
       let(:manifest_fixture_name) { "replaced_direct_dependency" }
       let(:files) { [composer_file] }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "neos/flow",
-          version: nil,
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "neos/flow" }
+      let(:dependency_version) { nil }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "*",
+          groups: [],
+          source: nil
+        }]
       end
       it { is_expected.to be_nil }
     end
@@ -503,20 +506,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "with a PEAR dependency" do
       let(:manifest_fixture_name) { "pear" }
       let(:lockfile_fixture_name) { "pear" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "pear-pear.horde.org/Horde_Date",
-          version: "2.4.1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "^2.4.0@stable",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "pear-pear.horde.org/Horde_Date" }
+      let(:dependency_version) { "2.4.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "^2.4.0@stable",
+          groups: [],
+          source: nil
+        }]
       end
 
       it "is between 2.0.0 and 3.0.0" do
@@ -528,20 +526,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "with a version conflict at the latest version" do
       let(:manifest_fixture_name) { "version_conflict_at_latest" }
       let(:lockfile_fixture_name) { "version_conflict_at_latest" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "doctrine/dbal",
-          version: "2.1.5",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "doctrine/dbal" }
+      let(:dependency_version) { "2.1.5" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
       end
 
       it "is between 2.0.0 and 3.0.0" do
@@ -552,20 +545,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
     context "with a version conflict in the current files" do
       let(:manifest_fixture_name) { "version_conflict" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "monolog/monolog",
-          version: "2.1.5",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "monolog/monolog" }
+      let(:dependency_version) { "2.1.5" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
       end
 
       it { is_expected.to be_nil }
@@ -574,20 +562,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "with an update that can't resolve" do
       let(:manifest_fixture_name) { "version_conflict_on_update" }
       let(:lockfile_fixture_name) { "version_conflict_on_update" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "longman/telegram-bot",
-          version: "2.1.5",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "longman/telegram-bot" }
+      let(:dependency_version) { "2.1.5" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
       end
 
       it { is_expected.to be_nil }
@@ -599,20 +582,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       it { is_expected.to be >= Gem::Version.new("1.22.1") }
 
       context "that is not the gem we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "symfony/polyfill-mbstring",
-            version: "1.0.1",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "composer"
-          )
+        let(:dependency_name) { "symfony/polyfill-mbstring" }
+        let(:dependency_version) { "1.0.1" }
+        let(:requirements) do
+          [{
+            file: "composer.json",
+            requirement: "1.0.*",
+            groups: [],
+            source: nil
+          }]
         end
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
@@ -650,20 +628,23 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "when an alternative source is specified" do
       let(:manifest_fixture_name) { "alternative_source" }
       let(:lockfile_fixture_name) { "alternative_source" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "wpackagist-plugin/acf-to-rest-api",
-          version: "2.2.1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "*",
-              groups: ["runtime"],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "wpackagist-plugin/acf-to-rest-api" }
+      let(:dependency_version) { "2.2.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "*",
+          groups: ["runtime"],
+          source: nil
+        }]
+      end
+
+      before do
+        stub_request(:get, "https://wpackagist.org/packages.json").
+          to_return(
+            status: 200,
+            body: fixture("php", "wpackagist_response.json")
+          )
       end
 
       it { is_expected.to be >= Gem::Version.new("3.0.2") }
@@ -672,20 +653,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "when an autoload is specified" do
       let(:manifest_fixture_name) { "autoload" }
       let(:lockfile_fixture_name) { "autoload" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "illuminate/support",
-          version: "v5.2.7",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "^5.2.0",
-              groups: ["runtime"],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "illuminate/support" }
+      let(:dependency_version) { "5.2.7" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "^5.2.0",
+          groups: ["runtime"],
+          source: nil
+        }]
       end
 
       it { is_expected.to be >= Gem::Version.new("5.2.30") }
@@ -694,20 +670,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
     context "when a sub-dependency would block the update" do
       let(:manifest_fixture_name) { "subdependency_update_required" }
       let(:lockfile_fixture_name) { "subdependency_update_required" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "illuminate/support",
-          version: "v5.2.7",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "^5.2.0",
-              groups: ["runtime"],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "illuminate/support" }
+      let(:dependency_version) { "5.2.7" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "^5.2.0",
+          groups: ["runtime"],
+          source: nil
+        }]
       end
 
       # 5.5.0 series and up require an update to illuminate/contracts
