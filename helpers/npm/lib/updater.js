@@ -4,8 +4,8 @@
  *  - directory containing an up-to-date package.json and a package-lock.json
  *    to be updated
  *  - name of the dependency to be updated
- *  - new dependency version (unused)
- *  - previous requirements for this dependency (unused)
+ *  - new dependency version
+ *  - previous requirements for this dependency
  *
  * Outputs:
  *  - updated package.json and package-lock.json files

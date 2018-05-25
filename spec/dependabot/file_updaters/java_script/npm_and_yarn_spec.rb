@@ -478,7 +478,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "fetch-factory",
-          version: "0.2.1",
+          version: "0.2.0",
           package_manager: "npm_and_yarn",
           requirements:
             [{
@@ -504,7 +504,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           to match_array(%w(yarn.lock package-lock.json))
 
         expect(updated_yarn_lock.content).
-          to include("fetch-factory@*:\n  version \"0.2.1\"")
+          to include("fetch-factory@*:\n  version \"0.2.0\"")
+        expect(updated_npm_lock.content).
+          to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
       end
     end
 
@@ -656,7 +658,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "has details of the updated item, but doesn't update everything" do
           # Updates the desired dependency
           expect(updated_yarn_lock.content).
-            to include("babel-jest@^22.0.4:\n  version \"22.4.4\"")
+            to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
 
           # Doesn't update unrelated dependencies
           expect(updated_yarn_lock.content).
