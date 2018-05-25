@@ -671,7 +671,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       let(:manifest_fixture_name) { "subdependency_update_required" }
       let(:lockfile_fixture_name) { "subdependency_update_required" }
       let(:dependency_name) { "illuminate/support" }
-      let(:dependency_version) { "5.2.7" }
+      let(:dependency_version) { "5.2.0" }
       let(:requirements) do
         [{
           file: "composer.json",

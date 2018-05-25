@@ -78,7 +78,7 @@ module Dependabot
                   ]
                 ).fetch("composer.lock")
 
-              updated_content = replace_patches(updated_content)
+              updated_content = post_process_lockfile(updated_content)
               if lockfile.content == updated_content
                 raise "Expected content to change!"
               end
@@ -162,8 +162,26 @@ module Dependabot
             File.write(file.name, file.content)
           end
 
-          File.write("composer.json", updated_composer_json_content)
+          File.write("composer.json", locked_composer_json_content)
           File.write("composer.lock", lockfile.content)
+        end
+
+        def locked_composer_json_content
+          dependencies.
+            reduce(updated_composer_json_content.dup) do |content, dep|
+              updated_req = dep.version
+
+              old_req =
+                dep.requirements.find { |r| r[:file] == "composer.json" }.
+                fetch(:requirement)
+
+              regex =
+                /"#{Regexp.escape(dep.name)}"\s*:\s*"#{Regexp.escape(old_req)}"/
+
+              content.gsub(regex) do |declaration|
+                declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+              end
+            end
         end
 
         def git_dependency_reference_error(error)
@@ -177,6 +195,11 @@ module Dependabot
 
           raise unless dependency_name
           raise GitDependencyReferenceNotFound, dependency_name
+        end
+
+        def post_process_lockfile(content)
+          content = replace_patches(content)
+          replace_content_hash(content)
         end
 
         def replace_patches(updated_content)
@@ -203,6 +226,23 @@ module Dependabot
             end
           end
           content
+        end
+
+        def replace_content_hash(content)
+          existing_hash = JSON.parse(content).fetch("content-hash")
+          SharedHelpers.in_a_temporary_directory do
+            File.write("composer.json", updated_composer_json_content)
+
+            content_hash =
+              SharedHelpers.run_helper_subprocess(
+                command: "php #{php_helper_path}",
+                function: "get_content_hash",
+                env: credentials_env,
+                args: [Dir.pwd]
+              )
+
+            content.gsub(existing_hash, content_hash)
+          end
         end
 
         def php_helper_path

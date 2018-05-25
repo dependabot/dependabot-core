@@ -542,7 +542,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
-            version: "v5.6.23",
+            version: "5.6.23",
             requirements: [
               {
                 file: "composer.json",
@@ -551,7 +551,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
                 source: nil
               }
             ],
-            previous_version: "v5.2.1",
+            previous_version: "5.2.0",
             previous_requirements: [
               {
                 file: "composer.json",
@@ -566,6 +566,44 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
         it "has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"v5.6.23\"")
+          expect(updated_lockfile_content).
+            to include("ba383d0a3bf6aa0b7a1307fdc4aa46ba")
+        end
+      end
+
+      context "updating to a specific version when reqs would allow higher" do
+        let(:manifest_fixture_name) { "subdependency_update_required" }
+        let(:lockfile_fixture_name) { "subdependency_update_required" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "illuminate/support",
+            version: "5.3.0",
+            requirements: [
+              {
+                file: "composer.json",
+                requirement: "^5.2.0",
+                groups: ["runtime"],
+                source: nil
+              }
+            ],
+            previous_version: "5.2.0",
+            previous_requirements: [
+              {
+                file: "composer.json",
+                requirement: "^5.2.0",
+                groups: ["runtime"],
+                source: nil
+              }
+            ],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v5.3.0\"")
+          expect(updated_lockfile_content).
+            to include("e244eda135819216ac30441464e27d4d")
         end
       end
     end
