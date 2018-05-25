@@ -22,7 +22,7 @@ module Dependabot
         end
 
         def required_files
-        	[elm_package, exact_deps]
+        	[elm_package]
         end
 
         def elm_package

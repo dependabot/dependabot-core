@@ -1,0 +1,15 @@
+{
+    "version": "1.0.0",
+    "summary": "NoRedInk's UI",
+    "repository": "https://github.com/NoRedInk/noredink-ui.git",
+    "license": "UNLICENSED",
+    "source-directories": [
+        ".",
+    ],
+    "exposed-modules": [],
+    "native-modules": true,
+    "dependencies": {
+        "Fresheyeball/elm-restrict-number": "2.0.0 <= v <= 2.2.0",
+        "Fresheyeball/elm-tuple-extra": "2.0.0 <= v <= 3.0.0",
+    }
+}
