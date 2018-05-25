@@ -1,3 +1,8 @@
+## v0.59.17, 25 May 2018
+
+- JS: Consider ignored versions when determining version to update to
+- JS: Update FileUpdater to install a specific version
+
 ## v0.59.16, 25 May 2018
 
 - PHP: Ignore ignored versions when checking latest version
