@@ -1,3 +1,9 @@
+## v0.59.16, 25 May 2018
+
+- PHP: Ignore ignored versions when checking latest version
+- PHP: Consider ignored versions when determining version to update to
+- PHP: Update to the specific version given in dependency.version in FileUpdater
+
 ## v0.59.15, 24 May 2018
 
 - JS: Raise unhandled error if FileUpdater fails to find the version we're
