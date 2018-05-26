@@ -513,6 +513,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       context "when no change is required" do
         let(:gemfile_fixture_name) { "Gemfile" }
+        let(:dependency_version) { "1.4.0" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: "~>1.4.0", groups: [], source: nil }]
         end
@@ -701,9 +702,11 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
 
       context "when the old Gemfile didn't specify the version" do
         let(:gemfile_fixture_name) { "version_not_specified" }
+        let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
-        it "locks the updated gem to the latest version" do
-          expect(file.content).to include "business (1.8.0)"
+        it "locks the updated gem to the desired version" do
+          expect(file.content).to include "business (1.5.0)"
+          expect(file.content).to include "business\n"
         end
 
         it "doesn't change the version of the other (also outdated) gem" do

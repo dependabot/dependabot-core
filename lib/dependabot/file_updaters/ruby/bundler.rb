@@ -232,7 +232,17 @@ module Dependabot
 
           begin
             definition = build_definition(dependencies_to_unlock)
+
+            old_reqs = lock_deps_being_updated_to_exact_versions(definition)
+
             definition.resolve_remotely!
+
+            old_reqs.each do |dep_name, old_req|
+              definition.dependencies.
+                find { |d| d.name == dep_name }.
+                instance_variable_set(:@requirement, old_req)
+            end
+
             definition.to_lock
           rescue ::Bundler::GemNotFound => error
             raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
@@ -250,6 +260,17 @@ module Dependabot
             "Gemfile.lock",
             gems: dependencies_to_unlock
           )
+        end
+
+        def lock_deps_being_updated_to_exact_versions(definition)
+          dependencies.each_with_object({}) do |dep, old_reqs|
+            next unless Gem::Version.correct?(dep.version)
+            new_req = Gem::Requirement.create("= #{dep.version}")
+            defn_dep = definition.dependencies.find { |d| d.name == dep.name }
+            next unless defn_dep
+            old_reqs[dep.name] = defn_dep.requirement
+            defn_dep.instance_variable_set(:@requirement, new_req)
+          end
         end
 
         def write_temporary_dependency_files
