@@ -18,14 +18,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:dependencies) { [dependency] }
@@ -175,22 +173,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: "i18n",
             version: "0.5.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 0.5.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 0.4.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 0.5.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 0.4.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "bundler"
           )
         end
@@ -266,17 +260,15 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           )
         end
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.13.0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "http://github.com/gocardless/business"
-              }
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.13.0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "http://github.com/gocardless/business"
             }
-          ]
+          }]
         end
         let(:previous_requirements) do
           [{
@@ -650,22 +642,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               name: "public_suffix",
               version: "1.4.6",
               previous_version: "1.4.0",
-              requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.5.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.4.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: [],
+                source: nil
+              }],
               package_manager: "bundler"
             )
           end
@@ -689,14 +677,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           described_class.new(
             dependency_files: [gemfile, lockfile, ruby_version_file],
             dependencies: [dependency],
-            credentials: [
-              {
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              }
-            ]
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }]
           )
         end
 
@@ -1025,24 +1011,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           let(:dependency_version) { "1.3.1" }
           let(:dependency_previous_version) { "1.2.1" }
           let(:requirements) do
-            [
-              {
-                file: "backend/Gemfile",
-                requirement: "~> 1.3.1",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              file: "backend/Gemfile",
+              requirement: "~> 1.3.1",
+              groups: [],
+              source: nil
+            }]
           end
           let(:previous_requirements) do
-            [
-              {
-                file: "backend/Gemfile",
-                requirement: "~> 1.2.0",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              file: "backend/Gemfile",
+              requirement: "~> 1.2.0",
+              groups: [],
+              source: nil
+            }]
           end
 
           it "updates the gem just fine" do
@@ -1070,22 +1052,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               name: "statesman",
               version: "2.0.0",
               previous_version: "1.4.0",
-              requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 2.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.2.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "Gemfile",
+                requirement: "~> 2.0",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.2.0",
+                groups: [],
+                source: nil
+              }],
               package_manager: "bundler"
             )
           end
@@ -1157,22 +1135,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 name: "json",
                 version: "2.0.3",
                 previous_version: "1.8.6",
-                requirements: [
-                  {
-                    file: "example.gemspec",
-                    requirement: ">= 1.0, < 3.0",
-                    groups: [],
-                    source: nil
-                  }
-                ],
-                previous_requirements: [
-                  {
-                    file: "example.gemspec",
-                    requirement: "~> 1.0",
-                    groups: [],
-                    source: nil
-                  }
-                ],
+                requirements: [{
+                  file: "example.gemspec",
+                  requirement: ">= 1.0, < 3.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "example.gemspec",
+                  requirement: "~> 1.0",
+                  groups: [],
+                  source: nil
+                }],
                 package_manager: "bundler"
               )
             end
@@ -1200,22 +1174,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "5.1.0",
-          requirements: [
-            {
-              file: "example.gemspec",
-              requirement: ">= 4.6, < 6.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "example.gemspec",
-              requirement: "~> 4.6",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "example.gemspec",
+            requirement: ">= 4.6, < 6.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "example.gemspec",
+            requirement: "~> 4.6",
+            groups: [],
+            source: nil
+          }],
           package_manager: "bundler"
         )
       end
@@ -1235,22 +1205,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             Dependabot::Dependency.new(
               name: dependency_name,
               version: "5.1.0",
-              requirements: [
-                {
-                  file: "example.gemspec",
-                  requirement: "~> 4.6",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "example.gemspec",
-                  requirement: "~> 4.6",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "example.gemspec",
+                requirement: "~> 4.6",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "example.gemspec",
+                requirement: "~> 4.6",
+                groups: [],
+                source: nil
+              }],
               package_manager: "bundler"
             )
           end
@@ -1432,22 +1398,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             name: "business",
             version: "1.5.0",
             previous_version: "1.4.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.5.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.4.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "bundler"
           )
         end
@@ -1465,22 +1427,18 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "octokit",
-            requirements: [
-              {
-                file: "some.gemspec",
-                requirement: ">= 4.6, < 6.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "some.gemspec",
-                requirement: "~> 4.6",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "some.gemspec",
+              requirement: ">= 4.6, < 6.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "some.gemspec",
+              requirement: "~> 4.6",
+              groups: [],
+              source: nil
+            }],
             package_manager: "bundler"
           )
         end
