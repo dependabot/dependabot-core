@@ -82,6 +82,16 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       expect(updated_files.first.content).to_not include("--hash=sha")
     end
 
+    context "with a custom header" do
+      let(:generated_fixture_name) { "pip_compile_custom_header.txt" }
+
+      it "preserves the header" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).to include("make upgrade")
+      end
+    end
+
     context "with hashes" do
       let(:generated_fixture_name) { "pip_compile_hashes.txt" }
 

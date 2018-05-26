@@ -61,6 +61,9 @@ module Dependabot
               dependency_files.map do |file|
                 next unless file.name.end_with?(".txt")
                 updated_content = File.read(file.name)
+
+                updated_content =
+                  replace_header_with_original(updated_content, file.content)
                 next if updated_content == file.content
 
                 file = file.dup
@@ -134,6 +137,16 @@ module Dependabot
               old_requirement: old_req[:requirement],
               new_requirement: new_req[:requirement]
             ).updated_content
+          end
+
+          def replace_header_with_original(updated_content, original_content)
+            original_header_lines =
+              original_content.lines.take_while { |l| l.start_with?("#") }
+
+            updated_content_lines =
+              updated_content.lines.drop_while { |l| l.start_with?("#") }
+
+            [*original_header_lines, *updated_content_lines].join
           end
 
           def source_pip_config_file_name
