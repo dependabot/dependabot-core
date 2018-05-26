@@ -1,3 +1,9 @@
+## v0.59.19, 26 May 2018
+
+- Python: Preserve custom headers in pip-compile generated files
+- Update rubygems and add libmysqlclient-dev to dockerfile
+- Better version string sanitization for presentation of vulnerabilities
+
 ## v0.59.18, 26 May 2018
 
 - PHP: Only catch out of memory errors in shutdown handler
