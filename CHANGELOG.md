@@ -1,3 +1,7 @@
+## v0.59.18, 26 May 2018
+
+- PHP: Only catch out of memory errors in shutdown handler
+
 ## v0.59.17, 25 May 2018
 
 - JS: Consider ignored versions when determining version to update to
