@@ -2,6 +2,9 @@ FROM ubuntu:17.10
 
 ### SYSTEM DEPENDENCIES
 
+# Everything from `make` onwards in apt-get install is only installed to ensure
+# Python support works with all packages (which may require specific libraries
+# at install time).
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
@@ -25,6 +28,7 @@ RUN apt-get update \
       llvm \
       libncurses5-dev \
       libncursesw5-dev \
+      libmysqlclient-dev \
       xz-utils \
       tk-dev \
     && locale-gen en_US.UTF-8
@@ -38,7 +42,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu artful main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
-    && gem update --system 2.7.6 \
+    && gem update --system 2.7.7 \
     && gem install --no-ri --no-rdoc bundler -v 1.16.2
 
 
