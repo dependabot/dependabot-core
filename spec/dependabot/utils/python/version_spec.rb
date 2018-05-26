@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Utils::Python::Version do
 
     context "with nil" do
       let(:version_string) { nil }
-      it { is_expected.to eq(true) }
+      it { is_expected.to eq(false) }
     end
 
     context "with an invalid version" do
@@ -42,11 +42,6 @@ RSpec.describe Dependabot::Utils::Python::Version do
     context "with a local version" do
       let(:version_string) { "1.0.0+gc.1" }
       it { is_expected.to eq "1.0.0+gc.1" }
-    end
-
-    context "with an empty string" do
-      let(:version_string) { "" }
-      it { is_expected.to eq("") }
     end
   end
 

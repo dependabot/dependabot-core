@@ -220,42 +220,5 @@
         "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/v1.5.0",
         "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/v1.5.0",
         "body": ""
-    },
-    {
-        "url": "https://api.github.com/repos/gocardless/business/releases/4999481",
-        "assets_url": "https://api.github.com/repos/gocardless/business/releases/4999481/assets",
-        "upload_url": "https://uploads.github.com/repos/gocardless/business/releases/4999481/assets{?name,label}",
-        "html_url": "https://github.com/gocardless/business/releases/tag/sad-release",
-        "id": 4999481,
-        "tag_name": "sad-release",
-        "target_commitish": "444606ddc1a6543ff37199c072c829564a9a8a65",
-        "name": "sad-release",
-        "draft": false,
-        "author": {
-            "login": "jacobpgn",
-            "id": 6728978,
-            "avatar_url": "https://avatars3.githubusercontent.com/u/6728978?v=3",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/jacobpgn",
-            "html_url": "https://github.com/jacobpgn",
-            "followers_url": "https://api.github.com/users/jacobpgn/followers",
-            "following_url": "https://api.github.com/users/jacobpgn/following{/other_user}",
-            "gists_url": "https://api.github.com/users/jacobpgn/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/jacobpgn/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/jacobpgn/subscriptions",
-            "organizations_url": "https://api.github.com/users/jacobpgn/orgs",
-            "repos_url": "https://api.github.com/users/jacobpgn/repos",
-            "events_url": "https://api.github.com/users/jacobpgn/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/jacobpgn/received_events",
-            "type": "User",
-            "site_admin": false
-        },
-        "prerelease": false,
-        "created_at": "2016-12-23T11:41:31Z",
-        "published_at": "2016-12-23T11:42:20Z",
-        "assets": [],
-        "tarball_url": "https://api.github.com/repos/gocardless/business/tarball/sad-release",
-        "zipball_url": "https://api.github.com/repos/gocardless/business/zipball/sad-release",
-        "body": ""
     }
 ]

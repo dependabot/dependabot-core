@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Utils::Elixir::Version do
 
     context "with nil" do
       let(:version_string) { nil }
-      it { is_expected.to eq(true) }
+      it { is_expected.to eq(false) }
     end
 
     context "with an invalid version" do
