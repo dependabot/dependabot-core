@@ -393,7 +393,8 @@ module Dependabot
         %w(patched_versions unaffected_versions affected_versions).each do |tp|
           type = tp.split("_").first.capitalize
           next unless details[tp]
-          versions_string = details[tp].any? ? details[tp].join(", ") : "none"
+          versions_string = details[tp].any? ? details[tp].join("; ") : "none"
+          versions_string = versions_string.gsub(/(?<!\\)~/, '\~')
           msg += "> #{type} versions: #{versions_string}\n"
         end
         msg
