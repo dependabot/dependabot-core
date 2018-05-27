@@ -33,12 +33,14 @@ module Dependabot
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
                          unlock_requirement: true,
-                         replacement_git_pin: nil)
-            @dependency_files = dependency_files
-            @dependency = dependency
-            @remove_git_source = remove_git_source
-            @unlock_requirement = unlock_requirement
-            @replacement_git_pin = replacement_git_pin
+                         replacement_git_pin: nil,
+                         latest_allowable_version: nil)
+            @dependency_files         = dependency_files
+            @dependency               = dependency
+            @remove_git_source        = remove_git_source
+            @unlock_requirement       = unlock_requirement
+            @replacement_git_pin      = replacement_git_pin
+            @latest_allowable_version = latest_allowable_version
           end
 
           # rubocop:disable Metrics/AbcSize
@@ -86,7 +88,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files, :dependency, :replacement_git_pin
+          attr_reader :dependency_files, :dependency, :replacement_git_pin,
+                      :latest_allowable_version
 
           def remove_git_source?
             @remove_git_source
@@ -135,7 +138,7 @@ module Dependabot
 
           def gemfile_content_for_update_check(file)
             content = file.content
-            content = replace_gemfile_constraint(content) if unlock_requirement?
+            content = replace_gemfile_constraint(content, file.name)
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
             content = update_ruby_version(content) if file == gemfile
@@ -144,23 +147,23 @@ module Dependabot
 
           def gemspec_content_for_update_check(gemspec)
             content = gemspec.content
-            content = replace_gemspec_constraint(content) if unlock_requirement?
+            content = replace_gemspec_constraint(content, gemspec.name)
             sanitize_gemspec_content(content)
           end
 
-          def replace_gemfile_constraint(content)
+          def replace_gemfile_constraint(content, filename)
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemfile,
-              updated_requirement: updated_version_requirement_string
+              updated_requirement: updated_version_requirement_string(filename)
             ).rewrite(content)
           end
 
-          def replace_gemspec_constraint(content)
+          def replace_gemspec_constraint(content, filename)
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemspec,
-              updated_requirement: updated_version_requirement_string
+              updated_requirement: updated_version_requirement_string(filename)
             ).rewrite(content)
           end
 
@@ -172,19 +175,36 @@ module Dependabot
               rewrite(gemspec_content)
           end
 
-          def updated_version_requirement_string
-            return ">= 0" if dependency.version&.match?(/^[0-9a-f]{40}$/)
-            return ">= #{dependency.version}" if dependency.version
+          def updated_version_requirement_string(filename)
+            lower_bound_req = updated_version_req_lower_bound(filename)
 
-            version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
+            return lower_bound_req if latest_allowable_version.nil?
+            unless Gem::Version.correct?(latest_allowable_version)
+              return lower_bound_req
+            end
 
-            ">= #{version_for_requirement || 0}"
+            lower_bound_req + ", <= #{latest_allowable_version}"
+          end
+
+          def updated_version_req_lower_bound(filename)
+            original_req = dependency.requirements.
+                           find { |r| r.fetch(:file) == filename }&.
+                           fetch(:requirement)
+
+            if original_req && !unlock_requirement? then original_req
+            elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
+            elsif dependency.version then ">= #{dependency.version}"
+            else
+              version_for_requirement =
+                dependency.requirements.map { |r| r[:requirement] }.
+                reject { |req_string| req_string.start_with?("<") }.
+                select { |req_string| req_string.match?(VERSION_REGEX) }.
+                map { |req_string| req_string.match(VERSION_REGEX) }.
+                select { |version| Gem::Version.correct?(version) }.
+                max_by { |version| Gem::Version.new(version) }
+
+              ">= #{version_for_requirement || 0}"
+            end
           end
 
           def remove_git_source(content)

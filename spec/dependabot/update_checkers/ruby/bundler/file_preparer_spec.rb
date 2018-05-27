@@ -11,7 +11,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
       dependency: dependency,
       remove_git_source: remove_git_source,
       unlock_requirement: unlock_requirement,
-      replacement_git_pin: replacement_git_pin
+      replacement_git_pin: replacement_git_pin,
+      latest_allowable_version: latest_allowable_version
     )
   end
 
@@ -27,11 +28,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
   end
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
-  let(:requirements) { [] }
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
   let(:dependency_name) { "business" }
   let(:remove_git_source) { false }
   let(:unlock_requirement) { true }
   let(:replacement_git_pin) { nil }
+  let(:latest_allowable_version) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
@@ -52,12 +56,35 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
         let(:version) { "1.4.3" }
 
-        its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
-        its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }
+        its(:content) { is_expected.to include(%("business", ">= 1.4.3"\n)) }
+        its(:content) { is_expected.to include(%("statesman", "~> 1.2.0"\n)) }
+
+        context "with a latest allowable version" do
+          let(:latest_allowable_version) { "5.0.0" }
+
+          its(:content) do
+            is_expected.to include(%("business", ">= 1.4.3", "<= 5.0.0"\n))
+          end
+
+          context "that is a git SHA" do
+            let(:latest_allowable_version) { "d12ca5e" }
+            its(:content) do
+              is_expected.to include(%("business", ">= 1.4.3"\n))
+            end
+          end
+        end
 
         context "when asked not to unlock the requirement" do
           let(:unlock_requirement) { false }
-          its(:content) { is_expected.to include(%("business", "~> 1.4.0")) }
+          its(:content) { is_expected.to include(%("business", "~> 1.4.0"\n)) }
+
+          context "with a latest allowable version" do
+            let(:latest_allowable_version) { "5.0.0" }
+
+            its(:content) do
+              is_expected.to include(%("business", "~> 1.4.0", "<= 5.0.0"\n))
+            end
+          end
         end
       end
 

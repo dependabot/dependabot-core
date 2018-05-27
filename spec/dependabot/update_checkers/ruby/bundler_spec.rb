@@ -16,7 +16,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
   let(:credentials) do
@@ -30,6 +31,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   let(:dependency_files) { [gemfile, lockfile] }
   let(:github_token) { "token" }
   let(:directory) { "/" }
+  let(:ignored_versions) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -40,9 +42,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     )
   end
   let(:dependency_name) { "business" }
-  let(:current_version) { "1.3" }
+  let(:current_version) { "1.4.0" }
   let(:requirements) do
-    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
   end
 
   let(:gemfile) do
@@ -128,14 +130,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:lockfile_fixture_name) { "specified_source.lock" }
       let(:gemfile_fixture_name) { "specified_source" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: { type: "rubygems" }
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: { type: "rubygems" }
+        }]
       end
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
@@ -167,19 +167,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_name) { "business" }
         let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                branch: "master",
-                ref: "master"
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "master"
             }
-          ]
+          }]
         end
 
         context "when head of the gem's branch is included in a release" do
@@ -220,19 +218,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_fixture_name) { "git_source" }
 
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "a1b78a9"
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "a1b78a9"
               }
-            ]
+            }]
           end
 
           context "and the gem isn't on Rubygems" do
@@ -378,6 +374,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
         let(:target_version) { "0.8.6" }
         let(:dependency_name) { "i18n" }
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 0.7.0",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it { is_expected.to be_falsey }
       end
@@ -387,6 +391,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:lockfile_fixture_name) { "version_conflict.lock" }
         let(:target_version) { "3.6.0" }
         let(:dependency_name) { "rspec-mocks" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: "= 3.5.0", groups: [], source: nil }]
+        end
 
         it { is_expected.to be_truthy }
       end
@@ -410,24 +417,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:target_version) { "3.6.0" }
         let(:dependency_name) { "rspec-mocks" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "= 3.5.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "= 3.5.0",
+            groups: [:default],
+            source: nil
+          }]
         end
         let(:expected_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "3.6.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: "3.6.0",
+            groups: [:default],
+            source: nil
+          }]
         end
 
         it "returns the right array of updated dependencies" do
@@ -474,6 +477,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "with no version specified" do
         let(:gemfile_fixture_name) { "version_not_specified" }
         let(:lockfile_fixture_name) { "version_not_specified.lock" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+        end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
@@ -481,12 +487,28 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       context "with a greater than or equal to matcher" do
         let(:gemfile_fixture_name) { "gte_matcher" }
         let(:lockfile_fixture_name) { "gte_matcher.lock" }
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: ">= 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
 
       context "with multiple requirements" do
         let(:gemfile_fixture_name) { "version_between_bounds" }
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "> 1.0.0, < 1.5.0",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
@@ -534,19 +556,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_name) { "business" }
         let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                branch: "master",
-                ref: "master"
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "master"
             }
-          ]
+          }]
         end
 
         before do
@@ -595,19 +615,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:dependency_name) { "prius" }
           let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/prius",
-                  branch: "master",
-                  ref: "master"
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
               }
-            ]
+            }]
           end
 
           before do
@@ -646,19 +664,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_fixture_name) { "git_source" }
 
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "a1b78a9"
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "a1b78a9"
               }
-            ]
+            }]
           end
 
           context "and the reference isn't included in the new version" do
@@ -793,19 +809,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:gemfile_fixture_name) { "git_source_with_version" }
           let(:lockfile_fixture_name) { "git_source_with_version.lock" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.0.0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "master"
-                }
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.0.0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "master"
               }
-            ]
+            }]
           end
           let(:dependency_name) { "business" }
           let(:current_version) { "c5bf1bd47935504072ac0eba1006cf4d67af6a7a" }
@@ -841,19 +855,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:dependency_name) { "prius" }
           let(:current_version) { "2.0.0" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.0.0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/prius",
-                  branch: "master",
-                  ref: "master"
-                }
+            [{
+              file: "Gemfile",
+              requirement: "~> 1.0.0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/prius",
+                branch: "master",
+                ref: "master"
               }
-            ]
+            }]
           end
 
           before do
@@ -926,19 +938,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:dependency_name) { "onfido" }
           let(:current_version) { "1.8.0" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/hvssle/onfido",
-                  branch: "master",
-                  ref: "master"
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/hvssle/onfido",
+                branch: "master",
+                ref: "master"
               }
-            ]
+            }]
           end
 
           it { is_expected.to be_nil }
@@ -1011,6 +1021,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "given a Gemfile that specifies a Ruby version" do
       let(:gemfile_fixture_name) { "explicit_ruby" }
       let(:dependency_name) { "statesman" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }]
+      end
 
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
@@ -1025,6 +1038,22 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency_files) { [gemfile, gemspec] }
       let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:gemspec_fixture_name) { "small_example" }
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.2.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [],
+            source: nil
+          }
+        ]
+      end
 
       before do
         allow(checker).
@@ -1187,6 +1216,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:lockfile_fixture_name) { "version_conflict_no_req_change.lock" }
         let(:dependency_name) { "ibandit" }
         let(:current_version) { "0.1.0" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: "~> 0.1", groups: [], source: nil }]
+        end
 
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.
