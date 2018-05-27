@@ -12,6 +12,7 @@ module Dependabot
         require_relative "bundler/file_preparer"
         require_relative "bundler/requirements_updater"
         require_relative "bundler/version_resolver"
+        require_relative "bundler/latest_version_finder"
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
@@ -94,7 +95,7 @@ module Dependabot
         def latest_version_details(remove_git_source: false)
           @latest_version_details ||= {}
           @latest_version_details[remove_git_source] ||=
-            version_resolver(remove_git_source: remove_git_source).
+            latest_version_finder(remove_git_source: remove_git_source).
             latest_version_details
         end
 
@@ -267,6 +268,24 @@ module Dependabot
               )
 
               VersionResolver.new(
+                dependency: dependency,
+                dependency_files: prepared_dependency_files,
+                credentials: credentials,
+                ignored_versions: ignored_versions
+              )
+            end
+        end
+
+        def latest_version_finder(remove_git_source:)
+          @latest_version_finder ||= {}
+          @latest_version_finder[remove_git_source] ||=
+            begin
+              prepared_dependency_files = prepared_dependency_files(
+                remove_git_source: remove_git_source,
+                unlock_requirement: true
+              )
+
+              LatestVersionFinder.new(
                 dependency: dependency,
                 dependency_files: prepared_dependency_files,
                 credentials: credentials,
