@@ -1,3 +1,7 @@
+## v0.59.24, 28 May 2018
+
+- Python: Raise a DependencyFileNotEvaluatable for impossible requirements
+
 ## v0.59.23, 28 May 2018
 
 - Maven: Continue processing if only some dependencies use inaccessible
