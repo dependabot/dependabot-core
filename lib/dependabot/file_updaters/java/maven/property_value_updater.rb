@@ -25,8 +25,10 @@ module Dependabot
             filename = declaration_details.fetch(:file)
 
             pom_to_update = dependency_files.find { |f| f.name == filename }
-            updated_content = pom_to_update.content.gsub(
-              %r{<#{Regexp.quote(node.name)}>.*</#{Regexp.quote(node.name)}>},
+            updated_content = pom_to_update.content.sub(
+              %r{<#{Regexp.quote(node.name)}>
+                 \s*#{Regexp.quote(node.content)}\s*
+                 </#{Regexp.quote(node.name)}>}xm,
               "<#{node.name}>#{updated_value}</#{node.name}>"
             )
 

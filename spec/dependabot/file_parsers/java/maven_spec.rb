@@ -247,7 +247,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       context "where the property is the project version" do
         let(:pom_body) { fixture("java", "poms", "project_version_pom.xml") }
 
-        its(:length) { is_expected.to eq(2) }
+        its(:length) { is_expected.to eq(3) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }

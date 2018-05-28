@@ -370,6 +370,62 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               to include("<version>${springframework.version}</version>")
           end
         end
+
+        context "with a version that could accidentally replace others" do
+          let(:pom_body) do
+            fixture("java", "poms", "project_version_pom.xml")
+          end
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-context",
+                version: "5.0.0.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "5.0.0.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "project.version" }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "0.0.2-RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "project.version" }
+                }],
+                package_manager: "maven"
+              ),
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "5.0.0.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "5.0.0.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "project.version" }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "0.0.2-RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "project.version" }
+                }],
+                package_manager: "maven"
+              )
+            ]
+          end
+
+          it "updates the version in the POM" do
+            expect(updated_pom_file.content).
+              to include("<artifactId>basic-pom</artifactId>\n  "\
+                         "<version>5.0.0.RELEASE</version>")
+            expect(updated_pom_file.content).
+              to include("<version>4.5.3</version>")
+          end
+        end
       end
     end
 
