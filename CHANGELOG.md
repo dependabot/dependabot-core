@@ -1,3 +1,9 @@
+## v0.59.20, 28 May 2018
+
+- Java: More careful updating for property versions
+- Ruby: Update to the version given in FileUpdater (don't just unlock)
+- Ruby: Include upper bound in FilePreparer if given a latest_allowable_version
+
 ## v0.59.19, 26 May 2018
 
 - Python: Preserve custom headers in pip-compile generated files
