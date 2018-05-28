@@ -14,7 +14,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     described_class.new(
       dependency: dependency,
       dependency_files: files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
 
@@ -26,6 +27,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       "password" => "token"
     }]
   end
+  let(:ignored_versions) { [] }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
@@ -71,6 +73,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     context "when the user wants pre-releases" do
       let(:version) { "1.4.0-rc.0" }
       it { is_expected.to eq(Gem::Version.new("1.5.0-rc.0")) }
+    end
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.2.5")) }
     end
 
     context "when the dependency doesn't have a requirement" do

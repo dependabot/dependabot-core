@@ -4,6 +4,7 @@ require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils/elixir/requirement"
 
 require "json"
 
@@ -201,7 +202,8 @@ module Dependabot
             select { |release| version_class.correct?(release["version"]) }.
             map { |release| version_class.new(release["version"]) }
 
-          versions = versions.reject(&:prerelease?) unless wants_prerelease?
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
           versions.max
         end
 
@@ -231,6 +233,11 @@ module Dependabot
           dependency.requirements.any? do |req|
             req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
           end
+        end
+
+        def ignore_reqs
+          ignored_versions.
+            map { |req| Utils::Elixir::Requirement.new(req.split(",")) }
         end
 
         def dependency_url
