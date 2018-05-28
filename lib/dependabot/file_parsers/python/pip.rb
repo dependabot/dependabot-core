@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils/python/requirement"
 require "dependabot/errors"
 
 module Dependabot
@@ -145,11 +146,14 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
+            requirements = SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python #{python_helper_path}",
               function: "parse_requirements",
               args: [Dir.pwd]
             )
+
+            check_requirements(requirements)
+            requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
           evaluation_errors = %w(InstallationError RequirementsFileParseError)
@@ -162,15 +166,27 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
+            requirements = SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python #{python_helper_path}",
               function: "parse_setup",
               args: [Dir.pwd]
             )
+
+            check_requirements(requirements)
+            requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("InstallationError")
           raise Dependabot::DependencyFileNotEvaluatable, error.message
+        end
+
+        def check_requirements(requirements)
+          requirements.each do |dep|
+            next unless dep["requirement"]
+            Utils::Python::Requirement.new(dep["requirement"].split(","))
+          rescue Gem::Requirement::BadRequirementError => error
+            raise Dependabot::DependencyFileNotEvaluatable, error.message
+          end
         end
 
         def write_temporary_dependency_files

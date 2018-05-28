@@ -26,10 +26,8 @@ module Dependabot
 
           def updated_requirements
             requirements.map do |req|
-              if req[:file] == "setup.py"
-                updated_setup_requirement(req)
-              else
-                updated_requirement(req)
+              if req[:file] == "setup.py" then updated_setup_requirement(req)
+              else updated_requirement(req)
               end
             end
           end

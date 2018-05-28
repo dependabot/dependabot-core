@@ -688,6 +688,25 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         its(:length) { is_expected.to eq(14) }
       end
 
+      context "with an illformed_requirement" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "illformed_req.py")
+          )
+        end
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error do |error|
+              expect(error.class).
+                to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message).
+                to eq('Illformed requirement ["==2.6.1raven==5.32.0"]')
+            end
+        end
+      end
+
       context "with an `open` statement" do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
