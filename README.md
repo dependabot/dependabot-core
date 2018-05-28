@@ -1,3 +1,5 @@
+![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)
+
 # Dependabot Core
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
