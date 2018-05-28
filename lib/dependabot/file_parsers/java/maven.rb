@@ -39,29 +39,38 @@ module Dependabot
         def pomfile_dependencies(pom)
           dependency_set = DependencySet.new
 
+          errors = []
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             next unless (name = dependency_name(dependency_node, pom))
             next if internal_dependency_names.include?(name)
-            property = version_property_name(dependency_node)
 
             dependency_set <<
-              Dependency.new(
-                name: name,
-                version: dependency_version(pom, dependency_node),
-                package_manager: "maven",
-                requirements: [{
-                  requirement: dependency_requirement(pom, dependency_node),
-                  file: pom.name,
-                  groups: [],
-                  source: nil,
-                  metadata: property ? { property_name: property } : nil
-                }]
-              )
+              dependency_from_dependency_node(pom, dependency_node, name)
+          rescue DependencyFileNotEvaluatable => error
+            errors << error
           end
 
+          raise errors.first if errors.any? && dependency_set.dependencies.none?
           dependency_set
+        end
+
+        def dependency_from_dependency_node(pom, dependency_node, name)
+          property = version_property_name(dependency_node)
+
+          Dependency.new(
+            name: name,
+            version: dependency_version(pom, dependency_node),
+            package_manager: "maven",
+            requirements: [{
+              requirement: dependency_requirement(pom, dependency_node),
+              file: pom.name,
+              groups: [],
+              source: nil,
+              metadata: property ? { property_name: property } : nil
+            }]
+          )
         end
 
         def dependency_name(dependency_node, pom)

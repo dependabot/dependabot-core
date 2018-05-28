@@ -257,15 +257,13 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
             expect(dependency.name).to eq("org.springframework:spring-beans")
             expect(dependency.version).to eq("0.0.2-RELEASE")
             expect(dependency.requirements).to eq(
-              [
-                {
-                  requirement: "0.0.2-RELEASE",
-                  file: "pom.xml",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "project.version" }
-                }
-              ]
+              [{
+                requirement: "0.0.2-RELEASE",
+                file: "pom.xml",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "project.version" }
+              }]
             )
           end
         end
@@ -274,12 +272,25 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       context "when the property is missing" do
         let(:pom_body) { fixture("java", "poms", "missing_property.xml") }
 
-        it "raises a helpful error" do
-          expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
-              expect(error.message).
-                to eq("Property not found: springframework.version")
-            end
+        its(:length) { is_expected.to eq(2) }
+
+        it "excludes the dependencies that use a missing property" do
+          expect(dependencies.map(&:name)).
+            to match_array(
+              %w(org.apache.httpcomponents:httpclient com.google.guava:guava)
+            )
+        end
+
+        context "and is required for all dependencies" do
+          let(:pom_body) { fixture("java", "poms", "missing_property_all.xml") }
+
+          it "raises a helpful error" do
+            expect { parser.parse }.
+              to raise_error(Dependabot::DependencyFileNotEvaluatable) do |err|
+                expect(err.message).
+                  to eq("Property not found: springframework.version")
+              end
+          end
         end
       end
     end
