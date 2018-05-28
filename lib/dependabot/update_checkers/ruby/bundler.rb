@@ -264,7 +264,8 @@ module Dependabot
             begin
               prepared_dependency_files = prepared_dependency_files(
                 remove_git_source: remove_git_source,
-                unlock_requirement: unlock_requirement
+                unlock_requirement: unlock_requirement,
+                latest_allowable_version: latest_version
               )
 
               VersionResolver.new(

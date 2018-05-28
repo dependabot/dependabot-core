@@ -1,0 +1,1009 @@
+[
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-03-21T00:00:00.000Z",
+        "created_at": "2018-03-21T10:45:05.279Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 2386,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.12",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "7d04f534112db8a832ddee9ba130f6b0f1e8ec89e38d7a1f937eaf527238cb38",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-03-01T00:00:00.000Z",
+        "created_at": "2018-03-01T13:23:17.744Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1273,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.11",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "33d3d5c791980a5fb045928e75f3181f37d9ec325eb70bd4d7d15c3da65f24bc",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-02-21T00:00:00.000Z",
+        "created_at": "2018-02-21T14:29:39.439Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 560,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.10",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8cbc1b3ac7472df6d3f15d24c8be815be42562f4c6ee2fb60efe043d193f44f2",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-02-08T00:00:00.000Z",
+        "created_at": "2018-02-08T11:01:54.328Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 725,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.9",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "71a607de1ea6a2ffc25223bbb4ee7511fef01dcbe2357491cdfe0a327817d274",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2017-12-20T00:00:00.000Z",
+        "created_at": "2017-12-20T13:18:08.377Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1413,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.7",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "1ad4e660a14ff48bd2809f33c47f8d5f1d87f45e71be271a1070f4b85fffaba1",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2017-08-17T00:00:00.000Z",
+        "created_at": "2017-08-17T08:34:04.726Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 2389,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.6",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ff2bf7a8a24e38f59f06d6abe616d1ce652250c38a999a6cbf82e890f132fabc",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2017-06-16T00:00:00.000Z",
+        "created_at": "2017-06-16T08:43:04.290Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1793,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "00072e7bcb30bff7d7293f738f5ef023deee46a816ed322893306a69d19674d5",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2017-03-14T00:00:00.000Z",
+        "created_at": "2017-03-14T12:08:42.356Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1779,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "50436cad81e40c4d69a7b31fc9f479224565de9f9e48429f9195a3e7dc7c0f03",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2017-03-09T00:00:00.000Z",
+        "created_at": "2017-03-09T14:33:02.955Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 478,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8b2da19ad2f46ea1a4a05d3c39a6a2b3cbc5a794713b3679d1c986ae9e8fa6da",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-07-04T00:00:00.000Z",
+        "created_at": "2016-07-04T21:46:26.748Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 15083,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "1eaef72e524f0fd51faa545c56dc0355a6dd7532468992c6555377c9548dd9fd",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-06-05T00:00:00.000Z",
+        "created_at": "2016-06-05T16:31:12.841Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 998,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "6b1afef940652f08c59f90200e92e9ba6c1af5ed042ed678658f8546cdd5e931",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-03-30T00:00:00.000Z",
+        "created_at": "2016-03-30T09:00:56.530Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1247,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b1ec10ac2233e57137cf4084d6fd70dbaf7d8fa3bb829dcf94722b69cf838027",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-03-06T00:00:00.000Z",
+        "created_at": "2016-03-06T22:59:21.136Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1470,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.10.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "1695dd18d7ea43fb61f1c67090c5079428fd49e1cda3a56d0653c7ed7a0d1360",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-02-25T00:00:00.000Z",
+        "created_at": "2016-02-25T16:37:03.197Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 819,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.10.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "22c78cb9ba03ffe6d10961f2b71264456f03dcefaf594ef1931a50e9cb835807",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-01-26T00:00:00.000Z",
+        "created_at": "2016-01-26T10:23:45.666Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1170,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.9.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "854cf1ff2cd2c8730fae241107a15410c5e306c5beb39d15207ab986ac34e4db",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-01-25T00:00:00.000Z",
+        "created_at": "2016-01-25T17:50:15.535Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 726,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.9.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "98ef6508dbad1f35c7c87cf4f05040c690c155e555f33b8179e498406b47416d",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2016-01-22T00:00:00.000Z",
+        "created_at": "2016-01-22T11:26:15.996Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 780,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.8",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "12fee8e25d0daf49a2ad35579511a3d0e15f20bcfb7688f4b3c2b6f31cf15777",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-12-08T00:00:00.000Z",
+        "created_at": "2015-12-08T22:04:01.941Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1194,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.7",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "9433c3f0676b3fc68fb0f36b22ba6bdd1889cecc68c0a2a87274321f074215de",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-12-06T00:00:00.000Z",
+        "created_at": "2015-12-06T22:06:39.753Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 797,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.6",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "d6cfbe03872b164fff47e83ce8f174b878a2fb9f61a786232a2196b9a919d3a6",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-11-20T00:00:00.000Z",
+        "created_at": "2015-11-20T02:03:50.851Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 965,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "917e87728ade0ba3b5d1ec9bd04389fac18f94d5fa279407256b69180d99f67c",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-10-15T00:00:00.000Z",
+        "created_at": "2015-10-15T16:43:21.008Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1394,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "2a1ab9f24fecf51ddf49cf1fb6d1ac13b29dfaeff384ea5d06f0c100cd45be3d",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-09-05T00:00:00.000Z",
+        "created_at": "2015-09-05T10:27:37.982Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1210,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b29a58d7d4bfe2470a68a3d0ec73a3c15e053a30b8a35395a15ba5cbb77d67f1",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-09-05T00:00:00.000Z",
+        "created_at": "2015-09-05T10:16:45.063Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 754,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "2d46747757b705984895791167d07f969d0675b1c753581b184eaf746a31554f",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-08-14T00:00:00.000Z",
+        "created_at": "2015-08-14T10:13:19.510Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1451,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "340377082b2fa8f683e22072d744e3f64dbdd302c8ae1a1ce50ae8fa02f99e72",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-08-14T00:00:00.000Z",
+        "created_at": "2015-08-14T09:10:03.474Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1100,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "dd6904126d60f77c3f4a2809d03fb6322f4334e4c388d955ea8c29c733055f38",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-08-11T00:00:00.000Z",
+        "created_at": "2015-08-11T11:10:27.678Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1417,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.7.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "08d1618dd9687ab9d0d552cdc481f59f69559620cf9c069f38f90f9985090202",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-31T00:00:00.000Z",
+        "created_at": "2015-07-31T22:57:07.872Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1589,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.6",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "99d492a2d0ca83e58e9ace9a26dd4d59e1ce524ef90be641e53c1cf1de0c4cf8",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-30T00:00:00.000Z",
+        "created_at": "2015-07-30T08:42:26.713Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1160,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "78c6def8558bfc820eb0e60b295619916ebadf7daa8ec4cfb6d569a51657243a",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-28T00:00:00.000Z",
+        "created_at": "2015-07-28T11:50:35.438Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 883,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "84ad8602268d364874de06bd182a78a2361703d92a1cb513ee579d5483f5a9d9",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-25T00:00:00.000Z",
+        "created_at": "2015-07-25T12:06:47.938Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 936,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "2ccc06cd3f60b6a6d5463c91a6d91fa755c2cd8150b08f3fcc932bf4ae148ef5",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-21T00:00:00.000Z",
+        "created_at": "2015-07-21T14:36:41.919Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 931,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "20ae9722dac45e167b771b10ee6ef11c7fa1684dc79a162eef5051e27223a27f",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-21T00:00:00.000Z",
+        "created_at": "2015-07-21T00:08:14.901Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 932,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "f88db6a893fd0b289b7dae86ff8ce0dc4302e791381d9194855ca9fc0ce03d5f",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-20T00:00:00.000Z",
+        "created_at": "2015-07-20T15:13:56.301Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 892,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "66fa7fa1072725ebb9abd2c9a910a4e6037c2555c43a2c46f4796e2bd4dd3d5b",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-07-12T00:00:00.000Z",
+        "created_at": "2015-07-12T09:46:21.303Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 986,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.5.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "caf27681ef94fe454248be32243b611802ca0652049c1b708cd6769b866e225b",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-06-25T00:00:00.000Z",
+        "created_at": "2015-06-25T22:27:29.887Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 978,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "dd5d57d2af2dd242f82f10a26251de9a317bd1a86342c82545a5d3c9edefd6b1",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-06-05T00:00:00.000Z",
+        "created_at": "2015-06-05T10:22:26.414Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1058,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "270a6ef10de8a245f7f201a130877d2538647ca906772b31afe7292bc8a81552",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-05-20T00:00:00.000Z",
+        "created_at": "2015-05-20T21:05:32.784Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1186,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ee623374d1726124d321726852a491043b8b38f122074a563ed748bb6c58c87f",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-05-19T00:00:00.000Z",
+        "created_at": "2015-05-19T08:59:30.378Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1153,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "a7e045b4d552dab176416c8fc71153fc0257d1b3adbe5661fffd5448666629b8",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-04-28T00:00:00.000Z",
+        "created_at": "2015-04-28T14:24:04.862Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 2085,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "c896cfc425f1cf1ff4261bfd021ec828b3c47f62907a4517209550820d17f8fc",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-04-24T00:00:00.000Z",
+        "created_at": "2015-04-24T18:37:39.484Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1074,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "dd674aa4bea1e7145e5324547bc9a253ee8a6b6f4f307ec0b08caa20056432c6",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-04-08T00:00:00.000Z",
+        "created_at": "2015-04-08T11:21:49.105Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1751,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.8",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "a5d89def4dddf60f9a48557b53f985e97f169aae55f94ace6a973ade9c7b6096",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-04-07T00:00:00.000Z",
+        "created_at": "2015-04-07T17:48:25.714Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1076,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.7",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ea03965a61b1070dd8549ec2d4cfb236a9022dde1ed1072ed685cb9941937da3",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-03-24T00:00:00.000Z",
+        "created_at": "2015-03-24T17:10:08.576Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1685,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.6",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ef0eb7a92461543048432845b777d72727cbba15d068ce3a52653fe314ae0451",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-03-23T00:00:00.000Z",
+        "created_at": "2015-03-23T23:56:07.174Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 925,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "7a858f3141afd85c41234b7d36d6b4ffc2f20331068edc9fdc913d02a45506cb",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-03-06T00:00:00.000Z",
+        "created_at": "2015-03-06T16:36:49.941Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 8769,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "f8a1eda38cc23b98da89080d98948c2b00d343f04c7de7bee36c9ba265cdc914",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-03-04T00:00:00.000Z",
+        "created_at": "2015-03-04T01:22:19.814Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1115,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "f61a1b79f542bb37a7a266ae781c75af81b6a41b542707e29298a6023932614e",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-02-24T00:00:00.000Z",
+        "created_at": "2015-02-24T18:50:41.239Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1371,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "102309d8b119e3549a6984e097d4ec21a0bcdac74c91ac844990af0b2f427571",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-02-15T00:00:00.000Z",
+        "created_at": "2015-02-15T22:02:37.133Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1298,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "1a28c975f1f76844d68174ffb14ae4cf7a633b33a8e34f36017e6e95871ed0e5",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-02-06T00:00:00.000Z",
+        "created_at": "2015-02-06T15:05:40.106Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1585,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "cab1ff5153e1360444367adda70197d722ab9f30eeb2d3f7294abc9aa38190e9",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-01-30T00:00:00.000Z",
+        "created_at": "2015-01-30T18:47:34.602Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1328,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "5abe7a85cd21c007ced085e4e81588e87b3556b2656c1f44c308fc176d52f59e",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-01-27T00:00:00.000Z",
+        "created_at": "2015-01-27T13:46:22.822Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1375,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "27eb119a9924c8ae9c79bb31417017edbd1fc9799a35035eb801a9951cad39ca",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2015-01-08T00:00:00.000Z",
+        "created_at": "2015-01-08T13:20:22.603Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1467,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.1.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b589400662a12444e41692502fd0cb6ea6c52b37c05d4d12513e0f2960cebbb3",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    },
+    {
+        "authors": "Grey Baker",
+        "built_at": "2014-12-29T00:00:00.000Z",
+        "created_at": "2014-12-29T13:54:35.417Z",
+        "description": "Ibandit is a Ruby library for manipulating and validating IBANs. It allows you to construct an IBAN from national banking details; deconstruct an IBAN into national banking details; and validate an IBAN's check digits and format.",
+        "downloads_count": 1085,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8a13af2dc141d9fdac2bdafc797f5b29fec21c40e2ddb0e82728d4b37fe9a6b5",
+        "summary": "Convert national banking details into IBANs, and vice-versa."
+    }
+]

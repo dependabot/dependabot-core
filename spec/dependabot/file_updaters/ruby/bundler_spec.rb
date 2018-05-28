@@ -2,15 +2,13 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "bundler/compact_index_client"
-require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_updaters/ruby/bundler"
 require_relative "../shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
-  include_context "stub rubygems"
+  include_context "stub rubygems compact index"
 
   it_behaves_like "a dependency file updater"
 

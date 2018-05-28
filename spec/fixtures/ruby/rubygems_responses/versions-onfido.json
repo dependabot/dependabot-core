@@ -1,0 +1,382 @@
+[
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2018-04-18T00:00:00.000Z",
+        "created_at": "2018-04-18T15:22:11.747Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 1471,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.11.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2.0",
+        "rubygems_version": ">= 0",
+        "sha": "5ccf3ae315d2a3d2eae577291ba26c9fc7a5e0452c3de18408f7da1681b851c3",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2018-04-03T00:00:00.000Z",
+        "created_at": "2018-04-03T11:58:21.275Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 87660,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.10.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2.0",
+        "rubygems_version": ">= 0",
+        "sha": "83cbdf35aa83546c905af5f0fdab5df14bb6f84969cd5664f74176ec021c2f88",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2018-03-08T00:00:00.000Z",
+        "created_at": "2018-03-08T15:12:21.803Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 1965,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.9.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2.0",
+        "rubygems_version": ">= 0",
+        "sha": "e3402e6cd1b53ed14395dcdec8facd8b7b19d86bb81b563057c00df48d59a324",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2018-01-29T00:00:00.000Z",
+        "created_at": "2018-01-29T09:35:04.357Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 6583,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "09548ed21d7831d33c386c9de864e4ab6683bc0b57724d451a27b2fe7ef895d3",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2018-01-16T00:00:00.000Z",
+        "created_at": "2018-01-16T10:25:00.836Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 1236,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8e845b3055c799f3fabf16c6ac79848ecde71d86ea1e73f516a529d3beb6b742",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2017-04-21T00:00:00.000Z",
+        "created_at": "2017-04-21T09:42:15.550Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 14030,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "e5aaadd008307545175c64a72a81e854fa32abfec16c25011e400477e0aa001e",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2017-04-05T00:00:00.000Z",
+        "created_at": "2017-04-05T17:22:58.827Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 1207,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b5cb073a3e910c66857bb34f5fc38af2fd9767062e3f23aaf4054d728812bdf6",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-09-05T00:00:00.000Z",
+        "created_at": "2016-09-05T09:21:11.905Z",
+        "description": "A thin wrapper for Onfido's API. This gem supports both v1 and v2 of the Onfido API. Refer to Onfido's API documentation for details of the expected requests and responses for both.",
+        "downloads_count": 19543,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.7.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "817ac37043809b0f7373c0ac4df41b59099378224e6cda6087e4c122a6cf0d8b",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-08-08T00:00:00.000Z",
+        "created_at": "2016-08-08T09:48:53.837Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 7669,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.7.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ccacb59e58b3455f2256aace782db7bdf8cfa3657b9758de5f81da23d4486ccf",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-07-15T00:00:00.000Z",
+        "created_at": "2016-07-15T11:01:05.498Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 1072,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "a868edaa27183ffd37d40c5f6838c721bb7fdf119743c4baf34fa39a77f0020e",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-07-07T00:00:00.000Z",
+        "created_at": "2016-07-07T11:07:20.552Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 741,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "7d8104e555efb41795463be2cfa3fdc527b8872e1ecce857442957ab15274e47",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-06-07T00:00:00.000Z",
+        "created_at": "2016-06-07T12:55:12.107Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 1380,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.5.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "3319a8dd4003eabb76239cb3c94349571fc34993d221426fe5a756d9cacd3723",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-05-12T00:00:00.000Z",
+        "created_at": "2016-05-12T22:57:20.547Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 690,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "f94ef3152f3406e6c2d9d0bb68fd6ee938fcd1485016ef6b16ff0dfaec36e606",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-03-16T00:00:00.000Z",
+        "created_at": "2016-03-16T19:55:46.782Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 2229,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "12c9854e0992cef97792c55b315368a524bd500e5c26dce975794501f2c6c337",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2016-02-09T00:00:00.000Z",
+        "created_at": "2016-02-09T13:57:12.345Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 3226,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "18ccb6969fc3d0f06a7f345ec1928ae0ff571c11f238e88136ed52f1e988f66f",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou, Grey Baker",
+        "built_at": "2015-11-11T00:00:00.000Z",
+        "created_at": "2015-11-11T21:04:07.775Z",
+        "description": "A wrapper for Onfido API",
+        "downloads_count": 1535,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "7acfdf16d546e7502f61f9f90984e3bfcec0ab07b9714686be238a68f01cae1a",
+        "summary": "A wrapper for Onfido API"
+    },
+    {
+        "authors": "Pericles Theodorou",
+        "built_at": "2015-11-11T00:00:00.000Z",
+        "created_at": "2015-11-11T00:16:18.891Z",
+        "description": "A wrapper for Onfido API 1.0",
+        "downloads_count": 781,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.0.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "507600c34296e234c79aa4f682657b8750fad18302075b5b0a98e9c56fd35004",
+        "summary": "A wrapper for Onfido API 1.0"
+    },
+    {
+        "authors": "Pericles Theodorou",
+        "built_at": "2015-05-22T00:00:00.000Z",
+        "created_at": "2015-05-22T09:22:52.686Z",
+        "description": "A wrapper for Onfido API 1.0",
+        "downloads_count": 16070,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.0.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "cc34d86c222d4d623341f92134c9d62edfea37e27a9a34611025d2ee147a459c",
+        "summary": "A wrapper for Onfido API 1.0"
+    },
+    {
+        "authors": "Pericles Theodorou",
+        "built_at": "2015-04-16T00:00:00.000Z",
+        "created_at": "2015-04-16T07:42:45.631Z",
+        "description": "A wrapper for Onfido API 1.0",
+        "downloads_count": 840,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.0.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "91f39f1466afd26170029d6067eac1d17dfc37254550d3135ff241bd532a00da",
+        "summary": "A wrapper for Onfido API 1.0"
+    },
+    {
+        "authors": "Pericles Theodorou",
+        "built_at": "2015-04-11T00:00:00.000Z",
+        "created_at": "2015-04-11T16:30:03.855Z",
+        "description": "A wrapper for Onfido API 1.0",
+        "downloads_count": 830,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.0.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8422ca80743193e5cbd1c834a0c0ec5fa970973517bf50b24b17a4969f104956",
+        "summary": "A wrapper for Onfido API 1.0"
+    }
+]

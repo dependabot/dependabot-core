@@ -1,0 +1,667 @@
+[
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-02-14T00:00:00.000Z",
+        "created_at": "2018-02-14T16:41:03.275Z",
+        "description": "A statesman-like state machine library",
+        "downloads_count": 35649,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.4.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "3632908ce2c81c1a26bf635e4a72828efe8b8f92e065cfec1c6b86a3f5bbc953",
+        "summary": "A statesman-like state machine library"
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-02-12T00:00:00.000Z",
+        "created_at": "2018-02-12T13:04:07.535Z",
+        "description": "A statesman-like state machine library",
+        "downloads_count": 426,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.4.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "06a58017d720e582ad2eef9b96adb1a7bd262831d2d30bdb662e7195e4c438ba",
+        "summary": "A statesman-like state machine library"
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2018-01-05T00:00:00.000Z",
+        "created_at": "2018-01-05T12:51:22.295Z",
+        "description": "A statesman-like state machine library",
+        "downloads_count": 9614,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "c95f66cef96bfd0428c2af634eb6c6a8352b5ec01462de542cd3b477b3f062f1",
+        "summary": "A statesman-like state machine library"
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2017-11-28T00:00:00.000Z",
+        "created_at": "2017-11-28T10:18:23.602Z",
+        "description": "A statesman-like state machine library",
+        "downloads_count": 5835,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "a33fa4661eff86f1ca6639bfa29335c1c1cd9c5f6110cf0f0babc13e163df190",
+        "summary": "A statesman-like state machine library"
+    },
+    {
+        "authors": "GoCardless",
+        "built_at": "2017-09-01T00:00:00.000Z",
+        "created_at": "2017-09-01T13:04:39.497Z",
+        "description": "A statesman-like state machine library",
+        "downloads_count": 26246,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "9713c5b9ea18b159b14daa84fd629c74b38a65074e28f1dae0ff0c2c7c74c118",
+        "summary": "A statesman-like state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2017-07-03T00:00:00.000Z",
+        "created_at": "2017-07-03T11:05:14.861Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 96697,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "3.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 2.2",
+        "rubygems_version": ">= 0",
+        "sha": "6eaf68e45537660d7d6c18b68fd9b2595583fc70e9e123dd4e4158909fa1e142",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2016-03-29T00:00:00.000Z",
+        "created_at": "2016-03-29T15:35:31.057Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 134000,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "2.0.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "34e51629c5a881ab2f58b32951ccb86ccec02fdbe18c3a78ff9f866bfc320ae3",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2016-01-06T00:00:00.000Z",
+        "created_at": "2016-01-06T14:08:51.184Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 14338,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "2.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "af876b69d927294e0c48f350c9bd3f7fe41a00d43431c408df7645b131fc8f88",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-12-23T00:00:00.000Z",
+        "created_at": "2015-12-23T17:37:03.097Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 932,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "2.0.0.rc1",
+        "platform": "ruby",
+        "prerelease": true,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": "> 1.3.1",
+        "sha": "ca57c456f6da19b6f8102ebe01bd03c6786819a344085c9e15157faa03cd5a04",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-07-02T00:00:00.000Z",
+        "created_at": "2015-07-02T15:22:45.771Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 184872,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.3.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "213a0c79ad8cc4b9d900b40d2be4f0a2f96261ceaf4850af162109188f6851ab",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-06-20T00:00:00.000Z",
+        "created_at": "2015-06-20T12:35:34.066Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 5219,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "c6b5731e85251b84831456306770398826203780ec7a3e2f7dd7f17faed644c8",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-06-17T00:00:00.000Z",
+        "created_at": "2015-06-17T11:18:13.990Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 6509,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.5",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "2778762c488eddc4a16e2558946690b6b20c143dd1faebf3b40dc5fdd89645b9",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-06-16T00:00:00.000Z",
+        "created_at": "2015-06-16T16:05:51.948Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1004,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.4",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "46e73ec464a10a9c079a833fd3592b51ce19af4593a7545f0c10f318a7087575",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-04-14T00:00:00.000Z",
+        "created_at": "2015-04-14T16:06:31.766Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 22903,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "3181a4aab203533ed744d10d5acd74471a26d37cf25536ddab546840bead1f0d",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-03-24T00:00:00.000Z",
+        "created_at": "2015-03-24T19:44:36.276Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 10107,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "423fcd7e40ee9e5ac4b7536118042e8fda04d29baede9aadfa6700d74e07834f",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-03-24T00:00:00.000Z",
+        "created_at": "2015-03-24T11:23:37.784Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1625,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b805ec51bc1a109f0bf7fe8b208f32fee647ec3326b0a3bde3bba4a609323300",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2015-03-18T00:00:00.000Z",
+        "created_at": "2015-03-18T18:40:09.753Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 6776,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "d44311192d2906a900d4740b1f98e166fc878a312cfc24954216dcdab79c90e4",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-12-09T00:00:00.000Z",
+        "created_at": "2014-12-09T09:56:21.713Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 54086,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "85f1cd5644a4c52efdfe222ebda1349237843bc809edca33fb816a3b275b46c6",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-11-21T00:00:00.000Z",
+        "created_at": "2014-11-21T10:43:22.604Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 15908,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "862bd8976ea51df54adac106689fa87b40d1dcc2e92463d193fbbb93d687eba3",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-10-10T00:00:00.000Z",
+        "created_at": "2014-10-10T15:45:19.882Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1255,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.0.0.beta2",
+        "platform": "ruby",
+        "prerelease": true,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": "> 1.3.1",
+        "sha": "85ac0d082dad0b2db87dd69623dde71a6dee3facfd42dc275f54fb532a4e1ebd",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-10-09T00:00:00.000Z",
+        "created_at": "2014-10-09T16:31:40.645Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 886,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.0.0.beta1",
+        "platform": "ruby",
+        "prerelease": true,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": "> 1.3.1",
+        "sha": "d5073d336c6869dc126f114760feab36ae3b211dad6cd8947c31b0e78782e394",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-09-02T00:00:00.000Z",
+        "created_at": "2014-09-02T09:50:16.637Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 12607,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.3",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "95484cce9f5251a0026d7bb2a468354d965e8599955fa4cc1510e17a7fa826de",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-09-02T00:00:00.000Z",
+        "created_at": "2014-09-02T09:45:18.567Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 997,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.2",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "cdff74164e4e079dff715429b130231e6ca95d0a072234ba43ca76e1b26b0284",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-08-19T00:00:00.000Z",
+        "created_at": "2014-08-19T16:35:53.025Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 2763,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "3521be6f8073d7eb9397d1a8a6752c5c9695e8603297efc670a83a09e7bd4913",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-07-29T00:00:00.000Z",
+        "created_at": "2014-07-29T10:13:13.072Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 3524,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.8.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "84e188f6eecf3890c67f4814318e0c7bf1b5c9bad372101f3c314e8293c082a8",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-07-25T00:00:00.000Z",
+        "created_at": "2014-07-25T13:20:51.228Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1286,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.7.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "0ec92959b235e6bc049f953c83e81a5e90363ae24e25fe677ecacd0cc8b73012",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-05-21T00:00:00.000Z",
+        "created_at": "2014-05-21T09:32:57.505Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 7588,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "90eaa4de2735d53fbe31cd44271bac965bcb52c8f5dbd041e01d79a047d03492",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-05-19T00:00:00.000Z",
+        "created_at": "2014-05-19T13:39:18.601Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1179,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.6.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "28fd28045cf3d5d7265ed3c6ea13b257e40a1076485dc4b659447524c138e074",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-03-27T00:00:00.000Z",
+        "created_at": "2014-03-27T14:29:54.729Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 10612,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.5.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "32d33ede67ea64e187dd2de3d6201daad56287682350644e74eb31f527dadd92",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-03-10T00:00:00.000Z",
+        "created_at": "2014-03-10T21:01:59.215Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1688,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.4.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "1ce9c4447ab93ecb07cbc0c1bbeef2fa8152e9fe928c2027669016e6edd2336b",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2014-02-20T00:00:00.000Z",
+        "created_at": "2014-02-20T14:17:33.896Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1514,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "e22d1f1a4f9ab49b735948ebf83cc1a4d014102fd901ea5a7276f8f561f29180",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2013-12-31T00:00:00.000Z",
+        "created_at": "2013-12-31T10:58:35.356Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1981,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "93ec6b70bfab4c73a548bc7529fcdf4b780f49a46e6971549efecb6e2aff5339",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2013-12-16T00:00:00.000Z",
+        "created_at": "2013-12-16T11:26:53.091Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1207,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "4dc0d6deaa9d5178653d9d5a89630eb1583aa0ae3f7940374a57c0bc4a33b164",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2013-11-05T00:00:00.000Z",
+        "created_at": "2013-11-05T13:38:53.968Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 2777,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "29232bf88f3f4db1c956b31d2c42bcd10751414a6d8a130f74faf47bae07ed43",
+        "summary": "A statesmanlike state machine library"
+    },
+    {
+        "authors": "Harry Marr, Andy Appleton",
+        "built_at": "2013-10-28T00:00:00.000Z",
+        "created_at": "2013-10-28T10:46:56.405Z",
+        "description": "A statesmanlike state machine library",
+        "downloads_count": 1222,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.0.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": null,
+        "rubygems_version": ">= 0",
+        "sha": "04df334575ea4f6138011d01630a0f10abd3f73b92f36db9606e9783e11bdc3e",
+        "summary": "A statesmanlike state machine library"
+    }
+]

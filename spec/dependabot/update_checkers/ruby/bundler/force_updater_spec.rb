@@ -5,10 +5,9 @@ require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/bundler/force_updater"
-require "bundler/compact_index_client"
 
 RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
-  include_context "stub rubygems"
+  include_context "stub rubygems compact index"
 
   let(:updater) do
     described_class.new(

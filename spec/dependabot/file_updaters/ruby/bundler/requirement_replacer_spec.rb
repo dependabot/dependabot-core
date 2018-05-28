@@ -23,14 +23,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
     )
   end
   let(:requirement) do
-    [
-      {
-        source: nil,
-        file: "Gemfile",
-        requirement: updated_requirement,
-        groups: []
-      }
-    ]
+    [{
+      source: nil,
+      file: "Gemfile",
+      requirement: updated_requirement,
+      groups: []
+    }]
   end
   let(:updated_requirement) { "~> 1.5.0" }
 
@@ -78,6 +76,24 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
       context "with a function requirement" do
         let(:content) { %(version = "1.0.0"\ngem "business", version) }
         it { is_expected.to eq(content) }
+      end
+
+      context "with no requirement" do
+        let(:content) { %(gem "business") }
+        it { is_expected.to eq(content) }
+
+        context "when asked to insert if required" do
+          let(:replacer) do
+            described_class.new(
+              dependency: dependency,
+              file_type: file_type,
+              updated_requirement: updated_requirement,
+              insert_if_bare: true
+            )
+          end
+
+          it { is_expected.to eq(%(gem "business", "~> 1.5.0")) }
+        end
       end
 
       context "with a ternary requirement" do

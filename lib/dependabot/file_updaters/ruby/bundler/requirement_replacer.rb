@@ -10,10 +10,12 @@ module Dependabot
         class RequirementReplacer
           attr_reader :dependency, :file_type, :updated_requirement
 
-          def initialize(dependency:, file_type:, updated_requirement:)
-            @dependency = dependency
-            @file_type = file_type
+          def initialize(dependency:, file_type:, updated_requirement:,
+                         insert_if_bare: false)
+            @dependency          = dependency
+            @file_type           = file_type
             @updated_requirement = updated_requirement
+            @insert_if_bare      = insert_if_bare
           end
 
           def rewrite(content)
@@ -24,8 +26,15 @@ module Dependabot
             Rewriter.new(
               dependency: dependency,
               file_type: file_type,
-              updated_requirement: updated_requirement
+              updated_requirement: updated_requirement,
+              insert_if_bare: insert_if_bare?
             ).rewrite(buffer, ast)
+          end
+
+          private
+
+          def insert_if_bare?
+            @insert_if_bare
           end
 
           class Rewriter < Parser::TreeRewriter
@@ -33,10 +42,12 @@ module Dependabot
             # implementing each one will be tricky.
             SKIPPED_TYPES = %i(send lvar dstr begin if splat const).freeze
 
-            def initialize(dependency:, file_type:, updated_requirement:)
-              @dependency = dependency
-              @file_type = file_type
+            def initialize(dependency:, file_type:, updated_requirement:,
+                           insert_if_bare:)
+              @dependency          = dependency
+              @file_type           = file_type
               @updated_requirement = updated_requirement
+              @insert_if_bare      = insert_if_bare
 
               return if %i(gemfile gemspec).include?(file_type)
               raise "File type must be :gemfile or :gemspec. Got #{file_type}."
@@ -48,21 +59,28 @@ module Dependabot
               req_nodes = node.children[3..-1]
               req_nodes = req_nodes.reject { |child| child.type == :hash }
 
-              return if req_nodes.none?
+              return if req_nodes.none? && !insert_if_bare?
               return if req_nodes.any? { |n| SKIPPED_TYPES.include?(n.type) }
 
               quote_characters = extract_quote_characters_from(req_nodes)
               space_after_specifier = space_after_specifier?(req_nodes)
 
-              replace(
-                range_for(req_nodes),
+              new_req =
                 new_requirement_string(quote_characters, space_after_specifier)
-              )
+              if req_nodes.any?
+                replace(range_for(req_nodes), new_req)
+              else
+                insert_after(range_for(node.children[2..2]), ", #{new_req}")
+              end
             end
 
             private
 
             attr_reader :dependency, :file_type, :updated_requirement
+
+            def insert_if_bare?
+              @insert_if_bare
+            end
 
             def declaration_methods
               return %i(gem) if file_type == :gemfile
@@ -76,6 +94,8 @@ module Dependabot
             end
 
             def extract_quote_characters_from(requirement_nodes)
+              return ['"', '"'] if requirement_nodes.none?
+
               case requirement_nodes.first.type
               when :str, :dstr
                 [
@@ -91,6 +111,8 @@ module Dependabot
             end
 
             def space_after_specifier?(requirement_nodes)
+              return true if requirement_nodes.none?
+
               req_string =
                 case requirement_nodes.first.type
                 when :str, :dstr

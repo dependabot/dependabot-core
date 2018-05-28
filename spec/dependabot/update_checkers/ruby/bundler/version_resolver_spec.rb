@@ -70,7 +70,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   describe "#latest_resolvable_version_details" do
     subject { resolver.latest_resolvable_version_details }
 
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
 
     context "with a rubygems source" do
       context "with a ~> version specified constraining the update" do
@@ -132,24 +132,27 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
             stub_request(:get, old_index_url + "?gems=public_suffix").
               to_return(
                 status: 200,
-                body: fixture("ruby", "rubygems-dependencies-public_suffix")
+                body: fixture("ruby",
+                              "rubygems_responses",
+                              "dependencies-public_suffix")
               )
 
             stub_request(:get, rubygems_url + "versions/public_suffix.json").
               to_return(status: 200, body: rubygems_versions)
           end
           let(:rubygems_versions) do
-            fixture("ruby", "rubygems-versions-public_suffix.json")
+            fixture("ruby", "rubygems_responses", "versions-public_suffix.json")
           end
 
           it { is_expected.to be_nil }
 
           context "and the dependency doesn't have a required Ruby version" do
             let(:rubygems_versions) do
-              fixture("ruby", "rubygems-versions-public_suffix.json").gsub(
-                /"ruby_version": .*,/,
-                '"ruby_version": null,'
-              )
+              fixture(
+                "ruby",
+                "rubygems_responses",
+                "versions-public_suffix.json"
+              ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')
             end
 
             its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }

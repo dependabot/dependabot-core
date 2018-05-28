@@ -2,8 +2,6 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "bundler/compact_index_client"
-require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/ruby/bundler"
@@ -348,7 +346,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
@@ -401,7 +399,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
     subject(:updated_dependencies_after_full_unlock) do
       checker.send(:updated_dependencies_after_full_unlock)
     end
@@ -460,7 +458,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_resolvable_version" do
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
     subject { checker.latest_resolvable_version }
 
     context "given a gem from rubygems" do
@@ -482,6 +482,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+
+        context "when the user is ignoring the latest version" do
+          let(:ignored_versions) { [">= 1.7.0.a, < 2.0"] }
+          it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+        end
       end
 
       context "with a greater than or equal to matcher" do
@@ -569,12 +574,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           }]
         end
 
-        before do
-          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 200, body: rubygems_response)
-        end
-
         context "when the head of the branch isn't released" do
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
@@ -629,12 +628,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
-            response = fixture("ruby", "rubygems_response_versions.json")
-            stub_request(:get, rubygems_url + "versions/prius.json").
-              to_return(status: 200, body: response)
-          end
-
-          before do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
@@ -682,11 +675,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               allow_any_instance_of(Dependabot::GitCommitChecker).
                 to receive(:branch_or_ref_in_release?).
                 and_return(false)
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_versions.json")
-                )
             end
 
             it "respects the pin" do
@@ -761,10 +749,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               end
 
               before do
-                response = fixture("ruby", "rubygems_response_versions.json")
-                stub_request(:get, rubygems_url + "versions/onfido.json").
-                  to_return(status: 200, body: response)
-
                 allow_any_instance_of(Dependabot::GitCommitChecker).
                   to receive(:branch_or_ref_in_release?).
                   and_return(false)
@@ -869,9 +853,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           before do
-            response = fixture("ruby", "rubygems_response_versions.json")
-            stub_request(:get, rubygems_url + "versions/prius.json").
-              to_return(status: 200, body: response)
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
@@ -909,10 +890,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           around { |example| capture_stderr { example.run } }
 
           before do
-            response = fixture("ruby", "rubygems_response_versions.json")
-            stub_request(:get, rubygems_url + "versions/onfido.json").
-              to_return(status: 200, body: response)
-
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
@@ -1055,12 +1032,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         ]
       end
 
-      before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(Gem::Version.new("0.5.0"))
-      end
-
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("1.8.0"))
@@ -1078,15 +1049,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
       context "when the Gemfile doesn't import the gemspec" do
         let(:gemfile_fixture_name) { "only_statesman" }
-        before do
-          response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 200, body: response)
-        end
 
-        it "doesn't just fall back to latest_version" do
+        it "falls back to latest_version" do
           expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.5.0"))
+            to eq(Gem::Version.new("1.13.0"))
         end
       end
     end
@@ -1112,12 +1078,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     context "with only a Gemfile" do
       let(:dependency_files) { [gemfile] }
       let(:gemfile_fixture_name) { "Gemfile" }
-
-      before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(Gem::Version.new("0.5.0"))
-      end
 
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
@@ -1205,7 +1165,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
     subject { checker.latest_resolvable_version_with_no_unlock }
 
     context "given a gem from rubygems" do
@@ -1238,19 +1200,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
   end
 
   describe "#updated_requirements" do
-    include_context "stub rubygems"
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
     subject(:updated_requirements) { checker.updated_requirements }
 
     let(:requirements_updater) do
       Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater
-    end
-
-    before do
-      stub_request(:get, rubygems_url + "versions/business.json").
-        to_return(
-          status: 200,
-          body: fixture("ruby", "rubygems_response_versions.json")
-        )
     end
 
     context "with a Gemfile and a Gemfile.lock" do
@@ -1259,14 +1215,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:current_version) { "1.4.0" }
 
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.4.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.4.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
@@ -1274,7 +1228,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           to receive(:new).with(
             requirements: requirements,
             library: false,
-            latest_version: "1.5.0",
+            latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: nil
           ).and_call_original
@@ -1290,12 +1244,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_name) { "i18n" }
         let(:current_version) { "0.7.0.beta1" }
 
-        before do
-          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/i18n.json").
-            to_return(status: 200, body: rubygems_response)
-        end
-
         it { is_expected.to eq([]) }
       end
 
@@ -1306,19 +1254,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:dependency_name) { "business" }
         let(:current_version) { "c5bf1bd47935504072ac0eba1006cf4d67af6a7a" }
         let(:requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.0.0",
-              groups: [:default],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                branch: "master",
-                ref: "master"
-              }
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [:default],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "master"
             }
-          ]
+          }]
         end
 
         before do
@@ -1358,19 +1304,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           let(:dependency_name) { "business" }
           let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
           let(:requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "a1b78a9"
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "a1b78a9"
               }
-            ]
+            }]
           end
 
           context "and the reference isn't included in the new version" do
@@ -1436,20 +1380,6 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
               allow_any_instance_of(Dependabot::GitCommitChecker).
                 to receive(:branch_or_ref_in_release?).
                 and_return(true)
-
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(
-                  status: 200,
-                  body: fixture("ruby", "rubygems_response_versions.json")
-                )
-
-              repo_url = "https://api.github.com/repos/gocardless/business"
-              stub_request(:get, repo_url + "/compare/v1.5.0...a1b78a9").
-                to_return(
-                  status: 200,
-                  body: fixture("github", "commit_compare_behind.json"),
-                  headers: { "Content-Type" => "application/json" }
-                )
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
@@ -1501,7 +1431,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           to receive(:new).with(
             requirements: requirements,
             library: false,
-            latest_version: "1.5.0",
+            latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
           ).and_call_original
@@ -1541,7 +1471,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           to receive(:new).with(
             requirements: requirements,
             library: true,
-            latest_version: "1.5.0",
+            latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
           ).and_call_original
@@ -1557,14 +1487,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency_name) { "business" }
       let(:current_version) { nil }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.4.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.4.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
@@ -1572,7 +1500,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           to receive(:new).with(
             requirements: requirements,
             library: true,
-            latest_version: "1.5.0",
+            latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
           ).and_call_original
@@ -1588,14 +1516,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:dependency_name) { "business" }
       let(:current_version) { nil }
       let(:requirements) do
-        [
-          {
-            file: "example.gemspec",
-            requirement: "~> 0.9",
-            groups: ["runtime"],
-            source: nil
-          }
-        ]
+        [{
+          file: "example.gemspec",
+          requirement: "~> 0.9",
+          groups: ["runtime"],
+          source: nil
+        }]
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
@@ -1603,8 +1529,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           to receive(:new).with(
             requirements: requirements,
             library: true,
-            latest_version: "1.5.0",
-            latest_resolvable_version: "1.5.0",
+            latest_version: "1.13.0",
+            latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
           ).and_call_original
 

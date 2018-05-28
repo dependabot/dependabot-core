@@ -1,0 +1,59 @@
+[
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-08-18T00:00:00.000Z",
+        "created_at": "2017-08-18T16:42:47.415Z",
+        "description": "Environmentally-friendly config",
+        "downloads_count": 8529,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "2.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "4d97bc8ed01658f40ede658df36a89b5c03b8508aa3e78a377cc2efecb2fbbc8",
+        "summary": "Environmentally-friendly config"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2015-05-29T00:00:00.000Z",
+        "created_at": "2015-05-29T14:07:15.353Z",
+        "description": "Environmentally-friendly config",
+        "downloads_count": 10195,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "83e0ce5c4683fe7f26b94f3c2f580424cf4724c4a35964fc7399d9bec0215a61",
+        "summary": "Environmentally-friendly config"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2015-02-05T00:00:00.000Z",
+        "created_at": "2015-02-05T14:23:49.036Z",
+        "description": "Environmentally-friendly config",
+        "downloads_count": 6539,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "0.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "9b3a51c4f666a7d20046578172d9596bab44e177be6f98e2b6f204d653c8f859",
+        "summary": "Environmentally-friendly config"
+    }
+]

@@ -1,0 +1,285 @@
+[
+    {
+        "authors": "Harry Marr",
+        "built_at": "2018-04-17T00:00:00.000Z",
+        "created_at": "2018-04-17T12:27:38.160Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1783,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.13.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "fe966bb39ff329b646a89dca43913b28ffd8ba70ae7ecb0d4af825b23996d9e0",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2018-04-03T00:00:00.000Z",
+        "created_at": "2018-04-03T16:08:56.609Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1192,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.12.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b518d6d50eda75045de0334440b7cf313c2c6779633fcf3f8f2ca793fcd8e2ba",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-12-20T00:00:00.000Z",
+        "created_at": "2017-12-20T17:34:17.691Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 6603,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.11.1",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "82536be00bcd1460c519ae8a39645c2187a70020842ae27dc018ecfec94bd0a1",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-09-21T00:00:00.000Z",
+        "created_at": "2017-09-21T09:40:21.492Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 9095,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.10.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "b7f327938fc39b4f0ddc95e5e75acbdabd2591bda996878ddc8cb095681f5a7a",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-08-23T00:00:00.000Z",
+        "created_at": "2017-08-23T14:08:57.922Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 5440,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.9.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "e33459ce404131896f9a9cc702188eaefd5aad837875c2bae0836b86672efb78",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-02-13T00:00:00.000Z",
+        "created_at": "2017-02-13T17:46:28.104Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 15078,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.8.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "865518e30459fe9d2343470c1c85274278edf74f754b1dbd52511b8738aaa0e0",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2017-01-18T00:00:00.000Z",
+        "created_at": "2017-01-18T18:19:02.600Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 959,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.7.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "619724594b8bdc16f4368fad78a7497fb74fbe72a3133f9e1641678486b087eb",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2016-12-23T00:00:00.000Z",
+        "created_at": "2016-12-23T12:58:13.893Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 4643,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.6.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "e2a03b2fac708e80744b7c9de176a5e220b52475462f7baeab948635cc9404d2",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2015-06-03T00:00:00.000Z",
+        "created_at": "2015-06-03T17:19:42.588Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 18271,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.5.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "5293b3f6e9b5db12d8b0ee36c2df1f1592aaff49ce961c1c11d035a72e2f9a77",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-12-24T00:00:00.000Z",
+        "created_at": "2014-12-24T16:24:41.537Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 15804,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.4.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "ee37a49ec4d20a3c9b2bda65f62ac53257daa52f7657e4d77b8aacf6a337f925",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-12-02T00:00:00.000Z",
+        "created_at": "2014-12-02T10:08:30.427Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1466,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.3.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "1e9821a5001f2edf33355dd77ad1eb162336c3af6265c7b456bbaa8b6838e404",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-11-15T00:00:00.000Z",
+        "created_at": "2014-11-15T16:18:07.220Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1373,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.2.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8aa0ef76600ab2f65bdf8e92501c6a4b81cb0c830248a0b62d212f7b0b737501",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-09-30T00:00:00.000Z",
+        "created_at": "2014-09-30T18:09:48.129Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1982,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "fe0e67fddaafa00732349698ec73737e051782cce4a6db255647ff307773ef99",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-06-11T00:00:00.000Z",
+        "created_at": "2014-06-11T13:59:34.837Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 5345,
+        "licenses": [
+            "MIT"
+        ],
+        "metadata": {},
+        "number": "1.0.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "749bf723a1c6d29d90574e565a6dc6ef83c68cde295453c84f1833fdc126f8ee",
+        "summary": "Date calculations based on business calendars"
+    },
+    {
+        "authors": "Harry Marr",
+        "built_at": "2014-06-11T00:00:00.000Z",
+        "created_at": "2014-06-11T10:10:13.993Z",
+        "description": "Date calculations based on business calendars",
+        "downloads_count": 1310,
+        "licenses": [],
+        "metadata": {},
+        "number": "0.1.0",
+        "platform": "ruby",
+        "prerelease": false,
+        "requirements": [],
+        "ruby_version": ">= 0",
+        "rubygems_version": ">= 0",
+        "sha": "8177fac2a1c867cc3378089550f010f789d99e7fe2fd3a9e1f14029ebe91db0b",
+        "summary": "Date calculations based on business calendars"
+    }
+]

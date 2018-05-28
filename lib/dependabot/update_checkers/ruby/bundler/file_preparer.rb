@@ -155,7 +155,8 @@ module Dependabot
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemfile,
-              updated_requirement: updated_version_requirement_string(filename)
+              updated_requirement: updated_version_requirement_string(filename),
+              insert_if_bare: true
             ).rewrite(content)
           end
 
@@ -163,7 +164,8 @@ module Dependabot
             FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemspec,
-              updated_requirement: updated_version_requirement_string(filename)
+              updated_requirement: updated_version_requirement_string(filename),
+              insert_if_bare: true
             ).rewrite(content)
           end
 
