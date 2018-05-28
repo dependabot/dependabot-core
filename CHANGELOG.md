@@ -1,3 +1,11 @@
+## v0.59.21, 28 May 2018
+
+- Ruby: Consider ignored versions when determining latest resolvable version.
+  This might sound innocuous but it's a significant improvement over previous
+  behaviour: if a user chooses to ignore Rails 5, for example, they'll now
+  continue to receive updates to Rails 4 if/when they're released. Bring Ruby
+  support in-line with Python, PHP, Java and JS, where this is already offered.
+
 ## v0.59.20, 28 May 2018
 
 - Java: More careful updating for property versions
