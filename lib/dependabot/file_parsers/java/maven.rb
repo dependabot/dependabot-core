@@ -128,7 +128,7 @@ module Dependabot
           return value if value
 
           msg = "Property not found: #{property_name}"
-          raise DependencyFileNotParseable, msg
+          raise DependencyFileNotEvaluatable, msg
         end
 
         # Cached, since this can makes calls to the registry (to get property

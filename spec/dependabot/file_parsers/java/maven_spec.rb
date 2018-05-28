@@ -276,7 +276,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
         it "raises a helpful error" do
           expect { parser.parse }.
-            to raise_error(Dependabot::DependencyFileNotParseable)
+            to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+              expect(error.message).
+                to eq("Property not found: springframework.version")
+            end
         end
       end
     end
