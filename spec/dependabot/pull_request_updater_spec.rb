@@ -139,14 +139,12 @@ RSpec.describe Dependabot::PullRequestUpdater do
           to have_requested(:post, "#{watched_repo_url}/git/trees").
           with(body: {
                  base_tree: "basecommitsha",
-                 tree: [
-                   {
-                     path: "manifesto",
-                     mode: "160000",
-                     type: "commit",
-                     sha: "sha1"
-                   }
-                 ]
+                 tree: [{
+                   path: "manifesto",
+                   mode: "160000",
+                   type: "commit",
+                   sha: "sha1"
+                 }]
                })
 
         expect(WebMock).

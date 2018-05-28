@@ -124,22 +124,18 @@ RSpec.describe Dependabot::PullRequestCreator do
           name: "business",
           version: "1.5.0",
           package_manager: "bundler",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
         )
       end
 
@@ -198,14 +194,12 @@ RSpec.describe Dependabot::PullRequestCreator do
           to have_requested(:post, "#{watched_repo_url}/git/trees").
           with(body: {
                  base_tree: "basecommitsha",
-                 tree: [
-                   {
-                     path: "manifesto",
-                     mode: "160000",
-                     type: "commit",
-                     sha: "sha1"
-                   }
-                 ]
+                 tree: [{
+                   path: "manifesto",
+                   mode: "160000",
+                   type: "commit",
+                   sha: "sha1"
+                 }]
                })
 
         expect(WebMock).
