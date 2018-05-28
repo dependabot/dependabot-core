@@ -121,7 +121,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
         let(:dependency_name) { "prius" }
 
-        its(:content) { is_expected.to include(%("prius", git:)) }
+        its(:content) { is_expected.to include(%("prius", ">= 0", git:)) }
 
         context "and a version specified" do
           let(:gemfile_body) do
@@ -134,12 +134,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
         context "that should be removed" do
           let(:remove_git_source) { true }
-          its(:content) { is_expected.to include(%("prius"\n)) }
+          its(:content) { is_expected.to include(%("prius", ">= 0"\n)) }
           its(:content) { is_expected.to include(%("que", git:)) }
 
           context "with a tag (i.e., multiple git-related arguments)" do
             let(:dependency_name) { "que" }
-            its(:content) { is_expected.to include(%("que"\n)) }
+            its(:content) { is_expected.to include(%("que", ">= 0"\n)) }
           end
 
           context "with non-git tags at the start" do
