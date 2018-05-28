@@ -1,3 +1,8 @@
+## v0.59.23, 28 May 2018
+
+- Maven: Continue processing if only some dependencies use inaccessible
+  properties
+
 ## v0.59.22, 28 May 2018
 
 - Maven: Clearer error message when property can't be found
