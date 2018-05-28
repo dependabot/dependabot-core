@@ -1,3 +1,7 @@
+## v0.59.22, 28 May 2018
+
+- Maven: Clearer error message when property can't be found
+
 ## v0.59.21, 28 May 2018
 
 - Ruby: Consider ignored versions when determining latest resolvable version.
