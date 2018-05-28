@@ -1,3 +1,8 @@
+## v0.59.25, 28 May 2018
+
+- Elixir: Consider ignore conditions when determining latest version
+- PHP: Catch out of memory errors in FileUpdater
+
 ## v0.59.24, 28 May 2018
 
 - Python: Raise a DependencyFileNotEvaluatable for impossible requirements
