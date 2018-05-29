@@ -1,3 +1,7 @@
+## v0.59.29, 29 May 2018
+
+- JS: Handle another npm error type
+
 ## v0.59.28, 29 May 2018
 
 - Elixir: Consider ignore requirements when determining latest resolvable
