@@ -1,3 +1,9 @@
+## v0.59.28, 29 May 2018
+
+- Elixir: Consider ignore requirements when determining latest resolvable
+  version
+- Improve FilePreparer to lookup existing version from requirements
+
 ## v0.59.27, 29 May 2018
 
 - JS: Handle git reference errors in FileUpdater
