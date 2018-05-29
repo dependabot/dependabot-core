@@ -5,6 +5,7 @@ require "dependabot/file_parsers/java_script/npm_and_yarn"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module JavaScript
@@ -145,6 +146,9 @@ module Dependabot
           handle_package_lock_updater_error(error)
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_package_lock_updater_error(error)
           raise if error.message.include?("#{dependency.name}@")
           if error.message.start_with?("No matching version", "404 Not Found")
@@ -153,6 +157,13 @@ module Dependabot
           if error.message.include?("did not match any file(s) known to git")
             msg = "Error while generating package-lock.json:\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+          if error.message.include?("fatal: reference is not a tree")
+            ref = error.message.match(/a tree: (?<ref>.*)/).
+                  named_captures.fetch("ref")
+            dep = find_npm_lockfile_dependency_with_ref(ref)
+            raise unless dep
+            raise Dependabot::GitDependencyReferenceNotFound, dep.fetch(:name)
           end
           if error.message.include?("make sure you have the correct access") ||
              error.message.include?("Authentication failed")
@@ -163,6 +174,9 @@ module Dependabot
           end
           raise
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def write_temporary_dependency_files(lock_git_deps: false)
           File.write("yarn.lock", yarn_lock.content) if yarn_lock
@@ -296,6 +310,20 @@ module Dependabot
           updated_content
         end
 
+        def find_npm_lockfile_dependency_with_ref(ref)
+          flatten_dependencies = lambda { |obj|
+            deps = []
+            obj["dependencies"]&.each do |name, details|
+              deps << { name: name, version: details["version"] }
+              deps += flatten_dependencies.call(details)
+            end
+            deps
+          }
+
+          deps = flatten_dependencies.call(JSON.parse(package_lock.content))
+          deps.find { |dep| dep[:version].end_with?("##{ref}") }
+        end
+
         def npmrc_content
           NpmrcBuilder.new(
             credentials: credentials,
@@ -323,3 +351,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

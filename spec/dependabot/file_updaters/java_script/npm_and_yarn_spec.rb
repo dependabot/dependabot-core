@@ -740,7 +740,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
-      context "with a git reference that Yarn would find by npm wouldn't" do
+      context "with a git reference that Yarn would find but npm wouldn't" do
         let(:manifest_fixture_name) { "git_dependency_yarn_ref.json" }
         let(:npm_lock_fixture_name) { "git_dependency_yarn_ref.json" }
 
@@ -749,6 +749,42 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
+
+      context "with an unreachable git reference" do
+        let(:npm_lock_fixture_name) { "git_dependency_bad_ref.json" }
+        let(:manifest_fixture_name) { "git_dependency_bad_ref.json" }
+        let(:yarn_lock_fixture_name) { "git_dependency_bad_ref.lock" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "lodash",
+            version: "1.3.1",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.3.1",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.2.1",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.to raise_error do |error|
+              expect(error).to be_a(Dependabot::GitDependencyReferenceNotFound)
+              expect(error.dependency).to eq("is-number")
+            end
           end
         end
       end
@@ -768,20 +804,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             name: "babel-register",
             version: "6.26.0",
             package_manager: "npm_and_yarn",
-            requirements:
-              [{
-                file: "package.json",
-                requirement: "^6.26.0",
-                groups: [],
-                source: nil
-              }],
-            previous_requirements:
-              [{
-                file: "package.json",
-                requirement: "^6.24.1",
-                groups: [],
-                source: nil
-              }]
+            requirements: [{
+              file: "package.json",
+              requirement: "^6.26.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^6.24.1",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -800,20 +834,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             version: "3.10.1",
             previous_version: "3.10.0",
             package_manager: "npm_and_yarn",
-            requirements:
-              [{
-                file: "package.json",
-                requirement: "^3.0",
-                groups: [],
-                source: nil
-              }],
-            previous_requirements:
-              [{
-                file: "package.json",
-                requirement: "^3.0",
-                groups: [],
-                source: nil
-              }]
+            requirements: [{
+              file: "package.json",
+              requirement: "^3.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^3.0",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -919,22 +951,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               name: "chalk",
               version: "0.4.0",
               package_manager: "npm_and_yarn",
-              requirements: [
-                {
-                  file: "packages/package1/package.json",
-                  requirement: "0.4.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "packages/package1/package.json",
-                  requirement: "0.3.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "0.4.0",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "0.3.0",
+                groups: [],
+                source: nil
+              }]
             )
           end
 
