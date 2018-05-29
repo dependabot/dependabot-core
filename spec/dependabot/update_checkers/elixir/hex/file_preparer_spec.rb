@@ -93,7 +93,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
           let(:version) { nil }
 
           it "updates the requirement" do
-            expect(prepared_mixfile.content).to include('{:plug, ">= 0"}')
+            expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
           end
 
           context "but a pre-release requirement" do
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
 
             it "updates the requirement" do
               expect(prepared_mixfile.content).
-                to include('{:phoenix, ">= 0.0.1-rc1"}')
+                to include('{:phoenix, ">= 1.2.0-rc.0"}')
             end
           end
         end
@@ -121,6 +121,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
       context "with a git pin to replace" do
         let(:replacement_git_pin) { "v1.2.1" }
         let(:mixfile_fixture_name) { "git_source" }
+        let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_name) { "phoenix" }
         let(:requirements) do
           [
@@ -140,7 +141,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
 
         it "updates the pin" do
           expect(prepared_mixfile.content).to include(
-            '{:phoenix, github: "phoenixframework/phoenix", ref: "v1.2.1"}'
+            '{:phoenix, ">= 0", github: "phoenixframework/phoenix", '\
+            'ref: "v1.2.1"}'
           )
         end
 
@@ -149,7 +151,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
 
           it "updates the pin" do
             expect(prepared_mixfile.content).to include(
-              '{:phoenix, github: "phoenixframework/phoenix", ref: \'v1.2.1\'}'
+              '{:phoenix, ">= 0", github: "phoenixframework/phoenix", '\
+              "ref: \'v1.2.1\'}"
             )
           end
         end

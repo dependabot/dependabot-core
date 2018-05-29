@@ -188,11 +188,13 @@ module Dependabot
             end
         end
 
-        def prepared_dependency_files(unlock_requirement:)
+        def prepared_dependency_files(unlock_requirement:,
+                                      latest_allowable_version: nil)
           FilePreparer.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            unlock_requirement: unlock_requirement
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: latest_allowable_version
           ).prepared_dependency_files
         end
 
