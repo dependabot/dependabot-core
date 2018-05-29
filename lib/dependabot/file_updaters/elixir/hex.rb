@@ -80,12 +80,14 @@ module Dependabot
           mixfiles.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(
-              path,
-              sanitize_mixfile(updated_mixfile_content(file))
-            )
+            File.write(path, mixfile_content_for_lockfile_generation(file))
           end
           File.write("mix.lock", lockfile.content)
+        end
+
+        def mixfile_content_for_lockfile_generation(file)
+          content = updated_mixfile_content(file)
+          sanitize_mixfile(content)
         end
 
         def updated_mixfile_content(file)
