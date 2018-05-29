@@ -29,22 +29,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
     Dependabot::Dependency.new(
       name: "psycopg2",
       version: "2.8.1",
-      requirements: [
-        {
-          file: "requirements.txt",
-          requirement: "==2.8.1",
-          groups: [],
-          source: nil
-        }
-      ],
-      previous_requirements: [
-        {
-          file: "requirements.txt",
-          requirement: "==2.7.1",
-          groups: [],
-          source: nil
-        }
-      ],
+      requirements: [{
+        file: "requirements.txt",
+        requirement: "==2.8.1",
+        groups: [],
+        source: nil
+      }],
+      previous_requirements: [{
+        file: "requirements.txt",
+        requirement: "==2.7.1",
+        groups: [],
+        source: nil
+      }],
       package_manager: "pip"
     )
   end
@@ -102,23 +98,19 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           Dependabot::Dependency.new(
             name: "pytest",
             version: "3.3.1",
-            requirements: [
-              {
-                file: "requirements.txt",
-                requirement: "==3.3.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "requirements.txt",
+              requirement: "==3.3.1",
+              groups: [],
+              source: nil
+            }],
             previous_version: "3.2.3",
-            previous_requirements: [
-              {
-                file: "requirements.txt",
-                requirement: "==3.2.3",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "requirements.txt",
+              requirement: "==3.2.3",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
@@ -169,23 +161,19 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             Dependabot::Dependency.new(
               name: "flask-featureflags",
               version: "0.6",
-              requirements: [
-                {
-                  file: "requirements.txt",
-                  requirement: "==0.6",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "requirements.txt",
+                requirement: "==0.6",
+                groups: [],
+                source: nil
+              }],
               previous_version: "0.5",
-              previous_requirements: [
-                {
-                  file: "requirements.txt",
-                  requirement: "==0.5",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              previous_requirements: [{
+                file: "requirements.txt",
+                requirement: "==0.5",
+                groups: [],
+                source: nil
+              }],
               package_manager: "pip"
             )
           end
@@ -214,22 +202,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           Dependabot::Dependency.new(
             name: "psycopg2",
             version: "2.8.1",
-            requirements: [
-              {
-                file: "more_requirements.txt",
-                requirement: "==2.8.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "more_requirements.txt",
-                requirement: "==2.7.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "more_requirements.txt",
+              requirement: "==2.8.1",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "more_requirements.txt",
+              requirement: "==2.7.1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
@@ -263,22 +247,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         Dependabot::Dependency.new(
           name: "psycopg2",
           version: "2.8.1",
-          requirements: [
-            {
-              file: "setup.py",
-              requirement: "==2.8.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "setup.py",
-              requirement: "==2.7.1",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "setup.py",
+            requirement: "==2.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "setup.py",
+            requirement: "==2.7.1",
+            groups: [],
+            source: nil
+          }],
           package_manager: "pip"
         )
       end
@@ -291,22 +271,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           Dependabot::Dependency.new(
             name: "raven",
             version: "5.34.0",
-            requirements: [
-              {
-                file: "setup.py",
-                requirement: "==5.34.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "setup.py",
-                requirement: "==5.32.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "setup.py",
+              requirement: "==5.34.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.py",
+              requirement: "==5.32.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
@@ -321,22 +297,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           Dependabot::Dependency.new(
             name: "requests",
             version: nil,
-            requirements: [
-              {
-                file: "setup.py",
-                requirement: "==2.13.*",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "setup.py",
-                requirement: "==2.12.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "setup.py",
+              requirement: "==2.13.*",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.py",
+              requirement: "==2.12.*",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
@@ -349,22 +321,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           Dependabot::Dependency.new(
             name: "flake8",
             version: nil,
-            requirements: [
-              {
-                file: "setup.py",
-                requirement: ">2.5.4,<3.4.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "setup.py",
-                requirement: ">2.5.4,<3.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "setup.py",
+              requirement: ">2.5.4,<3.4.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.py",
+              requirement: ">2.5.4,<3.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
@@ -480,22 +448,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           version: "2.18.4",
           previous_version: "2.18.0",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "*",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "*",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+          requirements: [{
+            requirement: "*",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "*",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
         )
       end
       let(:dependency_name) { "requests" }
@@ -533,22 +497,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             version: "2.18.4",
             previous_version: "2.18.0",
             package_manager: "pip",
-            requirements: [
-              {
-                requirement: "==2.18.4",
-                file: "Pipfile",
-                source: nil,
-                groups: ["default"]
-              }
-            ],
-            previous_requirements: [
-              {
-                requirement: "==2.18.0",
-                file: "Pipfile",
-                source: nil,
-                groups: ["default"]
-              }
-            ]
+            requirements: [{
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }],
+            previous_requirements: [{
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
           )
         end
 
@@ -599,22 +559,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
             version: "2.18.4",
             previous_version: "2.18.0",
             package_manager: "pip",
-            requirements: [
-              {
-                requirement: "==2.18.4",
-                file: "Pipfile",
-                source: nil,
-                groups: ["default"]
-              }
-            ],
-            previous_requirements: [
-              {
-                requirement: "==2.18.0",
-                file: "Pipfile",
-                source: nil,
-                groups: ["default"]
-              }
-            ]
+            requirements: [{
+              requirement: "==2.18.4",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }],
+            previous_requirements: [{
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
           )
         end
 
@@ -660,22 +616,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               version: "2.18.4",
               previous_version: "2.18.0",
               package_manager: "pip",
-              requirements: [
-                {
-                  requirement: "==2.18.4",
-                  file: "Pipfile",
-                  source: nil,
-                  groups: ["default"]
-                }
-              ],
-              previous_requirements: [
-                {
-                  requirement: "==2.18.0",
-                  file: "Pipfile",
-                  source: nil,
-                  groups: ["default"]
-                }
-              ]
+              requirements: [{
+                requirement: "==2.18.4",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }],
+              previous_requirements: [{
+                requirement: "==2.18.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }]
             )
           end
           let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
@@ -698,22 +650,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
               version: "6.7.0",
               previous_version: "5.27.1",
               package_manager: "pip",
-              requirements: [
-                {
-                  requirement: "==6.7.0",
-                  file: "Pipfile",
-                  source: nil,
-                  groups: ["default"]
-                }
-              ],
-              previous_requirements: [
-                {
-                  requirement: "==5.27.1",
-                  file: "Pipfile",
-                  source: nil,
-                  groups: ["default"]
-                }
-              ]
+              requirements: [{
+                requirement: "==6.7.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }],
+              previous_requirements: [{
+                requirement: "==5.27.1",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }]
             )
           end
           let(:pipfile_body) do

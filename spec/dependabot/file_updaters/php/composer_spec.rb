@@ -45,23 +45,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
       version: "1.22.1",
-      requirements: [
-        {
-          file: "composer.json",
-          requirement: "1.22.1",
-          groups: [],
-          source: nil
-        }
-      ],
+      requirements: [{
+        file: "composer.json",
+        requirement: "1.22.1",
+        groups: [],
+        source: nil
+      }],
       previous_version: "1.0.1",
-      previous_requirements: [
-        {
-          file: "composer.json",
-          requirement: "1.0.1",
-          groups: [],
-          source: nil
-        }
-      ],
+      previous_requirements: [{
+        file: "composer.json",
+        requirement: "1.0.1",
+        groups: [],
+        source: nil
+      }],
       package_manager: "composer"
     )
   end
@@ -107,23 +103,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: "1.22.1",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.22.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.22.*",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.1",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -139,23 +131,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: "1.22.1",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.22.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.22.1",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.0-RC1",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.0-RC1",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.0-RC1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -255,23 +243,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: "1.22.1",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.22.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.22.*",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.1",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -289,23 +273,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: "1.0.2",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.0",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.*",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.*",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -338,22 +318,18 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
             name: "dependabot/dummy-pkg-a",
             version: "2.2.0",
             previous_version: "2.1.0",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "*",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "*",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "*",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "*",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -390,23 +366,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "symfony/polyfill-mbstring",
             version: "1.6.0",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.6.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.6.0",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.1",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -427,23 +399,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "symfony/polyfill-mbstring",
             version: "1.6.0",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.6.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.6.0",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.1",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -465,23 +433,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "ehime/hello-world",
             version: "1.0.5",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.5",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.0.5",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.0.4",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.4",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.4",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -504,23 +468,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: "1.23.0",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "~1.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "~1.0",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.20.0",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "~1.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "~1.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -543,23 +503,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "illuminate/support",
             version: "5.6.23",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "^5.6.23",
-                groups: ["runtime"],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "^5.6.23",
+              groups: ["runtime"],
+              source: nil
+            }],
             previous_version: "5.2.0",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "^5.2.0",
-                groups: ["runtime"],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -579,23 +535,19 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
           Dependabot::Dependency.new(
             name: "illuminate/support",
             version: "5.3.0",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "^5.2.0",
-                groups: ["runtime"],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }],
             previous_version: "5.2.0",
-            previous_requirements: [
-              {
-                file: "composer.json",
-                requirement: "^5.2.0",
-                groups: ["runtime"],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end

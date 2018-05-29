@@ -61,22 +61,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           version: "2.18.4",
           previous_version: "2.18.0",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "==2.18.4",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "==2.18.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
         )
       end
       let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }
@@ -107,22 +103,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           version: "3.2",
           previous_version: "3.1",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "==3.2",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "==3.1",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+          requirements: [{
+            requirement: "==3.2",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==3.1",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
         )
       end
 
@@ -137,22 +129,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           version: "2.18.4",
           previous_version: "2.18.0",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "==2.18.4",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "==2.18.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
         )
       end
 
@@ -167,22 +155,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           version: "3.3.1",
           previous_version: "3.2.3",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "==3.3.1",
-              file: "Pipfile",
-              source: nil,
-              groups: ["develop"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "==3.2.3",
-              file: "Pipfile",
-              source: nil,
-              groups: ["develop"]
-            }
-          ]
+          requirements: [{
+            requirement: "==3.3.1",
+            file: "Pipfile",
+            source: nil,
+            groups: ["develop"]
+          }],
+          previous_requirements: [{
+            requirement: "==3.2.3",
+            file: "Pipfile",
+            source: nil,
+            groups: ["develop"]
+          }]
         )
       end
 
@@ -198,22 +182,18 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           version: "2.18.4",
           previous_version: "2.18.0",
           package_manager: "pip",
-          requirements: [
-            {
-              requirement: "==2.18.4",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "==2.18.0",
-              file: "Pipfile",
-              source: nil,
-              groups: ["default"]
-            }
-          ]
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
         )
       end
       let(:pipfile_body) { fixture("python", "pipfiles", "hard_names") }

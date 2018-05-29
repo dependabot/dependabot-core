@@ -105,32 +105,28 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           version: version,
           previous_version: previous_version,
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              requirement: req,
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: {
-                type: "git",
-                url: "https://github.com/jonschlinkert/is-number",
-                branch: nil,
-                ref: ref
-              }
+          requirements: [{
+            requirement: req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: ref
             }
-          ],
-          previous_requirements: [
-            {
-              requirement: old_req,
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: {
-                type: "git",
-                url: "https://github.com/jonschlinkert/is-number",
-                branch: nil,
-                ref: old_ref
-              }
+          }],
+          previous_requirements: [{
+            requirement: old_req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: old_ref
             }
-          ]
+          }]
         )
       end
       let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
@@ -327,27 +323,23 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               version: "4.0.0",
               previous_version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
               package_manager: "npm_and_yarn",
-              requirements: [
-                {
-                  requirement: "^4.0.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
+              requirements: [{
+                requirement: "^4.0.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "d5ac058"
                 }
-              ],
-              previous_requirements: [
-                {
-                  requirement: nil,
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/jonschlinkert/is-number",
-                    branch: nil,
-                    ref: "d5ac058"
-                  }
-                }
-              ]
+              }]
             )
           end
 
@@ -390,22 +382,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           name: "lodash",
           version: "1.3.1",
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.3.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.2.1",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^1.2.1",
+            groups: [],
+            source: nil
+          }]
         )
       end
 
@@ -523,22 +511,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             name: "fetch-factory",
             version: "0.0.2",
             package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^0.0.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^0.0.1",
-                groups: [],
-                source: nil
-              }
-            ]
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.0.1",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^0.0.1",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -583,23 +567,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             name: "npm",
             version: "5.9.0-next.0",
             package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "next",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "next",
+              groups: [],
+              source: nil
+            }],
             previous_version: "5.8.0",
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "next",
-                groups: [],
-                source: nil
-              }
-            ]
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "next",
+              groups: [],
+              source: nil
+            }]
           )
         end
         let(:manifest_fixture_name) { "dist_tag.json" }
@@ -636,22 +616,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             version: "22.4.3",
             previous_version: "22.0.4",
             package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^22.0.4",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^22.0.4",
-                groups: [],
-                source: nil
-              }
-            ]
+            requirements: [{
+              file: "package.json",
+              requirement: "^22.0.4",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^22.0.4",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -982,22 +958,18 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               name: "etag",
               version: "1.8.1",
               package_manager: "npm_and_yarn",
-              requirements: [
-                {
-                  file: "packages/package1/package.json",
-                  requirement: "^1.8.1",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "packages/package1/package.json",
-                  requirement: "^1.1.0",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ]
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "^1.8.1",
+                groups: ["devDependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "^1.1.0",
+                groups: ["devDependencies"],
+                source: nil
+              }]
             )
           end
 

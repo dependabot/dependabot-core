@@ -24,13 +24,19 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
 
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
-    Dependabot::DependencyFile.new(content: mixfile_body, name: "mix.exs")
+    Dependabot::DependencyFile.new(
+      content: fixture("elixir", "mixfiles", mixfile_fixture_name),
+      name: "mix.exs"
+    )
   end
-  let(:mixfile_body) { fixture("elixir", "mixfiles", "exact_version") }
-  let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
   let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "mix.lock", content: lockfile_body)
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+    )
   end
+  let(:mixfile_fixture_name) { "exact_version" }
+  let(:lockfile_fixture_name) { "exact_version" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -75,12 +81,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with a git dependency having its reference updated" do
-        let(:mixfile_body) do
-          fixture("elixir", "mixfiles", "git_source_tag_can_update")
-        end
-        let(:lockfile_body) do
-          fixture("elixir", "lockfiles", "git_source_tag_can_update")
-        end
+        let(:mixfile_fixture_name) { "git_source_tag_can_update" }
+        let(:lockfile_fixture_name) { "git_source_tag_can_update" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "phoenix",
@@ -121,8 +123,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with similarly named packages" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "similar_names") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "similar_names") }
+        let(:mixfile_fixture_name) { "similar_names" }
+        let(:lockfile_fixture_name) { "similar_names" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -155,8 +157,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with a mix.exs that opens another file" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+        let(:mixfile_fixture_name) { "loads_file" }
+        let(:lockfile_fixture_name) { "exact_version" }
 
         it "doesn't leave the temporary edits present" do
           expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
@@ -165,8 +167,9 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with an umbrella app" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+        let(:mixfile_fixture_name) { "umbrella" }
+        let(:lockfile_fixture_name) { "umbrella" }
+
         let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
         let(:sub_mixfile1) do
           Dependabot::DependencyFile.new(
@@ -252,8 +255,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with no requirement" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "no_requirement") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "no_requirement") }
+        let(:mixfile_fixture_name) { "no_requirement" }
+        let(:lockfile_fixture_name) { "no_requirement" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "plug",
@@ -293,8 +296,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "when the subdependencies should have changed" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+        let(:mixfile_fixture_name) { "minor_version" }
+        let(:lockfile_fixture_name) { "minor_version" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "phoenix",
@@ -322,8 +325,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         end
 
         context "with an old-format lockfile" do
-          let(:mixfile_body) { fixture("elixir", "mixfiles", "old_elixir") }
-          let(:lockfile_body) { fixture("elixir", "lockfiles", "old_elixir") }
+          let(:mixfile_fixture_name) { "old_elixir" }
+          let(:lockfile_fixture_name) { "old_elixir" }
 
           it "updates the dependency version in the lockfile" do
             expect(updated_lockfile_content).to start_with('%{"mime"')
@@ -334,8 +337,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with a mix.exs that opens another file" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+        let(:mixfile_fixture_name) { "loads_file" }
+        let(:lockfile_fixture_name) { "exact_version" }
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
@@ -346,8 +349,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with an umbrella app" do
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
-        let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+        let(:mixfile_fixture_name) { "umbrella" }
+        let(:lockfile_fixture_name) { "umbrella" }
         let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
         let(:sub_mixfile1) do
           Dependabot::DependencyFile.new(
@@ -408,12 +411,8 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
       end
 
       context "with a git dependency" do
-        let(:mixfile_body) do
-          fixture("elixir", "mixfiles", "git_source_no_tag")
-        end
-        let(:lockfile_body) do
-          fixture("elixir", "lockfiles", "git_source_no_tag")
-        end
+        let(:mixfile_fixture_name) { "git_source_no_tag" }
+        let(:lockfile_fixture_name) { "git_source_no_tag" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "phoenix",
