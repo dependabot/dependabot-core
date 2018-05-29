@@ -1,3 +1,7 @@
+## v0.59.26, 29 May 2018
+
+- Fall back to GitHub git data API for large files
+
 ## v0.59.25, 28 May 2018
 
 - Elixir: Consider ignore conditions when determining latest version
