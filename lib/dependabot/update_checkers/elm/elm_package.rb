@@ -1,31 +1,64 @@
 # frozen_string_literal: true
 
+require "excon"
 require "dependabot/update_checkers/base"
-require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
-require "dependabot/git_commit_checker"
+require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 module Dependabot
   module UpdateCheckers
-    module Ruby
-      class Bundler < Dependabot::UpdateCheckers::ElmPackage
+    module Elm
+      class ElmPackage < Dependabot::UpdateCheckers::Base
+        VERSION_REGEX = /(\d+)\.(\d+)\.(\d+)/
+        VERSIONS_REGEX = /versions: \[("#{VERSION_REGEX}",?)+\]/
         def latest_version
-          raise NotImplementedError
+          versions.last
         end
 
         def latest_resolvable_version
-          raise NotImplementedError
+          # TODO: how do we deal with resolvability in elm?
+          latest_version
         end
 
-        alias latest_resolvable_version_with_no_unlock latest_resolvable_version
+        def latest_resolvable_version_with_no_unlock
+          # No concept of "unlocking" for elm-packages
+          dependency.version
+        end
 
         def updated_requirements
-          raise NotImplementedError
+
         end
 
         private
 
+        def updated_dependencies_after_full_unlock
+          throw NotImplemented
+        end
+
         def latest_version_resolvable_with_full_unlock?
-          raise NotImplementedError
+          # Full unlock checks aren't relevant for elm-packages
+          false
+        end
+
+        def versions
+          url = "http://package.elm-lang.org/packages/#{dependency.name}/"
+
+          response = Excon.get(
+            url,
+            idempotent: true,
+            omit_default_port: true,
+            middlewares: SharedHelpers.excon_middleware
+          )
+
+          return [] unless response.status == 200
+
+          matches = VERSIONS_REGEX.match(response.body).to_a
+
+          return [] unless matches.any?
+
+          matches[0].scan(VERSION_REGEX).
+            map {|strings| string.map(&:to_i)}.
+            sort
         end
       end
     end

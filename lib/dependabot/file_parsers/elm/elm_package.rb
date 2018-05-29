@@ -45,7 +45,7 @@ module Dependabot
         end
 
         def max_of(version_requirement)
-          _, maybe_equals, *major_minor_patch = /<(=)? (\d)\.(\d)\.(\d)$/.match(version_requirement).to_a
+          _, maybe_equals, *major_minor_patch = /<(=)? (\d+)\.(\d+)\.(\d+)$/.match(version_requirement).to_a
           major, minor, patch = major_minor_patch.map(&:to_i)
           if maybe_equals != "="
             if patch > 0
