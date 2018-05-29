@@ -55,9 +55,7 @@ module Dependabot
               return sanitize_mixfile(content)
             end
 
-            if unlock_requirement?
-              content = relax_version(content, filename: file.name)
-            end
+            content = relax_version(content, filename: file.name)
             if replace_git_pin?
               content = replace_git_pin(content, filename: file.name)
             end
@@ -102,7 +100,7 @@ module Dependabot
               return lower_bound_req
             end
 
-            lower_bound_req + ", <= #{latest_allowable_version}"
+            lower_bound_req + " and <= #{latest_allowable_version}"
           end
 
           # rubocop:disable Metrics/AbcSize

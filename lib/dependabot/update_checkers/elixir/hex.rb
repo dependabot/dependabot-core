@@ -17,10 +17,12 @@ module Dependabot
         require_relative "hex/version_resolver"
 
         def latest_version
-          return latest_version_for_git_dependency if git_dependency?
-          return latest_resolvable_version unless hex_registry_response
-
-          latest_release_on_hex_registry
+          @latest_version ||=
+            if git_dependency?
+              latest_version_for_git_dependency
+            else
+              latest_release_from_hex_registry || latest_resolvable_version
+            end
         end
 
         def latest_resolvable_version
@@ -177,7 +179,8 @@ module Dependabot
           @version_resolver[unlock_requirement] ||=
             begin
               prepared_dependency_files = prepared_dependency_files(
-                unlock_requirement: unlock_requirement
+                unlock_requirement: unlock_requirement,
+                latest_allowable_version: latest_release_from_hex_registry
               )
 
               VersionResolver.new(
@@ -198,19 +201,27 @@ module Dependabot
           ).prepared_dependency_files
         end
 
-        def latest_release_on_hex_registry
-          versions =
-            hex_registry_response["releases"].
-            select { |release| version_class.correct?(release["version"]) }.
-            map { |release| version_class.new(release["version"]) }
+        def latest_release_from_hex_registry
+          @latest_release_from_hex_registry ||=
+            begin
+              versions = hex_registry_response&.fetch("releases", []) || []
+              versions =
+                versions.
+                select { |release| version_class.correct?(release["version"]) }.
+                map { |release| version_class.new(release["version"]) }
 
-          versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          versions.max
+              versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.reject! do |v|
+                ignore_reqs.any? { |r| r.satisfied_by?(v) }
+              end
+              versions.max
+            end
         end
 
         def hex_registry_response
-          return @hex_registry_response unless @hex_registry_response.nil?
+          return @hex_registry_response if @hex_registry_requested
+
+          @hex_registry_requested = true
 
           response = Excon.get(
             dependency_url,
@@ -219,8 +230,7 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          return nil unless response.status == 200
-
+          return unless response.status == 200
           @hex_registry_response = JSON.parse(response.body)
         end
 

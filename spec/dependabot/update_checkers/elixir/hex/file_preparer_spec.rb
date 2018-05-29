@@ -10,7 +10,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
       dependency_files: dependency_files,
       dependency: dependency,
       unlock_requirement: unlock_requirement,
-      replacement_git_pin: replacement_git_pin
+      replacement_git_pin: replacement_git_pin,
+      latest_allowable_version: latest_allowable_version
     )
   end
 
@@ -25,6 +26,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
     )
   end
 
+  let(:latest_allowable_version) { nil }
   let(:version) { "1.3.0" }
   let(:requirements) do
     [{ file: "mix.exs", requirement: "1.3.0", groups: [], source: nil }]
@@ -87,6 +89,15 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
 
         it "updates the requirement" do
           expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
+        end
+
+        context "and a latest allowable version" do
+          let(:latest_allowable_version) { Gem::Version.new("1.6.0") }
+
+          it "updates the requirement" do
+            expect(prepared_mixfile.content).
+              to include('{:plug, ">= 1.3.0 and <= 1.6.0"}')
+          end
         end
 
         context "and no version" do

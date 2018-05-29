@@ -30,13 +30,14 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   let(:ignored_versions) { [] }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "plug",
+      name: dependency_name,
       version: version,
       requirements: dependency_requirements,
       package_manager: "hex"
     )
   end
 
+  let(:dependency_name) { "plug" }
   let(:version) { "1.3.0" }
   let(:dependency_requirements) do
     [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
@@ -54,16 +55,19 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
   let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
 
+  let(:hex_url) { "https://hex.pm/api/packages/#{dependency_name}" }
+  let(:hex_response) do
+    fixture("elixir", "registry_api", "#{dependency_name}_response.json")
+  end
+
+  before do
+    stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
+  end
+
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    let(:hex_url) { "https://hex.pm/api/packages/plug" }
-    let(:hex_response) do
-      fixture("elixir", "registry_api", "plug_response.json")
-    end
-
     before do
-      stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
       allow(checker).to receive(:latest_resolvable_version).
         and_return(Gem::Version.new("1.3.5"))
     end
@@ -97,26 +101,22 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "phoenix",
-          version: "178ce1a2344515e9145599970313fcc190d4b881",
-          requirements: [
-            {
-              requirement: nil,
-              file: "mix.exs",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/phoenixframework/phoenix.git",
-                branch: "master",
-                ref: "v1.2.0"
-              }
-            }
-          ],
-          package_manager: "hex"
-        )
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
+      let(:dependency_requirements) do
+        [{
+          file: "mix.exs",
+          requirement: "~> 1.3.0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/phoenixframework/phoenix.git",
+            branch: "master",
+            ref: "v1.2.0"
+          }
+        }]
       end
+
       before do
         git_url = "https://github.com/phoenixframework/phoenix.git"
         git_header = {
@@ -137,21 +137,18 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
+    it { is_expected.to eq(Gem::Version.new("1.3.6")) }
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 1.3.5.a, < 2.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.3.4")) }
+    end
+
     context "with a version conflict at the latest version" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "phoenix",
-          version: "1.2.1",
-          requirements: [
-            {
-              file: "mix.exs",
-              requirement: "== 1.2.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "1.2.1" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "== 1.2.1", groups: [], source: nil }]
       end
 
       let(:mixfile_body) { fixture("elixir", "mixfiles", "exact_version") }
@@ -161,20 +158,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     context "when a subdependency needs updating" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "phoenix",
-          version: "1.2.5",
-          requirements: [
-            {
-              file: "mix.exs",
-              requirement: "~> 1.2.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "1.2.5" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "~> 1.2.1", groups: [], source: nil }]
       end
 
       let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
@@ -189,20 +176,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
       before { `mix hex.organization deauth dependabot` }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "example_package_a",
-          version: "1.0.0",
-          requirements: [
-            {
-              file: "mix.exs",
-              requirement: "~> 1.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "hex"
-        )
+      let(:dependency_name) { "example_package_a" }
+      let(:version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
 
       context "with good credentials" do
@@ -276,44 +253,29 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
 
       context "that is not the dependency we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "plug",
-            version: "1.2.0",
-            requirements: [
-              {
-                file: "mix.exs",
-                requirement: "1.2.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            package_manager: "hex"
-          )
+        let(:dependency_name) { "plug" }
+        let(:version) { "1.2.0" }
+        let(:dependency_requirements) do
+          [{ file: "mix.exs", requirement: "1.2.0", groups: [], source: nil }]
         end
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
 
       context "that is the dependency we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "phoenix",
-            version: "178ce1a2344515e9145599970313fcc190d4b881",
-            requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: ref
-                }
-              }
-            ],
-            package_manager: "hex"
-          )
+        let(:dependency_name) { "phoenix" }
+        let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
+        let(:dependency_requirements) do
+          [{
+            file: "mix.exs",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/phoenixframework/phoenix.git",
+              branch: "master",
+              ref: ref
+            }
+          }]
         end
 
         context "and has a tag" do
@@ -392,20 +354,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "phoenix",
-          version: "1.2.1",
-          requirements: [
-            {
-              file: "mix.exs",
-              requirement: "== 1.2.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "composer"
-        )
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "1.2.1" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "== 1.2.1", groups: [], source: nil }]
       end
 
       it { is_expected.to eq(Gem::Version.new("1.2.2")) }
@@ -428,29 +380,26 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         )
       end
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "plug",
-          version: "1.3.6",
-          requirements: [
-            {
-              requirement: "~> 1.3.0",
-              file: "apps/dependabot_business/mix.exs",
-              groups: [],
-              source: nil
-            },
-            {
-              requirement: "1.3.6",
-              file: "apps/dependabot_web/mix.exs",
-              groups: [],
-              source: nil
-            }
-          ],
-          package_manager: "hex"
-        )
+      let(:dependency_name) { "plug" }
+      let(:version) { "1.3.6" }
+      let(:dependency_requirements) do
+        [
+          {
+            requirement: "~> 1.3.0",
+            file: "apps/dependabot_business/mix.exs",
+            groups: [],
+            source: nil
+          },
+          {
+            requirement: "1.3.6",
+            file: "apps/dependabot_web/mix.exs",
+            groups: [],
+            source: nil
+          }
+        ]
       end
 
-      it { is_expected.to be >= Gem::Version.new("1.5.0") }
+      it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
   end
 
@@ -463,25 +412,20 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
 
       context "that is the dependency we're checking" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "phoenix",
-            version: "178ce1a2344515e9145599970313fcc190d4b881",
-            requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: ref
-                }
-              }
-            ],
-            package_manager: "hex"
-          )
+        let(:dependency_name) { "phoenix" }
+        let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
+        let(:dependency_requirements) do
+          [{
+            file: "mix.exs",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/phoenixframework/phoenix.git",
+              branch: "master",
+              ref: ref
+            }
+          }]
         end
 
         context "and has a tag" do
@@ -539,14 +483,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "mix.exs",
-              requirement: "~> 1.6.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "mix.exs",
+            requirement: "~> 1.6.0",
+            groups: [],
+            source: nil
+          }]
         )
     end
 
@@ -557,28 +499,20 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:lockfile_body) do
         fixture("elixir", "lockfiles", "git_source_tag_can_update")
       end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "phoenix",
-          version: "178ce1a2344515e9145599970313fcc190d4b881",
-          requirements: dependency_requirements,
-          package_manager: "hex"
-        )
-      end
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
       let(:dependency_requirements) do
-        [
-          {
-            requirement: nil,
-            file: "mix.exs",
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
-              branch: "master",
-              ref: "v1.2.0"
-            }
+        [{
+          requirement: nil,
+          file: "mix.exs",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/phoenixframework/phoenix.git",
+            branch: "master",
+            ref: "v1.2.0"
           }
-        ]
+        }]
       end
 
       before do
@@ -611,19 +545,17 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           and_call_original
         expect(checker.updated_requirements).
           to eq(
-            [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: "v1.3.2"
-                }
+            [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.3.2"
               }
-            ]
+            }]
           )
       end
     end
