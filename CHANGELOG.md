@@ -1,3 +1,7 @@
+## v0.59.27, 29 May 2018
+
+- JS: Handle git reference errors in FileUpdater
+
 ## v0.59.26, 29 May 2018
 
 - Fall back to GitHub git data API for large files
