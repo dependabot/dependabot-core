@@ -186,10 +186,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "with a directory specified" do
-        let(:file_fetcher_instance) do
-          child_class.new(source: source, credentials: credentials)
-        end
-
         context "that ends in a slash" do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
@@ -236,6 +232,61 @@ RSpec.describe Dependabot::FileFetchers::Base do
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_name).to eq("requirements.txt")
             end
+        end
+      end
+
+      context "when a dependency file is too big to download" do
+        let(:blob_url) do
+          "https://api.github.com/repos/#{repo}/git/blobs/"\
+          "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
+        end
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 403,
+              body: fixture("github", "file_too_large.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_python.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, blob_url).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "git_data_requirements_blob.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "falls back to the git data API" do
+          expect(files.first.content).to include("-r common.txt")
+          expect(WebMock).to have_requested(:get, blob_url)
+        end
+
+        context "with a directory specified" do
+          let(:directory) { "app/" }
+          let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+          before do
+            stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "contents_python.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).
+              to have_requested(:get, url + "requirements.txt?ref=sha")
+          end
         end
       end
     end

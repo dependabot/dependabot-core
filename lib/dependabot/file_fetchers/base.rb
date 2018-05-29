@@ -119,7 +119,7 @@ module Dependabot
         end
 
         github_response.map do |f|
-          OpenStruct.new(name: f.name, path: f.path, type: f.type)
+          OpenStruct.new(name: f.name, path: f.path, type: f.type, sha: f.sha)
         end
       end
 
@@ -144,9 +144,7 @@ module Dependabot
         end
 
         case source.provider
-        when "github"
-          tmp = github_client_for_source.contents(repo, path: path, ref: commit)
-          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        when "github" then fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
@@ -165,15 +163,33 @@ module Dependabot
         path = path.gsub("#{dir}/", "")
 
         case provider
-        when "github"
-          tmp = github_client_for_source.contents(repo, path: path, ref: commit)
-          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        when "github" then fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         else raise "Unsupported provider '#{provider}'."
         end
       end
+
+      # rubocop:disable Metrics/AbcSize
+      def fetch_file_content_from_github(path, repo, commit)
+        tmp = github_client_for_source.contents(repo, path: path, ref: commit)
+        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+      rescue Octokit::Forbidden => error
+        raise unless error.message.include?("too_large")
+
+        # Fall back to Git Data API to fetch the file
+        prefix_dir = directory.gsub(%r{(^/|/$)}, "")
+        dir = File.dirname(path).gsub(%r{^/?#{Regexp.escape(prefix_dir)}/?}, "")
+        basename = File.basename(path)
+        file_details = repo_contents(dir: dir).find { |f| f.name == basename }
+        raise unless file_details
+
+        tmp = github_client_for_source.blob(repo, file_details.sha)
+        return tmp.content if tmp.encoding == "utf-8"
+        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+      end
+      # rubocop:enable Metrics/AbcSize
 
       def github_client_for_source
         access_token =
