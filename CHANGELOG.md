@@ -1,3 +1,7 @@
+## v0.59.30, 29 May 2018
+
+- Elixir: Update to specific version in FileUpdater
+
 ## v0.59.29, 29 May 2018
 
 - JS: Handle another npm error type
