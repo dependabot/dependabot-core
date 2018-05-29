@@ -7,6 +7,10 @@ module Dependabot
   module FileUpdaters
     module Elixir
       class Hex < Base
+        require_relative "hex/mixfile_requirement_updater"
+        require_relative "hex/mixfile_git_pin_updater"
+        require_relative "hex/mixfile_sanitizer"
+
         def self.updated_files_regex
           [
             /^mix\.exs$/,
@@ -122,12 +126,12 @@ module Dependabot
 
           return content unless old_req
 
-          declaration_regex =
-            /:#{Regexp.escape(dependency.name)},.*#{Regexp.escape(old_req)}/
-
-          content.gsub(declaration_regex) do |declaration|
-            declaration.gsub(old_req, updated_req)
-          end
+          MixfileRequirementUpdater.new(
+            dependency_name: dependency.name,
+            mixfile_content: content,
+            previous_requirement: old_req,
+            updated_requirement: updated_req
+          ).updated_content
         end
 
         def update_git_pin(content:, filename:, dependency:)
@@ -140,22 +144,18 @@ module Dependabot
             dig(:source, :ref)
 
           return content unless old_pin
+          return content if old_pin == updated_pin
 
-          requirement_line_regex =
-            /
-              :#{Regexp.escape(dependency.name)},.*
-              (?:ref|tag):\s+["']#{Regexp.escape(old_pin)}["']
-            /x
-
-          content.gsub(requirement_line_regex) do |requirement_line|
-            requirement_line.gsub(old_pin, updated_pin)
-          end
+          MixfileGitPinUpdater.new(
+            dependency_name: dependency.name,
+            mixfile_content: content,
+            previous_pin: old_pin,
+            updated_pin: updated_pin
+          ).updated_content
         end
 
         def sanitize_mixfile(content)
-          content.
-            gsub(/File\.read!\(.*?\)/, '"0.0.1"').
-            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
+          MixfileSanitizer.new(mixfile_content: content).sanitized_content
         end
 
         def mix_env

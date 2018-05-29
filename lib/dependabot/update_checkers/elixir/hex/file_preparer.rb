@@ -2,6 +2,9 @@
 
 require "dependabot/dependency_file"
 require "dependabot/update_checkers/elixir/hex"
+require "dependabot/file_updaters/elixir/hex/mixfile_requirement_updater"
+require "dependabot/file_updaters/elixir/hex/mixfile_git_pin_updater"
+require "dependabot/file_updaters/elixir/hex/mixfile_sanitizer"
 require "dependabot/utils/elixir/version"
 
 module Dependabot
@@ -68,28 +71,13 @@ module Dependabot
               dependency.requirements.find { |r| r.fetch(:file) == filename }.
               fetch(:requirement)
 
-            new_requirement = updated_version_requirement_string(filename)
-
-            requirement_line_regex =
-              if old_requirement
-                /
-                  :#{Regexp.escape(dependency.name)},.*
-                  #{Regexp.escape(old_requirement)}
-                /x
-              else
-                /:#{Regexp.escape(dependency.name)}(,|\s|\})/
-              end
-
-            content.gsub(requirement_line_regex) do |requirement_line|
-              if old_requirement
-                requirement_line.gsub(old_requirement, new_requirement)
-              else
-                requirement_line.gsub(
-                  ":#{dependency.name}",
-                  ":#{dependency.name}, \"#{new_requirement}\""
-                )
-              end
-            end
+            FileUpdaters::Elixir::Hex::MixfileRequirementUpdater.new(
+              dependency_name: dependency.name,
+              mixfile_content: content,
+              previous_requirement: old_requirement,
+              updated_requirement: updated_version_requirement_string(filename),
+              insert_if_bare: true
+            ).updated_content
           end
 
           def updated_version_requirement_string(filename)
@@ -132,22 +120,20 @@ module Dependabot
               dig(:source, :ref)
 
             return content unless old_pin
+            return content if old_pin == replacement_git_pin
 
-            requirement_line_regex =
-              /
-                :#{Regexp.escape(dependency.name)},.*
-                (?:ref|tag):\s+["']#{Regexp.escape(old_pin)}["']
-              /x
-
-            content.gsub(requirement_line_regex) do |requirement_line|
-              requirement_line.gsub(old_pin, replacement_git_pin)
-            end
+            FileUpdaters::Elixir::Hex::MixfileGitPinUpdater.new(
+              dependency_name: dependency.name,
+              mixfile_content: content,
+              previous_pin: old_pin,
+              updated_pin: replacement_git_pin
+            ).updated_content
           end
 
           def sanitize_mixfile(content)
-            content.
-              gsub(/File\.read!\(.*?\)/, '"0.0.1"').
-              gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
+            FileUpdaters::Elixir::Hex::MixfileSanitizer.new(
+              mixfile_content: content
+            ).sanitized_content
           end
 
           def mixfiles
