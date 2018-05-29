@@ -85,33 +85,29 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "phoenix",
             version: "aa218f56b14c9653891f9e74264a383fa43fefbd",
-            requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: "v1.3.0"
-                }
+            requirements: [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.3.0"
               }
-            ],
+            }],
             previous_version: "178ce1a2344515e9145599970313fcc190d4b881",
-            previous_requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: "v1.2.0"
-                }
+            previous_requirements: [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.2.0"
               }
-            ],
+            }],
             package_manager: "hex"
           )
         end
@@ -132,23 +128,19 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "plug",
             version: "1.4.3",
-            requirements: [
-              {
-                file: "mix.exs",
-                requirement: "~> 1.4",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "mix.exs",
+              requirement: "~> 1.4",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.3.5",
-            previous_requirements: [
-              {
-                file: "mix.exs",
-                requirement: "~> 1.3",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "mix.exs",
+              requirement: "~> 1.3",
+              groups: [],
+              source: nil
+            }],
             package_manager: "hex"
           )
         end
@@ -259,6 +251,47 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         )
       end
 
+      context "with no requirement" do
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "no_requirement") }
+        let(:lockfile_body) { fixture("elixir", "lockfiles", "no_requirement") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: target_version,
+            requirements: [
+              { file: "mix.exs", requirement: nil, groups: [], source: nil }
+            ],
+            previous_version: "1.3.0",
+            previous_requirements: [
+              { file: "mix.exs", requirement: nil, groups: [], source: nil }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        context "targeting 1.3.2" do
+          let(:target_version) { "1.3.2" }
+
+          it "updates the dependency version in the lockfile" do
+            expect(updated_lockfile_content).to include %({:hex, :plug, "1.3.2")
+            expect(updated_lockfile_content).to include(
+              "8391d8ba2e2c187de069211110a882599e851f64550c556163b5130e1e2dbc1b"
+            )
+          end
+        end
+
+        context "targeting 1.3.6" do
+          let(:target_version) { "1.3.6" }
+
+          it "updates the dependency version in the lockfile" do
+            expect(updated_lockfile_content).to include %({:hex, :plug, "1.3.6")
+            expect(updated_lockfile_content).to include(
+              "bcdf94ac0f4bc3b804bdbdbde37ebf598bd7ed2bfa5106ed1ab5984a09b7e75f"
+            )
+          end
+        end
+      end
+
       context "when the subdependencies should have changed" do
         let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
         let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
@@ -266,23 +299,19 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "phoenix",
             version: "1.3.0",
-            requirements: [
-              {
-                file: "mix.exs",
-                requirement: "~> 1.3.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "mix.exs",
+              requirement: "~> 1.3.0",
+              groups: [],
+              source: nil
+            }],
             previous_version: "1.2.5",
-            previous_requirements: [
-              {
-                file: "mix.exs",
-                requirement: "~> 1.2.1",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "mix.exs",
+              requirement: "~> 1.2.1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "hex"
           )
         end
@@ -390,32 +419,28 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
             name: "phoenix",
             version: "463e9d282e999fff1737cc6ca09074cf3dbca4ff",
             previous_version: "178ce1a2344515e9145599970313fcc190d4b881",
-            requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: nil
-                }
+            requirements: [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: nil
               }
-            ],
-            previous_requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: nil
-                }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: nil
               }
-            ],
+            }],
             package_manager: "hex"
           )
         end

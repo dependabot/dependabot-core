@@ -117,7 +117,7 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
-          expect(dependency.version).to eq("1.5.0")
+          expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
             [
               {

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
+require "dependabot/utils/elixir/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -91,7 +92,28 @@ module Dependabot
 
         def mixfile_content_for_lockfile_generation(file)
           content = updated_mixfile_content(file)
+          content = lock_mixfile_dependency_versions(content, file.name)
           sanitize_mixfile(content)
+        end
+
+        def lock_mixfile_dependency_versions(mixfile_content, filename)
+          dependencies.
+            reduce(mixfile_content.dup) do |content, dep|
+              # Run on the updated mixfile content, so we're updating from the
+              # updated requirements
+              req_details = dep.requirements.find { |r| r[:file] == filename }
+
+              next content unless req_details
+              next content unless Utils::Elixir::Version.correct?(dep.version)
+
+              MixfileRequirementUpdater.new(
+                dependency_name: dep.name,
+                mixfile_content: content,
+                previous_requirement: req_details.fetch(:requirement),
+                updated_requirement: dep.version,
+                insert_if_bare: true
+              ).updated_content
+            end
         end
 
         def updated_mixfile_content(file)
