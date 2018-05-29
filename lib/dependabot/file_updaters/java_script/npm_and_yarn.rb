@@ -154,7 +154,8 @@ module Dependabot
           if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
-          if error.message.include?("did not match any file(s) known to git")
+          if error.message.include?("did not match any file(s) known to git") ||
+             error.message.include?("Non-registry package missing package.json")
             msg = "Error while generating package-lock.json:\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           end
