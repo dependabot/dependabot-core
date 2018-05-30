@@ -1,3 +1,7 @@
+## v0.59.31, 30 May 2018
+
+- PHP: Fix bug in subdependency updates
+
 ## v0.59.30, 29 May 2018
 
 - Elixir: Update to specific version in FileUpdater
