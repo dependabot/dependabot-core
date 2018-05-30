@@ -62,14 +62,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     end
 
     context "when the user wants a pre-release" do
-      let(:dependency_version) { "18.0-beta" }
-      its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      let(:dependency_version) { "23.0-rc1-android" }
+      its([:version]) do
+        is_expected.to eq(version_class.new("23.7-rc1-android"))
+      end
     end
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
         fixture("java", "maven_central_metadata", "with_date_releases.xml")
       end
+      let(:dependency_version) { "3.1" }
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
@@ -80,12 +83,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
 
     context "when the user has asked to ignore a major version" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
-      its([:version]) { is_expected.to eq(version_class.new("22.0-android")) }
+      let(:dependency_version) { "17.0" }
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:version]) { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "with a repository from credentials" do
@@ -177,7 +181,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
-    its(:count) { is_expected.to eq(63) }
+    its(:count) { is_expected.to eq(64) }
 
     describe "the first version" do
       subject { versions.first }
@@ -191,7 +195,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     describe "the last version" do
       subject { versions.last }
 
-      its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -241,7 +245,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       describe "the last version" do
         subject { versions.last }
 
-        its([:version]) { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+        its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
@@ -255,7 +259,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
             to_return(status: 200, body: body)
         end
 
-        its(:count) { is_expected.to eq(80) }
+        its(:count) { is_expected.to eq(81) }
 
         describe "the first version" do
           subject { versions.first }

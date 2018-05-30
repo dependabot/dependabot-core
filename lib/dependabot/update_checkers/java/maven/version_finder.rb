@@ -12,6 +12,8 @@ module Dependabot
     module Java
       class Maven
         class VersionFinder
+          TYPE_SUFFICES = %w(jre android java).freeze
+
           def initialize(dependency:, dependency_files:, credentials:,
                          ignored_versions:)
             @dependency       = dependency
@@ -34,6 +36,10 @@ module Dependabot
                 possible_versions.
                 reject { |v| v.fetch(:version) > version_class.new(1900) }
             end
+
+            possible_versions =
+              possible_versions.
+              select { |v| matches_dependency_version_type?(v.fetch(:version)) }
 
             ignored_versions.each do |req|
               ignore_req = Utils::Java::Requirement.new(req.split(","))
@@ -122,6 +128,20 @@ module Dependabot
                   "password" => cred.fetch("password", nil)
                 }
               end
+          end
+
+          def matches_dependency_version_type?(comparison_version)
+            return true unless dependency.version
+
+            current_type =
+              TYPE_SUFFICES.
+              find { |t| dependency.version.split(/[.\-]/).include?(t) }
+
+            version_type =
+              TYPE_SUFFICES.
+              find { |t| comparison_version.to_s.split(/[.\-]/).include?(t) }
+
+            current_type == version_type
           end
 
           def pom
