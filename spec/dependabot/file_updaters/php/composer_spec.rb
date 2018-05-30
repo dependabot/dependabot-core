@@ -308,6 +308,28 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
       end
 
+      context "when the dependency is a subdependency" do
+        let(:manifest_fixture_name) { "subdependency_update_required" }
+        let(:lockfile_fixture_name) { "subdependency_update_required" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "illuminate/contracts",
+            version: "5.2.45",
+            previous_version: "5.2.37",
+            requirements: [],
+            previous_requirements: [],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v5.2.45\"")
+          expect(updated_lockfile_content).
+            to include("22bde7b048a33c702d9737fc1446234fff9b1363")
+        end
+      end
+
       context "with a private registry" do
         let(:manifest_fixture_name) { "private_registry" }
         let(:lockfile_fixture_name) { "private_registry" }

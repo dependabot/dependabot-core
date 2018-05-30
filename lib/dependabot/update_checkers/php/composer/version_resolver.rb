@@ -78,7 +78,7 @@ module Dependabot
           def updated_version_requirement_string
             lower_bound =
               if requirements_to_unlock == :none
-                dependency.requirements.first&.fetch(:requirement)
+                dependency.requirements.first&.fetch(:requirement) || ">= 0"
               elsif dependency.version
                 ">= #{dependency.version}"
               else

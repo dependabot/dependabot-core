@@ -177,8 +177,11 @@ module Dependabot
               next content unless Utils::Php::Version.correct?(updated_req)
 
               old_req =
-                dep.requirements.find { |r| r[:file] == "composer.json" }.
+                dep.requirements.find { |r| r[:file] == "composer.json" }&.
                 fetch(:requirement)
+
+              # When updating a subdependency there won't be an old requirement
+              next content unless old_req
 
               regex =
                 /"#{Regexp.escape(dep.name)}"\s*:\s*"#{Regexp.escape(old_req)}"/
