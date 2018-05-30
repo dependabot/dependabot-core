@@ -115,6 +115,25 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
+
+      context "but no auth details" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
+        end
+
+        before do
+          stub_request(:get, private_registry_metadata_url).
+            to_return(status: 200, body: maven_central_releases)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/repo")
+        end
+      end
     end
 
     context "with a custom repository" do

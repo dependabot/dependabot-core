@@ -118,8 +118,8 @@ module Dependabot
               map do |cred|
                 {
                   "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                  "username" => cred.fetch("username"),
-                  "password" => cred.fetch("password")
+                  "username" => cred.fetch("username", nil),
+                  "password" => cred.fetch("password", nil)
                 }
               end
           end
