@@ -1,3 +1,9 @@
+## v0.59.32, 31 May 2018
+
+- Gradle: Handle ignored versions
+- Maven: Consider type suffix when determining version to update to
+- Maven: Handle credential URLs with login details in UpdateChecker
+
 ## v0.59.31, 30 May 2018
 
 - PHP: Fix bug in subdependency updates
