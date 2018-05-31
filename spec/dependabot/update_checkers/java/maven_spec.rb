@@ -65,14 +65,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     end
 
     context "when the user wants a pre-release" do
-      let(:dependency_version) { "18.0-beta" }
-      it { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      let(:dependency_version) { "23.0-rc1-android" }
+      it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
     end
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
         fixture("java", "maven_central_metadata", "with_date_releases.xml")
       end
+      let(:dependency_version) { "3.1" }
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
@@ -83,7 +84,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "when the version comes from a property" do
@@ -105,11 +106,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
 
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
-        it { is_expected.to eq(version_class.new("23.6-jre")) }
+        it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
   end
@@ -137,7 +138,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:dependency_version) { "4.3.12.RELEASE" }
       let(:metadata) { nil }
 
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
@@ -171,7 +172,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             }
           ]
         end
-        it { is_expected.to eq(version_class.new("23.6-jre")) }
+        it { is_expected.to eq(version_class.new("23.0")) }
 
         context "that affects multiple dependencies" do
           let(:pom_body) do
@@ -198,7 +199,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
               }
             ]
           end
-          it { is_expected.to eq(version_class.new("23.6-jre")) }
+          it { is_expected.to eq(version_class.new("23.0")) }
         end
       end
     end
@@ -288,7 +289,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           "org/springframework/spring-aop/maven-metadata.xml"
         end
 
-        it { is_expected.to eq(version_class.new("23.6-jre")) }
+        it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
   end

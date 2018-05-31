@@ -10,11 +10,12 @@ module Dependabot
       class Gradle
         class PropertyUpdater
           def initialize(dependency:, dependency_files:,
-                         target_version_details:)
+                         target_version_details:, ignored_versions:)
             @dependency       = dependency
             @dependency_files = dependency_files
             @target_version   = target_version_details&.fetch(:version)
             @source_url       = target_version_details&.fetch(:source_url)
+            @ignored_versions = ignored_versions
           end
 
           def update_possible?
@@ -23,7 +24,8 @@ module Dependabot
               dependencies_using_property.all? do |dep|
                 VersionFinder.new(
                   dependency: dep,
-                  dependency_files: dependency_files
+                  dependency_files: dependency_files,
+                  ignored_versions: ignored_versions
                 ).versions.
                   map { |v| v.fetch(:version) }.
                   include?(target_version)
@@ -49,7 +51,7 @@ module Dependabot
           private
 
           attr_reader :dependency, :dependency_files, :target_version,
-                      :source_url
+                      :source_url, :ignored_versions
 
           def dependencies_using_property
             @dependencies_using_property ||=

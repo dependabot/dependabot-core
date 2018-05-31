@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/file_parsers/java/gradle/repositories_finder"
 require "dependabot/update_checkers/java/gradle"
 require "dependabot/utils/java/version"
+require "dependabot/utils/java/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -12,10 +13,12 @@ module Dependabot
       class Gradle
         class VersionFinder
           GOOGLE_MAVEN_REPO = "https://maven.google.com"
+          TYPE_SUFFICES = %w(jre android java).freeze
 
-          def initialize(dependency:, dependency_files:)
+          def initialize(dependency:, dependency_files:, ignored_versions:)
             @dependency = dependency
             @dependency_files = dependency_files
+            @ignored_versions = ignored_versions
           end
 
           def latest_version_details
@@ -31,6 +34,17 @@ module Dependabot
               possible_versions =
                 possible_versions.
                 reject { |v| v.fetch(:version) > version_class.new(1900) }
+            end
+
+            possible_versions =
+              possible_versions.
+              select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+
+            ignored_versions.each do |req|
+              ignore_req = Utils::Java::Requirement.new(req.split(","))
+              possible_versions =
+                possible_versions.
+                reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
             end
 
             possible_versions.last
@@ -51,7 +65,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files
+          attr_reader :dependency, :dependency_files, :ignored_versions
 
           def wants_prerelease?
             return false unless dependency.version
@@ -118,6 +132,20 @@ module Dependabot
               FileParsers::Java::Gradle::RepositoriesFinder.new(
                 dependency_files: dependency_files
               ).repository_urls
+          end
+
+          def matches_dependency_version_type?(comparison_version)
+            return true unless dependency.version
+
+            current_type =
+              TYPE_SUFFICES.
+              find { |t| dependency.version.split(/[.\-]/).include?(t) }
+
+            version_type =
+              TYPE_SUFFICES.
+              find { |t| comparison_version.to_s.split(/[.\-]/).include?(t) }
+
+            current_type == version_type
           end
 
           def pom

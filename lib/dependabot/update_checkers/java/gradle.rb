@@ -84,7 +84,8 @@ module Dependabot
           @version_finder ||=
             VersionFinder.new(
               dependency: dependency,
-              dependency_files: dependency_files
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions
             )
         end
 
@@ -93,7 +94,8 @@ module Dependabot
             PropertyUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              target_version_details: latest_version_details
+              target_version_details: latest_version_details,
+              ignored_versions: ignored_versions
             )
         end
 

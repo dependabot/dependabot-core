@@ -9,11 +9,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::PropertyUpdater do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      target_version_details: target_version_details
+      target_version_details: target_version_details,
+      ignored_versions: ignored_versions
     )
   end
 
   let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:ignored_versions) { [] }
   let(:target_version_details) do
     {
       version: version_class.new("23.6-jre"),

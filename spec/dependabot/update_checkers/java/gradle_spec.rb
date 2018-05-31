@@ -68,14 +68,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
     end
 
     context "when the user wants a pre-release" do
-      let(:dependency_version) { "18.0-beta" }
-      it { is_expected.to eq(version_class.new("23.7-jre-rc1")) }
+      let(:dependency_version) { "23.0-rc1-android" }
+      it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
     end
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
         fixture("java", "maven_central_metadata", "with_date_releases.xml")
       end
+      let(:dependency_version) { "3.1" }
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
@@ -86,7 +87,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "when the version comes from a property" do
@@ -96,24 +97,22 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "1.1.4-3",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "kotlin_version" }
-          }
-        ]
+        [{
+          file: "pom.xml",
+          requirement: "1.1.4-3",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "kotlin_version" }
+        }]
       end
       let(:dependency_name) { "org.jetbrains.kotlin:kotlin-stdlib-jre8" }
       let(:dependency_version) { "1.1.4-3" }
 
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
 
       context "that affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
-        it { is_expected.to eq(version_class.new("23.6-jre")) }
+        it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
   end
@@ -129,20 +128,18 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "1.1.4-3",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "kotlin_version" }
-          }
-        ]
+        [{
+          file: "pom.xml",
+          requirement: "1.1.4-3",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "kotlin_version" }
+        }]
       end
       let(:dependency_name) { "org.jetbrains.kotlin:kotlin-stdlib-jre8" }
       let(:dependency_version) { "1.1.4-3" }
 
-      it { is_expected.to eq(version_class.new("23.6-jre")) }
+      it { is_expected.to eq(version_class.new("23.0")) }
 
       context "that affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
@@ -172,17 +169,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "build.gradle",
-              requirement: "23.6-jre",
-              groups: [],
-              source: {
-                type: "maven_repo",
-                url: "https://repo.maven.apache.org/maven2"
-              }
+          [{
+            file: "build.gradle",
+            requirement: "23.6-jre",
+            groups: [],
+            source: {
+              type: "maven_repo",
+              url: "https://repo.maven.apache.org/maven2"
             }
-          ]
+          }]
         )
     end
   end
@@ -244,8 +239,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
+            ignored_versions: [],
             target_version_details: {
-              version: version_class.new("23.6-jre"),
+              version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
             }
           ).
@@ -302,8 +298,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
+            ignored_versions: [],
             target_version_details: {
-              version: version_class.new("23.6-jre"),
+              version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
             }
           ).
@@ -312,56 +309,48 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
           [
             Dependabot::Dependency.new(
               name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
-              version: "23.6-jre",
+              version: "23.0",
               previous_version: "1.1.4-3",
-              requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: {
-                    type: "maven_repo",
-                    url: "https://repo.maven.apache.org/maven2"
-                  },
-                  metadata: { property_name: "kotlin_version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "1.1.4-3",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "kotlin_version" }
-                }
-              ],
+              requirements: [{
+                file: "build.gradle",
+                requirement: "23.0",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                },
+                metadata: { property_name: "kotlin_version" }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "1.1.4-3",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "kotlin_version" }
+              }],
               package_manager: "gradle"
             ),
             Dependabot::Dependency.new(
               name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
-              version: "23.6-jre",
+              version: "23.0",
               previous_version: "1.1.4-3",
-              requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: {
-                    type: "maven_repo",
-                    url: "https://repo.maven.apache.org/maven2"
-                  },
-                  metadata: { property_name: "kotlin_version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "1.1.4-3",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "kotlin_version" }
-                }
-              ],
+              requirements: [{
+                file: "build.gradle",
+                requirement: "23.0",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                },
+                metadata: { property_name: "kotlin_version" }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "1.1.4-3",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "kotlin_version" }
+              }],
               package_manager: "gradle"
             )
           ]
