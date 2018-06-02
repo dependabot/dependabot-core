@@ -19,9 +19,19 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     fixture("java", "maven_central_metadata", "with_release.xml")
   end
 
+  let(:maven_central_version_files_url) do
+    "https://repo.maven.apache.org/maven2/"\
+    "com/google/guava/guava/23.6-jre/"
+  end
+  let(:maven_central_version_files) do
+    fixture("java", "maven_central_version_files", "guava-23.6.html")
+  end
+
   before do
     stub_request(:get, maven_central_metadata_url).
       to_return(status: 200, body: maven_central_releases)
+    stub_request(:get, maven_central_version_files_url).
+      to_return(status: 200, body: maven_central_version_files)
   end
 
   let(:checker) do
@@ -66,6 +76,14 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when the user wants a pre-release" do
       let(:dependency_version) { "23.0-rc1-android" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/23.7-rc1-android/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "guava-23.7.html")
+      end
+
       it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
     end
 
@@ -73,17 +91,53 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:maven_central_releases) do
         fixture("java", "maven_central_metadata", "with_date_releases.xml")
       end
+      let(:dependency_name) { "commons-collections:commons-collections" }
       let(:dependency_version) { "3.1" }
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "commons-collections/commons-collections/maven-metadata.xml"
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "commons-collections/commons-collections/3.2.2/"
+      end
+      let(:maven_central_version_files) do
+        fixture(
+          "java",
+          "maven_central_version_files",
+          "commons-collections-3.2.2.html"
+        )
+      end
+
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
         let(:dependency_version) { "20030418" }
+        let(:maven_central_version_files_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "commons-collections/commons-collections/20040616/"
+        end
+        let(:maven_central_version_files) do
+          fixture(
+            "java",
+            "maven_central_version_files",
+            "commons-collections-20040616.html"
+          )
+        end
+
         it { is_expected.to eq(version_class.new("20040616")) }
       end
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/23.0/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "guava-23.0.html")
+      end
       it { is_expected.to eq(version_class.new("23.0")) }
     end
 
@@ -93,15 +147,20 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
       end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/springframework/spring-beans/23.0/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "spring-beans-23.0.html")
+      end
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "4.3.12.RELEASE",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "pom.xml",
+          requirement: "4.3.12.RELEASE",
+          groups: [],
+          source: nil
+        }]
       end
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
@@ -124,6 +183,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/springframework/spring-beans/23.0/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "spring-beans-23.0.html")
       end
       let(:dependency_requirements) do
         [{
@@ -151,6 +217,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         let(:maven_central_metadata_url) do
           "https://repo.maven.apache.org/maven2/"\
           "org/apache/maven/plugins/maven-javadoc-plugin/maven-metadata.xml"
+        end
+        let(:maven_central_version_files_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "org/apache/maven/plugins/maven-javadoc-plugin/23.0/"
+        end
+        let(:maven_central_version_files) do
+          fixture(
+            "java",
+            "maven_central_version_files",
+            "maven-javadoc-plugin-23.0.html"
+          )
         end
         let(:dependency_name) do
           "org.apache.maven.plugins:maven-javadoc-plugin"
@@ -273,20 +350,29 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
       context "for a dependency that uses a property from its parent" do
         let(:dependency_requirements) do
-          [
-            {
-              requirement: "2.5.6",
-              file: "legacy/some-spring-project/pom.xml",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            requirement: "2.5.6",
+            file: "legacy/some-spring-project/pom.xml",
+            groups: [],
+            source: nil
+          }]
         end
         let(:dependency_name) { "org.springframework:spring-aop" }
         let(:dependency_version) { "2.5.6" }
         let(:maven_central_metadata_url) do
           "https://repo.maven.apache.org/maven2/"\
           "org/springframework/spring-aop/maven-metadata.xml"
+        end
+        let(:maven_central_version_files_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "org/springframework/spring-aop/23.0/"
+        end
+        let(:maven_central_version_files) do
+          fixture(
+            "java",
+            "maven_central_version_files",
+            "spring-aop-23.0.html"
+          )
         end
 
         it { is_expected.to eq(version_class.new("23.0")) }
@@ -315,17 +401,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "pom.xml",
-              requirement: "23.6-jre",
-              groups: [],
-              source: {
-                type: "maven_repo",
-                url: "https://repo.maven.apache.org/maven2"
-              }
+          [{
+            file: "pom.xml",
+            requirement: "23.6-jre",
+            groups: [],
+            source: {
+              type: "maven_repo",
+              url: "https://repo.maven.apache.org/maven2"
             }
-          ]
+          }]
         )
     end
   end
@@ -354,16 +438,22 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-context/maven-metadata.xml"
       end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/springframework/spring-beans/23.6-jre/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "spring-beans-23.6.html")
+      end
+
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "4.3.12.RELEASE",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "springframework.version" }
-          }
-        ]
+        [{
+          file: "pom.xml",
+          requirement: "4.3.12.RELEASE",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "springframework.version" }
+        }]
       end
 
       before do
@@ -414,6 +504,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:maven_central_metadata_url_context) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-context/maven-metadata.xml"
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "org/springframework/spring-beans/23.6-jre/"
+      end
+      let(:maven_central_version_files) do
+        fixture("java", "maven_central_version_files", "spring-beans-23.6.html")
       end
       let(:dependency_requirements) do
         [{

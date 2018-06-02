@@ -48,7 +48,7 @@ module Dependabot
                 reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
             end
 
-            possible_versions.last
+            possible_versions.reverse.find { |v| released?(v.fetch(:version)) }
           end
 
           def versions
@@ -80,6 +80,27 @@ module Dependabot
             return false unless dependency.version
             return false unless version_class.correct?(dependency.version)
             version_class.new(dependency.version) >= version_class.new(100)
+          end
+
+          def released?(version)
+            repositories.any? do |repository_details|
+              url = repository_details.fetch("url")
+              response = Excon.get(
+                dependency_files_url(url, version),
+                user: repository_details.fetch("username"),
+                password: repository_details.fetch("password"),
+                idempotent: true,
+                omit_default_port: true,
+                middlewares: SharedHelpers.excon_middleware
+              )
+
+              artifact_id = dependency.name.split(":").last
+              type = dependency.requirements.first.
+                     dig(:source, :packaging_type)
+              response.body.include?("#{artifact_id}-#{version}.#{type}")
+            rescue Excon::Error::Socket, Excon::Error::Timeout
+              false
+            end
           end
 
           def dependency_metadata(repository_details)
@@ -156,6 +177,15 @@ module Dependabot
             "#{group_id.tr('.', '/')}/"\
             "#{artifact_id}/"\
             "maven-metadata.xml"
+          end
+
+          def dependency_files_url(repository_url, version)
+            group_id, artifact_id = dependency.name.split(":")
+
+            "#{repository_url}/"\
+            "#{group_id.tr('.', '/')}/"\
+            "#{artifact_id}/"\
+            "#{version}/"
           end
 
           def version_class
