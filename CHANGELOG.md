@@ -1,3 +1,7 @@
+## v0.59.34, 02 June 2018
+
+- Maven: Check for a jar on repository before selecting a version
+
 ## v0.59.33, 02 June 2018
 
 - Handle unlikely case of release without a tag name
