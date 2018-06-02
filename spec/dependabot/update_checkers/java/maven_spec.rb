@@ -625,7 +625,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     subject { checker.up_to_date? }
 
     context "when the current version isn't normal" do
-      let(:dependency_version) { "RELEASE802" }
+      let(:dependency_version) { "RELEASE&802" }
       it { is_expected.to eq(false) }
     end
   end
@@ -634,7 +634,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     subject { checker.can_update?(requirements_to_unlock: :all) }
 
     context "when the current version isn't normal" do
-      let(:dependency_version) { "RELEASE802" }
+      let(:dependency_version) { "RELEASE&802" }
       it { is_expected.to eq(false) }
     end
   end

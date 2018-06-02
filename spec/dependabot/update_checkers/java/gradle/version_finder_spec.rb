@@ -131,12 +131,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
-    its(:count) { is_expected.to eq(64) }
+    its(:count) { is_expected.to eq(70) }
 
     describe "the first version" do
       subject { versions.first }
 
-      its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+      its([:version]) { is_expected.to eq(version_class.new("r03")) }
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end

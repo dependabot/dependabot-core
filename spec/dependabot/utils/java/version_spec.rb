@@ -7,27 +7,41 @@ RSpec.describe Dependabot::Utils::Java::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
+  describe ".correct?" do
+    subject { described_class.correct?(version_string) }
+
+    context "with a normal version" do
+      let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a normal version" do
+      let(:version_string) { "Finchley" }
+      it { is_expected.to eq(true) }
+    end
+  end
+
   describe "#to_s" do
     subject { version.to_s }
 
     context "with no dashes" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq "1.0.0" }
+      it { is_expected.to eq("1.0.0") }
     end
 
     context "with a dot-specified prerelease" do
       let(:version_string) { "1.0.0.pre1" }
-      it { is_expected.to eq "1.0.0.pre1" }
+      it { is_expected.to eq("1.0.0.pre1") }
     end
 
     context "with a dash-specified prerelease" do
       let(:version_string) { "1.0.0-pre1" }
-      it { is_expected.to eq "1.0.0-pre1" }
+      it { is_expected.to eq("1.0.0-pre1") }
     end
 
     context "with an underscore-specified prerelease" do
       let(:version_string) { "1.0.0_pre1" }
-      it { is_expected.to eq "1.0.0_pre1" }
+      it { is_expected.to eq("1.0.0_pre1") }
     end
   end
 
@@ -113,6 +127,12 @@ RSpec.describe Dependabot::Utils::Java::Version do
 
       context "that is a pre-release" do
         let(:other_version) { described_class.new("1.0.0a1") }
+        it { is_expected.to eq(1) }
+      end
+
+      context "that is non-numeric" do
+        let(:version) { described_class.new("Finchley") }
+        let(:other_version) { described_class.new("Edgware") }
         it { is_expected.to eq(1) }
       end
 

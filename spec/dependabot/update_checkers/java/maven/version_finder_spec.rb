@@ -288,12 +288,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
-    its(:count) { is_expected.to eq(64) }
+    its(:count) { is_expected.to eq(70) }
 
     describe "the first version" do
       subject { versions.first }
 
-      its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+      its([:version]) { is_expected.to eq(version_class.new("r03")) }
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -343,7 +343,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       describe "the first version" do
         subject { versions.first }
 
-        its([:version]) { is_expected.to eq(version_class.new("10.0-rc1")) }
+        its([:version]) { is_expected.to eq(version_class.new("r03")) }
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
@@ -366,12 +366,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
             to_return(status: 200, body: body)
         end
 
-        its(:count) { is_expected.to eq(81) }
+        its(:count) { is_expected.to eq(87) }
 
         describe "the first version" do
           subject { versions.first }
 
-          its([:version]) { is_expected.to eq(version_class.new("1.0")) }
+          its([:version]) { is_expected.to eq(version_class.new("r01")) }
           its([:source_url]) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end

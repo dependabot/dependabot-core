@@ -23,6 +23,14 @@ module Dependabot
           "ga"       => 6, "" => 6, "final" => 6,
           "sp"       => 7
         }.freeze
+        VERSION_PATTERN =
+          '[0-9a-zA-Z]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'
+        ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
+
+        def self.correct?(version)
+          return false if version.nil?
+          version.to_s.match?(ANCHORED_VERSION_PATTERN)
+        end
 
         def initialize(version)
           @version_string = version.to_s
