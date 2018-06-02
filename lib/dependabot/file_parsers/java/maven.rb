@@ -57,8 +57,6 @@ module Dependabot
         end
 
         def dependency_from_dependency_node(pom, dependency_node, name)
-          property = version_property_name(dependency_node)
-
           Dependency.new(
             name: name,
             version: dependency_version(pom, dependency_node),
@@ -68,7 +66,10 @@ module Dependabot
               file: pom.name,
               groups: [],
               source: nil,
-              metadata: property ? { property_name: property } : nil
+              metadata: {
+                property_name: version_property_name(dependency_node),
+                packaging_type: packaging_type(pom, dependency_node) || "jar"
+              }
             }]
           )
         end
@@ -105,6 +106,14 @@ module Dependabot
           version_content = dependency_node.at_xpath("./version").content.strip
 
           evaluated_value(version_content, pom)
+        end
+
+        def packaging_type(pom, dependency_node)
+          return unless dependency_node.at_xpath("./type")
+          packaging_type_content = dependency_node.at_xpath("./type").
+                                   content.strip
+
+          evaluated_value(packaging_type_content, pom)
         end
 
         def version_property_name(dependency_node)

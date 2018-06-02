@@ -42,7 +42,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -67,7 +70,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -94,7 +100,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -120,7 +129,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -166,7 +178,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -194,7 +209,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -219,7 +237,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -238,7 +259,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -262,7 +286,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                 file: "pom.xml",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "project.version" }
+                metadata: {
+                  property_name: "project.version",
+                  packaging_type: "jar"
+                }
               }]
             )
           end
@@ -315,7 +342,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -376,7 +406,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -401,7 +434,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -426,7 +462,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -453,14 +492,20 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                 file: "pom.xml",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "maven-javadoc-plugin.version" }
+                metadata: {
+                  property_name: "maven-javadoc-plugin.version",
+                  packaging_type: "jar"
+                }
               },
               {
                 requirement: "2.10.4",
                 file: "pom.xml",
                 groups: [],
                 source: nil,
-                metadata: nil
+                metadata: {
+                  property_name: nil,
+                  packaging_type: "jar"
+                }
               }
             ]
           )
@@ -486,7 +531,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               file: "pom.xml",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: {
+                property_name: nil,
+                packaging_type: "jar"
+              }
             }]
           )
         end
@@ -565,14 +613,20 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
                 file: "pom.xml",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "guava.version" }
+                metadata: {
+                  property_name: "guava.version",
+                  packaging_type: "jar"
+                }
               },
               {
                 requirement: nil,
                 file: "util/pom.xml",
                 groups: [],
                 source: nil,
-                metadata: nil
+                metadata: {
+                  property_name: nil,
+                  packaging_type: "jar"
+                }
               }
             ]
           )
