@@ -40,7 +40,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
       requirement: "4.3.12.RELEASE",
       groups: [],
       source: nil,
-      metadata: { property_name: "springframework.version" }
+      metadata: {
+        property_name: "springframework.version",
+        packaging_type: "jar"
+      }
     }]
   end
   let(:dependency_name) { "org.springframework:spring-beans" }
@@ -115,14 +118,20 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 type: "maven_repo",
                 url: "https://repo.maven.apache.org/maven2"
               },
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "4.3.12.RELEASE",
               groups: [],
               source: nil,
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }],
             package_manager: "maven"
           ),
@@ -138,14 +147,20 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 type: "maven_repo",
                 url: "https://repo.maven.apache.org/maven2"
               },
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "4.3.12.RELEASE.1",
               groups: [],
               source: nil,
-              metadata: { property_name: "springframework.version" }
+              metadata: {
+                property_name: "springframework.version",
+                packaging_type: "jar"
+              }
             }],
             package_manager: "maven"
           )
@@ -174,7 +189,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
           requirement: "1.0.0-M2",
           groups: [],
           source: nil,
-          metadata: { property_name: "junit-platform.version" }
+          metadata: {
+            property_name: "junit-platform.version",
+            packaging_type: "jar"
+          }
         }]
       end
       let(:dependency_name) do
@@ -218,7 +236,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   requirement: nil,
                   groups: [],
                   source: nil,
-                  metadata: nil
+                  metadata: {
+                    property_name: nil,
+                    packaging_type: "jar"
+                  }
                 },
                 {
                   file: "pom.xml",
@@ -228,14 +249,20 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                     type: "maven_repo",
                     url: "https://repo.maven.apache.org/maven2"
                   },
-                  metadata: { property_name: "junit-platform.version" }
+                  metadata: {
+                    property_name: "junit-platform.version",
+                    packaging_type: "jar"
+                  }
                 },
                 {
                   file: "pom.xml",
                   requirement: "1.0.0",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "another.version" }
+                  metadata: {
+                    property_name: "another.version",
+                    packaging_type: "jar"
+                  }
                 }
               ],
               previous_requirements: [
@@ -244,21 +271,30 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   requirement: nil,
                   groups: [],
                   source: nil,
-                  metadata: nil
+                  metadata: {
+                    property_name: nil,
+                    packaging_type: "jar"
+                  }
                 },
                 {
                   file: "pom.xml",
                   requirement: "1.0.0-M2",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "junit-platform.version" }
+                  metadata: {
+                    property_name: "junit-platform.version",
+                    packaging_type: "jar"
+                  }
                 },
                 {
                   file: "pom.xml",
                   requirement: "1.0.0",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "another.version" }
+                  metadata: {
+                    property_name: "another.version",
+                    packaging_type: "jar"
+                  }
                 }
               ],
               package_manager: "maven"
@@ -275,14 +311,20 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   type: "maven_repo",
                   url: "https://repo.maven.apache.org/maven2"
                 },
-                metadata: { property_name: "junit-platform.version" }
+                metadata: {
+                  property_name: "junit-platform.version",
+                  packaging_type: "jar"
+                }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "1.0.0-M2",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "junit-platform.version" }
+                metadata: {
+                  property_name: "junit-platform.version",
+                  packaging_type: "jar"
+                }
               }],
               package_manager: "maven"
             )

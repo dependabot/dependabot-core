@@ -416,15 +416,16 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-context/maven-metadata.xml"
       end
       let(:dependency_requirements) do
-        [
-          {
-            file: "pom.xml",
-            requirement: "4.3.12.RELEASE",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "springframework.version" }
+        [{
+          file: "pom.xml",
+          requirement: "4.3.12.RELEASE",
+          groups: [],
+          source: nil,
+          metadata: {
+            property_name: "springframework.version",
+            packaging_type: "jar"
           }
-        ]
+        }]
       end
 
       before do
@@ -463,54 +464,58 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
               name: "org.springframework:spring-beans",
               version: "23.6-jre",
               previous_version: "4.3.12.RELEASE",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: {
-                    type: "maven_repo",
-                    url: "https://repo.maven.apache.org/maven2"
-                  },
-                  metadata: { property_name: "springframework.version" }
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                },
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
                 }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
                 }
-              ],
+              }],
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
               name: "org.springframework:spring-context",
               version: "23.6-jre.1",
               previous_version: "4.3.12.RELEASE.1",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre.1",
-                  groups: [],
-                  source: {
-                    type: "maven_repo",
-                    url: "https://repo.maven.apache.org/maven2"
-                  },
-                  metadata: { property_name: "springframework.version" }
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre.1",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                },
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
                 }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE.1",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE.1",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
                 }
-              ],
+              }],
               package_manager: "maven"
             )
           ]
