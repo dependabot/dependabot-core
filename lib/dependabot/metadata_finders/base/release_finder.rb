@@ -175,6 +175,11 @@ module Dependabot
 
         def fetch_github_releases
           releases = github_client.releases(source.repo)
+
+          # Remove any releases without a tag name. These are draft releases and
+          # aren't yet associated with a tag, so shouldn't be used.
+          releases = releases.reject { |r| r.tag_name.nil? }
+
           clean_release_names =
             releases.map { |r| r.tag_name.gsub(/^[^0-9\.]*/, "") }
 
