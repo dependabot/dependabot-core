@@ -1,3 +1,7 @@
+## v0.59.33, 02 June 2018
+
+- Handle unlikely case of release without a tag name
+
 ## v0.59.32, 31 May 2018
 
 - Gradle: Handle ignored versions
