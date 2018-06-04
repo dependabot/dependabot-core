@@ -498,6 +498,43 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    context "when the exact version we're updating from is still requested" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "typescript",
+          version: "2.9.1",
+          package_manager: "npm_and_yarn",
+          requirements:
+            [{
+              file: "package.json",
+              requirement: "^2.1.1",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+          previous_version: "2.1.4",
+          previous_requirements:
+            [{
+              file: "package.json",
+              requirement: "^2.1.1",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+        )
+      end
+      let(:files) { [package_json, yarn_lock] }
+      let(:manifest_fixture_name) { "typedoc-plugin-ui-router.json" }
+      let(:yarn_lock_fixture_name) { "typedoc-plugin-ui-router.lock" }
+
+      it "updates the lockfile" do
+        expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
+
+        expect(updated_yarn_lock.content).
+          to include("typescript@2.1.4:\n  version \"2.1.4\"")
+        expect(updated_yarn_lock.content).
+          to include("typescript@^2.1.1:\n  version \"2.9.1\"")
+      end
+    end
+
     describe "the updated package-lock.json" do
       it "has details of the updated item" do
         parsed_lockfile = JSON.parse(updated_npm_lock.content)
