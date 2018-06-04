@@ -1,3 +1,8 @@
+## v0.59.38, 04 June 2018
+
+- Rust: Convert ssh URLs to https in UpdateChecker
+- Rust: Handle ssh git dependencies in FileUpdater
+
 ## v0.59.37, 04 June 2018
 
 - JS: Handle empty package-lock.json files
