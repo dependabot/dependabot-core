@@ -1,3 +1,7 @@
+## v0.59.37, 04 June 2018
+
+- JS: Handle empty package-lock.json files
+
 ## v0.59.36, 04 June 2018
 
 - JS: Fix replaceDeclaration function, and test that it works for tricky case
