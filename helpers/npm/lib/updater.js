@@ -108,7 +108,7 @@ function muteStderr() {
 
 function installer_for_lockfile(oldLockfile) {
   var requireObjectsIncludeMatchers = Object.keys(
-    oldLockfile["dependencies"]
+    oldLockfile["dependencies"] || {}
   ).some(key => {
     var requires = oldLockfile["dependencies"][key]["requires"] || {};
     return Object.keys(requires).some(key2 => {

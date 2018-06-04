@@ -803,6 +803,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    ######################
+    # npm specific tests #
+    ######################
+    describe "npm specific" do
+      let(:files) { [package_json, package_lock] }
+
+      context "when the package lock is empty" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:npm_lock_fixture_name) { "no_dependencies.json" }
+
+        it "updates the files" do
+          expect(updated_files.count).to eq(2)
+        end
+      end
+    end
+
     #######################
     # Yarn specific tests #
     #######################
