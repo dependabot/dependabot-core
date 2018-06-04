@@ -13,14 +13,12 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
     described_class.new(
       dependency_files: files,
       dependencies: [dependency],
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
 
@@ -291,6 +289,32 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
             to include("utf8-ranges#47afd3c09c6583afdf4083fc9644f6f64172c8f8")
         end
 
+        context "with an ssh URl" do
+          let(:manifest_fixture_name) { "git_dependency_ssh" }
+          let(:lockfile_fixture_name) { "git_dependency_ssh" }
+          let(:requirements) { previous_requirements }
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "ssh://git@github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: nil
+              }
+            }]
+          end
+
+          it "updates the dependency version in the lockfile" do
+            expect(updated_lockfile_content).
+              to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
+                         "47afd3c09c6583afdf4083fc9644f6f64172c8f8")
+            expect(updated_lockfile_content).to_not include("git+https://")
+          end
+        end
+
         context "with an updated tag" do
           let(:manifest_fixture_name) { "git_dependency_with_tag" }
           let(:lockfile_fixture_name) { "git_dependency_with_tag" }
@@ -342,23 +366,19 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
           Dependabot::Dependency.new(
             name: "regex",
             version: "0.2.10",
-            requirements: [
-              {
-                file: "Cargo.toml",
-                requirement: "=0.2.10",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "Cargo.toml",
+              requirement: "=0.2.10",
+              groups: [],
+              source: nil
+            }],
             previous_version: "0.1.38",
-            previous_requirements: [
-              {
-                file: "Cargo.toml",
-                requirement: "=0.1.38",
-                groups: [],
-                source: nil
-              }
-            ],
+            previous_requirements: [{
+              file: "Cargo.toml",
+              requirement: "=0.1.38",
+              groups: [],
+              source: nil
+            }],
             package_manager: "cargo"
           )
         end

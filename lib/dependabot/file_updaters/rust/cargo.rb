@@ -6,6 +6,7 @@ require "dependabot/file_updaters/base"
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/shared_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module Rust
@@ -127,6 +128,7 @@ module Dependabot
               run_shell_command(command)
 
               updated_lockfile = File.read("Cargo.lock")
+              updated_lockfile = post_process_lockfile(updated_lockfile)
 
               if updated_lockfile.include?(desired_lockfile_content)
                 next updated_lockfile
@@ -227,9 +229,13 @@ module Dependabot
 
         def prepared_manifest_content(file)
           updated_content = updated_manifest_file_content(file)
-          return updated_content if git_dependency?
+          updated_content = pin_version(updated_content) unless git_dependency?
+          updated_content = replace_ssh_urls(updated_content)
+          updated_content
+        end
 
-          parsed_manifest = TomlRB.parse(updated_content)
+        def pin_version(content)
+          parsed_manifest = TomlRB.parse(content)
 
           FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
             next unless (req = parsed_manifest.dig(type, dependency.name))
@@ -243,6 +249,43 @@ module Dependabot
           end
 
           TomlRB.dump(parsed_manifest)
+        end
+
+        def replace_ssh_urls(content)
+          git_ssh_requirements_to_swap.each do |ssh_url, https_url|
+            content = content.gsub(ssh_url, https_url)
+          end
+          content
+        end
+
+        def post_process_lockfile(content)
+          git_ssh_requirements_to_swap.each do |ssh_url, https_url|
+            content = content.gsub(https_url, ssh_url)
+          end
+
+          content
+        end
+
+        def git_ssh_requirements_to_swap
+          return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
+
+          @git_ssh_requirements_to_swap = {}
+
+          manifest_files.each do |manifest|
+            parsed_manifest = TomlRB.parse(manifest.content)
+
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+              (parsed_manifest[type] || {}).each do |_, details|
+                next unless details.is_a?(Hash)
+                next unless details["git"]&.match?(%r{ssh://git@(.*?)/})
+
+                @git_ssh_requirements_to_swap[details["git"]] =
+                  details["git"].gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
+              end
+            end
+          end
+
+          @git_ssh_requirements_to_swap
         end
 
         def set_git_credentials
@@ -310,3 +353,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -106,7 +106,7 @@ module Dependabot
                 next unless details["git"]
 
                 details["git"] = details["git"].
-                                 gsub(%r{ssh://git@(.*?)(?::|/)}, 'https://\1/')
+                                 gsub(%r{ssh://git@(.*?)/}, 'https://\1/')
               end
             end
 
