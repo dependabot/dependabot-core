@@ -91,6 +91,14 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       end
     end
 
+    context "with a blank requirement string" do
+      let(:manifest_fixture_name) { "blank_version" }
+      let(:lockfile_fixture_name) { "blank_version" }
+      let(:string_req) { nil }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
     context "with a missing dependency" do
       let(:manifest_fixture_name) { "optional_dependency" }
       let(:lockfile_fixture_name) { "optional_dependency" }

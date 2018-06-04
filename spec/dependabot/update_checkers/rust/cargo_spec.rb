@@ -226,7 +226,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    it "delegates to VersionResolved" do
+    it "delegates to VersionResolver" do
       expect(Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver).
         to receive(:new).
         and_call_original
