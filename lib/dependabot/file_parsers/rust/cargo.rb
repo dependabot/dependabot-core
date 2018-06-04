@@ -86,7 +86,9 @@ module Dependabot
         end
 
         def requirement_from_declaration(declaration)
-          return declaration if declaration.is_a?(String)
+          if declaration.is_a?(String)
+            return declaration == "" ? nil : declaration
+          end
           unless declaration.is_a?(Hash)
             raise "Unexpected dependency declaration: #{declaration}"
           end

@@ -61,6 +61,29 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "with no version specified" do
+        let(:manifest_fixture_name) { "blank_version" }
+        let(:lockfile_fixture_name) { "blank_version" }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("time")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "Cargo.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+
       context "with a path dependency" do
         let(:manifest_fixture_name) { "path_dependency" }
         let(:lockfile_fixture_name) { "path_dependency" }
@@ -417,6 +440,29 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
                 source: nil
               }]
             )
+          end
+        end
+
+        context "with no version specified" do
+          let(:manifest_fixture_name) { "blank_version" }
+          let(:lockfile_fixture_name) { "blank_version" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("time")
+              expect(dependency.version).to eq("0.1.38")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
           end
         end
 
