@@ -31,7 +31,7 @@ module.exports = (oldLockfileContent, newLockfileContent, depName, newReq) => {
   const oldPackageReqs = getRequestedVersions(depName, oldJson);
   const newPackageReqs = getRequestedVersions(depName, newJson);
 
-  const reqToReplace = newPackageReqs.find((pattern) => {
+  const reqToReplace = newPackageReqs.find(pattern => {
     return !oldPackageReqs.includes(pattern);
   });
 
