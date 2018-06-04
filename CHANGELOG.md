@@ -1,3 +1,7 @@
+## v0.59.39, 04 June 2018
+
+- Rust: Handle blank requirements in FileParser
+
 ## v0.59.38, 04 June 2018
 
 - Rust: Convert ssh URLs to https in UpdateChecker
