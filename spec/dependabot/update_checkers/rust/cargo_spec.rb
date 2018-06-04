@@ -288,6 +288,21 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         # The SHA of the next version tag
         it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
       end
+
+      context "with an ssh URL" do
+        let(:manifest_fixture_name) { "git_dependency_ssh" }
+        let(:lockfile_fixture_name) { "git_dependency_ssh" }
+        let(:source) do
+          {
+            type: "git",
+            url: "ssh://git@github.com/BurntSushi/utf8-ranges",
+            branch: nil,
+            ref: nil
+          }
+        end
+
+        it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+      end
     end
   end
 
@@ -376,14 +391,12 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "Cargo.toml",
-              requirement: "0.1.40",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Cargo.toml",
+            requirement: "0.1.40",
+            groups: [],
+            source: nil
+          }]
         )
     end
   end

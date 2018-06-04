@@ -67,7 +67,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
         let(:unlock_requirement) { false }
 
         it "doesn't update the requirement" do
-          expect(prepared_manifest_file.content).to eq(manifest.content)
+          expect(prepared_manifest_file.content).to include('regex = "0.1.41"')
         end
       end
 
@@ -101,6 +101,25 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
               to include('git = "https://github.com/BurntSushi/utf8-ranges"')
             expect(prepared_manifest_file.content).
               to include('version = ">= 1.0.0"')
+          end
+
+          context "using ssh" do
+            let(:manifest_fixture_name) { "git_dependency_ssh" }
+            let(:lockfile_fixture_name) { "git_dependency_ssh" }
+
+            let(:source) do
+              {
+                type: "git",
+                url: "ssh://git@github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: nil
+              }
+            end
+
+            it "sanitizes the requirement" do
+              expect(prepared_manifest_file.content).
+                to include('git = "https://github.com/BurntSushi/utf8-ranges"')
+            end
           end
 
           context "with a tag" do

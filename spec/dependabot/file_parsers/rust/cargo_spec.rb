@@ -2,6 +2,7 @@
 
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require_relative "../shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::FileParsers::Rust::Cargo do
@@ -300,6 +301,33 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
           end
         end
 
+        context "with an ssh URL" do
+          let(:manifest_fixture_name) { "git_dependency_ssh" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("utf8-ranges")
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "git",
+                    url: "ssh://git@github.com/BurntSushi/utf8-ranges",
+                    branch: nil,
+                    ref: nil
+                  }
+                }]
+              )
+            end
+          end
+        end
+
         context "with a tag" do
           let(:manifest_fixture_name) { "git_dependency_with_tag" }
 
@@ -471,6 +499,35 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
                   }
                 }]
               )
+            end
+          end
+
+          context "with an ssh URL" do
+            let(:manifest_fixture_name) { "git_dependency_ssh" }
+            let(:lockfile_fixture_name) { "git_dependency_ssh" }
+
+            describe "the first dependency" do
+              subject(:dependency) { dependencies.first }
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("utf8-ranges")
+                expect(dependency.version).
+                  to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
+                expect(dependency.requirements).to eq(
+                  [{
+                    requirement: nil,
+                    file: "Cargo.toml",
+                    groups: ["dependencies"],
+                    source: {
+                      type: "git",
+                      url: "ssh://git@github.com/BurntSushi/utf8-ranges",
+                      branch: nil,
+                      ref: nil
+                    }
+                  }]
+                )
+              end
             end
           end
         end

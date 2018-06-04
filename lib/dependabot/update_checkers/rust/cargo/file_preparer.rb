@@ -51,6 +51,7 @@ module Dependabot
 
             content = relax_version(file.content) if unlock_requirement?
             content = replace_git_pin(content) if replace_git_pin?
+            content = replace_ssh_urls(content)
 
             content
           end
@@ -90,6 +91,22 @@ module Dependabot
               if req["rev"]
                 parsed_manifest[type][dependency.name]["rev"] =
                   replacement_git_pin
+              end
+            end
+
+            TomlRB.dump(parsed_manifest)
+          end
+
+          def replace_ssh_urls(content)
+            parsed_manifest = TomlRB.parse(content)
+
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+              (parsed_manifest[type] || {}).each do |_, details|
+                next unless details.is_a?(Hash)
+                next unless details["git"]
+
+                details["git"] = details["git"].
+                                 gsub(%r{ssh://git@(.*?)(?::|/)}, 'https://\1/')
               end
             end
 
