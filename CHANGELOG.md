@@ -1,3 +1,7 @@
+## v0.59.36, 04 June 2018
+
+- JS: Fix replaceDeclaration function, and test that it works for tricky case
+
 ## v0.59.35, 04 June 2018
 
 - Ignore failure to add team collaborators to PRs
