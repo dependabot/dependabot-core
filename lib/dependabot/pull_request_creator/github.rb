@@ -220,7 +220,9 @@ module Dependabot
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => error
-        raise unless error.message.include?("not a collaborator")
+        return if error.message.include?("not a collaborator")
+        return if error.message.include?("Could not resolve to a node")
+        raise
       end
 
       def add_assignees_to_pull_request(pull_request)
