@@ -1,3 +1,8 @@
+## v0.59.35, 04 June 2018
+
+- Ignore failure to add team collaborators to PRs
+- Maven: Handle versions that start non-numeric
+
 ## v0.59.34, 02 June 2018
 
 - Maven: Check for a jar on repository before selecting a version
