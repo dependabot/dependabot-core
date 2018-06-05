@@ -1,3 +1,7 @@
+## v0.59.43, 05 June 2018
+
+- Python: Select resolution type based on dependency requirements, not files
+
 ## v0.59.42, 05 June 2018
 
 - Maven: Handle versions without numbers in RequirementsUpdater
