@@ -1,3 +1,9 @@
+## v0.59.46, 05 June 2018
+
+- Python: Include requirements.txt requirement in parsed req if no pip-compile
+  file
+- Python: Handle sub-dependency updates within a pip-compile setup
+
 ## v0.59.45, 05 June 2018
 
 - Python: Pull private sources out of Pipfiles for quicker update checking
