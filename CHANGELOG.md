@@ -1,3 +1,8 @@
+## v0.59.40, 05 June 2018
+
+- JS: Add timeout logic to version resolver
+- JS: Raise PrivateSourceNotReachable error when a private source times out
+
 ## v0.59.39, 04 June 2018
 
 - Rust: Handle blank requirements in FileParser
