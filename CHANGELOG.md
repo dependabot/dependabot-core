@@ -1,3 +1,7 @@
+## v0.59.44, 05 June 2018
+
+- Python: Handle updating dependencies for which we can't find a latest version
+
 ## v0.59.43, 05 June 2018
 
 - Python: Select resolution type based on dependency requirements, not files
