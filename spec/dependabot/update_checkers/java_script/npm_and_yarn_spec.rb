@@ -68,14 +68,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: nil,
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^0.9.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.9.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -89,14 +87,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "etag",
           version: "1.7.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -108,14 +104,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: nil,
-            requirements: [
-              {
-                file: "package.json",
-                requirement: requirement,
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: requirement,
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -146,14 +140,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "@blep/blep",
           version: "1.0.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -189,19 +181,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "is-number",
           version: current_version,
-          requirements: [
-            {
-              requirement: req,
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: {
-                type: "git",
-                url: "https://github.com/jonschlinkert/is-number",
-                branch: nil,
-                ref: ref
-              }
+          requirements: [{
+            requirement: req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: ref
             }
-          ],
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -350,14 +340,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "etag",
           version: "1.0.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "stable",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "package.json",
+            requirement: "stable",
+            groups: [],
+            source: nil
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -384,14 +372,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.7.0",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "1.x",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "1.x",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -440,14 +426,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "etag",
               version: nil,
-              requirements: [
-                {
-                  file: "package.json",
-                  requirement: requirement,
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "package.json",
+                requirement: requirement,
+                groups: [],
+                source: nil
+              }],
               package_manager: "npm_and_yarn"
             )
           end
@@ -479,14 +463,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "@blep/blep",
           version: "1.0.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -513,14 +495,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
       context "without credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
         end
 
         it "raises a to Dependabot::PrivateSourceNotReachable error" do
@@ -577,19 +557,32 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "@blep/blep",
           version: "1.0.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: [],
-              source: {
-                type: "private_registry",
-                url: "https://npm.fury.io/dependabot"
-              }
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: [],
+            source: {
+              type: "private_registry",
+              url: "https://npm.fury.io/dependabot"
             }
-          ],
+          }],
           package_manager: "npm_and_yarn"
         )
+      end
+
+      context "when the request times out" do
+        before do
+          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_timeout
+        end
+
+        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+          expect { checker.latest_version }.
+            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              expect(error.source).to eq("npm.fury.io/dependabot")
+            end
+        end
       end
 
       context "with credentials" do
@@ -616,14 +609,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "@blep/blep",
               version: nil,
-              requirements: [
-                {
-                  file: "package.json",
-                  requirement: "^1.0.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: nil
+              }],
               package_manager: "npm_and_yarn"
             )
           end
@@ -649,17 +640,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             Dependabot::Dependency.new(
               name: "@blep/blep",
               version: "1.0.0",
-              requirements: [
-                {
-                  file: "package.json",
-                  requirement: "^1.0.0",
-                  groups: [],
-                  source: {
-                    type: "private_registry",
-                    url: "http://npm.fury.io/dependabot"
-                  }
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: {
+                  type: "private_registry",
+                  url: "http://npm.fury.io/dependabot"
                 }
-              ],
+              }],
               package_manager: "npm_and_yarn"
             )
           end
@@ -670,14 +659,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
       context "without credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
         end
 
         it "raises a to Dependabot::PrivateSourceNotReachable error" do
@@ -793,14 +780,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: nil,
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -819,14 +804,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "@blep/blep",
             version: "1.0.0",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -856,14 +839,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: "1.7.0",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -876,14 +857,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: "etag",
             version: nil,
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.7.0",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.7.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "npm_and_yarn"
           )
         end
@@ -906,14 +885,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         )
       end
       let(:requirements) do
-        [
-          {
-            file: "package.json",
-            requirement: req_string,
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "package.json",
+          requirement: req_string,
+          groups: [],
+          source: nil
+        }]
       end
       let(:req_string) { "^1.0.0" }
 
@@ -954,19 +931,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: "is-number",
           version: current_version,
-          requirements: [
-            {
-              requirement: req,
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: {
-                type: "git",
-                url: "https://github.com/jonschlinkert/is-number",
-                branch: nil,
-                ref: ref
-              }
+          requirements: [{
+            requirement: req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: ref
             }
-          ],
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -1027,14 +1002,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       )
     end
     let(:dependency_requirements) do
-      [
-        {
-          file: "package.json",
-          requirement: "^1.0.0",
-          groups: [],
-          source: nil
-        }
-      ]
+      [{
+        file: "package.json",
+        requirement: "^1.0.0",
+        groups: [],
+        source: nil
+      }]
     end
 
     it "delegates to the RequirementsUpdater" do
@@ -1050,14 +1023,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "package.json",
-              requirement: "^1.7.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "package.json",
+            requirement: "^1.7.0",
+            groups: [],
+            source: nil
+          }]
         )
     end
 
@@ -1084,14 +1055,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           and_call_original
         expect(checker.updated_requirements).
           to eq(
-            [
-              {
-                file: "package.json",
-                requirement: "^1.0.0",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }]
           )
       end
     end
@@ -1106,19 +1075,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         )
       end
       let(:dependency_requirements) do
-        [
-          {
-            requirement: "^2.0.0",
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/jonschlinkert/is-number",
-              branch: nil,
-              ref: "master"
-            }
+        [{
+          requirement: "^2.0.0",
+          file: "package.json",
+          groups: ["devDependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/jonschlinkert/is-number",
+            branch: nil,
+            ref: "master"
           }
-        ]
+        }]
       end
       let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
       let(:registry_response) do
@@ -1169,19 +1136,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           and_call_original
         expect(checker.updated_requirements).
           to eq(
-            [
-              {
-                file: "package.json",
-                requirement: "^4.0.0",
-                groups: ["devDependencies"],
-                source: {
-                  type: "git",
-                  url: "https://github.com/jonschlinkert/is-number",
-                  branch: nil,
-                  ref: "master"
-                }
+            [{
+              file: "package.json",
+              requirement: "^4.0.0",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "master"
               }
-            ]
+            }]
           )
       end
 
@@ -1191,19 +1156,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         end
 
         let(:dependency_requirements) do
-          [
-            {
-              requirement: nil,
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: {
-                type: "git",
-                url: "https://github.com/jonschlinkert/is-number",
-                branch: nil,
-                ref: "master"
-              }
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: "master"
             }
-          ]
+          }]
         end
 
         it "delegates to the RequirementsUpdater" do
@@ -1219,14 +1182,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             and_call_original
           expect(checker.updated_requirements).
             to eq(
-              [
-                {
-                  file: "package.json",
-                  requirement: "^4.0.0",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ]
+              [{
+                file: "package.json",
+                requirement: "^4.0.0",
+                groups: ["devDependencies"],
+                source: nil
+              }]
             )
         end
       end

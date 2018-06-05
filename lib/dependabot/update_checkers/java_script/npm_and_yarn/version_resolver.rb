@@ -178,7 +178,7 @@ module Dependabot
                 @retry_count += 1
                 if @retry_count > 2
                   raise if dependency_registry == "registry.npmjs.org"
-                  return nil
+                  raise PrivateSourceNotReachable, dependency_registry
                 end
                 sleep(rand(3.0..10.0)) && retry
               end
