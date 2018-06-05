@@ -1,3 +1,7 @@
+## v0.59.42, 05 June 2018
+
+- Maven: Handle versions without numbers in RequirementsUpdater
+
 ## v0.59.41, 05 June 2018
 
 - JS: Better timeout error handling
