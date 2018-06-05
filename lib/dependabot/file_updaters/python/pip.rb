@@ -74,7 +74,7 @@ module Dependabot
           changed_requirements.each do |req|
             updated_files << updated_file(
               file: original_file(req.fetch(:file)),
-              content: updated_requirement_of_setup_file_content(req)
+              content: updated_requirement_or_setup_file_content(req)
             )
           end
 
@@ -98,7 +98,7 @@ module Dependabot
           get_original_file(filename)
         end
 
-        def updated_requirement_of_setup_file_content(requirement)
+        def updated_requirement_or_setup_file_content(requirement)
           content = original_file(requirement.fetch(:file)).content
 
           updated_content =
