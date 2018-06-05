@@ -25,7 +25,8 @@ module Dependabot
 
         def latest_resolvable_version
           @latest_resolvable_version ||=
-            if pipfile
+            case resolver_type
+            when :pipfile
               PipfileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
@@ -33,7 +34,7 @@ module Dependabot
                 unlock_requirement: true,
                 latest_allowable_version: latest_version
               ).latest_resolvable_version
-            elsif pip_compile_files.any?
+            when :pip_compile
               PipCompileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
@@ -41,17 +42,19 @@ module Dependabot
                 unlock_requirement: true,
                 latest_allowable_version: latest_version
               ).latest_resolvable_version
-            else
+            when :requirements
               # pip doesn't (yet) do any dependency resolution, so if we don't
-              # have a Pipfile or a pip-conpile file, we just return the latest
+              # have a Pipfile or a pip-compile file, we just return the latest
               # version.
               latest_version
+            else raise "Unexpected resolver type #{resolver_type}"
             end
         end
 
         def latest_resolvable_version_with_no_unlock
           @latest_resolvable_version_with_no_unlock ||=
-            if pipfile
+            case resolver_type
+            when :pipfile
               PipfileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
@@ -59,7 +62,7 @@ module Dependabot
                 unlock_requirement: false,
                 latest_allowable_version: latest_version
               ).latest_resolvable_version
-            elsif pip_compile_files.any?
+            when :pip_compile
               PipCompileVersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files,
@@ -67,8 +70,9 @@ module Dependabot
                 unlock_requirement: false,
                 latest_allowable_version: latest_version
               ).latest_resolvable_version
-            else
+            when :requirements
               latest_pip_version_with_no_unlock
+            else raise "Unexpected resolver type #{resolver_type}"
             end
         end
 
@@ -92,6 +96,22 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def resolver_type
+          reqs = dependency.requirements
+
+          if (pipfile && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file) == "Pipfile" }
+            return :pipfile
+          end
+
+          if (pip_compile_files.any? && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file).end_with?(".in") }
+            return :pip_compile
+          end
+
+          :requirements
         end
 
         def fetch_latest_version

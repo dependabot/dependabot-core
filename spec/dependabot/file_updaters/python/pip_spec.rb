@@ -411,6 +411,25 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
       let(:manifest_fixture_name) { "unpinned.in" }
       let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "psycopg2",
+          version: "2.8.1",
+          requirements: [{
+            file: "requirements/test.in",
+            requirement: "==2.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "requirements/test.in",
+            requirement: "==2.7.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
 
       it "delegates to PipCompileFileUpdater" do
         dummy_updater =

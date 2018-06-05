@@ -184,13 +184,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
       context "set in credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "python_index",
-              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-              "replaces-base" => "true"
-            }
-          ]
+          [{
+            "type" => "python_index",
+            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+            "replaces-base" => "true"
+          }]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -251,13 +249,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
       context "set in credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "python_index",
-              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-              "replaces-base" => "false"
-            }
-          ]
+          [{
+            "type" => "python_index",
+            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+            "replaces-base" => "false"
+          }]
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
@@ -308,6 +304,14 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       end
       let(:manifest_fixture_name) { "unpinned.in" }
       let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
 
       it "delegates to PipCompileVersionResolver" do
         dummy_resolver =
@@ -331,6 +335,14 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         )
       end
       let(:pipfile_fixture_name) { "exact_version" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==2.18.0",
+          groups: [],
+          source: nil
+        }]
+      end
 
       it "delegates to PipfileVersionResolver" do
         dummy_resolver =
@@ -412,14 +424,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         Dependabot::Dependency.new(
           name: "luigi",
           version: "2.0.0",
-          requirements: [
-            {
-              file: "constraints.txt",
-              requirement: "==2.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "constraints.txt",
+            requirement: "==2.0.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "pip"
         )
       end
@@ -432,14 +442,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         Dependabot::Dependency.new(
           name: "luigi",
           version: "2.0",
-          requirements: [
-            {
-              file: "requirements.txt",
-              requirement: "==2.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "requirements.txt",
+            requirement: "==2.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "pip"
         )
       end

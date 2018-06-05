@@ -24,12 +24,31 @@ module Dependabot
         end
 
         def updated_dependency_files
-          return updated_pipfile_based_files if pipfile && lockfile
-          return updated_pip_compile_based_files if pip_compile_files.any?
-          updated_requirement_based_files
+          case resolver_type
+          when :pipfile then updated_pipfile_based_files
+          when :pip_compile then updated_pip_compile_based_files
+          when :requirements then updated_requirement_based_files
+          else raise "Unexpected resolver type: #{resolver_type}"
+          end
         end
 
         private
+
+        def resolver_type
+          reqs = dependencies.flat_map(&:requirements)
+
+          if (pipfile && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file) == "Pipfile" }
+            return :pipfile
+          end
+
+          if (pip_compile_files.any? && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file).end_with?(".in") }
+            return :pip_compile
+          end
+
+          :requirements
+        end
 
         def updated_pipfile_based_files
           PipfileFileUpdater.new(
