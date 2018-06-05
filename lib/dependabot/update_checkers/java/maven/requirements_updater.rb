@@ -13,7 +13,7 @@ module Dependabot
     module Java
       class Maven
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9]+(?:\.[a-zA-Z0-9\-]+)*/
+          VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/
 
           def initialize(requirements:, latest_version:, source_url:,
                          properties_to_update:)
@@ -32,7 +32,6 @@ module Dependabot
             # at the same index.
             requirements.map do |req|
               next req if req.fetch(:requirement).nil?
-              next req unless req.fetch(:requirement).match?(/\d/)
               next req if req.fetch(:requirement).include?(",")
 
               property_name = req.dig(:metadata, :property_name)
