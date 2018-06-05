@@ -43,7 +43,8 @@ module Dependabot
           dependencies = DependencySet.new
           parsed_requirement_files.each do |dep|
             requirements =
-              if pip_compile_files.any? && !dep["file"].end_with?(".in") then []
+              if lockfile_for_pip_compile_file?(dep["file"])
+                []
               else
                 [{
                   requirement: dep["requirement"],
@@ -73,14 +74,12 @@ module Dependabot
               Dependency.new(
                 name: normalised_name(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
-                requirements: [
-                  {
-                    requirement: dep["requirement"],
-                    file: Pathname.new(dep["file"]).cleanpath.to_path,
-                    source: nil,
-                    groups: []
-                  }
-                ],
+                requirements: [{
+                  requirement: dep["requirement"],
+                  file: Pathname.new(dep["file"]).cleanpath.to_path,
+                  source: nil,
+                  groups: []
+                }],
                 package_manager: "pip"
               )
           end
@@ -101,14 +100,12 @@ module Dependabot
                 Dependency.new(
                   name: normalised_name(dep_name),
                   version: dependency_version(dep_name, keys[:lockfile]),
-                  requirements: [
-                    {
-                      requirement: req.is_a?(String) ? req : req["version"],
-                      file: pipfile.name,
-                      source: nil,
-                      groups: [keys[:lockfile]]
-                    }
-                  ],
+                  requirements: [{
+                    requirement: req.is_a?(String) ? req : req["version"],
+                    file: pipfile.name,
+                    source: nil,
+                    groups: [keys[:lockfile]]
+                  }],
                   package_manager: "pip"
                 )
             end
@@ -140,6 +137,13 @@ module Dependabot
           end
 
           dependencies
+        end
+
+        def lockfile_for_pip_compile_file?(filename)
+          return false unless pip_compile_files.any?
+          return false unless filename.end_with?(".txt")
+          basename = filename.gsub(/\.txt$/, "")
+          pip_compile_files.any? { |f| f.name == basename + ".in" }
         end
 
         def parsed_requirement_files

@@ -558,6 +558,59 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           end
         end
 
+        context "with filenames that can't be figured out" do
+          let(:generated_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: fixture("python", "requirements", generated_fixture_name)
+            )
+          end
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("apipkg")
+              expect(dependency.version).to eq("1.4")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "==1.4",
+                  file: "requirements.txt",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("attrs")
+              expect(dependency.version).to eq("17.3.0")
+              expect(dependency.requirements).to match_array(
+                [
+                  {
+                    requirement: nil,
+                    file: "requirements/test.in",
+                    groups: [],
+                    source: nil
+                  },
+                  {
+                    requirement: "==17.3.0",
+                    file: "requirements.txt",
+                    groups: [],
+                    source: nil
+                  }
+                ]
+              )
+            end
+          end
+        end
+
         context "with a version bound" do
           let(:manifest_fixture_name) { "bounded.in" }
           let(:generated_fixture_name) { "pip_compile_bounded.txt" }
