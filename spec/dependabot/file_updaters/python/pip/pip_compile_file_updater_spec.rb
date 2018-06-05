@@ -103,6 +103,20 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       end
     end
 
+    context "with a subdependency" do
+      let(:dependency_name) { "pbr" }
+      let(:dependency_version) { "4.0.2" }
+      let(:dependency_previous_version) { "4.0.4" }
+      let(:dependency_requirements) { [] }
+      let(:dependency_previous_requirements) { [] }
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).
+          to include("pbr==4.0.4                # via mock")
+      end
+    end
+
     context "targeting a non-latest version" do
       let(:dependency_version) { "17.4.0" }
 

@@ -150,9 +150,23 @@ module Dependabot
           end
 
           def source_pip_config_file_name
-            dependency.requirements.
+            file_from_reqs =
+              dependency.requirements.
               map { |r| r[:file] }.
               find { |fn| fn.end_with?(".in") }
+
+            return file_from_reqs if file_from_reqs
+
+            pip_compile_filenames =
+              dependency_files.
+              select { |f| f.name.end_with?(".in") }.
+              map(&:name)
+
+            pip_compile_filenames.find do |fn|
+              req_file = dependency_files.
+                         find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
+              req_file&.content&.include?(dependency.name)
+            end
           end
 
           def pip_compile_options
