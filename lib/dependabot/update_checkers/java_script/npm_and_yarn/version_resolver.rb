@@ -162,6 +162,9 @@ module Dependabot
                 npm_response = Excon.get(
                   dependency_url,
                   headers: registry_auth_headers,
+                  connect_timeout: 5,
+                  write_timeout: 5,
+                  read_timeout: 5,
                   idempotent: true,
                   omit_default_port: true,
                   middlewares: SharedHelpers.excon_middleware
