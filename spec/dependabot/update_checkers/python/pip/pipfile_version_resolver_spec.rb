@@ -85,6 +85,11 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
+    context "when the latest version is nil" do
+      let(:latest_version) { nil }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
     context "with a path dependency" do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do

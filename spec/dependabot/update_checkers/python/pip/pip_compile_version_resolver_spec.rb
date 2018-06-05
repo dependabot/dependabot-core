@@ -89,6 +89,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:latest_version) { Gem::Version.new("18.0.0") }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
+
+      context "when the latest version is nil" do
+        let(:latest_version) { nil }
+        it { is_expected.to eq(Gem::Version.new("18.1.0")) }
+      end
     end
 
     context "with a Python 2.7 library" do

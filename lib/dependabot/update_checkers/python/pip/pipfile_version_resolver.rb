@@ -189,20 +189,7 @@ module Dependabot
           end
 
           def updated_version_requirement_string
-            lower_bound =
-              if dependency.version
-                ">= #{dependency.version}"
-              else
-                version_for_requirement =
-                  dependency.requirements.map { |r| r[:requirement] }.compact.
-                  reject { |req_string| req_string.start_with?("<") }.
-                  select { |req_string| req_string.match?(VERSION_REGEX) }.
-                  map { |req_string| req_string.match(VERSION_REGEX) }.
-                  select { |version| Gem::Version.correct?(version) }.
-                  max_by { |version| Gem::Version.new(version) }
-
-                ">= #{version_for_requirement || 0}"
-              end
+            lower_bound_req = updated_version_req_lower_bound
 
             # Add the latest_allowable_version as an upper bound. This means
             # ignore conditions are considered when checking for the latest
@@ -211,7 +198,28 @@ module Dependabot
             # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
             # unresolvable then the `latest_allowable_version` will be v3, and
             # we won't be ignoring v2.x releases like we should be.
-            lower_bound + ", <= #{latest_allowable_version}"
+            return lower_bound_req if latest_allowable_version.nil?
+            unless Utils::Python::Version.correct?(latest_allowable_version)
+              return lower_bound_req
+            end
+
+            lower_bound_req + ", <= #{latest_allowable_version}"
+          end
+
+          def updated_version_req_lower_bound
+            if dependency.version
+              ">= #{dependency.version}"
+            else
+              version_for_requirement =
+                dependency.requirements.map { |r| r[:requirement] }.compact.
+                reject { |req_string| req_string.start_with?("<") }.
+                select { |req_string| req_string.match?(VERSION_REGEX) }.
+                map { |req_string| req_string.match(VERSION_REGEX) }.
+                select { |version| Gem::Version.correct?(version) }.
+                max_by { |version| Gem::Version.new(version) }
+
+              ">= #{version_for_requirement || 0}"
+            end
           end
 
           def dependency_version(dep_name, group)
