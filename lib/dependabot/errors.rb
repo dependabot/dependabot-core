@@ -72,6 +72,7 @@ module Dependabot
   # Source level errors #
   #######################
 
+  # TODO: Rename to PrivateSourceAuthenticationFailure
   class PrivateSourceNotReachable < DependabotError
     attr_reader :source
 
@@ -80,6 +81,15 @@ module Dependabot
       msg = "The following source could not be reached as it requires "\
             "authentication (and any provided details were invalid): #{source}"
       super(msg)
+    end
+  end
+
+  class PrivateSourceTimedOut < DependabotError
+    attr_reader :source
+
+    def initialize(source)
+      @source = source
+      super("The following source timed out: #{source}")
     end
   end
 

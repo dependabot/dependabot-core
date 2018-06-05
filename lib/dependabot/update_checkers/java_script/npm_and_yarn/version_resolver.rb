@@ -149,36 +149,36 @@ module Dependabot
           def yanked?(version)
             Excon.get(
               dependency_url + "/#{version}",
-              headers: registry_auth_headers,
-              idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              SharedHelpers.excon_defaults.merge(
+                headers: registry_auth_headers,
+                idempotent: true
+              )
             ).status == 404
           end
 
           def npm_details
+            return @npm_details if @npm_details_lookup_attempted
+            @npm_details_lookup_attempted = true
             @npm_details ||=
               begin
                 npm_response = Excon.get(
                   dependency_url,
-                  headers: registry_auth_headers,
-                  connect_timeout: 5,
-                  write_timeout: 5,
-                  read_timeout: 5,
-                  idempotent: true,
-                  omit_default_port: true,
-                  middlewares: SharedHelpers.excon_middleware
+                  SharedHelpers.excon_defaults.merge(
+                    headers: registry_auth_headers,
+                    idempotent: true
+                  )
                 )
 
                 check_npm_response(npm_response)
 
                 JSON.parse(npm_response.body)
-              rescue JSON::ParserError, Excon::Error::Timeout
+              rescue JSON::ParserError, Excon::Error::Timeout => error
                 @retry_count ||= 0
                 @retry_count += 1
                 if @retry_count > 2
                   raise if dependency_registry == "registry.npmjs.org"
-                  raise PrivateSourceNotReachable, dependency_registry
+                  raise unless error.is_a?(Excon::Error::Timeout)
+                  raise PrivateSourceTimedOut, dependency_registry
                 end
                 sleep(rand(3.0..10.0)) && retry
               end

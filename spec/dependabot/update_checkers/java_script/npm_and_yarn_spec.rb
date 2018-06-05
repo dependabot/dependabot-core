@@ -575,11 +575,17 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_timeout
+          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            to_timeout
+
+          # Speed up spec by stopping any retry logic
+          resolver = checker.send(:version_resolver)
+          resolver.instance_variable_set(:@retry_count, 10)
         end
 
-        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+        it "raises a to Dependabot::PrivateSourceTimedOut error" do
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
         end

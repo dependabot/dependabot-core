@@ -86,5 +86,15 @@ module Dependabot
     def self.excon_middleware
       Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
     end
+
+    def self.excon_defaults
+      {
+        connect_timeout: 5,
+        write_timeout: 5,
+        read_timeout: 5,
+        omit_default_port: true,
+        middlewares: excon_middleware
+      }
+    end
   end
 end
