@@ -32,6 +32,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
   end
   let(:ignored_versions) { [] }
   let(:dependency_files) { [requirements_file] }
+  let(:pipfile) do
+    Dependabot::DependencyFile.new(
+      name: "Pipfile",
+      content: fixture("python", "pipfiles", pipfile_fixture_name)
+    )
+  end
+  let(:pipfile_fixture_name) { "exact_version" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",
@@ -182,6 +189,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
       end
 
+      context "set in a Pipfile" do
+        let(:pipfile_fixture_name) { "private_source" }
+        let(:dependency_files) { [pipfile] }
+        let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
@@ -328,13 +342,6 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "with a Pipfile" do
       let(:dependency_files) { [pipfile] }
-      let(:pipfile) do
-        Dependabot::DependencyFile.new(
-          name: "Pipfile",
-          content: fixture("python", "pipfiles", pipfile_fixture_name)
-        )
-      end
-      let(:pipfile_fixture_name) { "exact_version" }
       let(:dependency_requirements) do
         [{
           file: "Pipfile",

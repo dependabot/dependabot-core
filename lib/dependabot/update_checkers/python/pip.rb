@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "excon"
+require "toml-rb"
+
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
 require "dependabot/utils/python/requirement"
@@ -177,6 +179,7 @@ module Dependabot
         def index_urls
           main_index_url =
             config_variable_index_urls[:main] ||
+            pipfile_index_urls[:main] ||
             requirement_file_index_urls[:main] ||
             pip_conf_index_urls[:main] ||
             "https://pypi.python.org/simple/"
@@ -187,6 +190,7 @@ module Dependabot
 
           extra_index_urls =
             config_variable_index_urls[:extra] +
+            pipfile_index_urls[:extra] +
             requirement_file_index_urls[:extra] +
             pip_conf_index_urls[:extra]
 
@@ -229,6 +233,22 @@ module Dependabot
             urls[:main] = content.match(/index-url\s*=\s*(.+)/).captures.first
           end
           urls[:extra] += content.scan(/extra-index-url\s*=(.+)/).flatten
+
+          urls
+        end
+
+        def pipfile_index_urls
+          urls = { main: nil, extra: [] }
+
+          return urls unless pipfile
+          pipfile_object = TomlRB.parse(pipfile.content)
+
+          urls[:main] = pipfile_object["source"].first&.fetch("url", nil)
+
+          pipfile_object["source"]&.each do |source|
+            urls[:extra] << source.fetch("url") if source["url"]
+          end
+          urls[:extra] = urls[:extra].uniq
 
           urls
         end

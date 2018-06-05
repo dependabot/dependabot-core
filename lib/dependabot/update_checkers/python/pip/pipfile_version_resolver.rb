@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "toml-rb"
 
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip/pipfile_preparer"
