@@ -1,3 +1,9 @@
+## v0.59.45, 05 June 2018
+
+- Python: Pull private sources out of Pipfiles for quicker update checking
+- Python: Don't try to handle pip-compile subdependencies
+- Python: Use requirements.txt updater in FileUpdater if sub-dep
+
 ## v0.59.44, 05 June 2018
 
 - Python: Handle updating dependencies for which we can't find a latest version
