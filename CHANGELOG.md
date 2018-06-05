@@ -1,3 +1,7 @@
+## v0.59.41, 05 June 2018
+
+- JS: Better timeout error handling
+
 ## v0.59.40, 05 June 2018
 
 - JS: Add timeout logic to version resolver
