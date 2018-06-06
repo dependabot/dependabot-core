@@ -105,8 +105,8 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
 
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
-      let(:dependency_version) { "4.0.2" }
-      let(:dependency_previous_version) { "4.0.4" }
+      let(:dependency_version) { "4.0.4" }
+      let(:dependency_previous_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
       let(:dependency_previous_requirements) { [] }
 

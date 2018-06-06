@@ -108,7 +108,8 @@ module Dependabot
             return :pipfile
           end
 
-          if reqs.any? { |r| r.fetch(:file).end_with?(".in") }
+          if (pip_compile_files.any? && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file).end_with?(".in") }
             return :pip_compile
           end
 

@@ -96,6 +96,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
+    context "with a subdependency" do
+      let(:dependency_name) { "pbr" }
+      let(:dependency_version) { "4.0.2" }
+      let(:dependency_requirements) { [] }
+
+      it { is_expected.to eq(Gem::Version.new("4.0.4")) }
+    end
+
     context "with a Python 2.7 library" do
       let(:manifest_fixture_name) { "legacy_python.in" }
       let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
