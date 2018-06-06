@@ -346,7 +346,9 @@ module Dependabot
         end
 
         def sanitized_package_json_content(content)
-          content.gsub(/\{\{.*\}\}/, "something")
+          content.
+            gsub(/\{\{.*\}\}/, "something"). # {{ name }} syntax not allowed
+            gsub("\\ ", " ")                 # escaped whitespace not allowed
         end
       end
     end
