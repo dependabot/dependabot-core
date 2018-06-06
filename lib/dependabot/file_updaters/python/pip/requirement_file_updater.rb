@@ -76,7 +76,9 @@ module Dependabot
                 requirement.fetch(:requirement)
               )
 
-            return updated_string unless requirement_includes_hashes?(requirement)
+            unless requirement_includes_hashes?(requirement)
+              return updated_string
+            end
 
             updated_string.sub(
               PythonRequirementParser::HASHES,

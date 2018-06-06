@@ -9,6 +9,7 @@ module Dependabot
       class Pip
         class PipCompileFileUpdater
           require_relative "requirement_replacer"
+          require_relative "requirement_file_updater"
 
           attr_reader :dependencies, :dependency_files, :credentials
 
@@ -33,22 +34,20 @@ module Dependabot
           end
 
           def fetch_updated_dependency_files
-            updated_requirement_files = fetch_updated_requirement_files
+            updated_compiled_files = compile_new_requirement_files
+            updated_manifest_files = update_manifest_files
 
-            dependency_files.map do |file|
-              if updated_requirement_files.find { |f| f.name == file.name }
-                next updated_requirement_files.find { |f| f.name == file.name }
-              end
+            updated_files = updated_compiled_files + updated_manifest_files
+            updated_uncompiled_files = update_uncompiled_files(updated_files)
 
-              file = file.dup
-              updated_content = update_dependency_requirement(file)
-              next if updated_content == file.content
-              file.content = updated_content
-              file
-            end.compact
+            [
+              *updated_compiled_files,
+              *updated_manifest_files,
+              *updated_uncompiled_files
+            ]
           end
 
-          def fetch_updated_requirement_files
+          def compile_new_requirement_files
             SharedHelpers.in_a_temporary_directory do
               write_updated_dependency_files
 
@@ -71,6 +70,40 @@ module Dependabot
                 file
               end.compact
             end
+          end
+
+          def update_manifest_files
+            dependency_files.map do |file|
+              next unless file.name.end_with?(".in")
+              file = file.dup
+              updated_content = update_dependency_requirement(file)
+              next if updated_content == file.content
+              file.content = updated_content
+              file
+            end.compact
+          end
+
+          def update_uncompiled_files(updated_files)
+            old_reqs = dependency.previous_requirements.
+                       reject { |r| updated_files.include?(r[:file]) }
+            new_reqs = dependency.requirements.
+                       reject { |r| updated_files.include?(r[:file]) }
+
+            files = dependency_files.
+                    reject { |file| updated_files.include?(file.name) }
+
+            args = dependency.to_h
+            args = Hash[args.keys.map { |k| [k.to_sym, args[k]] }]
+            args.merge(
+              requirements: new_reqs,
+              previous_requirements: old_reqs
+            )
+
+            RequirementFileUpdater.new(
+              dependencies: [Dependency.new(**args)],
+              dependency_files: files,
+              credentials: credentials
+            ).updated_dependency_files
           end
 
           def run_command(command)

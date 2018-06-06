@@ -115,6 +115,41 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         expect(updated_files.first.content).
           to include("pbr==4.0.4                # via mock")
       end
+
+      context "with an uncompiled requirement file, too" do
+        let(:dependency_files) do
+          [manifest_file, generated_file, requirement_file]
+        end
+        let(:requirement_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: fixture("python", "requirements", "pbr.txt")
+          )
+        end
+        let(:dependency_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: "==4.0.4",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: "==4.0.2",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "updates the requirements.txt" do
+          expect(updated_files.count).to eq(2)
+          expect(updated_files.first.content).
+            to include("pbr==4.0.4                # via mock")
+          expect(updated_files.last.content).to include("pbr==4.0.4")
+        end
+      end
     end
 
     context "targeting a non-latest version" do
