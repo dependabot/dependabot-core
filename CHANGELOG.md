@@ -1,3 +1,7 @@
+## v0.59.48, 06 June 2018
+
+- Python: Handle uncompiled requirement files in PipCompileFileUpdater
+
 ## v0.59.47, 06 June 2018
 
 - Python: Resolve pip-compile sub-dependencies in the context of their compile
