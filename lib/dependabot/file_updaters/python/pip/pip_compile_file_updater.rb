@@ -41,8 +41,8 @@ module Dependabot
             updated_uncompiled_files = update_uncompiled_files(updated_files)
 
             [
-              *updated_compiled_files,
               *updated_manifest_files,
+              *updated_compiled_files,
               *updated_uncompiled_files
             ]
           end
@@ -84,13 +84,16 @@ module Dependabot
           end
 
           def update_uncompiled_files(updated_files)
+            updated_filenames = updated_files.map(&:name)
             old_reqs = dependency.previous_requirements.
-                       reject { |r| updated_files.include?(r[:file]) }
+                       reject { |r| updated_filenames.include?(r[:file]) }
             new_reqs = dependency.requirements.
-                       reject { |r| updated_files.include?(r[:file]) }
+                       reject { |r| updated_filenames.include?(r[:file]) }
+
+            return [] if new_reqs.none?
 
             files = dependency_files.
-                    reject { |file| updated_files.include?(file.name) }
+                    reject { |file| updated_filenames.include?(file.name) }
 
             args = dependency.to_h
             args = Hash[args.keys.map { |k| [k.to_sym, args[k]] }]
