@@ -155,7 +155,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
           if error.message.include?("did not match any file(s) known to git") ||
-             error.message.include?("Non-registry package missing package.json")
+             error.message.include?("Non-registry package missing package.j") ||
+             error.message.include?("Cannot read property 'match' of undefined")
             msg = "Error while generating package-lock.json:\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           end

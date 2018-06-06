@@ -766,6 +766,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a corrupted npm lockfile (version missing)" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:npm_lock_fixture_name) { "version_missing.json" }
+
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
+
       context "with an unreachable git reference" do
         let(:npm_lock_fixture_name) { "git_dependency_bad_ref.json" }
         let(:manifest_fixture_name) { "git_dependency_bad_ref.json" }
