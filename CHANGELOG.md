@@ -1,3 +1,7 @@
+## v0.59.49, 06 June 2018
+
+- Python: Bug fix - don't double-update compiled requirement files
+
 ## v0.59.48, 06 June 2018
 
 - Python: Handle uncompiled requirement files in PipCompileFileUpdater
