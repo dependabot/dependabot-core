@@ -1,3 +1,8 @@
+## v0.59.47, 06 June 2018
+
+- Python: Resolve pip-compile sub-dependencies in the context of their compile
+  files in UpdateChecker
+
 ## v0.59.46, 05 June 2018
 
 - Python: Include requirements.txt requirement in parsed req if no pip-compile
