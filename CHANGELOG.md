@@ -1,3 +1,8 @@
+## v0.59.50, 06 June 2018
+
+- JS: Better caching in UpdateChecker
+- JS: Handle package.json files with escaped whitespace
+
 ## v0.59.49, 06 June 2018
 
 - Python: Bug fix - don't double-update compiled requirement files
