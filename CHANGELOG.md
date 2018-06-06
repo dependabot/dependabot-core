@@ -1,3 +1,8 @@
+## v0.59.51, 06 June 2018
+
+- JS: Better sanitization of package.json in FileParser
+- JS: Handle npm lockfiles with missing version information
+
 ## v0.59.50, 06 June 2018
 
 - JS: Better caching in UpdateChecker
