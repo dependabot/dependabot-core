@@ -2,6 +2,7 @@
 
 require "toml-rb"
 
+require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip"
 
 module Dependabot
