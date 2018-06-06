@@ -15,7 +15,7 @@ module Dependabot
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
-          @latest_version ||= fetch_latest_version_details&.fetch(:version)
+          latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
@@ -38,9 +38,9 @@ module Dependabot
               requirements: dependency.requirements,
               updated_source: updated_source,
               latest_version:
-                fetch_latest_version_details&.fetch(:version, nil)&.to_s,
+                latest_version_details&.fetch(:version, nil)&.to_s,
               latest_resolvable_version:
-                fetch_latest_version_details&.fetch(:version, nil)&.to_s,
+                latest_version_details&.fetch(:version, nil)&.to_s,
               library: library?
             ).updated_requirements
         end
@@ -95,12 +95,13 @@ module Dependabot
           git_commit_checker.branch_or_ref_in_release?(release)
         end
 
-        def fetch_latest_version_details
-          if git_dependency? && !should_switch_source_from_git_to_registry?
-            return latest_git_version_details
-          end
-
-          version_resolver.latest_version_details_from_registry
+        def latest_version_details
+          @latest_version_details ||=
+            if git_dependency? && !should_switch_source_from_git_to_registry?
+              latest_git_version_details
+            else
+              version_resolver.latest_version_details_from_registry
+            end
         end
 
         def version_resolver
