@@ -20,11 +20,12 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << package_json
-          fetched_files << package_lock if package_lock
-          fetched_files << yarn_lock if yarn_lock
           fetched_files << npmrc if npmrc
+          fetched_files << package_lock if package_lock && !ignore_package_lock?
+          fetched_files << yarn_lock if yarn_lock
           fetched_files += workspace_package_jsons
           fetched_files += path_dependencies
+
           fetched_files
         end
 
@@ -134,6 +135,11 @@ module Dependabot
           JSON.parse(package_lock.content)
         rescue JSON::ParserError
           {}
+        end
+
+        def ignore_package_lock?
+          return false unless npmrc
+          npmrc.content.match?(/^package-lock\s*=\s*false/)
         end
       end
     end
