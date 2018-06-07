@@ -181,8 +181,10 @@ module Dependabot
           source.repo, "dependencies", "0025ff",
           description: "Pull requests that update a dependency file"
         )
+        @labels = [*@labels, "dependencies"].uniq
       rescue Octokit::UnprocessableEntity => error
         raise unless error.errors.first.fetch(:code) == "already_exists"
+        @labels = [*@labels, "dependencies"].uniq
       end
 
       def annotate_pull_request(pull_request)
@@ -192,13 +194,11 @@ module Dependabot
       end
 
       def add_label_to_pull_request(pull_request)
-        # If a custom label is desired but doesn't exist, don't label the PR
-        return if custom_labels && !dependencies_label_exists?
+        return unless dependencies_label_exists?
 
         label_names =
           custom_labels ||
-          [labels.find { |l| l.match?(/dependenc/i) }] ||
-          ["dependencies"]
+          [labels.find { |l| l.match?(/dependenc/i) }]
 
         github_client_for_source.add_labels_to_an_issue(
           source.repo,
