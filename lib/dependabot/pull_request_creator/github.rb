@@ -205,10 +205,6 @@ module Dependabot
           pull_request.number,
           label_names
         )
-      rescue Octokit::UnprocessableEntity
-        # For now, ignore unprocessible entity errors when labeling PRs. They
-        # are caused by a race condition on GitHub's side.
-        nil
       end
 
       def add_reviewers_to_pull_request(pull_request)
