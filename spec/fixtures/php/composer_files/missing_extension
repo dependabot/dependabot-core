@@ -1,13 +1,12 @@
 {
     "require": {
-        "php": "^5.6.0",
+        "ext-xdebug": "*",
         "erusev/parsedown": "^1.6.0",
         "illuminate/support": "^5.2.0"
     },
     "config": {
         "platform": {
-            "php": "5.6.4",
-            "ext-mbstring": "1.0.0"
+            "php": "5.6.4"
         }
     }
 }
