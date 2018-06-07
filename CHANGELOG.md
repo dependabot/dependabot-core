@@ -1,3 +1,7 @@
+## v0.59.53, 07 June 2018
+
+- JS: Better ignore of package-lock.json if asked to in .npmrc
+
 ## v0.59.52, 07 June 2018
 
 - Ignore unprocessible entity errors when adding labels (work around GitHub bug)
