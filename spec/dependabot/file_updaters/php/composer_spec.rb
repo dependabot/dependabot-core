@@ -185,6 +185,37 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
       it { is_expected.to include "\"prefer-stable\":false" }
 
+      context "when an old version of PHP is specified" do
+        context "as a platform requirement" do
+          let(:manifest_fixture_name) { "old_php_platform" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "illuminate/support",
+              version: "5.4.36",
+              requirements: [{
+                file: "composer.json",
+                requirement: "^5.2.0",
+                groups: ["runtime"],
+                source: nil
+              }],
+              previous_version: "5.2.7",
+              previous_requirements: [{
+                file: "composer.json",
+                requirement: "^5.2.0",
+                groups: ["runtime"],
+                source: nil
+              }],
+              package_manager: "composer"
+            )
+          end
+
+          it "has details of the updated item" do
+            expect(updated_lockfile_content).
+              to include("\"version\":\"v5.4.36\"")
+          end
+        end
+      end
+
       context "that requires an environment variable" do
         let(:manifest_fixture_name) { "env_variable" }
 
