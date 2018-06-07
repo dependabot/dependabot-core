@@ -338,6 +338,56 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         end
         it { is_expected.to be >= Gem::Version.new("4.3.0") }
       end
+
+      context "when an old version of PHP is specified" do
+        let(:manifest_fixture_name) { "old_php_specified" }
+        let(:dependency_name) { "illuminate/support" }
+        let(:dependency_version) { "5.2.7" }
+        let(:requirements) do
+          [{
+            file: "composer.json",
+            requirement: "^5.2.0",
+            groups: ["runtime"],
+            source: nil
+          }]
+        end
+
+        # 5.5.0 series requires PHP 7
+        it { is_expected.to be >= Gem::Version.new("5.4.36") }
+        pending { is_expected.to be < Gem::Version.new("5.5.0") }
+
+        context "as a platform requirement" do
+          let(:manifest_fixture_name) { "old_php_platform" }
+          it { is_expected.to be >= Gem::Version.new("5.4.36") }
+          it { is_expected.to be < Gem::Version.new("5.5.0") }
+
+          context "and an extension is specified that we don't have" do
+            let(:manifest_fixture_name) { "missing_extension" }
+
+            it "raises a helpful error" do
+              expect { checker.latest_resolvable_version }.
+                to raise_error do |error|
+                  expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+                  expect(error.message).
+                    to include("extension ext-xdebug * is missing")
+                end
+            end
+          end
+
+          context "but the platform requirement only specifies an extension" do
+            let(:manifest_fixture_name) { "bad_php" }
+
+            it "raises a helpful error" do
+              expect { checker.latest_resolvable_version }.
+                to raise_error do |error|
+                  expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+                  expect(error.message).
+                    to include("This package requires php 5.6.4 but")
+                end
+            end
+          end
+        end
+      end
     end
 
     context "with a dev dependency" do

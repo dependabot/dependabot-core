@@ -1,0 +1,12 @@
+{
+    "require": {
+        "php": "5.6.4",
+        "erusev/parsedown": "^1.6.0",
+        "illuminate/support": "^5.2.0"
+    },
+    "config": {
+        "platform": {
+            "ext-xdebug": "1.0.0"
+        }
+    }
+}

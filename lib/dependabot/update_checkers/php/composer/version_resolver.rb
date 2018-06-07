@@ -107,6 +107,7 @@ module Dependabot
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
           # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/MethodLength
           def handle_composer_errors(error)
             if error.message.start_with?("Failed to execute git clone")
               dependency_url =
@@ -120,7 +121,10 @@ module Dependabot
               raise Dependabot::GitDependenciesNotReachable, dependency_url
             elsif error.message.start_with?("Could not parse version")
               raise Dependabot::DependencyFileNotResolvable, error.message
-            elsif error.message == "Requirements could not be resolved"
+            elsif error.message.include?("requested PHP extension") ||
+                  error.message.include?("package requires php")
+              raise Dependabot::DependencyFileNotResolvable, error.message
+            elsif error.message.include?("requirements could not be resolved")
               # We should raise a Dependabot::DependencyFileNotResolvable error
               # here, but can't confidently distinguish between cases where we
               # can't install and cases where we can't update. For now, we
@@ -141,6 +145,7 @@ module Dependabot
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
           # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/MethodLength
 
           def php_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
