@@ -344,20 +344,15 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           fixture("php", "composer_files", "old_php_specified")
         end
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "illuminate/support",
-            version: "v5.2.7",
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "^5.2.0",
-                groups: ["runtime"],
-                source: nil
-              }
-            ],
-            package_manager: "composer"
-          )
+        let(:dependency_name) { "illuminate/support" }
+        let(:dependency_version) { "5.2.7" }
+        let(:requirements) do
+          [{
+            file: "composer.json",
+            requirement: "^5.2.0",
+            groups: ["runtime"],
+            source: nil
+          }]
         end
 
         # 5.5.0 series requires PHP 7
