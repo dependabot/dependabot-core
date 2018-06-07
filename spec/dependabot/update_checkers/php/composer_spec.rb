@@ -340,10 +340,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       end
 
       context "when an old version of PHP is specified" do
-        let(:composer_file_content) do
-          fixture("php", "composer_files", "old_php_specified")
-        end
-
+        let(:manifest_fixture_name) { "old_php_specified" }
         let(:dependency_name) { "illuminate/support" }
         let(:dependency_version) { "5.2.7" }
         let(:requirements) do
@@ -360,9 +357,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         it { is_expected.to be < Gem::Version.new("5.5.0") }
 
         context "as a platform requirement" do
-          let(:composer_file_content) do
-            fixture("php", "composer_files", "old_php_platform")
-          end
+          let(:manifest_fixture_name) { "old_php_platform" }
           it { is_expected.to be >= Gem::Version.new("5.4.36") }
           it { is_expected.to be < Gem::Version.new("5.5.0") }
         end
