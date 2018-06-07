@@ -1,3 +1,7 @@
+## v0.59.52, 07 June 2018
+
+- Ignore unprocessible entity errors when adding labels (work around GitHub bug)
+
 ## v0.59.51, 06 June 2018
 
 - JS: Better sanitization of package.json in FileParser
