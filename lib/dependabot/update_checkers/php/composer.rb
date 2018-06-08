@@ -149,6 +149,8 @@ module Dependabot
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
           listing.dig("packages", dependency.name.downcase).keys
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          []
         end
 
         def ignore_reqs

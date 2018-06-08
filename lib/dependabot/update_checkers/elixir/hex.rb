@@ -231,6 +231,8 @@ module Dependabot
 
           return unless response.status == 200
           @hex_registry_response = JSON.parse(response.body)
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          nil
         end
 
         def wants_prerelease?

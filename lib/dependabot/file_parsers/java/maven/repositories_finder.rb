@@ -109,6 +109,8 @@ module Dependabot
               )
 
               return dependency_file
+            rescue Excon::Error::Socket, Excon::Error::Timeout
+              nil
             end
 
             # If a parent POM couldn't be found, return `nil`

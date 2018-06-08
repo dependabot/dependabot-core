@@ -100,7 +100,7 @@ module Dependabot
             return false unless ruby_version
 
             versions = Excon.get(
-              "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
+              "#{fetcher.fetch_uri}api/v1/versions/#{dependency.name}.json",
               idempotent: true,
               **SharedHelpers.excon_defaults
             )

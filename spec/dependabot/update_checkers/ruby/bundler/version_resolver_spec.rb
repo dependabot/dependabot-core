@@ -65,7 +65,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:gemfile_fixture_name) { "Gemfile" }
   let(:lockfile_fixture_name) { "Gemfile.lock" }
   let(:gemspec_fixture_name) { "example" }
-  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
 
   describe "#latest_resolvable_version_details" do
     subject { resolver.latest_resolvable_version_details }
