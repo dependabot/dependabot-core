@@ -370,6 +370,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
                   expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
                   expect(error.message).
                     to include("extension ext-xdebug * is missing")
+                  expect(error.message).
+                    to include("platform config: ext-xdebug.\n")
                 end
             end
           end

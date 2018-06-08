@@ -121,8 +121,15 @@ module Dependabot
               raise Dependabot::GitDependenciesNotReachable, dependency_url
             elsif error.message.start_with?("Could not parse version")
               raise Dependabot::DependencyFileNotResolvable, error.message
-            elsif error.message.include?("requested PHP extension") ||
-                  error.message.include?("package requires php")
+            elsif error.message.include?("requested PHP extension")
+              extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
+              msg = "Dependabot's installed extensions didn't match those "\
+                    "required by your application. Please add the following "\
+                    "extensions to your platform config: "\
+                    "#{extensions.join(', ')}.\n\n"\
+                    "The full error raised was:\n\n#{error.message}"
+              raise Dependabot::DependencyFileNotResolvable, msg
+            elsif error.message.include?("package requires php")
               raise Dependabot::DependencyFileNotResolvable, error.message
             elsif error.message.include?("requirements could not be resolved")
               # We should raise a Dependabot::DependencyFileNotResolvable error
