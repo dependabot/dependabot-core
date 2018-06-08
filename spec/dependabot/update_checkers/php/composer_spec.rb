@@ -369,9 +369,9 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
                 to raise_error do |error|
                   expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
                   expect(error.message).
-                    to include("extension ext-xdebug * is missing")
+                    to include("extension ext-maxminddb * is missing")
                   expect(error.message).
-                    to include("platform config: ext-xdebug.\n")
+                    to include("platform config: ext-maxminddb.\n")
                 end
             end
           end

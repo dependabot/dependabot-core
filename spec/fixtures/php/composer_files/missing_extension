@@ -1,6 +1,6 @@
 {
     "require": {
-        "ext-xdebug": "*",
+        "ext-maxminddb": "*",
         "erusev/parsedown": "^1.6.0",
         "illuminate/support": "^5.2.0"
     },
