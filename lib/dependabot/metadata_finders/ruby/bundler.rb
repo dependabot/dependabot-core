@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "excon"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
