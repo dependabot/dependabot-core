@@ -1,3 +1,8 @@
+## v0.60.1, 08 June 2018
+
+- Handle timeouts in Ruby metadata finder
+- Add timeout defaults to all Excon calls
+
 ## v0.60.0, 08 June 2018
 
 - PHP: Respect platform requirements if they are set
