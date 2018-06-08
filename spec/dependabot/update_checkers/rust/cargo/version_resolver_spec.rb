@@ -160,7 +160,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:dependency_version) { "0.4.1" }
       let(:string_req) { "0.4" }
 
-      it { is_expected.to eq(Gem::Version.new("0.5.0")) }
+      it { is_expected.to eq(Gem::Version.new("0.5.1")) }
 
       context "when the dependency isn't top-level" do
         let(:manifest_fixture_name) { "multiple_versions_subdependency" }
