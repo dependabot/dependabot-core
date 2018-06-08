@@ -72,7 +72,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.2 php7.2-xml php7.2-zip \
+    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-common php7.2-gettext php7.2-curl php-xdebug \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -104,10 +104,10 @@ RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true
     && apt-get update \
     && apt-get install -y oracle-java8-installer oracle-java8-set-default \
     && cd /tmp \
-    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.4.15.zip \
-    && unzip apache-groovy-binary-2.4.15.zip \
-    && mv groovy-2.4.15 /usr/local/groovy \
-    && rm -f apache-groovy-binary-2.4.15.zip \
+    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.5.0.zip \
+    && unzip apache-groovy-binary-2.5.0.zip \
+    && mv groovy-2.5.0 /usr/local/groovy \
+    && rm -f apache-groovy-binary-2.5.0.zip \
     && cd /tmp \
     && wget https://services.gradle.org/distributions/gradle-4.7-bin.zip \
     && unzip gradle-4.7-bin.zip \
