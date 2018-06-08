@@ -1,3 +1,8 @@
+## v0.60.0, 08 June 2018
+
+- PHP: Respect platform requirements if they are set
+- Update groovy to 2.5.0, and add PHP extensions to Dockerfile
+
 ## v0.59.53, 07 June 2018
 
 - JS: Better ignore of package-lock.json if asked to in .npmrc
