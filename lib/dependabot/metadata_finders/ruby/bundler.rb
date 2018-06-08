@@ -114,7 +114,7 @@ module Dependabot
             parsed_rubygems_body.values_at("version", "authors", "info").hash
 
           digest == rubygems_digest ? rubygems_response.body : response_body
-        rescue JSON::ParserError
+        rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
           response_body
         end
 

@@ -19,8 +19,6 @@ module Dependabot
           require_relative "shared_bundler_helpers"
           include SharedBundlerHelpers
 
-          RUBYGEMS_API = "https://rubygems.org/api/v1/"
-
           def initialize(dependency:, dependency_files:, credentials:,
                          ignored_versions:)
             @dependency       = dependency
@@ -48,7 +46,7 @@ module Dependabot
 
           def latest_rubygems_version_details
             response = Excon.get(
-              RUBYGEMS_API + "versions/#{dependency.name}.json",
+              "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
