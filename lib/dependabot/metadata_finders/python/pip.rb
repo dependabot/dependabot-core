@@ -72,8 +72,7 @@ module Dependabot
               Excon.get(
                 homepage_url,
                 idempotent: true,
-                omit_default_port: true,
-                middlewares: SharedHelpers.excon_middleware
+                **SharedHelpers.excon_defaults
               )
             rescue Excon::Error::Timeout, Excon::Error::Socket, ArgumentError
               nil
@@ -91,8 +90,7 @@ module Dependabot
             response = Excon.get(
               url,
               idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              **SharedHelpers.excon_defaults
             )
             next unless response.status == 200
 

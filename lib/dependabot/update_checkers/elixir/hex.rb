@@ -226,8 +226,7 @@ module Dependabot
           response = Excon.get(
             dependency_url,
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           return unless response.status == 200

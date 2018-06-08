@@ -85,8 +85,7 @@ module Dependabot
                 user: bitbucket_credential&.fetch("username"),
                 password: bitbucket_credential&.fetch("password"),
                 idempotent: true,
-                omit_default_port: true,
-                middlewares: SharedHelpers.excon_middleware
+                **SharedHelpers.excon_defaults
               ).body
             end
 
@@ -133,8 +132,7 @@ module Dependabot
                 user: bitbucket_credential&.fetch("username"),
                 password: bitbucket_credential&.fetch("password"),
                 idempotent: true,
-                omit_default_port: true,
-                middlewares: SharedHelpers.excon_middleware
+                **SharedHelpers.excon_defaults
               ).body
             end
           return unless @full_changelog_text.valid_encoding?
@@ -266,8 +264,7 @@ module Dependabot
             user: bitbucket_credential&.fetch("username"),
             password: bitbucket_credential&.fetch("password"),
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
           return [] if response.status >= 300
 

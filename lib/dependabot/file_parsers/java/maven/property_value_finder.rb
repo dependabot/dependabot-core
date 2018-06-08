@@ -121,8 +121,7 @@ module Dependabot
               @maven_responses[url] ||= Excon.get(
                 url,
                 idempotent: true,
-                omit_default_port: true,
-                middlewares: SharedHelpers.excon_middleware
+                **SharedHelpers.excon_defaults
               )
               next unless @maven_responses[url].status == 200
               next unless pom?(@maven_responses[url].body)

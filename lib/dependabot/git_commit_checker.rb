@@ -157,8 +157,7 @@ module Dependabot
       response = Excon.get(
         uri,
         idempotent: true,
-        omit_default_port: true,
-        middlewares: SharedHelpers.excon_middleware
+        **SharedHelpers.excon_defaults
       )
 
       return response.body if response.status == 200
@@ -238,8 +237,7 @@ module Dependabot
       response = Excon.get(url,
                            headers: bitbucket_auth_header,
                            idempotent: true,
-                           omit_default_port: true,
-                           middlewares: SharedHelpers.excon_middleware)
+                           **SharedHelpers.excon_defaults)
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)

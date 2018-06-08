@@ -52,8 +52,7 @@ module Dependabot
           response = Excon.get(
             "https://crates.io/api/v1/crates/#{dependency.name}",
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           @crates_listing = JSON.parse(response.body)

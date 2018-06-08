@@ -204,8 +204,7 @@ module Dependabot
           Excon.get(
             index_url + normalised_name + "/",
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
         end
 

@@ -92,8 +92,7 @@ module Dependabot
                 response = Excon.get(
                   dependency_metadata_url,
                   idempotent: true,
-                  omit_default_port: true,
-                  middlewares: SharedHelpers.excon_middleware
+                  **SharedHelpers.excon_defaults
                 )
                 Nokogiri::XML(response.body)
               end
@@ -115,8 +114,7 @@ module Dependabot
                 response = Excon.get(
                   dependency_metadata_url(repository_url),
                   idempotent: true,
-                  omit_default_port: true,
-                  middlewares: SharedHelpers.excon_middleware
+                  **SharedHelpers.excon_defaults
                 )
                 Nokogiri::XML(response.body)
               rescue Excon::Error::Socket, Excon::Error::Timeout

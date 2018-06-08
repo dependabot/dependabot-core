@@ -177,8 +177,7 @@ module Dependabot
                 response = Excon.get(
                   url + dependency.name + "/",
                   idempotent: true,
-                  omit_default_port: true,
-                  middlewares: SharedHelpers.excon_middleware
+                  **SharedHelpers.excon_defaults
                 )
 
                 if response.status == 401 || response.status == 403

@@ -160,8 +160,7 @@ module Dependabot
                     Excon.get(
                       uri,
                       idempotent: true,
-                      omit_default_port: true,
-                      middlewares: SharedHelpers.excon_middleware
+                      **SharedHelpers.excon_defaults
                     ).status == 200
                   rescue Excon::Error::Socket, Excon::Error::Timeout
                     false

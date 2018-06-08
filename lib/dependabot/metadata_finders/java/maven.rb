@@ -81,8 +81,7 @@ module Dependabot
             "#{artifact_id}-#{dependency.version}.pom",
             headers: auth_details,
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           @dependency_pom_file = Nokogiri::XML(response.body)
@@ -104,8 +103,7 @@ module Dependabot
             "#{artifact_id}-#{version}.pom",
             headers: auth_details,
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           Nokogiri::XML(response.body)

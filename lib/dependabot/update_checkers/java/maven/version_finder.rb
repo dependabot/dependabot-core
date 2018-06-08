@@ -90,8 +90,7 @@ module Dependabot
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
-                omit_default_port: true,
-                middlewares: SharedHelpers.excon_middleware
+                **SharedHelpers.excon_defaults
               )
 
               artifact_id = dependency.name.split(":").last
@@ -112,8 +111,7 @@ module Dependabot
                   user: repository_details.fetch("username"),
                   password: repository_details.fetch("password"),
                   idempotent: true,
-                  omit_default_port: true,
-                  middlewares: SharedHelpers.excon_middleware
+                  **SharedHelpers.excon_defaults
                 )
                 Nokogiri::XML(response.body)
               rescue Excon::Error::Socket, Excon::Error::Timeout

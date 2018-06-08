@@ -80,8 +80,7 @@ module Dependabot
               "#{registry_url}api/v1/gems/#{dependency.name}.json",
               headers: registry_auth_headers,
               idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              **SharedHelpers.excon_defaults
             )
           response_body = response.body
           response_body = augment_private_response_if_appropriate(response_body)
@@ -108,8 +107,7 @@ module Dependabot
             Excon.get(
               "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
               idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              **SharedHelpers.excon_defaults
             )
           parsed_rubygems_body = JSON.parse(rubygems_response.body)
           rubygems_digest =

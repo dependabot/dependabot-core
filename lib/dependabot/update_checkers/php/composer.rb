@@ -137,10 +137,9 @@ module Dependabot
           response = Excon.get(
             url,
             idempotent: true,
-            omit_default_port: true,
             user: cred&.fetch("username", nil),
             password: cred&.fetch("password", nil),
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           return [] unless response.status == 200

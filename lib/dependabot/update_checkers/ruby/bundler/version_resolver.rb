@@ -102,8 +102,7 @@ module Dependabot
             versions = Excon.get(
               "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
               idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              **SharedHelpers.excon_defaults
             )
 
             ruby_requirement =

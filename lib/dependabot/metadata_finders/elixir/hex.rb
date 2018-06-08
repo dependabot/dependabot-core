@@ -57,8 +57,7 @@ module Dependabot
           response = Excon.get(
             "https://hex.pm/api/packages/#{dependency.name}",
             idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
+            **SharedHelpers.excon_defaults
           )
 
           @hex_listing = JSON.parse(response.body)

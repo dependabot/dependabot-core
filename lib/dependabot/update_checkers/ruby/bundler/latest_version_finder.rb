@@ -50,8 +50,7 @@ module Dependabot
             response = Excon.get(
               RUBYGEMS_API + "versions/#{dependency.name}.json",
               idempotent: true,
-              omit_default_port: true,
-              middlewares: SharedHelpers.excon_middleware
+              **SharedHelpers.excon_defaults
             )
 
             relevant_versions =
