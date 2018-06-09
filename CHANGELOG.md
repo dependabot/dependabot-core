@@ -1,3 +1,11 @@
+## v0.60.2, 09 June 2018
+
+- Add logging for strange type error
+- Add GitLab support to PullRequestCreator::MessageBuilder
+- Split GitHub logic out of PullRequestUpdater (turns out to be all of it!)
+- Ruby: Handle timeouts when checking if Ruby version is incompatible
+- PHP: Include additional extension in Dockerfile (ext-intl)
+
 ## v0.60.1, 08 June 2018
 
 - Handle timeouts in Ruby metadata finder
