@@ -120,6 +120,8 @@ module Dependabot
             # Give the benefit of the doubt if something goes wrong fetching
             # version details (could be that it's a private index, etc.)
             false
+          rescue TypeError
+            raise "Type error! Body: #{versions.body} URI: #{fetcher.fetch_uri}"
           end
 
           def build_definition(dependencies_to_unlock)
