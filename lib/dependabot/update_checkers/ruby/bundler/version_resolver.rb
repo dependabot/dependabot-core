@@ -116,7 +116,7 @@ module Dependabot
             ruby_requirement = Utils::Ruby::Requirement.new(ruby_requirement)
 
             !ruby_requirement.satisfied_by?(ruby_version)
-          rescue JSON::ParserError
+          rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
             # Give the benefit of the doubt if something goes wrong fetching
             # version details (could be that it's a private index, etc.)
             false
