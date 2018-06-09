@@ -29,12 +29,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       version: "1.5.0",
       previous_version: "1.4.0",
       package_manager: "bundler",
-      requirements: [
-        { file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
-      ]
+      requirements:
+        [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
+      previous_requirements:
+        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
@@ -98,10 +96,28 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       context "that doesn't use semantic commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
-            to_return(status: 200, body: "[]", headers: json_header)
+            to_return(
+              status: 200,
+              body: commits_response,
+              headers: json_header
+            )
         end
+        let(:commits_response) { fixture("github", "commits.json") }
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+
+        context "from GitLab" do
+          let(:source) do
+            Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
+          end
+          let(:watched_repo_url) do
+            "https://gitlab.com/api/v4/projects/"\
+            "#{CGI.escape(source.repo)}/repository"
+          end
+          let(:commits_response) { fixture("gitlab", "commits.json") }
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
@@ -180,30 +196,26 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
               previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
               package_manager: "bundler",
-              requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    ref: new_ref
-                  }
+              requirements: [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: new_ref
                 }
-              ],
-              previous_requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    ref: old_ref
-                  }
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: old_ref
                 }
-              ]
+              }]
             )
           end
           let(:new_ref) { nil }
@@ -400,30 +412,26 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
             previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
             package_manager: "bundler",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  ref: new_ref
-                }
+            requirements: [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: new_ref
               }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  ref: old_ref
-                }
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: old_ref
               }
-            ]
+            }]
           )
         end
         let(:new_ref) { nil }
@@ -491,25 +499,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             version: "1.5.0",
             previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
             package_manager: "bundler",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: nil
+            requirements: [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business"
               }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business"
-                }
-              }
-            ]
+            }]
           )
         end
 
@@ -612,22 +616,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               version: "1.6.0",
               previous_version: "1.5.0",
               package_manager: "bundler",
-              requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.6.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.5.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.6.0",
+                groups: [],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: nil
+              }]
             )
           end
 
@@ -707,22 +707,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             version: "1.5.0",
             previous_version: "0.9.0",
             package_manager: "bundler",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.5.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 0.9.0",
-                groups: [],
-                source: nil
-              }
-            ]
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 0.9.0",
+              groups: [],
+              source: nil
+            }]
           )
         end
 
@@ -1012,22 +1008,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             version: "1.7.0",
             previous_version: "1.6.0",
             package_manager: "bundler",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.7",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.6",
-                groups: [],
-                source: nil
-              }
-            ]
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.7",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.6",
+              groups: [],
+              source: nil
+            }]
           )
         end
 

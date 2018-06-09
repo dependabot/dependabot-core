@@ -61,20 +61,6 @@ module Dependabot
 
       private
 
-      def github_client_for_source
-        access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }&.
-          fetch("password")
-
-        @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.new(
-            access_token: access_token,
-            api_endpoint: source.api_endpoint
-          )
-      end
-
       def commit_message_intro
         return requirement_commit_message_intro if library?
         version_commit_message_intro
@@ -565,11 +551,55 @@ module Dependabot
 
       def recent_commit_messages
         @recent_commit_messages ||=
-          github_client_for_source.commits(source.repo).
+          case source.provider
+          when "github" then recent_github_commit_messages
+          when "gitlab" then recent_gitlab_commit_messages
+          else raise "Unsupported provider: #{source.provider}"
+          end
+      end
+
+      def recent_github_commit_messages
+        github_client_for_source.commits(source.repo).
           reject { |c| c.author&.type == "Bot" }.
           map(&:commit).
           map(&:message).
           compact
+      end
+
+      def recent_gitlab_commit_messages
+        gitlab_client_for_source.commits(source.repo).
+          reject { |c| c.author_email == "support@dependabot.com" }.
+          reject { |c| c.message&.start_with?("merge !") }.
+          map(&:message).
+          compact
+      end
+
+      def github_client_for_source
+        access_token =
+          credentials.
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == source.hostname }&.
+          fetch("password")
+
+        @github_client_for_source ||=
+          Dependabot::GithubClientWithRetries.new(
+            access_token: access_token,
+            api_endpoint: source.api_endpoint
+          )
+      end
+
+      def gitlab_client_for_source
+        access_token =
+          credentials.
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == source.hostname }&.
+          fetch("password")
+
+        @gitlab_client_for_source ||=
+          Gitlab.client(
+            endpoint: "https://gitlab.com/api/v4",
+            private_token: access_token || ""
+          )
       end
 
       def package_manager

@@ -1,0 +1,322 @@
+[
+    {
+        "id": "4811450c1905ca49b3f156a8e6d9ac30893bd942",
+        "short_id": "4811450c",
+        "title": "Add separate room assignment model",
+        "created_at": "2018-06-06T21:34:41.000Z",
+        "parent_ids": [
+            "d9d39a70cd3ff6e57c8cbd99a61e0b9faf270a9e"
+        ],
+        "message": "Add separate room assignment model\n\nResolves #690\n\nThis commit adds a join table between users and rooms in preparation for\nusing a `DrawMembership` model to allow users to belong to multiple\ndraws over multiple years. This will allow us to maintain historical\ndraw data.\n",
+        "author_name": "Oren Kanner",
+        "author_email": "okanner@gmail.com",
+        "authored_date": "2018-01-25T17:51:08.000Z",
+        "committer_name": "Oren Kanner",
+        "committer_email": "okanner@gmail.com",
+        "committed_date": "2018-06-06T21:34:41.000Z"
+    },
+    {
+        "id": "d9d39a70cd3ff6e57c8cbd99a61e0b9faf270a9e",
+        "short_id": "d9d39a70",
+        "title": "Add flash when bulk user enrollment fails due to existing users",
+        "created_at": "2018-05-29T16:23:46.000Z",
+        "parent_ids": [
+            "121f626a39d260be634b54a67c9a83be442f43a5"
+        ],
+        "message": "Add flash when bulk user enrollment fails due to existing users\n\nResolves #156\n",
+        "author_name": "shaheer",
+        "author_email": "shaheer.malik@yale.edu",
+        "authored_date": "2018-05-19T09:11:13.000Z",
+        "committer_name": "shaheer",
+        "committer_email": "shaheer.malik@yale.edu",
+        "committed_date": "2018-05-29T16:23:46.000Z"
+    },
+    {
+        "id": "121f626a39d260be634b54a67c9a83be442f43a5",
+        "short_id": "121f626a",
+        "title": "Add LotteryAssignments and Clips to Administrate; fix Groups",
+        "created_at": "2018-05-24T15:50:58.000Z",
+        "parent_ids": [
+            "a51c6a0a4d795d1681a60563a4ee3e43b8b258fb"
+        ],
+        "message": "Add LotteryAssignments and Clips to Administrate; fix Groups\n\nResolves #768, resolves #775\n- This does not allow superusers to update lottery assignments through\n  the dashboard, unfortunately, due to overly strict callbacks and\n  validations that couple the lottery assignments to the associated draw\n",
+        "author_name": "Oren Kanner",
+        "author_email": "okanner@gmail.com",
+        "authored_date": "2018-04-03T04:01:54.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-05-24T15:50:58.000Z"
+    },
+    {
+        "id": "a51c6a0a4d795d1681a60563a4ee3e43b8b258fb",
+        "short_id": "a51c6a0a",
+        "title": "Fix error when unmerging suites with same name as merged suite",
+        "created_at": "2018-05-24T12:30:49.000Z",
+        "parent_ids": [
+            "f1c3be0f553e132902cfe9445b007c759b149e6c"
+        ],
+        "message": "Fix error when unmerging suites with same name as merged suite\n\nResolves #790\n",
+        "author_name": "shaheer",
+        "author_email": "shaheer.malik@yale.edu",
+        "authored_date": "2018-05-24T04:58:59.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-05-24T12:30:49.000Z"
+    },
+    {
+        "id": "f1c3be0f553e132902cfe9445b007c759b149e6c",
+        "short_id": "f1c3be0f",
+        "title": "Fix Results#export eager loading",
+        "created_at": "2018-05-23T13:53:29.000Z",
+        "parent_ids": [
+            "e4bfeb127de0e2968ab4787d08941a640b6c7f37"
+        ],
+        "message": "Fix Results#export eager loading\n\nResolves #794\n",
+        "author_name": "Matt Coshal",
+        "author_email": "matthew.coshal@yale.edu",
+        "authored_date": "2018-04-13T15:07:36.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-05-23T13:53:29.000Z"
+    },
+    {
+        "id": "e4bfeb127de0e2968ab4787d08941a640b6c7f37",
+        "short_id": "e4bfeb12",
+        "title": "Add authorization checks around links",
+        "created_at": "2018-05-21T17:35:01.000Z",
+        "parent_ids": [
+            "f108ea79c12cbdcfd0dd596d0ee8510dad5744f7"
+        ],
+        "message": "Add authorization checks around links\n\nResolves #553\n",
+        "author_name": "shaheer",
+        "author_email": "shaheer.malik@yale.edu",
+        "authored_date": "2018-05-16T16:20:38.000Z",
+        "committer_name": "shaheer",
+        "committer_email": "shaheer.malik@yale.edu",
+        "committed_date": "2018-05-21T17:35:01.000Z"
+    },
+    {
+        "id": "f108ea79c12cbdcfd0dd596d0ee8510dad5744f7",
+        "short_id": "f108ea79",
+        "title": "Remediate tables for accessibility",
+        "created_at": "2018-05-16T19:13:00.000Z",
+        "parent_ids": [
+            "81fa6ed1539b6d9b6aa1e54c2a69eb553b93fd4d"
+        ],
+        "message": "Remediate tables for accessibility\n-Add column headings\n-Add table descriptions as necessary\n\nCloses #745\n",
+        "author_name": "Matt Coshal",
+        "author_email": "matthew.coshal@yale.edu",
+        "authored_date": "2018-03-28T17:31:35.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-05-16T19:13:00.000Z"
+    },
+    {
+        "id": "81fa6ed1539b6d9b6aa1e54c2a69eb553b93fd4d",
+        "short_id": "81fa6ed1",
+        "title": "Remove login workarounds in suite_selection_spec.rb",
+        "created_at": "2018-05-15T12:42:06.000Z",
+        "parent_ids": [
+            "5752e845b1d6bcfc17a0abb255091acb0342d32c"
+        ],
+        "message": "Remove login workarounds in suite_selection_spec.rb\n\nResolves #122\n",
+        "author_name": "shaheer",
+        "author_email": "shaheer.malik@yale.edu",
+        "authored_date": "2018-04-27T09:35:59.000Z",
+        "committer_name": "shaheer",
+        "committer_email": "shaheer.malik@yale.edu",
+        "committed_date": "2018-05-15T12:42:06.000Z"
+    },
+    {
+        "id": "5752e845b1d6bcfc17a0abb255091acb0342d32c",
+        "short_id": "5752e845",
+        "title": "Add flash to warn of oversubscription in suite update",
+        "created_at": "2018-04-27T20:04:39.000Z",
+        "parent_ids": [
+            "d6d3840fdd4b3aaf155b52f76e78132d01459a64"
+        ],
+        "message": "Add flash to warn of oversubscription in suite update\n\nResolves #670\n- Change draw_suite_update.rb to include warning\n- Update draw_suite_update_spec.rb with relevant tests\n",
+        "author_name": "Kevin Tang",
+        "author_email": "k.tang@yale.edu",
+        "authored_date": "2018-04-09T21:25:13.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-27T20:04:39.000Z"
+    },
+    {
+        "id": "d6d3840fdd4b3aaf155b52f76e78132d01459a64",
+        "short_id": "d6d3840f",
+        "title": "Create new query object for drawless group suite assignment",
+        "created_at": "2018-04-27T19:38:29.000Z",
+        "parent_ids": [
+            "128d7610208f1847c7c461da53efb32d8f8f992f"
+        ],
+        "message": "Create new query object for drawless group suite assignment\n\nResolves #548\n- create SuitesOutsideSuiteSelectionQuery that includes drawless suites and suites not in suite selection\n- allow only suites retrieved through SuitesOutsideSuiteSelectionQuery in dropdown for drawless groups\n",
+        "author_name": "adwoabuadu",
+        "author_email": "adwoa.buadu@yale.edu",
+        "authored_date": "2018-04-03T21:12:47.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-27T19:38:29.000Z"
+    },
+    {
+        "id": "128d7610208f1847c7c461da53efb32d8f8f992f",
+        "short_id": "128d7610",
+        "title": "Remove db hit from DrawSuitesUpdate#find_suites_to_remove",
+        "created_at": "2018-04-27T19:02:09.000Z",
+        "parent_ids": [
+            "0f29b785b628ea6972aeabf6e27e7eb70e1fb065"
+        ],
+        "message": "Remove db hit from DrawSuitesUpdate#find_suites_to_remove\n\nResolves #206\n",
+        "author_name": "jd2358",
+        "author_email": "joyce.duan@yale.edu",
+        "authored_date": "2018-04-20T21:31:55.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-27T19:02:09.000Z"
+    },
+    {
+        "id": "0f29b785b628ea6972aeabf6e27e7eb70e1fb065",
+        "short_id": "0f29b785",
+        "title": "Add version number to footer",
+        "created_at": "2018-04-27T18:46:19.000Z",
+        "parent_ids": [
+            "2f692aa5ab54159b7570a9bd08a63e50b2d3eba6"
+        ],
+        "message": "Add version number to footer\n\nResolves #510\n",
+        "author_name": "Anand Nanduri",
+        "author_email": "an9878@gmail.com",
+        "authored_date": "2018-03-15T16:08:35.000Z",
+        "committer_name": "Anand Nanduri",
+        "committer_email": "an9878@gmail.com",
+        "committed_date": "2018-04-27T18:46:19.000Z"
+    },
+    {
+        "id": "2f692aa5ab54159b7570a9bd08a63e50b2d3eba6",
+        "short_id": "2f692aa5",
+        "title": "Removes duplication of html and text email views",
+        "created_at": "2018-04-25T14:30:43.000Z",
+        "parent_ids": [
+            "123b776975d75edf7f6fbadd5e35d8adb8fbac48"
+        ],
+        "message": "Removes duplication of html and text email views\n\nResolves #420\n",
+        "author_name": "shaheer",
+        "author_email": "shaheer.malik@yale.edu",
+        "authored_date": "2018-03-03T03:31:53.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-25T14:30:43.000Z"
+    },
+    {
+        "id": "123b776975d75edf7f6fbadd5e35d8adb8fbac48",
+        "short_id": "123b7769",
+        "title": "Loading users no longer fails when there is a user without a class year",
+        "created_at": "2018-04-24T19:29:44.000Z",
+        "parent_ids": [
+            "fac331e61eb71ec7f8ced71ed17c8499d9570971"
+        ],
+        "message": "Loading users no longer fails when there is a user without a class year\n\nResolves #601\n",
+        "author_name": "Bryan Owens",
+        "author_email": "bryan.owens@yale.edu",
+        "authored_date": "2018-04-21T19:48:04.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-24T19:29:44.000Z"
+    },
+    {
+        "id": "fac331e61eb71ec7f8ced71ed17c8499d9570971",
+        "short_id": "fac331e6",
+        "title": "Bulk user add instructions are now auth-dependent and no longer Yale specific",
+        "created_at": "2018-04-23T19:08:47.000Z",
+        "parent_ids": [
+            "babe9b2fe4579bc0272b3ef940ef2bfe996bdda5"
+        ],
+        "message": "Bulk user add instructions are now auth-dependent and no longer Yale specific\n\nResolves #157\n",
+        "author_name": "Bryan Owens",
+        "author_email": "bryan.owens@yale.edu",
+        "authored_date": "2018-03-22T19:47:07.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-23T19:08:47.000Z"
+    },
+    {
+        "id": "babe9b2fe4579bc0272b3ef940ef2bfe996bdda5",
+        "short_id": "babe9b2f",
+        "title": "Add validation of locking deadline and intent deadline",
+        "created_at": "2018-04-16T17:26:00.000Z",
+        "parent_ids": [
+            "6eac94f9c6373dc5fc29c91f03126845f494b566"
+        ],
+        "message": "Add validation of locking deadline and intent deadline\n\nResolves #600\n",
+        "author_name": "Vincent",
+        "author_email": "vincent.zhang@yale.edu",
+        "authored_date": "2018-02-23T20:54:46.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-16T17:26:00.000Z"
+    },
+    {
+        "id": "6eac94f9c6373dc5fc29c91f03126845f494b566",
+        "short_id": "6eac94f9",
+        "title": "Add dependent: :destory for group in draw model",
+        "created_at": "2018-04-13T18:48:30.000Z",
+        "parent_ids": [
+            "d44e3f1b9ab89d2f13329b8344ade998f6edfacc"
+        ],
+        "message": "Add dependent: :destory for group in draw model\n\nResolves #687\n",
+        "author_name": "Vincent",
+        "author_email": "vincent.zhang@yale.edu",
+        "authored_date": "2018-03-31T15:50:33.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-13T18:48:30.000Z"
+    },
+    {
+        "id": "d44e3f1b9ab89d2f13329b8344ade998f6edfacc",
+        "short_id": "d44e3f1b",
+        "title": "Renamed DrawReport#ungrouped_students to #ungrouped_students_by_intent",
+        "created_at": "2018-04-12T17:38:03.000Z",
+        "parent_ids": [
+            "0ef4c5a3a23ff42055974858ad0fac6f65c895ed"
+        ],
+        "message": "Renamed DrawReport#ungrouped_students to #ungrouped_students_by_intent\n\nCloses #793\n",
+        "author_name": "Matt Coshal",
+        "author_email": "matthew.coshal@yale.edu",
+        "authored_date": "2018-04-12T17:38:03.000Z",
+        "committer_name": "Matt Coshal",
+        "committer_email": "matthew.coshal@yale.edu",
+        "committed_date": "2018-04-12T17:38:03.000Z"
+    },
+    {
+        "id": "0ef4c5a3a23ff42055974858ad0fac6f65c895ed",
+        "short_id": "0ef4c5a3",
+        "title": "Release v1.0.8",
+        "created_at": "2018-04-10T03:36:49.000Z",
+        "parent_ids": [
+            "da4c1eedfec73ab63bb13bd5353d668eb7a63bc3"
+        ],
+        "message": "Release v1.0.8\n",
+        "author_name": "Oren Kanner",
+        "author_email": "okanner@gmail.com",
+        "authored_date": "2018-04-10T03:36:49.000Z",
+        "committer_name": "Oren Kanner",
+        "committer_email": "okanner@gmail.com",
+        "committed_date": "2018-04-10T03:36:49.000Z"
+    },
+    {
+        "id": "da4c1eedfec73ab63bb13bd5353d668eb7a63bc3",
+        "short_id": "da4c1eed",
+        "title": "Fix room id nullification upon group destruction",
+        "created_at": "2018-04-10T03:06:14.000Z",
+        "parent_ids": [
+            "bbca8314bc11b4d0a80016c5086f248018a9ebd9"
+        ],
+        "message": "Fix room id nullification upon group destruction\n\nCloses #784\n- Move before_destroy action before dependent destroy declaration in\n  group model\n- Fix broken spec\n",
+        "author_name": "Matt Coshal",
+        "author_email": "matthew.coshal@yale.edu",
+        "authored_date": "2018-04-06T15:04:31.000Z",
+        "committer_name": "Oren Kanner",
+        "committer_email": "okanner@gmail.com",
+        "committed_date": "2018-04-10T03:06:14.000Z"
+    }
+]
