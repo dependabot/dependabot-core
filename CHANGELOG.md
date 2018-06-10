@@ -1,3 +1,7 @@
+## v0.60.4, 10 June 2018
+
+- Ruby: Ignore bad responses when checking Ruby version compatibility
+
 ## v0.60.3, 10 June 2018
 
 - First version of GitLab PR creator. This library can now be used to
