@@ -126,11 +126,42 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             ).to_return(status: 200, body: "[]", headers: json_header)
         end
 
-        it "creates a merge request with the right details" do
-          expect(creator.create).to_not be_nil
+        context "and the commit doesn't already exists on that branch" do
+          before do
+            stub_request(:get, "#{repo_api_url}/repository/commits").
+              with(query: { ref_name: branch_name }).
+              to_return(status: 200,
+                        body: fixture("gitlab", "commits.json"),
+                        headers: json_header)
+          end
 
-          expect(WebMock).
-            to have_requested(:post, "#{repo_api_url}/merge_requests")
+          it "creates a commit and merge request with the right details" do
+            expect(creator.create).to_not be_nil
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/repository/commits")
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/merge_requests")
+          end
+        end
+
+        context "and a commit already exists on that branch" do
+          before do
+            stub_request(:get, "#{repo_api_url}/repository/commits").
+              with(query: { ref_name: branch_name }).
+              to_return(status: 200,
+                        body: fixture("gitlab", "commits_with_existing.json"),
+                        headers: json_header)
+          end
+
+          it "creates a merge request but not a commit" do
+            expect(creator.create).to_not be_nil
+
+            expect(WebMock).
+              to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/merge_requests")
+          end
         end
       end
 
@@ -146,9 +177,11 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             ).to_return(status: 200, body: "[{}]", headers: json_header)
         end
 
-        it "doesn't create a merge request (and returns nil)" do
+        it "doesn't create a commit or merge request (and returns nil)" do
           expect(creator.create).to be_nil
 
+          expect(WebMock).
+            to_not have_requested(:post, "#{repo_api_url}/repository/commits")
           expect(WebMock).
             to_not have_requested(:post, "#{repo_api_url}/merge_requests")
         end

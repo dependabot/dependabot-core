@@ -27,14 +27,21 @@ module Dependabot
         @assignee       = assignee
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def create
         return if branch_exists? && merge_request_exists?
 
-        create_branch unless branch_exists?
-        create_commit
+        if branch_exists?
+          create_commit unless commit_exists?
+        else
+          create_branch
+          create_commit
+        end
+
         create_label unless custom_labels || dependencies_label_exists?
         create_merge_request
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
@@ -58,6 +65,12 @@ module Dependabot
         true
       rescue ::Gitlab::Error::NotFound
         false
+      end
+
+      def commit_exists?
+        @commits ||=
+          gitlab_client_for_source.commits(source.repo, ref_name: branch_name)
+        @commits.first.message == commit_message
       end
 
       def merge_request_exists?
