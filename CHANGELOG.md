@@ -1,3 +1,8 @@
+## v0.60.3, 10 June 2018
+
+- First version of GitLab PR creator. This library can now be used to
+  dependabot-script to create PRs on GitLab
+
 ## v0.60.2, 09 June 2018
 
 - Add logging for strange type error
