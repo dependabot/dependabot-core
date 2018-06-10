@@ -137,7 +137,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         before do
           stub_request(:get, branch_url).
             to_return(status: 200,
-                      body: fixture("gitlab", "my_branch.json"),
+                      body: fixture("gitlab", "branch.json"),
                       headers: { "content-type" => "application/json" })
         end
 

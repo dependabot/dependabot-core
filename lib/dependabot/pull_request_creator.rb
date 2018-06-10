@@ -85,7 +85,7 @@ module Dependabot
         pr_name: message_builder.pr_name,
         author_details: author_details,
         custom_labels: custom_labels,
-        assignee: assignees.first
+        assignee: assignees&.first
       )
     end
 

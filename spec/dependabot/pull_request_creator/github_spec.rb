@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "octokit"
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/github"
@@ -63,39 +62,38 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
-  let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
-  let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
+  let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
 
   before do
-    stub_request(:get, watched_repo_url).
+    stub_request(:get, repo_api_url).
       to_return(status: 200,
                 body: fixture("github", "bump_repo.json"),
                 headers: json_header)
-    stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+    stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
       to_return(status: 404,
                 body: fixture("github", "not_found.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/trees").
+    stub_request(:post, "#{repo_api_url}/git/trees").
       to_return(status: 200,
                 body: fixture("github", "create_tree.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/commits").
+    stub_request(:post, "#{repo_api_url}/git/commits").
       to_return(status: 200,
                 body: fixture("github", "create_commit.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/refs").
+    stub_request(:post, "#{repo_api_url}/git/refs").
       to_return(status: 200,
                 body: fixture("github", "create_ref.json"),
                 headers: json_header)
-    stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+    stub_request(:get, "#{repo_api_url}/labels?per_page=100").
       to_return(status: 200,
                 body: fixture("github", "labels_with_dependencies.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/pulls").
+    stub_request(:post, "#{repo_api_url}/pulls").
       to_return(status: 200,
                 body: fixture("github", "create_pr.json"),
                 headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/issues/1347/labels").
+    stub_request(:post, "#{repo_api_url}/issues/1347/labels").
       to_return(status: 200,
                 body: fixture("github", "create_label.json"),
                 headers: json_header)
@@ -106,7 +104,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/trees").
+        to have_requested(:post, "#{repo_api_url}/git/trees").
         with(body: {
                base_tree: "basecommitsha",
                tree: [
@@ -126,7 +124,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
              })
 
       expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/commits").
+        to have_requested(:post, "#{repo_api_url}/git/commits").
         with(body: {
                parents: ["basecommitsha"],
                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
@@ -149,7 +147,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          to have_requested(:post, "#{repo_api_url}/git/trees").
           with(body: {
                  base_tree: "basecommitsha",
                  tree: [{
@@ -161,13 +159,13 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                })
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits")
+          to have_requested(:post, "#{repo_api_url}/git/commits")
       end
     end
 
     context "when the branch already exists" do
       before do
-        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
           to_return(status: 200,
                     body: [{ ref: "refs/heads/#{branch_name}" }].to_json,
                     headers: json_header)
@@ -175,13 +173,13 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
       context "but a PR to this branch doesn't" do
         before do
-          url = "#{watched_repo_url}/pulls?head=gocardless:#{branch_name}"\
+          url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
                 "&state=all"
           stub_request(:get, url).
             to_return(status: 200, body: "[]", headers: json_header)
           stub_request(
             :patch,
-            "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+            "#{repo_api_url}/git/refs/heads/#{branch_name}"
           ).to_return(
             status: 200,
             body: fixture("github", "update_ref.json"),
@@ -193,7 +191,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock).
-            to have_requested(:post, "#{watched_repo_url}/pulls").
+            to have_requested(:post, "#{repo_api_url}/pulls").
             with(
               body: {
                 base: "master",
@@ -207,7 +205,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
       context "and a PR to this branch already exists" do
         before do
-          url = "#{watched_repo_url}/pulls?head=gocardless:#{branch_name}"\
+          url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
                 "&state=all"
           stub_request(:get, url).
             to_return(status: 200, body: "[{}]", headers: json_header)
@@ -217,14 +215,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(creator.create).to be_nil
 
           expect(WebMock).
-            to_not have_requested(:post, "#{watched_repo_url}/pulls")
+            to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
       end
     end
 
     context "when a branch with a name that is a superstring exists" do
       before do
-        stub_request(:get, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
+        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
           to_return(status: 200,
                     body: [{ ref: "refs/heads/#{branch_name}.beta3" }].to_json,
                     headers: json_header)
@@ -234,7 +232,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/pulls").
+          to have_requested(:post, "#{repo_api_url}/pulls").
           with(
             body: {
               base: "master",
@@ -255,7 +253,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits").
+          to have_requested(:post, "#{repo_api_url}/git/commits").
           with(body: {
                  parents: anything,
                  tree: anything,
@@ -281,7 +279,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock).
-            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            to have_requested(:post, "#{repo_api_url}/git/commits").
             with(
               body: {
                 parents: anything,
@@ -301,7 +299,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock).to(
-            have_requested(:post, "#{watched_repo_url}/git/commits").
+            have_requested(:post, "#{repo_api_url}/git/commits").
               with do |req|
                 signature = JSON.parse(req.body)["signature"]
                 valid_sig = false
@@ -327,7 +325,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/refs").
+        to have_requested(:post, "#{repo_api_url}/git/refs").
         with(body: {
                ref: "refs/heads/dependabot/bundler/business-1.5.0",
                sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
@@ -338,7 +336,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/pulls").
+        to have_requested(:post, "#{repo_api_url}/pulls").
         with(
           body: {
             base: "master",
@@ -353,7 +351,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+        to have_requested(:post, "#{repo_api_url}/issues/1347/labels").
         with(body: '["dependencies"]')
     end
 
@@ -370,7 +368,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/pulls").
+          to have_requested(:post, "#{repo_api_url}/pulls").
           with(
             body: {
               base: "my_branch",
@@ -384,11 +382,11 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when the 'dependencies' label doesn't yet exist" do
       before do
-        stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+        stub_request(:get, "#{repo_api_url}/labels?per_page=100").
           to_return(status: 200,
                     body: fixture("github", "labels_without_dependencies.json"),
                     headers: json_header)
-        stub_request(:post, "#{watched_repo_url}/labels").
+        stub_request(:post, "#{repo_api_url}/labels").
           to_return(status: 201,
                     body: fixture("github", "create_label.json"),
                     headers: json_header)
@@ -398,7 +396,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/labels").
+          to have_requested(:post, "#{repo_api_url}/labels").
           with(
             body: {
               name: "dependencies",
@@ -410,7 +408,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
       context "when there's a race and we lose" do
         before do
-          stub_request(:post, "#{watched_repo_url}/labels").
+          stub_request(:post, "#{repo_api_url}/labels").
             to_return(status: 422,
                       body: fixture("github", "label_already_exists.json"),
                       headers: json_header)
@@ -424,7 +422,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when there is a custom dependencies label" do
       before do
-        stub_request(:get, "#{watched_repo_url}/labels?per_page=100").
+        stub_request(:get, "#{repo_api_url}/labels?per_page=100").
           to_return(status: 200,
                     body: fixture("github", "labels_with_custom.json"),
                     headers: json_header)
@@ -434,14 +432,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to_not have_requested(:post, "#{watched_repo_url}/labels")
+          to_not have_requested(:post, "#{repo_api_url}/labels")
       end
 
       it "labels the PR correctly" do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+          to have_requested(:post, "#{repo_api_url}/issues/1347/labels").
           with(body: '["Dependency: Gems"]')
       end
     end
@@ -453,14 +451,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to_not have_requested(:post, "#{watched_repo_url}/labels")
+          to_not have_requested(:post, "#{repo_api_url}/labels")
       end
 
       it "labels the PR correctly" do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/issues/1347/labels").
+          to have_requested(:post, "#{repo_api_url}/issues/1347/labels").
           with(body: '["wontfix"]')
       end
 
@@ -472,7 +470,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock).
-            to_not have_requested(:post, "#{watched_repo_url}/labels")
+            to_not have_requested(:post, "#{repo_api_url}/labels")
         end
 
         it "does not label the PR" do
@@ -481,7 +479,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(WebMock).
             to_not have_requested(
               :post,
-              "#{watched_repo_url}/issues/1347/labels"
+              "#{repo_api_url}/issues/1347/labels"
             )
         end
       end
@@ -491,7 +489,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       let(:reviewers) { { "reviewers" => ["greysteil"] } }
       before do
         stub_request(
-          :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
+          :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
         ).to_return(status: 200,
                     body: fixture("github", "create_pr.json"),
                     headers: json_header)
@@ -502,7 +500,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         expect(WebMock).
           to have_requested(
-            :post, "#{watched_repo_url}/pulls/1347/requested_reviewers"
+            :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
           ).with(body: { team_reviewers: [], reviewers: ["greysteil"] }.to_json)
       end
     end
@@ -511,7 +509,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       let(:assignees) { ["greysteil"] }
       before do
         stub_request(
-          :post, "#{watched_repo_url}/issues/1347/assignees"
+          :post, "#{repo_api_url}/issues/1347/assignees"
         ).to_return(status: 201,
                     body: fixture("github", "create_pr.json"),
                     headers: json_header)
@@ -522,7 +520,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         expect(WebMock).
           to have_requested(
-            :post, "#{watched_repo_url}/issues/1347/assignees"
+            :post, "#{repo_api_url}/issues/1347/assignees"
           ).with(body: { assignees: ["greysteil"] }.to_json)
       end
     end

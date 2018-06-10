@@ -1,0 +1,23 @@
+{
+    "name": "dependabot/bundler/statesman-3.4.1",
+    "commit": {
+        "id": "b7dd067490fe57505f7226c3b54d3127d2f7fd41",
+        "short_id": "b7dd0674",
+        "title": "Add bitbucket dependency",
+        "created_at": "2018-05-11T17:19:47.000Z",
+        "parent_ids": [
+            "4c2ba30593d909a090d26b0d9089114dda420d4f"
+        ],
+        "message": "Add bitbucket dependency\n",
+        "author_name": "Grey Baker",
+        "author_email": "greysteil@gmail.com",
+        "authored_date": "2018-05-11T17:19:47.000Z",
+        "committer_name": "Grey Baker",
+        "committer_email": "greysteil@gmail.com",
+        "committed_date": "2018-05-11T17:19:47.000Z"
+    },
+    "merged": false,
+    "protected": false,
+    "developers_can_push": false,
+    "developers_can_merge": false
+}

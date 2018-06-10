@@ -1,0 +1,62 @@
+{
+    "id": 12659148,
+    "iid": 5,
+    "project_id": 6986253,
+    "title": "Bump statesman from 1.2.5 to 3.4.1",
+    "description": "Bumps [statesman](https://github.com/gocardless/statesman) from 1.2.5 to 3.4.1.\n<details>\n<summary>Release notes</summary>\n\n*Sourced from [statesman's releases](https://github.com/gocardless/statesman/releases).*\n\n> ## v3.4.1\n> - When unsetting the `most_recent` flag during a transition, don't assume that transitions have an `updated_at` attribute, but rather allow the \"updated timestamp column\" to be re-configured or disabled entirely (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.4.0\n> - When unsetting the `most_recent` flag during a transition, don't assume that transitions have an `updated_at` attribute, but rather allow the \"updated timestamp column\" to be re-configured or disabled entirely (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.3.0\n> - Touch `updated_at` on transitions when unsetting `most_recent` flag (patch by [[**NGMarmaduke**](https://github.com/NGMarmaduke)](https://github.com/NGMarmaduke))\n> - Fix `force_reload` for ActiveRecord models with loaded transitions (patch by [[**jacobpgn**](https://github.com/jacobpgn)](https://github.com/))\n> \n>   \n> \n> ## v3.2.0\n> * Allow specifying metadata with `Machine#allowed_transitions`\n> (patch by [[**vvondra**](https://github.com/vvondra)](https://github.com/vvondra))\n> \n> ## v3.1.0\n> - Add support for Rails 5.0.x and 5.1.x (patch by [[**kenchan0130**](https://github.com/kenchan0130)](https://github.com/kenchan0130) and [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> - Run tests in CircleCI instead of TravisCI (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> - Update Rubocop and fix offences (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.0.0\n> **Breaking changes**\n>  \t\t \n>  - Drop support for Rails < 4.2\n>  - Drop support for Ruby < 2.2\n>   \t\t  \n>   For details on our compatibility policy, see `docs/COMPATIBILITY.md`.\n>   \t\t  \n> **Changes**\n> \n> - Better handling of custom transition association names (patch by [[**greysteil**](https://github.com/greysteil)](https://github.com/greysteil))\n> - Add foreign keys to transition table generator (patch by [[**greysteil**](https://github.com/greysteil)](https://github.com/greysteil))\n> - Support partial indexes in transition table update generator (patch by [[**kenchan0130**](https://github.com/kenchan0130)](https://github.com/kenchan0130))\n</details>\n<details>\n<summary>Changelog</summary>\n\n*Sourced from [statesman's changelog](https://github.com/gocardless/statesman/blob/master/CHANGELOG.md).*\n\n> ## v3.4.1, 14 February 2018 ❤️\n> \n> - Support ActiveRecord transition classes which don't include `Statesman::Adapters::ActiveRecordTransition`, and thus don't have a `.updated_timestamp_column` method (see [#310](https://github-redirect.dependabot.com/gocardless/statesman/issues/310) for further details) (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.4.0, 12 February 2018\n> \n> - When unsetting the `most_recent` flag during a transition, don't assume that transitions have an `updated_at` attribute, but rather allow the \"updated timestamp column\" to be re-configured or disabled entirely (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.3.0, 5 January 2018\n> \n> - Touch `updated_at` on transitions when unsetting `most_recent` flag (patch by [[**NGMarmaduke**](https://github.com/NGMarmaduke)](https://github.com/NGMarmaduke))\n> - Fix `force_reload` for ActiveRecord models with loaded transitions (patch by [[**jacobpgn**](https://github.com/jacobpgn)](https://github.com/))\n> \n> ## v3.2.0, 27 November 2017\n> \n> - Allow specifying metadata with `Machine#allowed_transitions` (patch by [[**vvondra**](https://github.com/vvondra)](https://github.com/vvondra))\n> \n> ## v3.1.0, 1 September 2017\n> \n> - Add support for Rails 5.0.x and 5.1.x (patch by [[**kenchan0130**](https://github.com/kenchan0130)](https://github.com/kenchan0130) and [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> - Run tests in CircleCI instead of TravisCI (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> - Update Rubocop and fix offences (patch by [[**timrogers**](https://github.com/timrogers)](https://github.com/timrogers))\n> \n> ## v3.0.0, 3 July 2017\n> \n> *Breaking changes*\n> \n> - Drop support for Rails < 4.2\n> - Drop support for Ruby < 2.2\n> \n> For details on our compatibility policy, see `docs/COMPATIBILITY.md`.\n> \n> *Changes*\n> \n> - Better handling of custom transition association names (patch by [[**greysteil**](https://github.com/greysteil)](https://github.com/greysteil))\n> - Add foreign keys to transition table generator (patch by [[**greysteil**](https://github.com/greysteil)](https://github.com/greysteil))\n> - Support partial indexes in transition table update generator (patch by [[**kenchan0130**](https://github.com/kenchan0130)](https://github.com/kenchan0130))\n> \n> ## v2.0.1, 29 March 2016\n> \n> - Add support for Rails 5 (excluding Mongoid adapter)\n> \n> ## v2.0.0, 5 January 2016\n> \n> - No changes from v2.0.0.rc1\n> \n> ## v2.0.0.rc1, 23 December 2015\n> \n> *Breaking changes*\n> \n></table> ... (truncated)\n</details>\n<details>\n<summary>Commits</summary>\n\n- [`dae8581`](https://github.com/gocardless/statesman/commit/dae858168e4624c0cffe487e2c6cac30423b8609) v3.4.1\n- [`084ec3a`](https://github.com/gocardless/statesman/commit/084ec3abce18d345a079b9963eaa99e9d8c3c412) Merge pull request [#310](https://github-redirect.dependabot.com/gocardless/statesman/issues/310) from gocardless/issue-309\n- [`42cdd84`](https://github.com/gocardless/statesman/commit/42cdd8401ce7c88c8895c20a52e06ff42064fa7f) Clarify README instructions for ActiveRecord\n- [`0a2ed03`](https://github.com/gocardless/statesman/commit/0a2ed0327857ac3df612eb79bf24c937383368ce) Support ActiveRecord transitions which don't include Statesman::Adapters::Act...\n- [`dbb3a75`](https://github.com/gocardless/statesman/commit/dbb3a7598d5ab855cf98db27a1f203009a601f6b) Merge pull request [#308](https://github-redirect.dependabot.com/gocardless/statesman/issues/308) from gocardless/v3.4.0\n- [`2846c16`](https://github.com/gocardless/statesman/commit/2846c16c4cdedb43da8b436af8c1b950b73c6664) v3.4.0\n- [`df9834d`](https://github.com/gocardless/statesman/commit/df9834d26245f09277d8393ec7e31c68b0a7ce9d) Merge pull request [#306](https://github-redirect.dependabot.com/gocardless/statesman/issues/306) from gocardless/most-recent-without-updated-at\n- [`a026316`](https://github.com/gocardless/statesman/commit/a026316bb82fa9e538fe34650939f3bfd5e2ea1d) Make the \"updated timestamp column\" for an ActiveRecord transition configurable\n- [`24195ad`](https://github.com/gocardless/statesman/commit/24195ad45e5653c3b92f7b84bf050f6e6477aa29) Make Pry available in specs\n- [`05bda59`](https://github.com/gocardless/statesman/commit/05bda59b531ceffdea69a82562744a5b4d438865) Merge pull request [#297](https://github-redirect.dependabot.com/gocardless/statesman/issues/297) from gocardless/v3.3.0\n- Additional commits viewable in [compare view](https://github.com/gocardless/statesman/compare/v1.2.5...v3.4.1)\n</details>\n<br />",
+    "state": "opened",
+    "created_at": "2018-06-10T14:15:03.099Z",
+    "updated_at": "2018-06-10T14:15:03.099Z",
+    "target_branch": "master",
+    "source_branch": "dependabot/bundler/statesman-3.4.1",
+    "upvotes": 0,
+    "downvotes": 0,
+    "author": {
+        "id": 1394555,
+        "name": "Grey Baker",
+        "username": "greysteil",
+        "state": "active",
+        "avatar_url": "https://secure.gravatar.com/avatar/66e8ce55da6fbc42bbf48ed56a824e6b?s=80&d=identicon",
+        "web_url": "https://gitlab.com/greysteil"
+    },
+    "assignee": null,
+    "source_project_id": 6986253,
+    "target_project_id": 6986253,
+    "labels": [
+        "dependencies"
+    ],
+    "work_in_progress": false,
+    "milestone": null,
+    "merge_when_pipeline_succeeds": false,
+    "merge_status": "can_be_merged",
+    "sha": "24602425d177183a0d25195bb13731a37a4c5bb4",
+    "merge_commit_sha": null,
+    "user_notes_count": 0,
+    "discussion_locked": null,
+    "should_remove_source_branch": null,
+    "force_remove_source_branch": true,
+    "web_url": "https://gitlab.com/greysteil/dependabot-test/merge_requests/5",
+    "time_stats": {
+        "time_estimate": 0,
+        "total_time_spent": 0,
+        "human_time_estimate": null,
+        "human_total_time_spent": null
+    },
+    "squash": false,
+    "subscribed": true,
+    "changes_count": "2",
+    "merged_by": null,
+    "merged_at": null,
+    "closed_by": null,
+    "closed_at": null,
+    "latest_build_started_at": null,
+    "latest_build_finished_at": null,
+    "first_deployed_to_production_at": null,
+    "pipeline": null,
+    "diff_refs": {
+        "base_sha": "0e09efdf379783fab8010cae6d50bf64f8358812",
+        "head_sha": "24602425d177183a0d25195bb13731a37a4c5bb4",
+        "start_sha": "0e09efdf379783fab8010cae6d50bf64f8358812"
+    },
+    "approvals_before_merge": null
+}

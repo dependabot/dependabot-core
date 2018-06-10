@@ -111,7 +111,8 @@ module Dependabot
 
       def create_label
         gitlab_client_for_source.create_label(
-          source.repo, "dependencies", "#0025ff"
+          source.repo, "dependencies", "#0025ff",
+          description: "Pull requests that update a dependency file"
         )
         @labels = [*@labels, "dependencies"].uniq
       end

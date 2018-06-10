@@ -133,5 +133,31 @@ RSpec.describe Dependabot::PullRequestCreator do
         creator.create
       end
     end
+
+    context "with a GitLab source" do
+      let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
+      let(:dummy_creator) { instance_double(described_class::Gitlab) }
+
+      it "delegates to PullRequestCreator::Github with correct params" do
+        expect(described_class::Gitlab).
+          to receive(:new).
+          with(
+            source: source,
+            branch_name: "dependabot/bundler/business-1.5.0",
+            base_commit: base_commit,
+            target_branch: target_branch,
+            credentials: credentials,
+            files: files,
+            commit_message: "Commit msg",
+            pr_description: "PR msg",
+            pr_name: "PR name",
+            author_details: author_details,
+            custom_labels: custom_labels,
+            assignee: nil
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
   end
 end
