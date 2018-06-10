@@ -596,7 +596,7 @@ module Dependabot
           fetch("password")
 
         @gitlab_client_for_source ||=
-          Gitlab.client(
+          ::Gitlab.client(
             endpoint: "https://gitlab.com/api/v4",
             private_token: access_token || ""
           )

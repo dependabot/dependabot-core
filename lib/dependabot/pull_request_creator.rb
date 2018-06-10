@@ -5,6 +5,7 @@ require "dependabot/metadata_finders"
 module Dependabot
   class PullRequestCreator
     require "dependabot/pull_request_creator/github"
+    require "dependabot/pull_request_creator/gitlab"
     require "dependabot/pull_request_creator/message_builder"
     require "dependabot/pull_request_creator/branch_namer"
 
@@ -43,6 +44,16 @@ module Dependabot
     end
 
     def create
+      case source.provider
+      when "github" then github_creator.create
+      when "gitlab" then gitlab_creator.create
+      else raise "Unsupported provider #{source.provider}"
+      end
+    end
+
+    private
+
+    def github_creator
       Github.new(
         source: source,
         branch_name: branch_namer.new_branch_name,
@@ -58,10 +69,24 @@ module Dependabot
         custom_labels: custom_labels,
         reviewers: reviewers,
         assignees: assignees
-      ).create
+      )
     end
 
-    private
+    def gitlab_creator
+      Gitlab.new(
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        target_branch: target_branch,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        author_details: author_details,
+        custom_labels: custom_labels
+      )
+    end
 
     def message_builder
       @message_builder ||
