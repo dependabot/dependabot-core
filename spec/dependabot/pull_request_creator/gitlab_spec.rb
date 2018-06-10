@@ -95,11 +95,13 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   end
 
   describe "#create" do
-    it "pushes a commit to GitLab" do
+    it "pushes a commit to GitLab and creates a merge request" do
       creator.create
 
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/repository/commits")
+      expect(WebMock).
+        to have_requested(:post, "#{repo_api_url}/merge_requests")
     end
 
     context "when the branch already exists" do
