@@ -334,40 +334,6 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
             expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
           end
         end
-
-        context "and an old sub-dependency should have been removed" do
-          let(:mixfile_fixture_name) { "subdep_for_removal" }
-          let(:lockfile_fixture_name) { "subdep_for_removal" }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "excoveralls",
-              version: "0.9.0",
-              requirements: [{
-                file: "mix.exs",
-                requirement: "~> 0.7",
-                groups: [],
-                source: nil
-              }],
-              previous_version: "0.8.2",
-              previous_requirements: [{
-                file: "mix.exs",
-                requirement: "~> 0.7",
-                groups: [],
-                source: nil
-              }],
-              package_manager: "hex"
-            )
-          end
-
-          it "removes the old subdependency from the lockfile" do
-            expect(updated_lockfile_content).to_not include('"exjsx"')
-            expect(updated_lockfile_content).to_not include('"jsx"')
-            expect(updated_lockfile_content).
-              to include %({:hex, :excoveralls, "0.9.0")
-            expect(updated_lockfile_content).to include %({:hex, :jason, "1.0.0)
-            expect(updated_lockfile_content).to include %({:hex, :bunt, "0.2.0")
-          end
-        end
       end
 
       context "with a mix.exs that opens another file" do
