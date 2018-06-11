@@ -1,3 +1,7 @@
+## v0.60.7, 11 June 2018
+
+- Elixir: Revert "Remove unused subdependencies after update"
+
 ## v0.60.6, 11 June 2018
 
 - Elixir: Handle git dependencies in umbrella apps correctly
