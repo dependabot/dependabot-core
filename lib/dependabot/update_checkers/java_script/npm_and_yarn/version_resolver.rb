@@ -154,6 +154,9 @@ module Dependabot
                 idempotent: true
               )
             ).status == 404
+          rescue Excon::Error::Timeout
+            # Give the benefit of the doubt if the registry is playing up
+            false
           end
 
           def npm_details
