@@ -1,3 +1,7 @@
+## v0.60.5, 11 June 2018
+
+- Elixir: Remove unused subdependencies after update
+
 ## v0.60.4, 10 June 2018
 
 - Ruby: Ignore bad responses when checking Ruby version compatibility
