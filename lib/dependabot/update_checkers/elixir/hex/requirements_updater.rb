@@ -38,7 +38,7 @@ module Dependabot
           # rubocop:disable Metrics/AbcSize
           # rubocop:disable PerceivedComplexity
           def updated_mixfile_requirement(req)
-            req = req.merge(source: updated_source)
+            req = update_source(req)
             return req unless latest_resolvable_version && req[:requirement]
             return req if req_satisfied_by_latest_resolvable?(req[:requirement])
 
@@ -65,6 +65,16 @@ module Dependabot
           end
           # rubocop:enable Metrics/AbcSize
           # rubocop:enable PerceivedComplexity
+
+          def update_source(requirement_hash)
+            # Only git sources ever need to be updated. Anything else should be
+            # left alone.
+            unless requirement_hash.dig(:source, :type) == "git"
+              return requirement_hash
+            end
+
+            requirement_hash.merge(source: updated_source)
+          end
 
           def req_satisfied_by_latest_resolvable?(requirement_string)
             ruby_requirements(requirement_string).

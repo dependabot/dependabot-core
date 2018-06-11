@@ -43,7 +43,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
       let(:latest_resolvable_version) do
         "aa218f56b14c9653891f9e74264a383fa43fefbd"
       end
-      let(:mixfile_req) do
+      let(:requirements) { [mixfile_req, git_req] }
+      let(:git_req) do
         {
           file: "mix.exs",
           requirement: nil,
@@ -64,12 +65,17 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
           ref: nil
         }
       end
-      it { is_expected.to eq(mixfile_req) }
+      subject { updater.updated_requirements }
+      it { is_expected.to eq([mixfile_req, git_req]) }
 
       context "when asked to update the source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
-        before { mixfile_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
-        its([:source]) { is_expected.to eq(updated_source) }
+        before { git_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
+
+        it "updates the git requirement, but not the registry one" do
+          expect(updater.updated_requirements).
+            to eq([mixfile_req, git_req.merge!(source: updated_source)])
+        end
       end
     end
 
