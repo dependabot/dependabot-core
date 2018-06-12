@@ -338,13 +338,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
 
         context "for a development dependency" do
           let(:requirements) do
-            [
-              {
-                file: "some.gemspec",
-                requirement: gemspec_requirement_string,
-                groups: ["development"]
-              }
-            ]
+            [{
+              file: "some.gemspec",
+              requirement: gemspec_requirement_string,
+              groups: ["development"]
+            }]
           end
 
           context "when an = specifier was used" do

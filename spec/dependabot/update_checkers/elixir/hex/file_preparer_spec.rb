@@ -111,14 +111,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
             let(:mixfile_fixture_name) { "prerelease_version" }
             let(:dependency_name) { "phoenix" }
             let(:requirements) do
-              [
-                {
-                  file: "mix.exs",
-                  requirement: "1.2.0-rc.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "mix.exs",
+                requirement: "1.2.0-rc.0",
+                groups: [],
+                source: nil
+              }]
             end
 
             it "updates the requirement" do
@@ -135,19 +133,17 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_name) { "phoenix" }
         let(:requirements) do
-          [
-            {
-              requirement: nil,
-              file: "mix.exs",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/phoenixframework/phoenix.git",
-                branch: "master",
-                ref: "v1.2.0"
-              }
+          [{
+            requirement: nil,
+            file: "mix.exs",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/phoenixframework/phoenix.git",
+              branch: "master",
+              ref: "v1.2.0"
             }
-          ]
+          }]
         end
 
         it "updates the pin" do

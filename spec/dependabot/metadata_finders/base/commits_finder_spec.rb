@@ -150,17 +150,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a dependency that has a git source" do
       let(:dependency_previous_requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/gocardless/business"
-            }
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business"
           }
-        ]
+        }]
       end
       let(:dependency_requirements) { dependency_previous_requirements }
       let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
@@ -291,18 +289,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           context "but with a previously specified reference" do
             let(:dependency_previous_requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    ref: "7638417"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  ref: "7638417"
                 }
-              ]
+              }]
             end
 
             it "uses the reference specified" do

@@ -14,14 +14,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       dependency: dependency,
       dependency_files: dependency_files,
       target_version: target_version,
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -59,24 +57,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       let(:target_version) { "3.6.0" }
       let(:dependency_name) { "rspec-mocks" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "= 3.5.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "= 3.5.0",
+          groups: [:default],
+          source: nil
+        }]
       end
       let(:expected_requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "3.6.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "3.6.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "returns the right array of updated dependencies" do
@@ -111,24 +105,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       let(:target_version) { "3.6.0" }
       let(:dependency_name) { "rspec-support" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "= 3.5.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "= 3.5.0",
+          groups: [:default],
+          source: nil
+        }]
       end
       let(:expected_requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "3.6.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "3.6.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "returns the right array of updated dependencies" do
@@ -166,24 +156,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       let(:dependency_name) { "rspec-mocks" }
       let(:target_version) { "3.6.0" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 3.5.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 3.5.0",
+          groups: [:default],
+          source: nil
+        }]
       end
       let(:expected_requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 3.6.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 3.6.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "returns the right array of updated dependencies" do

@@ -23,14 +23,12 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     described_class.new(dependency: dependency, credentials: credentials)
   end
   let(:credentials) do
-    [
-      {
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }
-    ]
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_name) { "etag" }
 
@@ -48,19 +46,17 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/jshttp/etag",
-                branch: nil,
-                ref: "master"
-              }
+          requirements: [{
+            file: "package.json",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/jshttp/etag",
+              branch: nil,
+              ref: "master"
             }
-          ],
+          }],
           package_manager: "npm_and_yarn"
         )
       end
@@ -215,17 +211,15 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
           Dependabot::Dependency.new(
             name: dependency_name,
             version: "1.0",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.0",
-                groups: [],
-                source: {
-                  type: "private_registry",
-                  url: "https://npm.fury.io/dependabot"
-                }
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "private_registry",
+                url: "https://npm.fury.io/dependabot"
               }
-            ],
+            }],
             package_manager: "npm_and_yarn"
           )
         end

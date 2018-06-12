@@ -13,12 +13,10 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0",
-      requirements: [
-        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-      ],
+      requirements:
+        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
+      previous_requirements:
+        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
       package_manager: "bundler"
     )
   end
@@ -153,17 +151,15 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: "1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/my_fork/business"
-              }
+          requirements: [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/my_fork/business"
             }
-          ],
+          }],
           package_manager: "bundler"
         )
       end
@@ -175,17 +171,15 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
           Dependabot::Dependency.new(
             name: dependency_name,
             version: "1.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://example.com/my_fork/business"
-                }
+            requirements: [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://example.com/my_fork/business"
               }
-            ],
+            }],
             package_manager: "bundler"
           )
         end

@@ -25,14 +25,12 @@ RSpec.describe tested_module::RegistryFinder do
     Dependabot::Dependency.new(
       name: "etag",
       version: "1.0.0",
-      requirements: [
-        {
-          file: "package.json",
-          requirement: "^1.0.0",
-          groups: [],
-          source: source
-        }
-      ],
+      requirements: [{
+        file: "package.json",
+        requirement: "^1.0.0",
+        groups: [],
+        source: source
+      }],
       package_manager: "npm_and_yarn"
     )
   end

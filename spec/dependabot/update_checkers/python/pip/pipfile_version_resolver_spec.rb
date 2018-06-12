@@ -74,7 +74,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       end
     end
 
-    context "without a lockfile" do
+    context "without a lockfile (but with a latest version)" do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
@@ -87,7 +87,7 @@ RSpec.describe namespace::PipfileVersionResolver do
 
     context "when the latest version is nil" do
       let(:latest_version) { nil }
-      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
     context "with a path dependency" do

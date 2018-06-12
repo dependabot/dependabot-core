@@ -100,17 +100,15 @@ RSpec.describe Dependabot::MetadataFinders::Php::Composer do
 
       context "but there is a source URL on the dependency" do
         let(:requirements) do
-          [
-            {
-              file: "composer.json",
-              requirement: "1.*",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
+          [{
+            file: "composer.json",
+            requirement: "1.*",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/Seldaek/monolog.git"
             }
-          ]
+          }]
         end
 
         it { is_expected.to eq("https://github.com/Seldaek/monolog") }

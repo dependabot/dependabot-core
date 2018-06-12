@@ -196,18 +196,16 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
-            [
-              {
-                requirement: nil,
-                groups: [],
-                file: "Dockerfile",
-                source: {
-                  type: "digest",
-                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
-                          "fc38288cf73aa07485005"
-                }
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                type: "digest",
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                        "fc38288cf73aa07485005"
               }
-            ]
+            }]
           end
 
           it "has the right details" do
@@ -240,14 +238,12 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
               )
             end
             let(:credentials) do
-              [
-                {
-                  "type" => "docker_registry",
-                  "registry" => "registry-host.io:5000",
-                  "username" => "grey",
-                  "password" => "pa55word"
-                }
-              ]
+              [{
+                "type" => "docker_registry",
+                "registry" => "registry-host.io:5000",
+                "username" => "grey",
+                "password" => "pa55word"
+              }]
             end
 
             its(:length) { is_expected.to eq(1) }
@@ -255,19 +251,17 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             describe "the first dependency" do
               subject(:dependency) { dependencies.first }
               let(:expected_requirements) do
-                [
-                  {
-                    requirement: nil,
-                    groups: [],
-                    file: "Dockerfile",
-                    source: {
-                      type: "digest",
-                      registry: "registry-host.io:5000",
-                      digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
-                              "e4c8dfc38288cf73aa07485005"
-                    }
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: "Dockerfile",
+                  source: {
+                    type: "digest",
+                    registry: "registry-host.io:5000",
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                            "e4c8dfc38288cf73aa07485005"
                   }
-                ]
+                }]
               end
 
               it "has the right details" do
@@ -357,17 +351,15 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
-            [
-              {
-                requirement: nil,
-                groups: [],
-                file: "Dockerfile",
-                source: {
-                  type: "tag",
-                  registry: "aws-account-id.dkr.ecr.region.amazonaws.com"
-                }
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                type: "tag",
+                registry: "aws-account-id.dkr.ecr.region.amazonaws.com"
               }
-            ]
+            }]
           end
 
           it "has the right details" do

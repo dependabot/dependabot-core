@@ -264,19 +264,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the pin looks like a version" do
             let(:requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    branch: "master",
-                    ref: "v1.0.0"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.0.0"
                 }
-              ]
+              }]
             end
 
             before do
@@ -697,19 +695,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
           context "and the release looks like a version" do
             let(:requirements) do
-              [
-                {
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/gocardless/business",
-                    branch: "master",
-                    ref: "v1.0.0"
-                  }
+              [{
+                file: "Gemfile",
+                requirement: ">= 0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.0.0"
                 }
-              ]
+              }]
             end
 
             before do
@@ -1586,19 +1582,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "git_source_no_ref" }
       let(:lockfile_fixture_name) { "git_source_no_ref.lock" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: ">= 0",
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/gocardless/business",
-              branch: "master",
-              ref: "master"
-            }
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "master"
           }
-        ]
+        }]
       end
 
       it { is_expected.to eq(true) }

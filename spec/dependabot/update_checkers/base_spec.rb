@@ -9,14 +9,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:dependency) do
@@ -32,14 +30,12 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
   end
   let(:updated_requirements) do
-    [
-      {
-        file: "Gemfile",
-        requirement: updated_requirement,
-        groups: [],
-        source: nil
-      }
-    ]
+    [{
+      file: "Gemfile",
+      requirement: updated_requirement,
+      groups: [],
+      source: nil
+    }]
   end
   let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
@@ -145,28 +141,24 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "that doesn't yet permit the latest version" do
         let(:updated_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 1, < 3",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: ">= 1, < 3",
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be_falsey }
       end
 
       context "that we don't know how to fix" do
         let(:updated_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: :unfixable,
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: :unfixable,
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be_falsey }
       end
@@ -350,28 +342,24 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "that doesn't yet permit the latest version" do
         let(:updated_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 1, < 3",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: ">= 1, < 3",
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be_truthy }
       end
 
       context "that we don't know how to fix" do
         let(:updated_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: :unfixable,
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "Gemfile",
+            requirement: :unfixable,
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to be_falsey }
       end

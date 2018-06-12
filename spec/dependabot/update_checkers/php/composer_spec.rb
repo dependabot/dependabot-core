@@ -88,14 +88,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "monolog/monolog",
           version: "1.0.0-RC1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.0-RC1",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.0-RC1",
+            groups: [],
+            source: nil
+          }],
           package_manager: "composer"
         )
       end
@@ -111,14 +109,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           Dependabot::Dependency.new(
             name: "monolog/monolog",
             version: nil,
-            requirements: [
-              {
-                file: "composer.json",
-                requirement: "1.0.0-RC1",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.0.0-RC1",
+              groups: [],
+              source: nil
+            }],
             package_manager: "composer"
           )
         end
@@ -147,14 +143,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "monolog/something",
           version: "1.0.1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.*",
+            groups: [],
+            source: nil
+          }],
           package_manager: "composer"
         )
       end
@@ -168,14 +162,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "monolog/MonoLog",
           version: "1.0.1",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "1.0.*",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.*",
+            groups: [],
+            source: nil
+          }],
           package_manager: "composer"
         )
       end
@@ -197,14 +189,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         Dependabot::Dependency.new(
           name: "dependabot/dummy-pkg-a",
           version: "2.1.0",
-          requirements: [
-            {
-              file: "composer.json",
-              requirement: "*",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
           package_manager: "composer"
         )
       end
@@ -750,14 +740,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
       )
     end
     let(:dependency_requirements) do
-      [
-        {
-          file: "composer.json",
-          requirement: "1.0.*",
-          groups: [],
-          source: nil
-        }
-      ]
+      [{
+        file: "composer.json",
+        requirement: "1.0.*",
+        groups: [],
+        source: nil
+      }]
     end
 
     before do
@@ -781,14 +769,12 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         and_call_original
       expect(checker.updated_requirements).
         to eq(
-          [
-            {
-              file: "composer.json",
-              requirement: "1.6.*",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "composer.json",
+            requirement: "1.6.*",
+            groups: [],
+            source: nil
+          }]
         )
     end
   end

@@ -12,14 +12,12 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
 
@@ -27,14 +25,12 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
     Dependabot::Dependency.new(
       name: "manifesto",
       version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
-      requirements: [
-        {
-          file: ".gitmodules",
-          requirement: nil,
-          groups: [],
-          source: { type: "git", url: url, branch: branch, ref: branch }
-        }
-      ],
+      requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        groups: [],
+        source: { type: "git", url: url, branch: branch, ref: branch }
+      }],
       package_manager: "submodules"
     )
   end

@@ -14,22 +14,18 @@ RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
       name: "manifesto",
       version: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
       previous_version: "7638417db6d59f3c431d3e1f261cc637155684cd",
-      requirements: [
-        {
-          file: ".gitmodules",
-          requirement: nil,
-          groups: [],
-          source: { type: "git", url: url, branch: "master", ref: "master" }
-        }
-      ],
-      previous_requirements: [
-        {
-          file: ".gitmodules",
-          requirement: nil,
-          groups: [],
-          source: { type: "git", url: url, branch: "master", ref: "master" }
-        }
-      ],
+      requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        groups: [],
+        source: { type: "git", url: url, branch: "master", ref: "master" }
+      }],
+      previous_requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        groups: [],
+        source: { type: "git", url: url, branch: "master", ref: "master" }
+      }],
       package_manager: "submodules"
     )
   end

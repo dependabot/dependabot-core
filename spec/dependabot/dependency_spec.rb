@@ -73,9 +73,8 @@ RSpec.describe Dependabot::Dependency do
     let(:args) do
       {
         name: "dep",
-        requirements: [
-          { file: "a.rb", requirement: "1", groups: [], source: nil }
-        ],
+        requirements:
+          [{ file: "a.rb", requirement: "1", groups: [], source: nil }],
         package_manager: "bundler"
       }
     end
@@ -101,9 +100,8 @@ RSpec.describe Dependabot::Dependency do
     let(:dependency_args) do
       {
         name: "dep",
-        requirements: [
-          { file: "a.rb", requirement: "1", groups: groups, source: nil }
-        ],
+        requirements:
+          [{ file: "a.rb", requirement: "1", groups: groups, source: nil }],
         package_manager: package_manager
       }
     end

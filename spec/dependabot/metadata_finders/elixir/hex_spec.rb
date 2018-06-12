@@ -12,14 +12,12 @@ RSpec.describe Dependabot::MetadataFinders::Elixir::Hex do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.3.0",
-      requirements: [
-        {
-          file: "mix.exs",
-          requirement: "~> 1.2",
-          groups: [],
-          source: dependency_source
-        }
-      ],
+      requirements: [{
+        file: "mix.exs",
+        requirement: "~> 1.2",
+        groups: [],
+        source: dependency_source
+      }],
       package_manager: "hex"
     )
   end

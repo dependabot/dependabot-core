@@ -46,14 +46,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.5")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "~> 1.3.0",
-                file: "mix.exs",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "~> 1.3.0",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -74,14 +72,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "== 1.2.1",
-                file: "mix.exs",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "== 1.2.1",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -94,14 +90,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.3.0",
-                file: "mix.exs",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.3.0",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -119,14 +113,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: ["docs"],
-                source: nil
-              }
-            ]
+            [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: ["docs"],
+              source: nil
+            }]
           )
         end
       end
@@ -176,14 +168,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "== 1.2.1",
-                file: "mix.exs",
-                groups: ["dev"],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "== 1.2.1",
+              file: "mix.exs",
+              groups: ["dev"],
+              source: nil
+            }]
           )
         end
       end
@@ -196,14 +186,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.3.0",
-                file: "mix.exs",
-                groups: %w(dev test),
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.3.0",
+              file: "mix.exs",
+              groups: %w(dev test),
+              source: nil
+            }]
           )
         end
       end
@@ -219,19 +207,17 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "phoenix",
             version: "178ce1a2344515e9145599970313fcc190d4b881",
-            requirements: [
-              {
-                requirement: nil,
-                file: "mix.exs",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/phoenixframework/phoenix.git",
-                  branch: "master",
-                  ref: "v1.2.0"
-                }
+            requirements: [{
+              requirement: nil,
+              file: "mix.exs",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/phoenixframework/phoenix.git",
+                branch: "master",
+                ref: "v1.2.0"
               }
-            ],
+            }],
             package_manager: "hex"
           )
         )
@@ -247,19 +233,17 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
             Dependabot::Dependency.new(
               name: "phoenix",
               version: "178ce1a2344515e9145599970313fcc190d4b881",
-              requirements: [
-                {
-                  requirement: nil,
-                  file: "mix.exs",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/phoenixframework/phoenix.git",
-                    branch: "master",
-                    ref: "v1.2.0"
-                  }
+              requirements: [{
+                requirement: nil,
+                file: "mix.exs",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/phoenixframework/phoenix.git",
+                  branch: "master",
+                  ref: "v1.2.0"
                 }
-              ],
+              }],
               package_manager: "hex"
             )
           )
@@ -318,14 +302,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "jason",
             version: "1.0.0",
-            requirements: [
-              {
-                requirement: "~> 1.0",
-                file: "apps/dependabot_business/mix.exs",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              requirement: "~> 1.0",
+              file: "apps/dependabot_business/mix.exs",
+              groups: [],
+              source: nil
+            }],
             package_manager: "hex"
           )
         )
@@ -354,14 +336,12 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
           Dependabot::Dependency.new(
             name: "distillery",
             version: "1.5.2",
-            requirements: [
-              {
-                requirement: "~> 1.5",
-                file: "mix.exs",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              requirement: "~> 1.5",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }],
             package_manager: "hex"
           )
         )

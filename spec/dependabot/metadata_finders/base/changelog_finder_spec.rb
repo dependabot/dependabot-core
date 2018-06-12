@@ -187,32 +187,28 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       context "for a git dependency" do
         let(:github_response) { fixture("github", "business_files.json") }
         let(:dependency_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                ref: new_ref
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: new_ref
             }
-          ]
+          }]
         end
         let(:dependency_previous_requirements) do
-          [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                ref: old_ref
-              }
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: old_ref
             }
-          ]
+          }]
         end
         let(:new_ref) { "master" }
         let(:old_ref) { "master" }
@@ -481,32 +477,28 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "for a git dependency" do
           let(:dependency_requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  ref: new_ref
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: new_ref
               }
-            ]
+            }]
           end
           let(:dependency_previous_requirements) do
-            [
-              {
-                file: "Gemfile",
-                requirement: ">= 0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  ref: old_ref
-                }
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                ref: old_ref
               }
-            ]
+            }]
           end
           let(:new_ref) { "master" }
           let(:old_ref) { "master" }

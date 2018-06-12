@@ -10,14 +10,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: files,
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }
-      ]
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
 

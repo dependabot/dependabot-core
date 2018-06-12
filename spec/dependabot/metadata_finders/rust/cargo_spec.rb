@@ -12,14 +12,12 @@ RSpec.describe Dependabot::MetadataFinders::Rust::Cargo do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.3.0",
-      requirements: [
-        {
-          file: "Cargo.toml",
-          requirement: "~1.3.0",
-          groups: [],
-          source: dependency_source
-        }
-      ],
+      requirements: [{
+        file: "Cargo.toml",
+        requirement: "~1.3.0",
+        groups: [],
+        source: dependency_source
+      }],
       package_manager: "cargo"
     )
   end
