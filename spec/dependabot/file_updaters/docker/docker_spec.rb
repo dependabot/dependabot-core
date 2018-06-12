@@ -37,22 +37,18 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       name: "ubuntu",
       version: "17.10",
       previous_version: "17.04",
-      requirements: [
-        {
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile",
-          source: { type: "tag" }
-        }
-      ],
-      previous_requirements: [
-        {
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile",
-          source: { type: "tag" }
-        }
-      ],
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "Dockerfile",
+        source: { type: "tag" }
+      }],
+      previous_requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "Dockerfile",
+        source: { type: "tag" }
+      }],
       package_manager: "docker"
     )
   end
@@ -83,22 +79,18 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
           name: "my-fork/ubuntu",
           version: "17.10",
           previous_version: "17.04",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag" }
-            }
-          ],
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }],
           package_manager: "docker"
         )
       end
@@ -122,22 +114,18 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
           name: "myreg/ubuntu",
           version: "17.10",
           previous_version: "17.04",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag", registry: "registry-host.io:5000" }
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag", registry: "registry-host.io:5000" }
-            }
-          ],
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag", registry: "registry-host.io:5000" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag", registry: "registry-host.io:5000" }
+          }],
           package_manager: "docker"
         )
       end
@@ -164,30 +152,26 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
           name: "ubuntu",
           version: "17.10",
           previous_version: "12.04.5",
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: {
-                type: "digest",
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
-                        "ca97eba880ebf600d68608"
-              }
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              type: "digest",
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                      "ca97eba880ebf600d68608"
             }
-          ],
-          previous_requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: {
-                type: "digest",
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
-                        "dfc38288cf73aa07485005"
-              }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              type: "digest",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                      "dfc38288cf73aa07485005"
             }
-          ],
+          }],
           package_manager: "docker"
         )
       end
@@ -222,32 +206,28 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             name: "myreg/ubuntu",
             version: "17.10",
             previous_version: "12.04.5",
-            requirements: [
-              {
-                requirement: nil,
-                groups: [],
-                file: "Dockerfile",
-                source: {
-                  type: "digest",
-                  registry: "registry-host.io:5000",
-                  digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
-                          "ca97eba880ebf600d68608"
-                }
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                type: "digest",
+                registry: "registry-host.io:5000",
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                        "ca97eba880ebf600d68608"
               }
-            ],
-            previous_requirements: [
-              {
-                requirement: nil,
-                groups: [],
-                file: "Dockerfile",
-                source: {
-                  type: "digest",
-                  registry: "registry-host.io:5000",
-                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
-                          "dfc38288cf73aa07485005"
-                }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                type: "digest",
+                registry: "registry-host.io:5000",
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                        "dfc38288cf73aa07485005"
               }
-            ],
+            }],
             package_manager: "docker"
           )
         end

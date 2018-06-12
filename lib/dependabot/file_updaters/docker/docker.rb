@@ -98,30 +98,6 @@ module Dependabot
         def private_registry_url
           dependency.requirements.first[:source][:registry]
         end
-
-        def private_registry_credentials
-          credentials.
-            select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred["registry"] == private_registry_url }
-        end
-
-        def registry_client
-          if private_registry_url && !private_registry_credentials
-            # TODO: This isn't right - some private registries don't need creds
-            raise PrivateSourceAuthenticationFailure, private_registry_url
-          end
-
-          @registry_client ||=
-            if private_registry_url
-              DockerRegistry2::Registry.new(
-                "https://#{private_registry_url}",
-                user: private_registry_credentials["username"],
-                password: private_registry_credentials["password"]
-              )
-            else
-              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
-            end
-        end
       end
     end
   end

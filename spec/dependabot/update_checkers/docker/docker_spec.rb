@@ -28,14 +28,12 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: version,
-      requirements: [
-        {
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile",
-          source: { type: "tag" }
-        }
-      ],
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "Dockerfile",
+        source: { type: "tag" }
+      }],
       package_manager: "docker"
     )
   end
@@ -195,18 +193,26 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: version,
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "tag", registry: "registry-host.io:5000" }
-            }
-          ],
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag", registry: "registry-host.io:5000" }
+          }],
           package_manager: "docker"
         )
       end
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+
+      before do
+        tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
+        stub_request(:get, tags_url).
+          and_return(
+            status: 401,
+            body: "",
+            headers: { "www_authenticate" => "basic 123" }
+          )
+      end
 
       context "without authentication credentials" do
         it "raises a to PrivateSourceAuthenticationFailure error" do
@@ -263,14 +269,12 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         Dependabot::Dependency.new(
           name: dependency_name,
           version: version,
-          requirements: [
-            {
-              requirement: nil,
-              groups: [],
-              file: "Dockerfile",
-              source: { type: "digest", digest: "old_digest" }
-            }
-          ],
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "digest", digest: "old_digest" }
+          }],
           package_manager: "docker"
         )
       end
@@ -291,18 +295,16 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it "updates the digest" do
         expect(checker.updated_requirements).
           to eq(
-            [
-              {
-                requirement: nil,
-                groups: [],
-                file: "Dockerfile",
-                source: {
-                  type: "digest",
-                  digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
-                          "ca97eba880ebf600d68608"
-                }
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                type: "digest",
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                        "ca97eba880ebf600d68608"
               }
-            ]
+            }]
           )
       end
     end

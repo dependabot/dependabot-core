@@ -96,6 +96,9 @@ module Dependabot
               raise if attempt > 3
               retry
             end
+        rescue DockerRegistry2::RegistryAuthenticationException
+          raise unless private_registry?
+          raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 
         def updated_digest
@@ -115,6 +118,9 @@ module Dependabot
               raise if attempt > 3
               retry
             end
+        rescue DockerRegistry2::RegistryAuthenticationException
+          raise if private_registry?
+          raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 
         def affix_of(tag)
@@ -129,28 +135,28 @@ module Dependabot
           tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
         end
 
-        def private_registry_url
+        def registry_hostname
           dependency.requirements.first[:source][:registry]
         end
 
-        def private_registry_credentials
+        def registry_credentials
           credentials.
             select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred["registry"] == private_registry_url }
+            find { |cred| cred["registry"] == registry_hostname }
+        end
+
+        def private_registry?
+          return false if registry_hostname.nil?
+          registry_hostname != "registry.hub.docker.com"
         end
 
         def docker_registry_client
-          if private_registry_url && !private_registry_credentials
-            # TODO: This isn't right - some private registries don't need creds
-            raise PrivateSourceAuthenticationFailure, private_registry_url
-          end
-
           @docker_registry_client ||=
-            if private_registry_url
+            if registry_hostname
               DockerRegistry2::Registry.new(
-                "https://#{private_registry_url}",
-                user: private_registry_credentials["username"],
-                password: private_registry_credentials["password"]
+                "https://#{registry_hostname}",
+                user: registry_credentials&.fetch("username"),
+                password: registry_credentials&.fetch("password")
               )
             else
               DockerRegistry2::Registry.new("https://registry.hub.docker.com")

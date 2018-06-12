@@ -61,7 +61,7 @@ module Dependabot
         def version_from(parsed_from_line)
           return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
           version_from_digest(
-            private_registry: parsed_from_line.fetch("registry"),
+            registry: parsed_from_line.fetch("registry"),
             image: parsed_from_line.fetch("image"),
             digest: parsed_from_line.fetch("digest")
           )
@@ -81,44 +81,48 @@ module Dependabot
           source
         end
 
-        def version_from_digest(private_registry:, image:, digest:)
+        def version_from_digest(registry:, image:, digest:)
           return unless digest
 
           repo = image.split("/").count < 2 ? "library/#{image}" : image
 
-          registry = docker_registry_client(private_registry)
-          registry.tags(repo).fetch("tags").find do |tag|
-            head = registry.dohead "/v2/#{repo}/manifests/#{tag}"
+          registry_client = docker_registry_client(registry)
+          registry_client.tags(repo).fetch("tags").find do |tag|
+            head = registry_client.dohead "/v2/#{repo}/manifests/#{tag}"
             head.headers[:docker_content_digest] == digest
           rescue DockerRegistry2::NotFound
             # Shouldn't happen, but it does. Example of existing tag with
             # no manifest is "library/python", "2-windowsservercore".
             false
           end
+        rescue DockerRegistry2::RegistryAuthenticationException
+          raise if standard_registry?(registry)
+          raise PrivateSourceAuthenticationFailure, registry
         end
 
-        def docker_registry_client(private_registry)
-          if private_registry
-            credentials = private_registry_credentials(private_registry)
-            # TODO: This isn't right - some private registries don't need creds
-            unless credentials
-              raise PrivateSourceAuthenticationFailure, private_registry
-            end
+        def docker_registry_client(registry)
+          if registry
+            credentials = registry_credentials(registry)
 
             DockerRegistry2::Registry.new(
-              "https://#{private_registry}",
-              user: credentials["username"],
-              password: credentials["password"]
+              "https://#{registry}",
+              user: credentials&.fetch("username"),
+              password: credentials&.fetch("password")
             )
           else
             DockerRegistry2::Registry.new("https://registry.hub.docker.com")
           end
         end
 
-        def private_registry_credentials(registry_url)
+        def registry_credentials(registry_url)
           credentials.
             select { |cred| cred["type"] == "docker_registry" }.
             find { |cred| cred["registry"] == registry_url }
+        end
+
+        def standard_registry?(registry)
+          return true if registry.nil?
+          registry == "registry.hub.docker.com"
         end
 
         def check_required_files

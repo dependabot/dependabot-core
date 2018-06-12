@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/docker/docker"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -220,7 +221,17 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           let(:dockerfile_fixture_name) { "private_digest" }
           let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
-          context "without authentication credentials" do
+          context "without no/bad authentication credentials" do
+            before do
+              tags_url = repo_url + "tags/list"
+              stub_request(:get, tags_url).
+                and_return(
+                  status: 401,
+                  body: "",
+                  headers: { "www_authenticate" => "basic 123" }
+                )
+            end
+
             it "raises a to PrivateSourceAuthenticationFailure error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { parser.parse }.
@@ -230,7 +241,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             end
           end
 
-          context "with authentication credentials" do
+          context "with good authentication credentials" do
             let(:parser) do
               described_class.new(
                 dependency_files: files,
