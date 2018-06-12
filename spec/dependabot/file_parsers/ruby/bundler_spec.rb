@@ -415,22 +415,18 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
           expect(dependencies.map(&:requirements)).
             to match_array(
               [
-                [
-                  {
-                    requirement: "~> 1.0",
-                    groups: ["runtime"],
-                    source: nil,
-                    file: "example.gemspec"
-                  }
-                ],
-                [
-                  {
-                    requirement: "~> 1.0",
-                    groups: ["runtime"],
-                    source: nil,
-                    file: "example2.gemspec"
-                  }
-                ]
+                [{
+                  requirement: "~> 1.0",
+                  groups: ["runtime"],
+                  source: nil,
+                  file: "example.gemspec"
+                }],
+                [{
+                  requirement: "~> 1.0",
+                  groups: ["runtime"],
+                  source: nil,
+                  file: "example2.gemspec"
+                }]
               ]
             )
         end

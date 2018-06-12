@@ -40,32 +40,28 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
       name: "manifesto",
       version: "sha2",
       previous_version: "sha1",
-      requirements: [
-        {
-          file: ".gitmodules",
-          requirement: nil,
-          source: {
-            type: "git",
-            url: "https://github.com/example/manifesto.git",
-            branch: "master",
-            ref: "master"
-          },
-          groups: []
-        }
-      ],
-      previous_requirements: [
-        {
-          file: ".gitmodules",
-          requirement: nil,
-          source: {
-            type: "git",
-            url: "https://github.com/example/manifesto.git",
-            branch: "master",
-            ref: "master"
-          },
-          groups: []
-        }
-      ],
+      requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        source: {
+          type: "git",
+          url: "https://github.com/example/manifesto.git",
+          branch: "master",
+          ref: "master"
+        },
+        groups: []
+      }],
+      previous_requirements: [{
+        file: ".gitmodules",
+        requirement: nil,
+        source: {
+          type: "git",
+          url: "https://github.com/example/manifesto.git",
+          branch: "master",
+          ref: "master"
+        },
+        groups: []
+      }],
       package_manager: "submodules"
     )
   end

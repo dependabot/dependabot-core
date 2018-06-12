@@ -22,12 +22,10 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       version: "1.5.0",
       previous_version: "1.4.0",
       package_manager: "bundler",
-      requirements: [
-        { file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
-      ]
+      requirements:
+        [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
+      previous_requirements:
+        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
@@ -93,22 +91,18 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           version: "1.5.0",
           previous_version: "1.4.0",
           package_manager: "bundler",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
         )
       end
 
@@ -129,48 +123,40 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
               name: "org.springframework:spring-beans",
               version: "23.6-jre",
               previous_version: "4.3.12.RELEASE",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
               name: "org.springframework:spring-context",
               version: "23.6-jre",
               previous_version: "4.3.12.RELEASE",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "4.3.12.RELEASE",
-                  groups: [],
-                  source: nil,
-                  metadata: { property_name: "springframework.version" }
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "springframework.version" }
+              }],
               package_manager: "maven"
             )
           ]
@@ -187,22 +173,18 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           version: "23.6-jre",
           previous_version: "23.3-jre",
           package_manager: "java",
-          requirements: [
-            {
-              file: "pom.xml",
-              requirement: "23.6-jre",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "pom.xml",
-              requirement: "23.3-jre",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "pom.xml",
+            requirement: "23.6-jre",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "23.3-jre",
+            groups: [],
+            source: nil
+          }]
         )
       end
 
@@ -219,30 +201,26 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
           previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
           package_manager: "bundler",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                ref: new_ref
-              }
+          requirements: [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: new_ref
             }
-          ],
-          previous_requirements: [
-            {
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/gocardless/business",
-                ref: old_ref
-              }
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: old_ref
             }
-          ]
+          }]
         )
       end
       let(:new_ref) { nil }

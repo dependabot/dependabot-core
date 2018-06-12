@@ -668,16 +668,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       context "and security vulnerabilities fixed" do
         let(:vulnerabilities_fixed) do
           {
-            "business" => [
-              {
-                "title" => "Serious vulnerability",
-                "description" => "A vulnerability that allows arbitrary code\n"\
-                                 "execution.\n",
-                "patched_versions" => ["> 1.5.0"],
-                "unaffected_versions" => [],
-                "url" => "https://dependabot.com"
-              }
-            ]
+            "business" => [{
+              "title" => "Serious vulnerability",
+              "description" => "A vulnerability that allows arbitrary code\n"\
+                               "execution.\n",
+              "patched_versions" => ["> 1.5.0"],
+              "unaffected_versions" => [],
+              "url" => "https://dependabot.com"
+            }]
           }
         end
 

@@ -49,22 +49,18 @@ RSpec.describe namespace::PackageJsonUpdater do
           name: "fetch-factory",
           version: "0.2.1",
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "0.2.x",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "package.json",
-              requirement: "0.1.x",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "package.json",
+            requirement: "0.2.x",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "0.1.x",
+            groups: [],
+            source: nil
+          }]
         )
       end
       let(:manifest_fixture_name) { "minor_version_specified.json" }
@@ -78,22 +74,18 @@ RSpec.describe namespace::PackageJsonUpdater do
           name: "etag",
           version: "1.8.1",
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.8.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }]
         )
       end
       let(:manifest_fixture_name) { "package.json" }
@@ -207,22 +199,18 @@ RSpec.describe namespace::PackageJsonUpdater do
           name: "lodash",
           version: "1.3.1",
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.3.1",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "package.json",
-              requirement: "^1.2.1",
-              groups: [],
-              source: nil
-            }
-          ]
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^1.2.1",
+            groups: [],
+            source: nil
+          }]
         )
       end
 

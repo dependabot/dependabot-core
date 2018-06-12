@@ -97,9 +97,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         Dependabot::Dependency.new(
           name: "business",
           version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
-          requirements: [
-            { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-          ],
+          requirements:
+            [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
           package_manager: "bundler"
         )
       end
@@ -298,9 +297,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         Dependabot::Dependency.new(
           name: "business",
           version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
-          requirements: [
-            { file: "Gemfile", requirement: ">= 0", groups: [], source: nil }
-          ],
+          requirements:
+            [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
           package_manager: "bundler"
         )
       end

@@ -42,13 +42,11 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
     Dependabot::Dependency.new(
       name: "plug",
       version: "1.4.3",
-      requirements: [
-        { file: "mix.exs", requirement: "1.4.3", groups: [], source: nil }
-      ],
+      requirements:
+        [{ file: "mix.exs", requirement: "1.4.3", groups: [], source: nil }],
       previous_version: "1.3.0",
-      previous_requirements: [
-        { file: "mix.exs", requirement: "1.3.0", groups: [], source: nil }
-      ],
+      previous_requirements:
+        [{ file: "mix.exs", requirement: "1.3.0", groups: [], source: nil }],
       package_manager: "hex"
     )
   end
