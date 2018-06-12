@@ -1,3 +1,10 @@
+## v0.61.0, 12 June 2018
+
+- BREAKING: Rename PrivateSourceNotReachable to
+  PrivateSourceAuthenticationFailure (since we now have PrivateSourceTimedOut)
+- Docker: Permit non-standard registries without credentials
+- Refactor specs
+
 ## v0.60.8, 12 June 2018
 
 - Rust: Check for latest allowable version in UpdateChecker
