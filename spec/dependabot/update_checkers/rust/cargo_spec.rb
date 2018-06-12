@@ -21,10 +21,12 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
 
+  let(:ignored_versions) { [] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -77,6 +79,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
+
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    end
 
     context "when the crates.io link resolves to a redirect" do
       let(:redirect_url) { "https://crates.io/api/v1/crates/Time" }
@@ -234,6 +241,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         to eq(Gem::Version.new("0.1.40"))
     end
 
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    end
+
     context "with a git dependency" do
       before do
         git_url = "https://github.com/BurntSushi/utf8-ranges.git"
@@ -318,9 +330,13 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         source: nil
       }]
     end
-    let(:crates_response) { nil }
 
     it { is_expected.to eq(Gem::Version.new("0.1.80")) }
+
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 0.1.60, < 2.0"] }
+      it { is_expected.to eq(Gem::Version.new("0.1.59")) }
+    end
 
     context "with a git dependency" do
       let(:dependency_name) { "utf8-ranges" }
@@ -342,6 +358,19 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           branch: nil,
           ref: nil
         }
+      end
+      before do
+        git_url = "https://github.com/BurntSushi/utf8-ranges.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: ["x-access-token", "token"]).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "utf8-ranges"),
+            headers: git_header
+          )
       end
 
       it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }

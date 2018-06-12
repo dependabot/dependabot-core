@@ -1,0 +1,2034 @@
+{
+    "categories": [
+        {
+            "category": "Text processing",
+            "crates_cnt": 147,
+            "created_at": "2017-01-17T19:13:05.112025+00:00",
+            "description": "Crates to deal with the complexities of human language when expressed in textual form.",
+            "id": "text-processing",
+            "slug": "text-processing"
+        }
+    ],
+    "crate": {
+        "badges": [
+            {
+                "attributes": {
+                    "branch": null,
+                    "id": null,
+                    "project_name": null,
+                    "repository": "rust-lang-libs/regex",
+                    "service": null
+                },
+                "badge_type": "appveyor"
+            },
+            {
+                "attributes": {
+                    "branch": null,
+                    "repository": "rust-lang/regex"
+                },
+                "badge_type": "travis-ci"
+            }
+        ],
+        "categories": [
+            "text-processing"
+        ],
+        "created_at": "2014-12-13T22:10:11.303311+00:00",
+        "description": "An implementation of regular expressions for Rust. This implementation uses\nfinite automata and guarantees linear time matching on all inputs.\n",
+        "documentation": "https://docs.rs/regex",
+        "downloads": 4263881,
+        "exact_match": false,
+        "homepage": "https://github.com/rust-lang/regex",
+        "id": "regex",
+        "keywords": [],
+        "links": {
+            "owner_team": "/api/v1/crates/regex/owner_team",
+            "owner_user": "/api/v1/crates/regex/owner_user",
+            "owners": "/api/v1/crates/regex/owners",
+            "reverse_dependencies": "/api/v1/crates/regex/reverse_dependencies",
+            "version_downloads": "/api/v1/crates/regex/downloads",
+            "versions": null
+        },
+        "max_version": "1.0.0",
+        "name": "regex",
+        "recent_downloads": 740256,
+        "repository": "https://github.com/rust-lang/regex",
+        "updated_at": "2018-05-01T20:53:02.628560+00:00",
+        "versions": [
+            91039,
+            91023,
+            85135,
+            84520,
+            84414,
+            83837,
+            80368,
+            75963,
+            75940,
+            72797,
+            53983,
+            41445,
+            41312,
+            36790,
+            36749,
+            36747,
+            33882,
+            33804,
+            33179,
+            33090,
+            29799,
+            29797,
+            27414,
+            27332,
+            26342,
+            26095,
+            26003,
+            25640,
+            25261,
+            25259,
+            25146,
+            24922,
+            24761,
+            24687,
+            24629,
+            23960,
+            23906,
+            23844,
+            23077,
+            22823,
+            22761,
+            22601,
+            22444,
+            21167,
+            20874,
+            20266,
+            20265,
+            19609,
+            18787,
+            18785,
+            13169,
+            12711,
+            12621,
+            12021,
+            11986,
+            11888,
+            11842,
+            11829,
+            10945,
+            10857,
+            10856,
+            9293,
+            9068,
+            8851,
+            8491,
+            7848,
+            7847,
+            7413,
+            7358,
+            7294,
+            7062,
+            6420,
+            6216,
+            6003,
+            5935,
+            5790,
+            5258,
+            4600,
+            4373,
+            4208,
+            3999,
+            2588,
+            2416,
+            2224,
+            2144,
+            2013,
+            1895,
+            1563,
+            1363,
+            1321,
+            1178,
+            1100
+        ]
+    },
+    "keywords": [],
+    "versions": [
+        {
+            "crate": "regex",
+            "created_at": "2018-05-01T20:53:02.628560+00:00",
+            "dl_path": "/api/v1/crates/regex/1.0.0/download",
+            "downloads": 134848,
+            "features": {
+                "default": [
+                    "use_std"
+                ],
+                "pattern": [],
+                "unstable": [
+                    "pattern"
+                ],
+                "use_std": []
+            },
+            "id": 91039,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/1.0.0/authors",
+                "dependencies": "/api/v1/crates/regex/1.0.0/dependencies",
+                "version_downloads": "/api/v1/crates/regex/1.0.0/downloads"
+            },
+            "num": "1.0.0",
+            "readme_path": "/api/v1/crates/regex/1.0.0/readme",
+            "updated_at": "2018-05-01T20:53:02.628560+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-05-01T17:31:48.340967+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.11/download",
+            "downloads": 119564,
+            "features": {
+                "default": [],
+                "pattern": [],
+                "simd-accel": [],
+                "unstable": [
+                    "pattern"
+                ]
+            },
+            "id": 91023,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.11/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.11/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.11/downloads"
+            },
+            "num": "0.2.11",
+            "readme_path": "/api/v1/crates/regex/0.2.11/readme",
+            "updated_at": "2018-05-01T17:31:48.340967+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-03-16T15:40:15.522381+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.10/download",
+            "downloads": 242603,
+            "features": {
+                "default": [],
+                "pattern": [],
+                "simd-accel": [],
+                "unstable": [
+                    "pattern"
+                ]
+            },
+            "id": 85135,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.10/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.10/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.10/downloads"
+            },
+            "num": "0.2.10",
+            "readme_path": "/api/v1/crates/regex/0.2.10/readme",
+            "updated_at": "2018-03-16T15:40:15.522381+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-03-13T02:36:59.220723+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.9/download",
+            "downloads": 19017,
+            "features": {
+                "default": [],
+                "pattern": [],
+                "simd-accel": [],
+                "unstable": [
+                    "pattern"
+                ]
+            },
+            "id": 84520,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.9/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.9/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.9/downloads"
+            },
+            "num": "0.2.9",
+            "readme_path": "/api/v1/crates/regex/0.2.9/readme",
+            "updated_at": "2018-03-13T02:36:59.220723+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-03-12T12:20:02.480981+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.8/download",
+            "downloads": 6988,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 84414,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.8/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.8/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.8/downloads"
+            },
+            "num": "0.2.8",
+            "readme_path": "/api/v1/crates/regex/0.2.8/readme",
+            "updated_at": "2018-03-12T12:20:02.480981+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-03-08T00:13:31.601980+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.7/download",
+            "downloads": 39772,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 83837,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.7/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.7/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.7/downloads"
+            },
+            "num": "0.2.7",
+            "readme_path": "/api/v1/crates/regex/0.2.7/readme",
+            "updated_at": "2018-03-08T00:13:31.601980+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2018-02-08T23:15:02.980759+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.6/download",
+            "downloads": 113252,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 80368,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.6/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.6/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.6/downloads"
+            },
+            "num": "0.2.6",
+            "readme_path": "/api/v1/crates/regex/0.2.6/readme",
+            "updated_at": "2018-02-08T23:15:02.980759+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-12-31T02:13:24.959269+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.5/download",
+            "downloads": 208905,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 75963,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.5/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.5/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.5/downloads"
+            },
+            "num": "0.2.5",
+            "readme_path": "/api/v1/crates/regex/0.2.5/readme",
+            "updated_at": "2017-12-31T02:13:24.959269+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-12-30T20:39:17.626282+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.4/download",
+            "downloads": 1841,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 75940,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.4/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.4/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.4/downloads"
+            },
+            "num": "0.2.4",
+            "readme_path": "/api/v1/crates/regex/0.2.4/readme",
+            "updated_at": "2017-12-30T20:39:17.626282+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-11-30T14:41:24.867619+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.3/download",
+            "downloads": 130157,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 72797,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.3/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.3/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.3/downloads"
+            },
+            "num": "0.2.3",
+            "readme_path": "/api/v1/crates/regex/0.2.3/readme",
+            "updated_at": "2017-11-30T14:41:24.867619+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-05-21T16:25:04.719701+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.2/download",
+            "downloads": 649707,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 53983,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.2/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.2/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.2/downloads"
+            },
+            "num": "0.2.2",
+            "readme_path": "/api/v1/crates/regex/0.2.2/readme",
+            "updated_at": "2017-11-30T03:52:37.260314+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-01-03T00:55:21.389196+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.1/download",
+            "downloads": 352607,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 41445,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.1/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.1/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.1/downloads"
+            },
+            "num": "0.2.1",
+            "readme_path": "/api/v1/crates/regex/0.2.1/readme",
+            "updated_at": "2017-11-30T03:52:12.518715+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2017-01-01T05:20:00.738078+00:00",
+            "dl_path": "/api/v1/crates/regex/0.2.0/download",
+            "downloads": 594,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 41312,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.2.0/authors",
+                "dependencies": "/api/v1/crates/regex/0.2.0/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.2.0/downloads"
+            },
+            "num": "0.2.0",
+            "readme_path": "/api/v1/crates/regex/0.2.0/readme",
+            "updated_at": "2017-11-30T02:57:28.933308+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-10-27T22:02:58.170473+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.80/download",
+            "downloads": 1127990,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 36790,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.80/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.80/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.80/downloads"
+            },
+            "num": "0.1.80",
+            "readme_path": "/api/v1/crates/regex/0.1.80/readme",
+            "updated_at": "2017-11-30T02:37:56.555943+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-10-26T22:33:12.541882+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.79/download",
+            "downloads": 2267,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 36749,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.79/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.79/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.79/downloads"
+            },
+            "num": "0.1.79",
+            "readme_path": "/api/v1/crates/regex/0.1.79/readme",
+            "updated_at": "2017-11-30T02:50:17.074794+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-10-26T22:01:53.344587+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.78/download",
+            "downloads": 759,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 36747,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.78/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.78/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.78/downloads"
+            },
+            "num": "0.1.78",
+            "readme_path": "/api/v1/crates/regex/0.1.78/readme",
+            "updated_at": "2017-11-30T02:56:26.903477+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-09-12T20:40:38.059039+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.77/download",
+            "downloads": 119191,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 33882,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.77/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.77/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.77/downloads"
+            },
+            "num": "0.1.77",
+            "readme_path": "/api/v1/crates/regex/0.1.77/readme",
+            "updated_at": "2017-11-30T03:35:41.151579+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-09-11T20:02:36.185580+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.76/download",
+            "downloads": 5491,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 33804,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.76/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.76/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.76/downloads"
+            },
+            "num": "0.1.76",
+            "readme_path": "/api/v1/crates/regex/0.1.76/readme",
+            "updated_at": "2017-11-30T02:58:25.262228+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-09-05T22:04:24.834963+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.75/download",
+            "downloads": 12186,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 33179,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.75/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.75/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.75/downloads"
+            },
+            "num": "0.1.75",
+            "readme_path": "/api/v1/crates/regex/0.1.75/readme",
+            "updated_at": "2017-11-30T03:51:45.230265+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-09-04T14:14:35.347416+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.74/download",
+            "downloads": 3160,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 33090,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.74/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.74/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.74/downloads"
+            },
+            "num": "0.1.74",
+            "readme_path": "/api/v1/crates/regex/0.1.74/readme",
+            "updated_at": "2017-11-30T04:09:39.130135+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-07-10T04:48:04.328512+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.73/download",
+            "downloads": 174866,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 29799,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.73/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.73/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.73/downloads"
+            },
+            "num": "0.1.73",
+            "readme_path": "/api/v1/crates/regex/0.1.73/readme",
+            "updated_at": "2017-11-30T03:08:12.123691+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-07-10T04:44:55.521464+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.72/download",
+            "downloads": 169,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 29797,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.72/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.72/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.72/downloads"
+            },
+            "num": "0.1.72",
+            "readme_path": "/api/v1/crates/regex/0.1.72/readme",
+            "updated_at": "2017-11-30T04:09:30.038006+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-05-20T10:38:33.623911+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.71/download",
+            "downloads": 114389,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 27414,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.71/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.71/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.71/downloads"
+            },
+            "num": "0.1.71",
+            "readme_path": "/api/v1/crates/regex/0.1.71/readme",
+            "updated_at": "2017-11-30T03:37:49.599539+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-05-18T23:43:45.977640+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.70/download",
+            "downloads": 9253,
+            "features": {
+                "pattern": [],
+                "simd-accel": [
+                    "simd"
+                ]
+            },
+            "id": 27332,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.70/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.70/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.70/downloads"
+            },
+            "num": "0.1.70",
+            "readme_path": "/api/v1/crates/regex/0.1.70/readme",
+            "updated_at": "2017-11-30T03:21:05.076775+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-29T20:59:18.555446+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.69/download",
+            "downloads": 43370,
+            "features": {
+                "pattern": []
+            },
+            "id": 26342,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.69/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.69/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.69/downloads"
+            },
+            "num": "0.1.69",
+            "readme_path": "/api/v1/crates/regex/0.1.69/readme",
+            "updated_at": "2017-11-30T03:08:05.578527+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-24T23:54:47.718515+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.68/download",
+            "downloads": 50814,
+            "features": {
+                "pattern": []
+            },
+            "id": 26095,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.68/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.68/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.68/downloads"
+            },
+            "num": "0.1.68",
+            "readme_path": "/api/v1/crates/regex/0.1.68/readme",
+            "updated_at": "2017-11-30T03:06:01.715838+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-22T19:24:24.431768+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.67/download",
+            "downloads": 3597,
+            "features": {
+                "pattern": []
+            },
+            "id": 26003,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.67/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.67/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.67/downloads"
+            },
+            "num": "0.1.67",
+            "readme_path": "/api/v1/crates/regex/0.1.67/readme",
+            "updated_at": "2017-11-30T02:44:20.502467+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-14T23:51:09.442299+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.66/download",
+            "downloads": 19339,
+            "features": {
+                "pattern": []
+            },
+            "id": 25640,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.66/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.66/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.66/downloads"
+            },
+            "num": "0.1.66",
+            "readme_path": "/api/v1/crates/regex/0.1.66/readme",
+            "updated_at": "2017-11-30T04:09:39.121711+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-09T13:44:15.651301+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.65/download",
+            "downloads": 22631,
+            "features": {
+                "pattern": []
+            },
+            "id": 25261,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.65/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.65/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.65/downloads"
+            },
+            "num": "0.1.65",
+            "readme_path": "/api/v1/crates/regex/0.1.65/readme",
+            "updated_at": "2017-11-30T03:37:48.299716+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-09T13:20:26.971994+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.64/download",
+            "downloads": 167,
+            "features": {
+                "pattern": []
+            },
+            "id": 25259,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.64/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.64/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.64/downloads"
+            },
+            "num": "0.1.64",
+            "readme_path": "/api/v1/crates/regex/0.1.64/readme",
+            "updated_at": "2017-11-30T04:09:39.117063+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-06T23:35:00.265314+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.63/download",
+            "downloads": 5351,
+            "features": {
+                "pattern": []
+            },
+            "id": 25146,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.63/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.63/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.63/downloads"
+            },
+            "num": "0.1.63",
+            "readme_path": "/api/v1/crates/regex/0.1.63/readme",
+            "updated_at": "2017-11-30T03:35:41.149602+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-04-02T14:24:37.714647+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.62/download",
+            "downloads": 14469,
+            "features": {
+                "pattern": []
+            },
+            "id": 24922,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.62/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.62/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.62/downloads"
+            },
+            "num": "0.1.62",
+            "readme_path": "/api/v1/crates/regex/0.1.62/readme",
+            "updated_at": "2017-11-30T03:42:20.852748+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-30T20:15:54.906060+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.61/download",
+            "downloads": 7723,
+            "features": {
+                "pattern": []
+            },
+            "id": 24761,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.61/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.61/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.61/downloads"
+            },
+            "num": "0.1.61",
+            "readme_path": "/api/v1/crates/regex/0.1.61/readme",
+            "updated_at": "2017-11-30T03:06:00.003431+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-29T16:49:44.256802+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.60/download",
+            "downloads": 3080,
+            "features": {
+                "pattern": []
+            },
+            "id": 24687,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.60/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.60/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.60/downloads"
+            },
+            "num": "0.1.60",
+            "readme_path": "/api/v1/crates/regex/0.1.60/readme",
+            "updated_at": "2017-11-30T03:23:35.145479+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-28T20:33:36.926410+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.59/download",
+            "downloads": 2559,
+            "features": {
+                "pattern": []
+            },
+            "id": 24629,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.59/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.59/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.59/downloads"
+            },
+            "num": "0.1.59",
+            "readme_path": "/api/v1/crates/regex/0.1.59/readme",
+            "updated_at": "2017-11-30T03:05:59.991579+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-15T21:16:50.957138+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.58/download",
+            "downloads": 46411,
+            "features": {
+                "pattern": []
+            },
+            "id": 23960,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.58/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.58/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.58/downloads"
+            },
+            "num": "0.1.58",
+            "readme_path": "/api/v1/crates/regex/0.1.58/readme",
+            "updated_at": "2017-11-30T02:57:02.793767+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-14T21:05:11.122189+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.57/download",
+            "downloads": 1472,
+            "features": {
+                "pattern": []
+            },
+            "id": 23906,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.57/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.57/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.57/downloads"
+            },
+            "num": "0.1.57",
+            "readme_path": "/api/v1/crates/regex/0.1.57/readme",
+            "updated_at": "2017-11-30T02:48:09.343736+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-03-13T15:09:39.569119+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.56/download",
+            "downloads": 8177,
+            "features": {
+                "pattern": []
+            },
+            "id": 23844,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.56/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.56/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.56/downloads"
+            },
+            "num": "0.1.56",
+            "readme_path": "/api/v1/crates/regex/0.1.56/readme",
+            "updated_at": "2017-11-30T02:48:09.341134+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-02-27T22:21:36.972259+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.55/download",
+            "downloads": 34478,
+            "features": {
+                "pattern": []
+            },
+            "id": 23077,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.55/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.55/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.55/downloads"
+            },
+            "num": "0.1.55",
+            "readme_path": "/api/v1/crates/regex/0.1.55/readme",
+            "updated_at": "2017-11-30T03:09:58.011062+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-02-23T12:03:49.615342+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.54/download",
+            "downloads": 8615,
+            "features": {
+                "pattern": []
+            },
+            "id": 22823,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.54/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.54/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.54/downloads"
+            },
+            "num": "0.1.54",
+            "readme_path": "/api/v1/crates/regex/0.1.54/readme",
+            "updated_at": "2017-11-30T03:22:02.431930+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-02-22T12:06:23.715991+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.53/download",
+            "downloads": 6208,
+            "features": {
+                "pattern": []
+            },
+            "id": 22761,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.53/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.53/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.53/downloads"
+            },
+            "num": "0.1.53",
+            "readme_path": "/api/v1/crates/regex/0.1.53/readme",
+            "updated_at": "2017-11-30T03:43:35.450939+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-02-19T00:39:11.629386+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.52/download",
+            "downloads": 7222,
+            "features": {
+                "pattern": []
+            },
+            "id": 22601,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.52/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.52/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.52/downloads"
+            },
+            "num": "0.1.52",
+            "readme_path": "/api/v1/crates/regex/0.1.52/readme",
+            "updated_at": "2017-11-30T03:55:18.062724+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-02-15T21:27:40.642708+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.51/download",
+            "downloads": 20179,
+            "features": {
+                "pattern": []
+            },
+            "id": 22444,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.51/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.51/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.51/downloads"
+            },
+            "num": "0.1.51",
+            "readme_path": "/api/v1/crates/regex/0.1.51/readme",
+            "updated_at": "2017-11-30T03:06:12.073978+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-01-23T00:40:16.649115+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.48/download",
+            "downloads": 41746,
+            "features": {
+                "pattern": []
+            },
+            "id": 21167,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.48/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.48/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.48/downloads"
+            },
+            "num": "0.1.48",
+            "readme_path": "/api/v1/crates/regex/0.1.48/readme",
+            "updated_at": "2017-11-30T03:17:59.220106+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-01-16T16:19:53.544240+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.47/download",
+            "downloads": 7046,
+            "features": {
+                "pattern": []
+            },
+            "id": 20874,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.47/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.47/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.47/downloads"
+            },
+            "num": "0.1.47",
+            "readme_path": "/api/v1/crates/regex/0.1.47/readme",
+            "updated_at": "2017-11-30T02:48:40.221138+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-01-06T02:08:43.321790+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.46/download",
+            "downloads": 21698,
+            "features": {
+                "pattern": []
+            },
+            "id": 20266,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.46/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.46/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.46/downloads"
+            },
+            "num": "0.1.46",
+            "readme_path": "/api/v1/crates/regex/0.1.46/readme",
+            "updated_at": "2017-11-30T02:26:49.711983+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2016-01-06T01:17:30.906681+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.45/download",
+            "downloads": 179,
+            "features": {
+                "pattern": []
+            },
+            "id": 20265,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.45/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.45/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.45/downloads"
+            },
+            "num": "0.1.45",
+            "readme_path": "/api/v1/crates/regex/0.1.45/readme",
+            "updated_at": "2017-11-30T02:49:57.422111+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-12-20T14:58:50.437180+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.44/download",
+            "downloads": 30352,
+            "features": {
+                "pattern": []
+            },
+            "id": 19609,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.44/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.44/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.44/downloads"
+            },
+            "num": "0.1.44",
+            "readme_path": "/api/v1/crates/regex/0.1.44/readme",
+            "updated_at": "2017-11-30T02:58:07.767905+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-11-30T22:45:07.242562+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.43/download",
+            "downloads": 28014,
+            "features": {
+                "pattern": []
+            },
+            "id": 18787,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.43/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.43/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.43/downloads"
+            },
+            "num": "0.1.43",
+            "readme_path": "/api/v1/crates/regex/0.1.43/readme",
+            "updated_at": "2017-11-30T03:11:18.765573+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-11-30T22:36:59.999550+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.42/download",
+            "downloads": 267,
+            "features": {
+                "pattern": []
+            },
+            "id": 18785,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.42/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.42/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.42/downloads"
+            },
+            "num": "0.1.42",
+            "readme_path": "/api/v1/crates/regex/0.1.42/readme",
+            "updated_at": "2017-11-30T03:25:53.089258+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-07-14T22:09:52.742175+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.41/download",
+            "downloads": 132131,
+            "features": {
+                "pattern": []
+            },
+            "id": 13169,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.41/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.41/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.41/downloads"
+            },
+            "num": "0.1.41",
+            "readme_path": "/api/v1/crates/regex/0.1.41/readme",
+            "updated_at": "2017-11-30T04:01:10.785970+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-07-05T17:17:31.359214+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.40/download",
+            "downloads": 10110,
+            "features": {
+                "pattern": []
+            },
+            "id": 12711,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.40/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.40/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.40/downloads"
+            },
+            "num": "0.1.40",
+            "readme_path": "/api/v1/crates/regex/0.1.40/readme",
+            "updated_at": "2017-11-30T03:42:20.830091+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-07-03T14:14:50.313729+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.39/download",
+            "downloads": 993,
+            "features": {
+                "pattern": []
+            },
+            "id": 12621,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.39/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.39/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.39/downloads"
+            },
+            "num": "0.1.39",
+            "readme_path": "/api/v1/crates/regex/0.1.39/readme",
+            "updated_at": "2017-11-30T02:52:32.281383+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-06-20T04:46:02.975779+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.38/download",
+            "downloads": 9665,
+            "features": {
+                "pattern": []
+            },
+            "id": 12021,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.38/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.38/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.38/downloads"
+            },
+            "num": "0.1.38",
+            "readme_path": "/api/v1/crates/regex/0.1.38/readme",
+            "updated_at": "2017-11-30T03:37:04.325063+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-06-19T13:44:31.726279+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.37/download",
+            "downloads": 333,
+            "features": {
+                "pattern": []
+            },
+            "id": 11986,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.37/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.37/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.37/downloads"
+            },
+            "num": "0.1.37",
+            "readme_path": "/api/v1/crates/regex/0.1.37/readme",
+            "updated_at": "2017-11-30T03:29:27.606866+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-06-18T01:10:51.131833+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.36/download",
+            "downloads": 1546,
+            "features": {
+                "pattern": []
+            },
+            "id": 11888,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.36/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.36/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.36/downloads"
+            },
+            "num": "0.1.36",
+            "readme_path": "/api/v1/crates/regex/0.1.36/readme",
+            "updated_at": "2017-11-30T03:29:27.603977+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-06-16T23:15:41.177255+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.35/download",
+            "downloads": 531,
+            "features": {
+                "pattern": []
+            },
+            "id": 11842,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.35/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.35/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.35/downloads"
+            },
+            "num": "0.1.35",
+            "readme_path": "/api/v1/crates/regex/0.1.35/readme",
+            "updated_at": "2017-11-30T03:45:35.035198+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-06-16T20:08:35.555140+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.34/download",
+            "downloads": 240,
+            "features": {
+                "pattern": []
+            },
+            "id": 11829,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.34/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.34/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.34/downloads"
+            },
+            "num": "0.1.34",
+            "readme_path": "/api/v1/crates/regex/0.1.34/readme",
+            "updated_at": "2017-11-30T03:29:31.573997+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-05-28T23:13:59.047172+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.33/download",
+            "downloads": 10634,
+            "features": {
+                "pattern": []
+            },
+            "id": 10945,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.33/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.33/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.33/downloads"
+            },
+            "num": "0.1.33",
+            "readme_path": "/api/v1/crates/regex/0.1.33/readme",
+            "updated_at": "2017-11-30T03:10:01.038156+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-05-27T23:32:24.465273+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.32/download",
+            "downloads": 811,
+            "features": {
+                "pattern": []
+            },
+            "id": 10857,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.32/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.32/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.32/downloads"
+            },
+            "num": "0.1.32",
+            "readme_path": "/api/v1/crates/regex/0.1.32/readme",
+            "updated_at": "2017-11-30T02:52:21.341802+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-05-27T23:19:28.592107+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.31/download",
+            "downloads": 160,
+            "features": {
+                "pattern": []
+            },
+            "id": 10856,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.31/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.31/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.31/downloads"
+            },
+            "num": "0.1.31",
+            "readme_path": "/api/v1/crates/regex/0.1.31/readme",
+            "updated_at": "2017-11-30T03:57:32.940860+00:00",
+            "yanked": true
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-24T12:09:38.054058+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.30/download",
+            "downloads": 18938,
+            "features": {
+                "pattern": []
+            },
+            "id": 9293,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.30/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.30/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.30/downloads"
+            },
+            "num": "0.1.30",
+            "readme_path": "/api/v1/crates/regex/0.1.30/readme",
+            "updated_at": "2017-11-30T03:08:26.896294+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-19T20:43:12.512804+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.29/download",
+            "downloads": 1359,
+            "features": {
+                "pattern": []
+            },
+            "id": 9068,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.29/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.29/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.29/downloads"
+            },
+            "num": "0.1.29",
+            "readme_path": "/api/v1/crates/regex/0.1.29/readme",
+            "updated_at": "2017-11-30T03:29:25.740499+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-14T23:25:11.312785+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.28/download",
+            "downloads": 1483,
+            "features": {
+                "pattern": []
+            },
+            "id": 8851,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.28/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.28/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.28/downloads"
+            },
+            "num": "0.1.28",
+            "readme_path": "/api/v1/crates/regex/0.1.28/readme",
+            "updated_at": "2017-11-30T03:37:53.035465+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-08T15:04:15.640872+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.27/download",
+            "downloads": 2235,
+            "features": {
+                "pattern": []
+            },
+            "id": 8491,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.27/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.27/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.27/downloads"
+            },
+            "num": "0.1.27",
+            "readme_path": "/api/v1/crates/regex/0.1.27/readme",
+            "updated_at": "2017-11-30T02:52:19.159611+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-03T01:18:11.736299+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.26/download",
+            "downloads": 3764,
+            "features": {
+                "pattern": []
+            },
+            "id": 7848,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.26/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.26/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.26/downloads"
+            },
+            "num": "0.1.26",
+            "readme_path": "/api/v1/crates/regex/0.1.26/readme",
+            "updated_at": "2017-11-30T03:37:53.010921+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-04-03T01:09:20.290752+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.25/download",
+            "downloads": 162,
+            "features": {
+                "pattern": []
+            },
+            "id": 7847,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.25/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.25/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.25/downloads"
+            },
+            "num": "0.1.25",
+            "readme_path": "/api/v1/crates/regex/0.1.25/readme",
+            "updated_at": "2017-11-30T03:33:25.754955+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-28T18:21:39.582188+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.24/download",
+            "downloads": 2209,
+            "features": {
+                "pattern": []
+            },
+            "id": 7413,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.24/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.24/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.24/downloads"
+            },
+            "num": "0.1.24",
+            "readme_path": "/api/v1/crates/regex/0.1.24/readme",
+            "updated_at": "2017-11-30T03:37:53.002333+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-27T11:50:53.699880+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.23/download",
+            "downloads": 521,
+            "features": {
+                "pattern": []
+            },
+            "id": 7358,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.23/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.23/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.23/downloads"
+            },
+            "num": "0.1.23",
+            "readme_path": "/api/v1/crates/regex/0.1.23/readme",
+            "updated_at": "2017-11-30T03:33:25.750864+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-26T23:13:32.790480+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.22/download",
+            "downloads": 398,
+            "features": {
+                "pattern": []
+            },
+            "id": 7294,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.22/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.22/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.22/downloads"
+            },
+            "num": "0.1.22",
+            "readme_path": "/api/v1/crates/regex/0.1.22/readme",
+            "updated_at": "2017-11-30T03:58:03.152311+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-25T15:49:03.249298+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.21/download",
+            "downloads": 927,
+            "features": {
+                "pattern": []
+            },
+            "id": 7062,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.21/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.21/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.21/downloads"
+            },
+            "num": "0.1.21",
+            "readme_path": "/api/v1/crates/regex/0.1.21/readme",
+            "updated_at": "2017-11-30T03:37:51.408946+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-16T11:16:10.726228+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.20/download",
+            "downloads": 2864,
+            "features": {},
+            "id": 6420,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.20/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.20/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.20/downloads"
+            },
+            "num": "0.1.20",
+            "readme_path": "/api/v1/crates/regex/0.1.20/readme",
+            "updated_at": "2017-11-30T04:09:29.984048+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-11T13:24:15.244677+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.19/download",
+            "downloads": 1969,
+            "features": {},
+            "id": 6216,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.19/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.19/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.19/downloads"
+            },
+            "num": "0.1.19",
+            "readme_path": "/api/v1/crates/regex/0.1.19/readme",
+            "updated_at": "2017-11-30T03:24:00.307774+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-06T00:46:49.241722+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.18/download",
+            "downloads": 3206,
+            "features": {},
+            "id": 6003,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.18/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.18/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.18/downloads"
+            },
+            "num": "0.1.18",
+            "readme_path": "/api/v1/crates/regex/0.1.18/readme",
+            "updated_at": "2017-11-30T03:33:25.742925+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-03-04T17:18:04.922967+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.17/download",
+            "downloads": 704,
+            "features": {},
+            "id": 5935,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.17/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.17/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.17/downloads"
+            },
+            "num": "0.1.17",
+            "readme_path": "/api/v1/crates/regex/0.1.17/readme",
+            "updated_at": "2017-11-30T03:30:03.232996+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-02-28T22:07:00.737438+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.16/download",
+            "downloads": 953,
+            "features": {},
+            "id": 5790,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.16/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.16/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.16/downloads"
+            },
+            "num": "0.1.16",
+            "readme_path": "/api/v1/crates/regex/0.1.16/readme",
+            "updated_at": "2017-11-30T03:19:18.815162+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-02-20T18:10:43.906663+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.15/download",
+            "downloads": 3667,
+            "features": {},
+            "id": 5258,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.15/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.15/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.15/downloads"
+            },
+            "num": "0.1.15",
+            "readme_path": "/api/v1/crates/regex/0.1.15/readme",
+            "updated_at": "2017-11-30T03:30:46.770985+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-02-06T13:14:06.802849+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.14/download",
+            "downloads": 3558,
+            "features": {},
+            "id": 4600,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.14/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.14/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.14/downloads"
+            },
+            "num": "0.1.14",
+            "readme_path": "/api/v1/crates/regex/0.1.14/readme",
+            "updated_at": "2017-11-30T03:34:04.461566+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-02-03T13:15:13.845986+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.13/download",
+            "downloads": 1081,
+            "features": {},
+            "id": 4373,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.13/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.13/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.13/downloads"
+            },
+            "num": "0.1.13",
+            "readme_path": "/api/v1/crates/regex/0.1.13/readme",
+            "updated_at": "2017-11-30T03:29:55.964342+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-31T00:15:16.980319+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.12/download",
+            "downloads": 800,
+            "features": {},
+            "id": 4208,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.12/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.12/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.12/downloads"
+            },
+            "num": "0.1.12",
+            "readme_path": "/api/v1/crates/regex/0.1.12/readme",
+            "updated_at": "2017-11-30T02:22:35.836004+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-28T15:57:38.507801+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.11/download",
+            "downloads": 838,
+            "features": {},
+            "id": 3999,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.11/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.11/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.11/downloads"
+            },
+            "num": "0.1.11",
+            "readme_path": "/api/v1/crates/regex/0.1.11/readme",
+            "updated_at": "2017-11-30T04:09:29.982200+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-09T10:41:05.371426+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.10/download",
+            "downloads": 10396,
+            "features": {},
+            "id": 2588,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.10/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.10/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.10/downloads"
+            },
+            "num": "0.1.10",
+            "readme_path": "/api/v1/crates/regex/0.1.10/readme",
+            "updated_at": "2017-11-30T03:43:03.597440+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-07T16:09:11.424172+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.9/download",
+            "downloads": 991,
+            "features": {},
+            "id": 2416,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.9/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.9/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.9/downloads"
+            },
+            "num": "0.1.9",
+            "readme_path": "/api/v1/crates/regex/0.1.9/readme",
+            "updated_at": "2017-11-30T03:43:51.580855+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-05T11:50:43.155351+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.8/download",
+            "downloads": 1767,
+            "features": {},
+            "id": 2224,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.8/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.8/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.8/downloads"
+            },
+            "num": "0.1.8",
+            "readme_path": "/api/v1/crates/regex/0.1.8/readme",
+            "updated_at": "2017-11-30T02:25:47.140579+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-04T18:56:40.715791+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.7/download",
+            "downloads": 522,
+            "features": {},
+            "id": 2144,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.7/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.7/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.7/downloads"
+            },
+            "num": "0.1.7",
+            "readme_path": "/api/v1/crates/regex/0.1.7/readme",
+            "updated_at": "2017-11-30T03:37:51.382596+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-03T20:43:54.897875+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.6/download",
+            "downloads": 618,
+            "features": {},
+            "id": 2013,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.6/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.6/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.6/downloads"
+            },
+            "num": "0.1.6",
+            "readme_path": "/api/v1/crates/regex/0.1.6/readme",
+            "updated_at": "2017-11-30T03:43:51.578986+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2015-01-01T16:17:58.018741+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.5/download",
+            "downloads": 1293,
+            "features": {},
+            "id": 1895,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.5/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.5/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.5/downloads"
+            },
+            "num": "0.1.5",
+            "readme_path": "/api/v1/crates/regex/0.1.5/readme",
+            "updated_at": "2017-11-30T03:43:51.576969+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2014-12-23T16:06:05.113271+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.4/download",
+            "downloads": 3367,
+            "features": {},
+            "id": 1563,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.4/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.4/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.4/downloads"
+            },
+            "num": "0.1.4",
+            "readme_path": "/api/v1/crates/regex/0.1.4/readme",
+            "updated_at": "2017-11-30T03:43:51.575008+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2014-12-19T16:16:41.737720+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.3/download",
+            "downloads": 741,
+            "features": {},
+            "id": 1363,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.3/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.3/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.3/downloads"
+            },
+            "num": "0.1.3",
+            "readme_path": "/api/v1/crates/regex/0.1.3/readme",
+            "updated_at": "2017-11-30T02:26:59.236947+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2014-12-18T06:56:46.884890+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.2/download",
+            "downloads": 200,
+            "features": {},
+            "id": 1321,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.2/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.2/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.2/downloads"
+            },
+            "num": "0.1.2",
+            "readme_path": "/api/v1/crates/regex/0.1.2/readme",
+            "updated_at": "2017-11-30T02:29:20.011250+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2014-12-15T20:31:48.571836+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.1/download",
+            "downloads": 240,
+            "features": {},
+            "id": 1178,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.1/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.1/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.1/downloads"
+            },
+            "num": "0.1.1",
+            "readme_path": "/api/v1/crates/regex/0.1.1/readme",
+            "updated_at": "2017-11-30T03:03:20.143103+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "regex",
+            "created_at": "2014-12-13T22:10:11.329494+00:00",
+            "dl_path": "/api/v1/crates/regex/0.1.0/download",
+            "downloads": 216,
+            "features": {},
+            "id": 1100,
+            "license": "MIT/Apache-2.0",
+            "links": {
+                "authors": "/api/v1/crates/regex/0.1.0/authors",
+                "dependencies": "/api/v1/crates/regex/0.1.0/dependencies",
+                "version_downloads": "/api/v1/crates/regex/0.1.0/downloads"
+            },
+            "num": "0.1.0",
+            "readme_path": "/api/v1/crates/regex/0.1.0/readme",
+            "updated_at": "2017-11-30T02:51:27.240551+00:00",
+            "yanked": false
+        }
+    ]
+}
