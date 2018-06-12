@@ -1,3 +1,7 @@
+## v0.60.8, 12 June 2018
+
+- Rust: Check for latest allowable version in UpdateChecker
+
 ## v0.60.7, 11 June 2018
 
 - Elixir: Revert "Remove unused subdependencies after update"
