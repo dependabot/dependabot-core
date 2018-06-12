@@ -119,11 +119,11 @@ module Dependabot
             when "Bundler::Fetcher::AuthenticationRequiredError"
               regex = /bundle config (?<source>.*) username:password/
               source = error.error_message.match(regex)[:source]
-              raise Dependabot::PrivateSourceNotReachable, source
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
             when "Bundler::Fetcher::BadAuthenticationError"
               regex = /Bad username or password for (?<source>.*)\.$/
               source = error.error_message.match(regex)[:source]
-              raise Dependabot::PrivateSourceNotReachable, source
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
             when "Bundler::Fetcher::CertificateFailureError"
               regex = /verify the SSL certificate for (?<source>.*)\.$/
               source = error.error_message.match(regex)[:source]
@@ -133,7 +133,7 @@ module Dependabot
               raise unless error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
               raise if source.include?("rubygems")
-              raise Dependabot::PrivateSourceNotReachable, source
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
             else raise
             end
           end

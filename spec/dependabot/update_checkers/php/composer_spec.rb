@@ -487,7 +487,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         it "raises a helpful error message" do
           expect { checker.latest_resolvable_version }.
             to raise_error do |error|
-              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error).
+                to be_a(Dependabot::PrivateSourceAuthenticationFailure)
               expect(error.source).to eq("php.fury.io")
             end
         end
@@ -506,7 +507,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
         it "raises a helpful error message" do
           expect { checker.latest_resolvable_version }.
             to raise_error do |error|
-              expect(error).to be_a(Dependabot::PrivateSourceNotReachable)
+              expect(error).
+                to be_a(Dependabot::PrivateSourceAuthenticationFailure)
               expect(error.source).to eq("php.fury.io")
             end
         end

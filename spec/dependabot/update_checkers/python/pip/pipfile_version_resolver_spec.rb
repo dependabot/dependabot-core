@@ -146,7 +146,7 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       it "raises a helpful error" do
         expect { subject }.
-          to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+          to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
             expect(error.source).
               to eq("https://some.internal.registry.com/pypi/")
           end
@@ -176,7 +176,7 @@ RSpec.describe namespace::PipfileVersionResolver do
 
         it "raises a helpful error" do
           expect { subject }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
               expect(error.source).
                 to eq("https://redacted@pypi.gemfury.com/secret_codes/")
             end
@@ -190,8 +190,9 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       context "with no credentials" do
         it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { subject }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
             end
         end
@@ -213,8 +214,9 @@ RSpec.describe namespace::PipfileVersionResolver do
           ]
         end
         it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { subject }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
             end
         end

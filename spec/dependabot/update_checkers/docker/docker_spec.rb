@@ -209,9 +209,10 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
 
       context "without authentication credentials" do
-        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+        it "raises a to PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("registry-host.io:5000")
             end
         end

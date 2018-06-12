@@ -155,7 +155,7 @@ module Dependabot
             index_response = registry_response_for_dependency(index_url)
 
             if index_response.status == 401 || index_response.status == 403
-              raise PrivateSourceNotReachable, sanitized_url
+              raise PrivateSourceAuthenticationFailure, sanitized_url
             end
 
             index_response.body.
@@ -172,7 +172,7 @@ module Dependabot
               end.compact
           rescue Excon::Error::Timeout, Excon::Error::Socket
             next if MAIN_PYPI_INDEXES.include?(index_url)
-            raise PrivateSourceNotReachable, sanitized_url
+            raise PrivateSourceAuthenticationFailure, sanitized_url
           end
         end
 

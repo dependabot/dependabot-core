@@ -181,10 +181,10 @@ module Dependabot
                 )
 
                 if response.status == 401 || response.status == 403
-                  raise PrivateSourceNotReachable, sanitized_url
+                  raise PrivateSourceAuthenticationFailure, sanitized_url
                 end
               rescue Excon::Error::Timeout, Excon::Error::Socket
-                raise PrivateSourceNotReachable, sanitized_url
+                raise PrivateSourceTimedOut, sanitized_url
               end
           end
 
@@ -272,7 +272,7 @@ module Dependabot
 
               regex = known_parts.map { |p| Regexp.quote(p) }.join(".*?")
               next if config_variable_source_urls.any? { |s| s.match?(regex) }
-              raise PrivateSourceNotReachable, url
+              raise PrivateSourceAuthenticationFailure, url
             end
           end
 

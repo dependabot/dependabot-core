@@ -72,8 +72,7 @@ module Dependabot
   # Source level errors #
   #######################
 
-  # TODO: Rename to PrivateSourceAuthenticationFailure
-  class PrivateSourceNotReachable < DependabotError
+  class PrivateSourceAuthenticationFailure < DependabotError
     attr_reader :source
 
     def initialize(source)

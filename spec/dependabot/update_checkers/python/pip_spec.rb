@@ -252,8 +252,9 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           end
 
           it "raises a helpful error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
             expect { subject }.
-              to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              to raise_error(error_class) do |error|
                 expect(error.source).
                   to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
               end
@@ -278,8 +279,9 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           end
 
           it "raises a helpful error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
             expect { subject }.
-              to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+              to raise_error(error_class) do |error|
                 expect(error.source).
                   to eq("https://pypi.weasyldev.com/weasyl/source/+simple/")
               end

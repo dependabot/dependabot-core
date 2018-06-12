@@ -189,7 +189,7 @@ module Dependabot
 
           def check_npm_response(npm_response)
             if private_dependency_not_reachable?(npm_response)
-              raise PrivateSourceNotReachable, dependency_registry
+              raise PrivateSourceAuthenticationFailure, dependency_registry
             end
 
             return if npm_response.status.to_s.start_with?("2")

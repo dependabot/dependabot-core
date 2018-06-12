@@ -100,7 +100,10 @@ module Dependabot
         def docker_registry_client(private_registry)
           if private_registry
             credentials = private_registry_credentials(private_registry)
-            raise PrivateSourceNotReachable, private_registry unless credentials
+            # TODO: This isn't right - some private registries don't need creds
+            unless credentials
+              raise PrivateSourceAuthenticationFailure, private_registry
+            end
 
             DockerRegistry2::Registry.new(
               "https://#{private_registry}",

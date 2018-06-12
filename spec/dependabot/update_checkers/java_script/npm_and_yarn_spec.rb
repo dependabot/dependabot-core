@@ -503,9 +503,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           }]
         end
 
-        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.npmjs.org")
             end
         end
@@ -673,9 +674,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           }]
         end
 
-        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
         end
@@ -699,9 +701,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               )
             end
 
-            it "raises a to Dependabot::PrivateSourceNotReachable error" do
+            it "raises a PrivateSourceAuthenticationFailure error" do
+              error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { checker.latest_version }.
-                to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                to raise_error(error_class) do |error|
                   expect(error.source).to eq("npm.fury.io/dependabot")
                 end
             end
@@ -820,9 +823,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           )
         end
 
-        it "raises a to Dependabot::PrivateSourceNotReachable error" do
+        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.npmjs.org")
             end
         end

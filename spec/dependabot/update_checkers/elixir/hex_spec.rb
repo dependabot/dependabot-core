@@ -220,8 +220,9 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         end
 
         it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { subject }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end
@@ -240,8 +241,9 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         # The Elixir process hangs waiting for input in this case. This spec
         # passes as long as we're intelligently timing out.
         it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { subject }.
-            to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+            to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
         end

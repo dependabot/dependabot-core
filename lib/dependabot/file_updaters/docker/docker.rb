@@ -107,7 +107,8 @@ module Dependabot
 
         def registry_client
           if private_registry_url && !private_registry_credentials
-            raise PrivateSourceNotReachable, private_registry_url
+            # TODO: This isn't right - some private registries don't need creds
+            raise PrivateSourceAuthenticationFailure, private_registry_url
           end
 
           @registry_client ||=

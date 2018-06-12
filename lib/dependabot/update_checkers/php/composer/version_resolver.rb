@@ -142,7 +142,7 @@ module Dependabot
               source =
                 error.message.match(%r{https?://(?<source>[^/]+)/}).
                 named_captures.fetch("source")
-              raise Dependabot::PrivateSourceNotReachable, source
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
             elsif error.message.start_with?("Allowed memory size")
               raise "Composer out of memory"
             else

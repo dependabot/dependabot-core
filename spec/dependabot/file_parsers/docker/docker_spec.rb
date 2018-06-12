@@ -221,9 +221,10 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
           context "without authentication credentials" do
-            it "raises a to Dependabot::PrivateSourceNotReachable error" do
+            it "raises a to PrivateSourceAuthenticationFailure error" do
+              error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { parser.parse }.
-                to raise_error(Dependabot::PrivateSourceNotReachable) do |error|
+                to raise_error(error_class) do |error|
                   expect(error.source).to eq("registry-host.io:5000")
                 end
             end

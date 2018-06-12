@@ -61,13 +61,13 @@ module Dependabot
 
             if error.message.include?("No authenticated organization found")
               org = error.message.match(/found for ([a-z_]+)\./).captures.first
-              raise Dependabot::PrivateSourceNotReachable, org
+              raise Dependabot::PrivateSourceAuthenticationFailure, org
             end
 
             if error.message.include?("Failed to fetch record for")
               org_match = error.message.match(%r{for 'hexpm:([a-z_]+)/})
               org = org_match&.captures&.first
-              raise Dependabot::PrivateSourceNotReachable, org if org
+              raise Dependabot::PrivateSourceAuthenticationFailure, org if org
             end
 
             # TODO: This isn't pretty. It would be much nicer to catch the
