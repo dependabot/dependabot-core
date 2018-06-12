@@ -6,10 +6,6 @@ Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
 for updating dependencies on GitHub or GitHub Enterprise (we plan to support
 Bitbucket and Gitlab in future, too).
 
-If you're looking to provide feedback on Dependabot's hosted service then we'd
-love to hear it. This repo is the right place to do so - please create an issue
-[here][issues].
-
 If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
 [here][dependabot-script].
@@ -98,7 +94,6 @@ GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
 [dependabot]: https://dependabot.com
-[issues]: https://github.com/dependabot/dependabot-core/issues
 [dependabot-script]: https://github.com/dependabot/dependabot-script
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
