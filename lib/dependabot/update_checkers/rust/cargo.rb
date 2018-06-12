@@ -21,6 +21,9 @@ module Dependabot
             else
               versions = available_versions
               versions.reject!(&:prerelease?) unless wants_prerelease?
+              versions.reject! do |v|
+                ignore_reqs.any? { |r| r.satisfied_by?(v) }
+              end
               versions.max
             end
         end
@@ -150,7 +153,8 @@ module Dependabot
           prepared_files = FilePreparer.new(
             dependency_files: dependency_files,
             dependency: dependency,
-            unlock_requirement: unlock_requirement
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: latest_version
           ).prepared_dependency_files
 
           VersionResolver.new(
@@ -213,6 +217,12 @@ module Dependabot
 
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
           sources.first&.fetch(:type) == "path"
+        end
+
+        def ignore_reqs
+          ignored_versions.map do |req|
+            Utils::Rust::Requirement.new(req.split(","))
+          end
         end
 
         def git_commit_checker

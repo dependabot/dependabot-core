@@ -14,11 +14,13 @@ module Dependabot
         class FilePreparer
           def initialize(dependency_files:, dependency:,
                          unlock_requirement: true,
-                         replacement_git_pin: nil)
-            @dependency_files = dependency_files
-            @dependency = dependency
-            @unlock_requirement = unlock_requirement
-            @replacement_git_pin = replacement_git_pin
+                         replacement_git_pin: nil,
+                         latest_allowable_version: nil)
+            @dependency_files         = dependency_files
+            @dependency               = dependency
+            @unlock_requirement       = unlock_requirement
+            @replacement_git_pin      = replacement_git_pin
+            @latest_allowable_version = latest_allowable_version
           end
 
           def prepared_dependency_files
@@ -36,7 +38,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files, :dependency, :replacement_git_pin
+          attr_reader :dependency_files, :dependency, :replacement_git_pin,
+                      :latest_allowable_version
 
           def unlock_requirement?
             @unlock_requirement
@@ -49,7 +52,7 @@ module Dependabot
           def manifest_content_for_update_check(file)
             content = file.content
 
-            content = relax_version(file.content) if unlock_requirement?
+            content = replace_version_constraint(content, file.name)
             content = replace_git_pin(content) if replace_git_pin?
             content = replace_ssh_urls(content)
 
@@ -58,12 +61,12 @@ module Dependabot
 
           # Note: We don't need to care about formatting in this method, since
           # we're only using the manifest to find the latest resolvable version
-          def relax_version(content)
+          def replace_version_constraint(content, filename)
             parsed_manifest = TomlRB.parse(content)
 
             FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
               next unless (req = parsed_manifest.dig(type, dependency.name))
-              updated_req = temporary_requirement_for_resolution
+              updated_req = temporary_requirement_for_resolution(filename)
 
               if req.is_a?(Hash)
                 parsed_manifest[type][dependency.name]["version"] = updated_req
@@ -113,15 +116,33 @@ module Dependabot
             TomlRB.dump(parsed_manifest)
           end
 
-          def temporary_requirement_for_resolution
-            if git_dependency? && git_dependency_version
+          def temporary_requirement_for_resolution(filename)
+            lower_bound_req = updated_version_req_lower_bound(filename)
+
+            return lower_bound_req if latest_allowable_version.nil?
+            unless Utils::Rust::Version.correct?(latest_allowable_version)
+              return lower_bound_req
+            end
+
+            lower_bound_req + ", <= #{latest_allowable_version}"
+          end
+
+          # rubocop:disable Metrics/PerceivedComplexity
+          def updated_version_req_lower_bound(filename)
+            original_req = dependency.requirements.
+                           find { |r| r.fetch(:file) == filename }&.
+                           fetch(:requirement)
+
+            if original_req && !unlock_requirement? then original_req
+            elsif git_dependency? && git_dependency_version
               ">= #{git_dependency_version}"
             elsif !git_dependency? && dependency.version
               ">= #{dependency.version}"
-            elsif !git_dependency?
+            else
               ">= 0"
             end
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def git_dependency_version
             return unless lockfile

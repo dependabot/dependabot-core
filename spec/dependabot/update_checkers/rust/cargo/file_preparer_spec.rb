@@ -10,13 +10,15 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
       dependency_files: dependency_files,
       dependency: dependency,
       unlock_requirement: unlock_requirement,
-      replacement_git_pin: replacement_git_pin
+      replacement_git_pin: replacement_git_pin,
+      latest_allowable_version: latest_allowable_version
     )
   end
 
   let(:dependency_files) { [manifest, lockfile] }
   let(:unlock_requirement) { true }
   let(:replacement_git_pin) { nil }
+  let(:latest_allowable_version) { nil }
 
   let(:manifest) do
     Dependabot::DependencyFile.new(
@@ -87,6 +89,15 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
           it "updates the requirement" do
             expect(prepared_manifest_file.content).
               to include('regex = ">= 0.1.41"')
+          end
+
+          context "and a latest_allowable_version" do
+            let(:latest_allowable_version) { Gem::Version.new("1.6.0") }
+
+            it "updates the requirement" do
+              expect(prepared_manifest_file.content).
+                to include('regex = ">= 0.1.41, <= 1.6.0"')
+            end
           end
         end
 
