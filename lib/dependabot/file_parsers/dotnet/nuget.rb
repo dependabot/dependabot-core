@@ -1,42 +1,86 @@
 # frozen_string_literal: true
 
+require "nokogiri"
+
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 
+# For details on how dotnet handles version constraints, see:
+# https://docs.microsoft.com/en-us/nuget/reference/package-versioning
 module Dependabot
   module FileParsers
     module Dotnet
       class Nuget < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
+        DEPENDENCY_SELECTOR = "ItemGroup > PackageReference"
+
         def parse
-          # Parse the dependency files and return an array of
-          # Dependabot::Dependency objects for each dependency.
-          #
-          # If possible, this should be done in Ruby (since it's easier to
-          # maintain). However, if we need to parse a lockfile that has a
-          # non-standard format we can shell out to a helper in a language of
-          # our choice (see JavaScript example where we parse the yarn.lock).
-          [
-            Dependency.new(
-              name: "my_dependency",
-              version: "1.0.1",
-              package_manager: "nuget",
-              requirements: [{
-                requirement: ">= 1.0.0",
-                file: "paket.dependencies",
-                groups: [],
-                source: nil
-              }]
-            )
-          ]
+          dependency_set = DependencySet.new
+          dependency_set += csproj_dependencies
+          dependency_set.dependencies
         end
 
         private
 
-        def check_required_files
-          # Check that the files required are present
-          %w(example1.file example2.file).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
+        def csproj_dependencies
+          dependency_set = DependencySet.new
+
+          doc = Nokogiri::XML(csproj_file.content)
+          doc.remove_namespaces!
+          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+            dependency_set <<
+              Dependency.new(
+                name: dependency_name(dependency_node),
+                version: dependency_version(dependency_node),
+                package_manager: "nuget",
+                requirements: [{
+                  requirement: dependency_requirement(dependency_node),
+                  file: csproj_file.name,
+                  groups: [],
+                  source: nil
+                }]
+              )
           end
+
+          dependency_set
+        end
+
+        def dependency_name(dependency_node)
+          dependency_node.attribute("Include")&.value&.strip ||
+            dependency_node.at_xpath("./Include")&.content&.strip
+        end
+
+        def dependency_requirement(dependency_node)
+          dependency_node.attribute("Version")&.value&.strip ||
+            dependency_node.at_xpath("./Version")&.content&.strip
+        end
+
+        def dependency_version(dependency_node)
+          requirement = dependency_requirement(dependency_node)
+
+          # If a range is specified then we can't tell the exact version
+          return nil if requirement.include?(",")
+
+          # Technically, specifying Version="1.3.0" means anything greater than
+          # v1.3.0 is allowed, and we ought to return `nil` for those cases.
+          # In practice, nuget uses a minimum-version-wins resolution strategy,
+          # so we're *probably* OK. Long-term solution would be to do
+          # resolution at this point.
+          # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-
+          #   resolution
+
+          # Remove brackets if present (and not denoting a range)
+          requirement.gsub(/[\(\)\[\]]/, "").strip
+        end
+
+        def csproj_file
+          dependency_files.find { |df| df.name.end_with?(".csproj") }
+        end
+
+        def check_required_files
+          return if dependency_files.any? { |df| df.name.end_with?(".csproj") }
+          raise "No .csproj file!"
         end
       end
     end
