@@ -1,3 +1,7 @@
+## v0.61.2, 13 June 2018
+
+- Rust: Ensure manifest-only setups don't downgrade
+
 ## v0.61.1, 13 June 2018
 
 - Handle Requests changelog version underline character
