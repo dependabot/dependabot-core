@@ -56,7 +56,59 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
     end
   end
 
-  context "without a .csproj" do
+  context "with a .vbproj" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_vb.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Nancy.vbproj?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_basic_csproj.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the .vbproj" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Nancy.vbproj))
+    end
+  end
+
+  context "with a .fsproj" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_fs.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Nancy.fsproj?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_basic_csproj.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the .vbproj" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Nancy.fsproj))
+    end
+  end
+
+  context "without any project files" do
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).

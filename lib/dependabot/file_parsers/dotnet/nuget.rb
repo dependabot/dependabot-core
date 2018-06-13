@@ -17,30 +17,32 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += csproj_dependencies
+          dependency_set += project_file_dependencies
           dependency_set.dependencies
         end
 
         private
 
-        def csproj_dependencies
+        def project_file_dependencies
           dependency_set = DependencySet.new
 
-          doc = Nokogiri::XML(csproj_file.content)
-          doc.remove_namespaces!
-          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            dependency_set <<
-              Dependency.new(
-                name: dependency_name(dependency_node),
-                version: dependency_version(dependency_node),
-                package_manager: "nuget",
-                requirements: [{
-                  requirement: dependency_requirement(dependency_node),
-                  file: csproj_file.name,
-                  groups: [],
-                  source: nil
-                }]
-              )
+          project_files.each do |proj_file|
+            doc = Nokogiri::XML(proj_file.content)
+            doc.remove_namespaces!
+            doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+              dependency_set <<
+                Dependency.new(
+                  name: dependency_name(dependency_node),
+                  version: dependency_version(dependency_node),
+                  package_manager: "nuget",
+                  requirements: [{
+                    requirement: dependency_requirement(dependency_node),
+                    file: proj_file.name,
+                    groups: [],
+                    source: nil
+                  }]
+                )
+            end
           end
 
           dependency_set
@@ -74,13 +76,13 @@ module Dependabot
           requirement.gsub(/[\(\)\[\]]/, "").strip
         end
 
-        def csproj_file
-          dependency_files.find { |df| df.name.end_with?(".csproj") }
+        def project_files
+          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
         end
 
         def check_required_files
-          return if dependency_files.any? { |df| df.name.end_with?(".csproj") }
-          raise "No .csproj file!"
+          return if project_files.any?
+          raise "No project file!"
         end
       end
     end

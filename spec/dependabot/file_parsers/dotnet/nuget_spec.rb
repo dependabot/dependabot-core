@@ -64,5 +64,61 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         end
       end
     end
+
+    context "with a csproj and a vbproj" do
+      let(:files) { [csproj_file, vbproj_file] }
+      let(:vbproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.vbproj",
+          content: fixture("dotnet", "csproj", "basic2.csproj")
+        )
+      end
+
+      its(:length) { is_expected.to eq(4) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+          expect(dependency.version).to eq("1.1.1")
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: "1.1.1",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.0.1",
+                file: "my.vbproj",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        end
+      end
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Serilog")
+          expect(dependency.version).to eq("2.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.3.0",
+              file: "my.vbproj",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
   end
 end

@@ -7,7 +7,7 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          filenames.any? { |name| name.match?(%r{^[^/]*\.csproj$}) }
+          filenames.any? { |name| name.match?(%r{^[^/]*\.(cs|vb|fs)proj$}) }
         end
 
         def self.required_files_message
@@ -17,28 +17,36 @@ module Dependabot
         private
 
         def fetch_files
-          # This method needs to return all of the files that we need to fetch.
-          # That means all the files that:
-          # - we may need to read in order to figure out what to update
-          # - we may wish to change as part of the update
-          #
-          # You can use the `fetch_file_from_github` helper to get files as
-          # long as you know their name. If you need to dynamically figure out
-          # what files to fetch, things get harder (the JS file fetcher is a
-          # good example)
           fetched_files = []
-          fetched_files << csproj_file
-          fetched_files
+          fetched_files << csproj_file if csproj_file
+          fetched_files << vbproj_file if vbproj_file
+          fetched_files << fsproj_file if fsproj_file
+
+          return fetched_files unless fetched_files.none?
+          raise(Dependabot::DependencyFileNotFound, "<anything>.csproj")
         end
 
         def csproj_file
           @csproj_file ||=
             begin
               file = repo_contents.find { |f| f.name.end_with?(".csproj") }
-              unless file
-                raise(Dependabot::DependencyFileNotFound, "<anything>.csproj")
-              end
-              fetch_file_from_host(file.name)
+              fetch_file_from_host(file.name) if file
+            end
+        end
+
+        def vbproj_file
+          @vbproj_file ||=
+            begin
+              file = repo_contents.find { |f| f.name.end_with?(".vbproj") }
+              fetch_file_from_host(file.name) if file
+            end
+        end
+
+        def fsproj_file
+          @fsproj_file ||=
+            begin
+              file = repo_contents.find { |f| f.name.end_with?(".fsproj") }
+              fetch_file_from_host(file.name) if file
             end
         end
       end
