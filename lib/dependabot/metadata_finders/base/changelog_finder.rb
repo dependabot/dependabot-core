@@ -165,7 +165,7 @@ module Dependabot
             next true if line.start_with?("#", "!")
             next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
             next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
-            next true if changelog_lines[index + 1]&.match?(/^[=-]+\s*$/)
+            next true if changelog_lines[index + 1]&.match?(/^[=\-\+]{3,}\s*$/)
             false
           end
         end
