@@ -61,19 +61,15 @@ module Dependabot
         def dependency_version(dependency_node)
           requirement = dependency_requirement(dependency_node)
 
-          # If a range is specified then we can't tell the exact version
-          return nil if requirement.include?(",")
+          # Remove brackets if present
+          version = requirement.gsub(/[\(\)\[\]]/, "").strip
 
-          # Technically, specifying Version="1.3.0" means anything greater than
-          # v1.3.0 is allowed, and we ought to return `nil` for those cases.
-          # In practice, nuget uses a minimum-version-wins resolution strategy,
-          # so we're *probably* OK. Long-term solution would be to do
-          # resolution at this point.
+          # Take the first (and therefore lowest) element of any range. Nuget
+          # resolves dependencies to the "Lowest Applicable Version".
           # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-
           #   resolution
-
-          # Remove brackets if present (and not denoting a range)
-          requirement.gsub(/[\(\)\[\]]/, "").strip
+          version = version.split(",").first.strip
+          return version unless version == ""
         end
 
         def project_files

@@ -65,6 +65,26 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
       end
     end
 
+    context "with version ranges" do
+      let(:csproj_body) { fixture("dotnet", "csproj", "ranges.csproj") }
+
+      its(:length) { is_expected.to eq(3) }
+
+      it "has the right details" do
+        expect(dependencies.first.requirements.first.fetch(:requirement)).
+          to eq("[1.0,2.0]")
+        expect(dependencies.first.version).to eq("1.0")
+
+        expect(dependencies[1].requirements.first.fetch(:requirement)).
+          to eq("[1.1]")
+        expect(dependencies[1].version).to eq("1.1")
+
+        expect(dependencies[2].requirements.first.fetch(:requirement)).
+          to eq("(,1.0)")
+        expect(dependencies[2].version).to be_nil
+      end
+    end
+
     context "with a csproj and a vbproj" do
       let(:files) { [csproj_file, vbproj_file] }
       let(:vbproj_file) do
