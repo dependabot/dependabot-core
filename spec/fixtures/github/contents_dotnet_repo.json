@@ -1,0 +1,1842 @@
+[
+  {
+    "name": "AfterPipeline.cs",
+    "path": "src/Nancy/AfterPipeline.cs",
+    "sha": "ef8df66fad8056807284b6382fac0c0ac94c6337",
+    "size": 5592,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AfterPipeline.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AfterPipeline.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ef8df66fad8056807284b6382fac0c0ac94c6337",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/AfterPipeline.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AfterPipeline.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ef8df66fad8056807284b6382fac0c0ac94c6337",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AfterPipeline.cs"
+    }
+  },
+  {
+    "name": "AppDomainAssemblyCatalog.cs",
+    "path": "src/Nancy/AppDomainAssemblyCatalog.cs",
+    "sha": "0633007c736d510e53c406ab5493c8c893103c59",
+    "size": 5650,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AppDomainAssemblyCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AppDomainAssemblyCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0633007c736d510e53c406ab5493c8c893103c59",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/AppDomainAssemblyCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AppDomainAssemblyCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0633007c736d510e53c406ab5493c8c893103c59",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AppDomainAssemblyCatalog.cs"
+    }
+  },
+  {
+    "name": "ArrayCache.cs",
+    "path": "src/Nancy/ArrayCache.cs",
+    "sha": "ee0289ee0c05f7781a9856882c81b011b82dea48",
+    "size": 551,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ArrayCache.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ArrayCache.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ee0289ee0c05f7781a9856882c81b011b82dea48",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ArrayCache.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ArrayCache.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ee0289ee0c05f7781a9856882c81b011b82dea48",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ArrayCache.cs"
+    }
+  },
+  {
+    "name": "AsyncNamedPipelineBase.cs",
+    "path": "src/Nancy/AsyncNamedPipelineBase.cs",
+    "sha": "0934b2a524d5e63e410ba711a337047dacdcee2f",
+    "size": 13785,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AsyncNamedPipelineBase.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AsyncNamedPipelineBase.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0934b2a524d5e63e410ba711a337047dacdcee2f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/AsyncNamedPipelineBase.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/AsyncNamedPipelineBase.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0934b2a524d5e63e410ba711a337047dacdcee2f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/AsyncNamedPipelineBase.cs"
+    }
+  },
+  {
+    "name": "BeforePipeline.cs",
+    "path": "src/Nancy/BeforePipeline.cs",
+    "sha": "5e32255e3cb41a67abf50f5cc9f13283bf697127",
+    "size": 6092,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/BeforePipeline.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/BeforePipeline.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/5e32255e3cb41a67abf50f5cc9f13283bf697127",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/BeforePipeline.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/BeforePipeline.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/5e32255e3cb41a67abf50f5cc9f13283bf697127",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/BeforePipeline.cs"
+    }
+  },
+  {
+    "name": "Bootstrapper",
+    "path": "src/Nancy/Bootstrapper",
+    "sha": "078aa33c716b634142d9315d5e6c5e36a020a58d",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Bootstrapper?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Bootstrapper",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/078aa33c716b634142d9315d5e6c5e36a020a58d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Bootstrapper?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/078aa33c716b634142d9315d5e6c5e36a020a58d",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Bootstrapper"
+    }
+  },
+  {
+    "name": "Configuration",
+    "path": "src/Nancy/Configuration",
+    "sha": "288e1e4666b0bfdc65b3968b0175057197c48967",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Configuration?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Configuration",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/288e1e4666b0bfdc65b3968b0175057197c48967",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Configuration?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/288e1e4666b0bfdc65b3968b0175057197c48967",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Configuration"
+    }
+  },
+  {
+    "name": "Conventions",
+    "path": "src/Nancy/Conventions",
+    "sha": "6dfe30c31368e6ac572cd5441b327725fa1ed46c",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Conventions?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Conventions",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/6dfe30c31368e6ac572cd5441b327725fa1ed46c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Conventions?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/6dfe30c31368e6ac572cd5441b327725fa1ed46c",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Conventions"
+    }
+  },
+  {
+    "name": "Cookies",
+    "path": "src/Nancy/Cookies",
+    "sha": "6e7e38bcc2bd39687e845e68b74a5e7dd9ac5602",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Cookies?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Cookies",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/6e7e38bcc2bd39687e845e68b74a5e7dd9ac5602",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Cookies?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/6e7e38bcc2bd39687e845e68b74a5e7dd9ac5602",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Cookies"
+    }
+  },
+  {
+    "name": "Cryptography",
+    "path": "src/Nancy/Cryptography",
+    "sha": "767f0a3fd7e7ed630677d766437df6d072f005d6",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Cryptography?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Cryptography",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/767f0a3fd7e7ed630677d766437df6d072f005d6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Cryptography?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/767f0a3fd7e7ed630677d766437df6d072f005d6",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Cryptography"
+    }
+  },
+  {
+    "name": "Culture",
+    "path": "src/Nancy/Culture",
+    "sha": "2d6377a27913bf7d0859a97a396c610ad6cc5e83",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Culture?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Culture",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/2d6377a27913bf7d0859a97a396c610ad6cc5e83",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Culture?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/2d6377a27913bf7d0859a97a396c610ad6cc5e83",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Culture"
+    }
+  },
+  {
+    "name": "DefaultGlobalizationConfigurationProvider.cs",
+    "path": "src/Nancy/DefaultGlobalizationConfigurationProvider.cs",
+    "sha": "d26d174817f082f40bc2dc04d9b7f43b3b6ba0a1",
+    "size": 718,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultGlobalizationConfigurationProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultGlobalizationConfigurationProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d26d174817f082f40bc2dc04d9b7f43b3b6ba0a1",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultGlobalizationConfigurationProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultGlobalizationConfigurationProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d26d174817f082f40bc2dc04d9b7f43b3b6ba0a1",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultGlobalizationConfigurationProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultNancyBootstrapper.cs",
+    "path": "src/Nancy/DefaultNancyBootstrapper.cs",
+    "sha": "1bc735cfef5df169be25388e1efc36d316bda672",
+    "size": 14145,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultNancyBootstrapper.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultNancyBootstrapper.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1bc735cfef5df169be25388e1efc36d316bda672",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultNancyBootstrapper.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultNancyBootstrapper.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1bc735cfef5df169be25388e1efc36d316bda672",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultNancyBootstrapper.cs"
+    }
+  },
+  {
+    "name": "DefaultNancyContextFactory.cs",
+    "path": "src/Nancy/DefaultNancyContextFactory.cs",
+    "sha": "1be807d7022e154602af5a95dcde9d98c7df60ba",
+    "size": 2285,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultNancyContextFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultNancyContextFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1be807d7022e154602af5a95dcde9d98c7df60ba",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultNancyContextFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultNancyContextFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1be807d7022e154602af5a95dcde9d98c7df60ba",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultNancyContextFactory.cs"
+    }
+  },
+  {
+    "name": "DefaultObjectSerializer.cs",
+    "path": "src/Nancy/DefaultObjectSerializer.cs",
+    "sha": "31ef70daac18598143d3df5ff767d9fad4551330",
+    "size": 2772,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultObjectSerializer.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultObjectSerializer.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/31ef70daac18598143d3df5ff767d9fad4551330",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultObjectSerializer.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultObjectSerializer.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/31ef70daac18598143d3df5ff767d9fad4551330",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultObjectSerializer.cs"
+    }
+  },
+  {
+    "name": "DefaultResponseFormatter.cs",
+    "path": "src/Nancy/DefaultResponseFormatter.cs",
+    "sha": "8d49a1c5b52abdfd680cf4a0de21a7cfdd49c8b3",
+    "size": 2568,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultResponseFormatter.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultResponseFormatter.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8d49a1c5b52abdfd680cf4a0de21a7cfdd49c8b3",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultResponseFormatter.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultResponseFormatter.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8d49a1c5b52abdfd680cf4a0de21a7cfdd49c8b3",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultResponseFormatter.cs"
+    }
+  },
+  {
+    "name": "DefaultResponseFormatterFactory.cs",
+    "path": "src/Nancy/DefaultResponseFormatterFactory.cs",
+    "sha": "23548820d512c2887761867fdc89ca308c8189a0",
+    "size": 1765,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultResponseFormatterFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultResponseFormatterFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23548820d512c2887761867fdc89ca308c8189a0",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultResponseFormatterFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultResponseFormatterFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23548820d512c2887761867fdc89ca308c8189a0",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultResponseFormatterFactory.cs"
+    }
+  },
+  {
+    "name": "DefaultRootPathProvider.cs",
+    "path": "src/Nancy/DefaultRootPathProvider.cs",
+    "sha": "d1cd50d04955493ede843d9b2af236b483939438",
+    "size": 713,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRootPathProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRootPathProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d1cd50d04955493ede843d9b2af236b483939438",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultRootPathProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRootPathProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d1cd50d04955493ede843d9b2af236b483939438",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRootPathProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultRouteConfigurationProvider.cs",
+    "path": "src/Nancy/DefaultRouteConfigurationProvider.cs",
+    "sha": "8496542751e51756beabeb3647c0ce16082c2e07",
+    "size": 675,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRouteConfigurationProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRouteConfigurationProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8496542751e51756beabeb3647c0ce16082c2e07",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultRouteConfigurationProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRouteConfigurationProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8496542751e51756beabeb3647c0ce16082c2e07",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRouteConfigurationProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultRuntimeEnvironmentInformation.cs",
+    "path": "src/Nancy/DefaultRuntimeEnvironmentInformation.cs",
+    "sha": "aadaa2f8123402a765888c996c0104c69843b87c",
+    "size": 1467,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRuntimeEnvironmentInformation.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRuntimeEnvironmentInformation.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aadaa2f8123402a765888c996c0104c69843b87c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultRuntimeEnvironmentInformation.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultRuntimeEnvironmentInformation.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aadaa2f8123402a765888c996c0104c69843b87c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultRuntimeEnvironmentInformation.cs"
+    }
+  },
+  {
+    "name": "DefaultSerializerFactory.cs",
+    "path": "src/Nancy/DefaultSerializerFactory.cs",
+    "sha": "041a6bdb2c663ea4c75621faf5e2570dcd0a3178",
+    "size": 3577,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultSerializerFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultSerializerFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/041a6bdb2c663ea4c75621faf5e2570dcd0a3178",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultSerializerFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultSerializerFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/041a6bdb2c663ea4c75621faf5e2570dcd0a3178",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultSerializerFactory.cs"
+    }
+  },
+  {
+    "name": "DefaultStaticContentConfigurationProvider.cs",
+    "path": "src/Nancy/DefaultStaticContentConfigurationProvider.cs",
+    "sha": "190bc467a88875192e42a99a0cc899f26a1e354b",
+    "size": 1277,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultStaticContentConfigurationProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultStaticContentConfigurationProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/190bc467a88875192e42a99a0cc899f26a1e354b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultStaticContentConfigurationProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultStaticContentConfigurationProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/190bc467a88875192e42a99a0cc899f26a1e354b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultStaticContentConfigurationProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultStaticContentProvider.cs",
+    "path": "src/Nancy/DefaultStaticContentProvider.cs",
+    "sha": "0db6e07e909b7acdd58132aff3a9cab81472cc1c",
+    "size": 1838,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultStaticContentProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultStaticContentProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0db6e07e909b7acdd58132aff3a9cab81472cc1c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultStaticContentProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultStaticContentProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0db6e07e909b7acdd58132aff3a9cab81472cc1c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultStaticContentProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultTraceConfigurationProvider.cs",
+    "path": "src/Nancy/DefaultTraceConfigurationProvider.cs",
+    "sha": "2e728e330a85e7756e13099491974216819d9189",
+    "size": 1281,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultTraceConfigurationProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultTraceConfigurationProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/2e728e330a85e7756e13099491974216819d9189",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultTraceConfigurationProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultTraceConfigurationProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/2e728e330a85e7756e13099491974216819d9189",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultTraceConfigurationProvider.cs"
+    }
+  },
+  {
+    "name": "DefaultTypeCatalog.cs",
+    "path": "src/Nancy/DefaultTypeCatalog.cs",
+    "sha": "b7a94b73baad23aa5c37639af205a68652de01ff",
+    "size": 2166,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultTypeCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultTypeCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b7a94b73baad23aa5c37639af205a68652de01ff",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultTypeCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultTypeCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b7a94b73baad23aa5c37639af205a68652de01ff",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultTypeCatalog.cs"
+    }
+  },
+  {
+    "name": "DefaultViewConfigurationProvider.cs",
+    "path": "src/Nancy/DefaultViewConfigurationProvider.cs",
+    "sha": "5a07644dc686eb2b24e03fc5c2247ffa15d05a9f",
+    "size": 726,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultViewConfigurationProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultViewConfigurationProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/5a07644dc686eb2b24e03fc5c2247ffa15d05a9f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DefaultViewConfigurationProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DefaultViewConfigurationProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/5a07644dc686eb2b24e03fc5c2247ffa15d05a9f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DefaultViewConfigurationProvider.cs"
+    }
+  },
+  {
+    "name": "DependencyContextAssemblyCatalog.cs",
+    "path": "src/Nancy/DependencyContextAssemblyCatalog.cs",
+    "sha": "f62b4d671bac7001ddb0d312a588d24ad3695c43",
+    "size": 2825,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DependencyContextAssemblyCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DependencyContextAssemblyCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f62b4d671bac7001ddb0d312a588d24ad3695c43",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DependencyContextAssemblyCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DependencyContextAssemblyCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f62b4d671bac7001ddb0d312a588d24ad3695c43",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DependencyContextAssemblyCatalog.cs"
+    }
+  },
+  {
+    "name": "Diagnostics",
+    "path": "src/Nancy/Diagnostics",
+    "sha": "e9a943359c7384cbf324efbd9c2b9fddb2ff12c2",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Diagnostics?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Diagnostics",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/e9a943359c7384cbf324efbd9c2b9fddb2ff12c2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Diagnostics?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/e9a943359c7384cbf324efbd9c2b9fddb2ff12c2",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Diagnostics"
+    }
+  },
+  {
+    "name": "DisabledStaticContentProvider.cs",
+    "path": "src/Nancy/DisabledStaticContentProvider.cs",
+    "sha": "09b49a2dc277c83082cf58ffbc21c0a86fc1bcec",
+    "size": 600,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DisabledStaticContentProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DisabledStaticContentProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/09b49a2dc277c83082cf58ffbc21c0a86fc1bcec",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DisabledStaticContentProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DisabledStaticContentProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/09b49a2dc277c83082cf58ffbc21c0a86fc1bcec",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DisabledStaticContentProvider.cs"
+    }
+  },
+  {
+    "name": "DynamicDictionary.cs",
+    "path": "src/Nancy/DynamicDictionary.cs",
+    "sha": "108d631305f930cb481c8b7ebafba574d7e53fd8",
+    "size": 18700,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DynamicDictionary.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DynamicDictionary.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/108d631305f930cb481c8b7ebafba574d7e53fd8",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DynamicDictionary.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DynamicDictionary.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/108d631305f930cb481c8b7ebafba574d7e53fd8",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DynamicDictionary.cs"
+    }
+  },
+  {
+    "name": "DynamicDictionaryValue.cs",
+    "path": "src/Nancy/DynamicDictionaryValue.cs",
+    "sha": "e934aa2190ec810246dd04ad400d8dc9433d6d01",
+    "size": 40980,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DynamicDictionaryValue.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DynamicDictionaryValue.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e934aa2190ec810246dd04ad400d8dc9433d6d01",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/DynamicDictionaryValue.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/DynamicDictionaryValue.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e934aa2190ec810246dd04ad400d8dc9433d6d01",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/DynamicDictionaryValue.cs"
+    }
+  },
+  {
+    "name": "ErrorHandling",
+    "path": "src/Nancy/ErrorHandling",
+    "sha": "f96c6bd43525488acef62946c2311305f0bf956b",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ErrorHandling?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ErrorHandling",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/f96c6bd43525488acef62946c2311305f0bf956b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ErrorHandling?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/f96c6bd43525488acef62946c2311305f0bf956b",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ErrorHandling"
+    }
+  },
+  {
+    "name": "ErrorPipeline.cs",
+    "path": "src/Nancy/ErrorPipeline.cs",
+    "sha": "3962d29301738a21623e1ffbf47cc97559ad028d",
+    "size": 4563,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ErrorPipeline.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ErrorPipeline.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3962d29301738a21623e1ffbf47cc97559ad028d",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ErrorPipeline.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ErrorPipeline.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3962d29301738a21623e1ffbf47cc97559ad028d",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ErrorPipeline.cs"
+    }
+  },
+  {
+    "name": "Extensions",
+    "path": "src/Nancy/Extensions",
+    "sha": "02e143a186f9f8c9b114040caa786694b251fb6d",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Extensions?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Extensions",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/02e143a186f9f8c9b114040caa786694b251fb6d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Extensions?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/02e143a186f9f8c9b114040caa786694b251fb6d",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Extensions"
+    }
+  },
+  {
+    "name": "FormatterExtensions.cs",
+    "path": "src/Nancy/FormatterExtensions.cs",
+    "sha": "3e72fc1dbd9ac8563a30e2a46fd74f624f7d5554",
+    "size": 8134,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/FormatterExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/FormatterExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3e72fc1dbd9ac8563a30e2a46fd74f624f7d5554",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/FormatterExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/FormatterExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3e72fc1dbd9ac8563a30e2a46fd74f624f7d5554",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/FormatterExtensions.cs"
+    }
+  },
+  {
+    "name": "GlobalizationConfiguration.cs",
+    "path": "src/Nancy/GlobalizationConfiguration.cs",
+    "sha": "cea59bef945b4c43e488ec71d09ed0a0577d4ba9",
+    "size": 3177,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/GlobalizationConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/GlobalizationConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/cea59bef945b4c43e488ec71d09ed0a0577d4ba9",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/GlobalizationConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/GlobalizationConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/cea59bef945b4c43e488ec71d09ed0a0577d4ba9",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/GlobalizationConfiguration.cs"
+    }
+  },
+  {
+    "name": "GlobalizationConfigurationExtensions.cs",
+    "path": "src/Nancy/GlobalizationConfigurationExtensions.cs",
+    "sha": "963241b400a2a2afe1d054ce9cd8607f683c0689",
+    "size": 1447,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/GlobalizationConfigurationExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/GlobalizationConfigurationExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/963241b400a2a2afe1d054ce9cd8607f683c0689",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/GlobalizationConfigurationExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/GlobalizationConfigurationExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/963241b400a2a2afe1d054ce9cd8607f683c0689",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/GlobalizationConfigurationExtensions.cs"
+    }
+  },
+  {
+    "name": "HeadResponse.cs",
+    "path": "src/Nancy/HeadResponse.cs",
+    "sha": "3c74cc5522bd734fbdadae8ea42d81825ed1cb39",
+    "size": 4420,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HeadResponse.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HeadResponse.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3c74cc5522bd734fbdadae8ea42d81825ed1cb39",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HeadResponse.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HeadResponse.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3c74cc5522bd734fbdadae8ea42d81825ed1cb39",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HeadResponse.cs"
+    }
+  },
+  {
+    "name": "Helpers",
+    "path": "src/Nancy/Helpers",
+    "sha": "dfb75743841c910900993e161eceed4452b83205",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Helpers?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Helpers",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/dfb75743841c910900993e161eceed4452b83205",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Helpers?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/dfb75743841c910900993e161eceed4452b83205",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Helpers"
+    }
+  },
+  {
+    "name": "HttpFile.cs",
+    "path": "src/Nancy/HttpFile.cs",
+    "sha": "0435d8293a11f38f0d8aac1935994615a84c668c",
+    "size": 2480,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpFile.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpFile.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0435d8293a11f38f0d8aac1935994615a84c668c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpFile.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpFile.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0435d8293a11f38f0d8aac1935994615a84c668c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpFile.cs"
+    }
+  },
+  {
+    "name": "HttpLink.cs",
+    "path": "src/Nancy/HttpLink.cs",
+    "sha": "1b0cbeccddb346d931275af25eab9f2ca9d9168b",
+    "size": 12277,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLink.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLink.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1b0cbeccddb346d931275af25eab9f2ca9d9168b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpLink.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLink.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1b0cbeccddb346d931275af25eab9f2ca9d9168b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLink.cs"
+    }
+  },
+  {
+    "name": "HttpLinkBuilder.cs",
+    "path": "src/Nancy/HttpLinkBuilder.cs",
+    "sha": "aa8967f78c8e9fae4a1b6b2d8def870e0519e02b",
+    "size": 1873,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLinkBuilder.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLinkBuilder.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aa8967f78c8e9fae4a1b6b2d8def870e0519e02b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpLinkBuilder.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLinkBuilder.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aa8967f78c8e9fae4a1b6b2d8def870e0519e02b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLinkBuilder.cs"
+    }
+  },
+  {
+    "name": "HttpLinkRelation.cs",
+    "path": "src/Nancy/HttpLinkRelation.cs",
+    "sha": "875c0519203ca9a5930d31314c8f454290ed485f",
+    "size": 6556,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLinkRelation.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLinkRelation.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/875c0519203ca9a5930d31314c8f454290ed485f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpLinkRelation.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpLinkRelation.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/875c0519203ca9a5930d31314c8f454290ed485f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpLinkRelation.cs"
+    }
+  },
+  {
+    "name": "HttpMultipart.cs",
+    "path": "src/Nancy/HttpMultipart.cs",
+    "sha": "27b33196fd8dbdb238332b5e7a75e88761cd789a",
+    "size": 4737,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipart.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipart.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/27b33196fd8dbdb238332b5e7a75e88761cd789a",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpMultipart.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipart.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/27b33196fd8dbdb238332b5e7a75e88761cd789a",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipart.cs"
+    }
+  },
+  {
+    "name": "HttpMultipartBoundary.cs",
+    "path": "src/Nancy/HttpMultipartBoundary.cs",
+    "sha": "799adc026b0121c4a0ba7ba86d5df174b3409fc8",
+    "size": 4045,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartBoundary.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartBoundary.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/799adc026b0121c4a0ba7ba86d5df174b3409fc8",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpMultipartBoundary.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartBoundary.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/799adc026b0121c4a0ba7ba86d5df174b3409fc8",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartBoundary.cs"
+    }
+  },
+  {
+    "name": "HttpMultipartBuffer.cs",
+    "path": "src/Nancy/HttpMultipartBuffer.cs",
+    "sha": "538d6484beb6e1f8ff4d2fa5fde6a33c34fafa7f",
+    "size": 3596,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartBuffer.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartBuffer.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/538d6484beb6e1f8ff4d2fa5fde6a33c34fafa7f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpMultipartBuffer.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartBuffer.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/538d6484beb6e1f8ff4d2fa5fde6a33c34fafa7f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartBuffer.cs"
+    }
+  },
+  {
+    "name": "HttpMultipartSubStream.cs",
+    "path": "src/Nancy/HttpMultipartSubStream.cs",
+    "sha": "23a5911df923a53de715b76bb042b728c9eb799b",
+    "size": 10194,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartSubStream.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartSubStream.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23a5911df923a53de715b76bb042b728c9eb799b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpMultipartSubStream.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpMultipartSubStream.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23a5911df923a53de715b76bb042b728c9eb799b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpMultipartSubStream.cs"
+    }
+  },
+  {
+    "name": "HttpStatusCode.cs",
+    "path": "src/Nancy/HttpStatusCode.cs",
+    "sha": "3bf921afdfabea7e643977d2e6db9b4d6de1a2a0",
+    "size": 7238,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpStatusCode.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpStatusCode.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3bf921afdfabea7e643977d2e6db9b4d6de1a2a0",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/HttpStatusCode.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/HttpStatusCode.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3bf921afdfabea7e643977d2e6db9b4d6de1a2a0",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/HttpStatusCode.cs"
+    }
+  },
+  {
+    "name": "IAssemblyCatalog.cs",
+    "path": "src/Nancy/IAssemblyCatalog.cs",
+    "sha": "dfb6f06658164a17ee29b83417459e64dcf3835f",
+    "size": 528,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IAssemblyCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IAssemblyCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/dfb6f06658164a17ee29b83417459e64dcf3835f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IAssemblyCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IAssemblyCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/dfb6f06658164a17ee29b83417459e64dcf3835f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IAssemblyCatalog.cs"
+    }
+  },
+  {
+    "name": "IHideObjectMembers.cs",
+    "path": "src/Nancy/IHideObjectMembers.cs",
+    "sha": "632ab2defd283276138bc31528e2bac2918e25af",
+    "size": 1130,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IHideObjectMembers.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IHideObjectMembers.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/632ab2defd283276138bc31528e2bac2918e25af",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IHideObjectMembers.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IHideObjectMembers.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/632ab2defd283276138bc31528e2bac2918e25af",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IHideObjectMembers.cs"
+    }
+  },
+  {
+    "name": "INancyContextFactory.cs",
+    "path": "src/Nancy/INancyContextFactory.cs",
+    "sha": "c28c215489584b0c113a12441176b1df668b2283",
+    "size": 344,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyContextFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyContextFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c28c215489584b0c113a12441176b1df668b2283",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/INancyContextFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyContextFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c28c215489584b0c113a12441176b1df668b2283",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyContextFactory.cs"
+    }
+  },
+  {
+    "name": "INancyEngine.cs",
+    "path": "src/Nancy/INancyEngine.cs",
+    "sha": "1705acc64d1d82e2b1f52690d848af6231d15ae2",
+    "size": 1344,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyEngine.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyEngine.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1705acc64d1d82e2b1f52690d848af6231d15ae2",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/INancyEngine.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyEngine.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1705acc64d1d82e2b1f52690d848af6231d15ae2",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyEngine.cs"
+    }
+  },
+  {
+    "name": "INancyModule.cs",
+    "path": "src/Nancy/INancyModule.cs",
+    "sha": "c5c805331ae16122a27a4a98fc1cf6d4ca407a40",
+    "size": 4833,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyModule.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyModule.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c5c805331ae16122a27a4a98fc1cf6d4ca407a40",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/INancyModule.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyModule.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c5c805331ae16122a27a4a98fc1cf6d4ca407a40",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyModule.cs"
+    }
+  },
+  {
+    "name": "INancyModuleCatalog.cs",
+    "path": "src/Nancy/INancyModuleCatalog.cs",
+    "sha": "0c25ef193f114901f553a8d12c7f9cc332f49b94",
+    "size": 1052,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyModuleCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyModuleCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0c25ef193f114901f553a8d12c7f9cc332f49b94",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/INancyModuleCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/INancyModuleCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/0c25ef193f114901f553a8d12c7f9cc332f49b94",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/INancyModuleCatalog.cs"
+    }
+  },
+  {
+    "name": "IO",
+    "path": "src/Nancy/IO",
+    "sha": "17a02d77cacc21c68bfe298cc1481288f3232b1f",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IO?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/IO",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/17a02d77cacc21c68bfe298cc1481288f3232b1f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IO?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/17a02d77cacc21c68bfe298cc1481288f3232b1f",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/IO"
+    }
+  },
+  {
+    "name": "IObjectSerializer.cs",
+    "path": "src/Nancy/IObjectSerializer.cs",
+    "sha": "23ecde16b2c08e34a230e61b6677f5804715e520",
+    "size": 668,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IObjectSerializer.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IObjectSerializer.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23ecde16b2c08e34a230e61b6677f5804715e520",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IObjectSerializer.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IObjectSerializer.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/23ecde16b2c08e34a230e61b6677f5804715e520",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IObjectSerializer.cs"
+    }
+  },
+  {
+    "name": "IObjectSerializerSelector.cs",
+    "path": "src/Nancy/IObjectSerializerSelector.cs",
+    "sha": "3626be9a40696ad1a50a2bee0e348e6a0a7cdfe8",
+    "size": 436,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IObjectSerializerSelector.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IObjectSerializerSelector.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3626be9a40696ad1a50a2bee0e348e6a0a7cdfe8",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IObjectSerializerSelector.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IObjectSerializerSelector.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3626be9a40696ad1a50a2bee0e348e6a0a7cdfe8",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IObjectSerializerSelector.cs"
+    }
+  },
+  {
+    "name": "IResourceAssemblyProvider.cs",
+    "path": "src/Nancy/IResourceAssemblyProvider.cs",
+    "sha": "fe2af421aacc29f921455f2efc5bcd27419a7e8c",
+    "size": 558,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResourceAssemblyProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResourceAssemblyProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/fe2af421aacc29f921455f2efc5bcd27419a7e8c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IResourceAssemblyProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResourceAssemblyProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/fe2af421aacc29f921455f2efc5bcd27419a7e8c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResourceAssemblyProvider.cs"
+    }
+  },
+  {
+    "name": "IResponseFormatter.cs",
+    "path": "src/Nancy/IResponseFormatter.cs",
+    "sha": "959864244880d388a6bce823696478eec1434bea",
+    "size": 1339,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResponseFormatter.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResponseFormatter.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/959864244880d388a6bce823696478eec1434bea",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IResponseFormatter.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResponseFormatter.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/959864244880d388a6bce823696478eec1434bea",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResponseFormatter.cs"
+    }
+  },
+  {
+    "name": "IResponseFormatterFactory.cs",
+    "path": "src/Nancy/IResponseFormatterFactory.cs",
+    "sha": "060ed365a13249f79cbd3136f4c5c1e1ff410e08",
+    "size": 590,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResponseFormatterFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResponseFormatterFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/060ed365a13249f79cbd3136f4c5c1e1ff410e08",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IResponseFormatterFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IResponseFormatterFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/060ed365a13249f79cbd3136f4c5c1e1ff410e08",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IResponseFormatterFactory.cs"
+    }
+  },
+  {
+    "name": "IRootPathProvider.cs",
+    "path": "src/Nancy/IRootPathProvider.cs",
+    "sha": "3593d8b352fc80801f63e67a3404ce9d1df9210d",
+    "size": 489,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IRootPathProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IRootPathProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3593d8b352fc80801f63e67a3404ce9d1df9210d",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IRootPathProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IRootPathProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3593d8b352fc80801f63e67a3404ce9d1df9210d",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IRootPathProvider.cs"
+    }
+  },
+  {
+    "name": "IRuntimeEnvironmentInformation.cs",
+    "path": "src/Nancy/IRuntimeEnvironmentInformation.cs",
+    "sha": "cacc81354ade502438cc734532d4d2cf88184473",
+    "size": 520,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IRuntimeEnvironmentInformation.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IRuntimeEnvironmentInformation.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/cacc81354ade502438cc734532d4d2cf88184473",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IRuntimeEnvironmentInformation.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IRuntimeEnvironmentInformation.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/cacc81354ade502438cc734532d4d2cf88184473",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IRuntimeEnvironmentInformation.cs"
+    }
+  },
+  {
+    "name": "ISerializer.cs",
+    "path": "src/Nancy/ISerializer.cs",
+    "sha": "aa35d86710505e1d45262d9e74b76c76646d104a",
+    "size": 1359,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ISerializer.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ISerializer.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aa35d86710505e1d45262d9e74b76c76646d104a",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ISerializer.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ISerializer.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/aa35d86710505e1d45262d9e74b76c76646d104a",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ISerializer.cs"
+    }
+  },
+  {
+    "name": "ISerializerFactory.cs",
+    "path": "src/Nancy/ISerializerFactory.cs",
+    "sha": "94b4e3b698fca1fd83995223cc2d0eb16a78e7ca",
+    "size": 687,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ISerializerFactory.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ISerializerFactory.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/94b4e3b698fca1fd83995223cc2d0eb16a78e7ca",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ISerializerFactory.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ISerializerFactory.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/94b4e3b698fca1fd83995223cc2d0eb16a78e7ca",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ISerializerFactory.cs"
+    }
+  },
+  {
+    "name": "IStaticContentProvider.cs",
+    "path": "src/Nancy/IStaticContentProvider.cs",
+    "sha": "c66af28607cedc3cc9bc45028848e4e7a18b7264",
+    "size": 458,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IStaticContentProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IStaticContentProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c66af28607cedc3cc9bc45028848e4e7a18b7264",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IStaticContentProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IStaticContentProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/c66af28607cedc3cc9bc45028848e4e7a18b7264",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IStaticContentProvider.cs"
+    }
+  },
+  {
+    "name": "IStatusCodeHandler.cs",
+    "path": "src/Nancy/IStatusCodeHandler.cs",
+    "sha": "f0e31acac8392467a5dccb9baeef0aebc431514b",
+    "size": 922,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IStatusCodeHandler.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IStatusCodeHandler.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f0e31acac8392467a5dccb9baeef0aebc431514b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IStatusCodeHandler.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IStatusCodeHandler.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f0e31acac8392467a5dccb9baeef0aebc431514b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IStatusCodeHandler.cs"
+    }
+  },
+  {
+    "name": "ITypeCatalog.cs",
+    "path": "src/Nancy/ITypeCatalog.cs",
+    "sha": "bf4384e46b014cb37c9518e49a67aa3f04fe5d27",
+    "size": 798,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ITypeCatalog.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ITypeCatalog.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/bf4384e46b014cb37c9518e49a67aa3f04fe5d27",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ITypeCatalog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ITypeCatalog.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/bf4384e46b014cb37c9518e49a67aa3f04fe5d27",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ITypeCatalog.cs"
+    }
+  },
+  {
+    "name": "IncludeInNancyAssemblyScanningAttribute.cs",
+    "path": "src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs",
+    "sha": "28f5534fcc3ddbaf8bbb782d6b656932e2e731ef",
+    "size": 518,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/28f5534fcc3ddbaf8bbb782d6b656932e2e731ef",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/28f5534fcc3ddbaf8bbb782d6b656932e2e731ef",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/IncludeInNancyAssemblyScanningAttribute.cs"
+    }
+  },
+  {
+    "name": "Json",
+    "path": "src/Nancy/Json",
+    "sha": "5da17ae53f7291f4f9e2b88f0380e3284cbb1bf7",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Json?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Json",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/5da17ae53f7291f4f9e2b88f0380e3284cbb1bf7",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Json?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/5da17ae53f7291f4f9e2b88f0380e3284cbb1bf7",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Json"
+    }
+  },
+  {
+    "name": "Jsonp.cs",
+    "path": "src/Nancy/Jsonp.cs",
+    "sha": "f20311ed9bd41337bc92784c5c8207b95dbd195e",
+    "size": 3147,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Jsonp.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Jsonp.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f20311ed9bd41337bc92784c5c8207b95dbd195e",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Jsonp.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Jsonp.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f20311ed9bd41337bc92784c5c8207b95dbd195e",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Jsonp.cs"
+    }
+  },
+  {
+    "name": "JsonpApplicationStartup.cs",
+    "path": "src/Nancy/JsonpApplicationStartup.cs",
+    "sha": "7586568042d1b9fd546ba8973188cdc70452eae7",
+    "size": 1058,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/JsonpApplicationStartup.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/JsonpApplicationStartup.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/7586568042d1b9fd546ba8973188cdc70452eae7",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/JsonpApplicationStartup.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/JsonpApplicationStartup.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/7586568042d1b9fd546ba8973188cdc70452eae7",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/JsonpApplicationStartup.cs"
+    }
+  },
+  {
+    "name": "Localization",
+    "path": "src/Nancy/Localization",
+    "sha": "8011f6070af522fe87297c42aaa4194283bd901b",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Localization?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Localization",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/8011f6070af522fe87297c42aaa4194283bd901b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Localization?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/8011f6070af522fe87297c42aaa4194283bd901b",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Localization"
+    }
+  },
+  {
+    "name": "MimeTypes.cs",
+    "path": "src/Nancy/MimeTypes.cs",
+    "sha": "9e97523e245cb74cec60cfc204cfd942cb4a5ac7",
+    "size": 34432,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/MimeTypes.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/MimeTypes.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9e97523e245cb74cec60cfc204cfd942cb4a5ac7",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/MimeTypes.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/MimeTypes.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9e97523e245cb74cec60cfc204cfd942cb4a5ac7",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/MimeTypes.cs"
+    }
+  },
+  {
+    "name": "ModelBinding",
+    "path": "src/Nancy/ModelBinding",
+    "sha": "7f9571d24c3903038b0c36964fffc578b7b7207e",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ModelBinding?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ModelBinding",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/7f9571d24c3903038b0c36964fffc578b7b7207e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ModelBinding?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/7f9571d24c3903038b0c36964fffc578b7b7207e",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ModelBinding"
+    }
+  },
+  {
+    "name": "NamedPipelineBase.cs",
+    "path": "src/Nancy/NamedPipelineBase.cs",
+    "sha": "4a816478d4743e71c0778c15192113344deed2aa",
+    "size": 8352,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NamedPipelineBase.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NamedPipelineBase.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/4a816478d4743e71c0778c15192113344deed2aa",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NamedPipelineBase.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NamedPipelineBase.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/4a816478d4743e71c0778c15192113344deed2aa",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NamedPipelineBase.cs"
+    }
+  },
+  {
+    "name": "Nancy.csproj",
+    "path": "src/Nancy/Nancy.csproj",
+    "sha": "b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+    "size": 1345,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Nancy.csproj",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj"
+    }
+  },
+  {
+    "name": "NancyContext.cs",
+    "path": "src/Nancy/NancyContext.cs",
+    "sha": "3848a935956738efa11a2804fdf4563233555040",
+    "size": 4540,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyContext.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyContext.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3848a935956738efa11a2804fdf4563233555040",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NancyContext.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyContext.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/3848a935956738efa11a2804fdf4563233555040",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyContext.cs"
+    }
+  },
+  {
+    "name": "NancyEngine.cs",
+    "path": "src/Nancy/NancyEngine.cs",
+    "sha": "895267e71361e2951c9a659b1aabf7cf0217af51",
+    "size": 12407,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyEngine.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyEngine.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/895267e71361e2951c9a659b1aabf7cf0217af51",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NancyEngine.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyEngine.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/895267e71361e2951c9a659b1aabf7cf0217af51",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyEngine.cs"
+    }
+  },
+  {
+    "name": "NancyEngineExtensions.cs",
+    "path": "src/Nancy/NancyEngineExtensions.cs",
+    "sha": "46558bc3b910553023a97d92128e8e01eb231e81",
+    "size": 884,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyEngineExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyEngineExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/46558bc3b910553023a97d92128e8e01eb231e81",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NancyEngineExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyEngineExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/46558bc3b910553023a97d92128e8e01eb231e81",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyEngineExtensions.cs"
+    }
+  },
+  {
+    "name": "NancyModule.cs",
+    "path": "src/Nancy/NancyModule.cs",
+    "sha": "7f913f082bcf0ea7f8291d2b1a6944cd1f4ef28d",
+    "size": 39572,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyModule.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyModule.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/7f913f082bcf0ea7f8291d2b1a6944cd1f4ef28d",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NancyModule.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NancyModule.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/7f913f082bcf0ea7f8291d2b1a6944cd1f4ef28d",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NancyModule.cs"
+    }
+  },
+  {
+    "name": "NegotiatorExtensions.cs",
+    "path": "src/Nancy/NegotiatorExtensions.cs",
+    "sha": "d22c6cbb5dff7e092282da391c739618a5c7d04b",
+    "size": 12273,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NegotiatorExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NegotiatorExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d22c6cbb5dff7e092282da391c739618a5c7d04b",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NegotiatorExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NegotiatorExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/d22c6cbb5dff7e092282da391c739618a5c7d04b",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NegotiatorExtensions.cs"
+    }
+  },
+  {
+    "name": "NotFoundResponse.cs",
+    "path": "src/Nancy/NotFoundResponse.cs",
+    "sha": "35f99d00be3fec9b3305da5fbd869d7bb31c4f0e",
+    "size": 484,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NotFoundResponse.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NotFoundResponse.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/35f99d00be3fec9b3305da5fbd869d7bb31c4f0e",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/NotFoundResponse.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/NotFoundResponse.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/35f99d00be3fec9b3305da5fbd869d7bb31c4f0e",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/NotFoundResponse.cs"
+    }
+  },
+  {
+    "name": "Owin",
+    "path": "src/Nancy/Owin",
+    "sha": "74d8239207a894d19d4d632e03e71a562fcabe59",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Owin?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Owin",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/74d8239207a894d19d4d632e03e71a562fcabe59",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Owin?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/74d8239207a894d19d4d632e03e71a562fcabe59",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Owin"
+    }
+  },
+  {
+    "name": "PipelineItem.cs",
+    "path": "src/Nancy/PipelineItem.cs",
+    "sha": "e3007d3cb9f1f106216f3998ad0ba3d1e4bbecd2",
+    "size": 2145,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/PipelineItem.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/PipelineItem.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e3007d3cb9f1f106216f3998ad0ba3d1e4bbecd2",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/PipelineItem.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/PipelineItem.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e3007d3cb9f1f106216f3998ad0ba3d1e4bbecd2",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/PipelineItem.cs"
+    }
+  },
+  {
+    "name": "Properties",
+    "path": "src/Nancy/Properties",
+    "sha": "cee05bb3b8c291654d44973b270d9e957a550f8a",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Properties?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Properties",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/cee05bb3b8c291654d44973b270d9e957a550f8a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Properties?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/cee05bb3b8c291654d44973b270d9e957a550f8a",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Properties"
+    }
+  },
+  {
+    "name": "Request.cs",
+    "path": "src/Nancy/Request.cs",
+    "sha": "a467d22bf17617a9839404b9400305d580cd94b7",
+    "size": 12156,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Request.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Request.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/a467d22bf17617a9839404b9400305d580cd94b7",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Request.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Request.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/a467d22bf17617a9839404b9400305d580cd94b7",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Request.cs"
+    }
+  },
+  {
+    "name": "RequestExecutionException.cs",
+    "path": "src/Nancy/RequestExecutionException.cs",
+    "sha": "2ab50fff8446cc000a95bdc43eaa831acf4dc430",
+    "size": 670,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RequestExecutionException.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RequestExecutionException.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/2ab50fff8446cc000a95bdc43eaa831acf4dc430",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/RequestExecutionException.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RequestExecutionException.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/2ab50fff8446cc000a95bdc43eaa831acf4dc430",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RequestExecutionException.cs"
+    }
+  },
+  {
+    "name": "RequestHeaders.cs",
+    "path": "src/Nancy/RequestHeaders.cs",
+    "sha": "53ce7712118781bb02ad06d5f8a0fbafebe984c1",
+    "size": 20865,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RequestHeaders.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RequestHeaders.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/53ce7712118781bb02ad06d5f8a0fbafebe984c1",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/RequestHeaders.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RequestHeaders.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/53ce7712118781bb02ad06d5f8a0fbafebe984c1",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RequestHeaders.cs"
+    }
+  },
+  {
+    "name": "ResourceAssemblyProvider.cs",
+    "path": "src/Nancy/ResourceAssemblyProvider.cs",
+    "sha": "ddd7d874bb78927dd416be490a4cde23dde5e636",
+    "size": 1720,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ResourceAssemblyProvider.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ResourceAssemblyProvider.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ddd7d874bb78927dd416be490a4cde23dde5e636",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ResourceAssemblyProvider.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ResourceAssemblyProvider.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ddd7d874bb78927dd416be490a4cde23dde5e636",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ResourceAssemblyProvider.cs"
+    }
+  },
+  {
+    "name": "Response.cs",
+    "path": "src/Nancy/Response.cs",
+    "sha": "6d6fe28e9927332d69f9349f318d139bd5aedfd1",
+    "size": 7812,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Response.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Response.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/6d6fe28e9927332d69f9349f318d139bd5aedfd1",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Response.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Response.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/6d6fe28e9927332d69f9349f318d139bd5aedfd1",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Response.cs"
+    }
+  },
+  {
+    "name": "ResponseExtensions.cs",
+    "path": "src/Nancy/ResponseExtensions.cs",
+    "sha": "ec0ed4eca6d278bc3994ef5fbc345945eacc5e00",
+    "size": 8758,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ResponseExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ResponseExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ec0ed4eca6d278bc3994ef5fbc345945eacc5e00",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ResponseExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ResponseExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/ec0ed4eca6d278bc3994ef5fbc345945eacc5e00",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ResponseExtensions.cs"
+    }
+  },
+  {
+    "name": "Responses",
+    "path": "src/Nancy/Responses",
+    "sha": "63ad14d4580451547b401dca89a7fe588bc2c7f9",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Responses?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Responses",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/63ad14d4580451547b401dca89a7fe588bc2c7f9",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Responses?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/63ad14d4580451547b401dca89a7fe588bc2c7f9",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Responses"
+    }
+  },
+  {
+    "name": "RouteConfiguration.cs",
+    "path": "src/Nancy/RouteConfiguration.cs",
+    "sha": "08684a262cedd9204aa3c9e4152229413760db01",
+    "size": 1758,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RouteConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RouteConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/08684a262cedd9204aa3c9e4152229413760db01",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/RouteConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RouteConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/08684a262cedd9204aa3c9e4152229413760db01",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RouteConfiguration.cs"
+    }
+  },
+  {
+    "name": "RouteConfigurationExtensions.cs",
+    "path": "src/Nancy/RouteConfigurationExtensions.cs",
+    "sha": "9c89b6c3e5071ecfa2821f93efca192e19b5fd3c",
+    "size": 1292,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RouteConfigurationExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RouteConfigurationExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9c89b6c3e5071ecfa2821f93efca192e19b5fd3c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/RouteConfigurationExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/RouteConfigurationExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9c89b6c3e5071ecfa2821f93efca192e19b5fd3c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/RouteConfigurationExtensions.cs"
+    }
+  },
+  {
+    "name": "Routing",
+    "path": "src/Nancy/Routing",
+    "sha": "8179b6a73bf0e0d168d5bba9c978d132f966a0e7",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Routing?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Routing",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/8179b6a73bf0e0d168d5bba9c978d132f966a0e7",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Routing?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/8179b6a73bf0e0d168d5bba9c978d132f966a0e7",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Routing"
+    }
+  },
+  {
+    "name": "Security",
+    "path": "src/Nancy/Security",
+    "sha": "dafc1655427aef1e833bcef21841a808762239c2",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Security?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Security",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/dafc1655427aef1e833bcef21841a808762239c2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Security?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/dafc1655427aef1e833bcef21841a808762239c2",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Security"
+    }
+  },
+  {
+    "name": "Session",
+    "path": "src/Nancy/Session",
+    "sha": "da871d48bcda5e069651c61e21314742e9542b79",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Session?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Session",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/da871d48bcda5e069651c61e21314742e9542b79",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Session?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/da871d48bcda5e069651c61e21314742e9542b79",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Session"
+    }
+  },
+  {
+    "name": "StaticConfiguration.cs",
+    "path": "src/Nancy/StaticConfiguration.cs",
+    "sha": "72b1c8cfc0b15c77c27b1ede3f38a403f3b22f4c",
+    "size": 1886,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/72b1c8cfc0b15c77c27b1ede3f38a403f3b22f4c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/StaticConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/72b1c8cfc0b15c77c27b1ede3f38a403f3b22f4c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticConfiguration.cs"
+    }
+  },
+  {
+    "name": "StaticContent.cs",
+    "path": "src/Nancy/StaticContent.cs",
+    "sha": "050fa79aca307596154c423314ef19661b278a35",
+    "size": 2060,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContent.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContent.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/050fa79aca307596154c423314ef19661b278a35",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/StaticContent.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContent.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/050fa79aca307596154c423314ef19661b278a35",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContent.cs"
+    }
+  },
+  {
+    "name": "StaticContentConfiguration.cs",
+    "path": "src/Nancy/StaticContentConfiguration.cs",
+    "sha": "95cc3088c07ab3fa969a5a41f4be635d6c28c04c",
+    "size": 805,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContentConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContentConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/95cc3088c07ab3fa969a5a41f4be635d6c28c04c",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/StaticContentConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContentConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/95cc3088c07ab3fa969a5a41f4be635d6c28c04c",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContentConfiguration.cs"
+    }
+  },
+  {
+    "name": "StaticContentConfigurationExtensions.cs",
+    "path": "src/Nancy/StaticContentConfigurationExtensions.cs",
+    "sha": "f148ec9f5aa0474ded2474998d29cff187e73a4f",
+    "size": 887,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContentConfigurationExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContentConfigurationExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f148ec9f5aa0474ded2474998d29cff187e73a4f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/StaticContentConfigurationExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/StaticContentConfigurationExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f148ec9f5aa0474ded2474998d29cff187e73a4f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/StaticContentConfigurationExtensions.cs"
+    }
+  },
+  {
+    "name": "TinyIoc",
+    "path": "src/Nancy/TinyIoc",
+    "sha": "74af32ae3fec309e08906982a2d17e179c7517e4",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TinyIoc?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/TinyIoc",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/74af32ae3fec309e08906982a2d17e179c7517e4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TinyIoc?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/74af32ae3fec309e08906982a2d17e179c7517e4",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/TinyIoc"
+    }
+  },
+  {
+    "name": "TraceConfiguration.cs",
+    "path": "src/Nancy/TraceConfiguration.cs",
+    "sha": "391dc7ed3a11031399dc2e0af42c9b07a20ecc4f",
+    "size": 1300,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TraceConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TraceConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/391dc7ed3a11031399dc2e0af42c9b07a20ecc4f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/TraceConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TraceConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/391dc7ed3a11031399dc2e0af42c9b07a20ecc4f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TraceConfiguration.cs"
+    }
+  },
+  {
+    "name": "TraceConfigurationExtensions.cs",
+    "path": "src/Nancy/TraceConfigurationExtensions.cs",
+    "sha": "de0c8b766a873cd37b122c390f8c3d2bf218a821",
+    "size": 1065,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TraceConfigurationExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TraceConfigurationExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/de0c8b766a873cd37b122c390f8c3d2bf218a821",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/TraceConfigurationExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TraceConfigurationExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/de0c8b766a873cd37b122c390f8c3d2bf218a821",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TraceConfigurationExtensions.cs"
+    }
+  },
+  {
+    "name": "TypeCatalogExtensions.cs",
+    "path": "src/Nancy/TypeCatalogExtensions.cs",
+    "sha": "e76e56a600d996785f1290739f25e491b796dbdc",
+    "size": 2664,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeCatalogExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeCatalogExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e76e56a600d996785f1290739f25e491b796dbdc",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/TypeCatalogExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeCatalogExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/e76e56a600d996785f1290739f25e491b796dbdc",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeCatalogExtensions.cs"
+    }
+  },
+  {
+    "name": "TypeResolveStrategies.cs",
+    "path": "src/Nancy/TypeResolveStrategies.cs",
+    "sha": "75cb002bd2fdfb6a06ddc1f104c054c04744e951",
+    "size": 1666,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeResolveStrategies.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeResolveStrategies.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/75cb002bd2fdfb6a06ddc1f104c054c04744e951",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/TypeResolveStrategies.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeResolveStrategies.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/75cb002bd2fdfb6a06ddc1f104c054c04744e951",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeResolveStrategies.cs"
+    }
+  },
+  {
+    "name": "TypeResolveStrategy.cs",
+    "path": "src/Nancy/TypeResolveStrategy.cs",
+    "sha": "f312bd9d3f156a89bc4af787ef67552d8fd329c0",
+    "size": 455,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeResolveStrategy.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeResolveStrategy.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f312bd9d3f156a89bc4af787ef67552d8fd329c0",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/TypeResolveStrategy.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/TypeResolveStrategy.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/f312bd9d3f156a89bc4af787ef67552d8fd329c0",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/TypeResolveStrategy.cs"
+    }
+  },
+  {
+    "name": "Url.cs",
+    "path": "src/Nancy/Url.cs",
+    "sha": "9f2512a7bbdd41ba6c96fe1290b346870c3eeff5",
+    "size": 7691,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Url.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Url.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9f2512a7bbdd41ba6c96fe1290b346870c3eeff5",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Url.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Url.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/9f2512a7bbdd41ba6c96fe1290b346870c3eeff5",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Url.cs"
+    }
+  },
+  {
+    "name": "Validation",
+    "path": "src/Nancy/Validation",
+    "sha": "fff3e43c945f156bd93653a9b00c2f1233c7cf55",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Validation?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Validation",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/fff3e43c945f156bd93653a9b00c2f1233c7cf55",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Validation?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/fff3e43c945f156bd93653a9b00c2f1233c7cf55",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Validation"
+    }
+  },
+  {
+    "name": "ViewConfiguration.cs",
+    "path": "src/Nancy/ViewConfiguration.cs",
+    "sha": "24fbeae788e20c2a309b198388047890432929e8",
+    "size": 1762,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewConfiguration.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewConfiguration.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/24fbeae788e20c2a309b198388047890432929e8",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ViewConfiguration.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewConfiguration.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/24fbeae788e20c2a309b198388047890432929e8",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewConfiguration.cs"
+    }
+  },
+  {
+    "name": "ViewConfigurationExtensions.cs",
+    "path": "src/Nancy/ViewConfigurationExtensions.cs",
+    "sha": "8c02ed9c0a4ce8e3924caf244a6784985d4a9f1f",
+    "size": 1228,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewConfigurationExtensions.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewConfigurationExtensions.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8c02ed9c0a4ce8e3924caf244a6784985d4a9f1f",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ViewConfigurationExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewConfigurationExtensions.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/8c02ed9c0a4ce8e3924caf244a6784985d4a9f1f",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewConfigurationExtensions.cs"
+    }
+  },
+  {
+    "name": "ViewEngines",
+    "path": "src/Nancy/ViewEngines",
+    "sha": "06416d08838fbe0fa94dbfa83a841e166e0ea26b",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewEngines?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ViewEngines",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/06416d08838fbe0fa94dbfa83a841e166e0ea26b",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewEngines?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/06416d08838fbe0fa94dbfa83a841e166e0ea26b",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/ViewEngines"
+    }
+  },
+  {
+    "name": "ViewRenderer.cs",
+    "path": "src/Nancy/ViewRenderer.cs",
+    "sha": "1b52505a90cf6991950a8307ac154e741cb02071",
+    "size": 3276,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewRenderer.cs?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewRenderer.cs",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1b52505a90cf6991950a8307ac154e741cb02071",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/ViewRenderer.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/ViewRenderer.cs?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/1b52505a90cf6991950a8307ac154e741cb02071",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/ViewRenderer.cs"
+    }
+  },
+  {
+    "name": "Xml",
+    "path": "src/Nancy/Xml",
+    "sha": "ade06d73a393e6ea1176329b13ef9dd4ec6c46b1",
+    "size": 0,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Xml?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Xml",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/trees/ade06d73a393e6ea1176329b13ef9dd4ec6c46b1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Xml?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/trees/ade06d73a393e6ea1176329b13ef9dd4ec6c46b1",
+      "html": "https://github.com/NancyFx/Nancy/tree/master/src/Nancy/Xml"
+    }
+  },
+  {
+    "name": "favicon.ico",
+    "path": "src/Nancy/favicon.ico",
+    "sha": "68463efd56dd9f96e07b50ad4c98accde32731bf",
+    "size": 1150,
+    "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/favicon.ico?ref=master",
+    "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/favicon.ico",
+    "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/68463efd56dd9f96e07b50ad4c98accde32731bf",
+    "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/favicon.ico",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/favicon.ico?ref=master",
+      "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/68463efd56dd9f96e07b50ad4c98accde32731bf",
+      "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/favicon.ico"
+    }
+  }
+]
