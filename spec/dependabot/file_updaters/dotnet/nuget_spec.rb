@@ -26,23 +26,32 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
   let(:csproj_body) { fixture("dotnet", "csproj", "basic.csproj") }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "Microsoft.Extensions.DependencyModel",
-      version: "1.1.2",
-      previous_version: "1.1.1",
-      requirements: [{
-        file: "my.csproj",
-        requirement: "1.1.2",
-        groups: [],
-        source: nil
-      }],
-      previous_requirements: [{
-        file: "my.csproj",
-        requirement: "1.1.1",
-        groups: [],
-        source: nil
-      }],
+      name: dependency_name,
+      version: version,
+      previous_version: previous_version,
+      requirements: requirements,
+      previous_requirements: previous_requirements,
       package_manager: "nuget"
     )
+  end
+  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+  let(:version) { "1.1.2" }
+  let(:previous_version) { "1.1.1" }
+  let(:requirements) do
+    [{
+      file: "my.csproj",
+      requirement: "1.1.2",
+      groups: [],
+      source: nil
+    }]
+  end
+  let(:previous_requirements) do
+    [{
+      file: "my.csproj",
+      requirement: "1.1.1",
+      groups: [],
+      source: nil
+    }]
   end
 
   describe "#updated_dependency_files" do
@@ -64,6 +73,31 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
 
       it "doesn't update the formatting of the project file" do
         expect(updated_csproj_file.content).to include("</PropertyGroup>\n\n")
+      end
+
+      context "with a version range" do
+        let(:csproj_body) { fixture("dotnet", "csproj", "ranges.csproj") }
+        let(:dependency_name) { "Dep1" }
+        let(:version) { "2.1" }
+        let(:previous_version) { nil }
+        let(:requirements) do
+          [{
+            file: "my.csproj",
+            requirement: "[1.0,2.1]",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "my.csproj",
+            requirement: "[1.0,2.0]",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        its(:content) { is_expected.to include '"Dep1" Version="[1.0,2.1]" />' }
       end
     end
 
