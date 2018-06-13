@@ -1,3 +1,8 @@
+## v0.61.1, 13 June 2018
+
+- Handle Requests changelog version underline character
+- Ruby: Handle invalid Ruby in FileFetcher
+
 ## v0.61.0, 12 June 2018
 
 - BREAKING: Rename PrivateSourceNotReachable to
