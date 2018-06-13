@@ -26,7 +26,7 @@ module Dependabot
         def project_file_dependencies
           dependency_set = DependencySet.new
 
-          project_files.each do |proj_file|
+          (project_files + project_import_files).each do |proj_file|
             doc = Nokogiri::XML(proj_file.content)
             doc.remove_namespaces!
             doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
@@ -76,7 +76,13 @@ module Dependabot
         end
 
         def project_files
-          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
+          dependency_files.
+            select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }.
+            reject { |df| df.type == "project_import" }
+        end
+
+        def project_import_files
+          dependency_files.select { |df| df.type == "project_import" }
         end
 
         def check_required_files

@@ -144,5 +144,36 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         end
       end
     end
+
+    context "with an imported properties file" do
+      let(:files) { [csproj_file, imported_file] }
+      let(:imported_file) do
+        Dependabot::DependencyFile.new(
+          name: "commonprops.props",
+          content: fixture("dotnet", "csproj", "commonprops.props"),
+          type: "project_import"
+        )
+      end
+
+      its(:length) { is_expected.to eq(4) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Serilog")
+          expect(dependency.version).to eq("2.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.3.0",
+              file: "commonprops.props",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
   end
 end

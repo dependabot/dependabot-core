@@ -23,7 +23,6 @@ module Dependabot
           fetched_files << csproj_file if csproj_file
           fetched_files << vbproj_file if vbproj_file
           fetched_files << fsproj_file if fsproj_file
-
           fetched_files += imported_property_files(fetched_files)
 
           return fetched_files unless fetched_files.none?
@@ -55,7 +54,7 @@ module Dependabot
         end
 
         def imported_property_files(project_files)
-          previously_fetched_files = []
+          previously_fetched_files = project_files
           project_files.flat_map do |proj_file|
             fetch_imported_property_files(
               file: proj_file,
@@ -71,7 +70,7 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_host(path)
+            fetched_file = fetch_file_from_host(path, type: "project_import")
             grandchild_gemfiles = fetch_imported_property_files(
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]
