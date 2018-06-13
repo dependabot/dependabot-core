@@ -68,7 +68,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
     context "with version ranges" do
       let(:csproj_body) { fixture("dotnet", "csproj", "ranges.csproj") }
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       it "has the right details" do
         expect(dependencies.first.requirements.first.fetch(:requirement)).
@@ -82,6 +82,10 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         expect(dependencies[2].requirements.first.fetch(:requirement)).
           to eq("(,1.0)")
         expect(dependencies[2].version).to be_nil
+
+        expect(dependencies[3].requirements.first.fetch(:requirement)).
+          to eq("1.0.*")
+        expect(dependencies[3].version).to be_nil
       end
     end
 

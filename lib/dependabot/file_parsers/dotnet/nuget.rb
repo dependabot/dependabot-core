@@ -69,7 +69,10 @@ module Dependabot
           # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-
           #   resolution
           version = version.split(",").first.strip
-          return version unless version == ""
+
+          # We don't know the version for requirements like (,1.0) or for
+          # wildcard requirements, so return `nil` for these.
+          return version unless version == "" || version.include?("*")
         end
 
         def project_files
