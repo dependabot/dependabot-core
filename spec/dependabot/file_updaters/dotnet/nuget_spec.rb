@@ -55,15 +55,78 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
     its(:length) { is_expected.to eq(1) }
 
     describe "the updated csproj file" do
-      subject(:updated_pom_file) do
+      subject(:updated_csproj_file) do
         updated_files.find { |f| f.name == "my.csproj" }
       end
 
       its(:content) { is_expected.to include 'Version="1.1.2" />' }
       its(:content) { is_expected.to include 'Version="1.1.0">' }
 
-      it "doesn't update the formatting of the POM" do
-        expect(updated_pom_file.content).to include("</PropertyGroup>\n\n")
+      it "doesn't update the formatting of the project file" do
+        expect(updated_csproj_file.content).to include("</PropertyGroup>\n\n")
+      end
+    end
+
+    context "with a vbproj and csproj" do
+      let(:dependency_files) { [csproj_file, vbproj_file] }
+      let(:vbproj_file) do
+        Dependabot::DependencyFile.new(
+          content: fixture("dotnet", "csproj", "basic2.csproj"),
+          name: "my.vbproj"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Microsoft.Extensions.DependencyModel",
+          version: "1.1.2",
+          previous_version: "1.1.1",
+          requirements: [
+            {
+              file: "my.csproj",
+              requirement: "1.1.2",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "my.vbproj",
+              requirement: "1.1.*",
+              groups: [],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "my.csproj",
+              requirement: "1.1.1",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "my.vbproj",
+              requirement: "1.0.1",
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated csproj file" do
+        subject(:updated_csproj_file) do
+          updated_files.find { |f| f.name == "my.csproj" }
+        end
+
+        its(:content) { is_expected.to include 'Version="1.1.2" />' }
+        its(:content) { is_expected.to include 'Version="1.1.0">' }
+      end
+
+      describe "the updated vbproj file" do
+        subject(:updated_csproj_file) do
+          updated_files.find { |f| f.name == "my.vbproj" }
+        end
+
+        its(:content) { is_expected.to include 'Version="1.1.*" />' }
       end
     end
   end

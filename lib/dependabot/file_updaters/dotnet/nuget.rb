@@ -12,7 +12,7 @@ module Dependabot
         end
 
         def updated_dependency_files
-          updated_files = [csproj_file.dup]
+          updated_files = project_files.dup
 
           # Loop through each of the changed requirements, applying changes to
           # all files for that change. Note that the logic is different here
@@ -33,13 +33,13 @@ module Dependabot
 
         private
 
-        def csproj_file
-          dependency_files.find { |df| df.name.end_with?(".csproj") }
+        def project_files
+          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
         end
 
         def check_required_files
-          return if dependency_files.any? { |df| df.name.end_with?(".csproj") }
-          raise "No .csproj file!"
+          return if project_files.any?
+          raise "No project file!"
         end
 
         def update_files_for_dependency(files:, dependency:)
