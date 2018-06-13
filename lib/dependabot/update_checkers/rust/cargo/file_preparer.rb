@@ -12,6 +12,8 @@ module Dependabot
         # This class takes a set of dependency files and sanitizes them for use
         # in UpdateCheckers::Rust::Cargo.
         class FilePreparer
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+
           def initialize(dependency_files:, dependency:,
                          unlock_requirement: true,
                          replacement_git_pin: nil,
@@ -128,6 +130,8 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/AbcSize
           def updated_version_req_lower_bound(filename)
             original_req = dependency.requirements.
                            find { |r| r.fetch(:file) == filename }&.
@@ -139,10 +143,20 @@ module Dependabot
             elsif !git_dependency? && dependency.version
               ">= #{dependency.version}"
             else
-              ">= 0"
+              version_from_requirement =
+                dependency.requirements.map { |r| r[:requirement] }.compact.
+                reject { |req_string| req_string.start_with?("<") }.
+                select { |req_string| req_string.match?(VERSION_REGEX) }.
+                map { |req_string| req_string.match(VERSION_REGEX) }.
+                select { |version| Utils::Rust::Version.correct?(version) }.
+                max_by { |version| Utils::Rust::Version.new(version) }
+
+              ">= #{version_from_requirement || 0}"
             end
           end
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/AbcSize
 
           def git_dependency_version
             return unless lockfile

@@ -81,6 +81,17 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
             to include('regex = ">= 0.1.41"')
         end
 
+        context "without a lockfile" do
+          let(:dependency_files) { [manifest] }
+          let(:dependency_version) { nil }
+          let(:string_req) { "0.1" }
+
+          it "updates the requirement" do
+            expect(prepared_manifest_file.content).
+              to include('regex = ">= 0.1"')
+          end
+        end
+
         context "with a blank requirement" do
           let(:manifest_fixture_name) { "blank_version" }
           let(:lockfile_fixture_name) { "blank_version" }
@@ -97,6 +108,17 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
             it "updates the requirement" do
               expect(prepared_manifest_file.content).
                 to include('regex = ">= 0.1.41, <= 1.6.0"')
+            end
+          end
+
+          context "without a lockfile" do
+            let(:dependency_files) { [manifest] }
+            let(:dependency_version) { nil }
+            let(:string_req) { nil }
+
+            it "updates the requirement" do
+              expect(prepared_manifest_file.content).
+                to include('regex = ">= 0"')
             end
           end
         end
