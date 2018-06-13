@@ -20,7 +20,7 @@ module Dependabot
   module Utils
     def self.version_class_for_package_manager(package_manager)
       case package_manager
-      when "bundler", "submodules", "docker" then Gem::Version
+      when "bundler", "submodules", "docker", "dotnet" then Gem::Version
       when "maven" then Utils::Java::Version
       when "gradle" then Utils::Java::Version
       when "npm_and_yarn" then Utils::JavaScript::Version
@@ -34,7 +34,7 @@ module Dependabot
 
     def self.requirement_class_for_package_manager(package_manager)
       case package_manager
-      when "bundler", "submodules", "docker" then Utils::Ruby::Requirement
+      when "bundler", "submodules", "docker", "dotnet" then Utils::Ruby::Requirement
       when "maven" then Utils::Java::Requirement
       when "gradle" then Utils::Java::Requirement
       when "npm_and_yarn" then Utils::JavaScript::Requirement
