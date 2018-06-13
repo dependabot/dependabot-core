@@ -42,6 +42,17 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::ChildGemfileFinder do
         it { is_expected.to eq(["some_gemfile"]) }
       end
 
+      context "with invalid Ruby in the Gemfile" do
+        let(:gemfile_body) { fixture("ruby", "gemfiles", "invalid_ruby") }
+
+        it "raises a helpful error" do
+          expect { finder.child_gemfile_paths }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("Gemfile")
+          end
+        end
+      end
+
       context "when this Gemfile is already in a nested directory" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
         let(:gemfile_name) { "nested/Gemfile" }

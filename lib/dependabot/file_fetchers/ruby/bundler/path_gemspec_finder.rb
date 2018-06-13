@@ -3,6 +3,7 @@
 require "pathname"
 require "parser/current"
 require "dependabot/file_fetchers/ruby/bundler"
+require "dependabot/errors"
 
 module Dependabot
   module FileFetchers
@@ -18,6 +19,8 @@ module Dependabot
           def path_gemspec_paths
             ast = Parser::CurrentRuby.parse(gemfile.content)
             find_path_gemspec_paths(ast)
+          rescue Parser::SyntaxError
+            raise Dependabot::DependencyFileNotParseable, gemfile.path
           end
 
           private

@@ -144,7 +144,7 @@ module Dependabot
             end
           end
         rescue ::Bundler::LockfileError
-          raise raise Dependabot::DependencyFileNotParseable, lockfile.path
+          raise Dependabot::DependencyFileNotParseable, lockfile.path
         end
 
         def child_gemfiles

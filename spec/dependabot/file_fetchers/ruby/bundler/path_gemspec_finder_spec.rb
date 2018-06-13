@@ -22,6 +22,17 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::PathGemspecFinder do
       it { is_expected.to eq([]) }
     end
 
+    context "with invalid Ruby in the Gemfile" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "invalid_ruby") }
+
+      it "raises a helpful error" do
+        expect { finder.path_gemspec_paths }.to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+          expect(error.file_name).to eq("Gemfile")
+        end
+      end
+    end
+
     context "when the file does include a path gemspec" do
       let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
       it { is_expected.to eq(["plugins/example"]) }

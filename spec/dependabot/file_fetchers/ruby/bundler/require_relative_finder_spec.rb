@@ -22,6 +22,17 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::RequireRelativeFinder do
       it { is_expected.to eq([]) }
     end
 
+    context "with invalid Ruby in the Gemfile" do
+      let(:file_body) { fixture("ruby", "gemfiles", "invalid_ruby") }
+
+      it "raises a helpful error" do
+        expect { finder.require_relative_paths }.to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+          expect(error.file_name).to eq("Gemfile")
+        end
+      end
+    end
+
     context "when the file does include a relative path" do
       let(:file_body) do
         fixture("ruby", "gemfiles", "includes_require_relative")
