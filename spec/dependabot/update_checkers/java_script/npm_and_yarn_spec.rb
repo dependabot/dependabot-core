@@ -16,6 +16,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   before do
     stub_request(:get, registry_listing_url).
       to_return(status: 200, body: registry_response)
+    stub_request(:get, registry_listing_url + "/latest").
+      to_return(status: 200, body: "{}")
     stub_request(:get, registry_listing_url + "/1.7.0").
       to_return(status: 200)
   end

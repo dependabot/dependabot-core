@@ -37,7 +37,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url + "/1.0").
+      stub_request(:get, npm_url + "/latest").
         to_return(status: 200, body: npm_latest_version_response)
       stub_request(:get, npm_url).
         to_return(status: 200, body: npm_all_versions_response)
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
       it "caches the call to npm" do
         2.times { source_url }
         expect(WebMock).
-          to have_requested(:get, npm_url + "/1.0").once
+          to have_requested(:get, npm_url + "/latest").once
         expect(WebMock).
           to_not have_requested(:get, npm_url)
       end
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
       it "caches the call to npm" do
         2.times { source_url }
         expect(WebMock).
-          to have_requested(:get, npm_url + "/1.0").once
+          to have_requested(:get, npm_url + "/latest").once
         expect(WebMock).
           to have_requested(:get, npm_url).once
       end
@@ -156,8 +156,8 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "when the npm link 404s" do
       before { stub_request(:get, npm_url).to_return(status: 404) }
-      before { stub_request(:get, npm_url + "/1.0").to_return(status: 404) }
-      before { stub_request(:get, npm_url + "/v1.0").to_return(status: 404) }
+      before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
+      before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
         fixture("javascript", "npm_responses", "etag.json")
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/1.0").
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/latest").
           to_return(status: 200, body: npm_latest_version_response)
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
           to_return(status: 200, body: npm_all_versions_response)
@@ -232,10 +232,11 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
           body = fixture("javascript", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
-          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag/1.0").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
           stub_request(
-            :get, "https://npm.fury.io/dependabot/@etag%2Fetag/v1.0"
+            :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
+          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(
+            :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
           ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
@@ -281,11 +282,13 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
         context "without credentials" do
           before do
-            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/1.0").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
+            stub_request(
+              :get, "https://registry.npmjs.org/@etag%2Fetag/latest"
+            ).with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
-            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/v1.0").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
+            stub_request(
+              :get, "https://registry.npmjs.org/@etag%2Fetag/latest"
+            ).with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
             stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
               with(headers: { "Authorization" => "Bearer secret_token" }).
@@ -303,7 +306,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url + "/1.0").
+      stub_request(:get, npm_url + "/latest").
         to_return(status: 200, body: npm_latest_version_response)
       stub_request(:get, npm_url).
         to_return(status: 200, body: npm_all_versions_response)
