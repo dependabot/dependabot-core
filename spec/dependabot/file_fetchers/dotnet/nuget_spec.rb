@@ -55,6 +55,32 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
         to match_array(%w(Nancy.csproj))
     end
 
+    context "with a nuget.config" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, "NuGet.Config?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the NuGet.Config files" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Nancy.csproj NuGet.Config))
+      end
+    end
+
     context "that imports another project" do
       before do
         stub_request(:get, File.join(url, "Nancy.csproj?ref=sha")).
