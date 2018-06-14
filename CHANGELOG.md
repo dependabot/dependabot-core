@@ -1,3 +1,7 @@
+## v0.61.3, 14 June 2018
+
+- JS: Avoid downloading huge version arrays when possible
+
 ## v0.61.2, 13 June 2018
 
 - Rust: Ensure manifest-only setups don't downgrade
