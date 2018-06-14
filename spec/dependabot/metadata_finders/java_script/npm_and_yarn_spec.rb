@@ -37,11 +37,15 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
+      stub_request(:get, npm_url + "/1.0").
+        to_return(status: 200, body: npm_latest_version_response)
+      stub_request(:get, npm_url).
+        to_return(status: 200, body: npm_all_versions_response)
     end
 
     context "for a git dependency" do
-      let(:npm_response) { nil }
+      let(:npm_all_versions_response) { nil }
+      let(:npm_latest_version_response) { nil }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -70,18 +74,27 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     end
 
     context "when there is a github link in the npm response" do
-      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
+      let(:npm_latest_version_response) do
+        fixture("javascript", "npm_responses", "etag-1.0.0.json")
+      end
+      let(:npm_all_versions_response) do
+        fixture("javascript", "npm_responses", "etag.json")
+      end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
 
       it "caches the call to npm" do
         2.times { source_url }
-        expect(WebMock).to have_requested(:get, npm_url).once
+        expect(WebMock).
+          to have_requested(:get, npm_url + "/1.0").once
+        expect(WebMock).
+          to_not have_requested(:get, npm_url)
       end
     end
 
     context "when there is a bitbucket link in the npm response" do
-      let(:npm_response) do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
         fixture("javascript", "npm_response_bitbucket.json")
       end
 
@@ -89,12 +102,16 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
       it "caches the call to npm" do
         2.times { source_url }
-        expect(WebMock).to have_requested(:get, npm_url).once
+        expect(WebMock).
+          to have_requested(:get, npm_url + "/1.0").once
+        expect(WebMock).
+          to have_requested(:get, npm_url).once
       end
     end
 
     context "when there's a link without the expected structure" do
-      let(:npm_response) do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
         fixture("javascript", "npm_response_string_link.json")
       end
 
@@ -107,7 +124,8 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     end
 
     context "when there isn't a source link in the npm response" do
-      let(:npm_response) do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
         fixture("javascript", "npm_response_no_source.json")
       end
 
@@ -121,13 +139,16 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "https://registry.npmjs.org/eTag" }
-      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        fixture("javascript", "npm_responses", "etag.json")
+      end
 
       before do
         stub_request(:get, npm_url).
           to_return(status: 302, headers: { "Location" => redirect_url })
         stub_request(:get, redirect_url).
-          to_return(status: 200, body: npm_response)
+          to_return(status: 200, body: npm_all_versions_response)
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -135,26 +156,35 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
     context "when the npm link 404s" do
       before { stub_request(:get, npm_url).to_return(status: 404) }
-      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
+      before { stub_request(:get, npm_url + "/1.0").to_return(status: 404) }
+      before { stub_request(:get, npm_url + "/v1.0").to_return(status: 404) }
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        fixture("javascript", "npm_responses", "etag.json")
+      end
 
-      # Not an idea error, but this should never happen
+      # Not an ideal error, but this should never happen
       specify { expect { finder.source_url }.to raise_error(JSON::ParserError) }
     end
 
     context "for a scoped package name" do
       before do
+        stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/1.0").
+          to_return(status: 200, body: npm_latest_version_response)
         stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-          to_return(status: 200, body: npm_response)
+          to_return(status: 200, body: npm_all_versions_response)
       end
       let(:dependency_name) { "@etag/etag" }
-      let(:npm_response) { fixture("javascript", "npm_responses", "etag.json") }
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        fixture("javascript", "npm_responses", "etag.json")
+      end
 
       it "requests the escaped name" do
         finder.source_url
 
         expect(WebMock).
-          to have_requested(:get,
-                            "https://registry.npmjs.org/@etag%2Fetag")
+          to have_requested(:get, "https://registry.npmjs.org/@etag%2Fetag")
       end
 
       context "that is private" do
@@ -163,7 +193,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 200, body: npm_response)
+            to_return(status: 200, body: npm_all_versions_response)
         end
 
         context "with credentials" do
@@ -202,6 +232,11 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
           body = fixture("javascript", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag/1.0").
+            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(
+            :get, "https://npm.fury.io/dependabot/@etag%2Fetag/v1.0"
+          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: body)
@@ -246,6 +281,12 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
         context "without credentials" do
           before do
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/1.0").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
+            stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag/v1.0").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 404)
             stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
@@ -262,13 +303,17 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
     let(:npm_url) { "https://registry.npmjs.org/etag" }
 
     before do
-      stub_request(:get, npm_url).to_return(status: 200, body: npm_response)
+      stub_request(:get, npm_url + "/1.0").
+        to_return(status: 200, body: npm_latest_version_response)
+      stub_request(:get, npm_url).
+        to_return(status: 200, body: npm_all_versions_response)
     end
 
     context "when there is a homepage link in the npm response" do
-      let(:npm_response) do
+      let(:npm_all_versions_response) do
         fixture("javascript", "npm_response_no_source.json")
       end
+      let(:npm_latest_version_response) { nil }
 
       it "returns the specified homepage" do
         expect(homepage_url).to eq("https://example.come/jshttp/etag")

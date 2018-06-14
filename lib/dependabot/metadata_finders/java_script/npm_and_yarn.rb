@@ -10,7 +10,10 @@ module Dependabot
     module JavaScript
       class NpmAndYarn < Dependabot::MetadataFinders::Base
         def homepage_url
-          listing = version_listings.find { |_, l| l["homepage"] }
+          # Attempt to use version_listing first, as fetching the entire listing
+          # array can be slow (if it's large)
+          return version_listing["homepage"] if version_listing["homepage"]
+          listing = all_version_listings.find { |_, l| l["homepage"] }
           listing&.last&.fetch("homepage", nil) || super
         end
 
@@ -29,8 +32,20 @@ module Dependabot
         end
 
         def find_source_from_registry
+          # Attempt to use version_listing first, as fetching the entire listing
+          # array can be slow (if it's large)
           potential_source_urls =
-            version_listings.flat_map do |_, listing|
+            [
+              get_url(version_listing["repository"]),
+              get_url(version_listing["homepage"]),
+              get_url(version_listing["bugs"])
+            ].compact
+
+          source_url = potential_source_urls.find { |url| Source.from_url(url) }
+          return Source.from_url(source_url) if Source.from_url(source_url)
+
+          potential_source_urls =
+            all_version_listings.flat_map do |_, listing|
               [
                 get_url(listing["repository"]),
                 get_url(listing["homepage"]),
@@ -62,7 +77,39 @@ module Dependabot
           Source.from_url(url)
         end
 
-        def version_listings
+        def version_listing
+          return @version_listing if @version_listing_lookup_attempted
+
+          @version_listing_lookup_attempted = true
+
+          response = Excon.get(
+            "#{dependency_url}/#{dependency.version}",
+            headers: registry_auth_headers,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          if response.status == 200
+            return @version_listing = JSON.parse(response.body)
+          end
+
+          response = Excon.get(
+            "#{dependency_url}/v#{dependency.version}",
+            headers: registry_auth_headers,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          if response.status == 200
+            return @version_listing = JSON.parse(response.body)
+          end
+
+          @version_listing = {}
+        rescue JSON::ParserError, Excon::Error::Timeout
+          @version_listing = {}
+        end
+
+        def all_version_listings
           return [] if npm_listing["versions"].nil?
 
           npm_listing["versions"].
