@@ -109,6 +109,15 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
               expect(prepared_manifest_file.content).
                 to include('regex = ">= 0.1.41, <= 1.6.0"')
             end
+
+            context "taht is lower than the current lower bound" do
+              let(:latest_allowable_version) { Gem::Version.new("0.1.0") }
+
+              it "updates the requirement" do
+                expect(prepared_manifest_file.content).
+                  to include('regex = ">= 0.1.41"')
+              end
+            end
           end
 
           context "without a lockfile" do

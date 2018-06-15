@@ -117,45 +117,45 @@ module Dependabot
           end
 
           def temporary_requirement_for_resolution(filename)
-            lower_bound_req = updated_version_req_lower_bound(filename)
+            original_req = dependency.requirements.
+                           find { |r| r.fetch(:file) == filename }&.
+                           fetch(:requirement)
 
-            return lower_bound_req if latest_allowable_version.nil?
-            unless Utils::Rust::Version.correct?(latest_allowable_version)
+            lower_bound_req =
+              if original_req && !unlock_requirement?
+                original_req
+              else
+                ">= #{lower_bound_version}"
+              end
+
+            unless Utils::Rust::Version.correct?(latest_allowable_version) &&
+                   Utils::Rust::Version.new(latest_allowable_version) >=
+                   Utils::Rust::Version.new(lower_bound_version)
               return lower_bound_req
             end
 
             lower_bound_req + ", <= #{latest_allowable_version}"
           end
 
-          # rubocop:disable Metrics/PerceivedComplexity
-          # rubocop:disable Metrics/CyclomaticComplexity
-          # rubocop:disable Metrics/AbcSize
-          def updated_version_req_lower_bound(filename)
-            original_req = dependency.requirements.
-                           find { |r| r.fetch(:file) == filename }&.
-                           fetch(:requirement)
+          def lower_bound_version
+            @lower_bound_version ||=
+              if git_dependency? && git_dependency_version
+                git_dependency_version
+              elsif !git_dependency? && dependency.version
+                dependency.version
+              else
+                version_from_requirement =
+                  dependency.requirements.map { |r| r.fetch(:requirement) }.
+                  compact.
+                  flat_map { |req_str| Utils::Rust::Requirement.new(req_str) }.
+                  flat_map(&:requirements).
+                  reject { |req_array| req_array.first.start_with?("<") }.
+                  map(&:last).
+                  max&.to_s
 
-            if original_req && !unlock_requirement? then original_req
-            elsif git_dependency? && git_dependency_version
-              ">= #{git_dependency_version}"
-            elsif !git_dependency? && dependency.version
-              ">= #{dependency.version}"
-            else
-              version_from_requirement =
-                dependency.requirements.map { |r| r.fetch(:requirement) }.
-                compact.
-                flat_map { |req_str| Utils::Rust::Requirement.new(req_str) }.
-                flat_map(&:requirements).
-                reject { |req_array| req_array.first.start_with?("<") }.
-                map(&:last).
-                max
-
-              ">= #{version_from_requirement || 0}"
-            end
+                version_from_requirement || 0
+              end
           end
-          # rubocop:enable Metrics/PerceivedComplexity
-          # rubocop:enable Metrics/CyclomaticComplexity
-          # rubocop:enable Metrics/AbcSize
 
           def git_dependency_version
             return unless lockfile
