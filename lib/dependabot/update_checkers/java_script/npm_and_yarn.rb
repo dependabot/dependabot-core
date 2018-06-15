@@ -2,7 +2,6 @@
 
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/java_script/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -59,9 +58,7 @@ module Dependabot
         def latest_resolvable_version_with_no_unlock_for_git_dependency
           reqs = dependency.requirements.map do |r|
             next if r.fetch(:requirement).nil?
-            Utils::JavaScript::Requirement.requirements_array(
-              r.fetch(:requirement)
-            )
+            requirement_class.requirements_array(r.fetch(:requirement))
           end.compact
 
           return dependency.version if git_commit_checker.pinned?

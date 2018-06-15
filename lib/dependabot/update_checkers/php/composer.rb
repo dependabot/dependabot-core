@@ -3,7 +3,6 @@
 require "excon"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
-require "dependabot/utils/php/requirement"
 require "dependabot/errors"
 
 require "json"
@@ -154,8 +153,7 @@ module Dependabot
         end
 
         def ignore_reqs
-          ignored_versions.
-            map { |req| Utils::Php::Requirement.new(req.split(",")) }
+          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
         def library?

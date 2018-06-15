@@ -4,7 +4,6 @@ require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
-require "dependabot/utils/elixir/requirement"
 
 require "json"
 
@@ -249,8 +248,7 @@ module Dependabot
         end
 
         def ignore_reqs
-          ignored_versions.
-            map { |req| Utils::Elixir::Requirement.new(req.split(",")) }
+          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
         def dependency_url

@@ -5,7 +5,6 @@ require "toml-rb"
 
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/python/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -127,7 +126,7 @@ module Dependabot
           versions = available_versions
           reqs = dependency.requirements.map do |r|
             reqs = (r.fetch(:requirement) || "").split(",").map(&:strip)
-            Utils::Python::Requirement.new(reqs)
+            requirement_class.new(reqs)
           end
           versions.reject!(&:prerelease?) unless wants_prerelease?
           versions.sort.reverse.
@@ -270,8 +269,7 @@ module Dependabot
         end
 
         def ignore_reqs
-          ignored_versions.
-            map { |req| Utils::Python::Requirement.new(req.split(",")) }
+          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
