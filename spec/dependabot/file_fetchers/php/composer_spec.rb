@@ -76,6 +76,25 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
     end
   end
 
+  context "with a bad composer.json" do
+    before do
+      stub_request(:get, File.join(url, "composer.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_name).to eq("composer.json")
+        end
+    end
+  end
+
   context "with a path source" do
     before do
       stub_request(:get, url + "composer.json?ref=sha").
