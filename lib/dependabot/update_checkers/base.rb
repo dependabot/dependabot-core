@@ -68,6 +68,10 @@ module Dependabot
         Utils.version_class_for_package_manager(dependency.package_manager)
       end
 
+      def requirement_class
+        Utils.requirement_class_for_package_manager(dependency.package_manager)
+      end
+
       # For some langauges, the manifest file may be constructed such that
       # Dependabot has no way to update it (e.g., if it fetches its versions
       # from a web API). This method is overridden in those cases.
@@ -177,7 +181,21 @@ module Dependabot
       end
 
       def requirements_up_to_date?
-        (updated_requirements - dependency.requirements).none?
+        return true if (updated_requirements - dependency.requirements).none?
+        return false unless latest_version
+        return false unless version_class.correct?(latest_version.to_s)
+        return false unless version_from_requirements
+        version_from_requirements >= version_class.new(latest_version.to_s)
+      end
+
+      def version_from_requirements
+        @version_from_requirements ||=
+          dependency.requirements.map { |r| r.fetch(:requirement) }.compact.
+          flat_map { |req_str| requirement_class.new(req_str) }.
+          flat_map(&:requirements).
+          reject { |req_array| req_array.first.start_with?("<") }.
+          map(&:last).
+          max
       end
 
       def requirements_can_update?

@@ -122,6 +122,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
 
     context "when updating a requirement file" do
+      let(:latest_version) { Gem::Version.new("4.0.0") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
@@ -148,6 +149,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           }]
         end
         it { is_expected.to be_falsey }
+      end
+
+      context "when the latest version is a downgrade" do
+        let(:latest_version) { Gem::Version.new("0.5.0") }
+        it { is_expected.to be_truthy }
       end
 
       context "that we don't know how to fix" do
