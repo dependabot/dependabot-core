@@ -1,3 +1,9 @@
+## v0.61.5, 15 June 2018
+
+- Rust: Better detection of lowest version in requirement
+- Rust: Handle latest_allowable_versions that are lower than the current version
+- All: Add check that new version is greater than permitted by old requirements
+
 ## v0.61.4, 15 June 2018
 
 - Python: Handle version ranges separted by commas in Python::Requirement
