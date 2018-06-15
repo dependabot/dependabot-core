@@ -1,3 +1,7 @@
+## v0.61.7, 15 June 2018
+
+- PHP: Handle OR requirements in new version_from_requirements check
+
 ## v0.61.6, 15 June 2018
 
 - Improve issue tag sanitization
