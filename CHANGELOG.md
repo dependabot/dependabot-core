@@ -1,3 +1,7 @@
+## v0.61.6, 15 June 2018
+
+- Improve issue tag sanitization
+
 ## v0.61.5, 15 June 2018
 
 - Rust: Better detection of lowest version in requirement
