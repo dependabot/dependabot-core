@@ -19,7 +19,9 @@ module Dependabot
 
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
-            convert_rust_constraint_to_ruby_constraint(req_string)
+            req_string.split(",").map do |r|
+              convert_rust_constraint_to_ruby_constraint(r.strip)
+            end
           end
 
           super(requirements)

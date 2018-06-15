@@ -12,8 +12,6 @@ module Dependabot
         # This class takes a set of dependency files and sanitizes them for use
         # in UpdateCheckers::Rust::Cargo.
         class FilePreparer
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-
           def initialize(dependency_files:, dependency:,
                          unlock_requirement: true,
                          replacement_git_pin: nil,
@@ -144,12 +142,13 @@ module Dependabot
               ">= #{dependency.version}"
             else
               version_from_requirement =
-                dependency.requirements.map { |r| r[:requirement] }.compact.
-                reject { |req_string| req_string.start_with?("<") }.
-                select { |req_string| req_string.match?(VERSION_REGEX) }.
-                map { |req_string| req_string.match(VERSION_REGEX) }.
-                select { |version| Utils::Rust::Version.correct?(version) }.
-                max_by { |version| Utils::Rust::Version.new(version) }
+                dependency.requirements.map { |r| r.fetch(:requirement) }.
+                compact.
+                flat_map { |req_str| Utils::Rust::Requirement.new(req_str) }.
+                flat_map(&:requirements).
+                reject { |req_array| req_array.first.start_with?("<") }.
+                map(&:last).
+                max
 
               ">= #{version_from_requirement || 0}"
             end
