@@ -53,6 +53,11 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
       let(:requirement_string) { ">=2.0<2.1" }
       # Python ignores that second operator!
       it { is_expected.to eq(Gem::Requirement.new(">=2.0")) }
+
+      context "separated with a comma" do
+        let(:requirement_string) { ">=2.0,<2.1" }
+        it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1")) }
+      end
     end
 
     context "with an array" do

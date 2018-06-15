@@ -39,8 +39,11 @@ module Dependabot
         end
 
         def initialize(*requirements)
-          requirements = requirements.flatten.map do |req_string|
-            convert_python_constraint_to_ruby_constraint(req_string)
+          requirements = requirements.flatten.flat_map do |req_string|
+            next if req_string.nil?
+            req_string.split(",").map do |r|
+              convert_python_constraint_to_ruby_constraint(r)
+            end
           end
 
           super(requirements)

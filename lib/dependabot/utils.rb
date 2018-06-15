@@ -34,10 +34,9 @@ module Dependabot
 
     def self.requirement_class_for_package_manager(package_manager)
       case package_manager
-      when "submodules", "docker" then Gem::Requirement
+      when "bundler", "submodules", "docker" then Utils::Ruby::Requirement
       when "maven" then Utils::Java::Requirement
       when "gradle" then Utils::Java::Requirement
-      when "bundler" then Utils::Ruby::Requirement
       when "npm_and_yarn" then Utils::JavaScript::Requirement
       when "pip" then Utils::Python::Requirement
       when "composer" then Utils::Php::Requirement
