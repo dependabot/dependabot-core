@@ -1,3 +1,8 @@
+## v0.61.4, 15 June 2018
+
+- Python: Handle version ranges separted by commas in Python::Requirement
+- PHP: Handle unparseable composer.json files
+
 ## v0.61.3, 14 June 2018
 
 - JS: Avoid downloading huge version arrays when possible
