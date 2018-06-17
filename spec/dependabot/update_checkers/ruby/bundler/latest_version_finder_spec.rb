@@ -252,10 +252,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::LatestVersionFinder do
         end
 
         it "blows up with a useful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { finder.latest_version_details }.
             to raise_error do |error|
-              expect(error).to be_a(error_class)
+              expect(error).to be_a(Dependabot::PrivateSourceTimedOut)
               expect(error.source).
                 to eq("https://repo.fury.io/greysteil/")
             end

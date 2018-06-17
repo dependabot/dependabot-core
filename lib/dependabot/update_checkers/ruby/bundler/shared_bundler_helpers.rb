@@ -133,7 +133,7 @@ module Dependabot
               raise unless error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
               raise if source.include?("rubygems")
-              raise Dependabot::PrivateSourceAuthenticationFailure, source
+              raise Dependabot::PrivateSourceTimedOut, source
             else raise
             end
           end
