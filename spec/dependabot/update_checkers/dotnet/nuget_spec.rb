@@ -51,7 +51,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     "https://api.nuget.org/v3-flatcontainer/"\
     "microsoft.extensions.dependencymodel/index.json"
   end
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Utils::Dotnet::Version }
   let(:nuget_versions) do
     fixture("dotnet", "nuget_responses", "versions.json")
   end
@@ -64,5 +64,29 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq(version_class.new("2.1.0")) }
+
+    context "when the user wants a pre-release" do
+      let(:dependency_version) { "2.2.0-preview1-26216-03" }
+      it { is_expected.to eq(version_class.new("2.2.0-preview2-26406-04")) }
+    end
+
+    context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
+      it { is_expected.to eq(version_class.new("1.1.2")) }
+    end
+  end
+
+  describe "#latest_resolvable_version" do
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+    it "delegates to latest_version" do
+      expect(checker).to receive(:latest_version).and_return("latest_version")
+      expect(latest_resolvable_version).to eq("latest_version")
+    end
+  end
+
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.latest_resolvable_version_with_no_unlock }
+    it { is_expected.to be_nil }
   end
 end

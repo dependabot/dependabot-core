@@ -28,15 +28,8 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          versions = available_versions
-          reqs = dependency.requirements.map do |r|
-            reqs = (r.fetch(:requirement) || "").split(",").map(&:strip)
-            Utils::Dotnet::Requirement.new(reqs)
-          end
-          versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.sort.reverse.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-            find { |v| reqs.all? { |r| r.satisfied_by?(v) } }
+          # Irrelevant, since Nuget has a single dependency file
+          nil
         end
 
         def updated_requirements
