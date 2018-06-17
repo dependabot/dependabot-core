@@ -1,0 +1,18 @@
+{
+  "name": "Nancy.csproj",
+  "path": "src/Nancy/Nancy.csproj",
+  "sha": "b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "size": 1345,
+  "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+  "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj",
+  "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Nancy.csproj",
+  "type": "file",
+  "content": "77u/PFByb2plY3QgU2RrPSJNaWNyb3NvZnQuTkVULlNkayI+CiAgPFByb3Bl\ncnR5R3JvdXA+CiAgICA8RGVzY3JpcHRpb24+TmFuY3kgaXMgYSBsaWdodHdl\naWdodCB3ZWIgZnJhbWV3b3JrIGZvciB0aGUgLk5ldCBwbGF0Zm9ybSwgaW5z\ncGlyZWQgYnkgU2luYXRyYS4gTmFuY3kgYWltIGF0IGRlbGl2ZXJpbmcgYSBs\nb3cgY2VyZW1vbnkgYXBwcm9hY2ggdG8gYnVpbGRpbmcgbGlnaHQsIGZhc3Qg\nd2ViIGFwcGxpY2F0aW9ucy48L0Rlc2NyaXB0aW9uPgogICAgPFRhcmdldEZy\nYW1ld29ya3M+bmV0c3RhbmRhcmQyLjA7bmV0NDUyPC9UYXJnZXRGcmFtZXdv\ncmtzPgogIDwvUHJvcGVydHlHcm91cD4KCiAgPEl0ZW1Hcm91cD4KICAgIDxF\nbWJlZGRlZFJlc291cmNlIEluY2x1ZGU9IkVycm9ySGFuZGxpbmdcUmVzb3Vy\nY2VzXCoqXCouKjtEaWFnbm9zdGljc1xSZXNvdXJjZXNcKipcKi4qO0RpYWdu\nb3N0aWNzXFZpZXdzXCoqXCouKiIgRXhjbHVkZT0iYmluXCoqO29ialwqKjsq\nKlwqLnhwcm9qO3BhY2thZ2VzXCoqO0AoRW1iZWRkZWRSZXNvdXJjZSkiIC8+\nCiAgPC9JdGVtR3JvdXA+CgogIDxJdGVtR3JvdXAgQ29uZGl0aW9uPSIgJyQo\nVGFyZ2V0RnJhbWV3b3JrKScgPT0gJ25ldHN0YW5kYXJkMi4wJyAiPgogICAg\nPFBhY2thZ2VSZWZlcmVuY2UgSW5jbHVkZT0iTWljcm9zb2Z0LkV4dGVuc2lv\nbnMuRGVwZW5kZW5jeU1vZGVsIiBWZXJzaW9uPSIyLjAuNCIgLz4KICAgIDxQ\nYWNrYWdlUmVmZXJlbmNlIEluY2x1ZGU9Ik1pY3Jvc29mdC5FeHRlbnNpb25z\nLlBsYXRmb3JtQWJzdHJhY3Rpb25zIiBWZXJzaW9uPSIxLjEuMCIgLz4KICAg\nIDxQYWNrYWdlUmVmZXJlbmNlIEluY2x1ZGU9IlN5c3RlbS5Db2xsZWN0aW9u\ncy5TcGVjaWFsaXplZCIgVmVyc2lvbj0iNC4zLjAiIC8+CiAgICA8UGFja2Fn\nZVJlZmVyZW5jZSBJbmNsdWRlPSJTeXN0ZW0uQ29tcG9uZW50TW9kZWwuVHlw\nZUNvbnZlcnRlciIgVmVyc2lvbj0iNC4zLjAiIC8+CiAgICA8UGFja2FnZVJl\nZmVyZW5jZSBJbmNsdWRlPSJTeXN0ZW0uTmV0Lk5hbWVSZXNvbHV0aW9uIiBW\nZXJzaW9uPSI0LjMuMCIgLz4KICAgIDxQYWNrYWdlUmVmZXJlbmNlIEluY2x1\nZGU9IlN5c3RlbS5TZWN1cml0eS5DbGFpbXMiIFZlcnNpb249IjQuMy4wIiAv\nPgogICAgPFBhY2thZ2VSZWZlcmVuY2UgSW5jbHVkZT0iU3lzdGVtLlhtbC5Y\nbWxTZXJpYWxpemVyIiBWZXJzaW9uPSI0LjMuMCIgLz4KICA8L0l0ZW1Hcm91\ncD4KCiAgPEl0ZW1Hcm91cCBDb25kaXRpb249IiAnJChUYXJnZXRGcmFtZXdv\ncmspJyA9PSAnbmV0NDUyJyAiPgogICAgPFJlZmVyZW5jZSBJbmNsdWRlPSJT\neXN0ZW0uWG1sIiAvPgogIDwvSXRlbUdyb3VwPgo8L1Byb2plY3Q+Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+    "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+    "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj"
+  }
+}

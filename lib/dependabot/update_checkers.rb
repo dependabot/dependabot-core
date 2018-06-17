@@ -10,6 +10,7 @@ require "dependabot/update_checkers/git/submodules"
 require "dependabot/update_checkers/docker/docker"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/rust/cargo"
+require "dependabot/update_checkers/dotnet/nuget"
 
 module Dependabot
   module UpdateCheckers
@@ -26,6 +27,7 @@ module Dependabot
       when "docker" then UpdateCheckers::Docker::Docker
       when "hex" then UpdateCheckers::Elixir::Hex
       when "cargo" then UpdateCheckers::Rust::Cargo
+      when "nuget" then UpdateCheckers::Dotnet::Nuget
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

@@ -10,6 +10,7 @@ require "dependabot/file_fetchers/git/submodules"
 require "dependabot/file_fetchers/docker/docker"
 require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/file_fetchers/rust/cargo"
+require "dependabot/file_fetchers/dotnet/nuget"
 
 module Dependabot
   module FileFetchers
@@ -26,6 +27,7 @@ module Dependabot
       when "docker" then FileFetchers::Docker::Docker
       when "hex" then FileFetchers::Elixir::Hex
       when "cargo" then FileFetchers::Rust::Cargo
+      when "nuget" then FileFetchers::Dotnet::Nuget
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

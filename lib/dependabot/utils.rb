@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/python/version"
+require "dependabot/utils/dotnet/version"
 require "dependabot/utils/elixir/version"
 require "dependabot/utils/java/version"
 require "dependabot/utils/java_script/version"
 require "dependabot/utils/php/version"
+require "dependabot/utils/python/version"
 require "dependabot/utils/rust/version"
 
+require "dependabot/utils/dotnet/requirement"
 require "dependabot/utils/elixir/requirement"
 require "dependabot/utils/java/requirement"
 require "dependabot/utils/java_script/requirement"
@@ -21,6 +23,7 @@ module Dependabot
     def self.version_class_for_package_manager(package_manager)
       case package_manager
       when "bundler", "submodules", "docker" then Gem::Version
+      when "nuget" then Utils::Dotnet::Version
       when "maven" then Utils::Java::Version
       when "gradle" then Utils::Java::Version
       when "npm_and_yarn" then Utils::JavaScript::Version
@@ -35,6 +38,7 @@ module Dependabot
     def self.requirement_class_for_package_manager(package_manager)
       case package_manager
       when "bundler", "submodules", "docker" then Utils::Ruby::Requirement
+      when "nuget" then Utils::Dotnet::Requirement
       when "maven" then Utils::Java::Requirement
       when "gradle" then Utils::Java::Requirement
       when "npm_and_yarn" then Utils::JavaScript::Requirement
