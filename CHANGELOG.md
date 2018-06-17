@@ -1,3 +1,7 @@
+## v0.61.8, 17 June 2018
+
+- Dotnet: First version of support for NuGet
+
 ## v0.61.7, 15 June 2018
 
 - PHP: Handle OR requirements in new version_from_requirements check

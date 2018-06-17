@@ -13,8 +13,8 @@ should give you the tools you need. A reference implementation is available
 ## What's in this repo?
 
 Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python, PHP, Elixir, Rust and Java. It can also
-update git submodules and Docker files. Highlights include:
+updating in Ruby, JavaScript, Python, PHP, Elixir, Rust, Java and .NET. It can
+also update git submodules and Docker files. Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
   a project's other dependencies*. That means tapping into the package manager's
