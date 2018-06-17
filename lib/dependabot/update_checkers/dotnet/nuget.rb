@@ -2,6 +2,7 @@
 
 require "dependabot/update_checkers/base"
 require "dependabot/utils/dotnet/requirement"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module UpdateCheckers

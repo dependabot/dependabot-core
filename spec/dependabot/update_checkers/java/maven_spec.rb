@@ -10,6 +10,40 @@ require_relative "../shared_examples_for_update_checkers"
 RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
   it_behaves_like "an update checker"
 
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: ignored_versions
+    )
+  end
+
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "maven"
+    )
+  end
+  let(:dependency_requirements) do
+    [{ file: "pom.xml", requirement: "23.3-jre", groups: [], source: nil }]
+  end
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:dependency_version) { "23.3-jre" }
+
+  let(:dependency_files) { [pom] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:ignored_versions) { [] }
+
   let(:maven_central_metadata_url) do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
@@ -33,34 +67,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     stub_request(:get, maven_central_version_files_url).
       to_return(status: 200, body: maven_central_version_files)
   end
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials
-    )
-  end
-  let(:dependency_files) { [pom] }
-  let(:credentials) { [] }
   let(:pom) do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
   let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "maven"
-    )
-  end
-  let(:dependency_requirements) do
-    [{ file: "pom.xml", requirement: "23.3-jre", groups: [], source: nil }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
 
   describe "#latest_version" do
     subject { checker.latest_version }
