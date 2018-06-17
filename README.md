@@ -60,6 +60,10 @@ concern will have a language-specific class.
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
 
+## API
+
+Dependabot has a REST API, see it's [dedicated GH page](https://github.com/dependabot/api-docs) for more.
+
 ## Why is this public?
 
 As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
