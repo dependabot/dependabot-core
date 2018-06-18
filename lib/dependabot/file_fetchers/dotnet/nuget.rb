@@ -21,11 +21,12 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files += project_files
+          fetched_files << packages_config if packages_config
           fetched_files += imported_property_files
 
           fetched_files << nuget_config if nuget_config
 
-          return fetched_files unless project_files.none?
+          return fetched_files unless project_files.none? && !packages_config
           raise(Dependabot::DependencyFileNotFound, "<anything>.csproj")
         end
 
@@ -37,6 +38,14 @@ module Dependabot
               project_files << vbproj_file if vbproj_file
               project_files << fsproj_file if fsproj_file
               project_files
+            end
+        end
+
+        def packages_config
+          @packages_config ||=
+            begin
+              file = repo_contents.find { |f| f.name == "packages.config" }
+              fetch_file_from_host(file.name) if file
             end
         end
 
