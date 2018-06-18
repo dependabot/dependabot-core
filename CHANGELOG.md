@@ -1,3 +1,7 @@
+## v0.61.9, 18 June 2018
+
+- Rust: Preserve pre-release formatting in Utils::Rust::Requirement
+
 ## v0.61.8, 17 June 2018
 
 - Dotnet: First version of support for NuGet
