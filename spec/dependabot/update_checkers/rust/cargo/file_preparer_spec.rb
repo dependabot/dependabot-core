@@ -129,6 +129,18 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
               expect(prepared_manifest_file.content).
                 to include('regex = ">= 0"')
             end
+
+            context "with a pre-release specified" do
+              let(:dependency_name) { "nom" }
+              let(:manifest_fixture_name) { "prerelease_specified" }
+              let(:string_req) { "4.0.0-beta3" }
+              let(:latest_allowable_version) { "4.0.0" }
+
+              it "updates the requirement" do
+                expect(prepared_manifest_file.content).
+                  to include('nom = ">= 4.0.0-beta3, <= 4.0.0"')
+              end
+            end
           end
         end
 

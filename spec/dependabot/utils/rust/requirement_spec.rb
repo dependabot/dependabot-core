@@ -15,6 +15,13 @@ RSpec.describe Dependabot::Utils::Rust::Requirement do
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
 
+    context "with a pre-release" do
+      let(:requirement_string) { "4.0.0-beta3" }
+      it "preserves the pre-release formatting" do
+        expect(requirement.requirements.first.last.to_s).to eq("4.0.0-beta3")
+      end
+    end
+
     describe "wildcards" do
       context "with only a *" do
         let(:requirement_string) { "*" }

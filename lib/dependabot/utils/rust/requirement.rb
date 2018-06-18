@@ -6,10 +6,28 @@
 # - https://steveklabnik.github.io/semver/semver/index.html                    #
 ################################################################################
 
+require "dependabot/utils/rust/version"
+
 module Dependabot
   module Utils
     module Rust
       class Requirement < Gem::Requirement
+        # Use Utils::Rust::Version rather than Gem::Version to ensure that
+        # pre-release versions aren't transformed.
+        def self.parse(obj)
+          if obj.is_a?(Gem::Version)
+            return ["=", Utils::Rust::Version.new(obj.to_s)]
+          end
+
+          unless (matches = PATTERN.match(obj.to_s))
+            msg = "Illformed requirement [#{obj.inspect}]"
+            raise BadRequirementError, msg
+          end
+
+          return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+          [matches[1] || "=", Utils::Rust::Version.new(matches[2])]
+        end
+
         # For consistency with other langauges, we define a requirements array.
         # Rust doesn't have an `OR` separator for requirements, so it always
         # contains a single element.
