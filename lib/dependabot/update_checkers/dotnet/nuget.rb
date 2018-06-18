@@ -8,6 +8,7 @@ module Dependabot
   module UpdateCheckers
     module Dotnet
       class Nuget < Dependabot::UpdateCheckers::Base
+        require_relative "nuget/repository_finder"
         require_relative "nuget/requirements_updater"
 
         def latest_version
@@ -51,9 +52,11 @@ module Dependabot
         end
 
         def available_versions
-          nuget_listing.
-            fetch("versions", []).
-            map { |v| version_class.new(v) }
+          nuget_listings.flat_map do |listing|
+            listing.
+              fetch("versions", []).
+              map { |v| version_class.new(v) }
+          end
         end
 
         def wants_prerelease?
@@ -74,21 +77,33 @@ module Dependabot
           end
         end
 
-        def nuget_listing
-          return @nuget_listing unless @nuget_listing.nil?
+        def nuget_listings
+          return @nuget_listings unless @nuget_listings.nil?
 
-          response = Excon.get(
-            dependency_url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          dependency_urls.map do |url|
+            response = Excon.get(
+              url,
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            next unless response.status == 200
 
-          @nuget_listing = JSON.parse(response.body)
+            @nuget_listing = JSON.parse(response.body)
+          end.compact
         end
 
-        def dependency_url
-          "https://api.nuget.org/v3-flatcontainer/"\
-          "#{dependency.name.downcase}/index.json"
+        def dependency_urls
+          @dependency_urls ||=
+            RepositoryFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              config_file: nuget_config
+            ).dependency_urls
+        end
+
+        def nuget_config
+          @nuget_config ||=
+            dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
         end
       end
     end

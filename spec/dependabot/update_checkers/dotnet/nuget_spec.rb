@@ -74,6 +74,31 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
       it { is_expected.to eq(version_class.new("1.1.2")) }
     end
+
+    context "with a custom repo in a nuget.config file" do
+      let(:config_file) do
+        Dependabot::DependencyFile.new(
+          name: "NuGet.Config",
+          content: fixture("dotnet", "configs", "nuget.config")
+        )
+      end
+      let(:dependency_files) { [csproj, config_file] }
+      before do
+        repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
+        stub_request(:get, repo_url).to_return(
+          status: 200,
+          body: fixture("dotnet", "nuget_responses", "myget_base.json")
+        )
+        stub_request(:get, nuget_versions_url).to_return(status: 404)
+        custom_nuget_versions_url =
+          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
+          "microsoft.extensions.dependencymodel/index.json"
+        stub_request(:get, custom_nuget_versions_url).
+          to_return(status: 200, body: nuget_versions)
+      end
+
+      it { is_expected.to eq(version_class.new("2.1.0")) }
+    end
   end
 
   describe "#latest_resolvable_version" do

@@ -39,10 +39,9 @@ module Dependabot
                 Excon.get(
                   "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
                   "#{escaped_dependency_name}",
-                  SharedHelpers.excon_defaults.merge(
-                    headers: auth_header_for(details["token"]),
-                    idempotent: true
-                  )
+                  headers: auth_header_for(details["token"]),
+                  idempotent: true,
+                  **SharedHelpers.excon_defaults
                 ).status < 400
               rescue Excon::Error::Timeout, Excon::Error::Socket
                 nil
