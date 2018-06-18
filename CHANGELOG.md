@@ -1,3 +1,7 @@
+## v0.61.10, 18 June 2018
+
+- .NET: Handle custom repositories (without auth details)
+
 ## v0.61.9, 18 June 2018
 
 - Rust: Preserve pre-release formatting in Utils::Rust::Requirement
