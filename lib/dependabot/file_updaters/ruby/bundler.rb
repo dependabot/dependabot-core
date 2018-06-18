@@ -251,6 +251,12 @@ module Dependabot
             raise if dependencies_to_unlock.include?(gem_name)
             dependencies_to_unlock << gem_name
             retry
+          rescue ::Bundler::HTTPError => error
+            # Retry network errors
+            attempt ||= 1
+            attempt += 1
+            raise if attempt > 3 || !error.message.include?("Network error")
+            retry
           end
         end
 
