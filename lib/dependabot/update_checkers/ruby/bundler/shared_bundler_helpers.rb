@@ -23,6 +23,7 @@ module Dependabot
             Gem::InvalidSpecificationException
             Bundler::VersionConflict
             Bundler::HTTPError
+            Bundler::Fetcher::FallbackError
           ).freeze
 
           attr_reader :dependency_files, :credentials
