@@ -53,9 +53,14 @@ module Dependabot
         end
 
         def dependency_nuspec_url
-          "https://api.nuget.org/v3-flatcontainer/"\
-          "#{dependency.name.downcase}/#{dependency.version}/"\
-          "#{dependency.name.downcase}.nuspec"
+          source = dependency.requirements.
+                   find { |r| r&.fetch(:source) }&.fetch(:source)
+
+          source&.fetch(:nuspec_url, nil) ||
+            source&.fetch("nuspec_url") ||
+            "https://api.nuget.org/v3-flatcontainer/"\
+            "#{dependency.name.downcase}/#{dependency.version}/"\
+            "#{dependency.name.downcase}.nuspec"
         end
       end
     end

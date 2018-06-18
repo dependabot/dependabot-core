@@ -15,7 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
         file: "my.csproj",
         requirement: dependency_version,
         groups: [],
-        source: nil
+        source: source
       }],
       package_manager: "nuget"
     )
@@ -33,6 +33,7 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:dependency_version) { "2.1.0" }
+  let(:source) { nil }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -53,7 +54,33 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
       stub_request(:get, nuget_url).to_return(status: 200, body: nuget_response)
     end
 
-    context "with a github link in the pom" do
+    context "with a github link in the nuspec" do
+      it { is_expected.to eq("https://github.com/dotnet/core-setup") }
+
+      it "caches the call to nuget" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, nuget_url).once
+      end
+    end
+
+    context "with a source" do
+      let(:source) do
+        {
+          type: "nuget_repo",
+          url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
+          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                      "flatcontainer/microsoft.extensions."\
+                      "dependencymodel/2.1.0/"\
+                      "microsoft.extensions.dependencymodel.nuspec"
+        }
+      end
+
+      let(:nuget_url) do
+        "https://www.myget.org/F/exceptionless/api/v3/"\
+        "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/"\
+        "microsoft.extensions.dependencymodel.nuspec"
+      end
+
       it { is_expected.to eq("https://github.com/dotnet/core-setup") }
 
       it "caches the call to nuget" do
