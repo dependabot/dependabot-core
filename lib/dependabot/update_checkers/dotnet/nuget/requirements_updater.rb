@@ -15,8 +15,9 @@ module Dependabot
         class RequirementsUpdater
           VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/
 
-          def initialize(requirements:, latest_version:)
+          def initialize(requirements:, latest_version:, source_details:)
             @requirements = requirements
+            @source_details = source_details
             return unless latest_version
             @latest_version = version_class.new(latest_version)
           end
@@ -35,16 +36,24 @@ module Dependabot
               # just do a `gsub` on anything that looks like a version
               new_req =
                 req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
-              req.merge(requirement: new_req)
+              req.merge(requirement: new_req, source: updated_source)
             end
           end
 
           private
 
-          attr_reader :requirements, :latest_version
+          attr_reader :requirements, :latest_version, :source_details
 
           def version_class
             Utils::Dotnet::Version
+          end
+
+          def updated_source
+            {
+              type: "nuget_repo",
+              url: source_details.fetch(:repo_url),
+              nuspec_url: source_details.fetch(:nuspec_url)
+            }
           end
         end
       end

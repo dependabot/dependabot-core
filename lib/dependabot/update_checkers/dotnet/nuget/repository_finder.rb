@@ -32,8 +32,7 @@ module Dependabot
                 if details.fetch("url") == DEFAULT_REPOSITORY_URL
                   # Save a request for the default URL, since we already how
                   # it addresses packages
-                  next "https://api.nuget.org/v3-flatcontainer/"\
-                       "#{dependency.name.downcase}/index.json"
+                  next default_repository_details
                 end
 
                 repo_metadata_response = Excon.get(
@@ -49,7 +48,11 @@ module Dependabot
                   find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
                   fetch("@id")
 
-                File.join(base_url, dependency.name.downcase, "index.json")
+                {
+                  repository_url: details.fetch("url"),
+                  versions_url:
+                    File.join(base_url, dependency.name.downcase, "index.json")
+                }
               rescue Excon::Error::Timeout, Excon::Error::Socket
                 nil
               end.compact.uniq
@@ -62,7 +65,11 @@ module Dependabot
             @known_repositories += config_file_repositories
 
             if @known_repositories.empty?
-              @known_repositories << default_repository_details
+              @known_repositories << {
+                "url" => DEFAULT_REPOSITORY_URL,
+                "username" => nil,
+                "password" => nil
+              }
             end
 
             @known_repositories
@@ -91,9 +98,9 @@ module Dependabot
 
           def default_repository_details
             {
-              "url" => DEFAULT_REPOSITORY_URL,
-              "username" => nil,
-              "password" => nil
+              repository_url: DEFAULT_REPOSITORY_URL,
+              versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
+                              "#{dependency.name.downcase}/index.json"
             }
           end
         end

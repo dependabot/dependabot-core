@@ -42,8 +42,11 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
     it "gets the right URL without making any requests" do
       expect(dependency_urls).to eq(
         [
-          "https://api.nuget.org/v3-flatcontainer/"\
-          "microsoft.extensions.dependencymodel/index.json"
+          {
+            repository_url: "https://api.nuget.org/v3/index.json",
+            versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
+                            "microsoft.extensions.dependencymodel/index.json"
+          }
         ]
       )
     end
@@ -77,8 +80,13 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
       it "gets the right URL" do
         expect(dependency_urls).to eq(
           [
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-            "microsoft.extensions.dependencymodel/index.json"
+            {
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "index.json",
+              versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "flatcontainer/microsoft.extensions."\
+                              "dependencymodel/index.json"
+            }
           ]
         )
       end
@@ -110,10 +118,18 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
       it "gets the right URLs" do
         expect(dependency_urls).to match_array(
           [
-            "https://api.nuget.org/v3-flatcontainer/"\
-            "microsoft.extensions.dependencymodel/index.json",
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-            "microsoft.extensions.dependencymodel/index.json"
+            {
+              repository_url: "https://api.nuget.org/v3/index.json",
+              versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
+                              "microsoft.extensions.dependencymodel/index.json"
+            },
+            {
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "index.json",
+              versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "flatcontainer/microsoft.extensions."\
+                              "dependencymodel/index.json"
+            }
           ]
         )
       end

@@ -12,15 +12,7 @@ module Dependabot
         require_relative "nuget/requirements_updater"
 
         def latest_version
-          @latest_version =
-            begin
-              versions = available_versions
-              versions.reject!(&:prerelease?) unless wants_prerelease?
-              versions.reject! do |v|
-                ignore_reqs.any? { |r| r.satisfied_by?(v) }
-              end
-              versions.max
-            end
+          @latest_version = latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
@@ -36,7 +28,9 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            latest_version: latest_version&.to_s
+            latest_version: latest_version&.to_s,
+            source_details: latest_version_details&.
+                            slice(:nuspec_url, :repo_url)
           ).updated_requirements
         end
 
@@ -51,11 +45,37 @@ module Dependabot
           raise NotImplementedError
         end
 
+        def latest_version_details
+          @latest_version_details =
+            begin
+              versions = available_versions
+              unless wants_prerelease?
+                versions.reject! { |hash| hash.fetch(:version).prerelease? }
+              end
+              versions.reject! do |hash|
+                ignore_reqs.any? { |r| r.satisfied_by?(hash.fetch(:version)) }
+              end
+              versions.max_by { |hash| hash.fetch(:version) }
+            end
+        end
+
         def available_versions
           nuget_listings.flat_map do |listing|
             listing.
               fetch("versions", []).
-              map { |v| version_class.new(v) }
+              map do |v|
+                nuspec_url =
+                  listing.fetch("listing_details").
+                  fetch(:versions_url).
+                  gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
+
+                {
+                  version:    version_class.new(v),
+                  nuspec_url: nuspec_url,
+                  repo_url:
+                    listing.fetch("listing_details").fetch(:repository_url)
+                }
+              end
           end
         end
 
@@ -80,15 +100,17 @@ module Dependabot
         def nuget_listings
           return @nuget_listings unless @nuget_listings.nil?
 
-          dependency_urls.map do |url|
+          dependency_urls.map do |url_details|
             response = Excon.get(
-              url,
+              url_details[:versions_url],
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
             next unless response.status == 200
 
-            @nuget_listing = JSON.parse(response.body)
+            @nuget_listing =
+              JSON.parse(response.body).
+              merge("listing_details" => url_details)
           end.compact
         end
 
@@ -104,6 +126,10 @@ module Dependabot
         def nuget_config
           @nuget_config ||=
             dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+        end
+
+        def sanitized_name
+          dependency.name.downcase
         end
       end
     end

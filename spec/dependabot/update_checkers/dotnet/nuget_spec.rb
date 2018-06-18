@@ -114,4 +114,37 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     subject { checker.latest_resolvable_version_with_no_unlock }
     it { is_expected.to be_nil }
   end
+
+  describe "#updated_requirements" do
+    subject(:updated_requirements) { checker.updated_requirements }
+
+    it "delegates to the RequirementsUpdater" do
+      expect(described_class::RequirementsUpdater).to receive(:new).with(
+        requirements: dependency_requirements,
+        latest_version: "2.1.0",
+        source_details: {
+          nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                      "microsoft.extensions.dependencymodel/2.1.0/"\
+                      "microsoft.extensions.dependencymodel.nuspec",
+          repo_url:   "https://api.nuget.org/v3/index.json"
+        }
+      ).and_call_original
+      expect(updated_requirements).to eq(
+        [
+          {
+            file: "my.csproj",
+            requirement: "2.1.0",
+            groups: [],
+            source: {
+              type: "nuget_repo",
+              url: "https://api.nuget.org/v3/index.json",
+              nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                          "microsoft.extensions.dependencymodel/2.1.0/"\
+                          "microsoft.extensions.dependencymodel.nuspec"
+            }
+          }
+        ]
+      )
+    end
+  end
 end

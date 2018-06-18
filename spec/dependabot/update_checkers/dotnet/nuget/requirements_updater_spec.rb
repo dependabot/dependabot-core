@@ -7,7 +7,8 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      latest_version: latest_version
+      latest_version: latest_version,
+      source_details: source_details
     )
   end
 
@@ -22,6 +23,14 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
   end
   let(:csproj_req_string) { "23.3-jre" }
   let(:latest_version) { version_class.new("23.6-jre") }
+  let(:source_details) do
+    {
+      repo_url:   "https://api.nuget.org/v3/index.json",
+      nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                  "microsoft.extensions.dependencymodel/1.2.3/"\
+                  "microsoft.extensions.dependencymodel.nuspec"
+    }
+  end
 
   let(:version_class) { Dependabot::Utils::Dotnet::Version }
 
@@ -74,13 +83,25 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                 file: "my.csproj",
                 requirement: "23.6-jre",
                 groups: [],
-                source: nil
+                source: {
+                  type: "nuget_repo",
+                  url: "https://api.nuget.org/v3/index.json",
+                  nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                              "microsoft.extensions.dependencymodel/1.2.3/"\
+                              "microsoft.extensions.dependencymodel.nuspec"
+                }
               },
               {
                 file: "another/my.csproj",
                 requirement: "[23.6-jre]",
                 groups: [],
-                source: nil
+                source: {
+                  type: "nuget_repo",
+                  url: "https://api.nuget.org/v3/index.json",
+                  nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                              "microsoft.extensions.dependencymodel/1.2.3/"\
+                              "microsoft.extensions.dependencymodel.nuspec"
+                }
               }
             ]
           )
@@ -96,7 +117,13 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                   file: "my.csproj",
                   requirement: "23.6-jre",
                   groups: [],
-                  source: nil
+                  source: {
+                    type: "nuget_repo",
+                    url: "https://api.nuget.org/v3/index.json",
+                    nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                                "microsoft.extensions.dependencymodel/1.2.3/"\
+                                "microsoft.extensions.dependencymodel.nuspec"
+                  }
                 },
                 {
                   file: "another/my.csproj",
