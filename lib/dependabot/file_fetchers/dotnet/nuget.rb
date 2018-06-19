@@ -9,11 +9,12 @@ module Dependabot
         require "dependabot/file_fetchers/dotnet/nuget/import_paths_finder"
 
         def self.required_files_in?(filenames)
+          return true if filenames.include?("packages.config")
           filenames.any? { |name| name.match?(%r{^[^/]*\.(cs|vb|fs)proj$}) }
         end
 
         def self.required_files_message
-          "Repo must contain a csproj file."
+          "Repo must contain a csproj file or a packages.config."
         end
 
         private
@@ -21,9 +22,9 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files += project_files
-          fetched_files << packages_config if packages_config
           fetched_files += imported_property_files
 
+          fetched_files << packages_config if packages_config
           fetched_files << nuget_config if nuget_config
 
           return fetched_files unless project_files.none? && !packages_config
