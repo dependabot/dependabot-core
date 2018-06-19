@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Dependabot
-  VERSION = "0.61.10"
+  VERSION = "0.61.11"
 end

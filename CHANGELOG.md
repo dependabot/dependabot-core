@@ -1,3 +1,10 @@
+## v0.61.11, 19 June 2018
+
+- .NET: Set repo details as source in UpdateChecker (for use later in
+  MetadataFinder)
+- .NET: Use dependency source in MetadataFinder if present
+- Java: Handle java-specific versions in Utils::Java::Requirement class
+
 ## v0.61.10, 18 June 2018
 
 - .NET: Handle custom repositories (without auth details)
