@@ -1,3 +1,8 @@
+## v0.61.13, 19 June 2018
+
+- .NET: Handle packages.config files in FileUpdater
+- .NET: Add parser for packages.config dependencies
+
 ## v0.61.12, 19 June 2018
 
 - .NET: Use credentials provided to access private repositories
