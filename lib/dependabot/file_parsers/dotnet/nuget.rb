@@ -13,12 +13,14 @@ module Dependabot
       class Nuget < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
         require "dependabot/file_parsers/dotnet/nuget/project_file_parser"
+        require "dependabot/file_parsers/dotnet/nuget/packages_config_parser"
 
         PACKAGE_CONF_DEPENDENCY_SELECTOR = "packages > packages"
 
         def parse
           dependency_set = DependencySet.new
           dependency_set += project_file_dependencies
+          dependency_set += packages_config_dependencies
           dependency_set.dependencies
         end
 
@@ -33,6 +35,13 @@ module Dependabot
           end
 
           dependency_set
+        end
+
+        def packages_config_dependencies
+          return DependencySet.new unless packages_config
+          PackagesConfigParser.
+            new(packages_config: packages_config).
+            dependency_set
         end
 
         def project_files
@@ -50,8 +59,8 @@ module Dependabot
         end
 
         def check_required_files
-          return if project_files.any?
-          raise "No project file!"
+          return if project_files.any? || packages_config
+          raise "No project file or packages.config!"
         end
       end
     end

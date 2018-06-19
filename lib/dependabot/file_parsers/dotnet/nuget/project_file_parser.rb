@@ -65,8 +65,7 @@ module Dependabot
 
             # Take the first (and therefore lowest) element of any range. Nuget
             # resolves dependencies to the "Lowest Applicable Version".
-            # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-
-            #   resolution
+            # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-resolution
             version = version.split(",").first.strip
 
             # We don't know the version for requirements like (,1.0) or for

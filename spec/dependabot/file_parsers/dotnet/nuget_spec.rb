@@ -25,67 +25,41 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    context "for top-level dependencies" do
-      its(:length) { is_expected.to eq(3) }
+    its(:length) { is_expected.to eq(3) }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+    describe "the first dependency" do
+      subject(:dependency) { dependencies.first }
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
-          expect(dependency.version).to eq("1.1.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "1.1.1",
-              file: "my.csproj",
-              groups: [],
-              source: nil
-            }]
-          )
-        end
-      end
-
-      describe "the last dependency" do
-        subject(:dependency) { dependencies.last }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("System.Collections.Specialized")
-          expect(dependency.version).to eq("4.3.0")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "4.3.0",
-              file: "my.csproj",
-              groups: [],
-              source: nil
-            }]
-          )
-        end
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
+        expect(dependency.version).to eq("1.1.1")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "1.1.1",
+            file: "my.csproj",
+            groups: [],
+            source: nil
+          }]
+        )
       end
     end
 
-    context "with version ranges" do
-      let(:csproj_body) { fixture("dotnet", "csproj", "ranges.csproj") }
-
-      its(:length) { is_expected.to eq(4) }
+    describe "the last dependency" do
+      subject(:dependency) { dependencies.last }
 
       it "has the right details" do
-        expect(dependencies.first.requirements.first.fetch(:requirement)).
-          to eq("[1.0,2.0]")
-        expect(dependencies.first.version).to eq("1.0")
-
-        expect(dependencies[1].requirements.first.fetch(:requirement)).
-          to eq("[1.1]")
-        expect(dependencies[1].version).to eq("1.1")
-
-        expect(dependencies[2].requirements.first.fetch(:requirement)).
-          to eq("(,1.0)")
-        expect(dependencies[2].version).to be_nil
-
-        expect(dependencies[3].requirements.first.fetch(:requirement)).
-          to eq("1.0.*")
-        expect(dependencies[3].version).to be_nil
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("System.Collections.Specialized")
+        expect(dependency.version).to eq("4.3.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "4.3.0",
+            file: "my.csproj",
+            groups: [],
+            source: nil
+          }]
+        )
       end
     end
 
@@ -137,6 +111,37 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
             [{
               requirement: "2.3.0",
               file: "my.vbproj",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a packages.config" do
+      let(:files) { [packages_config] }
+      let(:packages_config) do
+        Dependabot::DependencyFile.new(
+          name: "packages.config",
+          content: fixture("dotnet", "packages_configs", "packages.config")
+        )
+      end
+
+      its(:length) { is_expected.to eq(9) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.0",
+              file: "packages.config",
               groups: [],
               source: nil
             }]
