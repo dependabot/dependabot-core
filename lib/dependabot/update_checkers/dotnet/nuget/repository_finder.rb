@@ -2,6 +2,7 @@
 
 require "excon"
 require "nokogiri"
+require "dependabot/errors"
 require "dependabot/update_checkers/dotnet/nuget"
 require "dependabot/shared_helpers"
 
@@ -36,6 +37,7 @@ module Dependabot
                 end
 
                 repo_metadata_response = get_repo_metadata(details)
+                check_repo_reponse(repo_metadata_response, details)
                 next unless repo_metadata_response.status == 200
 
                 base_url =
@@ -51,7 +53,7 @@ module Dependabot
                   auth_header: auth_header_for_token(details.fetch(:token))
                 }
               rescue Excon::Error::Timeout, Excon::Error::Socket
-                nil
+                handle_timeout(repo_metadata_url: details.fetch(:url))
               end.compact.uniq
           end
 
@@ -62,6 +64,17 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
+          end
+
+          def handle_timeout(repo_metadata_url)
+            raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
+            raise PrivateSourceTimedOut, repo_metadata_url
+          end
+
+          def check_repo_reponse(response, details)
+            raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
+            return unless [401, 402, 403].include?(response.status)
+            raise PrivateSourceAuthenticationFailure, details.fetch(:url)
           end
 
           def known_repositories

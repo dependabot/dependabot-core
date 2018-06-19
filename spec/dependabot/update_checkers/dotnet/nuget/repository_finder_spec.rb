@@ -98,6 +98,19 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
         # TODO: Might want to raise here instead?
         it { is_expected.to eq([]) }
       end
+
+      context "that 403s" do
+        before { stub_request(:get, custom_repo_url).to_return(status: 403) }
+
+        it "raises a useful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { finder.dependency_urls }.
+            to raise_error do |error|
+              expect(error).to be_a(error_class)
+              expect(error.source).to eq(custom_repo_url)
+            end
+        end
+      end
     end
 
     context "with a URL included in the nuget.config" do
