@@ -87,6 +87,38 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, nuget_url).once
       end
+
+      context "that requires authentication" do
+        before do
+          stub_request(:get, nuget_url).to_return(status: 404)
+          stub_request(:get, nuget_url).
+            with(basic_auth: %w(my passw0rd)).
+            to_return(status: 200, body: nuget_response)
+        end
+
+        it { is_expected.to be_nil }
+
+        context "with details in the credentials" do
+          let(:credentials) do
+            [
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "type" => "nuget_repository",
+                "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+                         "index.json",
+                "token" => "my:passw0rd"
+              }
+            ]
+          end
+
+          it { is_expected.to eq("https://github.com/dotnet/core-setup") }
+        end
+      end
     end
   end
 end

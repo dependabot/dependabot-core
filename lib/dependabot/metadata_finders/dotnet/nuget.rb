@@ -45,6 +45,7 @@ module Dependabot
 
           response = Excon.get(
             dependency_nuspec_url,
+            headers: auth_header,
             idempotent: true,
             **SharedHelpers.excon_defaults
           )
@@ -61,6 +62,29 @@ module Dependabot
             "https://api.nuget.org/v3-flatcontainer/"\
             "#{dependency.name.downcase}/#{dependency.version}/"\
             "#{dependency.name.downcase}.nuspec"
+        end
+
+        def auth_header
+          source = dependency.requirements.
+                   find { |r| r&.fetch(:source) }&.fetch(:source)
+          url = source&.fetch(:url, nil) || source&.fetch("url")
+
+          token = credentials.
+                  select { |cred| cred["type"] == "nuget_repository" }.
+                  find { |cred| cred["url"] == url }&.
+                  fetch("token")
+
+          return {} unless token
+
+          if token.include?(":")
+            encoded_token = Base64.encode64(token).delete("\n")
+            { "Authorization" => "Basic #{encoded_token}" }
+          elsif Base64.decode64(token).ascii_only? &&
+                Base64.decode64(token).include?(":")
+            { "Authorization" => "Basic #{token.delete("\n")}" }
+          else
+            { "Authorization" => "Bearer #{token}" }
+          end
         end
       end
     end

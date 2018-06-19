@@ -65,16 +65,19 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
           },
           {
             "type" => "nuget_repository",
-            "url" => custom_repo_url
+            "url" => custom_repo_url,
+            "token" => "my:passw0rd"
           }
         ]
       end
 
       before do
-        stub_request(:get, custom_repo_url).to_return(
-          status: 200,
-          body: fixture("dotnet", "nuget_responses", "myget_base.json")
-        )
+        stub_request(:get, custom_repo_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(
+            status: 200,
+            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+          )
       end
 
       it "gets the right URL" do

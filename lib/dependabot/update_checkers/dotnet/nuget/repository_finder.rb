@@ -37,6 +37,7 @@ module Dependabot
 
                 repo_metadata_response = Excon.get(
                   details.fetch("url"),
+                  headers: auth_header_for(details.fetch("url")),
                   idempotent: true,
                   **SharedHelpers.excon_defaults
                 )
@@ -65,14 +66,10 @@ module Dependabot
             @known_repositories += config_file_repositories
 
             if @known_repositories.empty?
-              @known_repositories << {
-                "url" => DEFAULT_REPOSITORY_URL,
-                "username" => nil,
-                "password" => nil
-              }
+              @known_repositories << { "url" => DEFAULT_REPOSITORY_URL }
             end
 
-            @known_repositories
+            @known_repositories.uniq
           end
 
           def credential_repositories
@@ -102,6 +99,25 @@ module Dependabot
               versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
                               "#{dependency.name.downcase}/index.json"
             }
+          end
+
+          def auth_header_for(repository_url)
+            token = credentials.
+                    select { |cred| cred["type"] == "nuget_repository" }.
+                    find { |cred| cred["url"] == repository_url }&.
+                    fetch("token")
+
+            return {} unless token
+
+            if token.include?(":")
+              encoded_token = Base64.encode64(token).delete("\n")
+              { "Authorization" => "Basic #{encoded_token}" }
+            elsif Base64.decode64(token).ascii_only? &&
+                  Base64.decode64(token).include?(":")
+              { "Authorization" => "Basic #{token.delete("\n")}" }
+            else
+              { "Authorization" => "Bearer #{token}" }
+            end
           end
         end
       end
