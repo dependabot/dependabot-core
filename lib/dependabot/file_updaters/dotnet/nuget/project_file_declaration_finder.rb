@@ -7,7 +7,7 @@ module Dependabot
   module FileUpdaters
     module Dotnet
       class Nuget
-        class DeclarationFinder
+        class ProjectFileDeclarationFinder
           DECLARATION_REGEX =
             %r{<PackageReference [^>]*?/>|
                <PackageReference [^>]*?[^/]>.*?</PackageReference>}mx

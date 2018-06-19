@@ -3,9 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/dotnet/nuget/declaration_finder"
+require "dependabot/file_updaters/dotnet/nuget/project_file_declaration_finder"
 
-RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::DeclarationFinder do
+namespace = Dependabot::FileUpdaters::Dotnet::Nuget
+RSpec.describe namespace::ProjectFileDeclarationFinder do
   let(:finder) do
     described_class.new(
       dependency_name: dependency_name,

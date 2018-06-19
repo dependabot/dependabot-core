@@ -6,13 +6,16 @@ module Dependabot
   module FileUpdaters
     module Dotnet
       class Nuget < Dependabot::FileUpdaters::Base
-        require_relative "nuget/declaration_finder"
+        require_relative "nuget/packages_config_declaration_finder"
+        require_relative "nuget/project_file_declaration_finder"
+
         def self.updated_files_regex
           [%r{^[^/]*\.csproj$}]
         end
 
         def updated_dependency_files
           updated_files = project_files.dup
+          updated_files << packages_config.dup if packages_config
 
           # Loop through each of the changed requirements, applying changes to
           # all files for that change. Note that the logic is different here
@@ -37,9 +40,13 @@ module Dependabot
           dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
         end
 
+        def packages_config
+          dependency_files.find { |df| df.name == "packages.config" }
+        end
+
         def check_required_files
-          return if project_files.any?
-          raise "No project file!"
+          return if project_files.any? || packages_config
+          raise "No project file or packages.config!"
         end
 
         def update_files_for_dependency(files:, dependency:)
@@ -84,8 +91,14 @@ module Dependabot
         def declaration_finder(dependency, requirement)
           @declaration_finders ||= {}
           @declaration_finders[dependency.hash + requirement.hash] ||=
-            begin
-              DeclarationFinder.new(
+            if requirement.fetch(:file) == "packages.config"
+              PackagesConfigDeclarationFinder.new(
+                dependency_name: dependency.name,
+                declaring_requirement: requirement,
+                packages_config: packages_config
+              )
+            else
+              ProjectFileDeclarationFinder.new(
                 dependency_name: dependency.name,
                 declaring_requirement: requirement,
                 dependency_files: dependency_files

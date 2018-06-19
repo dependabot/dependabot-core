@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/file_updaters/dotnet/nuget"
 require_relative "../shared_examples_for_file_updaters"
 
@@ -98,6 +100,53 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
         end
 
         its(:content) { is_expected.to include '"Dep1" Version="[1.0,2.1]" />' }
+      end
+    end
+
+    context "with a packages.config file" do
+      let(:dependency_files) { [packages_config] }
+      let(:packages_config) do
+        Dependabot::DependencyFile.new(
+          content: fixture("dotnet", "packages_configs", "packages.config"),
+          name: "packages.config"
+        )
+      end
+      let(:dependency_name) { "Newtonsoft.Json" }
+      let(:version) { "8.0.4" }
+      let(:previous_version) { "8.0.3" }
+      let(:requirements) do
+        [{
+          file: "packages.config",
+          requirement: "8.0.4",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "packages.config",
+          requirement: "8.0.3",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      describe "the updated packages.config file" do
+        subject(:updated_packages_config_file) do
+          updated_files.find { |f| f.name == "packages.config" }
+        end
+
+        its(:content) do
+          is_expected.to include 'id="Newtonsoft.Json" version="8.0.4"'
+        end
+        its(:content) do
+          is_expected.to include 'id="NuGet.Core" version="2.11.1"'
+        end
+
+        it "doesn't update the formatting of the project file" do
+          expect(updated_packages_config_file.content).
+            to include("</packages>\n\n")
+        end
       end
     end
 
