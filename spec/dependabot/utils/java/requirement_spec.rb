@@ -9,11 +9,21 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
   let(:requirement_string) { ">=1.0.0" }
 
   describe ".new" do
-    subject { described_class.new(requirement_string) }
+    subject(:requirement) { described_class.new(requirement_string) }
 
     context "with a pre-release version" do
       let(:requirement_string) { "1.3.alpha" }
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.a")) }
+    end
+
+    context "with a version that wouldn't be a valid Gem::Version" do
+      let(:requirement_string) { ">= Finchley.SR3" }
+
+      it "creates a requirement object" do
+        expect(requirement).to be_satisfied_by(
+          Dependabot::Utils::Java::Version.new("Finchley.SR4")
+        )
+      end
     end
   end
 

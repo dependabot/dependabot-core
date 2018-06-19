@@ -6,6 +6,11 @@ module Dependabot
   module Utils
     module Java
       class Requirement < Gem::Requirement
+        quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
+        PATTERN_RAW =
+          "\\s*(#{quoted})?\\s*(#{Utils::Java::Version::VERSION_PATTERN})\\s*"
+        PATTERN = /\A#{PATTERN_RAW}\z/
+
         def self.parse(obj)
           if obj.is_a?(Gem::Version)
             return ["=", Utils::Java::Version.new(obj.to_s)]
