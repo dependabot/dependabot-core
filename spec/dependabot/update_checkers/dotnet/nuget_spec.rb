@@ -87,56 +87,66 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
       before do
-        stub_request(:get, custom_repo_url).to_return(
-          status: 200,
-          body: fixture("dotnet", "nuget_responses", "myget_base.json")
-        )
         stub_request(:get, nuget_versions_url).to_return(status: 404)
+
+        stub_request(:get, custom_repo_url).to_return(status: 404)
+        stub_request(:get, custom_repo_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(
+            status: 200,
+            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+          )
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
           "microsoft.extensions.dependencymodel/index.json"
+        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
         stub_request(:get, custom_nuget_versions_url).
+          with(basic_auth: %w(my passw0rd)).
           to_return(status: 200, body: nuget_versions)
       end
 
       it { is_expected.to eq(version_class.new("2.1.0")) }
+    end
 
-      context "with credentials" do
-        let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "nuget_repository",
-              "url" => custom_repo_url,
-              "token" => "my:passw0rd"
-            }
-          ]
-        end
-
-        before do
-          stub_request(:get, custom_repo_url).to_return(status: 404)
-          stub_request(:get, custom_repo_url).
-            with(basic_auth: %w(my passw0rd)).
-            to_return(
-              status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
-            )
-          custom_nuget_versions_url =
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-            "microsoft.extensions.dependencymodel/index.json"
-          stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-          stub_request(:get, custom_nuget_versions_url).
-            with(basic_auth: %w(my passw0rd)).
-            to_return(status: 200, body: nuget_versions)
-        end
-
-        it { is_expected.to eq(version_class.new("2.1.0")) }
+    context "with a custom repo in the credentials" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "type" => "nuget_repository",
+            "url" => custom_repo_url,
+            "token" => "my:passw0rd"
+          }
+        ]
       end
+      let(:custom_repo_url) do
+        "https://www.myget.org/F/exceptionless/api/v3/index.json"
+      end
+      before do
+        stub_request(:get, nuget_versions_url).to_return(status: 404)
+
+        stub_request(:get, custom_repo_url).to_return(status: 404)
+        stub_request(:get, custom_repo_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(
+            status: 200,
+            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+          )
+        custom_nuget_versions_url =
+          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
+          "microsoft.extensions.dependencymodel/index.json"
+        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
+        stub_request(:get, custom_nuget_versions_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(status: 200, body: nuget_versions)
+      end
+
+      it { is_expected.to eq(version_class.new("2.1.0")) }
     end
   end
 

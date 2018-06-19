@@ -103,7 +103,7 @@ module Dependabot
           dependency_urls.map do |url_details|
             response = Excon.get(
               url_details[:versions_url],
-              headers: auth_header_for(url_details[:repository_url]),
+              headers: url_details[:auth_header],
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
@@ -131,25 +131,6 @@ module Dependabot
 
         def sanitized_name
           dependency.name.downcase
-        end
-
-        def auth_header_for(repository_url)
-          token = credentials.
-                  select { |cred| cred["type"] == "nuget_repository" }.
-                  find { |cred| cred["url"] == repository_url }&.
-                  fetch("token")
-
-          return {} unless token
-
-          if token.include?(":")
-            encoded_token = Base64.encode64(token).delete("\n")
-            { "Authorization" => "Basic #{encoded_token}" }
-          elsif Base64.decode64(token).ascii_only? &&
-                Base64.decode64(token).include?(":")
-            { "Authorization" => "Basic #{token.delete("\n")}" }
-          else
-            { "Authorization" => "Bearer #{token}" }
-          end
         end
       end
     end

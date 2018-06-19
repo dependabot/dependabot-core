@@ -41,13 +41,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
 
     it "gets the right URL without making any requests" do
       expect(dependency_urls).to eq(
-        [
-          {
-            repository_url: "https://api.nuget.org/v3/index.json",
-            versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
-                            "microsoft.extensions.dependencymodel/index.json"
-          }
-        ]
+        [{
+          repository_url: "https://api.nuget.org/v3/index.json",
+          versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
+                          "microsoft.extensions.dependencymodel/index.json",
+          auth_header:    {}
+        }]
       )
     end
 
@@ -82,15 +81,14 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
 
       it "gets the right URL" do
         expect(dependency_urls).to eq(
-          [
-            {
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
-                              "index.json",
-              versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
-                              "flatcontainer/microsoft.extensions."\
-                              "dependencymodel/index.json"
-            }
-          ]
+          [{
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                            "index.json",
+            versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
+                            "flatcontainer/microsoft.extensions."\
+                            "dependencymodel/index.json",
+            auth_header:    { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" }
+          }]
         )
       end
 
@@ -112,10 +110,13 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
 
       before do
         repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
-        stub_request(:get, repo_url).to_return(
-          status: 200,
-          body: fixture("dotnet", "nuget_responses", "myget_base.json")
-        )
+        stub_request(:get, repo_url).to_return(status: 404)
+        stub_request(:get, repo_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(
+            status: 200,
+            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+          )
       end
 
       it "gets the right URLs" do
@@ -124,14 +125,16 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
             {
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
-                              "microsoft.extensions.dependencymodel/index.json"
+                              "microsoft.extensions.dependencymodel/index.json",
+              auth_header:    {}
             },
             {
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                               "index.json",
               versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
                               "flatcontainer/microsoft.extensions."\
-                              "dependencymodel/index.json"
+                              "dependencymodel/index.json",
+              auth_header:    { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" }
             }
           ]
         )
