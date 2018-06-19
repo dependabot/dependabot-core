@@ -1,3 +1,10 @@
+## v0.61.12, 19 June 2018
+
+- .NET: Use credentials provided to access private repositories
+- .NET: Fetch credentials from nuget.config file, too, if present
+- .NET: Raise PrivateSourceAuthenticationFailure when auth fails for custom
+  repos
+
 ## v0.61.11, 19 June 2018
 
 - .NET: Set repo details as source in UpdateChecker (for use later in
