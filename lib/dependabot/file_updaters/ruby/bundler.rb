@@ -27,6 +27,10 @@ module Dependabot
           ::Bundler::Source::Path,
           ::Bundler::Source::Gemspec
         ].freeze
+        RETRYABLE_ERRORS = [
+          ::Bundler::HTTPError,
+          ::Bundler::Fetcher::FallbackError
+        ].freeze
 
         def self.updated_files_regex
           [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
@@ -251,11 +255,10 @@ module Dependabot
             raise if dependencies_to_unlock.include?(gem_name)
             dependencies_to_unlock << gem_name
             retry
-          rescue ::Bundler::HTTPError => error
-            # Retry network errors
-            attempt ||= 1
-            attempt += 1
-            raise if attempt > 3 || !error.message.include?("Network error")
+          rescue *RETRYABLE_ERRORS
+            raise if @retrying
+            @retrying = true
+            sleep(rand(1.0..5.0))
             retry
           end
         end
