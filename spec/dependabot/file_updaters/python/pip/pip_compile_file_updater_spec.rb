@@ -192,6 +192,57 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         expect(updated_files.last.content).to include("attrs==18.1.0")
         expect(updated_files.last.content).to_not include("# via mock")
       end
+
+      context "with an additional requirements.txt" do
+        let(:dependency_files) { [manifest_file, generated_file, other_txt] }
+        let(:other_txt) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content:
+              fixture("python", "requirements", "pip_compile_unpinned.txt")
+          )
+        end
+
+        let(:dependency_requirements) do
+          [
+            {
+              file: "requirements/test.in",
+              requirement: "<=18.1.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "requirements.txt",
+              requirement: "==18.1.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+        let(:dependency_previous_requirements) do
+          [
+            {
+              file: "requirements/test.in",
+              requirement: "<=17.4.0",
+              groups: [],
+              source: nil
+            },
+            {
+              file: "requirements.txt",
+              requirement: "==17.3.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        end
+
+        it "updates the other requirements.txt, too" do
+          expect(updated_files.count).to eq(3)
+          expect(updated_files.first.content).to include("Attrs<=18.1.0")
+          expect(updated_files[1].content).to include("attrs==18.1.0")
+          expect(updated_files.last.content).to include("attrs==18.1.0")
+        end
+      end
     end
 
     context "when the upgrade requires Python 2.7" do

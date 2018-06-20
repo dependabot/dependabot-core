@@ -97,10 +97,8 @@ module Dependabot
 
             args = dependency.to_h
             args = Hash[args.keys.map { |k| [k.to_sym, args[k]] }]
-            args.merge(
-              requirements: new_reqs,
-              previous_requirements: old_reqs
-            )
+            args[:requirements] = new_reqs
+            args[:previous_requirements] = old_reqs
 
             RequirementFileUpdater.new(
               dependencies: [Dependency.new(**args)],
