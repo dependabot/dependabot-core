@@ -1,3 +1,7 @@
+## v0.61.14, 20 June 2018
+
+- Python: Fix requirement filtering when using pip-compile with uncompiled files
+
 ## v0.61.13, 19 June 2018
 
 - .NET: Handle packages.config files in FileUpdater
