@@ -29,7 +29,7 @@ module Dependabot
         ].freeze
         RETRYABLE_ERRORS = [
           ::Bundler::HTTPError,
-          ::Bundler::Fetcher::FallbackError
+          "::Bundler::Fetcher::FallbackError"
         ].freeze
 
         def self.updated_files_regex
