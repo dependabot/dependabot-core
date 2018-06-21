@@ -1,3 +1,8 @@
+## v0.61.17, 21 June 2018
+
+- .NET: Ignore failed imports (until we handle properties we can't rely on the
+  paths)
+
 ## v0.61.16, 21 June 2018
 
 - .NET: Fetch project files referenced in .sln files
