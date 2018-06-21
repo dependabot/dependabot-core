@@ -1,3 +1,9 @@
+## v0.61.15, 21 June 2018
+
+- Ruby: Retry more errors in FileUpdater
+- .NET: Handle capitalisation of packages.config file
+- .NET: Handle more dependency file names when considering rebasing
+
 ## v0.61.14, 20 June 2018
 
 - Python: Fix requirement filtering when using pip-compile with uncompiled files
