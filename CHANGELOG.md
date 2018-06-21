@@ -1,3 +1,7 @@
+## v0.61.19, 21 June 2018
+
+- .NET: Keep track of the files we've fetched better (avoids duplicate requests)
+
 ## v0.61.18, 21 June 2018
 
 - .NET: Allow repos with just a .sln file at the top level
