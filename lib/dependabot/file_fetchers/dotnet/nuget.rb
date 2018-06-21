@@ -29,6 +29,7 @@ module Dependabot
           fetched_files << packages_config if packages_config
           fetched_files << nuget_config if nuget_config
 
+          fetched_files = fetched_files.uniq
           return fetched_files unless project_files.none? && !packages_config
           raise(Dependabot::DependencyFileNotFound, "<anything>.csproj")
         end
@@ -108,13 +109,18 @@ module Dependabot
         end
 
         def imported_property_files
-          previously_fetched_files = project_files
-          project_files.flat_map do |proj_file|
-            fetch_imported_property_files(
-              file: proj_file,
-              previously_fetched_files: previously_fetched_files
-            )
-          end.compact
+          imported_property_files = []
+
+          project_files.each do |proj_file|
+            previously_fetched_files = project_files + imported_property_files
+            imported_property_files +=
+              fetch_imported_property_files(
+                file: proj_file,
+                previously_fetched_files: previously_fetched_files
+              )
+          end
+
+          imported_property_files
         end
 
         def fetch_imported_property_files(file:, previously_fetched_files:)
