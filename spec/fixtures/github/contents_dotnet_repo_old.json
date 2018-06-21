@@ -160,22 +160,6 @@
     }
   },
   {
-    "name": "FSharp.sln",
-    "path": "FSharp.sln",
-    "sha": "033b789a8b0639af562271728bc5ffc3ad81a6e5",
-    "size": 14844,
-    "url": "https://api.github.com/repos/fsharp/fsharp/contents/FSharp.sln?ref=master",
-    "html_url": "https://github.com/fsharp/fsharp/blob/master/FSharp.sln",
-    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
-    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/FSharp.sln",
-    "type": "file",
-    "_links": {
-      "self": "https://api.github.com/repos/fsharp/fsharp/contents/FSharp.sln?ref=master",
-      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
-      "html": "https://github.com/fsharp/fsharp/blob/master/FSharp.sln"
-    }
-  },
-  {
     "name": "ISSUE_TEMPLATE.md",
     "path": "ISSUE_TEMPLATE.md",
     "sha": "452ecef05def95e27e3cc3b6098255bf4cbac2d5",

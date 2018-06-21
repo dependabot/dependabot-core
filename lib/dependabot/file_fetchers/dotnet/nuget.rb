@@ -7,6 +7,7 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::FileFetchers::Base
         require "dependabot/file_fetchers/dotnet/nuget/import_paths_finder"
+        require "dependabot/file_fetchers/dotnet/nuget/sln_project_paths_finder"
 
         def self.required_files_in?(filenames)
           return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
@@ -38,6 +39,8 @@ module Dependabot
               project_files << csproj_file if csproj_file
               project_files << vbproj_file if vbproj_file
               project_files << fsproj_file if fsproj_file
+
+              project_files += sln_project_files if sln_file
               project_files
             end
         end
@@ -49,6 +52,19 @@ module Dependabot
                      find { |f| f.name.casecmp("packages.config").zero? }
               fetch_file_from_host(file.name) if file
             end
+        end
+
+        def sln_file
+          @sln_file ||=
+            begin
+              file = repo_contents.find { |f| f.name.end_with?(".sln") }
+              fetch_file_from_host(file.name) if file
+            end
+        end
+
+        def sln_project_files
+          # TODO: Write me!
+          []
         end
 
         def csproj_file
