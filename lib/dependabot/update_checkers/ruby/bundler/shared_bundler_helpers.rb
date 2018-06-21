@@ -133,7 +133,7 @@ module Dependabot
               regex = /Could not fetch specs from (?<source>.*)$/
               raise unless error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
-              raise if source.include?("rubygems")
+              raise if source.include?("rubygems.org")
               raise Dependabot::PrivateSourceTimedOut, source
             else raise
             end
