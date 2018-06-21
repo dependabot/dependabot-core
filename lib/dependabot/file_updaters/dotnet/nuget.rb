@@ -41,7 +41,7 @@ module Dependabot
         end
 
         def packages_config
-          dependency_files.find { |df| df.name == "packages.config" }
+          dependency_files.find { |f| f.name.casecmp("packages.config").zero? }
         end
 
         def check_required_files
@@ -91,7 +91,7 @@ module Dependabot
         def declaration_finder(dependency, requirement)
           @declaration_finders ||= {}
           @declaration_finders[dependency.hash + requirement.hash] ||=
-            if requirement.fetch(:file) == "packages.config"
+            if requirement.fetch(:file).casecmp("packages.config").zero?
               PackagesConfigDeclarationFinder.new(
                 dependency_name: dependency.name,
                 declaring_requirement: requirement,

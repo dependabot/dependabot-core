@@ -9,7 +9,7 @@ module Dependabot
         require "dependabot/file_fetchers/dotnet/nuget/import_paths_finder"
 
         def self.required_files_in?(filenames)
-          return true if filenames.include?("packages.config")
+          return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
           filenames.any? { |name| name.match?(%r{^[^/]*\.(cs|vb|fs)proj$}) }
         end
 
@@ -45,7 +45,8 @@ module Dependabot
         def packages_config
           @packages_config ||=
             begin
-              file = repo_contents.find { |f| f.name == "packages.config" }
+              file = repo_contents.
+                     find { |f| f.name.casecmp("packages.config").zero? }
               fetch_file_from_host(file.name) if file
             end
         end

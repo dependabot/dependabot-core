@@ -51,7 +51,7 @@ module Dependabot
         end
 
         def packages_config
-          dependency_files.find { |df| df.name == "packages.config" }
+          dependency_files.find { |f| f.name.casecmp("packages.config").zero? }
         end
 
         def project_import_files

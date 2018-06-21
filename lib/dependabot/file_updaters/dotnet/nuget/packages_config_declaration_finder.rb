@@ -21,7 +21,10 @@ module Dependabot
             @packages_config        = packages_config
             @declaring_requirement  = declaring_requirement
 
-            return if declaring_requirement[:file] == "packages.config"
+            if declaring_requirement[:file].casecmp("packages.config").zero?
+              return
+            end
+
             raise "Requirement not from packages.config!"
           end
 
