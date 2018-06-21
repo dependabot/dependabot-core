@@ -239,6 +239,61 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
     end
   end
 
+  context "with a *.sln" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_with_sln.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "NuGet.Config?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_config.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "FSharp.sln?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_sln.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(
+        :get,
+        File.join(url, "src/GraphQL.Common/GraphQL.Common.csproj?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github",
+                        "contents_dotnet_csproj_with_parent_import.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "src/src.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_csproj_basic.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the packages.config" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(
+            NuGet.Config
+            src/GraphQL.Common/GraphQL.Common.csproj
+            src/src.props
+          )
+        )
+    end
+  end
+
   context "without any project files" do
     before do
       stub_request(:get, url + "?ref=sha").

@@ -40,7 +40,7 @@ module Dependabot
               project_files << vbproj_file if vbproj_file
               project_files << fsproj_file if fsproj_file
 
-              project_files += sln_project_files if sln_file
+              project_files += sln_project_files
               project_files
             end
         end
@@ -63,8 +63,14 @@ module Dependabot
         end
 
         def sln_project_files
-          # TODO: Write me!
-          []
+          return [] unless sln_file
+          @sln_project_files ||=
+            begin
+              paths = SlnProjectPathsFinder.
+                      new(sln_file: sln_file).
+                      project_paths
+              paths.map { |path| fetch_file_from_host(path) }
+            end
         end
 
         def csproj_file
