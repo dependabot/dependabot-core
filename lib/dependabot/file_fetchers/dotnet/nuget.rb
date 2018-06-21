@@ -125,11 +125,11 @@ module Dependabot
             next if file.name == path
 
             fetched_file = fetch_file_from_host(path, type: "project_import")
-            grandchild_gemfiles = fetch_imported_property_files(
+            grandchild_property_files = fetch_imported_property_files(
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]
             )
-            [fetched_file, *grandchild_gemfiles]
+            [fetched_file, *grandchild_property_files]
           rescue Dependabot::DependencyFileNotFound
             # Don't worry about missing files too much for now (at least
             # until we start resolving properties)
