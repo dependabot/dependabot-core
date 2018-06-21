@@ -81,8 +81,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
 
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
-    && apt-get install -y esl-erlang=1:20.3.6 \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.5/Precompiled.zip \
+    && apt-get install -y esl-erlang \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.6/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip
 ENV PATH="$PATH:/usr/local/elixir/bin"
