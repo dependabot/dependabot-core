@@ -1,3 +1,7 @@
+## v0.61.16, 21 June 2018
+
+- .NET: Fetch project files referenced in .sln files
+
 ## v0.61.15, 21 June 2018
 
 - Ruby: Retry more errors in FileUpdater
