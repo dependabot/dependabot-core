@@ -129,6 +129,10 @@ module Dependabot
               previously_fetched_files: previously_fetched_files + [file]
             )
             [fetched_file, *grandchild_gemfiles]
+          rescue Dependabot::DependencyFileNotFound
+            # Don't worry about missing files too much for now (at least
+            # until we start resolving properties)
+            nil
           end.compact
         end
       end
