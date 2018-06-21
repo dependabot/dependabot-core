@@ -10,7 +10,10 @@ module Dependabot
         require_relative "nuget/project_file_declaration_finder"
 
         def self.updated_files_regex
-          [%r{^[^/]*\.csproj$}]
+          [
+            %r{^[^/]*\.(cs|vb|fs)proj$},
+            /^packages\.config$/i
+          ]
         end
 
         def updated_dependency_files
