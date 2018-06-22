@@ -52,7 +52,10 @@ module Dependabot
           new_version = dependency.version
 
           if git_source?(dependency.requirements) then new_version
-          else dependency_tags.find { |t| t =~ version_regex(new_version) }
+          else
+            tags = dependency_tags.
+                   select { |t| t =~ version_regex(new_version) }
+            tags.find { |t| t.include?(dependency.name) } || tags.first
           end
         end
 
@@ -62,7 +65,9 @@ module Dependabot
           if git_source?(dependency.previous_requirements)
             previous_version || previous_ref
           else
-            dependency_tags.find { |t| t =~ version_regex(previous_version) }
+            tags = dependency_tags.
+                   select { |t| t =~ version_regex(previous_version) }
+            tags.find { |t| t.include?(dependency.name) } || tags.first
           end
         end
 

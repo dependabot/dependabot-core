@@ -1,0 +1,262 @@
+[
+  {
+    "name": "@pollyjs/utils@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/utils@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/utils@0.1.0",
+    "commit": {
+      "sha": "ebf6474d0008e9e76249a78473263894dd0668dc",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ebf6474d0008e9e76249a78473263894dd0668dc"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL3V0aWxzQDAuMS4w"
+  },
+  {
+    "name": "@pollyjs/persister@0.2.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/persister@0.2.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/persister@0.2.0",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL3BlcnNpc3RlckAwLjIuMA=="
+  },
+  {
+    "name": "@pollyjs/persister@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/persister@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/persister@0.1.0",
+    "commit": {
+      "sha": "ebf6474d0008e9e76249a78473263894dd0668dc",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ebf6474d0008e9e76249a78473263894dd0668dc"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL3BlcnNpc3RlckAwLjEuMA=="
+  },
+  {
+    "name": "@pollyjs/node-server@0.2.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/node-server@0.2.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/node-server@0.2.0",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL25vZGUtc2VydmVyQDAuMi4w"
+  },
+  {
+    "name": "@pollyjs/node-server@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/node-server@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/node-server@0.1.0",
+    "commit": {
+      "sha": "8c7d8c2415ae14b14500ced0d6db17337fa00a95",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/8c7d8c2415ae14b14500ced0d6db17337fa00a95"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL25vZGUtc2VydmVyQDAuMS4w"
+  },
+  {
+    "name": "@pollyjs/node-server@0.0.2",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/node-server@0.0.2",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/node-server@0.0.2",
+    "commit": {
+      "sha": "ec6f8aed323f3a350ef9d53dc556adc96c98bbee",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec6f8aed323f3a350ef9d53dc556adc96c98bbee"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL25vZGUtc2VydmVyQDAuMC4y"
+  },
+  {
+    "name": "@pollyjs/node-server@0.0.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/node-server@0.0.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/node-server@0.0.1",
+    "commit": {
+      "sha": "2d377af4c3f5e0cbcf0c119449427aaead88e0c9",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/2d377af4c3f5e0cbcf0c119449427aaead88e0c9"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL25vZGUtc2VydmVyQDAuMC4x"
+  },
+  {
+    "name": "@pollyjs/ember@0.2.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/ember@0.2.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/ember@0.2.1",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2VtYmVyQDAuMi4x"
+  },
+  {
+    "name": "@pollyjs/ember@0.2.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/ember@0.2.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/ember@0.2.0",
+    "commit": {
+      "sha": "ebf6474d0008e9e76249a78473263894dd0668dc",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ebf6474d0008e9e76249a78473263894dd0668dc"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2VtYmVyQDAuMi4w"
+  },
+  {
+    "name": "@pollyjs/ember@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/ember@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/ember@0.1.0",
+    "commit": {
+      "sha": "8c7d8c2415ae14b14500ced0d6db17337fa00a95",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/8c7d8c2415ae14b14500ced0d6db17337fa00a95"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2VtYmVyQDAuMS4w"
+  },
+  {
+    "name": "@pollyjs/ember@0.0.2",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/ember@0.0.2",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/ember@0.0.2",
+    "commit": {
+      "sha": "ec6f8aed323f3a350ef9d53dc556adc96c98bbee",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec6f8aed323f3a350ef9d53dc556adc96c98bbee"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2VtYmVyQDAuMC4y"
+  },
+  {
+    "name": "@pollyjs/ember@0.0.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/ember@0.0.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/ember@0.0.1",
+    "commit": {
+      "sha": "2d377af4c3f5e0cbcf0c119449427aaead88e0c9",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/2d377af4c3f5e0cbcf0c119449427aaead88e0c9"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2VtYmVyQDAuMC4x"
+  },
+  {
+    "name": "@pollyjs/core@0.3.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/core@0.3.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/core@0.3.0",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NvcmVAMC4zLjA="
+  },
+  {
+    "name": "@pollyjs/core@0.2.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/core@0.2.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/core@0.2.0",
+    "commit": {
+      "sha": "ebf6474d0008e9e76249a78473263894dd0668dc",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ebf6474d0008e9e76249a78473263894dd0668dc"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NvcmVAMC4yLjA="
+  },
+  {
+    "name": "@pollyjs/core@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/core@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/core@0.1.0",
+    "commit": {
+      "sha": "8c7d8c2415ae14b14500ced0d6db17337fa00a95",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/8c7d8c2415ae14b14500ced0d6db17337fa00a95"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NvcmVAMC4xLjA="
+  },
+  {
+    "name": "@pollyjs/core@0.0.2",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/core@0.0.2",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/core@0.0.2",
+    "commit": {
+      "sha": "ec6f8aed323f3a350ef9d53dc556adc96c98bbee",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec6f8aed323f3a350ef9d53dc556adc96c98bbee"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NvcmVAMC4wLjI="
+  },
+  {
+    "name": "@pollyjs/core@0.0.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/core@0.0.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/core@0.0.1",
+    "commit": {
+      "sha": "2d377af4c3f5e0cbcf0c119449427aaead88e0c9",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/2d377af4c3f5e0cbcf0c119449427aaead88e0c9"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NvcmVAMC4wLjE="
+  },
+  {
+    "name": "@pollyjs/cli@0.1.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/cli@0.1.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/cli@0.1.1",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NsaUAwLjEuMQ=="
+  },
+  {
+    "name": "@pollyjs/cli@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/cli@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/cli@0.1.0",
+    "commit": {
+      "sha": "8c7d8c2415ae14b14500ced0d6db17337fa00a95",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/8c7d8c2415ae14b14500ced0d6db17337fa00a95"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NsaUAwLjEuMA=="
+  },
+  {
+    "name": "@pollyjs/cli@0.0.2",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/cli@0.0.2",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/cli@0.0.2",
+    "commit": {
+      "sha": "ec6f8aed323f3a350ef9d53dc556adc96c98bbee",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec6f8aed323f3a350ef9d53dc556adc96c98bbee"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NsaUAwLjAuMg=="
+  },
+  {
+    "name": "@pollyjs/cli@0.0.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/cli@0.0.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/cli@0.0.1",
+    "commit": {
+      "sha": "2d377af4c3f5e0cbcf0c119449427aaead88e0c9",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/2d377af4c3f5e0cbcf0c119449427aaead88e0c9"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2NsaUAwLjAuMQ=="
+  },
+  {
+    "name": "@pollyjs/adapter@0.3.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/adapter@0.3.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/adapter@0.3.0",
+    "commit": {
+      "sha": "ec8b74a61f4ff17ed3127526249977a5916f25b5",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec8b74a61f4ff17ed3127526249977a5916f25b5"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2FkYXB0ZXJAMC4zLjA="
+  },
+  {
+    "name": "@pollyjs/adapter@0.2.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/adapter@0.2.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/adapter@0.2.0",
+    "commit": {
+      "sha": "ebf6474d0008e9e76249a78473263894dd0668dc",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ebf6474d0008e9e76249a78473263894dd0668dc"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2FkYXB0ZXJAMC4yLjA="
+  },
+  {
+    "name": "@pollyjs/adapter@0.1.0",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/adapter@0.1.0",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/adapter@0.1.0",
+    "commit": {
+      "sha": "8c7d8c2415ae14b14500ced0d6db17337fa00a95",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/8c7d8c2415ae14b14500ced0d6db17337fa00a95"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2FkYXB0ZXJAMC4xLjA="
+  },
+  {
+    "name": "@pollyjs/adapter@0.0.2",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/adapter@0.0.2",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/adapter@0.0.2",
+    "commit": {
+      "sha": "ec6f8aed323f3a350ef9d53dc556adc96c98bbee",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/ec6f8aed323f3a350ef9d53dc556adc96c98bbee"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2FkYXB0ZXJAMC4wLjI="
+  },
+  {
+    "name": "@pollyjs/adapter@0.0.1",
+    "zipball_url": "https://api.github.com/repos/Netflix/pollyjs/zipball/@pollyjs/adapter@0.0.1",
+    "tarball_url": "https://api.github.com/repos/Netflix/pollyjs/tarball/@pollyjs/adapter@0.0.1",
+    "commit": {
+      "sha": "2d377af4c3f5e0cbcf0c119449427aaead88e0c9",
+      "url": "https://api.github.com/repos/Netflix/pollyjs/commits/2d377af4c3f5e0cbcf0c119449427aaead88e0c9"
+    },
+    "node_id": "MDM6UmVmMTM1NjMzMTU4OkBwb2xseWpzL2FkYXB0ZXJAMC4wLjE="
+  }
+]

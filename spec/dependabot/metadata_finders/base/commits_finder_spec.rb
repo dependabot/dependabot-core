@@ -109,6 +109,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         is_expected.to eq("https://github.com/gocardless/business/"\
                           "commits/business-1.4.0")
       end
+
+      context "for a monorepo" do
+        let(:dependency_name) { "@pollyjs/ember" }
+        let(:dependency_version) { "0.2.0" }
+        let(:source) do
+          Dependabot::Source.new(provider: "github", repo: "netflix/pollyjs")
+        end
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/netflix/pollyjs/"\
+            "tags?per_page=100"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "tags_monorepo.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it do
+          is_expected.to eq("https://github.com/netflix/pollyjs/"\
+                            "commits/@pollyjs/ember@0.2.0")
+        end
+      end
     end
 
     context "with a github repo and tags with no prefix" do
