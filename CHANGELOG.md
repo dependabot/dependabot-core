@@ -1,3 +1,8 @@
+## v0.61.23, 22 June 2018
+
+- PHP: Switch ssh git URLs to use ssl instead
+- JS: Clean up gitconfig changes even if error occurs
+
 ## v0.61.22, 22 June 2018
 
 - JS: Handle more git URL types
