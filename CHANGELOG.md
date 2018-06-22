@@ -1,3 +1,7 @@
+## v0.61.20, 22 June 2018
+
+- Raise internal error if npm updates can't reach an ssh URL
+
 ## v0.61.19, 21 June 2018
 
 - .NET: Keep track of the files we've fetched better (avoids duplicate requests)
