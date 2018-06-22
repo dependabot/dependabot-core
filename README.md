@@ -1,6 +1,6 @@
 ![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)
 
-# Dependabot Core
+# Dependabot Core ![Dependabot Status][dependabot-status]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
 for updating dependencies on GitHub or GitHub Enterprise (we plan to support
@@ -99,3 +99,4 @@ recurring payments from Europe, check them out.
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
 [elixir-pr]: https://github.com/dependabot/dependabot-core/pull/10
+[dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
