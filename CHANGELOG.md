@@ -1,3 +1,9 @@
+## v0.61.21, 22 June 2018
+
+- Add another PHP extension to dockerfile
+- Clean up git config after Rust update checks
+- JS: Fix FileUpdater for SSH URLs by setting git config
+
 ## v0.61.20, 22 June 2018
 
 - Raise internal error if npm updates can't reach an ssh URL
