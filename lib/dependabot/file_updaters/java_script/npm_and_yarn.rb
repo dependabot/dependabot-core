@@ -91,11 +91,12 @@ module Dependabot
           new_content =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
+              configure_git_to_use_https
 
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
 
-              SharedHelpers.run_helper_subprocess(
+              updated_files = SharedHelpers.run_helper_subprocess(
                 command: "node #{helper_path}",
                 function: "update",
                 args: [
@@ -104,16 +105,14 @@ module Dependabot
                   dependency.version,
                   dependency.requirements
                 ]
-              ).fetch("yarn.lock")
+              )
+
+              reset_git_config
+              updated_files.fetch("yarn.lock")
             end
           @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
-          if error.message.start_with?("Couldn't find any versions") ||
-             error.message.include?(": Not found")
-            raise if error.message.include?(%("#{dependency.name}"))
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-          raise
+          handle_yarn_lock_updater_error(error)
         end
 
         def updated_package_lock_content
@@ -174,6 +173,15 @@ module Dependabot
             raw_response,
             command
           )
+        end
+
+        def handle_yarn_lock_updater_error(error)
+          if error.message.start_with?("Couldn't find any versions") ||
+             error.message.include?(": Not found")
+            raise if error.message.include?(%("#{dependency.name}"))
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+          raise
         end
 
         # rubocop:disable Metrics/AbcSize
