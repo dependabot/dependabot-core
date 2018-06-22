@@ -127,6 +127,7 @@ module Dependabot
               command = "cargo update -p #{dependency_spec}"
               run_shell_command(command)
 
+              reset_git_config
               updated_lockfile = File.read("Cargo.lock")
               updated_lockfile = post_process_lockfile(updated_lockfile)
 
@@ -291,7 +292,6 @@ module Dependabot
         def set_git_credentials
           # This has to be global, otherwise Cargo doesn't pick it up
           run_shell_command(
-            "git init && "\
             "git config --global --replace-all credential.helper "\
             "'store --file=#{Dir.pwd}/git.store'"
           )
@@ -308,6 +308,10 @@ module Dependabot
           end
 
           File.write("git.store", git_store_content)
+        end
+
+        def reset_git_config
+          run_shell_command("git config --global --remove-section credential")
         end
 
         def dummy_app_content
