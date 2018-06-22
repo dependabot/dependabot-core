@@ -149,7 +149,7 @@ module Dependabot
 
         def configure_git_to_use_https
           run_shell_command(
-            'git config --global url."https://github.com/".'\
+            'git config --global --replace-all url."https://github.com/".'\
             "insteadOf ssh://git@github.com/ && "\
             'git config --global --add url."https://github.com/".'\
             "insteadOf ssh://git@github.com: && "\
