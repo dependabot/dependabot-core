@@ -128,7 +128,7 @@ module Dependabot
           ).gsub(
             /^            "type"\s*:\s*"git"/,
             '            "type": "vcs"'
-          )
+          ).gsub(%r{git@(.*?)[:/]}, 'https://\1/')
         end
 
         def handle_composer_errors(error)
