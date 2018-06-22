@@ -122,6 +122,7 @@ module Dependabot
           @updated_package_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)
+              configure_git_to_use_https
 
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/npm/bin/run.js")
@@ -137,6 +138,7 @@ module Dependabot
                 ]
               )
 
+              reset_git_config
               updated_content = updated_files.fetch("package-lock.json")
               updated_content = post_process_npm_lockfile(updated_content)
               raise "No change!" if package_lock.content == updated_content
@@ -144,6 +146,34 @@ module Dependabot
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_package_lock_updater_error(error)
+        end
+
+        def configure_git_to_use_https
+          run_shell_command(
+            'git config --global url."https://github.com/".'\
+            "insteadOf ssh://git@github.com/"
+          )
+        end
+
+        def reset_git_config
+          run_shell_command(
+            'git config --global --remove-section url."https://github.com/"'
+          )
+        end
+
+        def run_shell_command(command)
+          raw_response = nil
+          IO.popen(command, err: %i(child out)) do |process|
+            raw_response = process.read
+          end
+
+          # Raise an error with the output from the shell session if the command
+          # returns a non-zero status
+          return if $CHILD_STATUS.success?
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            raw_response,
+            command
+          )
         end
 
         # rubocop:disable Metrics/AbcSize
