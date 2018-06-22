@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Dependency do
         { name: "dep", requirements: [], package_manager: package_manager }
       end
 
-      it { is_expected.to be_nil }
+      it { is_expected.to eq(true) }
     end
 
     %w(submodules docker maven pip).each do |manager|

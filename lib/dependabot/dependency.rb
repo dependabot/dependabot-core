@@ -40,7 +40,7 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     def production?
-      return nil unless top_level?
+      return true unless top_level?
       groups = requirements.flat_map { |r| r.fetch(:groups).map(&:to_s) }
 
       case package_manager

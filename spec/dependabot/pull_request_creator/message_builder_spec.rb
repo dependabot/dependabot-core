@@ -244,11 +244,38 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                       headers: json_header)
         end
 
-        it { is_expected.to eq("build: bump business from 1.4.0 to 1.5.0") }
+        it do
+          is_expected.to eq("build(deps): bump business from 1.4.0 to 1.5.0")
+        end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("build: [security] bump") }
+          it { is_expected.to start_with("build(deps): [security] bump") }
+        end
+
+        context "with a dev dependency" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "bundler",
+              requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: ["test"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: ["test"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to start_with("build(devDeps): bump") }
         end
       end
 
@@ -335,12 +362,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "uses a semantic commit prefix" do
           expect(pr_name).
-            to eq("build: update business requirement to ~> 1.5.0")
+            to eq("build(deps): update business requirement to ~> 1.5.0")
         end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("build: [security] update") }
+          it { is_expected.to start_with("build(deps): [security] update") }
         end
       end
     end

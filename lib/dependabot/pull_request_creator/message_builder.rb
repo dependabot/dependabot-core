@@ -121,7 +121,8 @@ module Dependabot
       def pr_name_prefix
         pr_name = ""
         if using_semantic_commit_messages?
-          pr_name += "build: "
+          scope = dependencies.any?(&:production?) ? "deps" : "devDeps"
+          pr_name += "build(#{scope}): "
           pr_name += "[security] " if includes_security_fixes?
           pr_name + (library? ? "update " : "bump ")
         elsif using_gitmoji_commit_messages?
