@@ -1,6 +1,6 @@
-[![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)][dependabot]
+[![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)](#)
 
-# Dependabot Core ![Dependabot Status][dependabot-status]
+# Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
 for updating dependencies on GitHub or GitHub Enterprise (we plan to support
