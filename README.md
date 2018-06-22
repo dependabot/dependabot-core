@@ -1,4 +1,4 @@
-![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)
+[![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)][dependabot]
 
 # Dependabot Core ![Dependabot Status][dependabot-status]
 
@@ -94,9 +94,8 @@ GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
 [dependabot]: https://dependabot.com
+[dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
-[elixir-pr]: https://github.com/dependabot/dependabot-core/pull/10
-[dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
