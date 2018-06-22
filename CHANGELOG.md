@@ -1,3 +1,8 @@
+## v0.61.24, 22 June 2018
+
+- Better handling of monorepo tags
+- JS: Replace all git url config when initially setting
+
 ## v0.61.23, 22 June 2018
 
 - PHP: Switch ssh git URLs to use ssl instead
