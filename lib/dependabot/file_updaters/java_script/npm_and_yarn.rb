@@ -184,6 +184,7 @@ module Dependabot
         end
 
         def handle_yarn_lock_updater_error(error)
+          reset_git_config
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
             raise if error.message.include?(%("#{dependency.name}"))
@@ -197,6 +198,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_package_lock_updater_error(error)
+          reset_git_config
           raise if error.message.include?("#{dependency.name}@")
           if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
