@@ -1,4 +1,4 @@
-[![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)](#)
+![Dependabot](https://dependabot.com/images/dependabot-logo-full.svg)
 
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
