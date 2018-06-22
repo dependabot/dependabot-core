@@ -1,3 +1,7 @@
+## v0.61.22, 22 June 2018
+
+- JS: Handle more git URL types
+
 ## v0.61.21, 22 June 2018
 
 - Add another PHP extension to dockerfile
