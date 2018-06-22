@@ -1,3 +1,7 @@
+## v0.61.25, 22 June 2018
+
+- Add scope to semantic commit messages
+
 ## v0.61.24, 22 June 2018
 
 - Better handling of monorepo tags
