@@ -1284,13 +1284,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             to receive(:new).with(
               requirements: requirements,
               library: false,
-              latest_version: "1.13.0",
-              latest_resolvable_version: "1.13.0",
+              latest_version: "1.13.1",
+              latest_resolvable_version: "1.13.1",
               updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.13.1")
         end
 
         context "that is pinned" do
@@ -1324,7 +1324,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.13.0",
+                  latest_version: "1.13.1",
                   latest_resolvable_version: "1.6.0",
                   updated_source: requirements.first[:source]
                 ).and_call_original
@@ -1351,11 +1351,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
+              # Note: the v1.13.0 for the source is because we stub the lookup
+              # for the updated source, but can't stub the lookup for the latest
+              # version (in the LatestVersionFinder).
               expect(requirements_updater).
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.13.0",
+                  latest_version: "1.13.1",
                   latest_resolvable_version: "1.6.0",
                   updated_source: {
                     type: "git",
@@ -1383,7 +1386,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
                 to receive(:new).with(
                   requirements: requirements,
                   library: false,
-                  latest_version: "1.13.0",
+                  latest_version: "1.13.1",
                   latest_resolvable_version: "1.6.0",
                   updated_source: nil
                 ).and_call_original
