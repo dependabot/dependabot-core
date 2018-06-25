@@ -1,3 +1,7 @@
+## v0.61.30, 25 June 2018
+
+- Handle private GitLab sources in CommitsFinder
+
 ## v0.61.29, 25 June 2018
 
 - Python: Use latest pipenv
