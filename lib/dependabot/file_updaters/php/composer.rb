@@ -130,8 +130,7 @@ module Dependabot
           ).gsub(
             /^            "type"\s*:\s*"git"/,
             '            "type": "vcs"'
-          ).gsub(%r{git@(.*?)[:/]}, 'https://\1/').
-            gsub(/"no-api"\s*:\s*true,\n/, "")
+          ).gsub(%r{git@(.*?)[:/]}, 'https://\1/')
         end
 
         def handle_composer_errors(error)
@@ -174,8 +173,11 @@ module Dependabot
         end
 
         def locked_composer_json_content
+          updated_content = updated_composer_json_content.
+                            gsub(/"^\s*no-api"\s*:\s*true,\n/, "")
+
           dependencies.
-            reduce(updated_composer_json_content.dup) do |content, dep|
+            reduce(updated_content) do |content, dep|
               updated_req = dep.version
               next content unless Utils::Php::Version.correct?(updated_req)
 
