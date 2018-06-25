@@ -687,6 +687,42 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             ]
           )
         end
+
+        context "with a dependency that has a git source" do
+          let(:dependency_previous_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://gitlab.com/orgs/#{dependency_name}"
+              }
+            }]
+          end
+          let(:dependency_requirements) { dependency_previous_requirements }
+          let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+          let(:dependency_previous_version) do
+            "7638417db6d59f3c431d3e1f261cc637155684cd"
+          end
+
+          context "that 404s" do
+            before do
+              response = { message: "404 Project Not Found" }.to_json
+              gitlab_compare_url =
+                "https://gitlab.com/api/v4/projects/"\
+                "org%2Fbusiness/repository/compare"\
+                "?from=7638417db6d59f3c431d3e1f261cc637155684cd"\
+                "&to=cd8274d15fa3ae2ab983129fb037999f264ba9a7"
+              stub_request(:get, gitlab_compare_url).
+                to_return(status: 404,
+                          body: response,
+                          headers: { "Content-Type" => "application/json" })
+            end
+
+            it { is_expected.to eq([]) }
+          end
+        end
       end
     end
 

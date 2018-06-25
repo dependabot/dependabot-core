@@ -213,6 +213,8 @@ module Dependabot
                 html_url: "#{source.url}/commit/#{commit['id']}"
               }
             end
+        rescue Gitlab::Error::NotFound
+          []
         end
 
         def gitlab_client
