@@ -1,3 +1,8 @@
+## v0.61.29, 25 June 2018
+
+- Python: Use latest pipenv
+- Maven: Find nested plugin dependency declarations
+
 ## v0.61.28, 25 June 2018
 
 - PHP: Set git credentials when doing Composer updates (to handle no-api
