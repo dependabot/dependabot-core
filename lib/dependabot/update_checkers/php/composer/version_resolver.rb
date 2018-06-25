@@ -69,6 +69,7 @@ module Dependabot
             # composer.json to the user.
             content = content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
             content = content.gsub(%r{git@(.*?)[:/]}, 'https://\1/')
+            content = content.gsub(/"no-api"\s*:\s*true,\n/, "")
 
             content.gsub(
               /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,

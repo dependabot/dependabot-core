@@ -122,13 +122,16 @@ module Dependabot
           # We need to replace `git` types with `vcs` so that auth works.
           # Spacing is important so we don't accidentally replace the source for
           # "type": "package" dependencies.
+          # We then replace any ssh URLs with ssl ones, and remove any requests
+          # not to use the GitHub API (which would break auth)
           content.gsub(
             /^      "type"\s*:\s*"git"/,
             '      "type": "vcs"'
           ).gsub(
             /^            "type"\s*:\s*"git"/,
             '            "type": "vcs"'
-          ).gsub(%r{git@(.*?)[:/]}, 'https://\1/')
+          ).gsub(%r{git@(.*?)[:/]}, 'https://\1/').
+            gsub(/"no-api"\s*:\s*true,\n/, "")
         end
 
         def handle_composer_errors(error)
