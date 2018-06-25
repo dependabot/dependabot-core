@@ -1,3 +1,7 @@
+## v0.61.26, 24 June 2018
+
+- PHP: Use GitHub API when resolving versions
+
 ## v0.61.25, 22 June 2018
 
 - Add scope to semantic commit messages
