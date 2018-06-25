@@ -64,21 +64,11 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
+              set_git_credentials
 
-              updated_content =
-                SharedHelpers.run_helper_subprocess(
-                  command: "php #{php_helper_path}",
-                  function: "update",
-                  env: credentials_env,
-                  args: [
-                    Dir.pwd,
-                    dependency.name,
-                    dependency.version,
-                    git_credentials,
-                    registry_credentials
-                  ]
-                ).fetch("composer.lock")
+              updated_content = run_update_helper.fetch("composer.lock")
 
+              reset_git_config
               updated_content = post_process_lockfile(updated_content)
               if lockfile.content == updated_content
                 raise "Expected content to change!"
@@ -86,7 +76,58 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
+          reset_git_config
           handle_composer_errors(error)
+        end
+
+        def run_update_helper
+          SharedHelpers.run_helper_subprocess(
+            command: "php #{php_helper_path}",
+            function: "update",
+            env: credentials_env,
+            args: [
+              Dir.pwd,
+              dependency.name,
+              dependency.version,
+              git_credentials,
+              registry_credentials
+            ]
+          )
+        end
+
+        def set_git_credentials
+          run_shell_command(
+            "git config --global --replace-all credential.helper "\
+            "'store --file=#{Dir.pwd}/git.store'"
+          )
+
+          git_store_content = ""
+          git_credentials.each do |cred|
+            authenticated_url =
+              "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
+              "@#{cred.fetch('host')}"
+
+            git_store_content += authenticated_url + "\n"
+          end
+
+          File.write("git.store", git_store_content)
+        end
+
+        def reset_git_config
+          run_shell_command("git config --global --remove-section credential")
+        end
+
+        def run_shell_command(command)
+          raw_response = nil
+          IO.popen(command, err: %i(child out)) do |process|
+            raw_response = process.read
+          end
+
+          return if $CHILD_STATUS.success?
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            raw_response,
+            command
+          )
         end
 
         def updated_composer_json_content
@@ -173,11 +214,8 @@ module Dependabot
         end
 
         def locked_composer_json_content
-          updated_content = updated_composer_json_content.
-                            gsub(/"^\s*no-api"\s*:\s*true,\n/, "")
-
           dependencies.
-            reduce(updated_content) do |content, dep|
+            reduce(updated_composer_json_content) do |content, dep|
               updated_req = dep.version
               next content unless Utils::Php::Version.correct?(updated_req)
 

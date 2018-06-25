@@ -1,0 +1,13 @@
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "no-api": true,
+            "url": "https://github.com/dependabot/monolog"
+        }
+    ],
+    "require": {
+        "monolog/monolog": "dev-example",
+        "symfony/polyfill-mbstring": "1.0.1"
+    }
+}

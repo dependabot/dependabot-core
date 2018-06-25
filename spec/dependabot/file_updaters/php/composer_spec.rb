@@ -444,6 +444,40 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
         end
       end
 
+      context "with a git source using no-api" do
+        let(:manifest_fixture_name) { "git_source_no_api" }
+        let(:lockfile_fixture_name) { "git_source_no_api" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "symfony/polyfill-mbstring",
+            version: "1.6.0",
+            requirements: [{
+              file: "composer.json",
+              requirement: "1.6.0",
+              groups: [],
+              source: nil
+            }],
+            previous_version: "1.0.1",
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "1.0.1",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "composer"
+          )
+        end
+
+        it "keeps the no-api and doesn't add a support field" do
+          composer_file = updated_files.find { |f| f.name == "composer.json" }
+          expect(composer_file.content).to include("no-api")
+
+          lock_file = updated_files.find { |f| f.name == "composer.lock" }
+          expect(lock_file.content).to_not include('"support": {')
+        end
+      end
+
       context "when another dependency has an unreachable git source" do
         let(:lockfile_fixture_name) { "git_source_unreachable" }
         let(:manifest_fixture_name) { "git_source_unreachable" }
