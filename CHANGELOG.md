@@ -1,3 +1,7 @@
+## v0.61.27, 25 June 2018
+
+- PHP: Don't remove no-api settings from composer.json in FileUpdater
+
 ## v0.61.26, 24 June 2018
 
 - PHP: Use GitHub API when resolving versions
