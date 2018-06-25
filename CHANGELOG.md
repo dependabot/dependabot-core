@@ -1,3 +1,8 @@
+## v0.61.28, 25 June 2018
+
+- PHP: Set git credentials when doing Composer updates (to handle no-api
+  updates)
+
 ## v0.61.27, 25 June 2018
 
 - PHP: Don't remove no-api settings from composer.json in FileUpdater
