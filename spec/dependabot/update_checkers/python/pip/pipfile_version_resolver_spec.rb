@@ -118,9 +118,8 @@ RSpec.describe namespace::PipfileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to eq(
-              "Could not find a version that matches pytest3.4.0\n"\
-              "Tried: (no version found at all)\n"\
-              "Was <redacted> reachable?"
+              "packaging.specifiers.InvalidSpecifier: "\
+              "Invalid specifier: '3.4.0'"
             )
           end
       end
