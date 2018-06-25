@@ -701,7 +701,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             }]
           end
           let(:dependency_requirements) { dependency_previous_requirements }
-          let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+          let(:dependency_version) do
+            "cd8274d15fa3ae2ab983129fb037999f264ba9a7"
+          end
           let(:dependency_previous_version) do
             "7638417db6d59f3c431d3e1f261cc637155684cd"
           end
