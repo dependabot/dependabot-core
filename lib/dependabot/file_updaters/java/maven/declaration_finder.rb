@@ -65,7 +65,7 @@ module Dependabot
 
           def deep_find_declarations(string)
             string.scan(DECLARATION_REGEX).flat_map do |matching_node|
-              [matching_node, *deep_find_declarations(matching_node[0..-2])]
+              [matching_node, *deep_find_declarations(matching_node[1..-1])]
             end
           end
 

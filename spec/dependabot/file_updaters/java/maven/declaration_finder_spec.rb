@@ -170,6 +170,25 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
     end
 
+    context "with a plugin within a plugin" do
+      let(:pom_fixture_name) { "plugin_within_plugin.xml" }
+      let(:dependency_name) { "jp.skypencil.findbugs.slf4j:bug-pattern" }
+      let(:dependency_version) { "1.4.0" }
+
+      it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).
+          to eq("1.4.0")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("bug-pattern")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("jp.skypencil.findbugs.slf4j")
+      end
+    end
+
     context "with a repeated dependency" do
       let(:pom_fixture_name) { "repeated_pom_same_version.xml" }
       let(:dependency_name) { "org.apache.maven.plugins:maven-javadoc-plugin" }
