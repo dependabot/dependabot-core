@@ -80,19 +80,13 @@ module Dependabot
           end
 
           def handle_pipenv_errors(error)
-            if error.message.include?("no version found at all") ||
-               error.message.include?("Invalid specifier:")
+            if error.message.include?("no version found at all")
               # Pipenv outputs a lot of things to STDERR, so we need to clean
               # up the error message
               msg_lines = error.message.lines
               msg = msg_lines.
-                    take_while { |l| !l.start_with?("During handling of") }.
-                    drop_while do |l|
-                      !l.start_with?(
-                        "Could not find",
-                        "packaging.specifiers.InvalidSpecifier"
-                      )
-                    end.join.strip
+                    drop_while { |l| !l.start_with?("Could not find") }.
+                    join.strip
 
               # We also need to redact any URLs, as they may include credentials
               msg = msg.gsub(/http.*?(?=\s)/, "<redacted>")
