@@ -84,8 +84,8 @@ module Dependabot
             )
           rescue SharedHelpers::HelperSubprocessFailed => error
             raise unless error.message.include?("InstallationError")
-            raise if command.start_with?("pyenv local 2.7.14 &&")
-            command = "pyenv local 2.7.14 && " +
+            raise if command.start_with?("pyenv local 2.7.15 &&")
+            command = "pyenv local 2.7.15 && " +
                       command +
                       " && pyenv local --unset"
             retry

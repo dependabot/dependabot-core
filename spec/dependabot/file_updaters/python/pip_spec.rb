@@ -539,7 +539,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           json_lockfile = JSON.parse(updated_lockfile.content)
 
           expect(updated_pipfile.content).
-            to include('python_full_version = "2.7.14"')
+            to include('python_full_version = "2.7.15"')
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
           expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
