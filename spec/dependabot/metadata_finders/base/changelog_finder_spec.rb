@@ -435,6 +435,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
+        context "with headers that contain comparison links" do
+          let(:changelog_body) do
+            fixture("github", "changelog_contents_comparison_links.json")
+          end
+          let(:dependency_version) { "3.3.0" }
+          let(:dependency_previous_version) { "3.2.1" }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("# [3.3.0](https://github.")
+            expect(changelog_text).to end_with("<a name=\"3.2.1\"></a>")
+          end
+        end
+
         context "with no relevant versions" do
           let(:dependency_version) { "1.13.0" }
           let(:dependency_previous_version) { "1.12.0" }
