@@ -1,0 +1,65 @@
+[
+    {
+        "id": 618335045,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/bug",
+        "name": "bug",
+        "color": "ee0701",
+        "default": true
+    },
+    {
+        "id": 675690998,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/dependencies",
+        "name": "dependencies",
+        "color": "0025ff",
+        "default": false
+    },
+    {
+        "id": 618335046,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/duplicate",
+        "name": "duplicate",
+        "color": "cccccc",
+        "default": true
+    },
+    {
+        "id": 618335047,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/enhancement",
+        "name": "enhancement",
+        "color": "84b6eb",
+        "default": true
+    },
+    {
+        "id": 618335048,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/help%20wanted",
+        "name": "help wanted",
+        "color": "128A0C",
+        "default": true
+    },
+    {
+        "id": 618335049,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/invalid",
+        "name": "invalid",
+        "color": "e6e6e6",
+        "default": true
+    },
+    {
+        "id": 618335050,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/question",
+        "name": "question",
+        "color": "cc317c",
+        "default": true
+    },
+    {
+        "id": 618335052,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/security",
+        "name": "security",
+        "color": "ee0701",
+        "default": true
+    },
+    {
+        "id": 618335051,
+        "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/wontfix",
+        "name": "wontfix",
+        "color": "ffffff",
+        "default": true
+    }
+]

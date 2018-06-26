@@ -15,21 +15,22 @@ module Dependabot
         @includes_security_fixes = includes_security_fixes
       end
 
-      def create_default_label_if_required
-        return if custom_labels
-        return if dependencies_label_exists?
-
-        create_label
+      def create_default_labels_if_required
+        create_default_dependencies_label_if_required
+        create_default_security_label_if_required
       end
 
       def labels_for_pr
-        if custom_labels then custom_labels & labels
-        else [labels.find { |l| l.match?(/dependenc/i) }]
-        end
+        return default_labels_for_pr unless includes_security_fixes?
+
+        [
+          *default_labels_for_pr,
+          labels.find { |l| l.match?(/security/i) }
+        ].uniq
       end
 
       def label_pull_request(pull_request_number)
-        create_default_label_if_required
+        create_default_labels_if_required
 
         return if labels_for_pr.none?
         raise "Only GitHub!" unless source.provider == "github"
@@ -43,11 +44,38 @@ module Dependabot
 
       private
 
-      attr_reader :source, :custom_labels, :includes_security_fixes,
-                  :credentials
+      attr_reader :source, :custom_labels, :credentials
+
+      def includes_security_fixes?
+        @includes_security_fixes
+      end
+
+      def create_default_dependencies_label_if_required
+        return if custom_labels
+        return if dependencies_label_exists?
+
+        create_dependencies_label
+      end
+
+      def create_default_security_label_if_required
+        return unless includes_security_fixes?
+        return if security_label_exists?
+
+        create_security_label
+      end
+
+      def default_labels_for_pr
+        if custom_labels then custom_labels & labels
+        else [labels.find { |l| l.match?(/dependenc/i) }]
+        end
+      end
 
       def dependencies_label_exists?
         labels.any? { |l| l.match?(/dependenc/i) }
+      end
+
+      def security_label_exists?
+        labels.any? { |l| l.match?(/security/i) }
       end
 
       def labels
@@ -71,15 +99,23 @@ module Dependabot
           map(&:name)
       end
 
-      def create_label
+      def create_dependencies_label
         case source.provider
-        when "github" then create_github_label
-        when "gitlab" then create_gitlab_label
+        when "github" then create_github_dependencies_label
+        when "gitlab" then create_gitlab_dependencies_label
         else raise "Unsupported provider #{source.provider}"
         end
       end
 
-      def create_github_label
+      def create_security_label
+        case source.provider
+        when "github" then create_github_security_label
+        when "gitlab" then create_gitlab_security_label
+        else raise "Unsupported provider #{source.provider}"
+        end
+      end
+
+      def create_github_dependencies_label
         github_client_for_source.add_label(
           source.repo, "dependencies", "0025ff",
           description: "Pull requests that update a dependency file"
@@ -90,12 +126,31 @@ module Dependabot
         @labels = [*@labels, "dependencies"].uniq
       end
 
-      def create_gitlab_label
+      def create_gitlab_dependencies_label
         gitlab_client_for_source.create_label(
           source.repo, "dependencies", "#0025ff",
           description: "Pull requests that update a dependency file"
         )
         @labels = [*@labels, "dependencies"].uniq
+      end
+
+      def create_github_security_label
+        github_client_for_source.add_label(
+          source.repo, "security", "ee0701",
+          description: "Pull requests that address a security vulnerability"
+        )
+        @labels = [*@labels, "security"].uniq
+      rescue Octokit::UnprocessableEntity => error
+        raise unless error.errors.first.fetch(:code) == "already_exists"
+        @labels = [*@labels, "security"].uniq
+      end
+
+      def create_gitlab_security_label
+        gitlab_client_for_source.create_label(
+          source.repo, "security", "#ee0701",
+          description: "Pull requests that address a security vulnerability"
+        )
+        @labels = [*@labels, "security"].uniq
       end
 
       def github_client_for_source

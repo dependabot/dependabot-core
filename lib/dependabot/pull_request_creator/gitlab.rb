@@ -37,7 +37,7 @@ module Dependabot
           create_commit
         end
 
-        labeler.create_default_label_if_required
+        labeler.create_default_labels_if_required
         create_merge_request
       end
 
