@@ -1,3 +1,7 @@
+## v0.61.33, 26 June 2018
+
+- Python: Revert back to Pipenv 2018.5.18
+
 ## v0.61.32, 26 June 2018
 
 - Label security fix PRs with a security label
