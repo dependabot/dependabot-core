@@ -164,8 +164,6 @@ module Dependabot
       end
 
       def dependencies_label_exists?
-        return (custom_labels - labels).empty? if custom_labels
-
         labels.any? { |l| l.match?(/dependenc/i) }
       end
 
@@ -194,10 +192,12 @@ module Dependabot
       end
 
       def add_label_to_pull_request(pull_request)
-        return unless dependencies_label_exists?
+        return if custom_labels.nil? && !dependencies_label_exists?
+        available_custom_labels = custom_labels & labels
+        return if custom_labels && available_custom_labels.none?
 
         label_names =
-          custom_labels ||
+          available_custom_labels ||
           [labels.find { |l| l.match?(/dependenc/i) }]
 
         github_client_for_source.add_labels_to_an_issue(

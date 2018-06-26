@@ -110,8 +110,6 @@ module Dependabot
       end
 
       def dependencies_label_exists?
-        return (custom_labels - labels).empty? if custom_labels
-
         labels.any? { |l| l.match?(/dependenc/i) }
       end
 
@@ -131,8 +129,10 @@ module Dependabot
       end
 
       def create_merge_request
+        available_custom_labels = custom_labels & labels
+
         label_names =
-          custom_labels ||
+          available_custom_labels ||
           [labels.find { |l| l.match?(/dependenc/i) }]
 
         gitlab_client_for_source.create_merge_request(

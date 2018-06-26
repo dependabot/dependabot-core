@@ -483,6 +483,18 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             )
         end
       end
+
+      context "with multiple custom labels and one removed" do
+        let(:custom_labels) { %w(wontfix non-existent) }
+
+        it "labels the PR with the label that does exist" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{repo_api_url}/issues/1347/labels").
+            with(body: '["wontfix"]')
+        end
+      end
     end
 
     context "when a reviewer has been requested" do
