@@ -1,3 +1,7 @@
+## v0.61.32, 26 June 2018
+
+- Label security fix PRs with a security label
+
 ## v0.61.31, 26 June 2018
 
 - Handle changelogs with comparison links in their headers
