@@ -12,12 +12,12 @@ module Dependabot
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
-                  :custom_labels, :reviewers, :assignees
+                  :labeler, :reviewers, :assignees
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
-                     custom_labels:, reviewers:, assignees:)
+                     labeler:, reviewers:, assignees:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -29,7 +29,7 @@ module Dependabot
         @pr_name        = pr_name
         @author_details = author_details
         @signature_key  = signature_key
-        @custom_labels  = custom_labels
+        @labeler        = labeler
         @reviewers      = reviewers
         @assignees      = assignees
       end
@@ -40,8 +40,6 @@ module Dependabot
         commit = create_commit
         branch = create_or_update_branch(commit)
         return unless branch
-
-        create_label unless custom_labels || dependencies_label_exists?
 
         pull_request = create_pull_request
         return unless pull_request
@@ -163,48 +161,10 @@ module Dependabot
         )
       end
 
-      def dependencies_label_exists?
-        labels.any? { |l| l.match?(/dependenc/i) }
-      end
-
-      def labels
-        @labels ||=
-          github_client_for_source.
-          labels(source.repo, per_page: 100).
-          map(&:name)
-      end
-
-      def create_label
-        github_client_for_source.add_label(
-          source.repo, "dependencies", "0025ff",
-          description: "Pull requests that update a dependency file"
-        )
-        @labels = [*@labels, "dependencies"].uniq
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.errors.first.fetch(:code) == "already_exists"
-        @labels = [*@labels, "dependencies"].uniq
-      end
-
       def annotate_pull_request(pull_request)
-        add_label_to_pull_request(pull_request)
+        labeler.label_pull_request(pull_request.number)
         add_reviewers_to_pull_request(pull_request) if reviewers&.any?
         add_assignees_to_pull_request(pull_request) if assignees&.any?
-      end
-
-      def add_label_to_pull_request(pull_request)
-        return if custom_labels.nil? && !dependencies_label_exists?
-        available_custom_labels = custom_labels & labels
-        return if custom_labels && available_custom_labels.none?
-
-        label_names =
-          available_custom_labels ||
-          [labels.find { |l| l.match?(/dependenc/i) }]
-
-        github_client_for_source.add_labels_to_an_issue(
-          source.repo,
-          pull_request.number,
-          label_names
-        )
       end
 
       def add_reviewers_to_pull_request(pull_request)

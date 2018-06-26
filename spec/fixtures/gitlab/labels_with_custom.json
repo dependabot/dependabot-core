@@ -1,0 +1,68 @@
+[
+  {
+    "id" : 1,
+    "name" : "bug",
+    "color" : "#d9534f",
+    "description": "Bug reported by user",
+    "open_issues_count": 1,
+    "closed_issues_count": 0,
+    "open_merge_requests_count": 1,
+    "subscribed": false,
+    "priority": 10
+  },
+  {
+    "id" : 4,
+    "color" : "#d9534f",
+    "name" : "confirmed",
+    "description": "Confirmed issue",
+    "open_issues_count": 2,
+    "closed_issues_count": 5,
+    "open_merge_requests_count": 0,
+    "subscribed": false,
+    "priority": null
+  },
+  {
+    "id" : 7,
+    "name" : "critical",
+    "color" : "#d9534f",
+    "description": "Critical issue. Need fix ASAP",
+    "open_issues_count": 1,
+    "closed_issues_count": 3,
+    "open_merge_requests_count": 1,
+    "subscribed": false,
+    "priority": null
+  },
+  {
+    "id" : 8,
+    "name" : "Dependency: Gems",
+    "color" : "#0025ff",
+    "description": "Pull requests that update a dependency file",
+    "open_issues_count": 1,
+    "closed_issues_count": 0,
+    "open_merge_requests_count": 2,
+    "subscribed": false,
+    "priority": null
+  },
+  {
+    "id" : 9,
+    "name" : "documentation",
+    "color" : "#f0ad4e",
+    "description": "Issue about documentation",
+    "open_issues_count": 1,
+    "closed_issues_count": 0,
+    "open_merge_requests_count": 2,
+    "subscribed": false,
+    "priority": null
+  },
+  {
+    "id" : 10,
+    "color" : "#5cb85c",
+    "name" : "enhancement",
+    "description": "Enhancement proposal",
+    "open_issues_count": 1,
+    "closed_issues_count": 0,
+    "open_merge_requests_count": 1,
+    "subscribed": true,
+    "priority": null
+  }
+]

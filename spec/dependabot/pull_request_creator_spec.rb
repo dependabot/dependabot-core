@@ -125,7 +125,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_name: "PR name",
             author_details: author_details,
             signature_key: signature_key,
-            custom_labels: custom_labels,
+            labeler: instance_of(described_class::Labeler),
             reviewers: reviewers,
             assignees: assignees
           ).and_return(dummy_creator)
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_description: "PR msg",
             pr_name: "PR name",
             author_details: author_details,
-            custom_labels: custom_labels,
+            labeler: instance_of(described_class::Labeler),
             assignee: nil
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)

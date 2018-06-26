@@ -8,6 +8,7 @@ module Dependabot
     require "dependabot/pull_request_creator/gitlab"
     require "dependabot/pull_request_creator/message_builder"
     require "dependabot/pull_request_creator/branch_namer"
+    require "dependabot/pull_request_creator/labeler"
 
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :target_branch,
@@ -66,7 +67,7 @@ module Dependabot
         pr_name: message_builder.pr_name,
         author_details: author_details,
         signature_key: signature_key,
-        custom_labels: custom_labels,
+        labeler: labeler,
         reviewers: reviewers,
         assignees: assignees
       )
@@ -84,7 +85,7 @@ module Dependabot
         pr_description: message_builder.pr_message,
         pr_name: message_builder.pr_name,
         author_details: author_details,
-        custom_labels: custom_labels,
+        labeler: labeler,
         assignee: assignees&.first
       )
     end
@@ -111,12 +112,26 @@ module Dependabot
         )
     end
 
+    def labeler
+      @labeler ||=
+        Labeler.new(
+          source: source,
+          custom_labels: custom_labels,
+          credentials: credentials,
+          includes_security_fixes: includes_security_fixes?
+        )
+    end
+
     def library?
       if files.map(&:name).any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
         return true
       end
 
       dependencies.none?(&:appears_in_lockfile?)
+    end
+
+    def includes_security_fixes?
+      vulnerabilities_fixed.values.flatten.any?
     end
 
     def requirements_changed?(dependency)

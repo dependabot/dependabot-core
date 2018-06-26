@@ -8,11 +8,11 @@ module Dependabot
     class Gitlab
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :custom_labels, :assignee
+                  :target_branch, :author_details, :labeler, :assignee
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, custom_labels:, assignee:)
+                     target_branch:, author_details:, labeler:, assignee:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -23,11 +23,10 @@ module Dependabot
         @pr_description = pr_description
         @pr_name        = pr_name
         @author_details = author_details
-        @custom_labels  = custom_labels
+        @labeler        = labeler
         @assignee       = assignee
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def create
         return if branch_exists? && merge_request_exists?
 
@@ -38,10 +37,9 @@ module Dependabot
           create_commit
         end
 
-        create_label unless custom_labels || dependencies_label_exists?
+        labeler.create_default_label_if_required
         create_merge_request
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
@@ -109,32 +107,7 @@ module Dependabot
         )
       end
 
-      def dependencies_label_exists?
-        labels.any? { |l| l.match?(/dependenc/i) }
-      end
-
-      def labels
-        @labels ||=
-          gitlab_client_for_source.
-          labels(source.repo).
-          map(&:name)
-      end
-
-      def create_label
-        gitlab_client_for_source.create_label(
-          source.repo, "dependencies", "#0025ff",
-          description: "Pull requests that update a dependency file"
-        )
-        @labels = [*@labels, "dependencies"].uniq
-      end
-
       def create_merge_request
-        available_custom_labels = custom_labels & labels
-
-        label_names =
-          available_custom_labels ||
-          [labels.find { |l| l.match?(/dependenc/i) }]
-
         gitlab_client_for_source.create_merge_request(
           source.repo,
           pr_name,
@@ -143,7 +116,7 @@ module Dependabot
           description: pr_description,
           remove_source_branch: true,
           assignee_id: assignee,
-          labels: label_names.join(",")
+          labels: labeler.labels_for_pr.join(",")
         )
       end
 

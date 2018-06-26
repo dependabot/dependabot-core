@@ -17,7 +17,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       pr_name: pr_name,
       target_branch: target_branch,
       author_details: author_details,
-      custom_labels: custom_labels,
+      labeler: labeler,
       assignee: assignee
     )
   end
@@ -41,8 +41,16 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:pr_name) { "PR name" }
   let(:target_branch) { nil }
   let(:author_details) { nil }
-  let(:custom_labels) { nil }
   let(:assignee) { nil }
+  let(:labeler) do
+    Dependabot::PullRequestCreator::Labeler.new(
+      source: source,
+      credentials: credentials,
+      custom_labels: custom_labels,
+      includes_security_fixes: false
+    )
+  end
+  let(:custom_labels) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
