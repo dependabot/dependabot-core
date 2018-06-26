@@ -1,3 +1,8 @@
+## v0.61.31, 26 June 2018
+
+- Handle changelogs with comparison links in their headers
+- Add custom labels to PR as long as some exist
+
 ## v0.61.30, 25 June 2018
 
 - Handle private GitLab sources in CommitsFinder
