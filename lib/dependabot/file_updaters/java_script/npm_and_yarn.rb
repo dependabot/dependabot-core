@@ -91,7 +91,7 @@ module Dependabot
           new_content =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-              configure_git_to_use_https
+              configure_git_to_use_https_with_credentials
 
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
@@ -121,7 +121,7 @@ module Dependabot
           @updated_package_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)
-              configure_git_to_use_https
+              configure_git_to_use_https_with_credentials
 
               project_root = File.join(File.dirname(__FILE__), "../../../..")
               helper_path = File.join(project_root, "helpers/npm/bin/run.js")
@@ -147,6 +147,11 @@ module Dependabot
           handle_package_lock_updater_error(error)
         end
 
+        def configure_git_to_use_https_with_credentials
+          configure_git_to_use_https
+          set_git_credentials
+        end
+
         def configure_git_to_use_https
           run_shell_command(
             'git config --global --replace-all url."https://github.com/".'\
@@ -162,9 +167,29 @@ module Dependabot
           )
         end
 
+        def set_git_credentials
+          run_shell_command(
+            "git config --global --replace-all credential.helper "\
+            "'store --file=#{Dir.pwd}/git.store'"
+          )
+
+          git_store_content = ""
+          credentials.each do |cred|
+            next unless cred["type"] == "git_source"
+            authenticated_url =
+              "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
+              "@#{cred.fetch('host')}"
+
+            git_store_content += authenticated_url + "\n"
+          end
+
+          File.write("git.store", git_store_content)
+        end
+
         def reset_git_config
           run_shell_command(
-            'git config --global --remove-section url."https://github.com/"'
+            'git config --global --remove-section url."https://github.com/" '\
+            "&& git config --global --remove-section credential"
           )
         end
 
