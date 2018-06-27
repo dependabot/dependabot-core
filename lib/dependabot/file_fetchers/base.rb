@@ -5,8 +5,8 @@ require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket"
+require "dependabot/clients/gitlab"
 require "dependabot/shared_helpers"
-require "gitlab"
 
 module Dependabot
   module FileFetchers
@@ -266,16 +266,10 @@ module Dependabot
       end
 
       def gitlab_client
-        access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }&.
-          fetch("password")
-
         @gitlab_client ||=
-          Gitlab.client(
-            endpoint: source.api_endpoint,
-            private_token: access_token || ""
+          Dependabot::Clients::Gitlab.for_source(
+            source: source,
+            credentials: credentials
           )
       end
 
