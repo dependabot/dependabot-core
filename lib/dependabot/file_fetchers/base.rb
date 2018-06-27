@@ -209,12 +209,12 @@ module Dependabot
         access_token =
           credentials.
           select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "gitlab.com" }&.
+          find { |cred| cred["host"] == source.hostname }&.
           fetch("password")
 
         @gitlab_client ||=
           Gitlab.client(
-            endpoint: "https://gitlab.com/api/v4",
+            endpoint: source.api_endpoint,
             private_token: access_token || ""
           )
       end

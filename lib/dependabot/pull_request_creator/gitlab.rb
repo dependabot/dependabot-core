@@ -54,7 +54,7 @@ module Dependabot
 
         @gitlab_client_for_source ||=
           ::Gitlab.client(
-            endpoint: "https://gitlab.com/api/v4",
+            endpoint: source.api_endpoint,
             private_token: access_token || ""
           )
       end
