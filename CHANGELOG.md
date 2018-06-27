@@ -1,3 +1,7 @@
+## v0.61.38, 27 June 2018
+
+- Python: Handle another form of Python 2.7 resolvability issue
+
 ## v0.61.37, 27 June 2018
 
 - JS: Retry registry errors during yarn.lock update
