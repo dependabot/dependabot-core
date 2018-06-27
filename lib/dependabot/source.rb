@@ -63,7 +63,7 @@ module Dependabot
       case provider
       when "github" then "https://api.github.com/"
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
-      when "gitlab" then "https://gitlab.com/api/v4/"
+      when "gitlab" then "https://gitlab.com/api/v4"
       else raise "Unexpected provider '#{provider}'"
       end
     end
