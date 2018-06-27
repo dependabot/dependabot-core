@@ -1,3 +1,7 @@
+## v0.61.36, 27 June 2018
+
+- JS: Retry npm registry errors in VersionResolver
+
 ## v0.61.35, 27 June 2018
 
 - Update GitLab default API endpoint to remove trailing slash
