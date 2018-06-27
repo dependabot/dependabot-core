@@ -63,8 +63,14 @@ module Dependabot
                 # Whilst calling `lock` avoids doing an install as part of the
                 # pipenv flow, an install is still done by pip-tools in order
                 # to resolve the dependencies. That means this is slow.
-                run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv lock")
+                begin
+                  run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                     "pyenv exec pipenv lock")
+                rescue SharedHelpers::HelperSubprocessFailed => error
+                  # Workaround for https://github.com/pypa/pipenv/issues/2435
+                  raise unless error.message.include?("TypeError: expected")
+                  retry
+                end
 
                 updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
                 updated_lockfile.dig(
