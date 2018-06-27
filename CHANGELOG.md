@@ -1,3 +1,7 @@
+## v0.61.37, 27 June 2018
+
+- JS: Retry registry errors during yarn.lock update
+
 ## v0.61.36, 27 June 2018
 
 - JS: Retry npm registry errors in VersionResolver
