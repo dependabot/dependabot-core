@@ -91,27 +91,16 @@ module Dependabot
           new_content =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
+
               configure_git_to_use_https_with_credentials
-
-              project_root = File.join(File.dirname(__FILE__), "../../../..")
-              helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
-
-              updated_files = SharedHelpers.run_helper_subprocess(
-                command: "node #{helper_path}",
-                function: "update",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  dependency.version,
-                  dependency.requirements
-                ]
-              )
-
+              updated_files = run_yarn_updater
               reset_git_config
+
               updated_files.fetch("yarn.lock")
             end
           @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
+          reset_git_config
           handle_yarn_lock_updater_error(error)
         end
 
@@ -121,30 +110,51 @@ module Dependabot
           @updated_package_lock_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)
+
               configure_git_to_use_https_with_credentials
-
-              project_root = File.join(File.dirname(__FILE__), "../../../..")
-              helper_path = File.join(project_root, "helpers/npm/bin/run.js")
-
-              updated_files = SharedHelpers.run_helper_subprocess(
-                command: "node #{helper_path}",
-                function: "update",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  dependency.version,
-                  dependency.requirements
-                ]
-              )
-
+              updated_files = run_npm_updater
               reset_git_config
+
               updated_content = updated_files.fetch("package-lock.json")
               updated_content = post_process_npm_lockfile(updated_content)
               raise "No change!" if package_lock.content == updated_content
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
+          reset_git_config
           handle_package_lock_updater_error(error)
+        end
+
+        def run_yarn_updater
+          SharedHelpers.run_helper_subprocess(
+            command: "node #{yarn_helper_path}",
+            function: "update",
+            args: [
+              Dir.pwd,
+              dependency.name,
+              dependency.version,
+              dependency.requirements
+            ]
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          raise unless error.message.include?("The registry may be down")
+          retry_count ||= 0
+          retry_count += 1
+          raise if retry_count > 2
+          sleep(rand(3.0..10.0)) && retry
+        end
+
+        def run_npm_updater
+          SharedHelpers.run_helper_subprocess(
+            command: "node #{npm_helper_path}",
+            function: "update",
+            args: [
+              Dir.pwd,
+              dependency.name,
+              dependency.version,
+              dependency.requirements
+            ]
+          )
         end
 
         def configure_git_to_use_https_with_credentials
@@ -209,7 +219,6 @@ module Dependabot
         end
 
         def handle_yarn_lock_updater_error(error)
-          reset_git_config
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
             raise if error.message.include?(%("#{dependency.name}"))
@@ -223,7 +232,6 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_package_lock_updater_error(error)
-          reset_git_config
           raise if error.message.include?("#{dependency.name}@")
           if error.message.start_with?("No matching version", "404 Not Found")
             raise Dependabot::DependencyFileNotResolvable, error.message
@@ -426,6 +434,16 @@ module Dependabot
           content.
             gsub(/\{\{.*\}\}/, "something"). # {{ name }} syntax not allowed
             gsub("\\ ", " ")                 # escaped whitespace not allowed
+        end
+
+        def yarn_helper_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/yarn/bin/run.js")
+        end
+
+        def npm_helper_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/npm/bin/run.js")
         end
       end
     end

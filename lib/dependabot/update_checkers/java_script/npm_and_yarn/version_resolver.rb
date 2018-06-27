@@ -179,9 +179,9 @@ module Dependabot
                 JSON.parse(npm_response.body)
               rescue JSON::ParserError, Excon::Error::Timeout,
                      RegistryError => error
-                @retry_count ||= 0
-                @retry_count += 1
-                if @retry_count > 2
+                retry_count ||= 0
+                retry_count += 1
+                if retry_count > 2
                   raise if dependency_registry == "registry.npmjs.org"
                   raise unless error.is_a?(Excon::Error::Timeout)
                   raise PrivateSourceTimedOut, dependency_registry
