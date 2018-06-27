@@ -1,3 +1,9 @@
+## v0.61.35, 27 June 2018
+
+- Update GitLab default API endpoint to remove trailing slash
+- Use source api endpoint in gitlab client for using self host gitlab
+- JS: Set git credentials when switching from ssh to ssl in FileUpdater
+
 ## v0.61.34, 26 June 2018
 
 - Python: Bump Pipenv version back to 2018.6.25 (with some special handling)
