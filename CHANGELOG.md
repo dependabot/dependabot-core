@@ -1,3 +1,8 @@
+## v0.61.34, 26 June 2018
+
+- Python: Bump Pipenv version back to 2018.6.25 (with some special handling)
+- Python: Use Python 2.7.15 instead of 2.7.14
+
 ## v0.61.33, 26 June 2018
 
 - Python: Revert back to Pipenv 2018.5.18
