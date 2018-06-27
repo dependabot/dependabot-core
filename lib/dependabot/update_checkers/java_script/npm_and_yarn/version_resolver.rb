@@ -13,6 +13,8 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class VersionResolver
+          class RegistryError < StandardError; end
+
           def initialize(dependency:, credentials:, dependency_files:,
                          ignored_versions:)
             @dependency       = dependency
@@ -175,7 +177,8 @@ module Dependabot
                 check_npm_response(npm_response)
 
                 JSON.parse(npm_response.body)
-              rescue JSON::ParserError, Excon::Error::Timeout => error
+              rescue JSON::ParserError, Excon::Error::Timeout,
+                     RegistryError => error
                 @retry_count ||= 0
                 @retry_count += 1
                 if @retry_count > 2
@@ -199,8 +202,9 @@ module Dependabot
             return if npm_response.status == 404 && dependency.version.nil?
 
             return if npm_response.status == 404 && git_dependency?
-            raise "Got #{npm_response.status} response with body "\
+            msg = "Got #{npm_response.status} response with body "\
                   "#{npm_response.body}"
+            raise RegistryError, msg
           end
 
           def private_dependency_not_reachable?(npm_response)

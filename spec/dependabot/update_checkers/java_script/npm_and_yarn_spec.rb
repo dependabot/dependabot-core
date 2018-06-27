@@ -769,10 +769,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       before do
         stub_request(:get, registry_listing_url).
           to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
+
+        # Speed up spec by stopping any retry logic
+        resolver = checker.send(:version_resolver)
+        resolver.instance_variable_set(:@retry_count, 10)
       end
 
       it "raises an error" do
-        expect { checker.latest_version }.to raise_error(RuntimeError)
+        expect { checker.latest_version }.
+          to raise_error(described_class::VersionResolver::RegistryError)
       end
     end
 
@@ -780,10 +785,15 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       before do
         stub_request(:get, registry_listing_url).
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
+
+        # Speed up spec by stopping any retry logic
+        resolver = checker.send(:version_resolver)
+        resolver.instance_variable_set(:@retry_count, 10)
       end
 
       it "raises an error" do
-        expect { checker.latest_version }.to raise_error(RuntimeError)
+        expect { checker.latest_version }.
+          to raise_error(described_class::VersionResolver::RegistryError)
       end
 
       context "for a library dependency" do
