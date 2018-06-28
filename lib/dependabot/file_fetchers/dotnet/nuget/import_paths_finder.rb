@@ -18,7 +18,17 @@ module Dependabot
             doc = Nokogiri::XML(project_file.content)
             doc.remove_namespaces!
             doc.xpath("/Project/Import").map do |import_node|
-              path = import_node.attribute("Project")&.value&.strip
+              path = import_node.attribute("Project").value.strip.tr("\\", "/")
+              path = File.join(current_dir, path) unless current_dir.nil?
+              Pathname.new(path).cleanpath.to_path
+            end
+          end
+
+          def project_reference_paths
+            doc = Nokogiri::XML(project_file.content)
+            doc.remove_namespaces!
+            doc.xpath("/Project/ItemGroup/ProjectReference").map do |node|
+              path = node.attribute("Include").value.strip.tr("\\", "/")
               path = File.join(current_dir, path) unless current_dir.nil?
               Pathname.new(path).cleanpath.to_path
             end
