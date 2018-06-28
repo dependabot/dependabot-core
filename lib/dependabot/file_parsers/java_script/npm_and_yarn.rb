@@ -148,6 +148,7 @@ module Dependabot
 
           return unless resolved_url
           return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
+          return if resolved_url.include?("github.com")
 
           url =
             if resolved_url.include?("/~/") then resolved_url.split("/~/").first

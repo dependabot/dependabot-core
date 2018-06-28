@@ -671,6 +671,29 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
         end
 
+        context "with a git source that comes from a sub-dependency" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_fixture_name) { "git_dependency_from_subdep.json" }
+          let(:yarn_lock_fixture_name) { "git_dependency_from_subdep.lock" }
+
+          describe "the chalk dependency" do
+            subject { dependencies.find { |d| d.name == "chalk" } }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:version) { is_expected.to eq("2.4.1") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+
         context "with workspaces" do
           let(:package_json_fixture_name) { "workspaces.json" }
           let(:yarn_lock_fixture_name) { "workspaces.lock" }
