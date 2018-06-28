@@ -29,6 +29,8 @@ module Dependabot
         end
 
         def composer_lock
+          return @composer_lock if @composer_lock_lookup_attempted
+          @composer_lock_lookup_attempted = true
           @composer_lock ||= fetch_file_from_host("composer.lock")
         rescue Dependabot::DependencyFileNotFound
           nil
@@ -74,6 +76,12 @@ module Dependabot
             select { |file| file.type == "dir" }.
             map { |f| path.gsub(/\*$/, f.name) }
         rescue Octokit::NotFound, Gitlab::Error::NotFound
+          # If there's no lockfile, or if none of the dependencies are path
+          # dependencies, then we can ignore failures to find path deps
+          return [] unless composer_lock&.content&.include?('"path"')
+
+          # Otherwise, we don't know what to do. For now, just raise. If we see
+          # this in the wild we can make a call on the correct handling
           raise if directory == "/"
 
           # If the directory isn't found at the full path, try looking for it
