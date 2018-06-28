@@ -94,14 +94,14 @@ module Dependabot
 
               configure_git_to_use_https_with_credentials
               updated_files = run_yarn_updater
-              reset_git_config
 
               updated_files.fetch("yarn.lock")
             end
           @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
-          reset_git_config
           handle_yarn_lock_updater_error(error)
+        ensure
+          reset_git_config
         end
 
         def updated_package_lock_content
@@ -113,7 +113,6 @@ module Dependabot
 
               configure_git_to_use_https_with_credentials
               updated_files = run_npm_updater
-              reset_git_config
 
               updated_content = updated_files.fetch("package-lock.json")
               updated_content = post_process_npm_lockfile(updated_content)
@@ -121,8 +120,9 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          reset_git_config
           handle_package_lock_updater_error(error)
+        ensure
+          reset_git_config
         end
 
         def run_yarn_updater

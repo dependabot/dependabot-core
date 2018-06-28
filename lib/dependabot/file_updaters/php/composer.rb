@@ -68,7 +68,6 @@ module Dependabot
 
               updated_content = run_update_helper.fetch("composer.lock")
 
-              reset_git_config
               updated_content = post_process_lockfile(updated_content)
               if lockfile.content == updated_content
                 raise "Expected content to change!"
@@ -76,8 +75,9 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          reset_git_config
           handle_composer_errors(error)
+        ensure
+          reset_git_config
         end
 
         def run_update_helper

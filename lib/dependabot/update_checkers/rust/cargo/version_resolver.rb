@@ -36,7 +36,6 @@ module Dependabot
               command = "cargo update -p #{dependency_spec} --verbose"
               run_shell_command(command)
 
-              reset_git_config
               new_lockfile_content = File.read("Cargo.lock")
               updated_version = get_version_from_lockfile(new_lockfile_content)
 
@@ -46,6 +45,8 @@ module Dependabot
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_cargo_errors(error)
+          ensure
+            reset_git_config
           end
 
           def get_version_from_lockfile(lockfile_content)
