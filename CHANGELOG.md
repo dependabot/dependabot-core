@@ -1,3 +1,7 @@
+## v0.61.40, 28 June 2018
+
+- JS: Handle case where a subdependency introduces a git requirement
+
 ## v0.61.39, 28 June 2018
 
 - .NET: Fetch ProjectReference files
