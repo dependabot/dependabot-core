@@ -1,3 +1,7 @@
+## v0.61.39, 28 June 2018
+
+- .NET: Fetch ProjectReference files
+
 ## v0.61.38, 27 June 2018
 
 - Python: Handle another form of Python 2.7 resolvability issue
