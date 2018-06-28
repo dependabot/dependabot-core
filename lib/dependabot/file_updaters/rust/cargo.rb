@@ -122,12 +122,15 @@ module Dependabot
               write_temporary_dependency_files
               set_git_credentials
 
-              # Shell out to Cargo, which handles everything for us, and does
-              # so without doing an install (so it's fast).
-              command = "cargo update -p #{dependency_spec}"
-              run_shell_command(command)
+              begin
+                # Shell out to Cargo, which handles everything for us, and does
+                # so without doing an install (so it's fast).
+                command = "cargo update -p #{dependency_spec}"
+                run_shell_command(command)
+              ensure
+                reset_git_config
+              end
 
-              reset_git_config
               updated_lockfile = File.read("Cargo.lock")
               updated_lockfile = post_process_lockfile(updated_lockfile)
 
