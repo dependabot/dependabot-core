@@ -1,3 +1,8 @@
+## v0.61.41, 28 June 2018
+
+- PHP: Handle composer.json files that ask for non-existant path dependency
+  repos but don't need them
+
 ## v0.61.40, 28 June 2018
 
 - JS: Handle case where a subdependency introduces a git requirement
