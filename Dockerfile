@@ -49,7 +49,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ### PYTHON
 
 # Install Python 2.7 and 3.6 with pyenv. Using pyenv lets us support multiple Pythons
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv && cd /usr/local/.pyenv && git checkout v1.2.4 && cd -
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv && cd /usr/local/.pyenv && git checkout v1.2.5 && cd -
 ENV PYENV_ROOT=/usr/local/.pyenv
 ENV PATH="$PYENV_ROOT/bin:$PATH"
 RUN pyenv install 3.6.5 && pyenv install 2.7.15 && pyenv global 3.6.5
@@ -72,7 +72,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu artful main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-intl php7.2-common php7.2-gettext php7.2-curl php-xdebug php7.2-bcmath php-gmp \
+    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-intl php7.2-common php7.2-gettext php7.2-curl php-xdebug php7.2-bcmath php-gmp php7.2-imagick \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
