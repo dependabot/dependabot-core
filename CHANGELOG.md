@@ -1,3 +1,7 @@
+## v0.61.43, 29 June 2018
+
+- Fix git credential reset logic
+
 ## v0.61.42, 29 June 2018
 
 - Update semantic-release commit messages to be compliant with
