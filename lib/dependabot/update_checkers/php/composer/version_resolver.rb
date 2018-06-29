@@ -41,9 +41,20 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory(base_directory) do
               File.write("composer.json", prepared_composer_json_content)
               File.write("composer.lock", lockfile.content) if lockfile
-              set_git_credentials
 
-              latest_version_string = SharedHelpers.run_helper_subprocess(
+              run_update_checker
+            end
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            retry_count ||= 0
+            retry_count += 1
+            retry if retry_count < 2 && error.message.include?("404 Not Found")
+            retry if retry_count < 2 && error.message.include?("timed out")
+            handle_composer_errors(error)
+          end
+
+          def run_update_checker
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.run_helper_subprocess(
                 command: "php -d memory_limit=-1 #{php_helper_path}",
                 function: "get_latest_resolvable_version",
                 args: [
@@ -53,52 +64,7 @@ module Dependabot
                   registry_credentials
                 ]
               )
-
-              reset_git_config
-              latest_version_string
             end
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            reset_git_config
-            retry_count ||= 0
-            retry_count += 1
-            retry if retry_count < 2 && error.message.include?("404 Not Found")
-            retry if retry_count < 2 && error.message.include?("timed out")
-            handle_composer_errors(error)
-          end
-
-          def set_git_credentials
-            run_shell_command(
-              "git config --global --replace-all credential.helper "\
-              "'store --file=#{Dir.pwd}/git.store'"
-            )
-
-            git_store_content = ""
-            git_credentials.each do |cred|
-              authenticated_url =
-                "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
-                "@#{cred.fetch('host')}"
-
-              git_store_content += authenticated_url + "\n"
-            end
-
-            File.write("git.store", git_store_content)
-          end
-
-          def reset_git_config
-            run_shell_command("git config --global --remove-section credential")
-          end
-
-          def run_shell_command(command)
-            raw_response = nil
-            IO.popen(command, err: %i(child out)) do |process|
-              raw_response = process.read
-            end
-
-            return if $CHILD_STATUS.success?
-            raise SharedHelpers::HelperSubprocessFailed.new(
-              raw_response,
-              command
-            )
           end
 
           def prepared_composer_json_content

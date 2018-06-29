@@ -29,12 +29,13 @@ module Dependabot
           def fetch_latest_resolvable_version
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-              set_git_credentials
 
-              # Shell out to Cargo, which handles everything for us, and does
-              # so without doing an install (so it's fast).
-              command = "cargo update -p #{dependency_spec} --verbose"
-              run_shell_command(command)
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                # Shell out to Cargo, which handles everything for us, and does
+                # so without doing an install (so it's fast).
+                command = "cargo update -p #{dependency_spec} --verbose"
+                run_shell_command(command)
+              end
 
               new_lockfile_content = File.read("Cargo.lock")
               updated_version = get_version_from_lockfile(new_lockfile_content)
@@ -45,8 +46,6 @@ module Dependabot
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_cargo_errors(error)
-          ensure
-            reset_git_config
           end
 
           def get_version_from_lockfile(lockfile_content)
@@ -107,31 +106,6 @@ module Dependabot
             end
 
             File.write(lockfile.name, lockfile.content) if lockfile
-          end
-
-          def set_git_credentials
-            # This has to be global, otherwise Cargo doesn't pick it up
-            run_shell_command(
-              "git config --global --replace-all credential.helper "\
-              "'store --file=#{Dir.pwd}/git.store'"
-            )
-
-            git_store_content = ""
-            credentials.each do |cred|
-              next unless cred["type"] == "git_source"
-
-              authenticated_url =
-                "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
-                "@#{cred.fetch('host')}"
-
-              git_store_content += authenticated_url + "\n"
-            end
-
-            File.write("git.store", git_store_content)
-          end
-
-          def reset_git_config
-            run_shell_command("git config --global --remove-section credential")
           end
 
           def handle_cargo_errors(error)

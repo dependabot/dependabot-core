@@ -62,12 +62,14 @@ module Dependabot
               write_temporary_dependency_files
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
-              SharedHelpers.run_helper_subprocess(
-                env: mix_env,
-                command: "mix run #{elixir_helper_path}",
-                function: "get_updated_lockfile",
-                args: [Dir.pwd, dependency.name, organization_credentials]
-              )
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                SharedHelpers.run_helper_subprocess(
+                  env: mix_env,
+                  command: "mix run #{elixir_helper_path}",
+                  function: "get_updated_lockfile",
+                  args: [Dir.pwd, dependency.name, organization_credentials]
+                )
+              end
             end
 
           post_process_lockfile(@updated_lockfile_content)

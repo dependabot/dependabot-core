@@ -96,5 +96,73 @@ module Dependabot
         middlewares: excon_middleware
       }
     end
+
+    def self.with_git_configured(credentials:)
+      configure_git_to_use_https_with_credentials(credentials)
+      yield
+    ensure
+      reset_git_config
+    end
+
+    def self.configure_git_to_use_https_with_credentials(credentials)
+      configure_git_to_use_https
+      configure_git_credentials(credentials)
+    end
+
+    def self.configure_git_to_use_https
+      run_shell_command(
+        'git config --global --replace-all url."https://github.com/".'\
+        "insteadOf ssh://git@github.com/ && "\
+        'git config --global --add url."https://github.com/".'\
+        "insteadOf ssh://git@github.com: && "\
+        'git config --global --add url."https://github.com/".'\
+        "insteadOf git@github.com: && "\
+        'git config --global --add url."https://github.com/".'\
+        "insteadOf git@github.com/ && "\
+        'git config --global --add url."https://github.com/".'\
+        "insteadOf git://github.com/"
+      )
+    end
+
+    def self.configure_git_credentials(credentials)
+      run_shell_command(
+        "git config --global --replace-all credential.helper "\
+        "'store --file=#{Dir.pwd}/git.store'"
+      )
+
+      git_store_content = ""
+      credentials.each do |cred|
+        next unless cred["type"] == "git_source"
+        authenticated_url =
+          "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
+          "@#{cred.fetch('host')}"
+
+        git_store_content += authenticated_url + "\n"
+      end
+
+      File.write("git.store", git_store_content)
+    end
+
+    def self.reset_git_config
+      run_shell_command(
+        'git config --global --remove-section url."https://github.com/" '\
+        "&& git config --global --remove-section credential"
+      )
+    end
+
+    def self.run_shell_command(command)
+      raw_response = nil
+      IO.popen(command, err: %i(child out)) do |process|
+        raw_response = process.read
+      end
+
+      # Raise an error with the output from the shell session if the
+      # command returns a non-zero status
+      return if $CHILD_STATUS.success?
+      raise SharedHelpers::HelperSubprocessFailed.new(
+        raw_response,
+        command
+      )
+    end
   end
 end

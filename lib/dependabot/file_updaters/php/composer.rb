@@ -64,7 +64,6 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
-              set_git_credentials
 
               updated_content = run_update_helper.fetch("composer.lock")
 
@@ -76,58 +75,23 @@ module Dependabot
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_composer_errors(error)
-        ensure
-          reset_git_config
         end
 
         def run_update_helper
-          SharedHelpers.run_helper_subprocess(
-            command: "php #{php_helper_path}",
-            function: "update",
-            env: credentials_env,
-            args: [
-              Dir.pwd,
-              dependency.name,
-              dependency.version,
-              git_credentials,
-              registry_credentials
-            ]
-          )
-        end
-
-        def set_git_credentials
-          run_shell_command(
-            "git config --global --replace-all credential.helper "\
-            "'store --file=#{Dir.pwd}/git.store'"
-          )
-
-          git_store_content = ""
-          git_credentials.each do |cred|
-            authenticated_url =
-              "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
-              "@#{cred.fetch('host')}"
-
-            git_store_content += authenticated_url + "\n"
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.run_helper_subprocess(
+              command: "php #{php_helper_path}",
+              function: "update",
+              env: credentials_env,
+              args: [
+                Dir.pwd,
+                dependency.name,
+                dependency.version,
+                git_credentials,
+                registry_credentials
+              ]
+            )
           end
-
-          File.write("git.store", git_store_content)
-        end
-
-        def reset_git_config
-          run_shell_command("git config --global --remove-section credential")
-        end
-
-        def run_shell_command(command)
-          raw_response = nil
-          IO.popen(command, err: %i(child out)) do |process|
-            raw_response = process.read
-          end
-
-          return if $CHILD_STATUS.success?
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            raw_response,
-            command
-          )
         end
 
         def updated_composer_json_content

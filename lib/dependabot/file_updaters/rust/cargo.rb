@@ -120,15 +120,12 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-              set_git_credentials
 
-              begin
+              SharedHelpers.with_git_configured(credentials: credentials) do
                 # Shell out to Cargo, which handles everything for us, and does
                 # so without doing an install (so it's fast).
                 command = "cargo update -p #{dependency_spec}"
                 run_shell_command(command)
-              ensure
-                reset_git_config
               end
 
               updated_lockfile = File.read("Cargo.lock")
@@ -290,31 +287,6 @@ module Dependabot
           end
 
           @git_ssh_requirements_to_swap
-        end
-
-        def set_git_credentials
-          # This has to be global, otherwise Cargo doesn't pick it up
-          run_shell_command(
-            "git config --global --replace-all credential.helper "\
-            "'store --file=#{Dir.pwd}/git.store'"
-          )
-
-          git_store_content = ""
-          credentials.each do |cred|
-            next unless cred["type"] == "git_source"
-
-            authenticated_url =
-              "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
-              "@#{cred.fetch('host')}"
-
-            git_store_content += authenticated_url + "\n"
-          end
-
-          File.write("git.store", git_store_content)
-        end
-
-        def reset_git_config
-          run_shell_command("git config --global --remove-section credential")
         end
 
         def dummy_app_content

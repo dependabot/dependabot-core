@@ -33,15 +33,9 @@ module Dependabot
                   "check_update.exs"
                 )
 
-                SharedHelpers.run_helper_subprocess(
-                  env: mix_env,
-                  command: "mix run #{elixir_helper_path}",
-                  function: "get_latest_resolvable_version",
-                  args: [Dir.pwd,
-                         dependency.name,
-                         organization_credentials],
-                  popen_opts: { err: %i(child out) }
-                )
+                SharedHelpers.with_git_configured(credentials: credentials) do
+                  run_elixir_update_checker
+                end
               end
 
             return if latest_resolvable_version.nil?
@@ -51,6 +45,18 @@ module Dependabot
             version_class.new(latest_resolvable_version)
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_hex_errors(error)
+          end
+
+          def run_elixir_update_checker
+            SharedHelpers.run_helper_subprocess(
+              env: mix_env,
+              command: "mix run #{elixir_helper_path}",
+              function: "get_latest_resolvable_version",
+              args: [Dir.pwd,
+                     dependency.name,
+                     organization_credentials],
+              popen_opts: { err: %i(child out) }
+            )
           end
 
           def handle_hex_errors(error)

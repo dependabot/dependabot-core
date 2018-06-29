@@ -92,12 +92,9 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
-              configure_git_to_use_https_with_credentials
               updated_files = run_yarn_updater
 
               updated_files.fetch("yarn.lock")
-            ensure
-              reset_git_config
             end
           @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
@@ -111,31 +108,30 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)
 
-              configure_git_to_use_https_with_credentials
               updated_files = run_npm_updater
 
               updated_content = updated_files.fetch("package-lock.json")
               updated_content = post_process_npm_lockfile(updated_content)
               raise "No change!" if package_lock.content == updated_content
               updated_content
-            ensure
-              reset_git_config
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_package_lock_updater_error(error)
         end
 
         def run_yarn_updater
-          SharedHelpers.run_helper_subprocess(
-            command: "node #{yarn_helper_path}",
-            function: "update",
-            args: [
-              Dir.pwd,
-              dependency.name,
-              dependency.version,
-              dependency.requirements
-            ]
-          )
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{yarn_helper_path}",
+              function: "update",
+              args: [
+                Dir.pwd,
+                dependency.name,
+                dependency.version,
+                dependency.requirements
+              ]
+            )
+          end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.include?("The registry may be down")
           retry_count ||= 0
@@ -145,77 +141,18 @@ module Dependabot
         end
 
         def run_npm_updater
-          SharedHelpers.run_helper_subprocess(
-            command: "node #{npm_helper_path}",
-            function: "update",
-            args: [
-              Dir.pwd,
-              dependency.name,
-              dependency.version,
-              dependency.requirements
-            ]
-          )
-        end
-
-        def configure_git_to_use_https_with_credentials
-          configure_git_to_use_https
-          set_git_credentials
-        end
-
-        def configure_git_to_use_https
-          run_shell_command(
-            'git config --global --replace-all url."https://github.com/".'\
-            "insteadOf ssh://git@github.com/ && "\
-            'git config --global --add url."https://github.com/".'\
-            "insteadOf ssh://git@github.com: && "\
-            'git config --global --add url."https://github.com/".'\
-            "insteadOf git@github.com: && "\
-            'git config --global --add url."https://github.com/".'\
-            "insteadOf git@github.com/ && "\
-            'git config --global --add url."https://github.com/".'\
-            "insteadOf git://github.com/"
-          )
-        end
-
-        def set_git_credentials
-          run_shell_command(
-            "git config --global --replace-all credential.helper "\
-            "'store --file=#{Dir.pwd}/git.store'"
-          )
-
-          git_store_content = ""
-          credentials.each do |cred|
-            next unless cred["type"] == "git_source"
-            authenticated_url =
-              "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
-              "@#{cred.fetch('host')}"
-
-            git_store_content += authenticated_url + "\n"
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{npm_helper_path}",
+              function: "update",
+              args: [
+                Dir.pwd,
+                dependency.name,
+                dependency.version,
+                dependency.requirements
+              ]
+            )
           end
-
-          File.write("git.store", git_store_content)
-        end
-
-        def reset_git_config
-          run_shell_command(
-            'git config --global --remove-section url."https://github.com/" '\
-            "&& git config --global --remove-section credential"
-          )
-        end
-
-        def run_shell_command(command)
-          raw_response = nil
-          IO.popen(command, err: %i(child out)) do |process|
-            raw_response = process.read
-          end
-
-          # Raise an error with the output from the shell session if the command
-          # returns a non-zero status
-          return if $CHILD_STATUS.success?
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            raw_response,
-            command
-          )
         end
 
         def handle_yarn_lock_updater_error(error)
