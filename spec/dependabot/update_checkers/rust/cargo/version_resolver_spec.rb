@@ -197,7 +197,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("0.4.2")) }
+      it { is_expected.to eq(Gem::Version.new("0.4.3")) }
     end
 
     context "when not unlocking" do
