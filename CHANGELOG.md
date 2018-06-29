@@ -1,3 +1,7 @@
+## v0.61.45, 29 June 2018
+
+- Python: Revert Pipenv version again :-(
+
 ## v0.61.44, 29 June 2018
 
 - Rust: Handle yanked Rust versions in FileUpdater
