@@ -4,7 +4,7 @@ defmodule UpdateChecker do
 
     # Update the lockfile in a session that we can time out
     task = Task.async(fn -> do_resolution(dependency_name) end)
-    Task.await(task, 30000)
+    Task.yield(task, 30000) || raise("Timeout!")
 
     # Read the new lock
     {updated_lock, _updated_rest_lock} =
