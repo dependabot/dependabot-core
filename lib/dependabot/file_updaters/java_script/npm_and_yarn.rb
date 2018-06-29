@@ -96,12 +96,12 @@ module Dependabot
               updated_files = run_yarn_updater
 
               updated_files.fetch("yarn.lock")
+            ensure
+              reset_git_config
             end
           @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_yarn_lock_updater_error(error)
-        ensure
-          reset_git_config
         end
 
         def updated_package_lock_content
@@ -118,11 +118,11 @@ module Dependabot
               updated_content = post_process_npm_lockfile(updated_content)
               raise "No change!" if package_lock.content == updated_content
               updated_content
+            ensure
+              reset_git_config
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_package_lock_updater_error(error)
-        ensure
-          reset_git_config
         end
 
         def run_yarn_updater
