@@ -1,3 +1,7 @@
+## v0.61.46, 29 June 2018
+
+- Python: More Pipenv woe. Revert version further (oops!)
+
 ## v0.61.45, 29 June 2018
 
 - Python: Revert Pipenv version again :-(
