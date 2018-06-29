@@ -1,3 +1,10 @@
+## v0.61.44, 29 June 2018
+
+- Rust: Handle yanked Rust versions in FileUpdater
+- Elixir: more aggressive timeout handling
+- Move git config logic into SharedHelpers
+- Update Dockerfile for new PHP extension
+
 ## v0.61.43, 29 June 2018
 
 - Fix git credential reset logic
