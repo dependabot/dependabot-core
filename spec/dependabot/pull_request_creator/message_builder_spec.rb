@@ -275,7 +275,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
 
-          it { is_expected.to start_with("build(devDeps): bump") }
+          it { is_expected.to start_with("build(deps-dev): bump") }
         end
       end
 
