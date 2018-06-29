@@ -1,3 +1,8 @@
+## v0.61.42, 29 June 2018
+
+- Update semantic-release commit messages to be compliant with
+  @commitlint/config-conventional
+
 ## v0.61.41, 28 June 2018
 
 - PHP: Handle composer.json files that ask for non-existant path dependency
