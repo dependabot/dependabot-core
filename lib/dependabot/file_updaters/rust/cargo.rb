@@ -137,6 +137,14 @@ module Dependabot
 
               raise "Failed to update #{dependency.name}!"
             end
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+          handle_cargo_error(error)
+        end
+
+        def handle_cargo_error(error)
+          raise unless error.message.include?("no matching version")
+          raise if error.message.include?("`#{dependency.name}`")
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
         def update_manifest_req(content:, dep:, old_req:, new_req:)

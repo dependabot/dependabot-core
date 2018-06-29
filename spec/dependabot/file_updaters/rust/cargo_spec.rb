@@ -224,6 +224,20 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
             expect(error.message).to include("no matching version")
           end
       end
+
+      context "because an existing requirement is no good" do
+        let(:manifest_fixture_name) { "yanked_version" }
+        let(:lockfile_fixture_name) { "yanked_version" }
+
+        it "raises a helpful error" do
+          expect { updater.updated_dependency_files }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+              expect(error.message).
+                to include("version `^99.0.0` found for package `regex`")
+            end
+        end
+      end
     end
 
     describe "the updated lockfile" do
