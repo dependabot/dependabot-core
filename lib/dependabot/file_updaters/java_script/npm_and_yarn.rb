@@ -186,8 +186,7 @@ module Dependabot
             raise unless dep
             raise Dependabot::GitDependencyReferenceNotFound, dep.fetch(:name)
           end
-          if error.message.include?("make sure you have the correct access") ||
-             error.message.include?("Authentication failed")
+          if error.message.match?(UNREACHABLE_GIT)
             dependency_url =
               error.message.match(UNREACHABLE_GIT).
               named_captures.fetch("url")
