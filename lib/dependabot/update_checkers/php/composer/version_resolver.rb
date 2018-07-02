@@ -132,7 +132,7 @@ module Dependabot
               extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
               msg = "Dependabot's installed extensions didn't match those "\
                     "required by your application. Please add the following "\
-                    "extensions to your platform config: "\
+                    "extensions to the platform config in your composer.json: "\
                     "#{extensions.join(', ')}.\n\n"\
                     "The full error raised was:\n\n#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
@@ -152,6 +152,13 @@ module Dependabot
               raise Dependabot::PrivateSourceAuthenticationFailure, source
             elsif error.message.start_with?("Allowed memory size")
               raise "Composer out of memory"
+            elsif error.message.start_with?("Package not found in updated") &&
+                  !dependency.top_level?
+              # If we can't find the dependency in the composer.lock after an
+              # update, but it was originally a sub-dependency, it's because the
+              # dependency is no longer required and is just cruft in the
+              # composer.json. In this case we just ignore the dependency.
+              nil
             else
               raise error
             end

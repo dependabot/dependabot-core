@@ -72,5 +72,18 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "updating a subdependency that's not required anymore" do
+      let(:manifest_fixture_name) { "exact_version" }
+      let(:lockfile_fixture_name) { "version_conflict_at_latest" }
+      let(:requirements) { [] }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:dependency_name) { "doctrine/dbal" }
+      let(:dependency_version) { "2.1.5" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect(resolver.latest_resolvable_version).to be_nil
+      end
+    end
   end
 end
