@@ -139,14 +139,8 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(pipfile_content)
 
-              begin
-                run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv lock")
-              rescue SharedHelpers::HelperSubprocessFailed => error
-                # Workaround for https://github.com/pypa/pipenv/issues/2435
-                raise unless error.message.include?("TypeError: expected")
-                retry
-              end
+              run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                 "pyenv exec pipenv lock")
 
               File.read("Pipfile.lock")
             end
