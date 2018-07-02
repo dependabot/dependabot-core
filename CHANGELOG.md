@@ -1,3 +1,7 @@
+## v0.61.49, 02 July 2018
+
+- JS: Handle environment variables in npmrc URLs
+
 ## v0.61.48, 02 July 2018
 
 - JS: Catch more git authentication / repo not found errors
