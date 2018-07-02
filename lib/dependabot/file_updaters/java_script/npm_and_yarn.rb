@@ -167,7 +167,6 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/MethodLength
         def handle_package_lock_updater_error(error)
           raise if error.message.include?("#{dependency.name}@")
           if error.message.start_with?("No matching version", "404 Not Found")
@@ -198,7 +197,6 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/MethodLength
 
         def write_temporary_dependency_files(lock_git_deps: false)
           File.write("yarn.lock", yarn_lock.content) if yarn_lock
