@@ -1,3 +1,7 @@
+## v0.61.50, 02 July 2018
+
+- PHP: Don't error when updating subdependencies that are no longer required
+
 ## v0.61.49, 02 July 2018
 
 - JS: Handle environment variables in npmrc URLs
