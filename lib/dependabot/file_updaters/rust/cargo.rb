@@ -58,7 +58,7 @@ module Dependabot
             select { |dep| requirement_changed?(file, dep) }.
             reduce(file.content.dup) do |content, dep|
               updated_content = content
-              updated_content = update_requirement(
+              updated_content = update_requirements(
                 content: updated_content,
                 filename: file.name,
                 dependency: dep
@@ -74,25 +74,29 @@ module Dependabot
             end
         end
 
-        def update_requirement(content:, filename:, dependency:)
-          updated_requirement =
-            dependency.requirements.
-            find { |r| r[:file] == filename }.
-            fetch(:requirement)
+        def update_requirements(content:, filename:, dependency:)
+          updated_content = content.dup
 
-          old_req =
-            dependency.previous_requirements.
-            find { |r| r[:file] == filename }.
-            fetch(:requirement)
+          # The UpdateChecker ensures the order of requirements is preserved
+          # when updating, so we can zip them together in new/old pairs.
+          reqs = dependency.requirements.zip(dependency.previous_requirements).
+                 reject { |new_req, old_req| new_req == old_req }
 
-          return content unless old_req
+          # Loop through each changed requirement
+          reqs.each do |new_req, old_req|
+            raise "Bad req match" unless new_req[:file] == old_req[:file]
+            next if new_req[:requirement] == old_req[:requirement]
+            next unless new_req[:file] == filename
 
-          update_manifest_req(
-            content: content,
-            dep: dependency,
-            old_req: old_req,
-            new_req: updated_requirement
-          )
+            updated_content = update_manifest_req(
+              content: updated_content,
+              dep: dependency,
+              old_req: old_req.fetch(:requirement),
+              new_req: new_req.fetch(:requirement)
+            )
+          end
+
+          updated_content
         end
 
         def update_git_pin(content:, filename:, dependency:)

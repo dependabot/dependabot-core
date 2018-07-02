@@ -133,6 +133,49 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
             end
           end
 
+          context "with a repeated dependency when only one req has changed" do
+            let(:manifest_fixture_name) { "repeated_dependency" }
+            let(:lockfile_fixture_name) { "bare_version_specified" }
+            let(:requirements) do
+              [
+                {
+                  file: "Cargo.toml",
+                  requirement: "0.1.38",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  file: "Cargo.toml",
+                  requirement: "0.1.38",
+                  groups: ["build-dependencies"],
+                  source: nil
+                }
+              ]
+            end
+            let(:previous_requirements) do
+              [
+                {
+                  file: "Cargo.toml",
+                  requirement: "0.1.38",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  file: "Cargo.toml",
+                  requirement: "0.1.12",
+                  groups: ["build-dependencies"],
+                  source: nil
+                }
+              ]
+            end
+
+            it "includes the new requirement" do
+              expect(updated_manifest_content).to include(%(time = "0.1.38"))
+              expect(updated_manifest_content).
+                to_not include(%("time" = "0.1.12"))
+            end
+          end
+
           context "with a git dependency" do
             context "with an updated tag" do
               let(:manifest_fixture_name) { "git_dependency_with_tag" }

@@ -84,6 +84,36 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "with declarations in dependencies and build-dependencies" do
+        let(:manifest_fixture_name) { "repeated_dependency" }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("time")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [
+                {
+                  requirement: "0.1.12",
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "0.1.12",
+                  file: "Cargo.toml",
+                  groups: ["build-dependencies"],
+                  source: nil
+                }
+              ]
+            )
+          end
+        end
+      end
+
       context "with a path dependency" do
         let(:manifest_fixture_name) { "path_dependency" }
         let(:lockfile_fixture_name) { "path_dependency" }
