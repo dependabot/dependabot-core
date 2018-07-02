@@ -1,3 +1,7 @@
+## v0.61.48, 02 July 2018
+
+- JS: Catch more git authentication / repo not found errors
+
 ## v0.61.47, 01 July 2018
 
 - Python: Update Pipenv to 2018.7.1
