@@ -104,6 +104,7 @@ module Dependabot
                               select { |cred| cred["type"] == "npm_registry" }
 
                 npmrc_file&.content.to_s.scan(AUTH_TOKEN_REGEX) do
+                  next if Regexp.last_match[:registry].include?("${")
                   registries << {
                     "type" => "npm_registry",
                     "registry" => Regexp.last_match[:registry],

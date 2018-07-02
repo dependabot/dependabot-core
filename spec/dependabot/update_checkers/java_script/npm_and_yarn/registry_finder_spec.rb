@@ -82,6 +82,30 @@ RSpec.describe tested_module::RegistryFinder do
       end
     end
 
+    context "with an npmrc file" do
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: fixture("javascript", "npmrc", npmrc_fixture_name)
+        )
+      end
+      let(:npmrc_fixture_name) { "auth_token" }
+
+      before do
+        body = fixture("javascript", "gemfury_response_etag.json")
+        stub_request(:get, "https://npm.fury.io/dependabot/etag").
+          with(headers: { "Authorization" => "Bearer secret_token" }).
+          to_return(status: 200, body: body)
+      end
+
+      it { is_expected.to eq("npm.fury.io/dependabot") }
+
+      context "with an environment variable URL" do
+        let(:npmrc_fixture_name) { "env_url" }
+        it { is_expected.to eq("registry.npmjs.org") }
+      end
+    end
+
     context "with a private registry source" do
       let(:source) do
         { type: "private_registry", url: "https://npm.fury.io/dependabot" }
