@@ -108,6 +108,23 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:pipfile_fixture_name) { "required_python" }
       let(:lockfile_fixture_name) { "required_python.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+
+      context "for a resolution that has caused trouble in the past" do
+        let(:dependency_files) { [pipfile] }
+        let(:pipfile_fixture_name) { "problematic_resolution" }
+        let(:dependency_name) { "twilio" }
+        let(:dependency_version) { nil }
+        let(:dependency_requirements) do
+          [{
+            file: "Pipfile",
+            requirement: "*",
+            groups: ["default"],
+            source: nil
+          }]
+        end
+        let(:latest_version) { Gem::Version.new("6.14.6") }
+        it { is_expected.to eq(Gem::Version.new("6.14.6")) }
+      end
     end
 
     context "with an unfetchable requirement" do
