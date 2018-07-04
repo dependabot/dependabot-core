@@ -1,3 +1,7 @@
+## v0.61.52, 04 July 2018
+
+- .NET: Handle PackageReference lines without a version requirement
+
 ## v0.61.51, 02 July 2018
 
 - Rust: Handle updating multiple requirements in a single manifest file
