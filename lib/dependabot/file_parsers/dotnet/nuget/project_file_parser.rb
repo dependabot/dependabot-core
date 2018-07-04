@@ -59,6 +59,7 @@ module Dependabot
 
           def dependency_version(dependency_node)
             requirement = dependency_requirement(dependency_node)
+            return unless requirement
 
             # Remove brackets if present
             version = requirement.gsub(/[\(\)\[\]]/, "").strip

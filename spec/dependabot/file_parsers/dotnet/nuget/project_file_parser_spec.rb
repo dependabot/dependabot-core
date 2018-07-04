@@ -20,7 +20,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
     describe "the dependencies" do
       subject(:dependencies) { dependency_set.dependencies }
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -32,6 +32,24 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.1.1",
+              file: "my.csproj",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.AspNetCore.App")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: nil,
               file: "my.csproj",
               groups: [],
               source: nil

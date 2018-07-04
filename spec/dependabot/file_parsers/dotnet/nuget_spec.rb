@@ -25,7 +25,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(3) }
+    its(:length) { is_expected.to eq(4) }
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the last dependency" do
         subject(:dependency) { dependencies.last }
