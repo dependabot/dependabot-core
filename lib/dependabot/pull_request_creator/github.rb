@@ -132,6 +132,11 @@ module Dependabot
 
       def create_or_update_branch(commit)
         branch_exists? ? update_branch(commit) : create_branch(commit)
+      rescue Octokit::UnprocessableEntity
+        # A race condition may cause GitHub to fail here, in which case we retry
+        retry_count ||= 0
+        retry_count += 1
+        retry unless retry_count >= 2
       end
 
       def create_branch(commit)
