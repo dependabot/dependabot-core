@@ -37,12 +37,23 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
     end
 
     context "with no requirement" do
-      let(:dependency_name) { "pytest" }
       let(:old_requirement) { nil }
       let(:new_requirement) { "==1.11.5" }
 
-      it { is_expected.to include("pytest==1.11.5") }
-      it { is_expected.to include("pytest-xdist\n") }
+      context "and another requirement with the same beginning" do
+        let(:dependency_name) { "pytest" }
+        it { is_expected.to include("pytest==1.11.5") }
+        it { is_expected.to include("pytest-xdist\n") }
+      end
+
+      context "and another requirement with the same ending" do
+        let(:requirement_content) do
+          fixture("python", "pip_compile_files", "superstring.in")
+        end
+        let(:dependency_name) { "sqlalchemy" }
+        it { is_expected.to include("\nSQLAlchemy==1.11.5") }
+        it { is_expected.to include("Flask-SQLAlchemy\n") }
+      end
     end
   end
 end

@@ -22,7 +22,7 @@ module Dependabot
 
           def updated_content
             updated_content = content.gsub(
-              original_dependency_declaration_string(old_requirement),
+              original_declaration_replacement_regex,
               updated_dependency_declaration_string(
                 old_requirement,
                 new_requirement
@@ -52,7 +52,7 @@ module Dependabot
               end
 
             raise "Declaration not found for #{dependency_name}!" unless dec
-            dec.to_s
+            dec.to_s.strip
           end
 
           def updated_dependency_declaration_string(old_req, new_req)
@@ -65,6 +65,12 @@ module Dependabot
                   nm + new_req
                 end
             end
+          end
+
+          def original_declaration_replacement_regex
+            original_string =
+              original_dependency_declaration_string(old_requirement)
+            /(?<![\-\w])#{Regexp.escape(original_string)}(?![\-\w])/
           end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
