@@ -1,3 +1,9 @@
+## v0.61.54, 05 July 2018
+
+- Rust: Better file updating of feature dependencies (handle repeated case
+  properly)
+- Gradle: Correct caching of properties in FileParser
+
 ## v0.61.53, 05 July 2018
 
 - Python: Handle requirement.txt dependency reqs that are a substring of another
