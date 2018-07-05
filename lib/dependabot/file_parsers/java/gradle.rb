@@ -126,7 +126,8 @@ module Dependabot
         end
 
         def properties(buildfile)
-          @properties ||=
+          @properties ||= {}
+          @properties[buildfile.name] ||=
             parsed_buildfile(buildfile)["properties"].
             each_with_object({}) do |prop, hash|
               hash[prop.fetch("name")] = prop.fetch("value")
