@@ -41,7 +41,7 @@ the helpers:
 4. `cd helpers/php && composer install && cd -`
 5. `cd helpers/python && pyenv exec pip install -r requirements.txt && cd -`
 6. `cd helpers/elixir && mix deps.get && cd -`
-7. `cd helpers/gradle && gradle jar && cd -`
+7. `cd helpers/gradle/buildfile_parser && gradle jar && mv build/libs/buildfile_parser.jar ../ && cd - && cd helpers/gradle/settings_file_parser && gradle jar && mv build/libs/settings_file_parser.jar ../ && cd -`
 
 ## Architecture
 
