@@ -87,8 +87,8 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
       context "with declarations in dependencies and build-dependencies" do
         let(:manifest_fixture_name) { "repeated_dependency" }
 
-        describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+        describe "the last dependency" do
+          subject(:dependency) { dependencies.last }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
                   source: nil
                 },
                 {
-                  requirement: "0.1.12",
+                  requirement: "0.1.13",
                   file: "Cargo.toml",
                   groups: ["build-dependencies"],
                   source: nil

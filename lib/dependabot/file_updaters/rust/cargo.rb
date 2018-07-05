@@ -152,8 +152,11 @@ module Dependabot
         end
 
         def update_manifest_req(content:, dep:, old_req:, new_req:)
-          if content.match?(declaration_regex(dep))
-            content.gsub(declaration_regex(dep)) do |line|
+          simple_declaration = content.scan(declaration_regex(dep)).
+                               find { |m| m.include?(old_req) }
+
+          if simple_declaration
+            content.gsub(simple_declaration) do |line|
               line.gsub(old_req, new_req)
             end
           elsif content.match?(feature_declaration_version_regex(dep))
@@ -169,8 +172,11 @@ module Dependabot
         end
 
         def update_manifest_pin(content:, dep:, old_pin:, new_pin:)
-          if content.match?(declaration_regex(dep))
-            content.gsub(declaration_regex(dep)) do |line|
+          simple_declaration = content.scan(declaration_regex(dep)).
+                               find { |m| m.include?(old_pin) }
+
+          if simple_declaration
+            content.gsub(simple_declaration) do |line|
               line.gsub(old_pin, new_pin)
             end
           elsif content.match?(feature_declaration_pin_regex(dep))
