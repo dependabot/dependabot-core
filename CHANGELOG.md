@@ -1,3 +1,10 @@
+## v0.61.53, 05 July 2018
+
+- Python: Handle requirement.txt dependency reqs that are a substring of another
+  requirement
+- Python: Handle pip-compile dependency requirements that are a substring of
+  another requirement
+
 ## v0.61.52, 04 July 2018
 
 - .NET: Handle PackageReference lines without a version requirement
