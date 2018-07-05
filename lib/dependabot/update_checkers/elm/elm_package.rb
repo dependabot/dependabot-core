@@ -22,6 +22,7 @@ module Dependabot
 
         def latest_resolvable_version_with_no_unlock
           # No concept of "unlocking" for elm-packages
+          # elm-package sort of on always-unlock mode
           dependency.version
         end
 
@@ -50,14 +51,14 @@ module Dependabot
             middlewares: SharedHelpers.excon_middleware
           )
 
-          return [] unless response.status == 200
+          return [dependency.version] unless response.status == 200
 
           matches = VERSIONS_REGEX.match(response.body).to_a
 
-          return [] unless matches.any?
+          return [dependency.version] unless matches.any?
 
           matches[0].scan(VERSION_REGEX).
-            map {|strings| string.map(&:to_i)}.
+            map {|strings| strings.map(&:to_i)}.
             sort
         end
       end
