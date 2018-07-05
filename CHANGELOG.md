@@ -1,3 +1,7 @@
+## v0.61.55, 05 July 2018
+
+- Python: Handle errors installing futures on Python 3
+
 ## v0.61.54, 05 July 2018
 
 - Rust: Better file updating of feature dependencies (handle repeated case
