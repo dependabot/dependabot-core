@@ -70,13 +70,27 @@ module Dependabot
         end
 
         def path_dependency_paths_from_file(file)
-          FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
-            parsed_file(file).fetch(type, {}).map do |_, details|
-              next unless details.is_a?(Hash)
-              next unless details["path"]
-              File.join(details["path"], "Cargo.toml")
+          general_dependency_paths =
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
+              parsed_file(file).fetch(type, {}).map do |_, details|
+                next unless details.is_a?(Hash)
+                next unless details["path"]
+                File.join(details["path"], "Cargo.toml")
+              end
+            end.compact
+
+          target_specific_dependency_paths =
+            parsed_file(file).fetch("target", {}).flat_map do |_, t_details|
+              FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
+                t_details.fetch(type, {}).map do |_, details|
+                  next unless details.is_a?(Hash)
+                  next unless details["path"]
+                  File.join(details["path"], "Cargo.toml")
+                end
+              end.compact
             end
-          end.compact
+
+          general_dependency_paths + target_specific_dependency_paths
         end
 
         def workspace_dependency_paths_from_file(file)

@@ -129,6 +129,20 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         end
       end
 
+      context "for a target dependency" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_target_path_deps.json"
+          )
+        end
+
+        it "fetches the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml src/s3/Cargo.toml))
+        end
+      end
+
       context "with a directory" do
         let(:source) do
           Dependabot::Source.new(
