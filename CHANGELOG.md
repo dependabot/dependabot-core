@@ -1,3 +1,7 @@
+## v0.61.56, 05 July 2018
+
+- Rust: Fetch path dependencies for target-specific deps
+
 ## v0.61.55, 05 July 2018
 
 - Python: Handle errors installing futures on Python 3
