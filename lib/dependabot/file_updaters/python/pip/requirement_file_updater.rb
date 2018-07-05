@@ -50,7 +50,7 @@ module Dependabot
 
             updated_content =
               content.gsub(
-                original_dependency_declaration_string(requirement),
+                original_declaration_replacement_regex(requirement),
                 updated_dependency_declaration_string(requirement)
               )
 
@@ -58,15 +58,15 @@ module Dependabot
             updated_content
           end
 
-          def original_dependency_declaration_string(requirements)
+          def original_dependency_declaration_string(requirement)
             regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
             matches = []
 
-            get_original_file(requirements.fetch(:file)).
+            get_original_file(requirement.fetch(:file)).
               content.scan(regex) { matches << Regexp.last_match }
             dec = matches.find { |m| normalise(m[:name]) == dependency.name }
             raise "Declaration not found for #{dependency.name}!" unless dec
-            dec.to_s
+            dec.to_s.strip
           end
 
           def updated_dependency_declaration_string(requirement)
@@ -88,6 +88,12 @@ module Dependabot
                 algorithm: hash_algorithm(requirement)
               ).join(hash_separator(requirement))
             )
+          end
+
+          def original_declaration_replacement_regex(requirement)
+            original_string =
+              original_dependency_declaration_string(requirement)
+            /(?<![\-\w])#{Regexp.escape(original_string)}(?![\-\w])/
           end
 
           def requirement_includes_hashes?(requirement)

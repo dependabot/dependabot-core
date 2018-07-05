@@ -82,6 +82,31 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
+      context "with substring names" do
+        let(:requirements_fixture_name) { "name_clash.txt" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "sqlalchemy",
+            version: "1.2.10",
+            requirements: [{
+              file: "requirements.txt",
+              requirement: "==1.2.10",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "requirements.txt",
+              requirement: "==1.2.9",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+        its(:content) { is_expected.to include "\nSQLAlchemy==1.2.10\n" }
+        its(:content) { is_expected.to include "Flask-SQLAlchemy==1.2.9\n" }
+      end
+
       context "when there are hashes" do
         let(:requirements_fixture_name) { "hashes.txt" }
         let(:dependency) do
