@@ -249,11 +249,11 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
             )
           end
 
-          it "runs just fine (we get a 403 here because our key is wrong)" do
+          it "runs just fine (we get a 400 here because our key is wrong)" do
             expect { updated_files }.to raise_error do |error|
               expect(error).
                 to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-              expect(error.message).to include("403 Forbidden")
+              expect(error.message).to include("400 Bad Request")
             end
           end
         end
