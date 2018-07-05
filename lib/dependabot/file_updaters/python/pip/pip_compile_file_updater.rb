@@ -122,7 +122,9 @@ module Dependabot
               command
             )
           rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("InstallationError")
+            # Retry errors that might have been cause by using Python 3
+            raise unless error.message.include?("InstallationError") ||
+                         error.message.include?("futures")
             raise if command.start_with?("pyenv local 2.7.15 &&")
             command = "pyenv local 2.7.15 && " +
                       command +
