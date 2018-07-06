@@ -1,3 +1,7 @@
+## v0.61.57, 06 July 2018
+
+- Don't misinterpret GitHub downtime as repos being more generally unreachable
+
 ## v0.61.56, 05 July 2018
 
 - Rust: Fetch path dependencies for target-specific deps
