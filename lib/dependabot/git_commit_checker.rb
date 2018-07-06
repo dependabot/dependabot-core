@@ -8,7 +8,6 @@ require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/source"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
@@ -209,12 +208,9 @@ module Dependabot
     end
 
     def github_commit_comparison_status(ref1, ref2)
-      access_token = credentials.
-                     select { |cred| cred["type"] == "git_source" }.
-                     find { |cred| cred["host"] == "github.com" }&.
-                     fetch("password")
+      client = GithubClientWithRetries.
+               for_github_dot_com(credentials: credentials)
 
-      client = GithubClientWithRetries.new(access_token: access_token)
       client.compare(listing_source_repo, ref1, ref2).status
     end
 
@@ -335,4 +331,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

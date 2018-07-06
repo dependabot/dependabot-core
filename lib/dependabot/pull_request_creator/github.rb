@@ -52,16 +52,10 @@ module Dependabot
       private
 
       def github_client_for_source
-        access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }.
-          fetch("password")
-
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.new(
-            access_token: access_token,
-            api_endpoint: source.api_endpoint
+          Dependabot::GithubClientWithRetries.for_source(
+            source: source,
+            credentials: credentials
           )
       end
 

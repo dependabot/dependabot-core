@@ -20,6 +20,37 @@ module Dependabot
       Octokit::BadGateway
     ].freeze
 
+    #######################
+    # Constructor methods #
+    #######################
+
+    def self.for_source(source:, credentials:)
+      access_token =
+        credentials.
+        select { |cred| cred["type"] == "git_source" }.
+        find { |cred| cred["host"] == source.hostname }&.
+        fetch("password")
+
+      new(
+        access_token: access_token,
+        api_endpoint: source.api_endpoint
+      )
+    end
+
+    def self.for_github_dot_com(credentials:)
+      access_token =
+        credentials.
+        select { |cred| cred["type"] == "git_source" }.
+        find { |cred| cred["host"] == "github.com" }&.
+        fetch("password")
+
+      new(access_token: access_token)
+    end
+
+    ############
+    # Proxying #
+    ############
+
     def initialize(max_retries: 1, **args)
       args = DEFAULT_CLIENT_ARGS.merge(args)
 
