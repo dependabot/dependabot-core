@@ -8,9 +8,11 @@ require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/source"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
+    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/
 
     def initialize(dependency:, credentials:)
       @dependency = dependency
@@ -161,8 +163,12 @@ module Dependabot
       )
 
       return response.body if response.status == 200
+      if response.status >= 500 && original_uri.match?(KNOWN_HOSTS)
+        raise "Server error at #{original_uri}: #{response.body}"
+      end
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
+      raise if original_uri.match?(KNOWN_HOSTS)
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
     end
 
@@ -329,3 +335,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

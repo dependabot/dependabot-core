@@ -391,16 +391,40 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "when the source returns a timeout" do
-          before do
-            git_url = "https://github.com/gocardless/business.git"
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_raise(Excon::Error::Timeout)
-          end
-          let(:ref) { "my_ref" }
+          context "and is unknown" do
+            let(:source) do
+              {
+                type: "git",
+                url: "https://dodgyhost.com/gocardless/business",
+                branch: "master",
+                ref: "master"
+              }
+            end
+            before do
+              url = "https://dodgyhost.com/gocardless/business.git"
+              stub_request(:get, url + "/info/refs?service=git-upload-pack").
+                to_raise(Excon::Error::Timeout)
+            end
+            let(:ref) { "my_ref" }
 
-          it "raises a helpful error" do
-            expect { checker.head_commit_for_current_branch }.
-              to raise_error(Dependabot::GitDependenciesNotReachable)
+            it "raises a helpful error" do
+              expect { checker.head_commit_for_current_branch }.
+                to raise_error(Dependabot::GitDependenciesNotReachable)
+            end
+          end
+
+          context "but is GitHub" do
+            before do
+              url = "https://github.com/gocardless/business.git"
+              stub_request(:get, url + "/info/refs?service=git-upload-pack").
+                to_raise(Excon::Error::Timeout)
+            end
+            let(:ref) { "my_ref" }
+
+            it "raises a generic error (that won't be misinterpreted)" do
+              expect { checker.head_commit_for_current_branch }.
+                to raise_error(Excon::Error::Timeout)
+            end
           end
         end
       end
