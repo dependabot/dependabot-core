@@ -1,3 +1,8 @@
+## v0.61.59, 09 July 2018
+
+- Ruby: Don't try to rescue using a string
+- JS: Build an imitation path dependency package.json when required
+
 ## v0.61.58, 08 July 2018
 
 - PHP: Handle empty lockfiles
