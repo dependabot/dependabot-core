@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/source"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/php/composer"
 require_relative "../shared_examples_for_file_parsers"
@@ -121,6 +122,14 @@ RSpec.describe Dependabot::FileParsers::Php::Composer do
 
       it "skips the dependency" do
         expect(dependencies.length).to eq(1)
+      end
+    end
+
+    context "with a gutted lockfile" do
+      let(:lockfile_fixture_name) { "gutted" }
+
+      it "skips the dependency" do
+        expect(dependencies.length).to eq(0)
       end
     end
 

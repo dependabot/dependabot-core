@@ -103,8 +103,11 @@ module Dependabot
         def dependency_version(name:, type:)
           return unless lockfile
           key = lockfile_key(type)
-          package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
-          package&.fetch("version")&.sub(/^v?/, "")
+
+          parsed_lockfile.
+            fetch(key, []).
+            find { |d| d["name"] == name }&.
+            fetch("version")&.sub(/^v?/, "")
         end
 
         def dependency_source(name:, type:)

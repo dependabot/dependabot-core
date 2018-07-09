@@ -1,0 +1,12 @@
+{
+    "_readme": [
+        "This File Intentionally Left Blank                              ",
+        "================================================================",
+        "This lock file is left blank to make it impossible to deploy.   ",
+        "You must use `composer` to generated a valid composer.lock file ",
+        "based on your own composer.json config file instead.            ",
+        "                                                                ",
+        "I recommend this command:                                       ",
+        "$ bin/composer update --ignore-platform-reqs                    "
+    ]
+}
