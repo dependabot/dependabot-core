@@ -1,3 +1,7 @@
+## v0.61.58, 08 July 2018
+
+- PHP: Handle empty lockfiles
+
 ## v0.61.57, 06 July 2018
 
 - Don't misinterpret GitHub downtime as repos being more generally unreachable
