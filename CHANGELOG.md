@@ -1,3 +1,7 @@
+## v0.61.60, 09 July 2018
+
+- JS: Parse Yarn lockfiles to build path dependencies, too
+
 ## v0.61.59, 09 July 2018
 
 - Ruby: Don't try to rescue using a string
