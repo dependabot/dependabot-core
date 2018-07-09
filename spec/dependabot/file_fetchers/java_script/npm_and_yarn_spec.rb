@@ -119,6 +119,32 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       expect(file_fetcher_instance.files.map(&:name)).to eq(["package.json"])
       expect(file_fetcher_instance.files.first.type).to eq("file")
     end
+
+    context "with a path dependency" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_path_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      context "that has an unfetchable path" do
+        before do
+          stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+        end
+
+        it "fetches the package.json and ignores the missing path dep" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to eq(["package.json"])
+          expect(file_fetcher_instance.files.first.type).to eq("file")
+        end
+      end
+    end
   end
 
   context "with a yarn.lock but no package-lock.json file" do
@@ -264,13 +290,38 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(status: 404)
       end
 
-      it "raises a PathDependenciesNotReachable error with details" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(
-            Dependabot::PathDependenciesNotReachable,
-            "The following path based dependencies could not be retrieved: " \
-            "etag"
-          )
+      context "when the path dep doesn't appear in the lockfile" do
+        it "raises a PathDependenciesNotReachable error with details" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(
+              Dependabot::PathDependenciesNotReachable,
+              "The following path based dependencies could not be retrieved: " \
+              "etag"
+            )
+        end
+      end
+
+      context "when the path dep does appear in the lockfile" do
+        before do
+          stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_lock_with_path_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "builds an imitation path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("deps/etag/package.json")
+          path_file = file_fetcher_instance.files.
+                      find { |f| f.name == "deps/etag/package.json" }
+          expect(path_file.type).to eq("path_dependency")
+          expect(path_file.content).
+            to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
+        end
       end
 
       context "that only appears in the lockfile" do
@@ -298,13 +349,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             )
         end
 
-        it "raises a PathDependenciesNotReachable error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(
-              Dependabot::PathDependenciesNotReachable,
-              "The following path based dependencies could not be retrieved: " \
-              "etag"
-            )
+        it "builds an imitation path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("deps/etag/package.json")
+          path_file = file_fetcher_instance.files.
+                      find { |f| f.name == "deps/etag/package.json" }
+          expect(path_file.type).to eq("path_dependency")
         end
       end
     end

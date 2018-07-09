@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "dependabot/file_fetchers/base"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
 
@@ -7,6 +8,8 @@ module Dependabot
   module FileFetchers
     module JavaScript
       class NpmAndYarn < Dependabot::FileFetchers::Base
+        require_relative "npm_and_yarn/path_dependency_builder"
+
         def self.required_files_in?(filenames)
           filenames.include?("package.json")
         end
@@ -56,7 +59,7 @@ module Dependabot
             select { |_, v| v.start_with?("file:") }
 
           package_lock_path_deps =
-            parsed_package_lock.values_at(*types).compact.flat_map(&:to_a).
+            parsed_package_lock.fetch("dependencies", []).to_a.
             select { |_, v| v.fetch("version", "").start_with?("file:") }.
             map { |k, v| [k, v.fetch("version")] }
 
@@ -70,13 +73,11 @@ module Dependabot
               package_json_files <<
                 fetch_file_from_host(file, type: "path_dependency")
             rescue Dependabot::DependencyFileNotFound
-              unfetchable_deps << name
+              unfetchable_deps << [name, path]
             end
           end
 
-          if unfetchable_deps.any?
-            raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
-          end
+          package_json_files += build_unfetchable_deps(unfetchable_deps)
 
           package_json_files
         end
@@ -140,6 +141,20 @@ module Dependabot
         def ignore_package_lock?
           return false unless npmrc
           npmrc.content.match?(/^package-lock\s*=\s*false/)
+        end
+
+        def build_unfetchable_deps(unfetchable_deps)
+          return [] unless package_lock || yarn_lock
+
+          unfetchable_deps.map do |name, path|
+            PathDependencyBuilder.new(
+              dependency_name: name,
+              path: path,
+              directory: directory,
+              package_lock: package_lock,
+              yarn_lock: yarn_lock
+            ).dependency_file
+          end
         end
       end
     end
