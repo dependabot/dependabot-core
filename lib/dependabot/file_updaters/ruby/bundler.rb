@@ -27,10 +27,7 @@ module Dependabot
           ::Bundler::Source::Path,
           ::Bundler::Source::Gemspec
         ].freeze
-        RETRYABLE_ERRORS = [
-          ::Bundler::HTTPError,
-          "::Bundler::Fetcher::FallbackError"
-        ].freeze
+        RETRYABLE_ERRORS = [::Bundler::HTTPError].freeze
 
         def self.updated_files_regex
           [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
