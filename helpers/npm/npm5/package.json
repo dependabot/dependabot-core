@@ -2,6 +2,6 @@
   "name": "npm5",
   "version": "1.0.0",
   "dependencies": {
-    "npm": "5.8.0"
+    "npm": "5.10.0"
   }
 }
