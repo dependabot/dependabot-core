@@ -16,11 +16,11 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # TODO: Resolve the pom.xml to find the latest version we could update
-          # to without updating any other dependencies at the same time
-          #
-          # The above is hard. Currently we just return the latest version and
-          # hope (hence this package manager is in beta!)
+          # Maven's version resolution algorithm is very simple: it just uses
+          # the version defined "closest", with the first declaration winning
+          # if two declarations are equally close. As a result, we can just
+          # return that latest version unless dealing with a property dep.
+          # https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Transitive_Dependencies
           return nil if version_comes_from_multi_dependency_property?
           latest_version
         end
