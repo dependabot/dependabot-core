@@ -73,5 +73,48 @@ RSpec.describe namespace::PathDependencyBuilder do
         end
       end
     end
+
+    context "with a yarn lockfile" do
+      let(:package_lock) { nil }
+      let(:yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "yarn.lock",
+          content:
+            fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+        )
+      end
+      let(:yarn_lock_fixture_name) { "path_dependency.json" }
+
+      context "for a path dependency with no sub-deps" do
+        let(:yarn_lock_fixture_name) { "path_dependency.lock" }
+
+        it "builds an imitation path dependency" do
+          expect(dependency_file).to be_a(Dependabot::DependencyFile)
+          expect(dependency_file.name).to eq("deps/etag/package.json")
+          expect(dependency_file.type).to eq("path_dependency")
+          expect(dependency_file.content).
+            to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
+        end
+      end
+
+      context "for a path dependency with sub-deps" do
+        let(:yarn_lock_fixture_name) { "path_dependency_subdeps.lock" }
+        let(:dependency_name) { "other_package" }
+        let(:path) { "other_package" }
+
+        it "builds an imitation path dependency" do
+          expect(dependency_file).to be_a(Dependabot::DependencyFile)
+          expect(dependency_file.name).to eq("other_package/package.json")
+          expect(dependency_file.type).to eq("path_dependency")
+          expect(dependency_file.content).
+            to eq({
+              name: "other_package",
+              version: "0.0.1",
+              dependencies: { lodash: "^1.3.1" },
+              optionalDependencies: { etag: "^1.0.0" }
+            }.to_json)
+        end
+      end
+    end
   end
 end

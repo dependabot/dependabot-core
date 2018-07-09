@@ -35,6 +35,43 @@ module Dependabot
           attr_reader :dependency_name, :path, :package_lock, :yarn_lock,
                       :directory
 
+          def details_from_yarn_lock
+            parsed_yarn_lock.to_a.
+              find do |n, _|
+                next false unless n.split("@").first == dependency_name
+                n.split("@").last.start_with?("file:")
+              end&.last
+          end
+
+          def details_from_npm_lock
+            parsed_package_lock.fetch("dependencies", []).to_a.
+              select { |_, v| v.fetch("version", "").start_with?("file:") }.
+              find { |n, _| n == dependency_name }&.
+              last
+          end
+
+          def build_path_dep_content(dependency_name)
+            unless details_from_yarn_lock || details_from_npm_lock
+              raise Dependabot::PathDependenciesNotReachable, [dependency_name]
+            end
+
+            if details_from_yarn_lock
+              {
+                name: dependency_name,
+                version: "0.0.1",
+                dependencies: details_from_yarn_lock["dependencies"],
+                optionalDependencies:
+                  details_from_yarn_lock["optionalDependencies"]
+              }.compact.to_json
+            else
+              {
+                name: dependency_name,
+                version: "0.0.1",
+                dependencies: details_from_npm_lock["requires"]
+              }.compact.to_json
+            end
+          end
+
           def parsed_package_lock
             return {} unless package_lock
             JSON.parse(package_lock.content)
@@ -42,23 +79,23 @@ module Dependabot
             {}
           end
 
-          def build_path_dep_content(dependency_name)
-            package_lock_details =
-              parsed_package_lock.fetch("dependencies", []).to_a.
-              select { |_, v| v.fetch("version", "").start_with?("file:") }.
-              find { |n, _| n == dependency_name }&.
-              last
+          def parsed_yarn_lock
+            return {} unless yarn_lock
+            @parsed_yarn_lock ||=
+              SharedHelpers.in_a_temporary_directory do
+                File.write("yarn.lock", yarn_lock.content)
 
-            # TODO: Check yarn.lock for details instead of raising
-            unless package_lock_details
-              raise Dependabot::PathDependenciesNotReachable, [dependency_name]
-            end
+                SharedHelpers.run_helper_subprocess(
+                  command: "node #{yarn_helper_path}",
+                  function: "parseLockfile",
+                  args: [Dir.pwd]
+                )
+              end
+          end
 
-            {
-              name: dependency_name,
-              version: "0.0.1",
-              dependencies: package_lock_details["requires"]
-            }.compact.to_json
+          def yarn_helper_path
+            project_root = File.join(File.dirname(__FILE__), "../../../../..")
+            File.join(project_root, "helpers/yarn/bin/run.js")
           end
         end
       end
