@@ -93,6 +93,7 @@ module Dependabot
           upper_bound = parts.map.with_index do |part, i|
             if i < first_non_zero_index then part
             elsif i == first_non_zero_index then (part.to_i + 1).to_s
+            elsif i > first_non_zero_index && i == 2 then "0.a"
             else 0
             end
           end.join(".")

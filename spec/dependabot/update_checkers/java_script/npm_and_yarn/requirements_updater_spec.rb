@@ -31,6 +31,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
   let(:library) { false }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
+  let(:version_class) { Dependabot::Utils::JavaScript::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -399,6 +400,12 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           context "including a pre-release" do
             let(:package_json_req_string) { "^1.2.3-rc1" }
             its([:requirement]) { is_expected.to eq("^1.2.3-rc1") }
+          end
+
+          context "updating to a pre-release of a new major version" do
+            let(:package_json_req_string) { "^1.0.0-beta1" }
+            let(:latest_resolvable_version) { version_class.new("2.0.0-alpha") }
+            its([:requirement]) { is_expected.to eq("^2.0.0-alpha") }
           end
 
           context "including an x" do

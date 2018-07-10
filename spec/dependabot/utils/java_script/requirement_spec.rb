@@ -18,7 +18,7 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with a caret version specified" do
       let(:requirement_string) { "^1.0.0" }
-      it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0")) }
+      it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0.a")) }
     end
 
     context "with a ~ version specified" do

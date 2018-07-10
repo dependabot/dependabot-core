@@ -33,8 +33,6 @@ module Dependabot
 
           # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirements
-            return requirements unless latest_resolvable_version
-
             requirements.map do |req|
               req = req.merge(source: updated_source)
               next req unless latest_resolvable_version
