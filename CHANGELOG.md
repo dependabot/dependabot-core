@@ -1,3 +1,11 @@
+## v0.61.62, 10 July 2018
+
+- JS: Add support for Lerna. Dependabot will now pull down your lerna.json file,
+  parse it, and pull down all of the relevant packages for your project.
+  Dependabot PRs for repos using Lerna will update all of your packages at once
+  (if you'd prefer to receive a single PR per packages you can manually add each
+  package as a separate directory in Dependabot).
+
 ## v0.61.61, 10 July 2018
 
 - JS: Exclude prereleases of next version when building ruby req of caret
