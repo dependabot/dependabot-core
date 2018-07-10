@@ -32,8 +32,8 @@ module Dependabot
         def parse
           dependency_set = DependencySet.new
           dependency_set += manifest_dependencies
-          dependency_set += yarn_lock_dependencies if yarn_lock
-          dependency_set += package_lock_dependencies if package_lock
+          dependency_set += yarn_lock_dependencies if yarn_locks.any?
+          dependency_set += package_lock_dependencies if package_locks.any?
           dependency_set.dependencies
         end
 
@@ -65,41 +65,50 @@ module Dependabot
 
         def yarn_lock_dependencies
           dependency_set = DependencySet.new
-          parsed_yarn_lock.each do |dep|
-            next unless dep["version"]
 
-            # TODO: This isn't quite right, as it will only give us one
-            # version of each dependency (when in fact there are many)
-            dependency_set << Dependency.new(
-              name: dep["name"],
-              version: dep["version"],
-              package_manager: "npm_and_yarn",
-              requirements: []
-            )
-          end
-          dependency_set
-        end
-
-        def package_lock_dependencies
-          dependency_set = DependencySet.new
-          parsed_package_lock_json.
-            fetch("dependencies", {}).each do |name, details|
+          yarn_locks.each do |yarn_lock|
+            parse_yarn_lock(yarn_lock).each do |req, details|
               next unless details["version"]
 
               # TODO: This isn't quite right, as it will only give us one
               # version of each dependency (when in fact there are many)
               dependency_set << Dependency.new(
-                name: name,
+                name: req.split(/(?<=\w)\@/).first,
                 version: details["version"],
                 package_manager: "npm_and_yarn",
                 requirements: []
               )
             end
+          end
+
+          dependency_set
+        end
+
+        def package_lock_dependencies
+          dependency_set = DependencySet.new
+
+          package_locks.each do |package_lock|
+            parse_package_lock(package_lock).
+              fetch("dependencies", {}).each do |name, details|
+                next unless details["version"]
+
+                # TODO: This isn't quite right, as it will only give us one
+                # version of each dependency (when in fact there are many)
+                dependency_set << Dependency.new(
+                  name: name,
+                  version: details["version"],
+                  package_manager: "npm_and_yarn",
+                  requirements: []
+                )
+              end
+          end
+
           dependency_set
         end
 
         def build_dependency(file:, type:, name:, requirement:)
-          return if lockfile? && !version_for(name, requirement)
+          return if lockfile_details(name, requirement) &&
+                    !version_for(name, requirement)
           return if local_path?(requirement) || non_git_url?(requirement)
 
           Dependency.new(
@@ -132,7 +141,8 @@ module Dependabot
         end
 
         def version_for(name, requirement)
-          lockfile_version = lockfile_details(name)&.fetch("version", nil)
+          lockfile_version = lockfile_details(name, requirement)&.
+                             fetch("version", nil)
           return unless lockfile_version
           return lockfile_version.split("#").last if git_url?(requirement)
           return if lockfile_version.include?("://")
@@ -144,7 +154,8 @@ module Dependabot
         def source_for(name, requirement)
           return git_source_for(requirement) if git_url?(requirement)
 
-          resolved_url = lockfile_details(name)&.fetch("resolved", nil)
+          resolved_url = lockfile_details(name, requirement)&.
+                         fetch("resolved", nil)
 
           return unless resolved_url
           return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
@@ -174,44 +185,50 @@ module Dependabot
           }
         end
 
-        def lockfile_details(name)
-          if package_lock && parsed_package_lock_json.dig("dependencies", name)
-            parsed_package_lock_json.dig("dependencies", name)
-          elsif yarn_lock && parsed_yarn_lock.find { |dep| dep["name"] == name }
-            parsed_yarn_lock.find { |dep| dep["name"] == name }
+        def lockfile_details(name, requirement)
+          package_locks.each do |package_lock|
+            parsed_package_lock_json = parse_package_lock(package_lock)
+            next unless parsed_package_lock_json.dig("dependencies", name)
+            return parsed_package_lock_json.dig("dependencies", name)
           end
+
+          yarn_locks.each do |yarn_lock|
+            parsed_yarn_lock = parse_yarn_lock(yarn_lock)
+            details = parsed_yarn_lock.
+                      select { |k, _| k.split(/(?<=\w)\@/).first == name }.
+                      find { |k, _| k.split(/(?<=\w)\@/).last == requirement }&.
+                      last
+            return details if details
+          end
+
+          nil
         end
 
-        def parsed_package_lock_json
+        def parse_package_lock(package_lock)
           JSON.parse(package_lock.content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, package_lock.path
         end
 
-        def parsed_yarn_lock
-          @parsed_yarn_lock ||=
+        def parse_yarn_lock(yarn_lock)
+          @parsed_yarn_lock ||= {}
+          @parsed_yarn_lock[yarn_lock.name] ||=
             SharedHelpers.in_a_temporary_directory do
-              dependency_files.
-                select { |f| f.name.end_with?("package.json") }.
-                each do |file|
-                  path = file.name
-                  FileUtils.mkdir_p(Pathname.new(path).dirname)
-                  File.write(file.name, sanitized_package_json_content(file))
-                end
               File.write("yarn.lock", yarn_lock.content)
 
-              project_root = File.join(File.dirname(__FILE__), "../../../..")
-              helper_path = File.join(project_root, "helpers/yarn/bin/run.js")
-
               SharedHelpers.run_helper_subprocess(
-                command: "node #{helper_path}",
-                function: "parse",
+                command: "node #{yarn_helper_path}",
+                function: "parseLockfile",
                 args: [Dir.pwd]
               )
+            rescue SharedHelpers::HelperSubprocessFailed
+              raise Dependabot::DependencyFileNotParseable, yarn_lock.path
             end
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          raise unless error.message == "workspacesRequirePrivateProjects"
-          raise Dependabot::DependencyFileNotEvaluatable, error.message
+        end
+
+        def yarn_helper_path
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
+          File.join(project_root, "helpers/yarn/bin/run.js")
         end
 
         def package_files
@@ -227,15 +244,19 @@ module Dependabot
         end
 
         def lockfile?
-          yarn_lock || package_lock
+          package_locks.any? || yarn_locks.any?
         end
 
-        def package_lock
-          @package_lock ||= get_original_file("package-lock.json")
+        def package_locks
+          @package_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("package-lock.json") }
         end
 
-        def yarn_lock
-          @yarn_lock ||= get_original_file("yarn.lock")
+        def yarn_locks
+          @yarn_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("yarn.lock") }
         end
       end
     end
