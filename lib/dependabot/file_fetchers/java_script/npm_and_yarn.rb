@@ -28,9 +28,10 @@ module Dependabot
           fetched_files << yarn_lock if yarn_lock
           fetched_files << lerna_json if lerna_json
           fetched_files += workspace_package_jsons
-          fetched_files += path_dependencies
           fetched_files += lerna_packages
-          fetched_files
+          fetched_files += path_dependencies
+
+          fetched_files.uniq
         end
 
         def package_json
@@ -51,6 +52,14 @@ module Dependabot
 
         def lerna_json
           @lerna_json ||= fetch_file_if_present("lerna.json")
+        end
+
+        def workspace_package_jsons
+          @workspace_package_jsons ||= fetch_workspace_package_jsons
+        end
+
+        def lerna_packages
+          @lerna_packages ||= fetch_lerna_packages
         end
 
         def path_dependencies
@@ -87,7 +96,7 @@ module Dependabot
           package_json_files
         end
 
-        def workspace_package_jsons
+        def fetch_workspace_package_jsons
           return [] unless parsed_package_json["workspaces"]
           package_json_files = []
           unfetchable_deps = []
@@ -109,18 +118,24 @@ module Dependabot
           package_json_files
         end
 
-        def lerna_packages
+        def fetch_lerna_packages
           return [] unless parsed_lerna_json["packages"]
-          package_files = []
+          dependency_files = []
           unfetchable_deps = []
 
           workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
-            file = File.join(workspace, "package.json")
+            package_json_path = File.join(workspace, "package.json")
+            npm_lock_path = File.join(workspace, "package-lock.json")
+            yarn_lock_path = File.join(workspace, "yarn.lock")
 
             begin
-              package_files << fetch_file_from_host(file)
+              dependency_files << fetch_file_from_host(package_json_path)
+              dependency_files += [
+                fetch_file_if_present(npm_lock_path),
+                fetch_file_if_present(yarn_lock_path)
+              ].compact
             rescue Dependabot::DependencyFileNotFound
-              unfetchable_deps << file
+              unfetchable_deps << package_json_path
             end
           end
 
@@ -128,7 +143,7 @@ module Dependabot
             raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
           end
 
-          package_files
+          dependency_files
         end
 
         def workspace_paths(workspace_object)
