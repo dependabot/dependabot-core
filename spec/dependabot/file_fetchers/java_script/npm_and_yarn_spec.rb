@@ -361,6 +361,219 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
     end
   end
 
+  context "with a lerna.json file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm_lerna.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "lerna.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "lerna_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    context "that have fetchable paths" do
+      before do
+        stub_request(:get, File.join(url, "packages?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "packages_files.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package1/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package1?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package2/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package2?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "other_package/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "other_package?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the lerna.json" do
+        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.map(&:name)).to include("lerna.json")
+      end
+
+      it "fetches package.jsons for the dependencies" do
+        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("packages/package2/package.json")
+      end
+
+      context "with a lockfile for one of the packages" do
+        before do
+          stub_request(
+            :get,
+            File.join(url, "other_package?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_js_npm.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(
+            :get,
+            File.join(url, "other_package/package-lock.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_lock_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the lockfile" do
+          expect(file_fetcher_instance.files.count).to eq(7)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("other_package/package-lock.json")
+        end
+      end
+
+      context "in a directory" do
+        let(:url) do
+          "https://api.github.com/repos/gocardless/bump/contents/etc"
+        end
+        let(:directory) { "/etc" }
+        before do
+          stub_request(:get, File.join(url, "packages?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "packages_files_nested.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.count).to eq(6)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/package.json")
+        end
+      end
+    end
+
+    context "that has an unfetchable path" do
+      before do
+        stub_request(:get, File.join(url, "packages?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "packages_files.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package1/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package1?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package2/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "packages/package2?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "other_package/package.json?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            body: fixture("github", "package_json_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a PathDependenciesNotReachable error with details" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: " \
+            "other_package/package.json"
+          )
+      end
+    end
+  end
+
   context "with workspaces" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")

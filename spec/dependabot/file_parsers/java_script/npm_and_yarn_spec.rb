@@ -264,7 +264,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:path_dep) do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
-              content: fixture("javascript", "package_files", "etag.json")
+              content: fixture("javascript", "package_files", "etag.json"),
+              type: "path_dependency"
             )
           end
 
@@ -609,10 +610,10 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:yarn_lock_fixture_name) { "private_source.lock" }
 
-          its(:length) { is_expected.to eq(2) }
+          its(:length) { is_expected.to eq(3) }
 
-          describe "the first dependency" do
-            subject { top_level_dependencies.first }
+          describe "the second dependency" do
+            subject { top_level_dependencies[1] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("chalk") }
@@ -632,7 +633,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
           end
 
-          describe "the second dependency" do
+          describe "the last dependency" do
             subject { top_level_dependencies.last }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
@@ -661,7 +662,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:path_dep) do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
-              content: fixture("javascript", "package_files", "etag.json")
+              content: fixture("javascript", "package_files", "etag.json"),
+              type: "path_dependency"
             )
           end
 
@@ -742,13 +744,96 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               )
             end
           end
+        end
 
-          context "when the package.json doesn't specify that it's private" do
-            let(:package_json_fixture_name) { "workspaces_bad.json" }
+        context "with lerna.json" do
+          let(:files) do
+            [
+              package_json,
+              lerna_json,
+              package1,
+              package1_lock,
+              other_package_json,
+              other_package_lock
+            ]
+          end
+          let(:package_json_fixture_name) { "lerna.json" }
+          let(:lerna_json) do
+            Dependabot::DependencyFile.new(
+              name: "lerna.json",
+              content: fixture("javascript", "lerna", "lerna.json")
+            )
+          end
+          let(:package1) do
+            Dependabot::DependencyFile.new(
+              name: "packages/package1/package.json",
+              content: fixture("javascript", "package_files", "package1.json")
+            )
+          end
+          let(:package1_lock) do
+            Dependabot::DependencyFile.new(
+              name: "packages/package1/yarn.lock",
+              content: fixture("javascript", "yarn_lockfiles", "package1.lock")
+            )
+          end
+          let(:other_package_json) do
+            Dependabot::DependencyFile.new(
+              name: "packages/other_package/package.json",
+              content:
+                fixture("javascript", "package_files", "other_package.json")
+            )
+          end
+          let(:other_package_lock) do
+            Dependabot::DependencyFile.new(
+              name: "packages/other_package/yarn.lock",
+              content:
+                fixture("javascript", "yarn_lockfiles", "other_package.lock")
+            )
+          end
 
-            it "raises a helpful error" do
-              expect { parser.parse }.
-                to raise_error(Dependabot::DependencyFileNotEvaluatable)
+          its(:length) { is_expected.to eq(4) }
+
+          describe "the first dependency" do
+            subject { top_level_dependencies.first }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("lerna") }
+            its(:version) { is_expected.to be_nil }
+            its(:requirements) do
+              is_expected.to match_array(
+                [{
+                  requirement: "^2.5.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          describe "the last dependency" do
+            subject { top_level_dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("etag") }
+            its(:version) { is_expected.to eq("1.8.0") }
+            its(:requirements) do
+              is_expected.to match_array(
+                [
+                  {
+                    requirement: "^1.1.0",
+                    file: "packages/package1/package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^1.0.0",
+                    file: "packages/other_package/package.json",
+                    groups: ["devDependencies"],
+                    source: nil
+                  }
+                ]
+              )
             end
           end
         end

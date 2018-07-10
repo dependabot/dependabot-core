@@ -1,9 +1,7 @@
-const parser = require("../lib/parser");
 const lockfileParser = require("../lib/lockfile-parser");
 const updater = require("../lib/updater");
 
 const functionMap = {
-  parse: parser.parse,
   parseLockfile: lockfileParser.parse,
   update: updater.updateDependencyFiles
 };
