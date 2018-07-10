@@ -411,6 +411,139 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    context "with a lerna.json, and lockfiles" do
+      let(:files) do
+        [
+          package_json,
+          lerna_json,
+          package1,
+          package1_yarn_lock,
+          package1_npm_lock,
+          other_package_json,
+          other_package_yarn_lock,
+          other_package_npm_lock
+        ]
+      end
+      let(:manifest_fixture_name) { "lerna.json" }
+      let(:lerna_json) do
+        Dependabot::DependencyFile.new(
+          name: "lerna.json",
+          content: fixture("javascript", "lerna", "lerna.json")
+        )
+      end
+      let(:package1) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package.json",
+          content: fixture("javascript", "package_files", "package1.json")
+        )
+      end
+      let(:package1_yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/yarn.lock",
+          content: fixture("javascript", "yarn_lockfiles", "package1.lock")
+        )
+      end
+      let(:package1_npm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package-lock.json",
+          content: fixture("javascript", "npm_lockfiles", "package1.json")
+        )
+      end
+      let(:other_package_json) do
+        Dependabot::DependencyFile.new(
+          name: "packages/other_package/package.json",
+          content:
+            fixture("javascript", "package_files", "other_package.json")
+        )
+      end
+      let(:other_package_yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/other_package/yarn.lock",
+          content:
+            fixture("javascript", "yarn_lockfiles", "other_package.lock")
+        )
+      end
+      let(:other_package_npm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/other_package/package-lock.json",
+          content:
+            fixture("javascript", "npm_lockfiles", "other_package.json")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.8.1",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: nil
+            },
+            {
+              requirement: "^1.0.0",
+              file: "packages/other_package/package.json",
+              groups: ["devDependencies"],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: nil
+            },
+            {
+              requirement: "^1.0.0",
+              file: "packages/other_package/package.json",
+              groups: ["devDependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      it "upates both lockfiles" do
+        expect(updated_files.map(&:name)).
+          to match_array(
+            [
+              "packages/package1/yarn.lock",
+              "packages/package1/package-lock.json",
+              "packages/other_package/yarn.lock",
+              "packages/other_package/package-lock.json"
+            ]
+          )
+
+        package1_yarn_lock =
+          updated_files.find { |f| f.name == "packages/package1/yarn.lock" }
+        package1_npm_lock =
+          updated_files.
+          find { |f| f.name == "packages/package1/package-lock.json" }
+        parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+        other_package_yarn_lock =
+          updated_files.
+          find { |f| f.name == "packages/other_package/yarn.lock" }
+        other_package_npm_lock =
+          updated_files.
+          find { |f| f.name == "packages/other_package/package-lock.json" }
+        parsed_other_pkg_npm_lock = JSON.parse(other_package_npm_lock.content)
+
+        expect(package1_yarn_lock.content).
+          to include("etag@^1.1.0:\n  version \"1.8.1\"")
+        expect(other_package_yarn_lock.content).
+          to include("etag@^1.0.0:\n  version \"1.8.1\"")
+
+        expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"]).
+          to eq("1.8.1")
+        expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"]).
+          to eq("1.8.1")
+      end
+    end
+
     context "with a .npmrc" do
       let(:files) { [package_json, package_lock, npmrc] }
 

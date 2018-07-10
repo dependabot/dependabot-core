@@ -24,15 +24,19 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          if yarn_lock && yarn_lock_changed?
-            updated_files <<
-              updated_file(file: yarn_lock, content: updated_yarn_lock_content)
+          yarn_locks.each do |yarn_lock|
+            next unless yarn_lock && yarn_lock_changed?(yarn_lock)
+            updated_files << updated_file(
+              file: yarn_lock,
+              content: updated_yarn_lock_content(yarn_lock)
+            )
           end
 
-          if package_lock && package_lock_changed?
+          package_locks.each do |package_lock|
+            next unless package_lock && package_lock_changed?(package_lock)
             updated_files << updated_file(
               file: package_lock,
-              content: updated_package_lock_content
+              content: updated_package_lock_content(package_lock)
             )
           end
 
@@ -58,24 +62,28 @@ module Dependabot
           raise "No package.json!" unless get_original_file("package.json")
         end
 
-        def yarn_lock
-          @yarn_lock ||= get_original_file("yarn.lock")
+        def package_locks
+          @package_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("package-lock.json") }
         end
 
-        def package_lock
-          @package_lock ||= get_original_file("package-lock.json")
+        def yarn_locks
+          @yarn_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("yarn.lock") }
         end
 
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
         end
 
-        def yarn_lock_changed?
-          yarn_lock.content != updated_yarn_lock_content
+        def yarn_lock_changed?(yarn_lock)
+          yarn_lock.content != updated_yarn_lock_content(yarn_lock)
         end
 
-        def package_lock_changed?
-          package_lock.content != updated_package_lock_content
+        def package_lock_changed?(package_lock)
+          package_lock.content != updated_package_lock_content(package_lock)
         end
 
         def updated_package_files
@@ -86,29 +94,44 @@ module Dependabot
           end.compact
         end
 
-        def updated_yarn_lock_content
-          return @updated_yarn_lock_content if @updated_yarn_lock_content
+        def updated_yarn_lock_content(yarn_lock)
+          @updated_yarn_lock_content ||= {}
+          if @updated_yarn_lock_content[yarn_lock.name]
+            return @updated_yarn_lock_content[yarn_lock.name]
+          end
+
           new_content =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
-              updated_files = run_yarn_updater
+              updated_files =
+                run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
 
               updated_files.fetch("yarn.lock")
             end
-          @updated_yarn_lock_content = post_process_yarn_lockfile(new_content)
+
+          @updated_yarn_lock_content[yarn_lock.name] =
+            post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_yarn_lock_updater_error(error)
         end
 
-        def updated_package_lock_content
+        def updated_package_lock_content(package_lock)
           return package_lock.content if npmrc_disables_lockfile?
 
-          @updated_package_lock_content ||=
+          @updated_package_lock_content ||= {}
+          if @updated_package_lock_content[package_lock.name]
+            return @updated_package_lock_content[package_lock.name]
+          end
+
+          @updated_package_lock_content[package_lock.name] ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)
 
-              updated_files = run_npm_updater
+              updated_files =
+                Dir.chdir(Pathname.new(package_lock.name).dirname) do
+                  run_npm_updater
+                end
 
               updated_content = updated_files.fetch("package-lock.json")
               updated_content = post_process_npm_lockfile(updated_content)
@@ -119,18 +142,20 @@ module Dependabot
           handle_package_lock_updater_error(error)
         end
 
-        def run_yarn_updater
+        def run_yarn_updater(path:)
           SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.run_helper_subprocess(
-              command: "node #{yarn_helper_path}",
-              function: "update",
-              args: [
-                Dir.pwd,
-                dependency.name,
-                dependency.version,
-                dependency.requirements
-              ]
-            )
+            Dir.chdir(path) do
+              SharedHelpers.run_helper_subprocess(
+                command: "node #{yarn_helper_path}",
+                function: "update",
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  requirements_for_path(dependency.requirements, path)
+                ]
+              )
+            end
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.include?("The registry may be down")
@@ -138,6 +163,15 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 2
           sleep(rand(3.0..10.0)) && retry
+        end
+
+        def requirements_for_path(requirements, path)
+          return requirements if path.to_s == "."
+
+          requirements.map do |r|
+            next unless r[:file].start_with?(path.to_s)
+            r.merge(file: r[:file].gsub(/^#{Regexp.quote(path.to_s)}/, ""))
+          end.compact
         end
 
         def run_npm_updater
@@ -199,8 +233,10 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def write_temporary_dependency_files(lock_git_deps: false)
-          File.write("yarn.lock", yarn_lock.content) if yarn_lock
-          File.write("package-lock.json", package_lock.content) if package_lock
+          (yarn_locks + package_locks).each do |f|
+            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+            File.write(f.name, f.content)
+          end
           File.write(".npmrc", npmrc_content)
           package_files.each do |file|
             path = file.name
@@ -238,14 +274,15 @@ module Dependabot
         end
 
         def git_dependencies_to_lock
-          return {} unless package_lock
+          return {} unless package_locks.any?
           return @git_dependencies_to_lock if @git_dependencies_to_lock
 
           @git_dependencies_to_lock = {}
           dependency_names = dependencies.map(&:name)
 
-          FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
-            JSON.parse(package_lock.content).fetch(t, {}).each do |nm, details|
+          package_locks.each do |package_lock|
+            parsed_lockfile = JSON.parse(package_lock.content)
+            parsed_lockfile.fetch("dependencies", {}).each do |nm, details|
               next if dependency_names.include?(nm)
               next unless details["version"]
               next unless details["version"].start_with?("git")
@@ -340,7 +377,9 @@ module Dependabot
             deps
           }
 
-          deps = flatten_dependencies.call(JSON.parse(package_lock.content))
+          deps = package_locks.flat_map do |package_lock|
+            flatten_dependencies.call(JSON.parse(package_lock.content))
+          end
           deps.find { |dep| dep[:version].end_with?("##{ref}") }
         end
 

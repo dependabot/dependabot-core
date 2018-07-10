@@ -14,8 +14,8 @@ chalk@0.3.0:
     has-color "~0.1.0"
 
 etag@^1.1.0:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.0.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0111"
 
 has-color@~0.1.0:
   version "0.1.7"
