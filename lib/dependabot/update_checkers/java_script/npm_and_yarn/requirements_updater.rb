@@ -31,7 +31,6 @@ module Dependabot
               version_class.new(latest_resolvable_version)
           end
 
-          # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirements
             requirements.map do |req|
               req = req.merge(source: updated_source)
@@ -46,7 +45,6 @@ module Dependabot
               end
             end
           end
-          # rubocop:enable Metrics/PerceivedComplexity
 
           private
 

@@ -1,3 +1,8 @@
+## v0.61.61, 10 July 2018
+
+- JS: Exclude prereleases of next version when building ruby req of caret
+  requirement
+
 ## v0.61.60, 09 July 2018
 
 - JS: Parse Yarn lockfiles to build path dependencies, too
