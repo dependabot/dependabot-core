@@ -195,15 +195,15 @@ module Dependabot
               raise PrivateSourceAuthenticationFailure, dependency_registry
             end
 
-            return if npm_response.status.to_s.start_with?("2")
+            status = npm_response.status
+            return if status.to_s.start_with?("2")
 
             # Ignore 404s from the registry for updates where a lockfile doesn't
             # need to be generated. The 404 won't cause problems later.
-            return if npm_response.status == 404 && dependency.version.nil?
+            return if status == 404 && dependency.version.nil?
 
-            return if npm_response.status == 404 && git_dependency?
-            msg = "Got #{npm_response.status} response with body "\
-                  "#{npm_response.body}"
+            return if [404, 405].include?(status) && git_dependency?
+            msg = "Got #{status} response with body #{npm_response.body}"
             raise RegistryError, msg
           end
 
