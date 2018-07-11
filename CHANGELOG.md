@@ -1,3 +1,8 @@
+## v0.61.64, 11 July 2018
+
+- JS: Relax requirement that all workspaces specified in package.json are
+  fetchable
+
 ## v0.61.63, 11 July 2018
 
 - JS: Better handling of Lerna lockfiles (not all will need to be updated)
