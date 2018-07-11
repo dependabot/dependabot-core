@@ -563,13 +563,12 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           )
       end
 
-      it "raises a PathDependenciesNotReachable error with details" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(
-            Dependabot::PathDependenciesNotReachable,
-            "The following path based dependencies could not be retrieved: " \
-            "other_package/package.json"
-          )
+      it "fetches package.json from the workspace dependencies it can" do
+        expect(file_fetcher_instance.files.count).to eq(5)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("packages/package2/package.json")
+        expect(file_fetcher_instance.files.map(&:name)).
+          to_not include("other_package/package.json")
       end
     end
   end
@@ -657,6 +656,22 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "including an empty folder" do
+        before do
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+        end
+
+        it "fetches the other workspaces, ignoring the empty folder" do
+          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to_not include("packages/package1/package.json")
+        end
+      end
+
       context "in a directory" do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
@@ -718,13 +733,12 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           )
       end
 
-      it "raises a PathDependenciesNotReachable error with details" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(
-            Dependabot::PathDependenciesNotReachable,
-            "The following path based dependencies could not be retrieved: " \
-            "other_package/package.json"
-          )
+      it "fetches package.json from the workspace dependencies it can" do
+        expect(file_fetcher_instance.files.count).to eq(4)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("packages/package2/package.json")
+        expect(file_fetcher_instance.files.map(&:name)).
+          to_not include("other_package/package.json")
       end
     end
   end

@@ -99,7 +99,6 @@ module Dependabot
         def fetch_workspace_package_jsons
           return [] unless parsed_package_json["workspaces"]
           package_json_files = []
-          unfetchable_deps = []
 
           workspace_paths(parsed_package_json["workspaces"]).each do |workspace|
             file = File.join(workspace, "package.json")
@@ -107,12 +106,8 @@ module Dependabot
             begin
               package_json_files << fetch_file_from_host(file)
             rescue Dependabot::DependencyFileNotFound
-              unfetchable_deps << file
+              nil
             end
-          end
-
-          if unfetchable_deps.any?
-            raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
           end
 
           package_json_files
@@ -121,7 +116,6 @@ module Dependabot
         def fetch_lerna_packages
           return [] unless parsed_lerna_json["packages"]
           dependency_files = []
-          unfetchable_deps = []
 
           workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
             package_json_path = File.join(workspace, "package.json")
@@ -135,12 +129,8 @@ module Dependabot
                 fetch_file_if_present(yarn_lock_path)
               ].compact
             rescue Dependabot::DependencyFileNotFound
-              unfetchable_deps << package_json_path
+              nil
             end
-          end
-
-          if unfetchable_deps.any?
-            raise Dependabot::PathDependenciesNotReachable, unfetchable_deps
           end
 
           dependency_files
