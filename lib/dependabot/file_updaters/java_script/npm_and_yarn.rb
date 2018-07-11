@@ -117,13 +117,13 @@ module Dependabot
         end
 
         def updated_package_lock_content(package_lock)
-          return package_lock.content if npmrc_disables_lockfile?
-
-          @updated_package_lock_content ||= {}
-          if @updated_package_lock_content[package_lock.name]
-            return @updated_package_lock_content[package_lock.name]
+          path = Pathname.new(package_lock.name).dirname
+          if npmrc_disables_lockfile? ||
+             requirements_for_path(dependency.requirements, path).empty?
+            return package_lock.content
           end
 
+          @updated_package_lock_content ||= {}
           @updated_package_lock_content[package_lock.name] ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(lock_git_deps: true)

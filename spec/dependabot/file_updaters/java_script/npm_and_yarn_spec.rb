@@ -419,6 +419,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           package1,
           package1_yarn_lock,
           package1_npm_lock,
+          package2,
+          package2_yarn_lock,
+          package2_npm_lock,
           other_package_json,
           other_package_yarn_lock,
           other_package_npm_lock
@@ -447,6 +450,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         Dependabot::DependencyFile.new(
           name: "packages/package1/package-lock.json",
           content: fixture("javascript", "npm_lockfiles", "package1.json")
+        )
+      end
+      let(:package2) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/package.json",
+          content: fixture("javascript", "package_files", "wildcard.json")
+        )
+      end
+      let(:package2_yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/yarn.lock",
+          content: fixture("javascript", "yarn_lockfiles", "wildcard.lock")
+        )
+      end
+      let(:package2_npm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/package-lock.json",
+          content: fixture("javascript", "npm_lockfiles", "wildcard.json")
         )
       end
       let(:other_package_json) do

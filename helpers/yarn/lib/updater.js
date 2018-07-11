@@ -128,7 +128,9 @@ async function updateDependencyFiles(
   desiredVersion,
   requirements
 ) {
-  var update_run_results = {};
+  const readFile = fileName =>
+    fs.readFileSync(path.join(directory, fileName)).toString();
+  var update_run_results = { "yarn.lock": readFile("yarn.lock") };
   for (let reqs of requirements) {
     update_run_results = Object.assign(
       update_run_results,
