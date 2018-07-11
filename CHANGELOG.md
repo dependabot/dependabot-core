@@ -1,3 +1,7 @@
+## v0.61.63, 11 July 2018
+
+- JS: Better handling of Lerna lockfiles (not all will need to be updated)
+
 ## v0.61.62, 10 July 2018
 
 - JS: Add support for Lerna. Dependabot will now pull down your lerna.json file,
