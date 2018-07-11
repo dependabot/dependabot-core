@@ -1,3 +1,7 @@
+## v0.61.65, 11 July 2018
+
+- JS: Handle 405s from registry when checking git dependencies
+
 ## v0.61.64, 11 July 2018
 
 - JS: Relax requirement that all workspaces specified in package.json are
