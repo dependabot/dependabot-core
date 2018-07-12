@@ -18,6 +18,10 @@ module Dependabot
           GIT_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
           GIT_REF_REGEX = /does not exist in the repository (?<path>[^\s]*)\./
           PATH_REGEX = /The path `(?<path>.*)` does not exist/
+          RETRYABLE_ERRORS = %w(
+            Bundler::HTTPError
+            Bundler::Fetcher::FallbackError
+          ).freeze
           RETRYABLE_PRIVATE_REGISTRY_ERRORS = %w(
             Bundler::GemNotFound
             Gem::InvalidSpecificationException
@@ -55,17 +59,26 @@ module Dependabot
               end
             end
           rescue SharedHelpers::ChildProcessFailed => error
-            if RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class) &&
-               private_registry_credentials.any? && !@retrying
-              @retrying = true
-              sleep(rand(1.0..5.0))
-              retry
+            retry_count ||= 0
+            retry_count += 1
+            if retryable_error?(error) && retry_count <= 2
+              sleep(rand(1.0..5.0)) && retry
             end
 
             raise unless error_handling
 
             # Raise more descriptive errors
             handle_bundler_errors(error)
+          end
+
+          def retryable_error?(error)
+            return true if RETRYABLE_ERRORS.include?(error.error_class)
+
+            unless RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class)
+              return false
+            end
+
+            private_registry_credentials.any?
           end
 
           # rubocop:disable Metrics/CyclomaticComplexity
