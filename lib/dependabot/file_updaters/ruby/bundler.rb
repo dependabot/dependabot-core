@@ -210,6 +210,7 @@ module Dependabot
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
+                # Set the path for path gemspec correctly
                 ::Bundler.instance_variable_set(:@root, tmp_dir)
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []

@@ -34,10 +34,12 @@ module Dependabot
 
           def in_a_temporary_bundler_context(error_handling: true)
             base_directory = dependency_files.first.directory
-            SharedHelpers.in_a_temporary_directory(base_directory) do
+            SharedHelpers.in_a_temporary_directory(base_directory) do |tmp_dir|
               write_temporary_dependency_files
 
               SharedHelpers.in_a_forked_process do
+                # Set the path for path gemspec correctly
+                ::Bundler.instance_variable_set(:@root, tmp_dir)
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []
 
