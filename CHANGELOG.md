@@ -1,3 +1,8 @@
+## v0.61.66, 12 July 2018
+
+- Ruby: Fix inconsistency between UpdateChecker and FileUpdater that caused rare
+  bug
+
 ## v0.61.65, 11 July 2018
 
 - JS: Handle 405s from registry when checking git dependencies
