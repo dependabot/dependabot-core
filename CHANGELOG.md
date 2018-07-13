@@ -1,3 +1,9 @@
+## v0.61.67, 13 July 2018
+
+- Python: Handle whitespace in pip compile requirements
+- Ruby: Automatically retry some Bundler errors
+- Dockerfile: Use Ubuntu 18.04
+
 ## v0.61.66, 12 July 2018
 
 - Ruby: Fix inconsistency between UpdateChecker and FileUpdater that caused rare
