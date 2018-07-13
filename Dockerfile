@@ -12,7 +12,7 @@ RUN apt-get update \
       build-essential \
       dirmngr \
       git \
-      gnupg \
+      gnupg2 \
       curl \
       wget \
       zlib1g-dev \
