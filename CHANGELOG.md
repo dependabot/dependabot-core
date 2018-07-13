@@ -1,3 +1,7 @@
+## v0.61.68, 13 July 2018
+
+- Ruby: Handle rubygems server timeouts in MetadataFinder
+
 ## v0.61.67, 13 July 2018
 
 - Python: Handle whitespace in pip compile requirements
