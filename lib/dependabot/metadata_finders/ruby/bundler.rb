@@ -87,7 +87,7 @@ module Dependabot
           response_body = augment_private_response_if_appropriate(response_body)
 
           @rubygems_listing = JSON.parse(response_body)
-        rescue JSON::ParserError
+        rescue JSON::ParserError, Excon::Error::Timeout
           @rubygems_listing = {}
         end
 
