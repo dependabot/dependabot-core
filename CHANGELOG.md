@@ -1,3 +1,7 @@
+## v0.61.69, 13 July 2018
+
+- JS: Treat temporary npm 500 as a 404
+
 ## v0.61.68, 13 July 2018
 
 - Ruby: Handle rubygems server timeouts in MetadataFinder
