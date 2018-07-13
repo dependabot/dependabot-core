@@ -79,8 +79,8 @@ module Dependabot
           end
 
           def requirements_match(req1, req2)
-            req1&.split(",")&.map(&:strip)&.sort ==
-              req2&.split(",")&.map(&:strip)&.sort
+            req1&.split(",")&.map { |r| r.gsub(/\s/, "") }&.sort ==
+              req2&.split(",")&.map { |r| r.gsub(/\s/, "") }&.sort
           end
         end
       end
