@@ -1,3 +1,7 @@
+## v0.61.70, 13 July 2018
+
+- Python: Allow single component versions with a pre-release
+
 ## v0.61.69, 13 July 2018
 
 - JS: Treat temporary npm 500 as a 404
