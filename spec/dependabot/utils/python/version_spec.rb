@@ -18,6 +18,11 @@ RSpec.describe Dependabot::Utils::Python::Version do
         let(:version_string) { "1.0.0+abc.1" }
         it { is_expected.to eq(true) }
       end
+
+      context "that includes a prerelease part in the initial number" do
+        let(:version_string) { "2013b0" }
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "with nil" do

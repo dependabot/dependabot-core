@@ -10,11 +10,14 @@ module Dependabot
       class Version < Gem::Version
         attr_reader :local_version
 
-        VERSION_PATTERN = Gem::Version::VERSION_PATTERN +
+        VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+                          '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                           '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
+        ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
         def self.correct?(version)
-          super(version.to_s.split("+").first)
+          return false if version.nil?
+          version.to_s.match?(ANCHORED_VERSION_PATTERN)
         end
 
         def initialize(version)
