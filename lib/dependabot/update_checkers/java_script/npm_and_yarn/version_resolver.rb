@@ -214,7 +214,11 @@ module Dependabot
               return false
             end
 
-            [401, 402, 403, 404].include?(npm_response.status)
+            return true if [401, 402, 403, 404].include?(npm_response.status)
+
+            # Temporary workaround for npm bug on 2018-07-13. Remove me!
+            npm_response.status == 500 &&
+              npm_response.body.include?("Cannot read property 'then'")
           end
 
           def dependency_url
