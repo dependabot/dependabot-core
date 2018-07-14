@@ -187,7 +187,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:npm_lock_fixture_name) { "private_source.json" }
 
-          its(:length) { is_expected.to eq(3) }
+          its(:length) { is_expected.to eq(4) }
 
           describe "the first private dependency" do
             subject { top_level_dependencies[1] }
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
 
           describe "the second private dependency" do
-            subject { top_level_dependencies.last }
+            subject { top_level_dependencies[2] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/etag") }
@@ -610,7 +610,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:yarn_lock_fixture_name) { "private_source.lock" }
 
-          its(:length) { is_expected.to eq(3) }
+          its(:length) { is_expected.to eq(4) }
 
           describe "the second dependency" do
             subject { top_level_dependencies[1] }
@@ -633,8 +633,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
           end
 
-          describe "the last dependency" do
-            subject { top_level_dependencies.last }
+          describe "the third dependency" do
+            subject { top_level_dependencies[2] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("@dependabot/etag") }
