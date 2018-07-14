@@ -1,3 +1,9 @@
+## v0.61.72, 14 July 2018
+
+- PHP: Handle 403s in FileUpdater
+- JS: Handle missing package errors better
+- JS: Raise DependencyFileNotEvaluatable for workspace errors
+
 ## v0.61.71, 14 July 2018
 
 - Dockerfile: Switch to gnupg2
