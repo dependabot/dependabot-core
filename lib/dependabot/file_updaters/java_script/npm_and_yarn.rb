@@ -195,6 +195,9 @@ module Dependabot
             raise if error.message.include?(%("#{dependency.name}"))
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
+          if error.message.include?("Workspaces can only be enabled in private")
+            raise Dependabot::DependencyFileNotEvaluatable, error.message
+          end
           raise
         end
 

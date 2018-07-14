@@ -1172,6 +1172,15 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
         end
 
+        context "when the package.json doesn't specify that it's private" do
+          let(:manifest_fixture_name) { "workspaces_bad.json" }
+
+          it "raises a helpful error" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(Dependabot::DependencyFileNotEvaluatable)
+          end
+        end
+
         context "with a dependency that appears as a development dependency" do
           let(:dependency) do
             Dependabot::Dependency.new(
