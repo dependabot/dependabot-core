@@ -138,6 +138,10 @@ module Dependabot
           ).gsub(%r{git@(.*?)[:/]}, 'https://\1/')
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/MethodLength
         def handle_composer_errors(error)
           if error.message.start_with?("Failed to execute git checkout")
             raise git_dependency_reference_error(error)
@@ -163,8 +167,17 @@ module Dependabot
           if error.message.start_with?("Allowed memory size")
             raise "Composer out of memory"
           end
+          if error.message.include?("403 Forbidden")
+            source = error.message.match(%r{https?://(?<source>[^/]+)/}).
+                     named_captures.fetch("source")
+            raise PrivateSourceAuthenticationFailure, source
+          end
           raise error
         end
+        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/MethodLength
 
         def write_temporary_dependency_files
           path_dependencies.each do |file|
