@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters/base"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
+require "dependabot/update_checkers/java_script/npm_and_yarn/registry_finder"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -198,6 +199,12 @@ module Dependabot
           if error.message.include?("Workspaces can only be enabled in private")
             raise Dependabot::DependencyFileNotEvaluatable, error.message
           end
+          if error.message.include?("Couldn't find package")
+            package_name = error.message.match(/package "(?<package_req>.*)?"/).
+                           named_captures["package_req"].
+                           split(/(?<=\w)\@/).first
+            handle_missing_package(package_name)
+          end
           raise
         end
 
@@ -384,6 +391,26 @@ module Dependabot
             flatten_dependencies.call(JSON.parse(package_lock.content))
           end
           deps.find { |dep| dep[:version].end_with?("##{ref}") }
+        end
+
+        def handle_missing_package(package_name)
+          return unless package_name.start_with?("@")
+
+          missing_dep = FileParsers::JavaScript::NpmAndYarn.new(
+            dependency_files: dependency_files,
+            source: nil,
+            credentials: credentials
+          ).parse.find { |dep| dep.name == package_name }
+
+          return unless missing_dep
+
+          registry = UpdateCheckers::JavaScript::NpmAndYarn::RegistryFinder.new(
+            dependency: missing_dep,
+            credentials: credentials,
+            npmrc_file: dependency_files.find { |f| f.name == ".npmrc" }
+          ).registry
+
+          raise PrivateSourceAuthenticationFailure, registry
         end
 
         def npmrc_content

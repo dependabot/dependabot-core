@@ -850,6 +850,16 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               to raise_error(Dependabot::DependencyFileNotResolvable)
           end
 
+          context "when there is a private dep we don't have access to" do
+            let(:manifest_fixture_name) { "private_source.json" }
+            let(:yarn_lock_fixture_name) { "private_source.lock" }
+
+            it "raises a helpful error" do
+              expect { updater.updated_dependency_files }.
+                to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+            end
+          end
+
           context "because we're updating to a non-existant version" do
             let(:yarn_lock_fixture_name) { "yarn.lock" }
             let(:npm_lock_fixture_name) { "package-lock.json" }

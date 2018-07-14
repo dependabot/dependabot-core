@@ -21,6 +21,7 @@
       "chalk": "^2.0.0"
     },
     "devDependencies": {
-      "@dependabot/etag": "^1.0.0"
+      "@dependabot/etag": "^1.0.0",
+      "@dependabot/pack-core": "^2.0.1"
     }
 }
