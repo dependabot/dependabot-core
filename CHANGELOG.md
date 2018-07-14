@@ -1,3 +1,8 @@
+## v0.61.71, 14 July 2018
+
+- Dockerfile: Switch to gnupg2
+- JS: Bump npm
+
 ## v0.61.70, 13 July 2018
 
 - Python: Allow single component versions with a pre-release
