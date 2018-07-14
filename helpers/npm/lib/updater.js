@@ -16,9 +16,8 @@
 const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
-const npm = require("npm");
+const npm6 = require("npm");
 const npm5 = require("npm5/node_modules/npm");
-const npmlog = require("npmlog");
 const npm6installer = require("npm/lib/install");
 const npm5installer = require("npm5/node_modules/npm/lib/install");
 
@@ -31,7 +30,7 @@ async function updateDependencyFiles(
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
+  await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
   await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
   const oldLockfile = JSON.parse(readFile("package-lock.json"));
   const installer = installer_for_lockfile(oldLockfile);
