@@ -191,6 +191,8 @@ module Dependabot
           end
 
           def check_npm_response(npm_response)
+            return if git_dependency?
+
             if private_dependency_not_reachable?(npm_response)
               raise PrivateSourceAuthenticationFailure, dependency_registry
             end
@@ -202,7 +204,6 @@ module Dependabot
             # need to be generated. The 404 won't cause problems later.
             return if status == 404 && dependency.version.nil?
 
-            return if [404, 405].include?(status) && git_dependency?
             msg = "Got #{status} response with body #{npm_response.body}"
             raise RegistryError, msg
           end
