@@ -328,7 +328,7 @@ module Dependabot
         msg = "\n<details>\n<summary>Commits</summary>\n\n"
 
         commits(dep).reverse.first(10).each do |commit|
-          title = commit[:message].split("\n").first
+          title = commit[:message].strip.split("\n").first
           title = title.slice(0..76) + "..." if title.length > 80
           sha = commit[:sha][0, 7]
           msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
