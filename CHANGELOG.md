@@ -1,3 +1,7 @@
+## v0.61.74, 16 July 2018
+
+- Handle commit messages where the entire message is just a linebreak!
+
 ## v0.61.73, 16 July 2018
 
 - Handle commit messages that start with a linebreak
