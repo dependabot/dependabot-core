@@ -1,3 +1,7 @@
+## v0.61.73, 16 July 2018
+
+- Handle commit messages that start with a linebreak
+
 ## v0.61.72, 14 July 2018
 
 - PHP: Handle 403s in FileUpdater
