@@ -1,3 +1,7 @@
+## v0.61.75, 16 July 2018
+
+- JS: Ignore bad npm responses for git dependencies
+
 ## v0.61.74, 16 July 2018
 
 - Handle commit messages where the entire message is just a linebreak!
