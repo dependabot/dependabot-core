@@ -1,3 +1,7 @@
+## v0.61.79, 17 July 2018
+
+- Ruby: Don't artificially insert Bundler version in FileParser
+
 ## v0.61.78, 17 July 2018
 
 - Handle rare case where filtering releases yields an empty array
