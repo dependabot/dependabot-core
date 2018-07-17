@@ -43,6 +43,7 @@ module Dependabot
 
         def relevant_releases
           releases = releases_since_previous_version
+          return [] unless releases.any?
 
           if updated_release && version_class.correct?(dependency.version)
             releases = filter_releases_using_updated_release(releases)
