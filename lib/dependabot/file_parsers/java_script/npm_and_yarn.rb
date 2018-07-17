@@ -110,6 +110,7 @@ module Dependabot
           return if lockfile_details(name, requirement) &&
                     !version_for(name, requirement)
           return if local_path?(requirement) || non_git_url?(requirement)
+          return if workspace_package_names.include?(name)
 
           Dependency.new(
             name: name,
@@ -138,6 +139,11 @@ module Dependabot
 
         def git_url?(requirement)
           requirement.match?(GIT_URL_REGEX)
+        end
+
+        def workspace_package_names
+          @workspace_package_names ||=
+            package_files.map { |f| JSON.parse(f.content)["name"] }.compact
         end
 
         def version_for(name, requirement)
