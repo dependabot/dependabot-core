@@ -45,9 +45,7 @@ module Dependabot
         end
 
         def project_files
-          dependency_files.
-            select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }.
-            reject { |df| df.type == "project_import" }
+          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
         end
 
         def packages_config
@@ -55,7 +53,11 @@ module Dependabot
         end
 
         def project_import_files
-          dependency_files.select { |df| df.type == "project_import" }
+          dependency_files - [packages_config, nuget_config]
+        end
+
+        def nuget_config
+          dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
         end
 
         def check_required_files

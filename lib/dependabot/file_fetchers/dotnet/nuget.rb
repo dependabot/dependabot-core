@@ -132,7 +132,7 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_host(path, type: "project_import")
+            fetched_file = fetch_file_from_host(path)
             grandchild_property_files = fetch_imported_property_files(
               file: fetched_file,
               previously_fetched_files: previously_fetched_files + [file]

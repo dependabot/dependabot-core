@@ -155,8 +155,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
       let(:imported_file) do
         Dependabot::DependencyFile.new(
           name: "commonprops.props",
-          content: fixture("dotnet", "csproj", "commonprops.props"),
-          type: "project_import"
+          content: fixture("dotnet", "csproj", "commonprops.props")
         )
       end
 

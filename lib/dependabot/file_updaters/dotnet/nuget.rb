@@ -17,8 +17,7 @@ module Dependabot
         end
 
         def updated_dependency_files
-          updated_files = project_files.dup
-          updated_files << packages_config.dup if packages_config
+          updated_files = dependency_files.dup
 
           # Loop through each of the changed requirements, applying changes to
           # all files for that change. Note that the logic is different here
