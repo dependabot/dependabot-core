@@ -157,6 +157,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
+            context "with a numeric prefix (rare)" do
+              let(:github_response) do
+                fixture("github", "releases_number_prefix.json")
+              end
+
+              it { is_expected.to be_nil }
+            end
+
             context "but has tag names with dashes, and it's Java" do
               let(:github_response) do
                 fixture("github", "releases_dash_tags.json")

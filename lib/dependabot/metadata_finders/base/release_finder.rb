@@ -43,6 +43,10 @@ module Dependabot
 
         def relevant_releases
           releases = releases_since_previous_version
+
+          # Sometimes we can't filter the releases properly (if they're
+          # prefixed by a number that gets confused with the version). In this
+          # case, the best we can do is return nil.
           return [] unless releases.any?
 
           if updated_release && version_class.correct?(dependency.version)
