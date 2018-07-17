@@ -175,7 +175,7 @@ module Dependabot
         end
 
         def fetch_github_releases
-          releases = github_client.releases(source.repo)
+          releases = github_client.releases(source.repo, per_page: 100)
 
           # Remove any releases without a tag name. These are draft releases and
           # aren't yet associated with a tag, so shouldn't be used.

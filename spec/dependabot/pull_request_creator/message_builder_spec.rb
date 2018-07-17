@@ -396,7 +396,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200,
                   body: fixture("github", "business_tags.json"),
                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/releases").
+      stub_request(:get, "#{business_repo_url}/releases?per_page=100").
         to_return(status: 200,
                   body: fixture("github", "business_releases.json"),
                   headers: json_header)
@@ -859,7 +859,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_tags.json"),
                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/releases").
+          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
@@ -1063,7 +1063,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_tags.json"),
                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/releases").
+          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
