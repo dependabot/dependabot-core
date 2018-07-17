@@ -1,3 +1,7 @@
+## v0.61.80, 17 July 2018
+
+- .NET: Handle updates for imported property files properly
+
 ## v0.61.79, 17 July 2018
 
 - Ruby: Don't artificially insert Bundler version in FileParser
