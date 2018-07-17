@@ -29,7 +29,7 @@ module Dependabot
           fetched_files << lerna_json if lerna_json
           fetched_files += workspace_package_jsons
           fetched_files += lerna_packages
-          fetched_files += path_dependencies
+          fetched_files += path_dependencies(fetched_files)
 
           fetched_files.uniq
         end
@@ -62,10 +62,30 @@ module Dependabot
           @lerna_packages ||= fetch_lerna_packages
         end
 
-        def path_dependencies
+        def path_dependencies(fetched_files)
           package_json_files = []
           unfetchable_deps = []
 
+          path_dependency_details.each do |name, path|
+            path = path.sub(/^file:/, "")
+            filename = File.join(path, "package.json")
+
+            begin
+              file = fetch_file_from_host(filename, type: "path_dependency")
+              unless fetched_files.map(&:name).include?(file.name)
+                package_json_files << file
+              end
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_deps << [name, path]
+            end
+          end
+
+          package_json_files += build_unfetchable_deps(unfetchable_deps)
+
+          package_json_files
+        end
+
+        def path_dependency_details
           types = FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES
 
           package_json_path_deps =
@@ -77,23 +97,7 @@ module Dependabot
             select { |_, v| v.fetch("version", "").start_with?("file:") }.
             map { |k, v| [k, v.fetch("version")] }
 
-          path_deps = (package_json_path_deps + package_lock_path_deps).uniq
-
-          path_deps.map do |name, path|
-            path = path.sub(/^file:/, "")
-            file = File.join(path, "package.json")
-
-            begin
-              package_json_files <<
-                fetch_file_from_host(file, type: "path_dependency")
-            rescue Dependabot::DependencyFileNotFound
-              unfetchable_deps << [name, path]
-            end
-          end
-
-          package_json_files += build_unfetchable_deps(unfetchable_deps)
-
-          package_json_files
+          (package_json_path_deps + package_lock_path_deps).uniq
         end
 
         def fetch_workspace_package_jsons

@@ -636,6 +636,11 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         expect(file_fetcher_instance.files.count).to eq(5)
         expect(file_fetcher_instance.files.map(&:name)).
           to include("packages/package2/package.json")
+
+        workspace_dep =
+          file_fetcher_instance.files.
+          find { |f| f.name == "packages/package1/package.json" }
+        expect(workspace_dep.type).to eq("file")
       end
 
       context "specified using a hash" do
