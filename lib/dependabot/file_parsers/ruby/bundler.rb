@@ -212,10 +212,6 @@ module Dependabot
         def dependency_version(dependency_name)
           return unless lockfile
 
-          if dependency_name == "bundler"
-            return Gem::Version.new(::Bundler::VERSION)
-          end
-
           spec = parsed_lockfile.specs.find { |s| s.name == dependency_name }
 
           # Not all files in the Gemfile will appear in the Gemfile.lock. For

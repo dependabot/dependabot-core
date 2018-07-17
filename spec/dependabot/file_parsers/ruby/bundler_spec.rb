@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/source"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/ruby/bundler"
 require_relative "../shared_examples_for_file_parsers"
