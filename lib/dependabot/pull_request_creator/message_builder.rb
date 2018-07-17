@@ -359,7 +359,8 @@ module Dependabot
           msg += truncated_line if description.strip.lines.count > 10
         end
 
-        msg += "\n> \n"
+        msg += "\n" unless msg.end_with?("\n")
+        msg += "> \n"
         msg += vulnerability_version_range_lines(details)
         msg + "\n"
       end
