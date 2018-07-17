@@ -45,7 +45,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.16.2
+    && gem install --no-ri --no-rdoc bundler -v 1.16.3
 
 
 ### PYTHON
