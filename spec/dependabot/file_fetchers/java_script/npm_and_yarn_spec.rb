@@ -665,7 +665,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         before do
           stub_request(
             :get,
-            File.join(url, "packages/package1/package.json?ref=sha")
+            File.join(url, "packages/package2/package.json?ref=sha")
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
         end
@@ -673,7 +673,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         it "fetches the other workspaces, ignoring the empty folder" do
           expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name)).
-            to_not include("packages/package1/package.json")
+            to_not include("packages/package2/package.json")
         end
       end
 
