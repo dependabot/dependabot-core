@@ -1,3 +1,7 @@
+## v0.61.77, 17 July 2018
+
+- JS: Don't try to update workspace packages
+
 ## v0.61.76, 17 July 2018
 
 - JS: Don't double-fetch path dependencies
