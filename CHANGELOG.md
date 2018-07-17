@@ -1,3 +1,8 @@
+## v0.61.78, 17 July 2018
+
+- Handle rare case where filtering releases yields an empty array
+- Fetch 100 last releases in MetadataFinder, not 30
+
 ## v0.61.77, 17 July 2018
 
 - JS: Don't try to update workspace packages
