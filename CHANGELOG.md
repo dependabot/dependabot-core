@@ -1,3 +1,9 @@
+## v0.61.76, 17 July 2018
+
+- JS: Don't double-fetch path dependencies
+- Fix blank line after truncated vulnerability details text
+- Ruby: Use Bundler 1.16.3
+
 ## v0.61.75, 16 July 2018
 
 - JS: Ignore bad npm responses for git dependencies
