@@ -1,3 +1,7 @@
+## v0.61.81, 18 July 2018
+
+- .NET: Handle directory deletions in FileFetcher
+
 ## v0.61.80, 17 July 2018
 
 - .NET: Handle updates for imported property files properly
