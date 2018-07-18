@@ -1,3 +1,7 @@
+## v0.61.82, 18 July 2018
+
+- JS: Ignore aliased dependencies (for now)
+
 ## v0.61.81, 18 July 2018
 
 - .NET: Handle directory deletions in FileFetcher
