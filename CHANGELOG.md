@@ -1,3 +1,8 @@
+## v0.61.83, 18 July 2018
+
+- Ruby: Set git credentials before trying to find latest version of git
+  dependency
+
 ## v0.61.82, 18 July 2018
 
 - JS: Ignore aliased dependencies (for now)
