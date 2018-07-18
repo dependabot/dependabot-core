@@ -1,9 +1,0 @@
-{
-  "name": "npm-install-checks",
-  "version": "3.0.0",
-  "description": "Overrides checks that npm runs during the installation of a module",
-  "main": "index.js",
-  "dependencies": {
-    "semver": "^2.3.0 || 3.x || 4 || 5"
-  }
-}
