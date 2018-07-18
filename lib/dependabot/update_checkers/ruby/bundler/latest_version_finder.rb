@@ -94,19 +94,21 @@ module Dependabot
               uniq.compact.first
 
             in_a_temporary_bundler_context do
-              # Note: we don't set the `ref`, as we want to unpin the dependency
-              source = ::Bundler::Source::Git.new(
-                "uri" => dependency_source_details[:url],
-                "branch" => dependency_source_details[:branch],
-                "name" => dependency.name,
-                "submodules" => true
-              )
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                # Note: we don't set `ref`, as we want to unpin the dependency
+                source = ::Bundler::Source::Git.new(
+                  "uri" => dependency_source_details[:url],
+                  "branch" => dependency_source_details[:branch],
+                  "name" => dependency.name,
+                  "submodules" => true
+                )
 
-              # Tell Bundler we're fine with fetching the source remotely
-              source.instance_variable_set(:@allow_remote, true)
+                # Tell Bundler we're fine with fetching the source remotely
+                source.instance_variable_set(:@allow_remote, true)
 
-              spec = source.specs.first
-              { version: spec.version, commit_sha: spec.source.revision }
+                spec = source.specs.first
+                { version: spec.version, commit_sha: spec.source.revision }
+              end
             end
           end
 
