@@ -1,3 +1,7 @@
+## v0.61.84, 18 July 2018
+
+- JS: Overwrite npm's checkPlatform method
+
 ## v0.61.83, 18 July 2018
 
 - Ruby: Set git credentials before trying to find latest version of git
