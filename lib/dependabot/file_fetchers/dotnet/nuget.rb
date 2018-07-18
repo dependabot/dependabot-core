@@ -16,7 +16,7 @@ module Dependabot
         end
 
         def self.required_files_message
-          "Repo must contain a csproj file or a packages.config."
+          "Repo must contain a .(cs|vb|fs)proj file or a packages.config."
         end
 
         private
@@ -31,7 +31,11 @@ module Dependabot
 
           fetched_files = fetched_files.uniq
           return fetched_files unless project_files.none? && !packages_config
-          raise(Dependabot::DependencyFileNotFound, "<anything>.csproj")
+
+          raise(
+            Dependabot::DependencyFileNotFound,
+            File.join(directory, "<anything>.(cs|vb|fs)proj")
+          )
         end
 
         def project_files
@@ -45,6 +49,11 @@ module Dependabot
               project_files += sln_project_files
               project_files
             end
+        rescue Octokit::NotFound, Gitlab::Error::NotFound
+          raise(
+            Dependabot::DependencyFileNotFound,
+            File.join(directory, "<anything>.(cs|vb|fs)proj")
+          )
         end
 
         def packages_config

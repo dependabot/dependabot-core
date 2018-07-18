@@ -308,7 +308,23 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
     it "raises a Dependabot::DependencyFileNotFound error" do
       expect { file_fetcher_instance.files }.
         to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.file_name).to eq("<anything>.csproj")
+          expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
+        end
+    end
+  end
+
+  context "witha bad directory" do
+    let(:directory) { "dir/" }
+    before do
+      stub_request(:get, url + "dir?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+    end
+
+    it "raises a Dependabot::DependencyFileNotFound error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound) do |error|
+          expect(error.file_path).to eq("dir/<anything>.(cs|vb|fs)proj")
         end
     end
   end
