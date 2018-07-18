@@ -673,6 +673,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
         end
 
+        context "with an aliased dependency" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_fixture_name) { "aliased_dependency.json" }
+          let(:yarn_lock_fixture_name) { "aliased_dependency.lock" }
+
+          it "doesn't include the aliased dependency" do
+            expect(top_level_dependencies.length).to eq(1)
+            expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+          end
+        end
+
         context "with a git source that comes from a sub-dependency" do
           let(:files) { [package_json, lockfile] }
           let(:package_json_fixture_name) { "git_dependency_from_subdep.json" }

@@ -109,7 +109,7 @@ module Dependabot
         def build_dependency(file:, type:, name:, requirement:)
           return if lockfile_details(name, requirement) &&
                     !version_for(name, requirement)
-          return if local_path?(requirement) || non_git_url?(requirement)
+          return if ignore_requirement?(requirement)
           return if workspace_package_names.include?(name)
 
           Dependency.new(
@@ -129,8 +129,20 @@ module Dependabot
           raise "No package.json!" unless get_original_file("package.json")
         end
 
+        def ignore_requirement?(requirement)
+          return true if local_path?(requirement)
+          return true if non_git_url?(requirement)
+
+          # TODO: Handle aliased packages
+          alias_package?(requirement)
+        end
+
         def local_path?(requirement)
           requirement.start_with?("file:")
+        end
+
+        def alias_package?(requirement)
+          requirement.start_with?("npm:")
         end
 
         def non_git_url?(requirement)
