@@ -114,7 +114,7 @@ module Dependabot
           @updated_yarn_lock_content[yarn_lock.name] =
             post_process_yarn_lockfile(new_content)
         rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_yarn_lock_updater_error(error)
+          handle_yarn_lock_updater_error(error, yarn_lock.path)
         end
 
         def updated_package_lock_content(package_lock)
@@ -140,7 +140,7 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_package_lock_updater_error(error)
+          handle_package_lock_updater_error(error, package_lock.path)
         end
 
         def run_yarn_updater(path:)
@@ -190,11 +190,12 @@ module Dependabot
           end
         end
 
-        def handle_yarn_lock_updater_error(error)
+        def handle_yarn_lock_updater_error(error, file_path)
           if error.message.start_with?("Couldn't find any versions") ||
              error.message.include?(": Not found")
             raise if error.message.include?(%("#{dependency.name}"))
-            raise Dependabot::DependencyFileNotResolvable, error.message
+            msg = "Error while updating #{file_path}:\n#{error.message}"
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
           if error.message.include?("Workspaces can only be enabled in private")
             raise Dependabot::DependencyFileNotEvaluatable, error.message
@@ -211,15 +212,13 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
-        def handle_package_lock_updater_error(error)
+        def handle_package_lock_updater_error(error, file_path)
           raise if error.message.include?("#{dependency.name}@")
-          if error.message.start_with?("No matching version", "404 Not Found")
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
-          if error.message.include?("did not match any file(s) known to git") ||
+          if error.message.start_with?("No matching versio", "404 Not Found") ||
+             error.message.include?("did not match any file(s) known to git") ||
              error.message.include?("Non-registry package missing package.j") ||
              error.message.include?("Cannot read property 'match' of undefined")
-            msg = "Error while generating package-lock.json:\n#{error.message}"
+            msg = "Error while updating #{file_path}:\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           end
           if error.message.include?("fatal: reference is not a tree")
