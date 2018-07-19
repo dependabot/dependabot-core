@@ -24,11 +24,11 @@ module Dependabot
         end
 
         def manifest
-          @manifest ||= fetch_file_from_github("Gopkg.toml")
+          @manifest ||= fetch_file_from_host("Gopkg.toml")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_from_github("Gopkg.lock")
+          @lockfile ||= fetch_file_from_host("Gopkg.lock")
         end
       end
     end
