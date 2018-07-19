@@ -95,6 +95,23 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::LatestVersionFinder do
         it { is_expected.to be_nil }
       end
 
+      context "when the gem is Bundler" do
+        let(:gemfile_fixture_name) { "bundler_specified" }
+        let(:dependency_name) { "bundler" }
+        before do
+          rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+          stub_request(:get, rubygems_url + "versions/bundler.json").
+            to_return(status: 200, body: rubygems_response)
+        end
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+        context "wrapped in a source block" do
+          let(:gemfile_fixture_name) { "bundler_specified_in_source" }
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+        end
+      end
+
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }

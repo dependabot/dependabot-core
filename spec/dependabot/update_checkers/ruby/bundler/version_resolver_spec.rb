@@ -100,6 +100,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:lockfile_fixture_name) { "bundler_specified.lock" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+
+        context "attempting to update Bundler" do
+          let(:dependency_name) { "bundler" }
+          include_context "stub rubygems versions api"
+
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
+
+          context "when wrapped in a source block" do
+            let(:gemfile_fixture_name) { "bundler_specified_in_source" }
+            its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
+          end
+        end
       end
 
       context "with a version conflict at the latest version" do
