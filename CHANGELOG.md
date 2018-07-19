@@ -1,3 +1,7 @@
+## v0.61.85, 19 July 2018
+
+- Ruby: Special case handling of Bundler in UpdateCheckers::LatestVersionFinder
+
 ## v0.61.84, 18 July 2018
 
 - JS: Overwrite npm's checkPlatform method
