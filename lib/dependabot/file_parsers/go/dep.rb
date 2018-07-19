@@ -1,35 +1,111 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
+require "dependabot/errors"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 
+# Relevant dep docs can be found at:
+# - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# - https://github.com/golang/dep/blob/master/docs/Gopkg.lock.md
 module Dependabot
   module FileParsers
     module Go
       class Dep < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
+        REQUIREMENT_TYPES = %w(constraint override).freeze
+
         def parse
-          # Parse the dependency file and return a Dependabot::Dependency
-          # object for each dependency.
-          # If possible, this should be done in Ruby (since it's easier to
-          # maintain). However, if we need to parse a lockfile that has a
-          # non-standard format we can shell out to a helper in a language of
-          # our choice (see JavaScript example where we parse the yarn.lock).
-          [
-            Dependency.new(
-              name: "my_dependency",
-              version: "1.0.1",
-              package_manager: "dep",
-              requirements: [{
-                requirement: ">= 1.0.0",
-                file: "Gopkg.toml",
-                groups: [],
-                source: nil
-              }]
-            )
-          ]
+          dependency_set = DependencySet.new
+          dependency_set += manifest_dependencies
+          dependency_set += lockfile_dependencies
+          dependency_set.dependencies
         end
 
         private
+
+        def manifest_dependencies
+          dependency_set = DependencySet.new
+
+          REQUIREMENT_TYPES.each do |type|
+            parsed_file(manifest).fetch(type, {}).each do |details|
+              dependency_set << Dependency.new(
+                name: details.fetch("name"),
+                version: nil,
+                package_manager: "dep",
+                requirements: [{
+                  requirement: requirement_from_declaration(details),
+                  file: manifest.name,
+                  groups: [],
+                  source: source_from_declaration(details)
+                }]
+              )
+            end
+          end
+
+          dependency_set
+        end
+
+        def lockfile_dependencies
+          dependency_set = DependencySet.new
+
+          parsed_file(lockfile).fetch("projects", {}).each do |details|
+            dependency_set << Dependency.new(
+              name: details.fetch("name"),
+              version: version_from_lockfile(details),
+              package_manager: "dep",
+              requirements: []
+            )
+          end
+
+          dependency_set
+        end
+
+        def version_from_lockfile(details)
+          details["version"]&.sub(/^v?/, "") || details.fetch("revision")
+        end
+
+        def requirement_from_declaration(declaration)
+          unless declaration.is_a?(Hash)
+            raise "Unexpected dependency declaration: #{declaration}"
+          end
+
+          declaration["version"]
+        end
+
+        def source_from_declaration(declaration)
+          unless declaration.is_a?(Hash)
+            raise "Unexpected dependency declaration: #{declaration}"
+          end
+
+          # TODO: Figure out git sources (particularly ones which don't have
+          # a version) at this point, so we can use GitCommitChecker later
+          # Most likely looking docs:
+          # https://github.com/golang/dep/blob/master/vendor/github.com/Masterminds/vcs/vcs_remote_lookup.go
+          {
+            type: "default",
+            source: declaration["source"] || declaration["name"],
+            branch: declaration["branch"],
+            ref: declaration["revision"]
+          }
+        end
+
+        def parsed_file(file)
+          @parsed_file ||= {}
+          @parsed_file[file.name] ||= TomlRB.parse(file.content)
+        rescue TomlRB::ParseError
+          raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        def manifest
+          @manifest ||= get_original_file("Gopkg.toml")
+        end
+
+        def lockfile
+          @lockfile ||= get_original_file("Gopkg.lock")
+        end
 
         def check_required_files
           %w(Gopkg.toml Gopkg.lock).each do |filename|
