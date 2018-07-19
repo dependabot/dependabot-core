@@ -1,3 +1,7 @@
+## v0.61.87, 19 July 2018
+
+- JS: Better handling of lerna requirements in FileUpdater
+
 ## v0.61.86, 19 July 2018
 
 - JS: Add details of the file that was being updated when an error occurred
