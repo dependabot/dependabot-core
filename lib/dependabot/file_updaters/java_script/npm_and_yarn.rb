@@ -170,8 +170,8 @@ module Dependabot
           return requirements if path.to_s == "."
 
           requirements.map do |r|
-            next unless r[:file].start_with?(path.to_s)
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote(path.to_s)}/, ""))
+            next unless r[:file].start_with?("#{path}/")
+            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
           end.compact
         end
 
