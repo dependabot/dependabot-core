@@ -51,7 +51,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ### PYTHON
 
 # Install Python 2.7 and 3.6 with pyenv. Using pyenv lets us support multiple Pythons
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv && cd /usr/local/.pyenv && git checkout c057a80c && cd -
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv && cd /usr/local/.pyenv && git checkout v1.2.6 && cd -
 ENV PYENV_ROOT=/usr/local/.pyenv
 ENV PATH="$PYENV_ROOT/bin:$PATH"
 RUN pyenv install 3.6.5 && pyenv install 2.7.15 && pyenv global 3.6.5
