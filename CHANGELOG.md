@@ -1,3 +1,7 @@
+## v0.61.86, 19 July 2018
+
+- JS: Add details of the file that was being updated when an error occurred
+
 ## v0.61.85, 19 July 2018
 
 - Ruby: Special case handling of Bundler in UpdateCheckers::LatestVersionFinder
