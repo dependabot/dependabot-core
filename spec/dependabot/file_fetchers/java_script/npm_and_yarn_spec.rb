@@ -473,6 +473,42 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a glob that specifies only the second package" do
+        before do
+          stub_request(:get, File.join(url, "lerna.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "lerna_content_specific.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the lerna.json and package.jsons" do
+          expect(file_fetcher_instance.files.count).to eq(5)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/package.json")
+          expect(file_fetcher_instance.files.map(&:name)).
+            to_not include("packages/package/package.json")
+        end
+      end
+
+      context "with a glob that prefixes the packages names" do
+        before do
+          stub_request(:get, File.join(url, "lerna.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "lerna_content_prefix.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the lerna.json and package.jsons" do
+          expect(file_fetcher_instance.files.count).to eq(6)
+        end
+      end
+
       context "with a lockfile for one of the packages" do
         before do
           stub_request(

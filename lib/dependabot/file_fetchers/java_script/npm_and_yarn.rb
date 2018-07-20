@@ -148,17 +148,20 @@ module Dependabot
             end
 
           paths_array.flat_map do |path|
-            if path.end_with?("*") then expand_paths(path)
+            if path.include?("*") then expanded_paths(path)
             else path
             end
           end
         end
 
-        def expand_paths(path)
+        def expanded_paths(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
-          repo_contents(dir: path.gsub(/\*+$/, "")).
+          unglobbed_path = path.split("*").first.gsub(%r{(?<=/).*$}, "")
+
+          repo_contents(dir: unglobbed_path).
             select { |file| file.type == "dir" }.
-            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
+            select { |filename| File.fnmatch?(path, filename) }
         end
 
         def parsed_package_json
