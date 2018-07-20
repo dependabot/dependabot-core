@@ -79,24 +79,20 @@ module Dependabot
             Utils::Python::Version.new(@latest_resolvable_version_string)
           end
 
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
-              # Pipenv outputs a lot of things to STDERR, so we need to clean
-              # up the error message
-              msg_lines = error.message.lines
-              msg = msg_lines.
-                    take_while { |l| !l.start_with?("During handling of") }.
-                    drop_while do |l|
-                      !l.start_with?(
-                        "Could not find",
-                        "packaging.specifiers.InvalidSpecifier"
-                      )
-                    end.join.strip
+              msg = clean_error_message(error.message)
+              raise if msg.empty?
+              raise DependencyFileNotResolvable, msg
+            end
 
-              # We also need to redact any URLs, as they may include credentials
-              msg = msg.gsub(/http.*?(?=\s)/, "<redacted>")
-
+            if error.message.include?("Could not find a version") &&
+               !original_requirements_resolvable?
+              msg = clean_error_message(error.message)
+              msg.gsub!(/\s+\(from .*$/, "")
               raise if msg.empty?
               raise DependencyFileNotResolvable, msg
             end
@@ -110,8 +106,42 @@ module Dependabot
 
             raise unless error.message.include?("could not be resolved")
           end
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
 
-          def write_temporary_dependency_files
+          # Needed because Pipenv's resolver isn't perfect
+          def original_requirements_resolvable?
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files(update_pipfile: false)
+
+              run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                   "pyenv exec pipenv lock")
+
+              true
+            rescue SharedHelpers::HelperSubprocessFailed => error
+              return false if error.message.include?("Could not find a version")
+              raise
+            end
+          end
+
+          def clean_error_message(message)
+            # Pipenv outputs a lot of things to STDERR, so we need to clean
+            # up the error message
+            msg_lines = message.lines
+            msg = msg_lines.
+                  take_while { |l| !l.start_with?("During handling of") }.
+                  drop_while do |l|
+                    !l.start_with?(
+                      "Could not find",
+                      "packaging.specifiers.InvalidSpecifier"
+                    )
+                  end.join.strip
+
+            # We also need to redact any URLs, as they may include credentials
+            msg.gsub(/http.*?(?=\s)/, "<redacted>")
+          end
+
+          def write_temporary_dependency_files(update_pipfile: true)
             dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -122,7 +152,7 @@ module Dependabot
             FileUtils.mkdir_p("python_package.egg-info")
 
             # Overwrite the pipfile with updated content
-            File.write("Pipfile", pipfile_content)
+            File.write("Pipfile", pipfile_content) if update_pipfile
           end
 
           def pipfile_content

@@ -295,5 +295,29 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       it { is_expected.to be_nil }
     end
+
+    context "with a conflict at the current version" do
+      let(:pipfile_fixture_name) { "conflict_at_current" }
+      let(:lockfile_fixture_name) { "conflict_at_current.lock" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==2.18.0",
+          groups: ["default"],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to start_with(
+              "Could not find a version that matches "\
+              "chardet<3.1.0,==3.0.0,>=3.0.2\n"
+            )
+          end
+      end
+    end
   end
 end
