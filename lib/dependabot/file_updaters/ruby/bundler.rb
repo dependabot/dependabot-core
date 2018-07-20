@@ -363,7 +363,7 @@ module Dependabot
           reordered_new_section = new_deps.sort_by do |new_dep_details|
             remote = new_dep_details.match(/remote: (?<remote>.*\n)/)[:remote]
             i = old_deps.index { |details| details.include?(remote) }
-            raise "Remote not found in old dependencies!" unless i
+            return lockfile_body unless i
             i
           end.join
 

@@ -844,6 +844,16 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             expect(file.content).to eq(expected_lockfile)
           end
         end
+
+        context "and the lockfile was wrong before" do
+          let(:lockfile_fixture_name) { "Gemfile.lock" }
+
+          it "generates the correct lockfile" do
+            expect(file.content).to include("statesman (2.0.1)")
+            expect(file.content).
+              to include "remote: http://github.com/gocardless/uk_phone_numbers"
+          end
+        end
       end
 
       context "for a git dependency" do
