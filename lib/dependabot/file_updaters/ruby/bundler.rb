@@ -22,6 +22,8 @@ module Dependabot
         require_relative "bundler/gemspec_dependency_name_finder"
 
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+        GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
+        GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
         GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
         GEMSPEC_SOURCES = [
           ::Bundler::Source::Path,
@@ -343,6 +345,32 @@ module Dependabot
         end
 
         def post_process_lockfile(lockfile_body)
+          lockfile_body = reorder_git_dependencies(lockfile_body)
+          replace_lockfile_ending(lockfile_body)
+        end
+
+        def reorder_git_dependencies(lockfile_body)
+          new_section = lockfile_body.match(GIT_DEPENDENCIES_SECTION)&.to_s
+          old_section = lockfile.content.match(GIT_DEPENDENCIES_SECTION)&.to_s
+
+          return lockfile_body unless new_section && old_section
+
+          new_deps = new_section.scan(GIT_DEPENDENCY_DETAILS)
+          old_deps = old_section.scan(GIT_DEPENDENCY_DETAILS)
+
+          return lockfile_body unless new_deps.count == old_deps.count
+
+          reordered_new_section = new_deps.sort_by do |new_dep_details|
+            remote = new_dep_details.match(/remote: (?<remote>.*\n)/)[:remote]
+            i = old_deps.index { |details| details.include?(remote) }
+            raise "Remote not found in old dependencies!" unless i
+            i
+          end.join
+
+          lockfile_body.gsub(new_section, reordered_new_section)
+        end
+
+        def replace_lockfile_ending(lockfile_body)
           # Re-add the old `BUNDLED WITH` version (and remove the RUBY VERSION
           # if it wasn't previously present in the lockfile)
           lockfile_body.gsub(

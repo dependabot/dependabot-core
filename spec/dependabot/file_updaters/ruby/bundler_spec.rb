@@ -813,6 +813,37 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
               to eq(old_lock.index(original_remote_line))
           end
         end
+
+        context "and the git dependencies are in a weird order" do
+          let(:lockfile_fixture_name) { "git_source_reordered.lock" }
+
+          it "doesn't update the order of the git dependencies" do
+            old_lock = lockfile_body.split(/^/)
+            new_lock = file.content.split(/^/)
+
+            %w(business prius que uk_phone_numbers).each do |dep|
+              original_remote_line =
+                old_lock.find { |l| l.include?("gocardless/#{dep}") }
+              original_revision_line =
+                old_lock[old_lock.find_index(original_remote_line) + 1]
+
+              new_remote_line =
+                new_lock.find { |l| l.include?("gocardless/#{dep}") }
+              new_revision_line =
+                new_lock[new_lock.find_index(original_remote_line) + 1]
+
+              expect(new_remote_line).to eq(original_remote_line)
+              expect(new_revision_line).to eq(original_revision_line)
+              expect(new_lock.index(new_remote_line)).
+                to eq(old_lock.index(original_remote_line))
+            end
+
+            # Check that nothing strange has happened to the formatting anywhere
+            expected_lockfile =
+              lockfile_body.gsub("1.2.5", "2.0.1").gsub("~> 1.2.0", "~> 2.0.1")
+            expect(file.content).to eq(expected_lockfile)
+          end
+        end
       end
 
       context "for a git dependency" do
