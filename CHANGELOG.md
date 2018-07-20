@@ -1,3 +1,7 @@
+## v0.61.91, 20 July 2018
+
+- JS: Handle path expansion of multiple asterisks
+
 ## v0.61.90, 20 July 2018
 
 - JS: Store version as git SHA for git dependencies using Yarn
