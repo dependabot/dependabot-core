@@ -455,6 +455,24 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to include("packages/package2/package.json")
       end
 
+      context "with two stars to expand (not one)" do
+        before do
+          stub_request(:get, File.join(url, "lerna.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "lerna_content_two_stars.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the lerna.json and package.jsons" do
+          expect(file_fetcher_instance.files.count).to eq(6)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/package.json")
+        end
+      end
+
       context "with a lockfile for one of the packages" do
         before do
           stub_request(

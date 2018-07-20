@@ -156,7 +156,7 @@ module Dependabot
 
         def expand_paths(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
-          repo_contents(dir: path.gsub(/\*$/, "")).
+          repo_contents(dir: path.gsub(/\*+$/, "")).
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
         end
