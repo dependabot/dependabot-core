@@ -1,3 +1,8 @@
+## v0.61.90, 20 July 2018
+
+- JS: Store version as git SHA for git dependencies using Yarn
+- JS: Fall back to  when an updated version can't be found
+
 ## v0.61.89, 20 July 2018
 
 - Gradle: Handle dependencies that aren't listed in Google's repository
