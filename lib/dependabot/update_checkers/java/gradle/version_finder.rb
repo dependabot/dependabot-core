@@ -58,7 +58,7 @@ module Dependabot
                   select { |node| version_class.correct?(node.content) }.
                   map { |node| version_class.new(node.content) }.
                   map { |version| { version: version, source_url: url } }
-              end.flatten
+              end.flatten.compact
 
             version_details.sort_by { |details| details.fetch(:version) }
           end

@@ -185,9 +185,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         subject { versions.first }
 
         its([:version]) { is_expected.to eq(version_class.new("18.0.0")) }
-        its([:source_url]) do
-          is_expected.to eq("https://maven.google.com")
-        end
+        its([:source_url]) { is_expected.to eq("https://maven.google.com") }
       end
 
       describe "the last version" do
@@ -196,8 +194,32 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("28.0.0-alpha1"))
         end
-        its([:source_url]) do
-          is_expected.to eq("https://maven.google.com")
+        its([:source_url]) { is_expected.to eq("https://maven.google.com") }
+      end
+
+      context "when the details come from a non-google repo" do
+        before do
+          stub_request(:get, jcenter_metadata_url).
+            to_return(
+              status: 200,
+              body:
+                fixture("java", "maven_central_metadata", "with_release.xml")
+            )
+          stub_request(:get, magnusja_metadata_url).
+            to_raise(Excon::Error::Timeout)
+          stub_request(:get, google_metadata_url).
+            to_return(status: 404, body: "")
+        end
+
+        describe "the last version" do
+          subject { versions.last }
+
+          its([:version]) do
+            is_expected.to eq(version_class.new("23.7-rc1-jre"))
+          end
+          its([:source_url]) do
+            is_expected.to eq("https://jcenter.bintray.com")
+          end
         end
       end
     end
