@@ -323,10 +323,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
-
-          it "returns the current version" do
-            expect(checker.latest_version).to eq(current_version)
-          end
+          it { is_expected.to be_nil }
         end
       end
 
@@ -341,10 +338,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         context "but there are no tags" do
           let(:upload_pack_fixture) { "no_tags" }
-
-          it "returns the current version" do
-            expect(checker.latest_version).to eq(current_version)
-          end
+          it { is_expected.to be_nil }
         end
       end
     end

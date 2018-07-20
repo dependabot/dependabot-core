@@ -126,7 +126,7 @@ module Dependabot
           if semver_req || git_commit_checker.pinned_ref_looks_like_version?
             latest_tag = git_commit_checker.local_tag_for_latest_version
             return {
-              sha: latest_tag&.fetch(:commit_sha) || dependency.version,
+              sha: latest_tag&.fetch(:commit_sha),
               version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
             }
           end
