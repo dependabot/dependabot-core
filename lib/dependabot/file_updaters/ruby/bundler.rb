@@ -363,6 +363,10 @@ module Dependabot
           reordered_new_section = new_deps.sort_by do |new_dep_details|
             remote = new_dep_details.match(/remote: (?<remote>.*\n)/)[:remote]
             i = old_deps.index { |details| details.include?(remote) }
+
+            # If this dependency isn't in the old lockfile then we can't rely on
+            # that (presumably outdated) lockfile to do reordering. Instead, we
+            # just return the default-ordered content just generated.
             return lockfile_body unless i
             i
           end.join

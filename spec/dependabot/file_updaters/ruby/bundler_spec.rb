@@ -846,7 +846,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
 
         context "and the lockfile was wrong before" do
-          let(:lockfile_fixture_name) { "Gemfile.lock" }
+          let(:lockfile_fixture_name) { "git_source_outdated.lock" }
 
           it "generates the correct lockfile" do
             expect(file.content).to include("statesman (2.0.1)")
