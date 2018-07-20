@@ -1,3 +1,7 @@
+## v0.61.89, 20 July 2018
+
+- Gradle: Handle dependencies that aren't listed in Google's repository
+
 ## v0.61.88, 20 July 2018
 
 - Python: Raise a resolvability error if original Pipfile can't be resolved
