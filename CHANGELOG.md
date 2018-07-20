@@ -1,3 +1,8 @@
+## v0.61.92, 20 July 2018
+
+- JS: More sophisticated handling of globs when considering workspaces / Lerna
+  files
+
 ## v0.61.91, 20 July 2018
 
 - JS: Handle path expansion of multiple asterisks
