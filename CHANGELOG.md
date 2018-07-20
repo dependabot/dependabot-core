@@ -1,3 +1,7 @@
+## v0.61.93, 20 July 2018
+
+- Ruby: Preserve non-standard ordering of git dependencies in lockfile
+
 ## v0.61.92, 20 July 2018
 
 - JS: More sophisticated handling of globs when considering workspaces / Lerna
