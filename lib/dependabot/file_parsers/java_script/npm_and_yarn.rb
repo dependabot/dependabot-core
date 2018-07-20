@@ -158,16 +158,28 @@ module Dependabot
             package_files.map { |f| JSON.parse(f.content)["name"] }.compact
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def version_for(name, requirement)
-          lockfile_version = lockfile_details(name, requirement)&.
-                             fetch("version", nil)
-          return unless lockfile_version
-          return lockfile_version.split("#").last if git_url?(requirement)
-          return if lockfile_version.include?("://")
-          return if lockfile_version.include?("file:")
-          return if lockfile_version.include?("#") && !git_url?(requirement)
-          lockfile_version
+          lock_version = lockfile_details(name, requirement)&.
+                         fetch("version", nil)
+          lock_res     = lockfile_details(name, requirement)&.
+                         fetch("resolved", nil)
+
+          if git_url?(requirement)
+            return lock_version.split("#").last if lock_version&.include?("#")
+            return lock_res.split("#").last if lock_res&.include?("#")
+            return nil
+          end
+
+          return unless lock_version
+          return if lock_version.include?("://")
+          return if lock_version.include?("file:")
+          return if lock_version.include?("#")
+          lock_version
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def source_for(name, requirement)
           return git_source_for(requirement) if git_url?(requirement)
