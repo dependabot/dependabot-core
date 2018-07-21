@@ -9,9 +9,22 @@ module Dependabot
         private
 
         def look_up_source
-          # Hit the registry (or some other source) and get details of the
-          # location of the source code for the given dependency
-          Source.new(host: "github.com", repo: "my-org/my-dependency")
+          # TODO: A more general way to do this?
+          source_string = specified_source_string.
+                          gsub(%r{^golang\.org/x}, "github.com/golang")
+
+          Source.from_url(source_string)
+        end
+
+        def specified_source_string
+          sources = dependency.requirements.
+                    map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first&.fetch(:source, nil) ||
+            sources.first&.fetch("source") ||
+            dependency.name
         end
       end
     end
