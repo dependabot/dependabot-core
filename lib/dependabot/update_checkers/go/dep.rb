@@ -17,6 +17,11 @@ module Dependabot
           # package manager's own resolution logic (see PHP, for example).
         end
 
+        def latest_resolvable_version_with_no_unlock
+          # Will need the same resolution logic as above, just without the
+          # file unlocking.
+        end
+
         def updated_requirements
           # If the dependency file needs to be updated we store the updated
           # requirements on the dependency.
