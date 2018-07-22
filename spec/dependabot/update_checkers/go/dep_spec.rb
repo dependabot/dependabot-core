@@ -74,6 +74,11 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
     subject { checker.latest_version }
     it { is_expected.to eq(Gem::Version.new("0.3.0")) }
 
+    context "with a sub-dependency" do
+      let(:requirements) { [] }
+      it { is_expected.to eq(Gem::Version.new("0.3.0")) }
+    end
+
     context "with a git source" do
       context "that specifies a branch" do
         let(:manifest_fixture_name) { "branch.toml" }

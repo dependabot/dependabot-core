@@ -71,7 +71,7 @@ module Dependabot
           path = dependency.requirements.
                  map { |r| r.dig(:source, :source) }.
                  compact.first
-          return unless path
+          path ||= dependency.name
 
           updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
           # Currently, Dependabot::Source.new will return `nil` if it can't find
@@ -152,7 +152,8 @@ module Dependabot
           @git_commit_checker ||=
             GitCommitChecker.new(
               dependency: dependency,
-              credentials: credentials
+              credentials: credentials,
+              ignored_versions: ignored_versions
             )
         end
 

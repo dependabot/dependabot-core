@@ -8,14 +8,16 @@ require "dependabot/errors"
 require "dependabot/utils"
 require "dependabot/source"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/
 
-    def initialize(dependency:, credentials:)
+    def initialize(dependency:, credentials:, ignored_versions: [])
       @dependency = dependency
       @credentials = credentials
+      @ignored_versions = ignored_versions
     end
 
     def git_dependency?
@@ -58,13 +60,18 @@ module Dependabot
     end
 
     def local_tag_for_latest_version
-      tag =
+      tags =
         local_tags.
         select { |t| t.name.match?(VERSION_REGEX) }.
-        max_by do |t|
+        reject do |t|
           version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-          version_class.new(version)
+          ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
+
+      tag = tags.max_by do |t|
+        version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
+        version_class.new(version)
+      end
 
       return unless tag
       {
@@ -76,7 +83,7 @@ module Dependabot
 
     private
 
-    attr_reader :dependency, :credentials
+    attr_reader :dependency, :credentials, :ignored_versions
 
     def pinned_ref_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
@@ -322,8 +329,16 @@ module Dependabot
       @listing_upload_pack ||= fetch_upload_pack_for(listing_source_url)
     end
 
+    def ignore_reqs
+      ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+    end
+
     def version_class
       Utils.version_class_for_package_manager(dependency.package_manager)
+    end
+
+    def requirement_class
+      Utils.requirement_class_for_package_manager(dependency.package_manager)
     end
 
     def sha_for_update_pack_line(line)
@@ -331,3 +346,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
