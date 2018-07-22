@@ -6,7 +6,9 @@ module Dependabot
   module UpdateCheckers
     module Go
       class Dep < Dependabot::UpdateCheckers::Base
+        require_relative "dep/file_preparer"
         require_relative "dep/latest_version_finder"
+        require_relative "dep/version_resolver"
 
         def latest_version
           @latest_version ||=
@@ -19,20 +21,28 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # Resolving the dependency files to get the latest version of
-          # this dependency that doesn't cause conflicts is hard, and needs to
-          # be done through a language helper that piggy-backs off of the
-          # package manager's own resolution logic (see PHP, for example).
+          @latest_resolvable_version ||=
+            if git_dependency?
+              latest_resolvable_version_for_git_dependency
+            else
+              fetch_latest_resolvable_version(unlock_requirement: true)
+            end
         end
 
         def latest_resolvable_version_with_no_unlock
-          # Will need the same resolution logic as above, just without the
-          # file unlocking.
+          @latest_resolvable_version_with_no_unlock ||=
+            if git_dependency?
+              latest_resolvable_commit_with_unchanged_git_source
+            else
+              fetch_latest_resolvable_version(unlock_requirement: false)
+            end
         end
 
         def updated_requirements
           # If the dependency file needs to be updated we store the updated
           # requirements on the dependency.
+          #
+          # TODO!
           dependency.requirements
         end
 
@@ -47,37 +57,40 @@ module Dependabot
           raise NotImplementedError
         end
 
-        def dependencies_to_import
-          # There's no way to tell whether dependencies that appear in the
-          # lockfile are there because they're imported themselves or because
-          # they're sub-dependencies of something else. v0.5.0 will fix that
-          # problem, but for now we just have to import everything.
-          #
-          # NOTE: This means the `inputs-digest` we generate will be wrong.
-          # That's a pity, but we'd have to iterate through too many
-          # possibilities to get it right. Again, this is fixed in v0.5.0.
-          parsed_file(lockfile).fetch("required").map do |detail|
-            detail["name"]
-          end
+        def latest_resolvable_version_for_git_dependency
+          # TODO
         end
 
-        def parsed_file(file)
-          @parsed_file ||= {}
-          @parsed_file[file.name] ||= TomlRB.parse(file.content)
-        rescue TomlRB::ParseError
-          raise Dependabot::DependencyFileNotParseable, file.path
+        def latest_resolvable_commit_with_unchanged_git_source
+          # TODO
         end
 
-        def manifest
-          @manifest ||= dependency_files.find { |f| f.name == "Gopkg.toml" }
-          raise "No Gopkg.lock!" unless @manifest
-          @manifest
+        def fetch_latest_resolvable_version(unlock_requirement:)
+          prepared_files = FilePreparer.new(
+            dependency_files: dependency_files,
+            dependency: dependency,
+            unlock_requirement: unlock_requirement,
+            remove_git_source: git_dependency?,
+            latest_allowable_version: latest_version
+          ).prepared_dependency_files
+
+          VersionResolver.new(
+            dependency: dependency,
+            dependency_files: prepared_files,
+            credentials: credentials
+          ).latest_resolvable_version
         end
 
-        def lockfile
-          @lockfile = dependency_files.find { |f| f.name == "Gopkg.lock" }
-          raise "No Gopkg.lock!" unless @lockfile
-          @lockfile
+        def git_dependency?
+          git_commit_checker.git_dependency?
+        end
+
+        def git_commit_checker
+          @git_commit_checker ||=
+            GitCommitChecker.new(
+              dependency: dependency,
+              credentials: credentials
+            )
         end
       end
     end

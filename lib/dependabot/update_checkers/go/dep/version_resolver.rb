@@ -90,8 +90,31 @@ module Dependabot
           end
 
           def dummy_app_content
-            "package main\n\nimport \"fmt\"\n\nfunc main() {\n"\
-            "  fmt.Printf(\"hello, world\\n\")\n}"
+            base = "package main\n\n"\
+                   "import \"fmt\"\n\n"
+
+            dependencies_to_import.each { |nm| base += "import \"#{nm}\"\n\n" }
+
+            base + "func main() {\n  fmt.Printf(\"hello, world\\n\")\n}"
+          end
+
+          def dependencies_to_import
+            # There's no way to tell whether dependencies that appear in the
+            # lockfile are there because they're imported themselves or because
+            # they're sub-dependencies of something else. v0.5.0 will fix that
+            # problem, but for now we just have to import everything.
+            #
+            # NOTE: This means the `inputs-digest` we generate will be wrong.
+            # That's a pity, but we'd have to iterate through too many
+            # possibilities to get it right. Again, this is fixed in v0.5.0.
+            return [] unless lockfile
+            TomlRB.parse(lockfile.content).fetch("projects").map do |detail|
+              detail["name"]
+            end
+          end
+
+          def lockfile
+            @lockfile = dependency_files.find { |f| f.name == "Gopkg.lock" }
           end
 
           def version_class

@@ -84,4 +84,71 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       expect(checker.latest_version).to eq(Gem::Version.new("0.3.0"))
     end
   end
+
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_resolvable_version }
+
+    it "delegates to VersionResolver" do
+      prepped_files = described_class::FilePreparer.new(
+        dependency_files: dependency_files,
+        dependency: dependency,
+        unlock_requirement: true,
+        remove_git_source: false,
+        latest_allowable_version: Gem::Version.new("0.3.0")
+      ).prepared_dependency_files
+
+      expect(described_class::VersionResolver).to receive(:new).with(
+        dependency: dependency,
+        dependency_files: prepped_files,
+        credentials: credentials
+      ).and_call_original
+
+      expect(checker.latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+    end
+
+    context "with a manifest file that needs unlocking" do
+      let(:manifest_fixture_name) { "bare_version.toml" }
+      let(:lockfile_fixture_name) { "bare_version.lock" }
+      let(:req_str) { "0.2.0" }
+
+      it "unlocks the manifest and gets the correct version" do
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("0.3.0"))
+      end
+    end
+  end
+
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject { checker.latest_resolvable_version_with_no_unlock }
+
+    it "delegates to VersionResolver" do
+      prepped_files = described_class::FilePreparer.new(
+        dependency_files: dependency_files,
+        dependency: dependency,
+        unlock_requirement: true,
+        remove_git_source: false,
+        latest_allowable_version: Gem::Version.new("0.3.0")
+      ).prepared_dependency_files
+
+      expect(described_class::VersionResolver).to receive(:new).with(
+        dependency: dependency,
+        dependency_files: prepped_files,
+        credentials: credentials
+      ).and_call_original
+
+      expect(checker.latest_resolvable_version_with_no_unlock).
+        to eq(Gem::Version.new("0.3.0"))
+    end
+
+    context "with a manifest file that needs unlocking" do
+      let(:manifest_fixture_name) { "bare_version.toml" }
+      let(:lockfile_fixture_name) { "bare_version.lock" }
+      let(:req_str) { "0.2.0" }
+
+      it "doesn't unlock the manifest" do
+        expect(checker.latest_resolvable_version_with_no_unlock).
+          to eq(Gem::Version.new("0.2.0"))
+      end
+    end
+  end
 end
