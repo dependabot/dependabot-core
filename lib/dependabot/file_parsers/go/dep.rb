@@ -94,9 +94,7 @@ module Dependabot
           else
             {
               type: "default",
-              source: source,
-              branch: declaration["branch"],
-              ref: declaration["revision"]
+              source: source
             }
           end
         end

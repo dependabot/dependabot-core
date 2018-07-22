@@ -59,9 +59,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               groups: [],
               source: {
                 type: "default",
-                source: "github.com/satori/go.uuid",
-                branch: nil,
-                ref: nil
+                source: "github.com/satori/go.uuid"
               }
             }]
           )
@@ -85,9 +83,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
                 groups: [],
                 source: {
                   type: "default",
-                  source: "golang.org/x/text",
-                  branch: nil,
-                  ref: nil
+                  source: "golang.org/x/text"
                 }
               }]
             )
@@ -163,9 +159,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               groups: [],
               source: {
                 type: "default",
-                source: "unknownhost.com/dgrijalva/jwt-go",
-                branch: nil,
-                ref: nil
+                source: "unknownhost.com/dgrijalva/jwt-go"
               }
             }]
           )
