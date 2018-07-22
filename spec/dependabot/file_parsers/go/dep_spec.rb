@@ -43,7 +43,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
 
       its(:length) { is_expected.to eq(11) }
 
-      describe "a regular dependency dependency" do
+      describe "a regular version dependency" do
         subject(:dependency) do
           dependencies.find { |d| d.name == "github.com/satori/go.uuid" }
         end
@@ -58,8 +58,8 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               file: "Gopkg.toml",
               groups: [],
               source: {
-                type: "default",
-                source: "github.com/satori/go.uuid",
+                type: "git",
+                url: "https://github.com/satori/go.uuid",
                 branch: nil,
                 ref: nil
               }
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
         end
       end
 
-      describe "a git dependency dependency" do
+      describe "a git version dependency" do
         subject(:dependency) do
           dependencies.find { |d| d.name == "golang.org/x/text" }
         end
@@ -84,10 +84,37 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               file: "Gopkg.toml",
               groups: [],
               source: {
-                type: "default",
-                source: "golang.org/x/text",
+                type: "git",
+                url: "https://github.com/golang/text",
                 branch: nil,
                 ref: "470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4"
+              }
+            }]
+          )
+        end
+      end
+
+      describe "a dependency with an unrecognised name" do
+        let(:manifest_fixture_name) { "unknown_source.toml" }
+        let(:lockfile_fixture_name) { "unknown_source.lock" }
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "unknownhost.com/dgrijalva/jwt-go" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("unknownhost.com/dgrijalva/jwt-go")
+          expect(dependency.version).to eq("3.2.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "^3.2.0",
+              file: "Gopkg.toml",
+              groups: [],
+              source: {
+                type: "default",
+                source: "unknownhost.com/dgrijalva/jwt-go",
+                branch: nil,
+                ref: nil
               }
             }]
           )

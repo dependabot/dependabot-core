@@ -80,16 +80,31 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
 
-          # TODO: Figure out git sources (particularly ones which don't have
-          # a version) at this point, so we can use GitCommitChecker later
-          # Most likely looking docs:
-          # https://github.com/golang/dep/blob/master/vendor/github.com/Masterminds/vcs/vcs_remote_lookup.go
-          {
-            type: "default",
-            source: declaration["source"] || declaration["name"],
-            branch: declaration["branch"],
-            ref: declaration["revision"]
-          }
+          git_source_url =
+            git_source_url(declaration["source"] || declaration["name"])
+
+          if git_source_url
+            {
+              type: "git",
+              url: git_source_url,
+              branch: declaration["branch"],
+              ref: declaration["revision"]
+            }
+          else
+            {
+              type: "default",
+              source: declaration["source"] || declaration["name"],
+              branch: declaration["branch"],
+              ref: declaration["revision"]
+            }
+          end
+        end
+
+        def git_source_url(path)
+          updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
+          source = Source.from_url(updated_path)
+
+          source&.url
         end
 
         def parsed_file(file)
