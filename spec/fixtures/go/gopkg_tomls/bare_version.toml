@@ -5,4 +5,4 @@ required = [
 # The collation tables must never change.
 [[constraint]]
   name = "golang.org/x/text"
-  revision = "v0.2.0"
+  version = "0.2.0"

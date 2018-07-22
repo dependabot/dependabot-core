@@ -123,7 +123,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("golang.org/x/text")
-            expect(dependency.version).to eq("v0.3.0")
+            expect(dependency.version).to eq("v0.2.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
                   type: "git",
                   url: "https://github.com/golang/text",
                   branch: nil,
-                  ref: "v0.3.0"
+                  ref: "v0.2.0"
                 }
               }]
             )

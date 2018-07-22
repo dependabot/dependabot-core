@@ -17,11 +17,12 @@
     "unicode/cldr",
     "unicode/norm"
   ]
-  revision = "v0.2.0"
+  revision = "c4d099d611ac3ded35360abf03581e13d91c828f"
+  version = "v0.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2405704ac7a0b793021a0a72d2ff705b4a2c503b07b1e50382eecf14e46f2012"
+  inputs-digest = "72ff7ba321731c2b453c810f427e9d5a487f184083398167f21b3d7b565ab41c"
   solver-name = "gps-cdcl"
   solver-version = 1
