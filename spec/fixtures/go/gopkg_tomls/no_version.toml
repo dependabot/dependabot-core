@@ -1,0 +1,7 @@
+required = [
+ "golang.org/x/text",
+ ]
+
+# The collation tables must never change.
+[[constraint]]
+  name = "golang.org/x/text"

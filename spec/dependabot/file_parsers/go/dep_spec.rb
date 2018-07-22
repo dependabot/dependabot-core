@@ -58,13 +58,40 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               file: "Gopkg.toml",
               groups: [],
               source: {
-                type: "git",
-                url: "https://github.com/satori/go.uuid",
+                type: "default",
+                source: "github.com/satori/go.uuid",
                 branch: nil,
                 ref: nil
               }
             }]
           )
+        end
+
+        context "that doesn't declare a version" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "golang.org/x/text" }
+          end
+          let(:manifest_fixture_name) { "no_version.toml" }
+          let(:lockfile_fixture_name) { "no_version.lock" }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("golang.org/x/text")
+            expect(dependency.version).to eq("0.3.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "Gopkg.toml",
+                groups: [],
+                source: {
+                  type: "default",
+                  source: "golang.org/x/text",
+                  branch: nil,
+                  ref: nil
+                }
+              }]
+            )
+          end
         end
       end
 
@@ -91,6 +118,30 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
               }
             }]
           )
+        end
+
+        context "that specifies a tag as its revision" do
+          let(:manifest_fixture_name) { "tag_as_revision.toml" }
+          let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("golang.org/x/text")
+            expect(dependency.version).to eq("v0.3.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "Gopkg.toml",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/golang/text",
+                  branch: nil,
+                  ref: "v0.3.0"
+                }
+              }]
+            )
+          end
         end
       end
 

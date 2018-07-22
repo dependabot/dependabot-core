@@ -80,31 +80,34 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
 
-          git_source_url =
-            git_source_url(declaration["source"] || declaration["name"])
+          source = declaration["source"] || declaration["name"]
 
-          if git_source_url
+          git_source = git_source(source)
+
+          if git_source && (declaration["branch"] || declaration["revision"])
             {
               type: "git",
-              url: git_source_url,
+              url: git_source.url,
               branch: declaration["branch"],
               ref: declaration["revision"]
             }
           else
             {
               type: "default",
-              source: declaration["source"] || declaration["name"],
+              source: source,
               branch: declaration["branch"],
               ref: declaration["revision"]
             }
           end
         end
 
-        def git_source_url(path)
+        def git_source(path)
           updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
-          source = Source.from_url(updated_path)
 
-          source&.url
+          # Currently, Dependabot::Source.new will return `nil` if it can't find
+          # a git SCH associated with a path. If it is ever extended to handle
+          # non-git sources we'll need to add an additional check here.
+          Source.from_url(updated_path)
         end
 
         def parsed_file(file)
