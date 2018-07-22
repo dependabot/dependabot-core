@@ -79,6 +79,13 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
     && mv composer.phar /usr/local/bin/composer
 
 
+### GO
+
+RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
+    tar xvf go1.10.3.linux-amd64.tar.gz && \
+    mv go /usr/local
+
+
 ### Elixir
 
 # Install Erlang, Elixir and Hex

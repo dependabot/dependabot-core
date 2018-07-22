@@ -75,7 +75,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("golang.org/x/text")
-            expect(dependency.version).to eq("0.3.0")
+            expect(dependency.version).to eq("0.2.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,

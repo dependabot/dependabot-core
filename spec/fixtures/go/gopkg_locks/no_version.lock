@@ -17,8 +17,8 @@
     "unicode/cldr",
     "unicode/norm"
   ]
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "c4d099d611ac3ded35360abf03581e13d91c828f"
+  version = "v0.2.0"
 
 [solve-meta]
   analyzer-name = "dep"

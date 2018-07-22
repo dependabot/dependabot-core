@@ -30,7 +30,7 @@ module Dependabot
           dependency_set = DependencySet.new
 
           REQUIREMENT_TYPES.each do |type|
-            parsed_file(manifest).fetch(type, {}).each do |details|
+            parsed_file(manifest).fetch(type, []).each do |details|
               dependency_set << Dependency.new(
                 name: details.fetch("name"),
                 version: nil,
@@ -51,7 +51,7 @@ module Dependabot
         def lockfile_dependencies
           dependency_set = DependencySet.new
 
-          parsed_file(lockfile).fetch("projects", {}).each do |details|
+          parsed_file(lockfile).fetch("projects", []).each do |details|
             dependency_set << Dependency.new(
               name: details.fetch("name"),
               version: version_from_lockfile(details),
