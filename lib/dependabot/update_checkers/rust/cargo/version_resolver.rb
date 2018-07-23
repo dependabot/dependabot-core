@@ -27,7 +27,8 @@ module Dependabot
           attr_reader :dependency, :dependency_files, :credentials
 
           def fetch_latest_resolvable_version
-            SharedHelpers.in_a_temporary_directory do
+            base_directory = dependency_files.first.directory
+            SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
 
               SharedHelpers.with_git_configured(credentials: credentials) do
@@ -119,7 +120,9 @@ module Dependabot
               # for the specified features
               return nil
             end
-            if error.message.include?("failed to parse lock")
+            if error.message.include?("failed to parse lock") ||
+               error.message.include?("believes it's in a workspace") ||
+               error.message.include?("wasn't a root")
               raise Dependabot::DependencyFileNotResolvable, msg
             end
             raise error

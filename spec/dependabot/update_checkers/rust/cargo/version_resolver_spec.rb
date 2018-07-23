@@ -75,7 +75,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
-    context "with an optional dependency" do
+    context "with a missing dependency" do
       let(:manifest_fixture_name) { "bare_version_specified" }
       let(:lockfile_fixture_name) { "missing_dependency" }
 
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
-    context "with a missing dependency" do
+    context "with an optional dependency" do
       let(:manifest_fixture_name) { "optional_dependency" }
       let(:lockfile_fixture_name) { "optional_dependency" }
       let(:dependency_name) { "utf8-ranges" }
@@ -198,6 +198,38 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.4.3")) }
+
+      context "but it is not correctly set up" do
+        let(:unprepared_dependency_files) do
+          [manifest, workspace_child]
+        end
+        let(:manifest_fixture_name) { "workspace_root" }
+        let(:workspace_child) do
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("rust", "manifests", "workspace_child"),
+            directory: "/lib/sub_crate"
+          )
+        end
+        let(:manifest) do
+          Dependabot::DependencyFile.new(
+            name: "../../Cargo.toml",
+            content: fixture("rust", "manifests", "blank_version"),
+            directory: "/lib/sub_crate"
+          )
+        end
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the temporary path isn't included in the error message
+              expect(error.message).to_not include("dependabot_20")
+
+              # Test that the right details are included
+              expect(error.message).to include("wasn't a root")
+            end
+        end
+      end
     end
 
     context "when not unlocking" do
