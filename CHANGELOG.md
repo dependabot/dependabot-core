@@ -1,3 +1,8 @@
+## v0.61.95, 23 July 2018
+
+- JS: Handle git dependencies with auth details embedded in URL
+- Rust: Don't update versions in path dependencies
+
 ## v0.61.94, 20 July 2018
 
 - Ruby: Don't error for outdated lockfile git dependencies
