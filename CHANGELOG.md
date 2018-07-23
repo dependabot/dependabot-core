@@ -1,3 +1,7 @@
+## v0.61.97, 23 July 2018
+
+- Fetch more files on GitLab
+
 ## v0.61.96, 23 July 2018
 
 - Rust: Better handling of workspace errors
