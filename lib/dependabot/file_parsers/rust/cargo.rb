@@ -158,7 +158,9 @@ module Dependabot
 
         def manifest_files
           @manifest_files ||=
-            dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
+            dependency_files.
+            select { |f| f.name.end_with?("Cargo.toml") }.
+            reject { |f| f.type == "path_dependency" }
         end
 
         def lockfile

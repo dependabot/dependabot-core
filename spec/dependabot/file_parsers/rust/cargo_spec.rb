@@ -121,7 +121,8 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         let(:path_dependency_manifest) do
           Dependabot::DependencyFile.new(
             name: "src/s3/Cargo.toml",
-            content: fixture("rust", "manifests", "cargo-registry-s3")
+            content: fixture("rust", "manifests", "cargo-registry-s3"),
+            type: "path_dependency"
           )
         end
 
@@ -130,7 +131,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         describe "top level dependencies" do
           subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
-          its(:length) { is_expected.to eq(6) }
+          its(:length) { is_expected.to eq(2) }
 
           describe "the first dependency" do
             subject(:dependency) { top_level_dependencies.first }
@@ -155,12 +156,12 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
-              expect(dependency.name).to eq("base64")
-              expect(dependency.version).to eq("0.9.0")
+              expect(dependency.name).to eq("regex")
+              expect(dependency.version).to eq("0.1.38")
               expect(dependency.requirements).to eq(
                 [{
-                  requirement: "0.9",
-                  file: "src/s3/Cargo.toml",
+                  requirement: "=0.1.38",
+                  file: "Cargo.toml",
                   groups: ["dependencies"],
                   source: nil
                 }]

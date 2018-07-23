@@ -113,6 +113,8 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
       it "fetches the path dependency's Cargo.toml" do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Cargo.toml src/s3/Cargo.toml))
+        expect(file_fetcher_instance.files.last.type).
+          to eq("path_dependency")
       end
 
       context "with a trailing slash in the path" do
@@ -295,6 +297,8 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
                packages/sub_crate/Cargo.toml
                packages/sub_crate2/Cargo.toml)
           )
+        expect(file_fetcher_instance.files.map(&:type).uniq).
+          to eq(["file"])
       end
     end
   end
