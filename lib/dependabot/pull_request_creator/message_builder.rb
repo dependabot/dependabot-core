@@ -24,7 +24,7 @@ module Dependabot
                             card_file_box loud_sound mute busts_in_silhouette
                             children_crossing building_construction iphone
                             clown_face egg see_no_evil camera_flash).freeze
-      ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s)\],.:]|$)/
+      ISSUE_TAG_REGEX = /(?<=[\s(]|^)(?<tag>(?:\#|GH-)\d+)(?=[\s)\],.:|]|$)/
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}
 
       attr_reader :source, :dependencies, :files, :credentials,
