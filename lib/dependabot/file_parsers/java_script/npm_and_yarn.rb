@@ -222,12 +222,16 @@ module Dependabot
             return parsed_package_lock_json.dig("dependencies", name)
           end
 
+          req = requirement
           yarn_locks.each do |yarn_lock|
             parsed_yarn_lock = parse_yarn_lock(yarn_lock)
-            details = parsed_yarn_lock.
-                      select { |k, _| k.split(/(?<=\w)\@/).first == name }.
-                      find { |k, _| k.split(/(?<=\w)\@/).last == requirement }&.
-                      last
+
+            details =
+              parsed_yarn_lock.
+              select { |k, _| k.split(/(?<=\w)\@/).first == name }.
+              find { |k, _| k.split(/(?<=\w)\@/)[1..-1].join("@") == req }&.
+              last
+
             return details if details
           end
 

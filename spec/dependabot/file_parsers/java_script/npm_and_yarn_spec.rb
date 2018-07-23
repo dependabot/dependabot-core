@@ -715,6 +715,36 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
               )
             end
           end
+
+          context "with auth details" do
+            let(:package_json_fixture_name) { "git_dependency_with_auth.json" }
+            let(:yarn_lock_fixture_name) { "git_dependency_with_auth.lock" }
+
+            describe "the git dependency" do
+              subject { top_level_dependencies.last }
+
+              it { is_expected.to be_a(Dependabot::Dependency) }
+              its(:name) { is_expected.to eq("is-number") }
+              its(:version) do
+                is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
+              end
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number.git",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }]
+                )
+              end
+            end
+          end
         end
 
         context "with a git source that comes from a sub-dependency" do
