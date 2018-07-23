@@ -1,3 +1,7 @@
+## v0.61.96, 23 July 2018
+
+- Rust: Better handling of workspace errors
+
 ## v0.61.95, 23 July 2018
 
 - JS: Handle git dependencies with auth details embedded in URL
