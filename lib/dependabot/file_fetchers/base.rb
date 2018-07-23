@@ -125,7 +125,7 @@ module Dependabot
 
       def gitlab_repo_contents(path)
         gitlab_client.
-          repo_tree(repo, path: path, ref_name: commit).
+          repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
             OpenStruct.new(
               name: file.name,
