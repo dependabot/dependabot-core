@@ -1,3 +1,7 @@
+## v0.61.98, 24 July 2018
+
+- Rust: Fix path dependency sanitization in FileUpdater
+
 ## v0.61.97, 23 July 2018
 
 - Fetch more files on GitLab
