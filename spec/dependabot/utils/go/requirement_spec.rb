@@ -123,6 +123,11 @@ RSpec.describe Dependabot::Utils::Go::Requirement do
       it { is_expected.to eq(Gem::Requirement.new("> 1.5.1")) }
     end
 
+    context "with a range literal specified" do
+      let(:requirement_string) { "1.1.1 - 1.2.0" }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.1.1", "<= 1.2.0")) }
+    end
+
     context "with an = version specified" do
       let(:requirement_string) { "=1.5" }
       it { is_expected.to eq(Gem::Requirement.new("1.5")) }
@@ -141,6 +146,30 @@ RSpec.describe Dependabot::Utils::Go::Requirement do
     context "with a comma separated list" do
       let(:requirement_string) { ">1.5.1, < 2.0.0" }
       it { is_expected.to eq(Gem::Requirement.new("> 1.5.1", "< 2.0.0")) }
+    end
+  end
+
+  describe ".requirements_array" do
+    subject(:requirements) do
+      described_class.requirements_array(requirement_string)
+    end
+
+    context "with a single requirement" do
+      let(:requirement_string) { ">=1.0.0" }
+      it { is_expected.to eq([described_class.new(">= 1.0.0")]) }
+    end
+
+    context "with an OR requirement" do
+      let(:requirement_string) { "^1.1.0 || ^2.1.0" }
+
+      it "returns an array of requirements" do
+        expect(requirements).to match_array(
+          [
+            described_class.new(">= 1.1.0", "< 2.0.0"),
+            described_class.new(">= 2.1.0", "< 3.0.0")
+          ]
+        )
+      end
     end
   end
 end

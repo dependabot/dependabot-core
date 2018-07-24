@@ -13,6 +13,7 @@ module Dependabot
     module Go
       class Requirement < Gem::Requirement
         WILDCARD_REGEX = /(?:\.|^)[xX*]/
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
         # Use Utils::Go::Version rather than Gem::Version to ensure that
         # pre-release versions aren't transformed.
@@ -30,11 +31,13 @@ module Dependabot
           [matches[1] || "=", Utils::Go::Version.new(matches[2])]
         end
 
-        # For consistency with other langauges, we define a requirements array.
-        # Go doesn't have an `OR` separator for requirements, so it always
-        # contains a single element.
+        # Returns an array of requirements. At least one requirement from the
+        # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)
-          [new(requirement_string)]
+          return [new(nil)] if requirement_string.nil?
+          requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+            new(req_string)
+          end
         end
 
         def initialize(*requirements)
@@ -56,16 +59,14 @@ module Dependabot
           if req_string.match?(WILDCARD_REGEX)
             ruby_range(req_string.gsub(WILDCARD_REGEX, "").gsub(/^[^\d]/, ""))
           elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
+          elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
           elsif req_string.match?(/^[\d^]/) then convert_caret_req(req_string)
           elsif req_string.match?(/[<=>]/) then req_string
           else ruby_range(req_string)
           end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def convert_wildcard_characters(req_string)
-          return req_string unless req_string.match?(WILDCARD_REGEX)
-
           if req_string.start_with?(">", "^", "~")
             req_string.split(".").
               map { |p| p.match?(WILDCARD_REGEX) ? "0" : p }.
@@ -81,13 +82,17 @@ module Dependabot
             req_string
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def convert_tilde_req(req_string)
           version = req_string.gsub(/^~/, "")
           parts = version.split(".")
           parts << "0" if parts.count < 3
           "~> #{parts.join('.')}"
+        end
+
+        def convert_hyphen_req(req_string)
+          lower_bound, upper_bound = req_string.split(/\s+-\s+/)
+          [">= #{lower_bound}", "<= #{upper_bound}"]
         end
 
         def ruby_range(req_string)
