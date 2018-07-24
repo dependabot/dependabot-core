@@ -81,10 +81,13 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 
 ### GO
 
-RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz && \
-    tar xvf go1.10.3.linux-amd64.tar.gz && \
-    wget https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 && \
-    mv dep-linux-amd64 go/bin/dep && mv go /usr/local
+RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz \
+    && tar xvf go1.10.3.linux-amd64.tar.gz \
+    && wget https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 \
+    && mv dep-linux-amd64 go/bin/dep \
+    && chmod +x go/bin/dep \
+    && mv go /root
+ENV PATH=/root/go/bin:$PATH
 
 
 ### Elixir
