@@ -116,18 +116,12 @@ module Dependabot
           "~> #{parts.join('.')}"
         end
 
+        # Note: Dep's caret notation implementation doesn't distinguish between
+        # pre and post-1.0.0 requirements (unlike in JS)
         def convert_caret_req(req_string)
           version = req_string.gsub(/^\^?v?/, "")
           parts = version.split(".")
-          first_non_zero = parts.find { |d| d != "0" }
-          first_non_zero_index =
-            first_non_zero ? parts.index(first_non_zero) : parts.count - 1
-          upper_bound = parts.map.with_index do |part, i|
-            if i < first_non_zero_index then part
-            elsif i == first_non_zero_index then (part.to_i + 1).to_s
-            else 0
-            end
-          end.join(".")
+          upper_bound = [parts.first.to_i + 1, 0, 0, "a"].map(&:to_s).join(".")
 
           [">= #{version}", "< #{upper_bound}"]
         end
