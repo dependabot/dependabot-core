@@ -271,7 +271,8 @@ module Dependabot
           updated_content
         end
 
-        def prepared_path_dependency_content
+        def prepared_path_dependency_content(file)
+          updated_content = file.content.dup
           updated_content = replace_ssh_urls(updated_content)
           updated_content
         end
