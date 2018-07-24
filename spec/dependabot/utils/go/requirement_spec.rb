@@ -62,6 +62,11 @@ RSpec.describe Dependabot::Utils::Go::Requirement do
     context "with no specifier" do
       let(:requirement_string) { "1.1.0" }
       it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0")) }
+
+      context "and a v prefix" do
+        let(:requirement_string) { "v1.1.0" }
+        it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0")) }
+      end
     end
 
     context "with a caret version" do

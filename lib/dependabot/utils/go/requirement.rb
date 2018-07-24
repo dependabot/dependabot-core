@@ -67,7 +67,7 @@ module Dependabot
             ruby_range(req_string.gsub(WILDCARD_REGEX, "").gsub(/^[^\d]/, ""))
           elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
           elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
-          elsif req_string.match?(/^[\d^]/) then convert_caret_req(req_string)
+          elsif req_string.match?(/^[\dv^]/) then convert_caret_req(req_string)
           elsif req_string.match?(/[<=>]/) then req_string
           else ruby_range(req_string)
           end
@@ -117,7 +117,7 @@ module Dependabot
         end
 
         def convert_caret_req(req_string)
-          version = req_string.gsub(/^\^/, "")
+          version = req_string.gsub(/^\^?v?/, "")
           parts = version.split(".")
           first_non_zero = parts.find { |d| d != "0" }
           first_non_zero_index =
