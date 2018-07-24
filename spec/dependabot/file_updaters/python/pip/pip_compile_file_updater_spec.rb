@@ -105,7 +105,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
 
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
-      let(:dependency_version) { "4.1.1" }
+      let(:dependency_version) { "4.2.0" }
       let(:dependency_previous_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
       let(:dependency_previous_requirements) { [] }
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       it "updates the requirements.txt" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).
-          to include("pbr==4.1.1                # via mock")
+          to include("pbr==4.2.0                # via mock")
       end
 
       context "with an uncompiled requirement file, too" do
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         let(:dependency_requirements) do
           [{
             file: "requirements.txt",
-            requirement: "==4.1.1",
+            requirement: "==4.2.0",
             groups: [],
             source: nil
           }]
@@ -146,8 +146,8 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.first.content).
-            to include("pbr==4.1.1                # via mock")
-          expect(updated_files.last.content).to include("pbr==4.1.1")
+            to include("pbr==4.2.0                # via mock")
+          expect(updated_files.last.content).to include("pbr==4.2.0")
         end
       end
     end

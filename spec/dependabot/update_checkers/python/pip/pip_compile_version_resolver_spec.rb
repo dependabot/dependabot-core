@@ -101,7 +101,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
 
-      it { is_expected.to eq(Gem::Version.new("4.1.1")) }
+      it { is_expected.to eq(Gem::Version.new("4.2.0")) }
     end
 
     context "with a Python 2.7 library" do
