@@ -86,7 +86,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
       prepped_files = described_class::FilePreparer.new(
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         credentials: credentials
       ).and_call_original
 
-      expect(checker.latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+      expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
     end
 
     context "with a manifest file that needs unlocking" do
@@ -112,8 +112,74 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       let(:req_str) { "0.2.0" }
 
       it "unlocks the manifest and gets the correct version" do
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("0.3.0"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+      end
+    end
+
+    context "with a git dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/golang/text",
+          branch: branch,
+          ref: ref
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/golang/text"
+        stub_request(:get, repo_url + "/compare/v0.3.0...#{branch || ref}").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      context "that specifies a branch" do
+        let(:manifest_fixture_name) { "branch.toml" }
+        let(:lockfile_fixture_name) { "branch.lock" }
+        let(:req_str) { nil }
+        let(:dependency_version) { "7dd2c8130f5e924233f5543598300651c386d431" }
+        let(:branch) { "master" }
+        let(:ref) { nil }
+
+        context "that has diverged" do
+          let(:commit_compare_response) do
+            fixture("github", "commit_compare_diverged.json")
+          end
+
+          it "updates the commit" do
+            expect(latest_resolvable_version).
+              to eq("0605a8320aceb4207a5fb3521281e17ec2075476")
+          end
+        end
+
+        context "that is behind" do
+          let(:commit_compare_response) do
+            fixture("github", "commit_compare_behind.json")
+          end
+
+          it "updates to a released version" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+          end
+        end
+      end
+
+      context "that specifies a tag" do
+        let(:manifest_fixture_name) { "tag_as_revision.toml" }
+        let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+        let(:req_str) { nil }
+        let(:dependency_version) { "v0.2.0" }
+        let(:branch) { nil }
+        let(:ref) { "v0.2.0" }
+
+        it "updates to a released version" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+        end
       end
     end
   end
@@ -148,6 +214,58 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       it "doesn't unlock the manifest" do
         expect(checker.latest_resolvable_version_with_no_unlock).
           to eq(Gem::Version.new("0.2.0"))
+      end
+    end
+
+    context "with a git dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/golang/text",
+          branch: branch,
+          ref: ref
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/golang/text"
+        stub_request(:get, repo_url + "/compare/v0.3.0...#{branch || ref}").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      context "that specifies a branch" do
+        let(:manifest_fixture_name) { "branch.toml" }
+        let(:lockfile_fixture_name) { "branch.lock" }
+        let(:req_str) { nil }
+        let(:dependency_version) { "7dd2c8130f5e924233f5543598300651c386d431" }
+        let(:branch) { "master" }
+        let(:ref) { nil }
+
+        it "updates the commit" do
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq("0605a8320aceb4207a5fb3521281e17ec2075476")
+        end
+      end
+
+      context "that specifies a tag" do
+        let(:manifest_fixture_name) { "tag_as_revision.toml" }
+        let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+        let(:req_str) { nil }
+        let(:dependency_version) { "v0.2.0" }
+        let(:branch) { nil }
+        let(:ref) { "v0.2.0" }
+
+        it "doesn't unpin the commit" do
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq("v0.2.0")
+        end
       end
     end
   end

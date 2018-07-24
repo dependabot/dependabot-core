@@ -115,20 +115,6 @@ module Dependabot
             git_commit_checker.branch_or_ref_in_release?(release)
           end
 
-          def dependencies_to_import
-            # There's no way to tell whether dependencies that appear in the
-            # lockfile are there because they're imported themselves or because
-            # they're sub-dependencies of something else. v0.5.0 will fix that
-            # problem, but for now we just have to import everything.
-            #
-            # NOTE: This means the `inputs-digest` we generate will be wrong.
-            # That's a pity, but we'd have to iterate through too many
-            # possibilities to get it right. Again, this is fixed in v0.5.0.
-            parsed_file(lockfile).fetch("required").map do |detail|
-              detail["name"]
-            end
-          end
-
           def git_dependency?
             git_commit_checker.git_dependency?
           end

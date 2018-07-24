@@ -80,6 +80,22 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
 
         it { is_expected.to eq("0605a8320aceb4207a5fb3521281e17ec2075476") }
       end
+
+      context "that specifies a tag as a revision" do
+        let(:manifest_fixture_name) { "tag_as_revision.toml" }
+        let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/golang/text",
+            branch: nil,
+            ref: "v0.2.0"
+          }
+        end
+
+        it { is_expected.to eq("v0.2.0") }
+      end
     end
   end
 end
