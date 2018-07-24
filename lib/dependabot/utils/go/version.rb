@@ -9,8 +9,14 @@ module Dependabot
   module Utils
     module Go
       class Version < Gem::Version
+        def self.correct?(version)
+          version = version.gsub(/^v/, "") if version.is_a?(String)
+          super(version)
+        end
+
         def initialize(version)
           @version_string = version.to_s
+          version = version.gsub(/^v/, "") if version.is_a?(String)
           super
         end
 

@@ -15,6 +15,13 @@ module Dependabot
         WILDCARD_REGEX = /(?:\.|^)[xX*]/
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
+        # Override the version pattern to allow a 'v' prefix
+        quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+        version_pattern = "v?#{Gem::Version::VERSION_PATTERN}"
+
+        PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+        PATTERN = /\A#{PATTERN_RAW}\z/
+
         # Use Utils::Go::Version rather than Gem::Version to ensure that
         # pre-release versions aren't transformed.
         def self.parse(obj)

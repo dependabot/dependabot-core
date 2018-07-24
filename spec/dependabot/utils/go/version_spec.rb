@@ -7,6 +7,25 @@ RSpec.describe Dependabot::Utils::Go::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
+  describe ".correct?" do
+    subject { described_class.correct?(version_string) }
+
+    context "with a string prefixed with a 'v'" do
+      let(:version_string) { "v1.0.0" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a string not prefixed with a 'v'" do
+      let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an invalid string" do
+      let(:version_string) { "va1.0.0" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
   describe "#to_s" do
     subject { version.to_s }
 
@@ -43,6 +62,18 @@ RSpec.describe Dependabot::Utils::Go::Version do
     context "with a valid prerelease version" do
       let(:version_string) { "1.1.0-pre" }
       it { is_expected.to eq(true) }
+    end
+
+    context "prefixed with a 'v'" do
+      context "with a greater version" do
+        let(:version_string) { "v1.1.0" }
+        it { is_expected.to eq(true) }
+      end
+
+      context "with an lesser version" do
+        let(:version_string) { "v0.9.0" }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 end
