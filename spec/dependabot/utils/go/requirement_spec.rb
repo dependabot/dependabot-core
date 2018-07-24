@@ -35,21 +35,57 @@ RSpec.describe Dependabot::Utils::Go::Requirement do
 
       context "with a 1.*" do
         let(:requirement_string) { "1.*" }
-        it { is_expected.to eq(described_class.new("~> 1.0")) }
+        it { is_expected.to eq(described_class.new(">= 1.0, < 2.0.0.a")) }
+
+        context "with two wildcards" do
+          let(:requirement_string) { "1.*.*" }
+          it { is_expected.to eq(described_class.new(">= 1.0.0, < 2.0.0.a")) }
+        end
+
+        context "for a pre-1.0.0 release" do
+          let(:requirement_string) { "0.*" }
+          it { is_expected.to eq(described_class.new(">= 0.0, < 1.0.0.a")) }
+        end
+      end
+
+      context "with a 1.*.1" do
+        let(:requirement_string) { "1.*.1" }
+        it { is_expected.to eq(described_class.new(">= 1.0.0, < 2.0.0.a")) }
       end
 
       context "with a 1.1.*" do
         let(:requirement_string) { "1.1.*" }
-        it { is_expected.to eq(described_class.new("~> 1.1.0")) }
+        it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
 
         context "prefixed with a caret" do
           let(:requirement_string) { "^1.1.*" }
           it { is_expected.to eq(described_class.new(">= 1.1.0", "< 2.0.0.a")) }
+
+          context "for a pre-1.0.0 release" do
+            let(:requirement_string) { "^0.0.*" }
+            it do
+              is_expected.to eq(described_class.new(">= 0.0.0", "< 1.0.0.a"))
+            end
+
+            context "with a pre-release specifier" do
+              let(:requirement_string) { "^0.0.*-alpha" }
+
+              it "maintains a pre-release specifier" do
+                expect(requirement).
+                  to eq(described_class.new(">= 0.0.0-a", "< 1.0.0.a"))
+              end
+            end
+          end
         end
 
         context "prefixed with a ~" do
           let(:requirement_string) { "~1.1.x" }
           it { is_expected.to eq(described_class.new("~> 1.1.0")) }
+
+          context "with two wildcards" do
+            let(:requirement_string) { "~1.x.x" }
+            it { is_expected.to eq(described_class.new("~> 1.0")) }
+          end
         end
 
         context "prefixed with a <" do
