@@ -1,3 +1,7 @@
+## v0.62.4, 25 July 2018
+
+- Go: Don't try to lock revision for branch updates
+
 ## v0.62.3, 25 July 2018
 
 - Go: Don't import internal packages
