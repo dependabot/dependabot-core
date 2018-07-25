@@ -8,6 +8,7 @@ module Dependabot
       class Dep < Dependabot::UpdateCheckers::Base
         require_relative "dep/file_preparer"
         require_relative "dep/latest_version_finder"
+        require_relative "dep/requirements_updater"
         require_relative "dep/version_resolver"
 
         def latest_version
@@ -39,11 +40,13 @@ module Dependabot
         end
 
         def updated_requirements
-          # If the dependency file needs to be updated we store the updated
-          # requirements on the dependency.
-          #
-          # TODO!
-          dependency.requirements
+          @updated_requirements ||=
+            RequirementsUpdater.new(
+              requirements: dependency.requirements,
+              updated_source: updated_source,
+              latest_version: latest_version&.to_s,
+              latest_resolvable_version: latest_resolvable_version&.to_s
+            ).updated_requirements
         end
 
         private
@@ -150,13 +153,70 @@ module Dependabot
           @git_tag_resolvable = false
         end
 
+        def updated_source
+          # Never need to update source, unless a git_dependency
+          return dependency_source_details unless git_dependency?
+
+          # Source becomes `nil` if switching to default rubygems
+          return default_source if should_switch_source_from_ref_to_release?
+
+          # Update the git tag if updating a pinned version
+          if git_commit_checker.pinned_ref_looks_like_version? &&
+             latest_git_tag_is_resolvable?
+            new_tag = git_commit_checker.local_tag_for_latest_version
+            return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          end
+
+          # Otherwise return the original source
+          dependency_source_details
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
+        end
+
+        def should_switch_source_from_ref_to_release?
+          return false unless git_dependency?
+          return false if latest_resolvable_version_for_git_dependency.nil?
+          Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
+        end
+
         def git_dependency?
           git_commit_checker.git_dependency?
+        end
+
+        def default_source
+          original_declaration =
+            parsed_file(manifest).
+            values_at(*FileParsers::Go::Dep::REQUIREMENT_TYPES).
+            flatten.compact.
+            find { |d| d["name"] == dependency.name }
+
+          {
+            type: "default",
+            source: original_declaration["source"] || dependency.name
+          }
         end
 
         def git_branch_or_ref_in_release?(release)
           return false unless release
           git_commit_checker.branch_or_ref_in_release?(release)
+        end
+
+        def parsed_file(file)
+          @parsed_file ||= {}
+          @parsed_file[file.name] ||= TomlRB.parse(file.content)
+        rescue TomlRB::ParseError
+          raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        def manifest
+          @manifest ||= dependency_files.find { |f| f.name == "Gopkg.toml" }
         end
 
         def git_commit_checker

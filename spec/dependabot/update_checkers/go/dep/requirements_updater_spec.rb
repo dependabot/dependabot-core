@@ -8,7 +8,6 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       updated_source: updated_source,
-      library: library,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -26,7 +25,6 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
   end
   let(:manifest_req_string) { "^1.4.0" }
 
-  let(:library) { false }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
   let(:version_class) { Dependabot::Utils::Go::Version }
@@ -88,8 +86,13 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
             )
         end
 
-        context "updating to use npm" do
-          let(:updated_source) { nil }
+        context "updating to use releases" do
+          let(:updated_source) do
+            {
+              type: "default",
+              source: "golang.org/x/text"
+            }
+          end
 
           it "updates the source and requirement" do
             expect(updater.updated_requirements).
@@ -98,7 +101,10 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
                   file: "Gopkg.toml",
                   requirement: "^1.5.0",
                   groups: [],
-                  source: nil
+                  source: {
+                    type: "default",
+                    source: "golang.org/x/text"
+                  }
                 }]
               )
           end
@@ -106,9 +112,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
       end
     end
 
-    context "for a library requirement" do
-      let(:library) { true }
-
+    context "for a library-style update" do
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
 

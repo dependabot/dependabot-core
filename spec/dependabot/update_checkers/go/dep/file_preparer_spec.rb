@@ -52,10 +52,10 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
       source: source
     }]
   end
-  let(:dependency_name) { "golang.org/x/text" }
-  let(:dependency_version) { "0.2.0" }
-  let(:string_req) { "0.2.0" }
-  let(:source) { { type: "default", source: "golang.org/x/text" } }
+  let(:dependency_name) { "github.com/dgrijalva/jwt-go" }
+  let(:source) { { type: "default", source: "github.com/dgrijalva/jwt-go" } }
+  let(:dependency_version) { "1.0.1" }
+  let(:string_req) { "1.0.0" }
 
   describe "#prepared_dependency_files" do
     subject(:prepared_dependency_files) { preparer.prepared_dependency_files }
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
         let(:unlock_requirement) { false }
 
         it "doesn't update the requirement" do
-          expect(prepared_manifest_file.content).to include('version = "0.2.0"')
+          expect(prepared_manifest_file.content).to include('version = "1.0.0"')
         end
       end
 
@@ -80,17 +80,17 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
 
         it "updates the requirement" do
           expect(prepared_manifest_file.content).
-            to include('version = ">= 0.2.0"')
+            to include('version = ">= 1.0.1"')
         end
 
         context "without a lockfile" do
           let(:dependency_files) { [manifest] }
           let(:dependency_version) { nil }
-          let(:string_req) { "0.2.0" }
+          let(:string_req) { "1.0.0" }
 
           it "updates the requirement" do
             expect(prepared_manifest_file.content).
-              to include('version = ">= 0.2.0"')
+              to include('version = ">= 1.0.0"')
           end
         end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
 
           it "updates the requirement" do
             expect(prepared_manifest_file.content).
-              to include('version = ">= 0.2.0"')
+              to include('version = ">= 1.0.1"')
           end
 
           context "and a latest_allowable_version" do
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
 
             it "updates the requirement" do
               expect(prepared_manifest_file.content).
-                to include('version = ">= 0.2.0, <= 1.6.0"')
+                to include('version = ">= 1.0.1, <= 1.6.0"')
             end
 
             context "that is lower than the current lower bound" do
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
 
               it "updates the requirement" do
                 expect(prepared_manifest_file.content).
-                  to include('version = ">= 0.2.0"')
+                  to include('version = ">= 1.0.1"')
               end
             end
           end
@@ -138,6 +138,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
           context "with a branch" do
             let(:manifest_fixture_name) { "branch.toml" }
             let(:lockfile_fixture_name) { "branch.lock" }
+            let(:dependency_name) { "golang.org/x/text" }
             let(:dependency_version) do
               "7dd2c8130f5e924233f5543598300651c386d431"
             end
@@ -172,6 +173,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
             let(:manifest_fixture_name) { "tag_as_revision.toml" }
             let(:lockfile_fixture_name) { "tag_as_revision.lock" }
             let(:dependency_version) { "v0.2.0" }
+            let(:dependency_name) { "golang.org/x/text" }
             let(:string_req) { nil }
             let(:source) do
               {

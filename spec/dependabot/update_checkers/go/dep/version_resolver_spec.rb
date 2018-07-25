@@ -54,10 +54,10 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
   let(:requirements) do
     [{ file: "Gopkg.toml", requirement: req_str, groups: [], source: source }]
   end
-  let(:dependency_name) { "golang.org/x/text" }
-  let(:dependency_version) { "0.2.0" }
+  let(:dependency_name) { "github.com/dgrijalva/jwt-go" }
+  let(:dependency_version) { "1.0.1" }
   let(:req_str) { nil }
-  let(:source) { { type: "default", source: "golang.org/x/text" } }
+  let(:source) { { type: "default", source: "github.com/dgrijalva/jwt-go" } }
 
   describe "latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
       context "that specifies a branch" do
         let(:manifest_fixture_name) { "branch.toml" }
         let(:lockfile_fixture_name) { "branch.lock" }
-
+        let(:dependency_name) { "golang.org/x/text" }
         let(:source) do
           {
             type: "git",
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
       context "that specifies a tag as a revision" do
         let(:manifest_fixture_name) { "tag_as_revision.toml" }
         let(:lockfile_fixture_name) { "tag_as_revision.lock" }
-
+        let(:dependency_name) { "golang.org/x/text" }
         let(:source) do
           {
             type: "git",

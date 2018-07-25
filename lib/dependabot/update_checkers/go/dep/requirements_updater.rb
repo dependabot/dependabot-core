@@ -13,10 +13,9 @@ module Dependabot
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
 
-          def initialize(requirements:, library:, updated_source:,
+          def initialize(requirements:, updated_source:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-            @library = library
             @updated_source = updated_source
 
             if latest_version && version_class.correct?(latest_version)
@@ -46,12 +45,8 @@ module Dependabot
           attr_reader :requirements, :updated_source,
                       :latest_version, :latest_resolvable_version
 
-          def library?
-            @library
-          end
-
           def updating_from_git_to_version?
-            return false unless updated_source.nil?
+            return false unless updated_source&.fetch(:type) == "default"
             original_source = requirements.map { |r| r[:source] }.compact.first
             original_source&.fetch(:type) == "git"
           end

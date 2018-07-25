@@ -1,7 +1,6 @@
 required = [
- "golang.org/x/text",
+ "github.com/dgrijalva/jwt-go",
  ]
 
-# The collation tables must never change.
 [[constraint]]
-  name = "golang.org/x/text"
+  name = "github.com/dgrijalva/jwt-go"

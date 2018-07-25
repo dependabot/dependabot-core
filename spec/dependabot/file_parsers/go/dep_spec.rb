@@ -67,15 +67,15 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
 
         context "that doesn't declare a version" do
           subject(:dependency) do
-            dependencies.find { |d| d.name == "golang.org/x/text" }
+            dependencies.find { |d| d.name == "github.com/dgrijalva/jwt-go" }
           end
           let(:manifest_fixture_name) { "no_version.toml" }
           let(:lockfile_fixture_name) { "no_version.lock" }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("golang.org/x/text")
-            expect(dependency.version).to eq("0.2.0")
+            expect(dependency.name).to eq("github.com/dgrijalva/jwt-go")
+            expect(dependency.version).to eq("1.0.1")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
                 groups: [],
                 source: {
                   type: "default",
-                  source: "golang.org/x/text"
+                  source: "github.com/dgrijalva/jwt-go"
                 }
               }]
             )

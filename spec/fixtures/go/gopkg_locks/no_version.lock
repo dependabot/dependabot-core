@@ -2,27 +2,14 @@
 
 
 [[projects]]
-  name = "golang.org/x/text"
-  packages = [
-    ".",
-    "collate",
-    "collate/build",
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "transform",
-    "unicode/cldr",
-    "unicode/norm"
-  ]
-  revision = "c4d099d611ac3ded35360abf03581e13d91c828f"
-  version = "v0.2.0"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "fbcb3e4b637bdc5ef2257eb2d0fe1d914a499386"
+  version = "v1.0.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ecaba8014947bc355742bfec162054f40eaabe5e7451ede8df52256d93bcbceb"
+  inputs-digest = "eb62c15704b851f8626abe61ac342d43a2d3522af64b9c8aa89748486e3325cc"
   solver-name = "gps-cdcl"
   solver-version = 1

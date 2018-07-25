@@ -49,26 +49,36 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
   let(:requirements) do
     [{ file: "Gopkg.toml", requirement: req_str, groups: [], source: source }]
   end
-  let(:dependency_name) { "golang.org/x/text" }
-  let(:dependency_version) { "0.2.0" }
+  let(:dependency_name) { "github.com/dgrijalva/jwt-go" }
+  let(:dependency_version) { "1.0.1" }
   let(:req_str) { nil }
-  let(:source) { { type: "default", source: "golang.org/x/text" } }
+  let(:source) { { type: "default", source: "github.com/dgrijalva/jwt-go" } }
 
-  let(:service_pack_url) do
-    "https://github.com/golang/text.git/info/refs"\
-    "?service=git-upload-pack"
-  end
   before do
-    stub_request(:get, service_pack_url).
+    jwt_service_pack_url =
+      "https://github.com/dgrijalva/jwt-go.git/info/refs"\
+      "?service=git-upload-pack"
+    stub_request(:get, jwt_service_pack_url).
       to_return(
         status: 200,
-        body: fixture("git", "upload_packs", upload_pack_fixture),
+        body: fixture("git", "upload_packs", "jwt-go"),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+
+    text_service_pack_url =
+      "https://github.com/golang/text.git/info/refs"\
+      "?service=git-upload-pack"
+    stub_request(:get, text_service_pack_url).
+      to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", "text"),
         headers: {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
       )
   end
-  let(:upload_pack_fixture) { "text" }
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -81,7 +91,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         ignored_versions: ignored_versions
       ).and_call_original
 
-      expect(checker.latest_version).to eq(Gem::Version.new("0.3.0"))
+      expect(checker.latest_version).to eq(Gem::Version.new("3.2.0"))
     end
   end
 
@@ -94,7 +104,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         dependency: dependency,
         unlock_requirement: true,
         remove_git_source: false,
-        latest_allowable_version: Gem::Version.new("0.3.0")
+        latest_allowable_version: Gem::Version.new("3.2.0")
       ).prepared_dependency_files
 
       expect(described_class::VersionResolver).to receive(:new).with(
@@ -103,20 +113,21 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         credentials: credentials
       ).and_call_original
 
-      expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+      expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.0"))
     end
 
     context "with a manifest file that needs unlocking" do
       let(:manifest_fixture_name) { "bare_version.toml" }
       let(:lockfile_fixture_name) { "bare_version.lock" }
-      let(:req_str) { "0.2.0" }
+      let(:req_str) { "1.0.0" }
 
       it "unlocks the manifest and gets the correct version" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.0"))
       end
     end
 
     context "with a git dependency" do
+      let(:dependency_name) { "golang.org/x/text" }
       let(:source) do
         {
           type: "git",
@@ -193,7 +204,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         dependency: dependency,
         unlock_requirement: true,
         remove_git_source: false,
-        latest_allowable_version: Gem::Version.new("0.3.0")
+        latest_allowable_version: Gem::Version.new("3.2.0")
       ).prepared_dependency_files
 
       expect(described_class::VersionResolver).to receive(:new).with(
@@ -203,17 +214,17 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       ).and_call_original
 
       expect(checker.latest_resolvable_version_with_no_unlock).
-        to eq(Gem::Version.new("0.3.0"))
+        to eq(Gem::Version.new("3.2.0"))
     end
 
     context "with a manifest file that needs unlocking" do
       let(:manifest_fixture_name) { "bare_version.toml" }
       let(:lockfile_fixture_name) { "bare_version.lock" }
-      let(:req_str) { "0.2.0" }
+      let(:req_str) { "1.0.0" }
 
       it "doesn't unlock the manifest" do
         expect(checker.latest_resolvable_version_with_no_unlock).
-          to eq(Gem::Version.new("0.2.0"))
+          to eq(Gem::Version.new("1.0.2"))
       end
     end
 
@@ -226,6 +237,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           ref: ref
         }
       end
+      let(:dependency_name) { "golang.org/x/text" }
 
       before do
         repo_url = "https://api.github.com/repos/golang/text"
@@ -266,6 +278,86 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           expect(checker.latest_resolvable_version_with_no_unlock).
             to eq("v0.2.0")
         end
+      end
+    end
+  end
+
+  describe "#updated_requirements" do
+    subject { checker.updated_requirements }
+
+    it "delegates to RequirementsUpdater" do
+      expect(described_class::RequirementsUpdater).to receive(:new).with(
+        requirements: dependency.requirements,
+        updated_source: source,
+        latest_version: "3.2.0",
+        latest_resolvable_version: "3.2.0"
+      ).and_call_original
+
+      expect(checker.updated_requirements).to eq(
+        [{
+          file: "Gopkg.toml",
+          requirement: nil,
+          groups: [],
+          source: { type: "default", source: "github.com/dgrijalva/jwt-go" }
+        }]
+      )
+    end
+
+    context "with a manifest file that needs unlocking" do
+      let(:manifest_fixture_name) { "bare_version.toml" }
+      let(:lockfile_fixture_name) { "bare_version.lock" }
+      let(:req_str) { "1.0.0" }
+
+      it "updates the requirements for the new version range" do
+        expect(checker.updated_requirements).to eq(
+          [{
+            file: "Gopkg.toml",
+            requirement: ">= 1.0.0, < 4.0.0",
+            groups: [],
+            source: { type: "default", source: "github.com/dgrijalva/jwt-go" }
+          }]
+        )
+      end
+    end
+
+    context "with a git dependency we should switch" do
+      let(:manifest_fixture_name) { "tag_as_revision.toml" }
+      let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+
+      let(:dependency_name) { "golang.org/x/text" }
+      let(:req_str) { nil }
+      let(:dependency_version) { "v0.2.0" }
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/golang/text",
+          branch: nil,
+          ref: "v0.2.0"
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/golang/text"
+        stub_request(:get, repo_url + "/compare/v0.3.0...v0.2.0").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      it "updates the requirements for the new version range" do
+        expect(checker.updated_requirements).to eq(
+          [{
+            file: "Gopkg.toml",
+            requirement: "^0.3.0",
+            groups: [],
+            source: { type: "default", source: "golang.org/x/text" }
+          }]
+        )
       end
     end
   end
