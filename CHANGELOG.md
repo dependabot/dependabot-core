@@ -1,3 +1,7 @@
+## v0.62.3, 25 July 2018
+
+- Go: Don't import internal packages
+
 ## v0.62.2, 25 July 2018
 
 - Go: Import all packages that were used in lockfile
