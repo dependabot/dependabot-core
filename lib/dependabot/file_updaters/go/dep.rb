@@ -122,29 +122,47 @@ module Dependabot
           )
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def update_manifest_req(content:, dep:, old_req:, new_req:)
-          simple_declaration = content.scan(declaration_regex(dep)).
-                               find { |m| m.include?(old_req) }
+          declaration = content.scan(declaration_regex(dep)).
+                        find { |m| old_req.nil? || m.include?(old_req) }
 
-          if simple_declaration
-            content.gsub(simple_declaration) do |line|
+          return content unless declaration
+
+          if old_req && new_req
+            content.gsub(declaration) do |line|
               line.gsub(old_req, new_req)
             end
-          else
-            content
+          elsif old_req && new_req.nil?
+            content.gsub(declaration) do |line|
+              line.gsub(/\R+.*version\s*=.*/, "")
+            end
+          elsif old_req.nil? && new_req
+            content.gsub(declaration) do |line|
+              indent = line.match(/(?<indent>\s*)name/).named_captures["indent"]
+              version_declaration = indent + "version = \"#{new_req}\""
+              line.gsub(/name\s*=.*/) { |nm_ln| nm_ln + version_declaration }
+            end
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_manifest_pin(content:, dep:, old_pin:, new_pin:)
-          simple_declaration = content.scan(declaration_regex(dep)).
-                               find { |m| m.include?(old_pin) }
+          declaration = content.scan(declaration_regex(dep)).
+                        find { |m| m.include?(old_pin) }
 
-          if simple_declaration
-            content.gsub(simple_declaration) do |line|
+          return content unless declaration
+
+          if old_pin && new_pin
+            content.gsub(declaration) do |line|
               line.gsub(old_pin, new_pin)
             end
-          else
-            content
+          elsif old_pin && new_pin.nil?
+            content.gsub(declaration) do |line|
+              line.gsub(/\R+.*revision\s*=.*/, "").gsub(/\R+.*branch\s*=.*/, "")
+            end
           end
         end
 
