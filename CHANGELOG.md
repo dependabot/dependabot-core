@@ -1,3 +1,8 @@
+## v0.62.2, 25 July 2018
+
+- Go: Import all packages that were used in lockfile
+- Go: Handle git dependencies correctly in metadata finder
+
 ## v0.62.1, 25 July 2018
 
 - Go: Import packages, not projects
