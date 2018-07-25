@@ -51,10 +51,13 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ### PYTHON
 
 # Install Python 2.7 and 3.6 with pyenv. Using pyenv lets us support multiple Pythons
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv && cd /usr/local/.pyenv && git checkout v1.2.6 && cd -
-ENV PYENV_ROOT=/usr/local/.pyenv
-ENV PATH="$PYENV_ROOT/bin:$PATH"
-RUN pyenv install 3.6.5 && pyenv install 2.7.15 && pyenv global 3.6.5
+ENV PYENV_ROOT=/usr/local/.pyenv \
+    PATH="/usr/local/.pyenv/bin:$PATH"
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
+    && cd /usr/local/.pyenv && git checkout v1.2.6 && cd - \
+    && pyenv install 3.6.5 \
+    && pyenv install 2.7.15 \
+    && pyenv global 3.6.5
 
 
 ### JAVASCRIPT
@@ -81,6 +84,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 
 ### GO
 
+# Install Go and dep
 RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz \
     && tar xvf go1.10.3.linux-amd64.tar.gz \
     && wget https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 \
@@ -93,26 +97,28 @@ ENV PATH=/root/go/bin:$PATH
 ### Elixir
 
 # Install Erlang, Elixir and Hex
+ENV PATH="$PATH:/usr/local/elixir/bin"
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
     && wget https://github.com/elixir-lang/elixir/releases/download/v1.6.6/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
-    && rm -f Precompiled.zip
-ENV PATH="$PATH:/usr/local/elixir/bin"
-RUN mix local.hex --force
+    && rm -f Precompiled.zip \
+    && mix local.hex --force
 
 
 ### Rust
 
-ENV RUSTUP_HOME=/opt/rust
+# Install Rust
+ENV RUSTUP_HOME=/opt/rust \
+    PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="${PATH}:/opt/rust/bin"
 
 
 ### Java, Groovy and Gradle
 
+# Install Java, Groovy and Gradle
 RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections \
     && echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu bionic main" > /etc/apt/sources.list.d/webupd8team-java-trusty.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886 \
