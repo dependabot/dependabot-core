@@ -90,7 +90,6 @@ module Dependabot
             nested_directories =
               repo_contents(dir: path).
               select { |f| f.type == "dir" }
-            nested_directories = [] if path.to_s == "."
 
             nested_directories.each do |dir|
               dir_path = File.join(path, dir.name)

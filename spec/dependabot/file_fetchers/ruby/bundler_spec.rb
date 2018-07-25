@@ -507,6 +507,14 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           headers: { "content-type" => "application/json" }
         )
 
+      stub_request(:get, /#{Regexp.quote(url)}(app|build|data|migr|tests)/).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: "[]",
+          headers: { "content-type" => "application/json" }
+        )
+
       stub_request(:get, url + "Gemfile?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
