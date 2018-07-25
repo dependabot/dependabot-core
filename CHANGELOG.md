@@ -1,3 +1,7 @@
+## v0.62.5, 25 July 2018
+
+- Go: Fix file update generation for branches
+
 ## v0.62.4, 25 July 2018
 
 - Go: Don't try to lock revision for branch updates
