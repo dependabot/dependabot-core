@@ -163,9 +163,10 @@ module Dependabot
             # That's a pity, but we'd have to iterate through too many
             # possibilities to get it right. Again, this is fixed in v0.5.0.
             return [] unless lockfile
-            TomlRB.parse(lockfile.content).fetch("projects").map do |dep|
-              package = dep["packages"].first
-              package == "." ? dep["name"] : File.join(dep["name"], package)
+            TomlRB.parse(lockfile.content).fetch("projects").flat_map do |dep|
+              dep["packages"].map do |package|
+                package == "." ? dep["name"] : File.join(dep["name"], package)
+              end
             end
           end
 

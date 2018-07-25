@@ -63,7 +63,11 @@ module Dependabot
 
         def latest_resolvable_version_for_git_dependency
           latest_release =
-            latest_resolvable_released_version(unlock_requirement: true)
+            begin
+              latest_resolvable_released_version(unlock_requirement: true)
+            rescue SharedHelpers::HelperSubprocessFailed => error
+              raise unless error.message.include?("Solving failure")
+            end
 
           # If there's a resolvable release that includes the current pinned
           # ref or that the current branch is behind, we switch to that release.
