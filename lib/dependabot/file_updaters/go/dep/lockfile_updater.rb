@@ -102,12 +102,13 @@ module Dependabot
 
             req = dep.requirements.find { |r| r[:file] == manifest.name }
 
-            details.delete("branch")
-
-            if req.fetch(:source).fetch(:type) == "git"
-              details.delete("version")
+            if req.fetch(:source).fetch(:type) == "git" && !details["branch"]
+              # Note: we don't try to update to a specific revision if the
+              # branch was previously specified because the change in
+              # specification type would be persisted in the lockfile
               details["revision"] = dep.version
             else
+              details.delete("branch")
               details.delete("revision")
               details["version"] = dep.version
             end
