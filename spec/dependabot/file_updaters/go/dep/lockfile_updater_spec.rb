@@ -60,27 +60,102 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
   describe "#updated_lockfile_content" do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }
 
-    context "if no files have changed" do
-      let(:dependency_version) { "1.0.1" }
-      let(:dependency_previous_version) { "1.0.1" }
+    context "with a released version" do
+      context "if no files have changed" do
+        let(:dependency_version) { "1.0.1" }
+        let(:dependency_previous_version) { "1.0.1" }
 
-      # Ideally this would spec that the lockfile didn't change at all. That
-      # isn't the case because the inputs-hash changes (whilst on dep 0.4.1)
-      it "doesn't update the version in the lockfile" do
-        expect(updated_lockfile_content).to include(%(version = "v1.0.1"))
-        expect(updated_lockfile_content).
-          to include("fbcb3e4b637bdc5ef2257eb2d0fe1d914a499386")
+        # Ideally this would spec that the lockfile didn't change at all. That
+        # isn't the case because the inputs-hash changes (whilst on dep 0.4.1)
+        it "doesn't update the version in the lockfile" do
+          expect(updated_lockfile_content).to include(%(version = "v1.0.1"))
+          expect(updated_lockfile_content).
+            to include("fbcb3e4b637bdc5ef2257eb2d0fe1d914a499386")
+        end
+      end
+
+      context "when the version has changed but the requirement hasn't" do
+        let(:dependency_version) { "1.0.2" }
+        let(:dependency_previous_version) { "1.0.1" }
+
+        it "updates the lockfile correctly" do
+          expect(updated_lockfile_content).to include(%(version = "v1.0.2"))
+          expect(updated_lockfile_content).
+            to include("0987fb8fd48e32823701acdac19f5cfe47339de4")
+        end
       end
     end
 
-    context "when the version has changed but the requirement hasn't" do
-      let(:dependency_version) { "1.0.2" }
-      let(:dependency_previous_version) { "1.0.1" }
+    context "with a git dependency" do
+      context "updating to the tip of a branch" do
+        let(:manifest_fixture_name) { "branch.toml" }
+        let(:lockfile_fixture_name) { "branch.lock" }
 
-      it "updates the lockfile correctly" do
-        expect(updated_lockfile_content).to include(%(version = "v1.0.2"))
-        expect(updated_lockfile_content).
-          to include("0987fb8fd48e32823701acdac19f5cfe47339de4")
+        let(:dependency_name) { "golang.org/x/text" }
+        let(:dependency_version) { "0605a8320aceb4207a5fb3521281e17ec2075476" }
+        let(:dependency_previous_version) do
+          "7dd2c8130f5e924233f5543598300651c386d431"
+        end
+        let(:requirements) { previous_requirements }
+        let(:previous_requirements) do
+          [{
+            file: "Gopkg.toml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/golang/text",
+              branch: "master",
+              ref: nil
+            }
+          }]
+        end
+
+        it "updates the lockfile correctly" do
+          expect(updated_lockfile_content).
+            to include("0605a8320aceb4207a5fb3521281e17ec2075476")
+          expect(updated_lockfile_content).
+            to include(%(branch = "master"\n  name = "golang.org/x/text"))
+        end
+      end
+
+      context "updating a reference" do
+        let(:manifest_fixture_name) { "tag_as_revision.toml" }
+        let(:lockfile_fixture_name) { "tag_as_revision.lock" }
+
+        let(:dependency_name) { "golang.org/x/text" }
+        let(:dependency_version) { "v0.3.0" }
+        let(:dependency_previous_version) { "v0.2.0" }
+        let(:requirements) do
+          [{
+            file: "Gopkg.toml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/golang/text",
+              branch: nil,
+              ref: "v0.3.0"
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Gopkg.toml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/golang/text",
+              branch: nil,
+              ref: "v0.2.0"
+            }
+          }]
+        end
+
+        it "updates the lockfile correctly" do
+          expect(updated_lockfile_content).to include(%(revision = "v0.3.0"))
+        end
       end
     end
   end
