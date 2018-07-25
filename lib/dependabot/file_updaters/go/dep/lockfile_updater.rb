@@ -110,7 +110,7 @@ module Dependabot
             elsif req.fetch(:source).fetch(:type) == "default"
               details.delete("branch")
               details.delete("revision")
-              details["version"] = dep.version
+              details["version"] = "=#{dep.version}"
             end
           end
 
