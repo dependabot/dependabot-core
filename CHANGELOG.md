@@ -1,3 +1,7 @@
+## v0.62.1, 25 July 2018
+
+- Go: Import packages, not projects
+
 ## v0.62.0, 25 July 2018
 
 - Go: Initial support (no vendoring, library-style manifest updates)
