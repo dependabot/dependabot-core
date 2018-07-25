@@ -1,3 +1,7 @@
+## v0.62.0, 25 July 2018
+
+- Go: Initial support (no vendoring, library-style manifest updates)
+
 ## v0.61.99, 25 July 2018
 
 - Ruby: Handle "." paths in the lockfile
