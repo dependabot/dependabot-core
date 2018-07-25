@@ -1,0 +1,14 @@
+required = [
+ "github.com/some/thing",
+ "github.com/bsm/ratelimit"
+ ]
+
+[[constraint]]
+  name = "github.com/some/thing"
+  branch = "master"
+  source = "https://github.com/dgrijalva/jwt-go"
+
+[[constraint]]
+  name = "github.com/bsm/ratelimit"
+  version = "2.0.0"
+

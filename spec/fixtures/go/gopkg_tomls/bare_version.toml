@@ -1,0 +1,7 @@
+required = [
+ "github.com/dgrijalva/jwt-go",
+ ]
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "1.0.0"

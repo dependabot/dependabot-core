@@ -8,7 +8,8 @@ RSpec.describe Dependabot::GitCommitChecker do
   let(:checker) do
     described_class.new(
       dependency: dependency,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
 
@@ -20,6 +21,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       package_manager: "bundler"
     )
   end
+  let(:ignored_versions) { [] }
 
   let(:requirements) do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: source }]
@@ -702,6 +704,11 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         its([:tag_sha]) do
           is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+        end
+
+        context "and an ignore condition" do
+          let(:ignored_versions) { [">= 1.12.0"] }
+          its([:tag]) { is_expected.to eq("v1.11.1") }
         end
       end
     end

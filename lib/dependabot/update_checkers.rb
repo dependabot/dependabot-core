@@ -11,6 +11,7 @@ require "dependabot/update_checkers/docker/docker"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/dotnet/nuget"
+require "dependabot/update_checkers/go/dep"
 
 module Dependabot
   module UpdateCheckers
@@ -28,6 +29,7 @@ module Dependabot
       when "hex" then UpdateCheckers::Elixir::Hex
       when "cargo" then UpdateCheckers::Rust::Cargo
       when "nuget" then UpdateCheckers::Dotnet::Nuget
+      when "dep" then UpdateCheckers::Go::Dep
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

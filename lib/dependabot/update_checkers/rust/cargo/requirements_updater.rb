@@ -94,7 +94,7 @@ module Dependabot
             return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }
 
             # TODO: In future, we might want to treat libraries differently to
-            # applications. Fo now, since Rust allows multiple versions of the
+            # applications. For now, since Rust allows multiple versions of the
             # same dependeny, it's fine to upgrade them like apps if required
             updated_app_requirement(req)
           end

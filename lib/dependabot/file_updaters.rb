@@ -11,6 +11,7 @@ require "dependabot/file_updaters/docker/docker"
 require "dependabot/file_updaters/elixir/hex"
 require "dependabot/file_updaters/rust/cargo"
 require "dependabot/file_updaters/dotnet/nuget"
+require "dependabot/file_updaters/go/dep"
 
 module Dependabot
   module FileUpdaters
@@ -28,6 +29,7 @@ module Dependabot
       when "hex" then FileUpdaters::Elixir::Hex
       when "cargo" then FileUpdaters::Rust::Cargo
       when "nuget" then FileUpdaters::Dotnet::Nuget
+      when "dep" then FileUpdaters::Go::Dep
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

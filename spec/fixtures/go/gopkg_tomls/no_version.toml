@@ -1,0 +1,6 @@
+required = [
+ "github.com/dgrijalva/jwt-go",
+ ]
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"

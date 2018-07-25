@@ -1,0 +1,32 @@
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "^3.2.0"
+
+[[constraint]]
+  name = "github.com/gosimple/slug"
+  version = "^1.1.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/lib/pq"
+
+[[constraint]]
+  name = "github.com/russross/blackfriday"
+  version = "^1.5.1"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/goenning/letteravatar"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/julienschmidt/httprouter"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
