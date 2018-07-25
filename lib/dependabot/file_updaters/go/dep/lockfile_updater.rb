@@ -148,12 +148,12 @@ module Dependabot
             base = "package main\n\n"\
                    "import \"fmt\"\n\n"
 
-            dependencies_to_import.each { |nm| base += "import \"#{nm}\"\n\n" }
+            packages_to_import.each { |nm| base += "import \"#{nm}\"\n\n" }
 
             base + "func main() {\n  fmt.Printf(\"hello, world\\n\")\n}"
           end
 
-          def dependencies_to_import
+          def packages_to_import
             # There's no way to tell whether dependencies that appear in the
             # lockfile are there because they're imported themselves or because
             # they're sub-dependencies of something else. v0.5.0 will fix that
@@ -163,8 +163,9 @@ module Dependabot
             # That's a pity, but we'd have to iterate through too many
             # possibilities to get it right. Again, this is fixed in v0.5.0.
             return [] unless lockfile
-            TomlRB.parse(lockfile.content).fetch("projects").map do |detail|
-              detail["name"]
+            TomlRB.parse(lockfile.content).fetch("projects").map do |dep|
+              package = dep["packages"].first
+              package == "." ? dep["name"] : File.join(dep["name"], package)
             end
           end
 

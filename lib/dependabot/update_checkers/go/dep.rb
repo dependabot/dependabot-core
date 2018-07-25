@@ -150,7 +150,9 @@ module Dependabot
           ).latest_resolvable_version
 
           @git_tag_resolvable = true
-        rescue Dependabot::DependencyFileNotResolvable
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          # This should rescue resolvability errors in future
+          raise unless error.message.include?("Solving failure")
           @git_tag_resolvable = false
         end
 
