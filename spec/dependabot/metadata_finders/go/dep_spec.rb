@@ -40,25 +40,34 @@ RSpec.describe Dependabot::MetadataFinders::Go::Dep do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    context "with a github name" do
+    context "with no requirements (i.e., a subdependency)" do
+      let(:requirements) { [] }
+
       it { is_expected.to eq("https://github.com/satori/go.uuid") }
 
-      context "and no requirements" do
-        it { is_expected.to eq("https://github.com/satori/go.uuid") }
-      end
-
-      context "that uses golang.org" do
+      context "for a golang.org project" do
         let(:dependency_name) { "golang.org/x/text" }
         it { is_expected.to eq("https://github.com/golang/text") }
       end
     end
 
-    context "with a source" do
+    context "with default requirements" do
       let(:source) do
         {
           type: "default",
-          source: "github.com/alias/go.uuid",
-          branch: nil,
+          source: "github.com/alias/go.uuid"
+        }
+      end
+
+      it { is_expected.to eq("https://github.com/alias/go.uuid") }
+    end
+
+    context "with git requirements" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/alias/go.uuid",
+          branch: "master",
           ref: nil
         }
       end
