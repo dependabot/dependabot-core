@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "parser/current"
 require "dependabot/file_updaters/go/dep"
 
 module Dependabot

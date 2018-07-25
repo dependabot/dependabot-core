@@ -8,6 +8,7 @@ module Dependabot
     module Go
       class Dep < Dependabot::FileUpdaters::Base
         require_relative "dep/manifest_updater"
+        require_relative "dep/lockfile_updater"
 
         def self.updated_files_regex
           [
@@ -59,9 +60,11 @@ module Dependabot
         end
 
         def updated_lockfile_content
-          # TODO: This normally needs to be written in the native language.
-          # We do so by shelling out to a helper method (see other languages)
-          lockfile.content
+          LockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_lockfile_content
         end
       end
     end

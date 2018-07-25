@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "toml-rb"
 require "dependabot/update_checkers/base"
 
 module Dependabot
@@ -211,8 +212,6 @@ module Dependabot
         def parsed_file(file)
           @parsed_file ||= {}
           @parsed_file[file.name] ||= TomlRB.parse(file.content)
-        rescue TomlRB::ParseError
-          raise Dependabot::DependencyFileNotParseable, file.path
         end
 
         def manifest
