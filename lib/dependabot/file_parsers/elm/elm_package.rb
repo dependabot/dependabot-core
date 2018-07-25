@@ -12,9 +12,13 @@ module Dependabot
         require "dependabot/file_parsers/base/dependency_set"
 
         def parse
+          self.class.dependency_set_for(elm_package_file.content)
+        end
+
+        def self.dependency_set_for(content)
           dependency_set = DependencySet.new
 
-          dependency_details.each do |dep|
+          decode(content).each do |dep|
             dependency_set <<
               Dependency.new(
                 name: dep[:name],
@@ -32,19 +36,13 @@ module Dependabot
           dependency_set.dependencies.sort_by(&:name)
         end
 
-        private
-
-        def check_required_files
-          raise "No elm-package.json!" unless elm_package_file
-        end
-
-        def dependency_details
-          json = JSON.parse elm_package_file.content
+        private_class_method def self.decode(content)
+          json = JSON.parse content
           json['dependencies'].
             map {|k,v| {name: k, requirement: v, file: "elm-package.json", max_version: max_of(v)}}
         end
 
-        def max_of(version_requirement)
+        private_class_method def self.max_of(version_requirement)
           _, maybe_equals, *major_minor_patch = /<(=)? (\d+)\.(\d+)\.(\d+)$/.match(version_requirement).to_a
           major, minor, patch = major_minor_patch.map(&:to_i)
           if maybe_equals != "="
@@ -61,6 +59,13 @@ module Dependabot
           end
           [major, minor, patch]
         end
+
+        private
+
+        def check_required_files
+          raise "No elm-package.json!" unless elm_package_file
+        end
+
 
         def elm_package_file
           @elm_package_file ||= get_original_file("elm-package.json")
