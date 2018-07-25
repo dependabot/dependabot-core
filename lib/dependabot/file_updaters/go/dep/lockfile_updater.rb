@@ -107,7 +107,7 @@ module Dependabot
               # branch was previously specified because the change in
               # specification type would be persisted in the lockfile
               details["revision"] = dep.version
-            else
+            elsif req.fetch(:source).fetch(:type) == "default"
               details.delete("branch")
               details.delete("revision")
               details["version"] = dep.version
