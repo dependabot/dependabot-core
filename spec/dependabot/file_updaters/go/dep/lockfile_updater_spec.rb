@@ -117,6 +117,28 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
           expect(updated_lockfile_content).
             to include(%(branch = "master"\n  name = "golang.org/x/text"))
         end
+
+        context "to use a release instead" do
+          let(:dependency_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "Gopkg.toml",
+              requirement: "^0.3.0",
+              groups: [],
+              source: {
+                type: "default",
+                source: "golang.org/x/text"
+              }
+            }]
+          end
+
+          it "updates the lockfile correctly" do
+            expect(updated_lockfile_content).
+              to include(%(version = "v0.3.0"))
+            expect(updated_lockfile_content).
+              to include(%(vision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"))
+          end
+        end
       end
 
       context "updating a reference" do
@@ -155,6 +177,28 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
 
         it "updates the lockfile correctly" do
           expect(updated_lockfile_content).to include(%(revision = "v0.3.0"))
+        end
+
+        context "to use a release instead" do
+          let(:dependency_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "Gopkg.toml",
+              requirement: "^0.3.0",
+              groups: [],
+              source: {
+                type: "default",
+                source: "golang.org/x/text"
+              }
+            }]
+          end
+
+          it "updates the lockfile correctly" do
+            expect(updated_lockfile_content).
+              to include(%(version = "v0.3.0"))
+            expect(updated_lockfile_content).
+              to include(%(vision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"))
+          end
         end
       end
     end
