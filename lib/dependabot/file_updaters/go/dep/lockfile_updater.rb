@@ -165,8 +165,9 @@ module Dependabot
             return [] unless lockfile
             TomlRB.parse(lockfile.content).fetch("projects").flat_map do |dep|
               dep["packages"].map do |package|
+                next if package.start_with?("internal")
                 package == "." ? dep["name"] : File.join(dep["name"], package)
-              end
+              end.compact
             end
           end
 

@@ -94,6 +94,11 @@ module Dependabot
         end
 
         def latest_resolvable_commit_with_unchanged_git_source
+          if @commit_lookup_attempted
+            return @latest_resolvable_commit_with_unchanged_git_source
+          end
+
+          @commit_lookup_attempted = true
           @latest_resolvable_commit_with_unchanged_git_source ||=
             begin
               prepared_files = FilePreparer.new(
@@ -110,6 +115,9 @@ module Dependabot
                 credentials: credentials
               ).latest_resolvable_version
             end
+        rescue SharedHelpers::HelperSubprocessFailed => error
+          # This should rescue resolvability errors in future
+          raise unless error.message.include?("Solving failure")
         end
 
         def latest_resolvable_released_version(unlock_requirement:)
