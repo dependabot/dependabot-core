@@ -67,6 +67,18 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         }
       )
 
+    mgo_service_pack_url =
+      "https://github.com/globalsign/mgo.git/info/refs"\
+      "?service=git-upload-pack"
+    stub_request(:get, mgo_service_pack_url).
+      to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", "mgo"),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+
     text_service_pack_url =
       "https://github.com/golang/text.git/info/refs"\
       "?service=git-upload-pack"
@@ -190,6 +202,26 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
 
         it "updates to a released version" do
           expect(latest_resolvable_version).to eq(Gem::Version.new("0.3.0"))
+        end
+
+        context "as a version" do
+          let(:manifest_fixture_name) { "tag_as_version.toml" }
+          let(:lockfile_fixture_name) { "tag_as_version.lock" }
+          let(:dependency_name) { "github.com/globalsign/mgo" }
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/globalsign/mgo",
+              branch: nil,
+              ref: "r2018.04.23"
+            }
+          end
+          let(:req_str) { "r2018.04.23" }
+          let(:dependency_version) { "r2018.04.23" }
+
+          it "doesn't update the tag (not version-like enough)" do
+            expect(latest_resolvable_version).to eq("r2018.06.15")
+          end
         end
       end
     end

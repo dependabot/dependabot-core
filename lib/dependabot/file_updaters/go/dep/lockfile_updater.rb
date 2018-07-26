@@ -108,7 +108,8 @@ module Dependabot
               # Note: we don't try to update to a specific revision if the
               # branch was previously specified because the change in
               # specification type would be persisted in the lockfile
-              details["revision"] = dep.version
+              details["revision"] = dep.version if details["revision"]
+              details["version"] = dep.version if details["version"]
             elsif req.fetch(:source).fetch(:type) == "default"
               details.delete("branch")
               details.delete("revision")

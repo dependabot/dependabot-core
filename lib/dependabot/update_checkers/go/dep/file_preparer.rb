@@ -76,9 +76,6 @@ module Dependabot
               (parsed_manifest[type] || []).each do |details|
                 next unless details["name"] == dependency.name
 
-                unless details["branch"] || details["revision"]
-                  raise "No git source to remove! #{details}"
-                end
                 details.delete("revision")
                 details.delete("branch")
               end
@@ -96,6 +93,7 @@ module Dependabot
               (parsed_manifest[type] || []).each do |details|
                 next unless details["name"] == dependency.name
                 next if details["revision"] || details["branch"]
+                next if replacement_git_pin
                 updated_req = temporary_requirement_for_resolution(filename)
 
                 details["version"] = updated_req
@@ -112,10 +110,13 @@ module Dependabot
               (parsed_manifest[type] || []).each do |details|
                 next unless details["name"] == dependency.name
 
-                if details["branch"] || details["version"]
-                  raise "Invalid details! #{details}"
+                raise "Invalid details! #{details}" if details["branch"]
+
+                if details["version"]
+                  details["version"] = replacement_git_pin
+                else
+                  details["revision"] = replacement_git_pin
                 end
-                details["revision"] = replacement_git_pin
               end
             end
 

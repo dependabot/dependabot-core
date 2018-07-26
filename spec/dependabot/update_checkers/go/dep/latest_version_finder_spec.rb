@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/update_checkers/go/dep/latest_version_finder"
 
 RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
@@ -144,6 +145,30 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
         end
 
         it { is_expected.to eq(Gem::Version.new("0.3.0")) }
+
+        context "specified as a version (and not version-like)" do
+          let(:manifest_fixture_name) { "tag_as_version.toml" }
+          let(:lockfile_fixture_name) { "tag_as_version.lock" }
+          let(:dependency_name) { "github.com/globalsign/mgo" }
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/globalsign/mgo",
+              branch: nil,
+              ref: "r2018.04.23"
+            }
+          end
+          let(:req_str) { "r2018.04.23" }
+          let(:dependency_version) { "r2018.04.23" }
+
+          let(:service_pack_url) do
+            "https://github.com/globalsign/mgo.git/info/refs"\
+            "?service=git-upload-pack"
+          end
+          let(:upload_pack_fixture) { "mgo" }
+
+          it { is_expected.to eq("r2018.06.15") }
+        end
 
         context "that is up-to-date" do
           let(:commit_compare_response) do

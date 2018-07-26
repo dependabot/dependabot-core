@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_updaters/go/dep/manifest_updater"
@@ -149,6 +150,47 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::ManifestUpdater do
 
       it "includes the new tag" do
         expect(updated_manifest_content).to include(%(revision = "v0.3.0"))
+      end
+
+      context "and it was specified as a version" do
+        let(:manifest_fixture_name) { "tag_as_version.toml" }
+        let(:dependency_name) { "github.com/globalsign/mgo" }
+        let(:dependency_version) { "r2018.06.15" }
+        let(:dependency_previous_version) { "r2018.04.23" }
+        let(:requirements) do
+          [{
+            requirement: "r2018.06.15",
+            file: "Gopkg.toml",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/globalsign/mgo",
+              branch: nil,
+              ref: "r2018.06.15"
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "r2018.04.23",
+            file: "Gopkg.toml",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/golang/text",
+              branch: nil,
+              ref: "r2018.04.23"
+            }
+          }]
+        end
+
+        it "includes the new tag" do
+          expect(updated_manifest_content).
+            to include(
+              "  name = \"github.com/globalsign/mgo\"\n"\
+              "  version = \"r2018.06.15\"\n\n"
+            )
+        end
       end
     end
 

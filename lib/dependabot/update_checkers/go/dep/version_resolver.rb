@@ -53,8 +53,12 @@ module Dependabot
             package = TomlRB.parse(lockfile_content).fetch("projects").
                       find { |p| p["name"] == dependency.name }
 
-            if package["version"]
-              version_class.new(package["version"].sub(/^v?/, ""))
+            version = package["version"]
+
+            if version && version_class.correct?(version.sub(/^v?/, ""))
+              version_class.new(version.sub(/^v?/, ""))
+            elsif version
+              version
             else
               package.fetch("revision")
             end

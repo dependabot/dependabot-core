@@ -184,6 +184,48 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
           expect(updated_lockfile_content).to include(%(revision = "v0.3.0"))
         end
 
+        context "and it was specified as a version" do
+          let(:manifest_fixture_name) { "tag_as_version.toml" }
+          let(:lockfile_fixture_name) { "tag_as_version.lock" }
+
+          let(:dependency_name) { "github.com/globalsign/mgo" }
+          let(:dependency_version) { "r2018.06.15" }
+          let(:dependency_previous_version) { "r2018.04.23" }
+          let(:requirements) do
+            [{
+              requirement: "r2018.06.15",
+              file: "Gopkg.toml",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/globalsign/mgo",
+                branch: nil,
+                ref: "r2018.06.15"
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: "r2018.04.23",
+              file: "Gopkg.toml",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/golang/text",
+                branch: nil,
+                ref: "r2018.04.23"
+              }
+            }]
+          end
+
+          it "updates the lockfile correctly" do
+            expect(updated_lockfile_content).
+              to include(%(version = "r2018.06.15"))
+            expect(updated_lockfile_content).
+              to include(%(revision = "113d3961e7311))
+          end
+        end
+
         context "to use a release instead" do
           let(:dependency_version) { "0.3.0" }
           let(:requirements) do

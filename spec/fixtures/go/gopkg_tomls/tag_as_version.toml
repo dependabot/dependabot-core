@@ -1,0 +1,14 @@
+required = [
+ "github.com/globalsign/mgo",
+ "github.com/bsm/ratelimit"
+ ]
+
+# The collation tables must never change.
+[[constraint]]
+  name = "github.com/globalsign/mgo"
+  version = "r2018.04.23"
+
+[[constraint]]
+  name = "github.com/bsm/ratelimit"
+  version = "2.0.0"
+

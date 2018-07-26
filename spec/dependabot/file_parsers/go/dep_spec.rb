@@ -139,6 +139,33 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
             )
           end
         end
+
+        context "that specifies a tag as its version" do
+          let(:manifest_fixture_name) { "tag_as_version.toml" }
+          let(:lockfile_fixture_name) { "tag_as_version.lock" }
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "github.com/globalsign/mgo" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("github.com/globalsign/mgo")
+            expect(dependency.version).to eq("r2018.04.23")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "r2018.04.23",
+                file: "Gopkg.toml",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/globalsign/mgo",
+                  branch: nil,
+                  ref: "r2018.04.23"
+                }
+              }]
+            )
+          end
+        end
       end
 
       describe "a dependency with an unrecognised name" do

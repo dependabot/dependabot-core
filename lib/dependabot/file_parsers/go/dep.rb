@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/errors"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/utils/go/requirement"
 
 # Relevant dep docs can be found at:
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
@@ -84,12 +85,12 @@ module Dependabot
 
           git_source = git_source(source)
 
-          if git_source && (declaration["branch"] || declaration["revision"])
+          if git_source && git_declaration?(declaration)
             {
               type: "git",
               url: git_source.url,
               branch: declaration["branch"],
-              ref: declaration["revision"]
+              ref: declaration["revision"] || declaration["version"]
             }
           else
             {
@@ -97,6 +98,17 @@ module Dependabot
               source: source
             }
           end
+        end
+
+        def git_declaration?(declaration)
+          return true if declaration["branch"] || declaration["revision"]
+          return false unless declaration["version"]
+          return false unless declaration["version"].match?(/^[A-Za-z0-9]/)
+
+          Utils::Go::Requirement.new(declaration["version"])
+          false
+        rescue Gem::Requirement::BadRequirementError
+          true
         end
 
         def git_source(path)
