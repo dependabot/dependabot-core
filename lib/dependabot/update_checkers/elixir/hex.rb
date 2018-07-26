@@ -131,12 +131,13 @@ module Dependabot
             replacement_git_pin: replacement_tag.fetch(:tag)
           ).prepared_dependency_files
 
-          VersionResolver.new(
+          resolver_result = VersionResolver.new(
             dependency: dependency,
             dependency_files: prepared_files,
             credentials: credentials
           ).latest_resolvable_version
-          @git_tag_resolvable = true
+
+          @git_tag_resolvable = !resolver_result.nil?
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise error unless error.message.include?("resolution failed")
           @git_tag_resolvable = false
