@@ -27,15 +27,20 @@ module Dependabot
           attr_reader :dependency, :dependency_files, :credentials
 
           def fetch_latest_resolvable_version
+            base_directory = File.join("src", "project",
+                                       dependency_files.first.directory)
+            base_parts = base_directory.split("/").length
             updated_version =
-              Dir.chdir(go_dir) do
+              SharedHelpers.in_a_temporary_directory(base_directory) do |dir|
                 write_temporary_dependency_files
 
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   # Shell out to dep, which handles everything for us, and does
                   # so without doing an install (so it's fast).
                   command = "dep ensure -update --no-vendor #{dependency.name}"
-                  run_shell_command(command)
+                  dir_parts = dir.realpath.to_s.split("/")
+                  gopath = File.join(dir_parts[0..-(base_parts + 1)])
+                  run_shell_command(command, "GOPATH" => gopath)
                 end
 
                 new_lockfile_content = File.read("Gopkg.lock")
@@ -43,7 +48,6 @@ module Dependabot
                 get_version_from_lockfile(new_lockfile_content)
               end
 
-            FileUtils.rm_rf(go_dir)
             updated_version
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_dep_errors(error)
@@ -71,9 +75,9 @@ module Dependabot
             raise
           end
 
-          def run_shell_command(command)
+          def run_shell_command(command, env = {})
             raw_response = nil
-            IO.popen(command, err: %i(child out)) do |process|
+            IO.popen(env, command, err: %i(child out)) do |process|
               raw_response = process.read
             end
 
@@ -94,14 +98,6 @@ module Dependabot
             end
 
             File.write("hello.go", dummy_app_content)
-          end
-
-          def go_dir
-            # Work in a directory called "$HOME/go/src/dependabot-tmp".
-            # TODO: This should pick up what the user's actual GOPATH is.
-            go_dir = File.join(Dir.home, "go", "src", "dependabot-tmp")
-            FileUtils.mkdir_p(go_dir)
-            go_dir
           end
 
           def dummy_app_content

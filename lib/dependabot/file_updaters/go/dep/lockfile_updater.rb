@@ -19,8 +19,11 @@ module Dependabot
           end
 
           def updated_lockfile_content
+            base_directory = File.join("src", "project",
+                                       dependency_files.first.directory)
+            base_parts = base_directory.split("/").length
             updated_content =
-              Dir.chdir(go_dir) do
+              SharedHelpers.in_a_temporary_directory(base_directory) do |dir|
                 write_temporary_dependency_files
 
                 SharedHelpers.with_git_configured(credentials: credentials) do
@@ -30,13 +33,14 @@ module Dependabot
                   # for each project.
                   command = "dep ensure -update "\
                             "#{dependencies.map(&:name).join(' ')}"
-                  run_shell_command(command)
+                  dir_parts = dir.realpath.to_s.split("/")
+                  gopath = File.join(dir_parts[0..-(base_parts + 1)])
+                  run_shell_command(command, "GOPATH" => gopath)
                 end
 
                 File.read("Gopkg.lock")
               end
 
-            FileUtils.rm_rf(go_dir)
             updated_content
           end
 
@@ -44,9 +48,9 @@ module Dependabot
 
           attr_reader :dependencies, :dependency_files, :credentials
 
-          def run_shell_command(command)
+          def run_shell_command(command, env = {})
             raw_response = nil
-            IO.popen(command, err: %i(child out)) do |process|
+            IO.popen(env, command, err: %i(child out)) do |process|
               raw_response = process.read
             end
 
@@ -137,14 +141,6 @@ module Dependabot
             end
 
             parsed_manifest["constraint"] << details
-          end
-
-          def go_dir
-            # Work in a directory called "$HOME/go/src/dependabot-tmp".
-            # TODO: This should pick up what the user's actual GOPATH is.
-            go_dir = File.join(Dir.home, "go", "src", "dependabot-tmp")
-            FileUtils.mkdir_p(go_dir)
-            go_dir
           end
 
           def dummy_app_content
