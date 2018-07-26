@@ -23,6 +23,8 @@ module Dependabot
               fetch("repositories").
               map { |details| details.fetch("url") }.
               map { |url| url.strip.gsub(%r{/$}, "") }.
+              # Reject non-http URLs because they're probably parsing mistakes
+              select { |url| url.start_with?("http") }.
               uniq
 
             return repository_urls unless repository_urls.empty?
