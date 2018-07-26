@@ -1,3 +1,8 @@
+## v0.63.3, 26 July 2018
+
+- Go: Raise Dependabot::GitDependenciesNotReachable error for unreachable git
+  dependencies
+
 ## v0.63.2, 26 July 2018
 
 - Go: Better library detection (pull down all top-level Go files)
