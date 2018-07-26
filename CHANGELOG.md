@@ -1,3 +1,8 @@
+## v0.63.4, 26 July 2018
+
+- JS: Handle substring git reference versions
+- Gradle: Silence persistent bug (replace with pending spec)
+
 ## v0.63.3, 26 July 2018
 
 - Go: Raise Dependabot::GitDependenciesNotReachable error for unreachable git
