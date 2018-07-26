@@ -1,3 +1,9 @@
+## v0.63.0, 26 July 2018
+
+- Elixir: Use Elixir v1.7.0 (which includes hex resolver changes)
+- Go: Make use of new information in dep v0.5.0 lockfiles, if available
+- Go: Update dep behaviour to work with dep v0.5.0 (i.e., create digests)
+
 ## v0.62.5, 25 July 2018
 
 - Go: Fix file update generation for branches
