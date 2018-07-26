@@ -134,7 +134,8 @@ module Dependabot
                 ">= #{lower_bound_version}"
               end
 
-            unless version_class.correct?(latest_allowable_version) &&
+            unless latest_allowable_version &&
+                   version_class.correct?(latest_allowable_version) &&
                    version_class.new(latest_allowable_version) >=
                    version_class.new(lower_bound_version)
               return lower_bound_req
