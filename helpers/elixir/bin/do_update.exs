@@ -2,11 +2,11 @@
 
 grouped_creds = Enum.reduce credentials, [], fn cred, acc ->
   if List.last(acc) == nil || List.last(acc)[:token] do
-    acc = List.insert_at(acc, -1, %{ organization: cred })
+    List.insert_at(acc, -1, %{ organization: cred })
   else
     { item, acc } = List.pop_at(acc, -1)
     item = Map.put(item, :token, cred)
-    acc = List.insert_at(acc, -1, item)
+    List.insert_at(acc, -1, item)
   end
 end
 
