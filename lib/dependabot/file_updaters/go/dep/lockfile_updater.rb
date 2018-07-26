@@ -24,9 +24,11 @@ module Dependabot
                 write_temporary_dependency_files
 
                 SharedHelpers.with_git_configured(credentials: credentials) do
-                  # Shell out to dep, which handles everything for us, and does
-                  # so without doing an install (so it's fast).
-                  command = "dep ensure -update --no-vendor "\
+                  # Shell out to dep, which handles everything for us.
+                  # Note: We are currently doing a full install here (we're not
+                  # passing no-vendor) because dep needs to generate the digests
+                  # for each project.
+                  command = "dep ensure -update "\
                             "#{dependencies.map(&:name).join(' ')}"
                   run_shell_command(command)
                 end
