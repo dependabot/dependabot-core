@@ -44,6 +44,13 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
         body: fixture("github", "contents_gopkg_lock.json"),
         headers: { "content-type" => "application/json" }
       )
+    stub_request(:get, url + "?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_go_library.json"),
+        headers: { "content-type" => "application/json" }
+      )
   end
 
   it "fetches the Gopkg.toml and Gopkg.lock" do
@@ -74,6 +81,30 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
     it "raises a helpful error" do
       expect { file_fetcher_instance.files }.
         to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
+  context "for an application" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_go_app.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "main.go?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_gopkg_lock.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the main.go, too" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Gopkg.toml Gopkg.lock main.go))
     end
   end
 end

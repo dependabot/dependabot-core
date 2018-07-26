@@ -45,6 +45,7 @@ module Dependabot
             RequirementsUpdater.new(
               requirements: dependency.requirements,
               updated_source: updated_source,
+              library: library?,
               latest_version: latest_version&.to_s,
               latest_resolvable_version: latest_resolvable_version&.to_s
             ).updated_requirements
@@ -59,6 +60,10 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def library?
+          !dependency_files.map(&:name).include?("main.go")
         end
 
         def latest_resolvable_version_for_git_dependency

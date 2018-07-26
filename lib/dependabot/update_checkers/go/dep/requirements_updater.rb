@@ -13,10 +13,11 @@ module Dependabot
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
 
-          def initialize(requirements:, updated_source:,
+          def initialize(requirements:, updated_source:, library:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
             @updated_source = updated_source
+            @library = library
 
             if latest_version && version_class.correct?(latest_version)
               @latest_version = version_class.new(latest_version)
@@ -34,9 +35,8 @@ module Dependabot
               next req unless latest_resolvable_version
               next initial_req_after_source_change(req) unless req[:requirement]
 
-              # In future we'll write logic to update apps differently, but
-              # for now we can't tell them apart
-              updated_library_requirement(req)
+              next updated_library_requirement(req) if library?
+              updated_app_requirement(req)
             end
           end
 
@@ -44,6 +44,10 @@ module Dependabot
 
           attr_reader :requirements, :updated_source,
                       :latest_version, :latest_resolvable_version
+
+          def library?
+            @library
+          end
 
           def updating_from_git_to_version?
             return false unless updated_source&.fetch(:type) == "default"
@@ -76,6 +80,32 @@ module Dependabot
               else
                 # Convert existing requirement to a range
                 create_new_range_requirement(reqs)
+              end
+
+            req.merge(requirement: updated_requirement)
+          end
+
+          def updated_app_requirement(req)
+            current_requirement = req[:requirement]
+            version = latest_resolvable_version
+
+            ruby_reqs = ruby_requirements(current_requirement)
+            reqs = current_requirement.strip.split(",").map(&:strip)
+
+            if ruby_reqs.any? { |r| r.satisfied_by?(version) } &&
+               current_requirement.match?(/(<|-\s|\|\|)/)
+              return req
+            end
+
+            updated_requirement =
+              if current_requirement.include?("||")
+                # Further widen the range by adding another OR condition
+                current_requirement + " || ^#{version}"
+              elsif reqs.any? { |r| r.match?(/(<|-\s)/) }
+                # Further widen the range by updating the upper bound
+                update_range_requirement(current_requirement)
+              else
+                update_version_requirement(reqs)
               end
 
             req.merge(requirement: updated_requirement)
@@ -123,6 +153,13 @@ module Dependabot
               end
 
             ">= #{lower_bound}, < #{upper_bound}"
+          end
+
+          def update_version_requirement(string_reqs)
+            version = latest_resolvable_version.to_s.gsub(/^v/, "")
+            current_req = string_reqs.first
+
+            current_req.gsub(VERSION_REGEX, version)
           end
 
           def create_upper_bound_for_tilda_req(string_req)

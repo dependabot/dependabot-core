@@ -1,0 +1,514 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "66be63a00578abc9791f1f1f765676303aea185b",
+    "size": 7,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/66be63a00578abc9791f1f1f765676303aea185b",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/66be63a00578abc9791f1f1f765676303aea185b",
+      "html": "https://github.com/sirupsen/logrus/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".travis.yml",
+    "path": ".travis.yml",
+    "sha": "2f19b4a757a94141dd474fd3bd908e425b7beae7",
+    "size": 296,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/.travis.yml?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/.travis.yml",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/2f19b4a757a94141dd474fd3bd908e425b7beae7",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/.travis.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/.travis.yml?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/2f19b4a757a94141dd474fd3bd908e425b7beae7",
+      "html": "https://github.com/sirupsen/logrus/blob/master/.travis.yml"
+    }
+  },
+  {
+    "name": "CHANGELOG.md",
+    "path": "CHANGELOG.md",
+    "sha": "1bd1deb294752a1764352ee708af687ca7ad9ae3",
+    "size": 2658,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/CHANGELOG.md?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/CHANGELOG.md",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/1bd1deb294752a1764352ee708af687ca7ad9ae3",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/CHANGELOG.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/CHANGELOG.md?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/1bd1deb294752a1764352ee708af687ca7ad9ae3",
+      "html": "https://github.com/sirupsen/logrus/blob/master/CHANGELOG.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "f090cb42f370bda9e7f4f58d9b8b8ee2750c115f",
+    "size": 1082,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/f090cb42f370bda9e7f4f58d9b8b8ee2750c115f",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/f090cb42f370bda9e7f4f58d9b8b8ee2750c115f",
+      "html": "https://github.com/sirupsen/logrus/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "072e99be3137632f64c1bf57c49a67a199f74026",
+    "size": 16754,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/README.md?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/072e99be3137632f64c1bf57c49a67a199f74026",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/072e99be3137632f64c1bf57c49a67a199f74026",
+      "html": "https://github.com/sirupsen/logrus/blob/master/README.md"
+    }
+  },
+  {
+    "name": "alt_exit.go",
+    "path": "alt_exit.go",
+    "sha": "8af90637a99e61a5f55df746e1f916b4b0ffab06",
+    "size": 2246,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/alt_exit.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/alt_exit.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/8af90637a99e61a5f55df746e1f916b4b0ffab06",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/alt_exit.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/alt_exit.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/8af90637a99e61a5f55df746e1f916b4b0ffab06",
+      "html": "https://github.com/sirupsen/logrus/blob/master/alt_exit.go"
+    }
+  },
+  {
+    "name": "alt_exit_test.go",
+    "path": "alt_exit_test.go",
+    "sha": "a08b1a898f665878347a19952ab3037afc66ea62",
+    "size": 1623,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/alt_exit_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/alt_exit_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a08b1a898f665878347a19952ab3037afc66ea62",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/alt_exit_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/alt_exit_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a08b1a898f665878347a19952ab3037afc66ea62",
+      "html": "https://github.com/sirupsen/logrus/blob/master/alt_exit_test.go"
+    }
+  },
+  {
+    "name": "appveyor.yml",
+    "path": "appveyor.yml",
+    "sha": "96c2ce15f842b92c87952ba5702d33c37ccf1344",
+    "size": 281,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/appveyor.yml?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/appveyor.yml",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/96c2ce15f842b92c87952ba5702d33c37ccf1344",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/appveyor.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/appveyor.yml?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/96c2ce15f842b92c87952ba5702d33c37ccf1344",
+      "html": "https://github.com/sirupsen/logrus/blob/master/appveyor.yml"
+    }
+  },
+  {
+    "name": "doc.go",
+    "path": "doc.go",
+    "sha": "da67aba06debf6721a2d97604145aa09ac257e19",
+    "size": 586,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/doc.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/doc.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/da67aba06debf6721a2d97604145aa09ac257e19",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/doc.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/doc.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/da67aba06debf6721a2d97604145aa09ac257e19",
+      "html": "https://github.com/sirupsen/logrus/blob/master/doc.go"
+    }
+  },
+  {
+    "name": "entry.go",
+    "path": "entry.go",
+    "sha": "c2b2e493d8814cce43b09eeeedf408d931df4b21",
+    "size": 7462,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/entry.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/entry.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/c2b2e493d8814cce43b09eeeedf408d931df4b21",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/entry.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/entry.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/c2b2e493d8814cce43b09eeeedf408d931df4b21",
+      "html": "https://github.com/sirupsen/logrus/blob/master/entry.go"
+    }
+  },
+  {
+    "name": "entry_test.go",
+    "path": "entry_test.go",
+    "sha": "a81e2b3834cfe89b77bd99f5d2bfba8b14d6e4ac",
+    "size": 2126,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/entry_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/entry_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a81e2b3834cfe89b77bd99f5d2bfba8b14d6e4ac",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/entry_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/entry_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a81e2b3834cfe89b77bd99f5d2bfba8b14d6e4ac",
+      "html": "https://github.com/sirupsen/logrus/blob/master/entry_test.go"
+    }
+  },
+  {
+    "name": "example_basic_test.go",
+    "path": "example_basic_test.go",
+    "sha": "a2acf550c95dfecb11132ec8578d2b6ef8d4c560",
+    "size": 2042,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/example_basic_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/example_basic_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a2acf550c95dfecb11132ec8578d2b6ef8d4c560",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/example_basic_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/example_basic_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/a2acf550c95dfecb11132ec8578d2b6ef8d4c560",
+      "html": "https://github.com/sirupsen/logrus/blob/master/example_basic_test.go"
+    }
+  },
+  {
+    "name": "example_hook_test.go",
+    "path": "example_hook_test.go",
+    "sha": "d4ddffca37ffe59a15a670d50a9c285a108c2e32",
+    "size": 1001,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/example_hook_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/example_hook_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/d4ddffca37ffe59a15a670d50a9c285a108c2e32",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/example_hook_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/example_hook_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/d4ddffca37ffe59a15a670d50a9c285a108c2e32",
+      "html": "https://github.com/sirupsen/logrus/blob/master/example_hook_test.go"
+    }
+  },
+  {
+    "name": "exported.go",
+    "path": "exported.go",
+    "sha": "eb612a6f3e8a87ef7dd297c61396acf972dec2b3",
+    "size": 5283,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/exported.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/exported.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/eb612a6f3e8a87ef7dd297c61396acf972dec2b3",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/exported.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/exported.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/eb612a6f3e8a87ef7dd297c61396acf972dec2b3",
+      "html": "https://github.com/sirupsen/logrus/blob/master/exported.go"
+    }
+  },
+  {
+    "name": "formatter.go",
+    "path": "formatter.go",
+    "sha": "83c74947beab291bffa8205e6646b35c1ef1536f",
+    "size": 1603,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/formatter.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/formatter.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/83c74947beab291bffa8205e6646b35c1ef1536f",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/formatter.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/formatter.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/83c74947beab291bffa8205e6646b35c1ef1536f",
+      "html": "https://github.com/sirupsen/logrus/blob/master/formatter.go"
+    }
+  },
+  {
+    "name": "formatter_bench_test.go",
+    "path": "formatter_bench_test.go",
+    "sha": "d9481589f5f0e3bce680d81a4766a6f47fae16ed",
+    "size": 2143,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/formatter_bench_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/formatter_bench_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/d9481589f5f0e3bce680d81a4766a6f47fae16ed",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/formatter_bench_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/formatter_bench_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/d9481589f5f0e3bce680d81a4766a6f47fae16ed",
+      "html": "https://github.com/sirupsen/logrus/blob/master/formatter_bench_test.go"
+    }
+  },
+  {
+    "name": "hook_test.go",
+    "path": "hook_test.go",
+    "sha": "4fea7514e1b7bfa9ee0d09c51b2495ec463a30cd",
+    "size": 2549,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/hook_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/hook_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/4fea7514e1b7bfa9ee0d09c51b2495ec463a30cd",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/hook_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/hook_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/4fea7514e1b7bfa9ee0d09c51b2495ec463a30cd",
+      "html": "https://github.com/sirupsen/logrus/blob/master/hook_test.go"
+    }
+  },
+  {
+    "name": "hooks.go",
+    "path": "hooks.go",
+    "sha": "3f151cdc39275a003d6a6e7059b0801071c001a8",
+    "size": 1101,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/hooks.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/hooks.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3f151cdc39275a003d6a6e7059b0801071c001a8",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/hooks.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/hooks.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3f151cdc39275a003d6a6e7059b0801071c001a8",
+      "html": "https://github.com/sirupsen/logrus/blob/master/hooks.go"
+    }
+  },
+  {
+    "name": "hooks",
+    "path": "hooks",
+    "sha": "38f957031349e4a370df3c5fcd11c4db397cd6ec",
+    "size": 0,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/hooks?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/tree/master/hooks",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/trees/38f957031349e4a370df3c5fcd11c4db397cd6ec",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/hooks?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/trees/38f957031349e4a370df3c5fcd11c4db397cd6ec",
+      "html": "https://github.com/sirupsen/logrus/tree/master/hooks"
+    }
+  },
+  {
+    "name": "json_formatter.go",
+    "path": "json_formatter.go",
+    "sha": "dab17610f172e45833cd19eb9bfc2a61cbb0e6b1",
+    "size": 2117,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/json_formatter.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/json_formatter.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dab17610f172e45833cd19eb9bfc2a61cbb0e6b1",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/json_formatter.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/json_formatter.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dab17610f172e45833cd19eb9bfc2a61cbb0e6b1",
+      "html": "https://github.com/sirupsen/logrus/blob/master/json_formatter.go"
+    }
+  },
+  {
+    "name": "json_formatter_test.go",
+    "path": "json_formatter_test.go",
+    "sha": "0dde3004cbccc291bc342a52191752fd7f4b4653",
+    "size": 7011,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/json_formatter_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/json_formatter_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/0dde3004cbccc291bc342a52191752fd7f4b4653",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/json_formatter_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/json_formatter_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/0dde3004cbccc291bc342a52191752fd7f4b4653",
+      "html": "https://github.com/sirupsen/logrus/blob/master/json_formatter_test.go"
+    }
+  },
+  {
+    "name": "logger.go",
+    "path": "logger.go",
+    "sha": "342f7977d85b84b2a21797085de4c5a848c0c0e0",
+    "size": 8373,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/logger.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/logger.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/342f7977d85b84b2a21797085de4c5a848c0c0e0",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/logger.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/logger.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/342f7977d85b84b2a21797085de4c5a848c0c0e0",
+      "html": "https://github.com/sirupsen/logrus/blob/master/logger.go"
+    }
+  },
+  {
+    "name": "logger_bench_test.go",
+    "path": "logger_bench_test.go",
+    "sha": "dd23a3535ec9626a00e590bf53f221017fc99f39",
+    "size": 1344,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/logger_bench_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/logger_bench_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dd23a3535ec9626a00e590bf53f221017fc99f39",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/logger_bench_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/logger_bench_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dd23a3535ec9626a00e590bf53f221017fc99f39",
+      "html": "https://github.com/sirupsen/logrus/blob/master/logger_bench_test.go"
+    }
+  },
+  {
+    "name": "logrus.go",
+    "path": "logrus.go",
+    "sha": "dd38999741ed0802ad3d28892abb3c0b60a56c16",
+    "size": 3667,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/logrus.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/logrus.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dd38999741ed0802ad3d28892abb3c0b60a56c16",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/logrus.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/logrus.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/dd38999741ed0802ad3d28892abb3c0b60a56c16",
+      "html": "https://github.com/sirupsen/logrus/blob/master/logrus.go"
+    }
+  },
+  {
+    "name": "logrus_test.go",
+    "path": "logrus_test.go",
+    "sha": "57fb8d1c6ecfbb3eac12e3401e6580113e6a8991",
+    "size": 11148,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/logrus_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/logrus_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/57fb8d1c6ecfbb3eac12e3401e6580113e6a8991",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/logrus_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/logrus_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/57fb8d1c6ecfbb3eac12e3401e6580113e6a8991",
+      "html": "https://github.com/sirupsen/logrus/blob/master/logrus_test.go"
+    }
+  },
+  {
+    "name": "terminal_bsd.go",
+    "path": "terminal_bsd.go",
+    "sha": "4880d13d26d803691bc1eccecf02895a5e5c1a3a",
+    "size": 196,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_bsd.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/terminal_bsd.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/4880d13d26d803691bc1eccecf02895a5e5c1a3a",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/terminal_bsd.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_bsd.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/4880d13d26d803691bc1eccecf02895a5e5c1a3a",
+      "html": "https://github.com/sirupsen/logrus/blob/master/terminal_bsd.go"
+    }
+  },
+  {
+    "name": "terminal_check_appengine.go",
+    "path": "terminal_check_appengine.go",
+    "sha": "3de08e802fde8205884c7cb6f4639154c65eb4d2",
+    "size": 120,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_check_appengine.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/terminal_check_appengine.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3de08e802fde8205884c7cb6f4639154c65eb4d2",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/terminal_check_appengine.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_check_appengine.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3de08e802fde8205884c7cb6f4639154c65eb4d2",
+      "html": "https://github.com/sirupsen/logrus/blob/master/terminal_check_appengine.go"
+    }
+  },
+  {
+    "name": "terminal_check_notappengine.go",
+    "path": "terminal_check_notappengine.go",
+    "sha": "067047a12334012d22ac8c6940ea5dd9e40b5a0b",
+    "size": 262,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_check_notappengine.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/067047a12334012d22ac8c6940ea5dd9e40b5a0b",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/terminal_check_notappengine.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_check_notappengine.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/067047a12334012d22ac8c6940ea5dd9e40b5a0b",
+      "html": "https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go"
+    }
+  },
+  {
+    "name": "terminal_linux.go",
+    "path": "terminal_linux.go",
+    "sha": "f29a0097c81d564591900c094f71174e681d8aaa",
+    "size": 330,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_linux.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/terminal_linux.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/f29a0097c81d564591900c094f71174e681d8aaa",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/terminal_linux.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/terminal_linux.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/f29a0097c81d564591900c094f71174e681d8aaa",
+      "html": "https://github.com/sirupsen/logrus/blob/master/terminal_linux.go"
+    }
+  },
+  {
+    "name": "text_formatter.go",
+    "path": "text_formatter.go",
+    "sha": "3e55040304dfb161843b4ba833500de128e9634b",
+    "size": 4687,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/text_formatter.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/text_formatter.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3e55040304dfb161843b4ba833500de128e9634b",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/text_formatter.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/text_formatter.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/3e55040304dfb161843b4ba833500de128e9634b",
+      "html": "https://github.com/sirupsen/logrus/blob/master/text_formatter.go"
+    }
+  },
+  {
+    "name": "text_formatter_test.go",
+    "path": "text_formatter_test.go",
+    "sha": "921d0522b1452ae0f31f9e5d7f30d2a8e5958a11",
+    "size": 5930,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/text_formatter_test.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/text_formatter_test.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/921d0522b1452ae0f31f9e5d7f30d2a8e5958a11",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/text_formatter_test.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/text_formatter_test.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/921d0522b1452ae0f31f9e5d7f30d2a8e5958a11",
+      "html": "https://github.com/sirupsen/logrus/blob/master/text_formatter_test.go"
+    }
+  },
+  {
+    "name": "writer.go",
+    "path": "writer.go",
+    "sha": "7bdebedc60bb91b7c24ec373cace3c6d3e9365a7",
+    "size": 1269,
+    "url": "https://api.github.com/repos/sirupsen/logrus/contents/writer.go?ref=master",
+    "html_url": "https://github.com/sirupsen/logrus/blob/master/writer.go",
+    "git_url": "https://api.github.com/repos/sirupsen/logrus/git/blobs/7bdebedc60bb91b7c24ec373cace3c6d3e9365a7",
+    "download_url": "https://raw.githubusercontent.com/sirupsen/logrus/master/writer.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/sirupsen/logrus/contents/writer.go?ref=master",
+      "git": "https://api.github.com/repos/sirupsen/logrus/git/blobs/7bdebedc60bb91b7c24ec373cace3c6d3e9365a7",
+      "html": "https://github.com/sirupsen/logrus/blob/master/writer.go"
+    }
+  }
+]

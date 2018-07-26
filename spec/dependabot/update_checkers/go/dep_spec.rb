@@ -289,6 +289,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       expect(described_class::RequirementsUpdater).to receive(:new).with(
         requirements: dependency.requirements,
         updated_source: source,
+        library: true,
         latest_version: "3.2.0",
         latest_resolvable_version: "3.2.0"
       ).and_call_original

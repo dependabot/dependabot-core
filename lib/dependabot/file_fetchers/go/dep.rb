@@ -20,6 +20,10 @@ module Dependabot
           fetched_files = []
           fetched_files << manifest
           fetched_files << lockfile
+
+          # Fetch the main.go file if present, as this will later identify
+          # this repo as an app.
+          fetched_files << main if main
           fetched_files
         end
 
@@ -29,6 +33,10 @@ module Dependabot
 
         def lockfile
           @lockfile ||= fetch_file_from_host("Gopkg.lock")
+        end
+
+        def main
+          fetch_file_if_present("main.go")
         end
       end
     end
