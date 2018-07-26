@@ -1,0 +1,7 @@
+required = [
+ "github.com/dependabot/private-go-dep",
+ ]
+
+[[constraint]]
+  name = "github.com/dependabot/private-go-dep"
+  version = "1.0.0"

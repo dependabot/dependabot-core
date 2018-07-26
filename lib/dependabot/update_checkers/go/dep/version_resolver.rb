@@ -10,6 +10,8 @@ module Dependabot
     module Go
       class Dep
         class VersionResolver
+          NOT_FOUND_REGEX = /failed to list versions for (?<repo_url>.*): ERROR/
+
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
@@ -43,6 +45,8 @@ module Dependabot
 
             FileUtils.rm_rf(go_dir)
             updated_version
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            handle_dep_errors(error)
           end
 
           def get_version_from_lockfile(lockfile_content)
@@ -54,6 +58,17 @@ module Dependabot
             else
               package.fetch("revision")
             end
+          end
+
+          def handle_dep_errors(error)
+            if error.message.include?("Repository not found")
+              url = error.message.match(NOT_FOUND_REGEX).
+                    named_captures.fetch("repo_url")
+
+              raise Dependabot::GitDependenciesNotReachable, url
+            end
+
+            raise
           end
 
           def run_shell_command(command)

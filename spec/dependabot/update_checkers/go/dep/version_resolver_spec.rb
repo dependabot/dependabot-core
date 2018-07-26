@@ -81,6 +81,28 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
         it { is_expected.to eq("0605a8320aceb4207a5fb3521281e17ec2075476") }
       end
 
+      context "that is unreachable" do
+        let(:manifest_fixture_name) { "unreachable_source.toml" }
+        let(:lockfile_fixture_name) { "unreachable_source.lock" }
+        let(:dependency_name) { "github.com/dependabot/private-go-dep" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/dependabot/private-go-dep",
+            branch: "master",
+            ref: nil
+          }
+        end
+
+        it "raises a helpful error" do
+          expect { latest_resolvable_version }.to raise_error do |error|
+            expect(error).to be_a Dependabot::GitDependenciesNotReachable
+            expect(error.dependency_urls).
+              to eq(["https://github.com/dependabot/private-go-dep"])
+          end
+        end
+      end
+
       context "that specifies a tag as a revision" do
         let(:manifest_fixture_name) { "tag_as_revision.toml" }
         let(:lockfile_fixture_name) { "tag_as_revision.lock" }
