@@ -1,3 +1,7 @@
+## v0.63.2, 26 July 2018
+
+- Go: Better library detection (pull down all top-level Go files)
+
 ## v0.63.1, 26 July 2018
 
 - Go: Update app requirements differently to library requirements
