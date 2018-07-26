@@ -115,7 +115,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
           expect(updated_lockfile_content).
             to include("0605a8320aceb4207a5fb3521281e17ec2075476")
           expect(updated_lockfile_content).
-            to include(%(branch = "master"\n  name = "golang.org/x/text"))
+            to include(%(branch = "master"\n))
         end
 
         context "to use a release instead" do
