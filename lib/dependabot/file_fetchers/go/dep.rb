@@ -36,7 +36,17 @@ module Dependabot
         end
 
         def main
-          fetch_file_if_present("main.go")
+          return @main if @main
+
+          go_files = repo_contents.select { |f| f.name.end_with?(".go") }
+
+          go_files.each do |go_file|
+            file = fetch_file_from_host(go_file.name, type: "package_main")
+            next unless file.content.match?(/\s*package\s+main/)
+            return @main = file
+          end
+
+          nil
         end
       end
     end

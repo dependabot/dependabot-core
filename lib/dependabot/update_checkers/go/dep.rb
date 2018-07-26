@@ -63,7 +63,7 @@ module Dependabot
         end
 
         def library?
-          !dependency_files.map(&:name).include?("main.go")
+          dependency_files.none? { |f| f.type == "package_main" }
         end
 
         def latest_resolvable_version_for_git_dependency

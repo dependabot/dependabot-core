@@ -319,6 +319,28 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           }]
         )
       end
+
+      context "for an application" do
+        before do
+          dependency_files <<
+            Dependabot::DependencyFile.new(
+              name: "main.go",
+              content: "code",
+              type: "package_main"
+            )
+        end
+
+        it "updates the requirements for the new version range" do
+          expect(checker.updated_requirements).to eq(
+            [{
+              file: "Gopkg.toml",
+              requirement: "3.2.0",
+              groups: [],
+              source: { type: "default", source: "github.com/dgrijalva/jwt-go" }
+            }]
+          )
+        end
+      end
     end
 
     context "with a git dependency we should switch" do

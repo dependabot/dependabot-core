@@ -51,6 +51,13 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
         body: fixture("github", "contents_go_library.json"),
         headers: { "content-type" => "application/json" }
       )
+    stub_request(:get, /#{Regexp.quote(url)}.*\.go\?ref=sha/).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_gopkg_lock.json"),
+        headers: { "content-type" => "application/json" }
+      )
   end
 
   it "fetches the Gopkg.toml and Gopkg.lock" do
@@ -97,7 +104,7 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_gopkg_lock.json"),
+          body: fixture("github", "contents_main_go.json"),
           headers: { "content-type" => "application/json" }
         )
     end
@@ -105,6 +112,7 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
     it "fetches the main.go, too" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Gopkg.toml Gopkg.lock main.go))
+      expect(file_fetcher_instance.files.last.type).to eq("package_main")
     end
   end
 end
