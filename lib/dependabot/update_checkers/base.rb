@@ -129,11 +129,12 @@ module Dependabot
       end
 
       def existing_version_is_sha1?
-        dependency.version.match?(/^[0-9a-f]{40}$/)
+        return false if version_class.correct?(dependency.version)
+        dependency.version.match?(/^[0-9a-f]{6,}$/)
       end
 
       def sha1_version_up_to_date?
-        latest_version && latest_version == dependency.version
+        latest_version&.to_s&.start_with?(dependency.version)
       end
 
       def sha1_version_can_update?(requirements_to_unlock:)
@@ -143,10 +144,10 @@ module Dependabot
         case requirements_to_unlock&.to_sym
         when :none
           new_version = latest_resolvable_version_with_no_unlock
-          new_version && new_version != dependency.version
+          new_version && !new_version.to_s.start_with?(dependency.version)
         when :own
           new_version = latest_resolvable_version
-          new_version && new_version != dependency.version
+          new_version && !new_version.to_s.start_with?(dependency.version)
         when :all
           latest_version_resolvable_with_full_unlock?
         else raise "Unknown unlock level '#{requirements_to_unlock}'"
