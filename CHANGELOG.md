@@ -1,3 +1,10 @@
+## v0.63.5, 26 July 2018
+
+- Go: Protect against nil `latest_resolvable_version` (for previous rubygems
+  version)
+- Go: Handle dependencies that specify a tag as a version
+
+
 ## v0.63.4, 26 July 2018
 
 - JS: Handle substring git reference versions
