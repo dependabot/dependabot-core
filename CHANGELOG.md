@@ -1,3 +1,7 @@
+## v0.63.1, 26 July 2018
+
+- Go: Update app requirements differently to library requirements
+
 ## v0.63.0, 26 July 2018
 
 - Elixir: Use Elixir v1.7.0 (which includes hex resolver changes)
