@@ -153,7 +153,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
             expect(dependency.version).to eq("r2018.04.23")
             expect(dependency.requirements).to eq(
               [{
-                requirement: "r2018.04.23",
+                requirement: nil,
                 file: "Gopkg.toml",
                 groups: [],
                 source: {

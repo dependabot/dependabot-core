@@ -193,7 +193,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
           let(:dependency_previous_version) { "r2018.04.23" }
           let(:requirements) do
             [{
-              requirement: "r2018.06.15",
+              requirement: nil,
               file: "Gopkg.toml",
               groups: [],
               source: {
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
           end
           let(:previous_requirements) do
             [{
-              requirement: "r2018.04.23",
+              requirement: nil,
               file: "Gopkg.toml",
               groups: [],
               source: {

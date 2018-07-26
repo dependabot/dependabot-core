@@ -216,11 +216,22 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
               ref: "r2018.04.23"
             }
           end
-          let(:req_str) { "r2018.04.23" }
+          let(:req_str) { nil }
           let(:dependency_version) { "r2018.04.23" }
 
-          it "doesn't update the tag (not version-like enough)" do
+          it "updates the tag" do
             expect(latest_resolvable_version).to eq("r2018.06.15")
+          end
+
+          context "with the revision as the version" do
+            let(:lockfile_fixture_name) { "tag_as_version_old.lock" }
+            let(:dependency_version) do
+              "efe0945164a7e582241f37ae8983c075f8f2e870"
+            end
+
+            it "updates the tag" do
+              expect(latest_resolvable_version).to eq("r2018.06.15")
+            end
           end
         end
       end

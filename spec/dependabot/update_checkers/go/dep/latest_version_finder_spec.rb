@@ -158,7 +158,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
               ref: "r2018.04.23"
             }
           end
-          let(:req_str) { "r2018.04.23" }
+          let(:req_str) { nil }
           let(:dependency_version) { "r2018.04.23" }
 
           let(:service_pack_url) do

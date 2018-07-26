@@ -73,6 +73,7 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
 
+          return if git_declaration?(declaration)
           declaration["version"]
         end
 

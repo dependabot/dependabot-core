@@ -222,7 +222,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
               let(:lockfile_fixture_name) { "tag_as_version.lock" }
               let(:dependency_version) { "r2018.06.15" }
               let(:dependency_name) { "github.com/globalsign/mgo" }
-              let(:string_req) { "r2018.04.23" }
+              let(:string_req) { nil }
               let(:source) do
                 {
                   type: "git",
@@ -238,6 +238,18 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
                 it "updates the requirement" do
                   expect(prepared_manifest_file.content).
                     to include('version = "r2018.06.15"')
+                end
+
+                context "and a non-tag version" do
+                  let(:lockfile_fixture_name) { "tag_as_version_old.lock" }
+                  let(:dependency_version) do
+                    "113d3961e7311526535a1ef7042196563d442761"
+                  end
+
+                  it "updates the requirement" do
+                    expect(prepared_manifest_file.content).
+                      to include('version = "r2018.06.15"')
+                  end
                 end
               end
             end
