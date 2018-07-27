@@ -1,3 +1,7 @@
+## v0.63.8, 27 July 2018
+
+- Go: Use GOPATHs in temp dirs when shelling out to dep
+
 ## v0.63.7, 27 July 2018
 
 - Go: Make updated version format match original format when using tags
