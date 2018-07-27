@@ -7,7 +7,7 @@ require "English"
 module Dependabot
   module SharedHelpers
     BUMP_TMP_FILE_PREFIX = "dependabot_"
-    BUMP_TMP_DIR_PATH = Dir.tmpdir
+    BUMP_TMP_DIR_PATH = "tmp"
 
     class ChildProcessFailed < StandardError
       attr_reader :error_class, :error_message, :error_backtrace
