@@ -219,7 +219,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           let(:req_str) { nil }
           let(:dependency_version) { "r2018.04.23" }
 
-          it "updates the tag" do
+          it "returns the updated the tag name" do
             expect(latest_resolvable_version).to eq("r2018.06.15")
           end
 
@@ -229,8 +229,9 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
               "efe0945164a7e582241f37ae8983c075f8f2e870"
             end
 
-            it "updates the tag" do
-              expect(latest_resolvable_version).to eq("r2018.06.15")
+            it "returns the updated tag commit sha" do
+              expect(latest_resolvable_version).
+                to eq("113d3961e7311526535a1ef7042196563d442761")
             end
           end
         end

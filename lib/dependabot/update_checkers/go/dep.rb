@@ -85,17 +85,25 @@ module Dependabot
           end
 
           # If the dependency is pinned to a tag that looks like a version then
-          # we want to update that tag. The latest version will be the
-          # tag name (NOT the tag SHA, unlike in other package managers).
+          # we want to update that tag.
           if git_commit_checker.pinned_ref_looks_like_version? &&
              latest_git_tag_is_resolvable?
             new_tag = git_commit_checker.local_tag_for_latest_version
-            return new_tag.fetch(:tag)
+            return version_from_tag(new_tag)
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
           nil
+        end
+
+        def version_from_tag(tag)
+          # To compare with the current version we either use the commit SHA
+          # (if that's what the parser picked up) of the tag name.
+          if dependency.version&.match?(/^[0-9a-f]{40}$/)
+            return tag&.fetch(:commit_sha)
+          end
+          tag&.fetch(:tag)
         end
 
         def latest_resolvable_commit_with_unchanged_git_source

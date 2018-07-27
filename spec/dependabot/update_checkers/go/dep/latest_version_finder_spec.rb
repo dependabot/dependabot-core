@@ -168,6 +168,17 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
           let(:upload_pack_fixture) { "mgo" }
 
           it { is_expected.to eq("r2018.06.15") }
+
+          context "when the current dependency version is a SHA" do
+            let(:dependency_version) do
+              "efe0945164a7e582241f37ae8983c075f8f2e870"
+            end
+
+            it "returns the updated tag commit sha" do
+              expect(finder.latest_version).
+                to eq("113d3961e7311526535a1ef7042196563d442761")
+            end
+          end
         end
 
         context "that is up-to-date" do
