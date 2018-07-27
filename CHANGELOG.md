@@ -1,4 +1,8 @@
-## v0.63.5, 26 July 2018
+## v0.63.7, 27 July 2018
+
+- Go: Make updated version format match original format when using tags
+
+## v0.63.6, 26 July 2018
 
 - Go: Don't parse version as a requirement for git dependencies
 
