@@ -1,4 +1,8 @@
-## v0.63.8, 28 July 2018
+## v0.63.10, 28 July 2018
+
+- Maven: Fix release checking so it actually checks the file type
+
+## v0.63.9, 28 July 2018
 
 - JS: Change library behaviour back for repos without a lockfile
 
