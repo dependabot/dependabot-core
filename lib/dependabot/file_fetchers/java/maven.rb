@@ -59,7 +59,7 @@ module Dependabot
 
             next [] if fetched_filenames.include?(path)
 
-            child_pom = fetch_file_from_host_or_submodule(path)
+            child_pom = fetch_file_from_host(path)
             fetched_filenames += [child_pom.name]
             [
               child_pom,
@@ -68,6 +68,9 @@ module Dependabot
                 fetched_filenames: fetched_filenames
               )
             ].flatten
+          rescue Dependabot::DependencyFileNotFound
+            raise unless fetch_file_from_host_or_submodule(path)
+            [] # Ignore any child submodules (since we can't update them)
           end
         end
 

@@ -128,11 +128,11 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
           )
       end
 
-      it "fetches the poms" do
-        expect(file_fetcher_instance.files.count).to eq(4)
+      it "doesn't fetch the submodule pom (which we couldn't update)" do
+        expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
-            %w(pom.xml util/pom.xml business-app/pom.xml legacy/pom.xml)
+            %w(pom.xml business-app/pom.xml legacy/pom.xml)
           )
       end
     end
