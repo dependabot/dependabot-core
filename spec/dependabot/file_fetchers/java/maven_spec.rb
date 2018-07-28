@@ -91,6 +91,52 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
         )
     end
 
+    context "that uses submodules" do
+      before do
+        stub_request(:get, File.join(url, "util/pom.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: { "content-type" => "application/json" }
+          )
+
+        submodule_details =
+          fixture("github", "submodule.json").
+          gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+        stub_request(:get, File.join(url, "util?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: submodule_details,
+            headers: { "content-type" => "application/json" }
+          )
+
+        sub_url = github_url + "repos/dependabot/manifesto/contents/"
+        stub_request(:get, sub_url + "?ref=sha2").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_dep_and_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, sub_url + "pom.xml?ref=sha2").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_java_basic_pom.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the poms" do
+        expect(file_fetcher_instance.files.count).to eq(4)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(pom.xml util/pom.xml business-app/pom.xml legacy/pom.xml)
+          )
+      end
+    end
+
     context "with a nested multimodule pom" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha")).

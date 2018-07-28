@@ -59,7 +59,7 @@ module Dependabot
 
             next [] if fetched_filenames.include?(path)
 
-            child_pom = fetch_file_from_host(path)
+            child_pom = fetch_file_from_host_or_submodule(path)
             fetched_filenames += [child_pom.name]
             [
               child_pom,

@@ -89,12 +89,22 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      def fetch_file_from_host_or_submodule(filename, type: "file")
+        fetch_file_from_host(filename, type: type)
+      rescue Dependabot::DependencyFileNotFound
+        repo_contents(dir: File.dirname(filename))
+        fetch_file_from_host(filename, type: type)
+      end
+
       def repo_contents(dir: ".")
         path = Pathname.new(File.join(directory, dir)).
                cleanpath.to_path.gsub(%r{^/*}, "")
 
         # Don't fetch contents of repos nested in submodules
-        return [] if @submodule_directories.keys.any? { |k| path.include?(k) }
+        submods = @submodule_directories
+        if submods.keys.any? { |k| path.match?(%r{#{Regexp.quote(k)}(/|$)}) }
+          return []
+        end
 
         @repo_contents ||= {}
         @repo_contents[dir] ||=
