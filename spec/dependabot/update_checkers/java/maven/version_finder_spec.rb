@@ -40,7 +40,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       file: "pom.xml",
       requirement: "23.3-jre",
       groups: [],
-      source: {
+      source: nil,
+      metadata: {
         property_name: nil,
         packaging_type: "jar"
       }

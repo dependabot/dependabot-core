@@ -95,7 +95,7 @@ module Dependabot
 
               artifact_id = dependency.name.split(":").last
               type = dependency.requirements.first.
-                     dig(:source, :packaging_type)
+                     dig(:metadata, :packaging_type)
               response.body.include?("#{artifact_id}-#{version}.#{type}")
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false
