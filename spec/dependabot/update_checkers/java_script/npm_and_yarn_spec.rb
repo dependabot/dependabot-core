@@ -123,7 +123,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
         context "and a requirement that covers but doesn't exactly match" do
           let(:requirement) { "^1.6.0" }
-          it { is_expected.to be_truthy }
+          it { is_expected.to be_falsey }
         end
       end
     end
