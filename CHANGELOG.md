@@ -1,3 +1,7 @@
+## v0.63.11, 28 July 2018
+
+- Maven: Handle submodules when fetching files
+
 ## v0.63.10, 28 July 2018
 
 - Maven: Fix release checking so it actually checks the file type
