@@ -1,3 +1,7 @@
+## v0.63.12, 28 July 2018
+
+- Java: Don't fetch child poms stored in submodules (we can't update them)
+
 ## v0.63.11, 28 July 2018
 
 - Maven: Handle submodules when fetching files
