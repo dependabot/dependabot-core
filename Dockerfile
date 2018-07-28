@@ -130,10 +130,10 @@ RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true
     && mv groovy-2.5.0 /usr/local/groovy \
     && rm -f apache-groovy-binary-2.5.0.zip \
     && cd /tmp \
-    && wget https://services.gradle.org/distributions/gradle-4.7-bin.zip \
-    && unzip gradle-4.7-bin.zip \
-    && mv gradle-4.7 /usr/local/gradle \
-    && rm -f gradle-4.7-bin.zip
+    && wget https://services.gradle.org/distributions/gradle-4.9-bin.zip \
+    && unzip gradle-4.9-bin.zip \
+    && mv gradle-4.9 /usr/local/gradle \
+    && rm -f gradle-4.9-bin.zip
 ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle \
     GROOVY_HOME=/usr/local/groovy \
     GRADLE_HOME=/usr/local/gradle \
