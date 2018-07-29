@@ -15,10 +15,9 @@ module Dependabot
           [
             /^Pipfile$/,
             /^Pipfile\.lock$/,
-            /requirements.*\.txt$/,
-            /^constraints\.txt$/,
-            /^setup\.py$/,
-            /requirements.*\.in$/
+            /.*\.txt$/,
+            /.*\.in$/,
+            /^setup\.py$/
           ]
         end
 
