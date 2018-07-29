@@ -32,6 +32,8 @@ module Dependabot
 
           REQUIREMENT_TYPES.each do |type|
             parsed_file(manifest).fetch(type, []).each do |details|
+              next if lockfile && !appears_in_lockfile?(details.fetch("name"))
+
               dependency_set << Dependency.new(
                 name: details.fetch("name"),
                 version: nil,
@@ -99,6 +101,11 @@ module Dependabot
               source: source
             }
           end
+        end
+
+        def appears_in_lockfile?(dependency_name)
+          parsed_file(lockfile).fetch("projects", []).
+            any? { |details| details["name"] == dependency_name }
         end
 
         def git_declaration?(declaration)

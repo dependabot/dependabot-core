@@ -91,6 +91,18 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
         end
       end
 
+      context "with a dependency that isn't in the lockfile" do
+        let(:manifest_fixture_name) { "unused_constraint.toml" }
+        let(:lockfile_fixture_name) { "unused_constraint.lock" }
+
+        its(:length) { is_expected.to eq(1) }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to eq(["github.com/dgrijalva/jwt-go"])
+        end
+      end
+
       describe "a git version dependency" do
         subject(:dependency) do
           dependencies.find { |d| d.name == "golang.org/x/text" }
