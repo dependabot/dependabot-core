@@ -219,7 +219,8 @@ module Dependabot
 
         def check_required_files
           filenames = dependency_files.map(&:name)
-          return if filenames.any? { |name| name.match?(/requirements/x) }
+          return if filenames.any? { |name| name.end_with?(".txt") }
+          return if filenames.any? { |name| name.end_with?(".in") }
           return if (%w(Pipfile Pipfile.lock) - filenames).empty?
           return if get_original_file("setup.py")
           raise "No requirements.txt or setup.py!"

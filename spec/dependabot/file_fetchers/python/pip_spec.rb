@@ -78,6 +78,20 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 200, body: repo_contents, headers: json_header)
+
+      %w(app build_scripts data migrations tests).each do |dir|
+        stub_request(:get, url + "#{dir}?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, body: "[]", headers: json_header)
+      end
+
+      stub_request(:get, url + "todo.txt?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_todo_txt.json"),
+          headers: json_header
+        )
     end
 
     context "with only a requirements.txt" do
@@ -99,6 +113,24 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
           to eq(["requirements.txt"])
+      end
+
+      context "and a todo.txt that is actually a requirements file" do
+        before do
+          stub_request(:get, url + "todo.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the unexpectedly named file" do
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(todo.txt requirements.txt))
+        end
       end
     end
 
@@ -154,9 +186,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
     end
 
     context "with no setup.py, requirements.txt or Pipfile" do
-      let(:repo_contents) do
-        fixture("github", "business_files.json")
-      end
+      let(:repo_contents) { "[]" }
 
       it "raises a Dependabot::DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }.

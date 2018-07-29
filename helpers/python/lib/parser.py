@@ -14,11 +14,11 @@ def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []
 
-    requirement_files = glob.glob(os.path.join(directory, '*requirements*.txt')) \
-                        + glob.glob(os.path.join(directory, 'requirements', '*.txt'))
+    requirement_files = glob.glob(os.path.join(directory, '*.txt')) \
+                        + glob.glob(os.path.join(directory, '**', '*.txt'))
 
-    pip_compile_files = glob.glob(os.path.join(directory, '*requirements*.in')) \
-                        + glob.glob(os.path.join(directory, 'requirements', '*.in'))
+    pip_compile_files = glob.glob(os.path.join(directory, '*.in')) \
+                        + glob.glob(os.path.join(directory, '**', '*.in'))
 
     for reqs_file in requirement_files + pip_compile_files:
         try:

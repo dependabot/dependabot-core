@@ -1,15 +1,17 @@
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/base"
+require "dependabot/file_parsers/python/pip"
 
 module Dependabot
   module FileFetchers
     module Python
       class Pip < Dependabot::FileFetchers::Base
+        CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.txt)/
+        CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/
+
         def self.required_files_in?(filenames)
-          if filenames.any? { |name| name.match?(/requirements.*\.txt/x) }
-            return true
-          end
+          return true if filenames.any? { |name| name.end_with?(".txt") }
 
           # If there is a directory of requirements return true
           return true if filenames.include?("requirements")
@@ -88,30 +90,28 @@ module Dependabot
 
           repo_contents.
             select { |f| f.type == "file" }.
-            select { |f| f.name.match?(/requirements/x) }.
             select { |f| f.name.end_with?(".txt", ".in") }.
-            each { |f| @req_txt_and_in_files << fetch_file_from_host(f.name) }
+            map { |f| fetch_file_from_host(f.name) }.
+            select { |f| requirements_file?(f) }.
+            each { |f| @req_txt_and_in_files << f }
 
-          @req_txt_and_in_files += requirements_directory_files
+          repo_contents.
+            select { |f| f.type == "dir" }.
+            each { |f| @req_txt_and_in_files += req_files_for_dir(f) }
+
           @req_txt_and_in_files
         end
 
-        def requirements_directory_files
-          requirements_directory =
-            repo_contents.find do |file|
-              file.type == "dir" && file.name == "requirements"
-            end
-
-          return [] unless requirements_directory
-
+        def req_files_for_dir(requirements_dir)
           dir = directory.gsub(%r{(^/|/$)}, "")
-          relative_requirements_directory =
-            requirements_directory.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
+          relative_reqs_dir =
+            requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
-          repo_contents(dir: relative_requirements_directory).
+          repo_contents(dir: relative_reqs_dir).
             select { |f| f.type == "file" }.
             select { |f| f.name.end_with?(".txt", ".in") }.
-            map { |f| fetch_file_from_host("requirements/#{f.name}") }
+            map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
+            select { |f| requirements_file?(f) }
         end
 
         def child_requirement_files
@@ -125,7 +125,7 @@ module Dependabot
         end
 
         def fetch_child_requirement_files(file:, previously_fetched_files:)
-          paths = file.content.scan(/^-r\s?(?<path>.*\.txt)/).flatten
+          paths = file.content.scan(CHILD_REQUIREMENT_REGEX).flatten
           current_dir = file.name.split("/")[0..-2].last
 
           paths.flat_map do |path|
@@ -149,7 +149,7 @@ module Dependabot
                                   child_requirement_files
 
           constraints_paths = all_requirement_files.map do |req_file|
-            req_file.content.scan(/^-c\s?(?<path>\..*)/).flatten
+            req_file.content.scan(CONSTRAINT_REGEX).flatten
           end.flatten.uniq
 
           constraints_paths.map { |path| fetch_file_from_host(path) }
@@ -172,6 +172,21 @@ module Dependabot
           end
 
           path_setup_files
+        end
+
+        def requirements_file?(file)
+          return true if file.name.match?(/requirements/x)
+
+          content = file.content.
+                    gsub(CONSTRAINT_REGEX, "").
+                    gsub(CHILD_REQUIREMENT_REGEX, "")
+
+          tmp_file = DependencyFile.new(name: file.name, content: content)
+          Dependabot::FileParsers::Python::Pip.
+            new(dependency_files: [tmp_file], source: source).
+            parse.any?
+        rescue Dependabot::DependencyFileNotEvaluatable
+          false
         end
 
         def path_setup_file_paths
