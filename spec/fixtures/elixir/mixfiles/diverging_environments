@@ -18,7 +18,7 @@ defmodule DependabotTest.Mixfile do
   defp deps do
     [
       {:poison, "~> 3.0", only: :test},
-      {:credo, "~> 0.6", only: [:dev, :test]}
+      {:credo, "~> 0.6", "< 0.10.0", only: [:dev, :test]}
     ]
   end
 end
