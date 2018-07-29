@@ -64,11 +64,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files
-            dependency_files.each do |file|
-              path = file.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(file.name, file.content)
-            end
+            File.write(lockfile.name, lockfile.content)
 
             # Overwrite the manifest with our custom prepared one
             File.write(prepared_manifest.name, prepared_manifest.content)
