@@ -4,6 +4,9 @@ require "toml-rb"
 
 require "dependabot/errors"
 require "dependabot/dependency"
+require "dependabot/shared_helpers"
+require "dependabot/source"
+
 require "dependabot/file_parsers/base"
 require "dependabot/utils/go/requirement"
 
@@ -80,10 +83,6 @@ module Dependabot
         end
 
         def source_from_declaration(declaration)
-          unless declaration.is_a?(Hash)
-            raise "Unexpected dependency declaration: #{declaration}"
-          end
-
           source = declaration["source"] || declaration["name"]
 
           git_source = git_source(source)
@@ -95,6 +94,8 @@ module Dependabot
               branch: declaration["branch"],
               ref: declaration["revision"] || declaration["version"]
             }
+          elsif git_declaration?(declaration)
+            raise "No git source for a git declaration!"
           else
             {
               type: "default",
@@ -120,12 +121,31 @@ module Dependabot
         end
 
         def git_source(path)
+          # Save a query by doing the conversion of golang.org/x names manually
           updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
 
           # Currently, Dependabot::Source.new will return `nil` if it can't find
           # a git SCH associated with a path. If it is ever extended to handle
           # non-git sources we'll need to add an additional check here.
-          Source.from_url(updated_path)
+          return Source.from_url(updated_path) if Source.from_url(updated_path)
+
+          # TODO: This is not robust! Instead, we should shell out to Go and use
+          # https://github.com/Masterminds/vcs.
+          uri = "https://#{path}?go-get=1"
+          response = Excon.get(
+            uri,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          return unless response.status == 200
+
+          response.body.scan(Dependabot::Source::SOURCE_REGEX) do
+            source_url = Regexp.last_match.to_s
+            return Source.from_url(source_url)
+          end
+
+          nil
         end
 
         def parsed_file(file)

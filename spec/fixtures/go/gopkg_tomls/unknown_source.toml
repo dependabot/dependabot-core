@@ -1,4 +1,0 @@
-
-[[constraint]]
-  name = "unknownhost.com/dgrijalva/jwt-go"
-  version = "^3.2.0"

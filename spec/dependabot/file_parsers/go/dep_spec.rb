@@ -33,6 +33,14 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
     )
   end
 
+  before do
+    stub_request(:get, "https://golang.org/x/text?go-get=1").
+      to_return(
+        status: 200,
+        body: fixture("go", "repo_responses", "golang_org_text.html")
+      )
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -178,30 +186,42 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
             )
           end
         end
-      end
 
-      describe "a dependency with an unrecognised name" do
-        let(:manifest_fixture_name) { "unknown_source.toml" }
-        let(:lockfile_fixture_name) { "unknown_source.lock" }
-        subject(:dependency) do
-          dependencies.find { |d| d.name == "unknownhost.com/dgrijalva/jwt-go" }
-        end
+        describe "with a proxy host in the name" do
+          let(:manifest_fixture_name) { "proxy_git_source.toml" }
+          let(:lockfile_fixture_name) { "proxy_git_source.lock" }
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "k8s.io/apimachinery" }
+          end
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("unknownhost.com/dgrijalva/jwt-go")
-          expect(dependency.version).to eq("3.2.0")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "^3.2.0",
-              file: "Gopkg.toml",
-              groups: [],
-              source: {
-                type: "default",
-                source: "unknownhost.com/dgrijalva/jwt-go"
-              }
-            }]
-          )
+          before do
+            stub_request(:get, "https://k8s.io/apimachinery?go-get=1").
+              to_return(
+                status: 200,
+                body:
+                  fixture("go", "repo_responses", "k8s_io_apimachinery.html")
+              )
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("k8s.io/apimachinery")
+            expect(dependency.version).
+              to eq("cbafd24d5796966031ae904aa88e2436a619ae8a")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "Gopkg.toml",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/kubernetes/apimachinery",
+                  branch: "master",
+                  ref: nil
+                }
+              }]
+            )
+          end
         end
       end
     end
