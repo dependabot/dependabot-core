@@ -1,3 +1,8 @@
+## v0.63.16, 29 July 2018
+
+- Python: Fetch all .txt and .in files and check if they're requirement files,
+  as well as all .txt and .in files nested one repo deeper
+
 ## v0.63.15, 29 July 2018
 
 - Go: Use go-get=1 trick to find git source URLs for unrecognised names
