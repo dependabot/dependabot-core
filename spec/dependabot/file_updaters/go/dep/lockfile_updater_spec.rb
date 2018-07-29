@@ -84,6 +84,42 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
             to include("0987fb8fd48e32823701acdac19f5cfe47339de4")
         end
       end
+
+      context "when the main.go file imports the dependency itself" do
+        let(:dependency_files) { [manifest, lockfile, main] }
+        let(:main) do
+          Dependabot::DependencyFile.new(name: "main.go", content: main_body)
+        end
+        let(:main_body) { fixture("go", "go_files", "main.go") }
+        let(:manifest_fixture_name) { "tilda.toml" }
+        let(:lockfile_fixture_name) { "tilda.lock" }
+
+        let(:dependency_name) { "github.com/jinzhu/gorm" }
+        let(:dependency_version) { "1.9.1" }
+        let(:dependency_previous_version) { "1.0" }
+        let(:requirements) do
+          [{
+            file: "Gopkg.toml",
+            requirement: "~1.9.1",
+            groups: [],
+            source: { type: "default", source: "github.com/jinzhu/gorm" }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Gopkg.toml",
+            requirement: "~1.0.0",
+            groups: [],
+            source: { type: "default", source: "github.com/jinzhu/gorm" }
+          }]
+        end
+
+        it "updates the lockfile correctly" do
+          expect(updated_lockfile_content).to include(%(version = "v1.9.1"))
+          expect(updated_lockfile_content).
+            to include("6ed508ec6a4ecb3531899a69cbc746ccf65a4166")
+        end
+      end
     end
 
     context "with a git dependency" do
