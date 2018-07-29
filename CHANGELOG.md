@@ -1,3 +1,7 @@
+## v0.63.15, 29 July 2018
+
+- Go: Use go-get=1 trick to find git source URLs for unrecognised names
+
 ## v0.63.14, 29 July 2018
 
 - Go: Ignore constraints for dependencies that don't appear in the lockfile
