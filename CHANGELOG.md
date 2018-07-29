@@ -1,10 +1,15 @@
+## v0.63.14, 29 July 2018
+
+- Go: Ignore constraints for dependencies that don't appear in the lockfile
+- JS: Update npm sub-dependencies
+
 ## v0.63.13, 29 July 2018
 
 - Go: Handle projects that import themselves in their main.go
 
 ## v0.63.12, 28 July 2018
 
-- Java: Don't fetch child poms stored in submodules (we can't update them)
+- Maven: Don't fetch child poms stored in submodules (we can't update them)
 
 ## v0.63.11, 28 July 2018
 
