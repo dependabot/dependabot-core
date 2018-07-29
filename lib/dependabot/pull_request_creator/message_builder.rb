@@ -355,8 +355,8 @@ module Dependabot
         end
 
         if (description = details["description"])
-          description.strip.lines.first(10).each { |line| msg += "> #{line}" }
-          msg += truncated_line if description.strip.lines.count > 10
+          description.strip.lines.first(20).each { |line| msg += "> #{line}" }
+          msg += truncated_line if description.strip.lines.count > 20
         end
 
         msg += "\n" unless msg.end_with?("\n")
