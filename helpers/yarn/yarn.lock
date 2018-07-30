@@ -10,15 +10,15 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
-"@dependabot/yarn-lib@^1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.9.2.tgz#1a218ee3b70054ac4e337ba68fd683ea0be03b75"
+"@dependabot/yarn-lib@^1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.7.0.tgz#a829cac8e9e3c7decfb31a4ebebfaf68037df1b8"
   dependencies:
-    "@zkochan/cmd-shim" "^2.2.4"
     babel-runtime "^6.26.0"
     bytes "^3.0.0"
     camelcase "^4.0.0"
     chalk "^2.1.0"
+    cmd-shim "^2.0.1"
     commander "^2.9.0"
     death "^1.0.0"
     debug "^3.0.0"
@@ -44,14 +44,14 @@
     proper-lockfile "^2.0.0"
     puka "^1.0.0"
     read "^1.0.7"
-    request "^2.87.0"
+    request "^2.81.0"
     request-capture-har "^1.2.2"
     rimraf "^2.5.0"
     semver "^5.1.0"
     strip-ansi "^4.0.0"
     strip-bom "^3.0.0"
     tar-fs "^1.16.0"
-    tar-stream "^1.6.1"
+    tar-stream "^1.6.0"
     uuid "^3.0.1"
     v8-compile-cache "^2.0.0"
     validate-npm-package-license "^3.0.3"
@@ -60,14 +60,6 @@
 "@types/node@*":
   version "8.5.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.5.1.tgz#4ec3020bcdfe2abffeef9ba3fbf26fca097514b5"
-
-"@zkochan/cmd-shim@^2.2.4":
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/@zkochan/cmd-shim/-/cmd-shim-2.2.4.tgz#5730a936491219d88487e92d12c6c3bdb16c3c6e"
-  dependencies:
-    is-windows "^1.0.0"
-    mkdirp-promise "^5.0.1"
-    mz "^2.5.0"
 
 abab@^1.0.3:
   version "1.0.3"
@@ -152,10 +144,6 @@ ansi-styles@^3.1.0, ansi-styles@^3.2.0:
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-3.2.0.tgz#c159b8d5be0f9e5a6f346dab94f16ce022161b88"
   dependencies:
     color-convert "^1.9.0"
-
-any-promise@^1.0.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/any-promise/-/any-promise-1.3.0.tgz#abc6afeedcea52e809cdc0376aed3ce39635d17f"
 
 anymatch@^1.3.0:
   version "1.3.0"
@@ -728,6 +716,13 @@ cliui@^4.0.0:
 clorox@^1.0.1:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/clorox/-/clorox-1.0.3.tgz#6fa63653f280c33d69f548fb14d239ddcfa1590d"
+
+cmd-shim@^2.0.1:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/cmd-shim/-/cmd-shim-2.0.2.tgz#6fcbda99483a8fd15d7d30a196ca69d688a2efdb"
+  dependencies:
+    graceful-fs "^4.1.2"
+    mkdirp "~0.5.0"
 
 co@^4.6.0:
   version "4.6.0"
@@ -1969,7 +1964,7 @@ is-webpack-bundle@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/is-webpack-bundle/-/is-webpack-bundle-1.0.0.tgz#576a50bb7c53d1d6a5c1647939c93ae2cbb90eea"
 
-is-windows@^1.0.0, is-windows@^1.0.2:
+is-windows@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/is-windows/-/is-windows-1.0.2.tgz#d1850eb9791ecd18e6182ce12a30f396634bb19d"
 
@@ -2676,13 +2671,7 @@ mixin-deep@^1.2.0:
     for-in "^1.0.2"
     is-extendable "^1.0.1"
 
-mkdirp-promise@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/mkdirp-promise/-/mkdirp-promise-5.0.1.tgz#e9b8f68e552c68a9c1713b84883f7a1dd039b8a1"
-  dependencies:
-    mkdirp "*"
-
-mkdirp@*, "mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1:
+"mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1, mkdirp@~0.5.0:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.5.1.tgz#30057438eac6cf7f8c4767f38648d6697d75c903"
   dependencies:
@@ -2695,14 +2684,6 @@ ms@2.0.0:
 mute-stream@0.0.7, mute-stream@~0.0.4:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.7.tgz#3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab"
-
-mz@^2.5.0:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/mz/-/mz-2.7.0.tgz#95008057a56cafadc2bc63dde7f9ff6955948e32"
-  dependencies:
-    any-promise "^1.0.0"
-    object-assign "^4.0.1"
-    thenify-all "^1.0.0"
 
 nan@^2.3.0:
   version "2.7.0"
@@ -3322,31 +3303,6 @@ request@^2.81.0, request@^2.83.0:
     tunnel-agent "^0.6.0"
     uuid "^3.1.0"
 
-request@^2.87.0:
-  version "2.87.0"
-  resolved "https://registry.yarnpkg.com/request/-/request-2.87.0.tgz#32f00235cd08d482b4d0d68db93a829c0ed5756e"
-  dependencies:
-    aws-sign2 "~0.7.0"
-    aws4 "^1.6.0"
-    caseless "~0.12.0"
-    combined-stream "~1.0.5"
-    extend "~3.0.1"
-    forever-agent "~0.6.1"
-    form-data "~2.3.1"
-    har-validator "~5.0.3"
-    http-signature "~1.2.0"
-    is-typedarray "~1.0.0"
-    isstream "~0.1.2"
-    json-stringify-safe "~5.0.1"
-    mime-types "~2.1.17"
-    oauth-sign "~0.8.2"
-    performance-now "^2.1.0"
-    qs "~6.5.1"
-    safe-buffer "^5.1.1"
-    tough-cookie "~2.3.3"
-    tunnel-agent "^0.6.0"
-    uuid "^3.1.0"
-
 require-directory@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/require-directory/-/require-directory-2.1.1.tgz#8c64ad5fd30dab1c976e2344ffe7f792a6a6df42"
@@ -3827,7 +3783,7 @@ tar-stream@^1.1.2:
     readable-stream "^2.0.0"
     xtend "^4.0.0"
 
-tar-stream@^1.6.1:
+tar-stream@^1.6.0:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/tar-stream/-/tar-stream-1.6.1.tgz#f84ef1696269d6223ca48f6e1eeede3f7e81f395"
   dependencies:
@@ -3860,18 +3816,6 @@ test-exclude@^4.2.1:
 text-table@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
-
-thenify-all@^1.0.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/thenify-all/-/thenify-all-1.6.0.tgz#1a1918d402d8fc3f98fbf234db0bcc8cc10e9726"
-  dependencies:
-    thenify ">= 3.1.0 < 4"
-
-"thenify@>= 3.1.0 < 4":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/thenify/-/thenify-3.3.0.tgz#e69e38a1babe969b0108207978b9f62b88604839"
-  dependencies:
-    any-promise "^1.0.0"
 
 throat@^4.0.0:
   version "4.1.0"
