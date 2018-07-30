@@ -1,3 +1,7 @@
+## v0.63.18, 30 July 2018
+
+- JS: Back to Yarn 1.9.2 (now fixed!)
+
 ## v0.63.17, 30 July 2018
 
 - JS: Revert Yarn upgrade, until https://github.com/yarnpkg/yarn/issues/6174
