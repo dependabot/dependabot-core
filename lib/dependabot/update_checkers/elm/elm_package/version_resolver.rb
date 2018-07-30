@@ -1,0 +1,180 @@
+# frozen_string_literal: true
+
+require "dependabot/shared_helpers"
+require "dependabot/errors"
+require "dependabot/update_checkers/elm/elm_package/cli_parser"
+require "dependabot/file_parsers/elm/elm_package"
+
+module Dependabot
+  module UpdateCheckers
+    module Elm
+      module ElmPackage
+        class VersionResolver
+          def initialize(dependency:, dependency_files:, unlock_requirement:,
+                         versions:)
+            @dependency = dependency
+            @dependency_files = dependency_files
+            @unlock_requirement = unlock_requirement
+            @versions = keep_higher_versions(versions, dependency.version)
+          end
+
+          def latest_resolvable_version
+            @latest_resolvable_version ||= fetch_latest_resolvable_version
+          end
+
+          private
+
+          attr_reader :dependency, :dependency_files
+
+          def keep_higher_versions(versions, lowest_version)
+            versions.keep_if { |v| (v <=> lowest_version) > 0 }
+          end
+
+          def fetch_latest_resolvable_version
+            # Elm has no lockfile, no unlock essentially means
+            # "let elm-package install whatever satisfies .requirements"
+            return @dependency.version unless @unlock_requirement
+
+            # don't look further if no other versions
+            return @dependency.version if @versions.empty?
+
+            # Otherwise, we gotta check a few conditions to see if bumping
+            # wouldn't also bump other deps in elm-package.json
+            #
+            # For Elm 0.18 we could just free the requirement
+            #        (i.e. 0.0.0 <= v <= 999.999.999)
+            # but what we got here is compatible with what we'll have to do
+            # in Elm 0.19 where you only get exact dependencies
+            last_version = @versions.pop
+            return last_version if can_update?(last_version)
+
+            return dependency.version if @versions.empty?
+
+            # TODO: grab from let elm-package install the highest version we can got
+          end
+
+          def can_update?(version)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files_with(dependency.name, version)
+
+              # Elm package install outputs a preview of the actions to be performed
+              # We can use this preview to calculate whether it would do anything funny
+              command = "yes n | elm-package install"
+              response = run_shell_command(command)
+
+              deps_after_install = CliParser.decode_install_preview(response)
+
+              elm_package = File.read("elm-package.json")
+              original_dependencies =
+                Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
+
+              result = install_result(version, original_dependencies,
+                                      deps_after_install)
+
+              # VersionResolver only allows updates for clean bumps
+              # Full unlocks are handled elsewhere
+              puts result
+              result == :clean_bump
+            rescue SharedHelpers::HelperSubprocessFailed => error
+              # 5) 👎 We bump our dep but elm-package blows up
+              handle_elm_package_errors(error)
+            end
+          end
+
+          def install_result(_version, original_dependencies, deps_after_install)
+            # This can go one of 5 ways:
+            # 1) 👍 We bump our dep and no other dep is bumped
+            # 2) 👎 We bump our dep and another dep is bumped too
+            #       Scenario: NoRedInk/datetimepicker bump to 3.0.2 bumps elm-css to 14
+            # 3) 👎 We bump our dep but actually elm-package doesn't bump it
+            #       Scenario: elm-css bump to 14 but NoRedInk/datetimepicker at 3.0.1
+            #                 also any "x <= v < y" that doesn't require :own unlock
+            # 4) 👎 We bump our dep but elm-package just says "Packages configured successfully!"
+            #       Narrator: they weren't
+            #       Scenario: impossible dependency (i.e. elm-css 999.999.999)
+            # 5) 👎 We bump our dep but elm-package blows up (not handled here)
+            #       Scenario: rtfeldman/elm-css 14 && rtfeldman/hashed-class 1.0.0
+
+            # 4) 👎 We bump our dep but elm-package just says "Packages configured successfully!"
+            return :empty_elm_stuff_bug if deps_after_install.empty?
+
+            version_after_install = deps_after_install.delete(dependency.name)
+
+            # 3) 👎 We bump our dep but actually elm-package doesn't bump it
+            return :downgrade_bug if (version_after_install <=>
+                                      dependency.version) <= 0
+
+            original_dependencies = original_dependencies.
+                                    reject do |original_dependency|
+              original_dependency.name == dependency.name
+            end
+            original_dependencies = original_dependencies.
+                                    map { |a| [a.name, a.version] }.to_h
+
+            # Remove transitive dependencies not found in elm-package.json
+            deps_after_install.
+              keep_if { |key, _val| original_dependencies.include?(key) }
+
+            # 2) 👎 We bump our dep and another dep is bumped
+            other_dep_bumped = deps_after_install.any? do |k, new_version|
+              original_dependencies.key?(k) &&
+                (original_dependencies[k] <=> new_version) <= 0
+            end
+
+            return :forced_full_unlock_bump if other_dep_bumped
+
+            # 1) 👍 We bump our dep and no other dep is bumped
+            :clean_bump
+          end
+
+          def run_shell_command(command)
+            raw_response = nil
+            IO.popen(command, err: %i(child out)) do |process|
+              raw_response = process.read
+            end
+
+            # Raise an error with the output from the shell session if Cargo
+            # returns a non-zero status
+            return raw_response if $CHILD_STATUS.success?
+            raise SharedHelpers::HelperSubprocessFailed.new(
+              raw_response,
+              command
+            )
+          end
+
+          def handle_elm_package_errors(error)
+            if error.message.include?("I cannot find a set of packages that " \
+                                      "works with your constraints")
+              raise Dependabot::DependencyFileNotResolvable, error.message
+            end
+
+            # I don't know any other errors
+            raise error
+          end
+
+          def write_temporary_dependency_files_with(dependency_name, version)
+            @dependency_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+
+              # TODO: optimize this to not decode and reencode every time
+              File.write(path, swap_version(file.content, dependency_name,
+                                            version))
+            end
+          end
+
+          def swap_version(content, dependency_name, version)
+            json = JSON.parse(content)
+            json["dependencies"][dependency_name] = requirement_for(version)
+            JSON.dump(json)
+          end
+
+          def requirement_for(version)
+            version = version.map(&:to_s).join(".")
+            "#{version} <= v <= #{version}"
+          end
+        end
+      end
+    end
+  end
+end
