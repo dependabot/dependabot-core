@@ -206,9 +206,8 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements.first[:requirement]).
-              to eq("<2.0.0")
-            expect(dependency.requirements.last[:requirement]).to be_nil
+            expect(dependency.requirements.map { |r| r[:requirement] }).
+              to match_array(["<2.0.0", nil])
           end
         end
       end
