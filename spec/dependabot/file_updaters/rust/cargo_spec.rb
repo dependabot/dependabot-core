@@ -238,6 +238,33 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
               }]
             end
 
+            context "that is a build dependency" do
+              let(:manifest_fixture_name) { "feature_build_dependency" }
+              let(:requirements) do
+                [{
+                  file: "Cargo.toml",
+                  requirement: "0.4.0",
+                  groups: ["build-dependencies"],
+                  source: nil
+                }]
+              end
+              let(:previous_requirements) do
+                [{
+                  file: "Cargo.toml",
+                  requirement: "0.3.0",
+                  groups: ["build-dependencies"],
+                  source: nil
+                }]
+              end
+
+              it "includes the new requirement" do
+                expect(updated_manifest_content).
+                  to include(
+                    %([build-dependencies.gtk]\nversion = "0.4.0"\nfeatures)
+                  )
+              end
+            end
+
             it "includes the new requirement" do
               expect(updated_manifest_content).
                 to include(%([dependencies.gtk]\nversion = "0.4.0"\nfeatures))

@@ -341,7 +341,7 @@ module Dependabot
 
         def feature_declaration_version_regex(dep)
           /
-            #{Regexp.quote("[dependencies.#{dep.name}]")}
+            #{Regexp.quote("dependencies.#{dep.name}]")}
             (?:(?!^\[).)+
             (?<version_declaration>version\s*=.*)$
           /mx
@@ -349,7 +349,7 @@ module Dependabot
 
         def feature_declaration_pin_regex(dep)
           /
-            #{Regexp.quote("[dependencies.#{dep.name}]")}
+            #{Regexp.quote("dependencies.#{dep.name}]")}
             (?:(?!^\[).)+
             (?<pin_declaration>(?:tag|rev)\s*=.*)$
           /mx

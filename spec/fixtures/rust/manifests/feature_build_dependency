@@ -1,0 +1,11 @@
+[package]
+name = "feature_dependency"
+version = "0.1.0"
+authors = ["Dependabot <support@dependabot.com>"]
+
+[build-dependencies.gtk]
+version = "0.3.0"
+features = ["v3_18"]
+
+[dependencies]
+time = "0.1.12"
