@@ -1,4 +1,4 @@
-## v0.63.18, 30 July 2018
+## v0.63.19, 30 July 2018
 
 - Maven: Raise DependencyFileNotFound for missing modules
 
