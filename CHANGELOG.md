@@ -1,3 +1,7 @@
+## v0.63.20, 30 July 2018
+
+- Rust: Update feature build-dependencies
+
 ## v0.63.19, 30 July 2018
 
 - Maven: Raise DependencyFileNotFound for missing modules
