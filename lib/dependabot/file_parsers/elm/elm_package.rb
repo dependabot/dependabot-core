@@ -8,7 +8,7 @@ module Dependabot
   module FileParsers
     module Elm
       class ElmPackage < Dependabot::FileParsers::Base
-        MAX_VERSION = 99999
+        MAX_VERSION = Float::INFINITY
         require "dependabot/file_parsers/base/dependency_set"
 
         def parse
@@ -38,6 +38,7 @@ module Dependabot
 
         private_class_method def self.decode(content)
           json = JSON.parse content
+
           json['dependencies'].
             map {|k,v| {name: k, requirement: v, file: "elm-package.json", max_version: max_of(v)}}
         end
