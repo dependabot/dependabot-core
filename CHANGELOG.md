@@ -1,3 +1,8 @@
+## v0.63.17, 30 July 2018
+
+- JS: Revert Yarn upgrade, until https://github.com/yarnpkg/yarn/issues/6174
+  is fixed or handled
+
 ## v0.63.16, 29 July 2018
 
 - Python: Fetch all .txt and .in files and check if they're requirement files,
