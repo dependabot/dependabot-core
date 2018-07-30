@@ -162,7 +162,8 @@ async function updateDependencyFile(
   const config = new Config(reporter);
   await config.init({
     cwd: path.join(directory, path.dirname(requirements.file)),
-    nonInteractive: true
+    nonInteractive: true,
+    enableDefaultRc: true
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
