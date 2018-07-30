@@ -91,8 +91,13 @@ module Dependabot
 
       def fetch_file_from_host_or_submodule(filename, type: "file")
         fetch_file_from_host(filename, type: type)
-      rescue Dependabot::DependencyFileNotFound
-        repo_contents(dir: File.dirname(filename))
+      rescue Dependabot::DependencyFileNotFound => error
+        begin
+          repo_contents(dir: File.dirname(filename))
+        rescue StandardError
+          raise error
+        end
+
         fetch_file_from_host(filename, type: type)
       end
 

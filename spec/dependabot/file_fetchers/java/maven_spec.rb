@@ -137,6 +137,31 @@ RSpec.describe Dependabot::FileFetchers::Java::Maven do
       end
     end
 
+    context "where the repo for a child module is missing" do
+      before do
+        stub_request(:get, File.join(url, "util/pom.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, "util?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/util/pom.xml")
+          end
+      end
+    end
+
     context "with a nested multimodule pom" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha")).
