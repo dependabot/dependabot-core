@@ -1,3 +1,7 @@
+## v0.63.23, 31 July 2018
+
+- JS: Handle git:// dependencies that upgrade across versions
+
 ## v0.63.22, 31 July 2018
 
 - JS: Raise error if no files change in FileUpdater
