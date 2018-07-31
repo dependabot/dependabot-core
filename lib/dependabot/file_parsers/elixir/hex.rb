@@ -40,7 +40,7 @@ module Dependabot
         def dependency_details
           SharedHelpers.in_a_temporary_directory do
             write_sanitized_mixfiles
-            File.write("mix.lock", lockfile.content)
+            File.write("mix.lock", lockfile.content) if lockfile
             FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
             SharedHelpers.run_helper_subprocess(
@@ -88,9 +88,7 @@ module Dependabot
         end
 
         def check_required_files
-          %w(mix.exs mix.lock).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          raise "No mixfile!" if mixfiles.none?
         end
 
         def project_root

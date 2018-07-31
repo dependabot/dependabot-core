@@ -35,6 +35,30 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
+    context "without a lockfile" do
+      let(:files) { [mixfile] }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("plug")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "~> 1.3.0",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "with a ~> version specified" do
       its(:length) { is_expected.to eq(2) }
 
