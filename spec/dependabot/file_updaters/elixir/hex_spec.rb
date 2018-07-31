@@ -68,6 +68,23 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
     it { expect { updated_files }.to_not output.to_stdout }
     its(:length) { is_expected.to eq(2) }
 
+    context "without a lockfile" do
+      let(:files) { [mixfile] }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated mixfile" do
+        subject(:updated_mixfile_content) do
+          updated_files.find { |f| f.name == "mix.exs" }.content
+        end
+
+        it "updates the right dependency" do
+          expect(updated_mixfile_content).to include(%({:plug, "1.4.3"},))
+          expect(updated_mixfile_content).to include(%({:phoenix, "== 1.2.1"}))
+        end
+      end
+    end
+
     describe "the updated mixfile" do
       subject(:updated_mixfile_content) do
         updated_files.find { |f| f.name == "mix.exs" }.content
