@@ -57,7 +57,8 @@ module Dependabot
               fetch(:requirement)
 
             old_req =
-              dependency.previous_requirements.find { |r| r[:file] == filename }.
+              dependency.previous_requirements.
+              find { |r| r[:file] == filename }.
               fetch(:requirement)
 
             return content unless old_req
@@ -76,7 +77,8 @@ module Dependabot
               dig(:source, :ref)
 
             old_pin =
-              dependency.previous_requirements.find { |r| r[:file] == filename }&.
+              dependency.previous_requirements.
+              find { |r| r[:file] == filename }&.
               dig(:source, :ref)
 
             return content unless old_pin
