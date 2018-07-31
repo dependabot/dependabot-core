@@ -24,7 +24,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files
+          attr_reader :dependency, :dependency_files, :unlock_requirement
 
           def keep_higher_versions(versions, lowest_version)
             versions.keep_if { |v| (v <=> lowest_version) > 0 }
@@ -33,7 +33,7 @@ module Dependabot
           def fetch_latest_resolvable_version
             # Elm has no lockfile, no unlock essentially means
             # "let elm-package install whatever satisfies .requirements"
-            return @dependency.version unless @unlock_requirement
+            return @dependency.version if !unlock_requirement || unlock_requirement == :none
 
             # don't look further if no other versions
             return @dependency.version if @versions.empty?
@@ -71,10 +71,11 @@ module Dependabot
               result = install_result(version, original_dependencies,
                                       deps_after_install)
 
-              # VersionResolver only allows updates for clean bumps
-              # Full unlocks are handled elsewhere
-              puts result
-              result == :clean_bump
+              if unlock_requirement == :own
+                result == :clean_bump
+              else
+                [:clean_bump, :forced_full_unlock_bump].include?(result)
+              end
             rescue SharedHelpers::HelperSubprocessFailed => error
               # 5) 👎 We bump our dep but elm-package blows up
               handle_elm_package_errors(error)
@@ -86,6 +87,7 @@ module Dependabot
             # 1) 👍 We bump our dep and no other dep is bumped
             # 2) 👎 We bump our dep and another dep is bumped too
             #       Scenario: NoRedInk/datetimepicker bump to 3.0.2 bumps elm-css to 14
+            #       Note: this is a 👍 for unlock_requirement: :all
             # 3) 👎 We bump our dep but actually elm-package doesn't bump it
             #       Scenario: elm-css bump to 14 but NoRedInk/datetimepicker at 3.0.1
             #                 also any "x <= v < y" that doesn't require :own unlock

@@ -8,17 +8,8 @@ require "dependabot/errors"
 module Dependabot
   module UpdateCheckers
     module Elm
-      # TODO:
-      # * latest_resolvable_version_with_no_unlock: what's the latest version something can go to without modifying elm-package.json?
-      # => this probably doesn't make sense for elm but :shrug:
-      # => elm-package install, bring back dep modifications, return current version if any diff between exact-dependencies.json <> elm-package.json
-      # * latest_resolvable_version: what's the latest version something can go to without modifying other deps in elm-package.json?
-      # => elm-package install, bring back dep modifications, return current version if other deps modified
-      # => if we could build a map of version dependencies somehow, that'd be awesome.. I wonder what elm-package uses..
-      # * latest_version_resolvable_with_full_unlock:
-      # => elm-package install, bring back dep modifications, give out latest version
       class ElmPackage < Dependabot::UpdateCheckers::Base
-        # require_relative "elm_package/requirements_updater"
+        require_relative "elm_package/requirements_updater"
         require_relative "elm_package/version_resolver"
 
         A_VERSION_REGEX = /\d+\.\d+\.\d+/
@@ -27,13 +18,23 @@ module Dependabot
           versions.last
         end
 
-        def latest_resolvable_version
-          # what's the latest version something can go to without modifying other deps in elm-package.json?
-          # => elm-package install, bring back dep modifications, return current version if other deps modified
+        def can_update?(requirements_to_unlock:)
+          # We're overriding can_update? bc otherwise
+          # there'd be no distinction between :own and :all
+          # given the logic in Dependabot::UpdateCheckers::Base
           VersionResolver.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            unlock_requirement: true,
+            unlock_requirement: requirements_to_unlock,
+            versions: versions
+          )
+        end
+
+        def latest_resolvable_version
+          VersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            unlock_requirement: :all,
             versions: versions
           ).latest_resolvable_version
         end

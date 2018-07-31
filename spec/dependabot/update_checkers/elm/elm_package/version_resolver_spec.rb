@@ -57,52 +57,102 @@ RSpec.describe namespace::VersionResolver do
       it { is_expected.to eq(dependency_version) }
     end
 
-    context "allowing :own unlocks" do
-      context "1) clean bump" do
-        let(:dependency_version) { elm_version.new("13.1.1") }
+    context "1) clean bump" do
+      let(:dependency_version) { elm_version.new("13.1.1") }
 
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
         it { is_expected.to eq(elm_version.new("14.0.0")) }
       end
 
-      context "2) forced full unlock" do
-        let(:fixture_name) { "elm_css_and_datetimepicker" }
-        let(:dependency_name) { "NoRedInk/datetimepicker" }
-        let(:dependency_requirement) { "3.0.1 <= v <= 3.0.1" }
-        let(:dependency_version) { elm_version.new("3.0.1") }
-        let(:versions) { [elm_version.new("3.0.1"), elm_version.new("3.0.2")] }
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it { is_expected.to eq(elm_version.new("14.0.0")) }
+      end
+    end
 
+    context "2) forced full unlock" do
+      let(:fixture_name) { "elm_css_and_datetimepicker" }
+      let(:dependency_name) { "NoRedInk/datetimepicker" }
+      let(:dependency_requirement) { "3.0.1 <= v <= 3.0.1" }
+      let(:dependency_version) { elm_version.new("3.0.1") }
+      let(:versions) { [elm_version.new("3.0.1"), elm_version.new("3.0.2")] }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
         it { is_expected.to eq(elm_version.new("3.0.1")) }
       end
 
-      context "3) downgrade bug" do
-        let(:fixture_name) { "elm_css_and_datetimepicker" }
-        let(:dependency_name) { "rtfeldman/elm-css" }
-        let(:dependency_requirement) { "13.1.1 <= v <= 13.1.1" }
-        let(:dependency_version) { elm_version.new("13.1.1") }
-        let(:versions) { [elm_version.new("13.1.1"), elm_version.new("14.0.0")] }
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it { is_expected.to eq(elm_version.new("3.0.2")) }
+      end
+    end
 
+    context "3) downgrade bug" do
+      let(:fixture_name) { "elm_css_and_datetimepicker" }
+      let(:dependency_name) { "rtfeldman/elm-css" }
+      let(:dependency_requirement) { "13.1.1 <= v <= 13.1.1" }
+      let(:dependency_version) { elm_version.new("13.1.1") }
+      let(:versions) { [elm_version.new("13.1.1"), elm_version.new("14.0.0")] }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
         it { is_expected.to eq(elm_version.new("13.1.1")) }
       end
 
-      context "3) a <= v < b that doesn't require :own unlock" do
-        let(:fixture_name) { "version_resolver_one_dep_lower_than" }
-        let(:dependency_version) { elm_version.new("14.#{max_version}.#{max_version}") }
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it { is_expected.to eq(elm_version.new("13.1.1")) }
+      end
+    end
 
+    context "3) a <= v < b that doesn't require :own unlock" do
+      let(:fixture_name) { "version_resolver_one_dep_lower_than" }
+      let(:dependency_version) { elm_version.new("14.#{max_version}.#{max_version}") }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
         it { is_expected.to eq(elm_version.new("14.#{max_version}.#{max_version}")) }
       end
 
-      context "4) empty elm-stuff bug means we don't bump" do
-        let(:fixture_name) { "version_resolver_one_dep_lower_than" }
-        let(:dependency_version) { elm_version.new("14.#{max_version}.#{max_version}") }
-        let(:versions) { [elm_version.new("999.1.1")] }
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it { is_expected.to eq(elm_version.new("14.#{max_version}.#{max_version}")) }
+      end
+    end
 
+    context "4) empty elm-stuff bug means we don't bump" do
+      let(:fixture_name) { "version_resolver_one_dep_lower_than" }
+      let(:dependency_version) { elm_version.new("14.#{max_version}.#{max_version}") }
+      let(:versions) { [elm_version.new("999.1.1")] }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
         it { is_expected.to eq(elm_version.new("14.#{max_version}.#{max_version}")) }
       end
 
-      context "5) dependencies too far apart" do
-        let(:fixture_name) { "version_resolver_elm_package_error" }
-        let(:dependency_version) { elm_version.new("13.1.1") }
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it { is_expected.to eq(elm_version.new("14.#{max_version}.#{max_version}")) }
+      end
+    end
 
+    context "5) dependencies too far apart" do
+      let(:fixture_name) { "version_resolver_elm_package_error" }
+      let(:dependency_version) { elm_version.new("13.1.1") }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
+        it "raises a helpful error" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("I cannot find a set of packages that works")
+          end
+        end
+      end
+
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
         it "raises a helpful error" do
           expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include("I cannot find a set of packages that works")
