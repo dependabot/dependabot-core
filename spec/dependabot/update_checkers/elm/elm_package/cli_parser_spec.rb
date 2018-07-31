@@ -28,7 +28,7 @@ Do you approve of this plan? [Y/n]
 				}
 			end
 
-			it { is_expected.to include("rtfeldman/elm-css" => [13,1,1]) }
+			it { is_expected.to include("rtfeldman/elm-css" => Dependabot::Utils::Elm::Version.new("13.1.1")) }
 		end
 
 		context "upgrade" do
@@ -51,7 +51,7 @@ Do you approve of this plan? [Y/n]
 				}
 			end
 
-			it { is_expected.to include("rtfeldman/elm-css" => [14,0,0]) }
+			it { is_expected.to include("rtfeldman/elm-css" => Dependabot::Utils::Elm::Version.new("14.0.0")) }
 		end
 	end
 end
