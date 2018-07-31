@@ -6,6 +6,7 @@ module Dependabot
   module FileFetchers
     module Elixir
       class Hex < Dependabot::FileFetchers::Base
+        APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
         def self.required_files_in?(filenames)
           (%w(mix.exs mix.lock) - filenames).empty?
         end
@@ -33,10 +34,12 @@ module Dependabot
         end
 
         def subapp_mixfiles
-          return [] unless repo_contents.any? { |f| f.name == "apps" }
-          app_directories =
-            repo_contents(dir: "apps").
-            select { |f| f.type == "dir" }
+          apps_path = mixfile.content.match(APPS_PATH_REGEX)&.
+                      named_captures.fetch("path")
+          return [] unless apps_path
+
+          app_directories = repo_contents(dir: apps_path).
+                            select { |f| f.type == "dir" }
 
           app_directories.map do |dir|
             fetch_file_from_host("#{dir.path}/mix.exs")
