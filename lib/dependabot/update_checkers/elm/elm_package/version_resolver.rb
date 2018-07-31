@@ -68,7 +68,7 @@ module Dependabot
               original_dependencies =
                 Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
 
-              result = install_result(version, original_dependencies,
+              result = install_result(original_dependencies,
                                       deps_after_install)
 
               if unlock_requirement == :own
@@ -82,7 +82,7 @@ module Dependabot
             end
           end
 
-          def install_result(_version, original_dependencies, deps_after_install)
+          def install_result(original_dependencies, deps_after_install)
             # This can go one of 5 ways:
             # 1) 👍 We bump our dep and no other dep is bumped
             # 2) 👎 We bump our dep and another dep is bumped too
