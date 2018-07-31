@@ -30,7 +30,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     )
   end
   let(:dependency_name) { "realWorld/ElmPackage" }
-  let(:current_version) { [2,2,0] }
+  let(:current_version) { Dependabot::Utils::Elm::Version.new("2.2.0") }
   let(:requirements) do
     [{ file: "elm-package.json", requirement: "1.0.0 <= v <= 2.2.0", groups: [], source: nil }]
   end
@@ -54,14 +54,14 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     before do
       stub_request(:get, elm_package_url).to_return(status: 200, body: elm_package_response)
       allow(checker).to receive(:latest_resolvable_version).
-        and_return([2,1,0])
+        and_return(Dependabot::Utils::Elm::Version.new("2.1.0"))
     end
 
-    it { is_expected.to eq([5,1,1]) }
+    it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("5.1.1")) }
 
     context "when the registry 404s" do
       before { stub_request(:get, elm_package_url).to_return(status: 404) }
-      it { is_expected.to eq([2,2,0]) }
+      it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("2.2.0")) }
     end
   end
 

@@ -21,8 +21,8 @@ module Dependabot
         # require_relative "elm_package/requirements_updater"
         require_relative "elm_package/version_resolver"
 
-        VERSION_REGEX = /(\d+)\.(\d+)\.(\d+)/
-        VERSIONS_REGEX = /versions: \[("#{VERSION_REGEX}",?)+\]/
+        A_VERSION_REGEX = /\d+\.\d+\.\d+/
+        VERSIONS_LINE_REGEX = /versions: \[("#{A_VERSION_REGEX}",?)+\]/
         def latest_version
           versions.last
         end
@@ -56,32 +56,21 @@ module Dependabot
         end
 
         def updated_requirements
-          # TODO: Delegate to RequirementsUpdater
-          # it should return the .requirements field on Dependency
-          # updated to the `latest_resolvable_version`
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            latest_version: latest_version&.to_s,
-            latest_resolvable_version: latest_resolvable_version&.to_s
+            latest_resolvable_version: latest_resolvable_version
           ).updated_requirements
         end
 
         private
 
         def updated_dependencies_after_full_unlock
+          # TODO: run updated_requirements on everyone on the force_updater
           throw NotImplemented
         end
 
         def latest_version_resolvable_with_full_unlock?
-          # Elm-package doesn't have locking.
-          # If we can't upgrade with the other methods
-          # it must mean some dependency doesn't yet
-          # support `latest_version`.
-          #
-          # Elm package doesn't let us get to this
-          # state unless we manually try to update
-          # a requirement.
-          false
+          # TODO: create a force_updater or smth
         end
 
         def versions
@@ -96,12 +85,12 @@ module Dependabot
 
           return [dependency.version] unless response.status == 200
 
-          matches = VERSIONS_REGEX.match(response.body).to_a
+          matches = VERSIONS_LINE_REGEX.match(response.body)
 
-          return [dependency.version] unless matches.any?
+          return [dependency.version] unless matches
 
-          matches[0].scan(VERSION_REGEX).
-            map {|strings| strings.map(&:to_i)}.
+          matches[0].scan(A_VERSION_REGEX).
+            map {|version| Dependabot::Utils::Elm::Version.new(version)}.
             sort
         end
       end
