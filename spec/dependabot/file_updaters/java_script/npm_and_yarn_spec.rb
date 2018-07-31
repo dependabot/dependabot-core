@@ -941,24 +941,25 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       context "when the lockfile needs to be cleaned up (Yarn bug)" do
         let(:manifest_fixture_name) { "no_lockfile_change.json" }
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "babel-register",
-            version: "6.26.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^6.26.0",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "^6.24.1",
-              groups: [],
-              source: nil
-            }]
-          )
+
+        let(:dependency_name) { "babel-register" }
+        let(:version) { "6.26.0" }
+        let(:previous_version) { "6.24.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^6.26.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^6.24.1",
+            groups: [],
+            source: nil
+          }]
         end
 
         it "removes details of the old version" do
@@ -970,26 +971,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       context "with resolutions" do
         let(:manifest_fixture_name) { "resolution_specified.json" }
         let(:yarn_lock_fixture_name) { "resolution_specified.lock" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "lodash",
-            version: "3.10.1",
-            previous_version: "3.10.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^3.0",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "^3.0",
-              groups: [],
-              source: nil
-            }]
-          )
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: [],
+            source: nil
+          }]
         end
+        let(:previous_requirements) { requirements }
 
         it "updates the resolution, as well as the declaration" do
           expect(updated_package_json.content).
@@ -1019,52 +1013,44 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           )
         end
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "lodash",
-            version: "1.3.1",
-            package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.3.1",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "packages/package1/package.json",
-                requirement: "^1.3.1",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "other_package/package.json",
-                requirement: "^1.3.1",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "package.json",
-                requirement: "^1.2.0",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "packages/package1/package.json",
-                requirement: "^1.2.1",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "other_package/package.json",
-                requirement: "^1.2.1",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.2.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: [],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: [],
+            source: nil
+          }]
         end
 
         it "updates the yarn.lock and all three package.jsons" do
@@ -1088,24 +1074,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         context "with a dependency that doesn't appear in all the workspaces" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "chalk",
-              version: "0.4.0",
-              package_manager: "npm_and_yarn",
-              requirements: [{
-                file: "packages/package1/package.json",
-                requirement: "0.4.0",
-                groups: [],
-                source: nil
-              }],
-              previous_requirements: [{
-                file: "packages/package1/package.json",
-                requirement: "0.3.0",
-                groups: [],
-                source: nil
-              }]
-            )
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: [],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: [],
+              source: nil
+            }]
           end
 
           it "updates the yarn.lock and the correct package_json" do
@@ -1128,24 +1114,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         context "with a dependency that appears as a development dependency" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "etag",
-              version: "1.8.1",
-              package_manager: "npm_and_yarn",
-              requirements: [{
-                file: "packages/package1/package.json",
-                requirement: "^1.8.1",
-                groups: ["devDependencies"],
-                source: nil
-              }],
-              previous_requirements: [{
-                file: "packages/package1/package.json",
-                requirement: "^1.1.0",
-                groups: ["devDependencies"],
-                source: nil
-              }]
-            )
+          let(:dependency_name) { "etag" }
+          let(:version) { "1.8.1" }
+          let(:previous_version) { "1.8.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.1.0",
+              groups: ["devDependencies"],
+              source: nil
+            }]
           end
 
           it "updates the right file" do
