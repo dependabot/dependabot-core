@@ -8,7 +8,7 @@ require "dependabot/file_parsers/elm/elm_package"
 module Dependabot
   module UpdateCheckers
     module Elm
-      module ElmPackage
+      class ElmPackage
         class VersionResolver
           def initialize(dependency:, dependency_files:, unlock_requirement:,
                          versions:)
@@ -170,7 +170,6 @@ module Dependabot
           end
 
           def requirement_for(version)
-            version = version.map(&:to_s).join(".")
             "#{version} <= v <= #{version}"
           end
         end
