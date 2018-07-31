@@ -30,6 +30,10 @@ module Dependabot
         end
 
         def exact_deps
+          # This file is not recommended to be checked in
+          # we shouldn't deal with it.
+          #
+          # Leaving this here merely to document.
         	"elm-stuff/exact-dependencies.json"
         end
       end
