@@ -58,17 +58,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "fetch-factory",
-      version: "0.0.2",
-      package_manager: "npm_and_yarn",
-      requirements: [
-        { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "package.json", requirement: "^0.0.1", groups: [], source: nil }
-      ]
+      name: dependency_name,
+      version: version,
+      previous_version: previous_version,
+      requirements: requirements,
+      previous_requirements: previous_requirements,
+      package_manager: "npm_and_yarn"
     )
   end
+  let(:dependency_name) { "fetch-factory" }
+  let(:version) { "0.0.2" }
+  let(:previous_version) { "0.0.1" }
+  let(:requirements) do
+    [{ file: "package.json", requirement: "^0.0.2", groups: [], source: nil }]
+  end
+  let(:previous_requirements) do
+    [{ file: "package.json", requirement: "^0.0.1", groups: [], source: nil }]
+  end
+
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -99,35 +106,32 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     context "with a git dependency" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "is-number",
-          version: version,
-          previous_version: previous_version,
-          package_manager: "npm_and_yarn",
-          requirements: [{
-            requirement: req,
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/jonschlinkert/is-number",
-              branch: nil,
-              ref: ref
-            }
-          }],
-          previous_requirements: [{
-            requirement: old_req,
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/jonschlinkert/is-number",
-              branch: nil,
-              ref: old_ref
-            }
-          }]
-        )
+      let(:dependency_name) { "is-number" }
+      let(:requirements) do
+        [{
+          requirement: req,
+          file: "package.json",
+          groups: ["devDependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/jonschlinkert/is-number",
+            branch: nil,
+            ref: ref
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: old_req,
+          file: "package.json",
+          groups: ["devDependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/jonschlinkert/is-number",
+            branch: nil,
+            ref: old_ref
+          }
+        }]
       end
       let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
       let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
@@ -202,25 +206,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
 
           context "when updating another dependency" do
-            let(:dependency) do
-              Dependabot::Dependency.new(
-                name: "chalk",
-                version: "2.3.2",
-                previous_version: "0.4.0",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  requirement: "2.3.2",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                }],
-                previous_requirements: [{
-                  requirement: "0.4.0",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              )
+            let(:dependency_name) { "chalk" }
+            let(:version) { "2.3.2" }
+            let(:previous_version) { "0.4.0" }
+            let(:requirements) do
+              [{
+                requirement: "2.3.2",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: "0.4.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }]
             end
 
             it "doesn't remove the git dependency" do
@@ -317,30 +320,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         context "updating to use the registry" do
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "is-number",
-              version: "4.0.0",
-              previous_version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
-              package_manager: "npm_and_yarn",
-              requirements: [{
-                requirement: "^4.0.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: nil
-              }],
-              previous_requirements: [{
-                requirement: nil,
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: {
-                  type: "git",
-                  url: "https://github.com/jonschlinkert/is-number",
-                  branch: nil,
-                  ref: "d5ac058"
-                }
-              }]
-            )
+          let(:dependency_name) { "is-number" }
+          let(:version) { "4.0.0" }
+          let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+          let(:requirements) do
+            [{
+              requirement: "^4.0.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: nil,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "d5ac058"
+              }
+            }]
           end
 
           let(:manifest_fixture_name) { "git_dependency_commit_ref.json" }
@@ -377,24 +379,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           content: fixture("javascript", "package_files", "etag.json")
         )
       end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "lodash",
-          version: "1.3.1",
-          package_manager: "npm_and_yarn",
-          requirements: [{
-            file: "package.json",
-            requirement: "^1.3.1",
-            groups: [],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: "package.json",
-            requirement: "^1.2.1",
-            groups: [],
-            source: nil
-          }]
-        )
+      let(:dependency_name) { "lodash" }
+      let(:version) { "1.3.1" }
+      let(:previous_version) { "1.2.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.3.1",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.2.1",
+          groups: [],
+          source: nil
+        }]
       end
 
       it "has details of the updated item" do
@@ -492,40 +494,34 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         )
       end
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "etag",
-          version: "1.8.1",
-          package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              requirement: "^1.1.0",
-              file: "packages/package1/package.json",
-              groups: ["devDependencies"],
-              source: nil
-            },
-            {
-              requirement: "^1.0.0",
-              file: "packages/other_package/package.json",
-              groups: ["devDependencies"],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "^1.1.0",
-              file: "packages/package1/package.json",
-              groups: ["devDependencies"],
-              source: nil
-            },
-            {
-              requirement: "^1.0.0",
-              file: "packages/other_package/package.json",
-              groups: ["devDependencies"],
-              source: nil
-            }
-          ]
-        )
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:previous_version) { "1.8.0" }
+      let(:requirements) do
+        [{
+          requirement: "^1.1.0",
+          file: "packages/package1/package.json",
+          groups: ["devDependencies"],
+          source: nil
+        }, {
+          requirement: "^1.0.0",
+          file: "packages/other_package/package.json",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: "^1.1.0",
+          file: "packages/package1/package.json",
+          groups: ["devDependencies"],
+          source: nil
+        }, {
+          requirement: "^1.0.0",
+          file: "packages/other_package/package.json",
+          groups: ["devDependencies"],
+          source: nil
+        }]
       end
 
       it "upates both lockfiles" do
@@ -617,29 +613,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     context "when a wildcard is specified" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "fetch-factory",
-          version: "0.2.0",
-          package_manager: "npm_and_yarn",
-          requirements:
-            [{
-              file: "package.json",
-              requirement: "*",
-              groups: [],
-              source: nil
-            }],
-          previous_requirements:
-            [{
-              file: "package.json",
-              requirement: "*",
-              groups: [],
-              source: nil
-            }]
-        )
-      end
       let(:manifest_fixture_name) { "wildcard.json" }
       let(:yarn_lock_fixture_name) { "wildcard.lock" }
+
+      let(:version) { "0.2.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "*",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) { requirements }
 
       it "only updates the lockfiles" do
         expect(updated_files.map(&:name)).
@@ -653,31 +639,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     context "when the exact version we're updating from is still requested" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "typescript",
-          version: "2.9.1",
-          package_manager: "npm_and_yarn",
-          requirements:
-            [{
-              file: "package.json",
-              requirement: "^2.1.1",
-              groups: ["devDependencies"],
-              source: nil
-            }],
-          previous_version: "2.1.4",
-          previous_requirements:
-            [{
-              file: "package.json",
-              requirement: "^2.1.1",
-              groups: ["devDependencies"],
-              source: nil
-            }]
-        )
-      end
       let(:files) { [package_json, yarn_lock] }
       let(:manifest_fixture_name) { "typedoc-plugin-ui-router.json" }
       let(:yarn_lock_fixture_name) { "typedoc-plugin-ui-router.lock" }
+
+      let(:dependency_name) { "typescript" }
+      let(:version) { "2.9.1" }
+      let(:previous_version) { "2.1.4" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.1.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) { requirements }
 
       it "updates the lockfile" do
         expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
@@ -697,25 +674,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
 
       context "when the requirement has not been updated" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "fetch-factory",
-            version: "0.0.2",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^0.0.1",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "^0.0.1",
-              groups: [],
-              source: nil
-            }]
-          )
-        end
+        let(:requirements) { previous_requirements }
 
         it "has details of the updated item" do
           parsed_lockfile = JSON.parse(updated_npm_lock.content)
@@ -753,28 +712,21 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
 
       context "when a dist-tag is specified" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "npm",
-            version: "5.9.0-next.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "next",
-              groups: [],
-              source: nil
-            }],
-            previous_version: "5.8.0",
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "next",
-              groups: [],
-              source: nil
-            }]
-          )
-        end
         let(:manifest_fixture_name) { "dist_tag.json" }
         let(:yarn_lock_fixture_name) { "dist_tag.lock" }
+
+        let(:dependency_name) { "npm" }
+        let(:version) { "5.9.0-next.0" }
+        let(:previous_version) { "5.8.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "next",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
 
         it "has details of the updated item" do
           expect(updated_yarn_lock.content).to include("npm@next:")
@@ -801,26 +753,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         let(:files) { [package_json, yarn_lock] }
         let(:manifest_fixture_name) { "lockfile_only_change.json" }
         let(:yarn_lock_fixture_name) { "lockfile_only_change.lock" }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "babel-jest",
-            version: "22.4.3",
-            previous_version: "22.0.4",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^22.0.4",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "^22.0.4",
-              groups: [],
-              source: nil
-            }]
-          )
+
+        let(:dependency_name) { "babel-jest" }
+        let(:version) { "22.4.3" }
+        let(:previous_version) { "22.0.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^22.0.4",
+            groups: [],
+            source: nil
+          }]
         end
+        let(:previous_requirements) { requirements }
 
         it "has details of the updated item, but doesn't update everything" do
           # Updates the desired dependency
@@ -865,24 +810,15 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             let(:npm_lock_fixture_name) { "package-lock.json" }
             let(:manifest_fixture_name) { "package.json" }
 
-            let(:dependency) do
-              Dependabot::Dependency.new(
-                name: "fetch-factory",
-                version: "5.0.2",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "package.json",
-                  requirement: "^5.0.2",
-                  groups: [],
-                  source: nil
-                }],
-                previous_requirements: [{
-                  file: "package.json",
-                  requirement: "^0.0.1",
-                  groups: [],
-                  source: nil
-                }]
-              )
+            let(:dependency_name) { "fetch-factory" }
+            let(:version) { "5.0.2" }
+            let(:requirements) do
+              [{
+                file: "package.json",
+                requirement: "^5.0.2",
+                groups: [],
+                source: nil
+              }]
             end
 
             it "raises an unhandled error" do
@@ -948,24 +884,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         let(:manifest_fixture_name) { "git_dependency_bad_ref.json" }
         let(:yarn_lock_fixture_name) { "git_dependency_bad_ref.lock" }
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "lodash",
-            version: "1.3.1",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^1.3.1",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "^1.2.1",
-              groups: [],
-              source: nil
-            }]
-          )
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.3.1",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.2.1",
+            groups: [],
+            source: nil
+          }]
         end
 
         context "with an npm lockfile" do

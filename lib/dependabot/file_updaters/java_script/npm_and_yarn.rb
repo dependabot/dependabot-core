@@ -43,7 +43,8 @@ module Dependabot
 
           updated_files += updated_package_files
 
-          if updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+          if updated_files.none? ||
+             updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
             raise "No files have changed!"
           end
 
