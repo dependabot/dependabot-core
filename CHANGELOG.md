@@ -1,3 +1,7 @@
+## v0.63.22, 31 July 2018
+
+- JS: Raise error if no files change in FileUpdater
+
 ## v0.63.21, 31 July 2018
 
 - Elixir: Handle projects without a mix.lock
