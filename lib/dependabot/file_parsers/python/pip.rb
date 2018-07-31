@@ -160,7 +160,8 @@ module Dependabot
             requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          evaluation_errors = %w(InstallationError RequirementsFileParseError)
+          evaluation_errors =
+            %w(InstallationError RequirementsFileParseError InvalidMarker)
           raise unless error.message.start_with?(*evaluation_errors)
 
           raise Dependabot::DependencyFileNotEvaluatable, error.message
