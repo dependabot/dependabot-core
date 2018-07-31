@@ -17,6 +17,7 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
     described_class.new(source: source, credentials: credentials)
   end
   let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -28,6 +29,52 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
+  before do
+    stub_request(:get, url + "?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_elixir.json"),
+        headers: json_header
+      )
+
+    stub_request(:get, url + "mix.exs?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_elixir_mixfile.json"),
+        headers: json_header
+      )
+
+    stub_request(:get, url + "mix.lock?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_elixir_lockfile.json"),
+        headers: json_header
+      )
+  end
+
+  it "fetches the mix.exs and mix.lock" do
+    expect(file_fetcher_instance.files.count).to eq(2)
+    expect(file_fetcher_instance.files.map(&:name)).
+      to match_array(%w(mix.exs mix.lock))
+  end
+
+  context "without a lockfile" do
+    before do
+      stub_request(:get, url + "mix.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404, headers: json_header)
+    end
+
+    it "fetches the mix.exs" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(mix.exs))
+    end
+  end
+
   context "with an umbrella app" do
     before do
       stub_request(:get, url + "?ref=sha").
@@ -35,23 +82,15 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
         to_return(
           status: 200,
           body: fixture("github", "contents_elixir_umbrella.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
 
       stub_request(:get, url + "mix.exs?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_elixir_mixfile.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, url + "mix.lock?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_elixir_lockfile.json"),
-          headers: { "content-type" => "application/json" }
+          body: fixture("github", "contents_elixir_umbrella_mixfile.json"),
+          headers: json_header
         )
 
       stub_request(:get, url + "apps?ref=sha").
@@ -59,7 +98,7 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
         to_return(
           status: 200,
           body: fixture("github", "contents_elixir_umbrella_apps.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
 
       stub_request(:get, url + "apps/bank/mix.exs?ref=sha").
@@ -67,14 +106,14 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
         to_return(
           status: 200,
           body: fixture("github", "contents_elixir_bank_mixfile.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, url + "apps/bank_web/mix.exs?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "contents_elixir_bank_web_mixfile.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -90,7 +129,7 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 404,
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 

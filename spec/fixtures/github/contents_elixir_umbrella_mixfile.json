@@ -1,0 +1,18 @@
+{
+  "name": "mix.exs",
+  "path": "mix.exs",
+  "sha": "84ef495b10f6a5a6a04c65606440621b44c173f9",
+  "size": 782,
+  "url": "https://api.github.com/repos/wojtekmach/acme_bank/contents/mix.exs?ref=master",
+  "html_url": "https://github.com/wojtekmach/acme_bank/blob/master/mix.exs",
+  "git_url": "https://api.github.com/repos/wojtekmach/acme_bank/git/blobs/84ef495b10f6a5a6a04c65606440621b44c173f9",
+  "download_url": "https://raw.githubusercontent.com/wojtekmach/acme_bank/master/mix.exs",
+  "type": "file",
+  "content": "ZGVmbW9kdWxlIEJhbmtQbGF0Zm9ybS5NaXhmaWxlIGRvCiAgdXNlIE1peC5Q\ncm9qZWN0CgogIGRlZiBwcm9qZWN0IGRvCiAgICBbYXBwc19wYXRoOiAiYXBw\ncyIsCiAgICAgYnVpbGRfZW1iZWRkZWQ6IE1peC5lbnYgPT0gOnByb2QsCiAg\nICAgc3RhcnRfcGVybWFuZW50OiBNaXguZW52ID09IDpwcm9kLAogICAgIHZl\ncnNpb246ICIxLjAuMC1kZXYiLAogICAgIHNvdXJjZV91cmw6ICJodHRwczov\nL2dpdGh1Yi5jb20vd29qdGVrbWFjaC9hY21lX2JhbmsiLAogICAgIG5hbWU6\nICJBY21lIEJhbmsiLAogICAgIGRvY3M6IFtzb3VyY2VfcmVmOiAiSEVBRCIs\nIG1haW46ICJtYWluIiwgYXNzZXRzOiAiZG9jcyIsIGV4dHJhczogWyJkb2Nz\nL21haW4ubWQiXV0sCiAgICAgZGVwczogZGVwcygpLAogICAgIGFsaWFzZXM6\nIGFsaWFzZXMoKV0KICBlbmQKCiAgZGVmcCBkZXBzIGRvCiAgICBbezpleF9k\nb2MsIGdpdGh1YjogImVsaXhpci1sYW5nL2V4X2RvYyIsIGJyYW5jaDogIm1h\nc3RlciIsIG9ubHk6IDpkZXZ9XQogIGVuZAoKICBkZWZwIGFsaWFzZXMgZG8K\nICAgIFsiZWN0by5zZXR1cCI6IFsiZWN0by5jcmVhdGUiLCAiZWN0by5taWdy\nYXRlIiwgImVjdG8uc2VlZCJdLAogICAgICJlY3RvLnNlZWQiOiBbInJ1biBh\ncHBzL2JhbmsvcHJpdi9yZXBvL3NlZWRzLmV4cyJdLAogICAgICJlY3RvLnJl\nc2V0IjogWyJlY3RvLmRyb3AiLCAiZWN0by5zZXR1cCJdLAogICAgICJ0ZXN0\nIjogWyJlY3RvLmNyZWF0ZSAtLXF1aWV0IiwgImVjdG8ubWlncmF0ZSIsICJ0\nZXN0Il1dCiAgZW5kCmVuZAo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/wojtekmach/acme_bank/contents/mix.exs?ref=master",
+    "git": "https://api.github.com/repos/wojtekmach/acme_bank/git/blobs/84ef495b10f6a5a6a04c65606440621b44c173f9",
+    "html": "https://github.com/wojtekmach/acme_bank/blob/master/mix.exs"
+  }
+}
