@@ -1,3 +1,7 @@
+## v0.63.21, 31 July 2018
+
+- Elixir: Handle projects without a mix.lock
+
 ## v0.63.20, 30 July 2018
 
 - Rust: Update feature build-dependencies
