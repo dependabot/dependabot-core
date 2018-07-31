@@ -103,6 +103,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     context "without a lockfile" do
       let(:files) { [package_json] }
       its(:length) { is_expected.to eq(1) }
+
+      context "whe nothing has changed" do
+        let(:requirements) { previous_requirements }
+        specify { expect { updated_files }.to raise_error(/No files/) }
+      end
     end
 
     context "with a git dependency" do
