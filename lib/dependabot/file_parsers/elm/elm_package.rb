@@ -3,12 +3,13 @@ require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/elm/elm_package"
 require "dependabot/shared_helpers"
+require "dependabot/utils/elm/version"
 
 module Dependabot
   module FileParsers
     module Elm
       class ElmPackage < Dependabot::FileParsers::Base
-        MAX_VERSION = Float::INFINITY
+        MAX_VERSION = 9999
         require "dependabot/file_parsers/base/dependency_set"
 
         def parse
@@ -58,7 +59,7 @@ module Dependabot
               major-=1
             end
           end
-          [major, minor, patch]
+          Dependabot::Utils::Elm::Version.new("#{major}.#{minor}.#{patch}")
         end
 
         private

@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.version).to eq([2, 2, 0])
+          expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("2.2.0"))
           expect(dependency.requirements).to eq(
             [
               {
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq([1, 0, 0])
+            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.0.0"))
             expect(dependency.requirements).to eq(
               [
                 {
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq([1, 0, max_version])
+            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.0.#{max_version}"))
             expect(dependency.requirements).to eq(
               [
                 {
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq([1, max_version, max_version])
+            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.#{max_version}.#{max_version}"))
             expect(dependency.requirements).to eq(
               [
                 {
