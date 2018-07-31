@@ -145,7 +145,7 @@ module Dependabot
           end
 
           def lockfile
-            lockfile = dependency_files.find { |f| f.name == "mix.lock" }
+            @lockfile ||= dependency_files.find { |f| f.name == "mix.lock" }
           end
 
           def wants_prerelease?
