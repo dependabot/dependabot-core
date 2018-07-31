@@ -34,7 +34,7 @@ module Dependabot
                 directory: file.directory
               )
             end
-            files << lockfile
+            files << lockfile if lockfile
             files
           end
 
@@ -140,14 +140,12 @@ module Dependabot
             mixfiles =
               dependency_files.
               select { |f| f.name.end_with?("mix.exs") }
-            raise "No mix.exs!" unless mixfiles.any?
+            raise "No mix.exs!" if mixfiles.none?
             mixfiles
           end
 
           def lockfile
             lockfile = dependency_files.find { |f| f.name == "mix.lock" }
-            raise "No mix.lock!" unless lockfile
-            lockfile
           end
 
           def wants_prerelease?

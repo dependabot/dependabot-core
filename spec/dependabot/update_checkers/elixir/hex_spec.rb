@@ -74,6 +74,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
     it { is_expected.to eq(Gem::Version.new("1.4.3")) }
 
+    context "without a lockfile" do
+      let(:files) { [mixfile] }
+      it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+    end
+
     context "when the user wants pre-releases" do
       let(:version) { "1.4.0-rc.0" }
       it { is_expected.to eq(Gem::Version.new("1.5.0-rc.0")) }
@@ -138,6 +143,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
+
+    context "without a lockfile" do
+      let(:files) { [mixfile] }
+      it { is_expected.to eq(Gem::Version.new("1.3.6")) }
+    end
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.5.a, < 2.0"] }

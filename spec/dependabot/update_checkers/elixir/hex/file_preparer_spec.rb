@@ -53,6 +53,22 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
   describe "#prepared_dependency_files" do
     subject(:prepared_dependency_files) { preparer.prepared_dependency_files }
 
+    context "without a lockfile" do
+      let(:dependency_files) { [mixfile] }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated mix.exs" do
+        subject(:prepared_mixfile) do
+          prepared_dependency_files.find { |f| f.name == "mix.exs" }
+        end
+
+        it "updates the requirement" do
+          expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
+        end
+      end
+    end
+
     describe "the updated mix.exs" do
       subject(:prepared_mixfile) do
         prepared_dependency_files.find { |f| f.name == "mix.exs" }
