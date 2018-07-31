@@ -106,19 +106,9 @@ function install_args_with_version(depName, desiredVersion, requirements) {
   const source = requirements.source;
 
   if (source && source.type === "git") {
-    return [`${source.url}#${desiredVersion}`];
+    return [`${depName}@${source.url}#${desiredVersion}`];
   } else {
     return [`${depName}@${desiredVersion}`];
-  }
-}
-
-function install_args_with_req(depName, currentRange, requirements) {
-  const source = requirements.source;
-
-  if (source && source.type === "git") {
-    return [`${currentRange}`];
-  } else {
-    return [`${depName}@${currentRange}`];
   }
 }
 

@@ -187,6 +187,48 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(updated_yarn_lock.content).to_not include("af885e2e890")
           end
 
+          context "that previously caused problems" do
+            let(:manifest_fixture_name) { "git_dependency_git_url.json" }
+            let(:yarn_lock_fixture_name) { "git_dependency_git_url.lock" }
+            let(:npm_lock_fixture_name) { "git_dependency_git_url.json" }
+
+            let(:dependency_name) { "slick-carousel" }
+            let(:requirements) { previous_requirements }
+            let(:previous_requirements) do
+              [{
+                requirement: old_req,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/brianfryer/slick",
+                  branch: nil,
+                  ref: old_ref
+                }
+              }]
+            end
+            let(:previous_version) do
+              "280b560161b751ba226d50c7db1e0a14a78c2de0"
+            end
+            let(:version) { "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1" }
+
+            it "only updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json yarn.lock))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              npm_lockfile_version =
+                parsed_package_lock["dependencies"]["slick-carousel"]["version"]
+              expect(npm_lockfile_version).
+                to eq("git://github.com/brianfryer/slick.git#"\
+                      "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1")
+
+              expect(updated_yarn_lock.content).
+                to include('slick-carousel@git://github.com/brianfryer/slick":')
+              expect(updated_yarn_lock.content).to_not include("280b56016")
+            end
+          end
+
           context "that uses ssh" do
             let(:manifest_fixture_name) { "git_dependency_ssh.json" }
             let(:yarn_lock_fixture_name) { "git_dependency_ssh.lock" }
