@@ -58,9 +58,13 @@ module Dependabot
           end
 
           def update_unmet_requirements(original_dependency, deps_after_install)
-            # get all deps w/ requirements not met by deps after install
-            # update those requirements
             new_version = deps_after_install[original_dependency.name]
+            # When using ranges (1.0.0 <= v < 2.0.0) we put a guess
+            # 1.999.999 version for original_dependency.version
+            # We should use the concrete value we got from elm-package
+            # in those cases.
+            previous_version =
+              [original_dependency.version, new_version].min.to_s
 
             # should never happen but
             msg = "Dependency disappeared after update"
@@ -84,7 +88,7 @@ module Dependabot
               name: original_dependency.name,
               version: new_version.to_s,
               requirements: new_requirements,
-              previous_version: original_dependency.version.to_s,
+              previous_version: previous_version,
               previous_requirements: original_dependency.requirements,
               package_manager: original_dependency.package_manager
             )
