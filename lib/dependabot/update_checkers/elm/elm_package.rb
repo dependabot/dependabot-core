@@ -22,7 +22,9 @@ module Dependabot
           # We're overriding can_update? bc otherwise
           # there'd be no distinction between :own and :all
           # given the logic in Dependabot::UpdateCheckers::Base
-          version_resolver.latest_resolvable_version(unlock_requirement: requirements_to_unlock)
+          version_resolver.latest_resolvable_version(
+            unlock_requirement: requirements_to_unlock
+          )
         end
 
         def latest_resolvable_version
@@ -64,7 +66,8 @@ module Dependabot
         end
 
         def updated_dependencies_after_full_unlock
-          version_resolver.updated_dependencies_after_full_unlock(latest_resolvable_version)
+          version_resolver.
+            updated_dependencies_after_full_unlock(latest_resolvable_version)
         end
 
         def latest_version_resolvable_with_full_unlock?
@@ -90,7 +93,7 @@ module Dependabot
             return [dependency.version] unless matches
 
             matches[0].scan(A_VERSION_REGEX).
-              map {|version| Dependabot::Utils::Elm::Version.new(version)}.
+              map { |version| Dependabot::Utils::Elm::Version.new(version) }.
               sort
           end
         end

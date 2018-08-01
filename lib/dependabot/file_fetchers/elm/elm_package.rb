@@ -18,15 +18,15 @@ module Dependabot
 
         def fetch_files
           required_files.
-          	map {|filename| fetch_file_from_host(filename)}
+            map { |filename| fetch_file_from_host(filename) }
         end
 
         def required_files
-        	[elm_package]
+          [elm_package]
         end
 
         def elm_package
-        	"elm-package.json"
+          "elm-package.json"
         end
 
         def exact_deps
@@ -34,7 +34,7 @@ module Dependabot
           # we shouldn't deal with it.
           #
           # Leaving this here merely to document.
-        	"elm-stuff/exact-dependencies.json"
+          "elm-stuff/exact-dependencies.json"
         end
       end
     end

@@ -26,16 +26,20 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage::ElmPackageUpdater do
       name: "rtfeldman/elm-css",
       version: "14.0.0",
       requirements:
-        [{ file: "elm-package.json", requirement: "14.0.0 <= v <= 14.0.0", groups: [], source: nil }],
+        [{ file: "elm-package.json", requirement: "14.0.0 <= v <= 14.0.0",
+           groups: [], source: nil }],
       previous_version: "13.1.1",
       previous_requirements:
-        [{ file: "elm-package.json", requirement: "13.1.1 <= v <= 13.1.1", groups: [], source: nil }],
+        [{ file: "elm-package.json", requirement: "13.1.1 <= v <= 13.1.1",
+           groups: [], source: nil }],
       package_manager: "elm-package"
     )
   end
 
   describe "#updated_elm_package_file_content" do
-    subject(:updated_elm_package_file_content) { updater.updated_elm_package_file_content }
+    subject(:updated_elm_package_file_content) do
+      updater.updated_elm_package_file_content
+    end
 
     it "updates the right dependency" do
       expect(updated_elm_package_file_content).

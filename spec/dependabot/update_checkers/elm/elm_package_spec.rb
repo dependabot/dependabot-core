@@ -32,7 +32,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
   let(:dependency_name) { "realWorld/ElmPackage" }
   let(:current_version) { Dependabot::Utils::Elm::Version.new("2.2.0") }
   let(:requirements) do
-    [{ file: "elm-package.json", requirement: "1.0.0 <= v <= 2.2.0", groups: [], source: nil }]
+    [{ file: "elm-package.json", requirement: "1.0.0 <= v <= 2.2.0",
+       groups: [], source: nil }]
   end
 
   let(:elm_package) do
@@ -46,13 +47,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    let(:elm_package_url) { "http://package.elm-lang.org/packages/realWorld/ElmPackage/" }
+    let(:elm_package_url) do
+      "http://package.elm-lang.org/packages/realWorld/ElmPackage/"
+    end
     let(:elm_package_response) do
       fixture("elm", "elm_package", "elm-package_response")
     end
 
     before do
-      stub_request(:get, elm_package_url).to_return(status: 200, body: elm_package_response)
+      stub_request(:get, elm_package_url).
+        to_return(status: 200, body: elm_package_response)
       allow(checker).to receive(:latest_resolvable_version).
         and_return(Dependabot::Utils::Elm::Version.new("2.1.0"))
     end

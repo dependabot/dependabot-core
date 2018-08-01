@@ -6,6 +6,9 @@ require "dependabot/file_parsers/elm/elm_package"
 require_relative "../shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
+  def elm_version(version_string)
+    Dependabot::Utils::Elm::Version.new(version_string)
+  end
   let(:max_version) { Dependabot::FileParsers::Elm::ElmPackage::MAX_VERSION }
   it_behaves_like "a dependency file parser"
 
@@ -37,7 +40,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("2.2.0"))
+          expect(dependency.version).to eq(elm_version("2.2.0"))
           expect(dependency.requirements).to eq(
             [
               {
@@ -56,7 +59,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.0.0"))
+            expect(dependency.version).to eq(elm_version("1.0.0"))
             expect(dependency.requirements).to eq(
               [
                 {
@@ -71,11 +74,13 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
         end
 
         context "with 1.1.0" do
-          let(:dependency_name) { "realWorldElmPackage/withZeroPatchUpperBound" }
+          let(:dependency_name) do
+            "realWorldElmPackage/withZeroPatchUpperBound"
+          end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.0.#{max_version}"))
+            expect(dependency.version).to eq(elm_version("1.0.#{max_version}"))
             expect(dependency.requirements).to eq(
               [
                 {
@@ -93,11 +98,14 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
         # elm packages start at 1.0.0
 
         context "with 2.0.0" do
-          let(:dependency_name) { "realWorldElmPackage/withZeroMinorUpperBound" }
+          let(:dependency_name) do
+            "realWorldElmPackage/withZeroMinorUpperBound"
+          end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq(Dependabot::Utils::Elm::Version.new("1.#{max_version}.#{max_version}"))
+            expect(dependency.version).
+              to eq(elm_version("1.#{max_version}.#{max_version}"))
             expect(dependency.requirements).to eq(
               [
                 {

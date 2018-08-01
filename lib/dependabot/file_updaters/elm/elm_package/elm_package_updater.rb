@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/elm/elm_package"
-# require "dependabot/file_updaters/elm/elm_package/elm_package_requirement_updater"
-# require "dependabot/file_updaters/elm/elm_package/elm_package_git_pin_updater"
 
 module Dependabot
   module FileUpdaters

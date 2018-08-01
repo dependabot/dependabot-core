@@ -24,7 +24,8 @@ module Dependabot
           def latest_resolvable_version(unlock_requirement:)
             # Elm has no lockfile, no unlock essentially means
             # "let elm-package install whatever satisfies .requirements"
-            return @dependency.version if !unlock_requirement ||
+            return @dependency.version if
+              !unlock_requirement ||
               unlock_requirement == :none
 
             # don't look further if no other versions
@@ -44,39 +45,48 @@ module Dependabot
           end
 
           def updated_dependencies_after_full_unlock(version)
-            deps_after_install, original_dependencies = simulate_install(version)
+            deps_after_install, original_dependencies =
+              simulate_install(version)
 
             original_dependencies.map do |original_dependency|
-              # get all deps whose requirements are not met by deps after install
-              # update those requirements
-              new_version = deps_after_install[original_dependency.name]
-
-              # should never happen but
-              raise UnrecoverableState, "Dependency disappeared after update" unless new_version
-
-              original_requirements = original_dependency.requirements.map do |req|
-                Dependabot::Utils::Elm::Requirement.new(req[:requirement])
-              end
-
-              new_requirements =
-                if original_requirements.all? {|req| req.satisfied_by?(new_version) }
-                  original_dependency.requirements
-                else
-                  RequirementsUpdater.new(
-                    requirements: original_dependency.requirements,
-                    latest_resolvable_version: new_version.to_s
-                  ).updated_requirements
-                end
-
-              Dependency.new(
-                name: original_dependency.name,
-                version: new_version.to_s,
-                requirements: new_requirements,
-                previous_version: original_dependency.version.to_s,
-                previous_requirements: original_dependency.requirements,
-                package_manager: original_dependency.package_manager
+              update_unmet_requirements(
+                original_dependency,
+                deps_after_install
               )
             end
+          end
+
+          def update_unmet_requirements(original_dependency, deps_after_install)
+            # get all deps w/ requirements not met by deps after install
+            # update those requirements
+            new_version = deps_after_install[original_dependency.name]
+
+            # should never happen but
+            msg = "Dependency disappeared after update"
+            raise UnrecoverableState, msg unless new_version
+
+            original_reqs = original_dependency.requirements.map do |req|
+              Dependabot::Utils::Elm::Requirement.new(req[:requirement])
+            end
+
+            new_requirements =
+              if original_reqs.all? { |req| req.satisfied_by?(new_version) }
+                original_dependency.requirements
+              else
+                RequirementsUpdater.new(
+                  requirements: original_dependency.requirements,
+                  latest_resolvable_version: new_version.to_s
+                ).updated_requirements
+              end
+
+            Dependency.new(
+              name: original_dependency.name,
+              version: new_version.to_s,
+              requirements: new_requirements,
+              previous_version: original_dependency.version.to_s,
+              previous_requirements: original_dependency.requirements,
+              package_manager: original_dependency.package_manager
+            )
           end
 
           private
@@ -84,11 +94,12 @@ module Dependabot
           attr_reader :dependency, :dependency_files
 
           def keep_higher_versions(versions, lowest_version)
-            versions.select { |v| (v <=> lowest_version) > 0 }
+            versions.select { |v| v > lowest_version }
           end
 
           def can_update?(version, unlock_requirement)
-            deps_after_install, original_dependencies = simulate_install(version)
+            deps_after_install, original_dependencies =
+              simulate_install(version)
 
             result = install_result(original_dependencies,
                                     deps_after_install)
@@ -96,7 +107,7 @@ module Dependabot
             if unlock_requirement == :own
               result == :clean_bump
             else
-              [:clean_bump, :forced_full_unlock_bump].include?(result)
+              %i(clean_bump forced_full_unlock_bump).include?(result)
             end
           end
 
@@ -106,8 +117,9 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files_with(dependency.name, version)
 
-                # Elm package install outputs a preview of the actions to be performed
-                # We can use this preview to calculate whether it would do anything funny
+                # Elm package install outputs a preview of the actions to be
+                # performed. We can use this preview to calculate whether it
+                # would do anything funny
                 command = "yes n | elm-package install"
                 response = run_shell_command(command)
 
@@ -115,36 +127,42 @@ module Dependabot
 
                 elm_package = dependency_files.first.content
                 original_dependencies =
-                  Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
+                  FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
 
                 [deps_after_install, original_dependencies]
               rescue SharedHelpers::HelperSubprocessFailed => error
-                # 5) 👎 We bump our dep but elm-package blows up
+                # 5) We bump our dep but elm-package blows up
                 handle_elm_package_errors(error)
               end
           end
 
           def install_result(original_dependencies, deps_after_install)
             # This can go one of 5 ways:
-            # 1) 👍 We bump our dep and no other dep is bumped
-            # 2) 👎 We bump our dep and another dep is bumped too
-            #       Scenario: NoRedInk/datetimepicker bump to 3.0.2 bumps elm-css to 14
-            #       Note: this is a 👍 for unlock_requirement: :all
-            # 3) 👎 We bump our dep but actually elm-package doesn't bump it
-            #       Scenario: elm-css bump to 14 but NoRedInk/datetimepicker at 3.0.1
-            #                 also any "x <= v < y" that doesn't require :own unlock
-            # 4) 👎 We bump our dep but elm-package just says "Packages configured successfully!"
-            #       Narrator: they weren't
-            #       Scenario: impossible dependency (i.e. elm-css 999.999.999)
-            # 5) 👎 We bump our dep but elm-package blows up (not handled here)
-            #       Scenario: rtfeldman/elm-css 14 && rtfeldman/hashed-class 1.0.0
+            # 1) We bump our dep and no other dep is bumped
+            # 2) We bump our dep and another dep is bumped too
+            #    Scenario: NoRedInk/datetimepicker bump to 3.0.2 also
+            #              bumps elm-css to 14
+            # 3) We bump our dep but actually elm-package doesn't bump it
+            #    Scenario: elm-css bump to 14 but datetimepicker is at 3.0.1
+            # 4) We bump our dep but elm-package just says
+            #    "Packages configured successfully!"
+            #    Narrator: they weren't
+            #    Scenario: impossible dependency (i.e. elm-css 999.999.999)
+            #              a <= v < b where a is greater than latest version
+            # 5) We bump our dep but elm-package blows up (not handled here)
+            #    Scenario: rtfeldman/elm-css 14 && rtfeldman/hashed-class 1.0.0
+            #              I'm not sure what's different from this scenario
+            #              to 3), why it blows up instead of just rolling
+            #              elm-css back to version 9 which is what
+            #              hashed-class requires
 
-            # 4) 👎 We bump our dep but elm-package just says "Packages configured successfully!"
+            # 4) We bump our dep but elm-package just says
+            #    "Packages configured successfully!"
             return :empty_elm_stuff_bug if deps_after_install.empty?
 
             version_after_install = deps_after_install.delete(dependency.name)
 
-            # 3) 👎 We bump our dep but actually elm-package doesn't bump it
+            # 3) We bump our dep but actually elm-package doesn't bump it
             return :downgrade_bug if (version_after_install <=>
                                       dependency.version) <= 0
 
@@ -159,7 +177,7 @@ module Dependabot
             deps_after_install.
               keep_if { |key, _val| original_dependencies.include?(key) }
 
-            # 2) 👎 We bump our dep and another dep is bumped
+            # 2) We bump our dep and another dep is bumped
             other_dep_bumped = deps_after_install.any? do |k, new_version|
               original_dependencies.key?(k) &&
                 (original_dependencies[k] <=> new_version) <= 0
@@ -167,7 +185,7 @@ module Dependabot
 
             return :forced_full_unlock_bump if other_dep_bumped
 
-            # 1) 👍 We bump our dep and no other dep is bumped
+            # 1) We bump our dep and no other dep is bumped
             :clean_bump
           end
 

@@ -6,14 +6,16 @@ require "dependabot/dependency_file"
 require "dependabot/update_checkers/elm/elm_package/cli_parser"
 
 namespace = Dependabot::UpdateCheckers::Elm::ElmPackage
-
 RSpec.describe namespace::CliParser do
-	describe "#decode_install_preview" do
-		subject { described_class.decode_install_preview(output) }
+  def elm_version(version_string)
+    Dependabot::Utils::Elm::Version.new(version_string)
+  end
+  describe "#decode_install_preview" do
+    subject { described_class.decode_install_preview(output) }
 
-		context "first install" do
-			let(:output) do
-				%{
+    context "first install" do
+      let(:output) do
+        %(
 Some new packages are needed. Here is the upgrade plan.
 
   Install:
@@ -25,15 +27,17 @@ Some new packages are needed. Here is the upgrade plan.
     rtfeldman/hex 1.0.0
 
 Do you approve of this plan? [Y/n]
-				}
-			end
+				)
+      end
 
-			it { is_expected.to include("rtfeldman/elm-css" => Dependabot::Utils::Elm::Version.new("13.1.1")) }
-		end
+      it do
+        is_expected.to include("rtfeldman/elm-css" => elm_version("13.1.1"))
+      end
+    end
 
-		context "upgrade" do
-			let(:output) do
-				%{
+    context "upgrade" do
+      let(:output) do
+        %{
 Some new packages are needed. Here is the upgrade plan.
 
   Install:
@@ -49,9 +53,11 @@ Some new packages are needed. Here is the upgrade plan.
 
 Do you approve of this plan? [Y/n]
 				}
-			end
+      end
 
-			it { is_expected.to include("rtfeldman/elm-css" => Dependabot::Utils::Elm::Version.new("14.0.0")) }
-		end
-	end
+      it do
+        is_expected.to include("rtfeldman/elm-css" => elm_version("14.0.0"))
+      end
+    end
+  end
 end

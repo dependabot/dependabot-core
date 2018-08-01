@@ -3,7 +3,8 @@
 require "spec_helper"
 require "dependabot/update_checkers/elm/elm_package/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage::RequirementsUpdater do
+the_class = Dependabot::UpdateCheckers::Elm::ElmPackage::RequirementsUpdater
+RSpec.describe the_class do
   let(:updater) do
     described_class.new(
       requirements: requirements,

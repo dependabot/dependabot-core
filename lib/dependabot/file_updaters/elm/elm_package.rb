@@ -14,11 +14,12 @@ module Dependabot
         end
 
         def updated_dependency_files
-          updated_files = []
-
           elm_package_files.map do |file|
             if file_changed?(file)
-              updated_file(file: file, content: updated_elm_package_content(file))
+              updated_file(
+                file: file,
+                content: updated_elm_package_content(file)
+              )
             else
               file
             end
@@ -28,7 +29,8 @@ module Dependabot
         private
 
         def check_required_files
-          raise "No elm-package.json!" unless get_original_file("elm-package.json")
+          raise "No elm-package.json!" unless
+            get_original_file("elm-package.json")
         end
 
         def updated_elm_package_content(file)

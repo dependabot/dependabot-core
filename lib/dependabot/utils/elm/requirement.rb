@@ -8,7 +8,8 @@ module Dependabot
       class Requirement < Gem::Requirement
         # Override the version pattern to allow local versions
         PATTERN_RAW =
-          "(#{Utils::Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) (#{Utils::Elm::Version::VERSION_PATTERN})"
+          "(#{Utils::Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
+          "(#{Utils::Elm::Version::VERSION_PATTERN})"
         PATTERN = /\A#{PATTERN_RAW}\z/
 
         # Returns an array of requirements. At least one requirement from the
@@ -18,7 +19,7 @@ module Dependabot
         end
 
         def initialize(*requirements)
-          if requirements.any? {|req| req.nil? }
+          if requirements.any?(&:nil?)
             raise BadRequirementError, "Nil requirement not supported in Elm"
           end
           super
