@@ -68,8 +68,8 @@ module Dependabot
         end
 
         def latest_version_resolvable_with_full_unlock?
-          # This is never called
-          throw NotImplemented
+          # This is never called, but..
+          latest_version == latest_resolvable_version
         end
 
         def versions
