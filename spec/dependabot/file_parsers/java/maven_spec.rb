@@ -344,7 +344,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
               source: nil,
               metadata: {
                 property_name: nil,
-                packaging_type: "jar"
+                packaging_type: "pom"
               }
             }]
           )

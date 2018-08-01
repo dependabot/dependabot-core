@@ -68,7 +68,7 @@ module Dependabot
               source: nil,
               metadata: {
                 property_name: version_property_name(dependency_node),
-                packaging_type: packaging_type(pom, dependency_node) || "jar"
+                packaging_type: packaging_type(pom, dependency_node)
               }
             }]
           )
@@ -109,7 +109,8 @@ module Dependabot
         end
 
         def packaging_type(pom, dependency_node)
-          return unless dependency_node.at_xpath("./type")
+          return "pom" if dependency_node.node_name == "parent"
+          return "jar" unless dependency_node.at_xpath("./type")
           packaging_type_content = dependency_node.at_xpath("./type").
                                    content.strip
 
