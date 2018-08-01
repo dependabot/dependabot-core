@@ -536,6 +536,20 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         its(:content) { is_expected.to include("i18n (0.7.0)") }
       end
 
+      context "when updating a dep blocked by a sub-dep" do
+        let(:gemfile_fixture_name) { "blocked_by_subdep" }
+        let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
+        let(:dependency_name) { "activesupport" }
+        let(:dependency_version) { "5.2.0" }
+        let(:dependency_previous_version) { "5.0.0.1" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+        end
+        let(:previous_requirements) { requirements }
+
+        its(:content) { is_expected.to include("activesupport (5.2.0)") }
+      end
+
       context "when a gem has been yanked" do
         let(:gemfile_fixture_name) { "minor_version_specified" }
         let(:lockfile_fixture_name) { "yanked_gem.lock" }

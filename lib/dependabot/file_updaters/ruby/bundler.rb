@@ -214,6 +214,7 @@ module Dependabot
               SharedHelpers.in_a_forked_process do
                 # Set the path for path gemspec correctly
                 ::Bundler.instance_variable_set(:@root, tmp_dir)
+
                 # Remove installed gems from the default Rubygems index
                 ::Gem::Specification.all = []
 
@@ -249,18 +250,41 @@ module Dependabot
 
             definition.to_lock
           rescue ::Bundler::GemNotFound => error
-            raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
-            gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                       named_captures["name"]
-            raise if dependencies_to_unlock.include?(gem_name)
-            dependencies_to_unlock << gem_name
-            retry
+            unlock_yanked_gem(dependencies_to_unlock, error) && retry
+          rescue ::Bundler::VersionConflict => error
+            unlock_blocking_subdeps(dependencies_to_unlock, error) && retry
           rescue *RETRYABLE_ERRORS
             raise if @retrying
             @retrying = true
             sleep(rand(1.0..5.0))
             retry
           end
+        end
+
+        def unlock_yanked_gem(dependencies_to_unlock, error)
+          raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+          gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
+                     named_captures["name"]
+          raise if dependencies_to_unlock.include?(gem_name)
+          dependencies_to_unlock << gem_name
+        end
+
+        def unlock_blocking_subdeps(dependencies_to_unlock, error)
+          all_deps = ::Bundler::LockfileParser.new(lockfile.content).
+                     specs.map(&:name)
+          top_level = build_definition([]).dependencies.map(&:name)
+          allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
+
+          potentials_deps =
+            error.cause.conflicts.values.
+            flat_map(&:requirement_trees).
+            map do |tree|
+              tree.find { |req| allowed_new_unlocks.include?(req.name) }
+            end.compact.map(&:name)
+
+          raise if potentials_deps.none?
+
+          dependencies_to_unlock.append(*potentials_deps)
         end
 
         def build_definition(dependencies_to_unlock)
