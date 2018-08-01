@@ -84,7 +84,7 @@ module Dependabot
           attr_reader :dependency, :dependency_files
 
           def keep_higher_versions(versions, lowest_version)
-            versions.keep_if { |v| (v <=> lowest_version) > 0 }
+            versions.select { |v| (v <=> lowest_version) > 0 }
           end
 
           def can_update?(version, unlock_requirement)
