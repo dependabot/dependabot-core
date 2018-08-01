@@ -64,7 +64,7 @@ module Dependabot
         end
 
         def updated_dependencies_after_full_unlock
-          throw NotImplemented
+          version_resolver.updated_dependencies_after_full_unlock(latest_resolvable_version)
         end
 
         def latest_version_resolvable_with_full_unlock?

@@ -2,14 +2,18 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/update_checkers/elm/elm_package/cli_parser"
 require "dependabot/file_parsers/elm/elm_package"
+require "dependabot/update_checkers/elm/elm_package"
+require "dependabot/update_checkers/elm/elm_package/cli_parser"
+require "dependabot/update_checkers/elm/elm_package/requirements_updater"
+require "dependabot/utils/elm/requirement"
 
 module Dependabot
   module UpdateCheckers
     module Elm
       class ElmPackage
         class VersionResolver
+          class UnrecoverableState < StandardError; end
           def initialize(dependency:, dependency_files:,
                          versions:)
             @dependency = dependency
@@ -20,7 +24,8 @@ module Dependabot
           def latest_resolvable_version(unlock_requirement:)
             # Elm has no lockfile, no unlock essentially means
             # "let elm-package install whatever satisfies .requirements"
-            return @dependency.version if !unlock_requirement || unlock_requirement == :none
+            return @dependency.version if !unlock_requirement ||
+              unlock_requirement == :none
 
             # don't look further if no other versions
             return @dependency.version if @versions.empty?
@@ -36,6 +41,42 @@ module Dependabot
             return last_version if can_update?(last_version, unlock_requirement)
 
             return dependency.version if @versions.empty?
+          end
+
+          def updated_dependencies_after_full_unlock(version)
+            deps_after_install, original_dependencies = simulate_install(version)
+
+            original_dependencies.map do |original_dependency|
+              # get all deps whose requirements are not met by deps after install
+              # update those requirements
+              new_version = deps_after_install[original_dependency.name]
+
+              # should never happen but
+              raise UnrecoverableState, "Dependency disappeared after update" unless new_version
+
+              original_requirements = original_dependency.requirements.map do |req|
+                Dependabot::Utils::Elm::Requirement.new(req[:requirement])
+              end
+
+              new_requirements =
+                if original_requirements.all? {|req| req.satisfied_by?(new_version) }
+                  original_dependency.requirements
+                else
+                  RequirementsUpdater.new(
+                    requirements: original_dependency.requirements,
+                    latest_resolvable_version: new_version.to_s
+                  ).updated_requirements
+                end
+
+              Dependency.new(
+                name: original_dependency.name,
+                version: new_version.to_s,
+                requirements: new_requirements,
+                previous_version: original_dependency.version.to_s,
+                previous_requirements: original_dependency.requirements,
+                package_manager: original_dependency.package_manager
+              )
+            end
           end
 
           private
