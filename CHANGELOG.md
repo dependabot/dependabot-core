@@ -1,3 +1,7 @@
+## v0.63.26, 1 August 2018
+
+- Ruby: Handle custom default sources correctly in LatestVersionFinder
+
 ## v0.63.25, 1 August 2018
 
 - Ruby: Handle updates blocked by a subdependency in the FileUpdater
