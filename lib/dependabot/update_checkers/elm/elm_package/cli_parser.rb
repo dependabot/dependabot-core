@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/elm/version"
+require "dependabot/update_checkers/elm/elm_package"
 
 module Dependabot
   module UpdateCheckers
