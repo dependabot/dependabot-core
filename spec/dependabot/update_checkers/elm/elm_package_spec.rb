@@ -64,10 +64,4 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
       it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("2.2.0")) }
     end
   end
-
-  describe "#latest_resolvable_version" do
-    # elm-package force-updates transient dependencies when they'd break
-    # it doesn't update elm-package.json after the fact
-    # we'll have to update 1 thing, run an install, retroactively update the elm-package.json
-  end
 end
