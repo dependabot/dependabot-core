@@ -43,7 +43,12 @@ module Dependabot
 
             case dependency_source
             when NilClass then latest_rubygems_version_details
-            when ::Bundler::Source::Rubygems then latest_private_version_details
+            when ::Bundler::Source::Rubygems
+              if dependency_source.remotes.first.to_s == "https://rubygems.org/"
+                latest_rubygems_version_details
+              else
+                latest_private_version_details
+              end
             when ::Bundler::Source::Git then latest_git_version_details
             end
           end
@@ -136,8 +141,13 @@ module Dependabot
 
             @dependency_source ||=
               in_a_temporary_bundler_context do
-                ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+                definition = ::Bundler::Definition.build("Gemfile", nil, {})
+
+                specified_source =
+                  definition.dependencies.
                   find { |dep| dep.name == dependency.name }&.source
+
+                specified_source || definition.send(:sources).default_source
               end
           end
 

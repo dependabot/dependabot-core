@@ -203,6 +203,13 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::LatestVersionFinder do
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
 
+      context "specified as the default source" do
+        let(:gemfile_fixture_name) { "specified_default_source" }
+        let(:lockfile_fixture_name) { "specified_source.lock" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
+      end
+
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
