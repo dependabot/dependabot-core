@@ -22,12 +22,20 @@ module Dependabot
         end
 
         def updated_dependency_files
-          case resolver_type
-          when :pipfile then updated_pipfile_based_files
-          when :pip_compile then updated_pip_compile_based_files
-          when :requirements then updated_requirement_based_files
-          else raise "Unexpected resolver type: #{resolver_type}"
+          updated_files =
+            case resolver_type
+            when :pipfile then updated_pipfile_based_files
+            when :pip_compile then updated_pip_compile_based_files
+            when :requirements then updated_requirement_based_files
+            else raise "Unexpected resolver type: #{resolver_type}"
+            end
+
+          if updated_files.none? ||
+             updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+            raise "No files have changed!"
           end
+
+          updated_files
         end
 
         private
