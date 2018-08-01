@@ -73,24 +73,26 @@ module Dependabot
         end
 
         def versions
-          url = "http://package.elm-lang.org/packages/#{dependency.name}/"
+          @versions ||= begin
+            url = "http://package.elm-lang.org/packages/#{dependency.name}/"
 
-          response = Excon.get(
-            url,
-            idempotent: true,
-            omit_default_port: true,
-            middlewares: SharedHelpers.excon_middleware
-          )
+            response = Excon.get(
+              url,
+              idempotent: true,
+              omit_default_port: true,
+              middlewares: SharedHelpers.excon_middleware
+            )
 
-          return [dependency.version] unless response.status == 200
+            return [dependency.version] unless response.status == 200
 
-          matches = VERSIONS_LINE_REGEX.match(response.body)
+            matches = VERSIONS_LINE_REGEX.match(response.body)
 
-          return [dependency.version] unless matches
+            return [dependency.version] unless matches
 
-          matches[0].scan(A_VERSION_REGEX).
-            map {|version| Dependabot::Utils::Elm::Version.new(version)}.
-            sort
+            matches[0].scan(A_VERSION_REGEX).
+              map {|version| Dependabot::Utils::Elm::Version.new(version)}.
+              sort
+          end
         end
       end
     end
