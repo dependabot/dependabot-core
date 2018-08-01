@@ -1,3 +1,7 @@
+## v0.63.24, 1 August 2018
+
+- Maven: Use packaging type 'pom' for parent nodes
+
 ## v0.63.23, 31 July 2018
 
 - JS: Handle git:// dependencies that upgrade across versions
