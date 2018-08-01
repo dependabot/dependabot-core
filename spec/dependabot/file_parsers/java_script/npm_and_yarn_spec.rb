@@ -532,6 +532,29 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
         end
 
+        context "when a dist-tag is specified" do
+          let(:package_json_fixture_name) { "dist_tag.json" }
+          let(:yarn_lock_fixture_name) { "dist_tag.lock" }
+
+          describe "the first dependency" do
+            subject { top_level_dependencies.first }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("npm") }
+            its(:version) { is_expected.to eq("5.8.0") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "next",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+
         context "with only dev dependencies" do
           let(:package_json_fixture_name) { "only_dev_dependencies.json" }
           let(:yarn_lock_fixture_name) { "only_dev_dependencies.lock" }
