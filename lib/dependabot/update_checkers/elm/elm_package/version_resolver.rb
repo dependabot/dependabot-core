@@ -72,7 +72,7 @@ module Dependabot
 
                 deps_after_install = CliParser.decode_install_preview(response)
 
-                elm_package = File.read("elm-package.json")
+                elm_package = dependency_files.first.content
                 original_dependencies =
                   Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
 
