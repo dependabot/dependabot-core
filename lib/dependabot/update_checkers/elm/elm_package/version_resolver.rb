@@ -38,10 +38,11 @@ module Dependabot
             #        (i.e. 0.0.0 <= v <= 999.999.999)
             # but what we got here is compatible with what we'll have to do
             # in Elm 0.19 where you only get exact dependencies
-            last_version = @versions.pop
+            last_version = @versions[-1]
+            versions = @versions[0..-2]
             return last_version if can_update?(last_version, unlock_requirement)
 
-            return dependency.version if @versions.empty?
+            return dependency.version if versions.empty?
           end
 
           def updated_dependencies_after_full_unlock(version)
@@ -160,27 +161,29 @@ module Dependabot
             #    "Packages configured successfully!"
             return :empty_elm_stuff_bug if deps_after_install.empty?
 
-            version_after_install = deps_after_install.delete(dependency.name)
+            version_after_install = deps_after_install[dependency.name]
 
             # 3) We bump our dep but actually elm-package doesn't bump it
-            return :downgrade_bug if (version_after_install <=>
-                                      dependency.version) <= 0
+            return :downgrade_bug if version_after_install <= dependency.version
 
-            original_dependencies = original_dependencies.
-                                    reject do |original_dependency|
-              original_dependency.name == dependency.name
-            end
-            original_dependencies = original_dependencies.
-                                    map { |a| [a.name, a.version] }.to_h
+            original_dependencies =
+              original_dependencies.reject do |original_dependency|
+                original_dependency.name == dependency.name
+              end
+            original_dependencies =
+              original_dependencies.map { |a| [a.name, a.version] }.to_h
 
             # Remove transitive dependencies not found in elm-package.json
-            deps_after_install.
-              keep_if { |key, _val| original_dependencies.include?(key) }
+            deps_after_install =
+              deps_after_install.
+              select do |key, _val|
+                key != dependency.name && original_dependencies.include?(key)
+              end
 
             # 2) We bump our dep and another dep is bumped
             other_dep_bumped = deps_after_install.any? do |k, new_version|
               original_dependencies.key?(k) &&
-                (original_dependencies[k] <=> new_version) <= 0
+                original_dependencies[k] <= new_version
             end
 
             return :forced_full_unlock_bump if other_dep_bumped
