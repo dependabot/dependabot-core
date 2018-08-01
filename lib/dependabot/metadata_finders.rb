@@ -11,6 +11,7 @@ require "dependabot/metadata_finders/elixir/hex"
 require "dependabot/metadata_finders/rust/cargo"
 require "dependabot/metadata_finders/dotnet/nuget"
 require "dependabot/metadata_finders/go/dep"
+require "dependabot/metadata_finders/elm/elm_package"
 
 module Dependabot
   module MetadataFinders
@@ -28,6 +29,7 @@ module Dependabot
       when "cargo" then MetadataFinders::Rust::Cargo
       when "nuget" then MetadataFinders::Dotnet::Nuget
       when "dep" then MetadataFinders::Go::Dep
+      when "elm-package" then MetadataFinders::Elm::ElmPackage
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
