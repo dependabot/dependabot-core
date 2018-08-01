@@ -1,3 +1,7 @@
+## v0.63.25, 1 August 2018
+
+- Ruby: Handle updates blocked by a subdependency in the FileUpdater
+
 ## v0.63.24, 1 August 2018
 
 - Maven: Use packaging type 'pom' for parent nodes
