@@ -24,9 +24,17 @@ module Dependabot
 
           def updated_requirements
             if @latest_resolvable_version
-              requirements.each { |req| req[:requirement] = require_exactly(@latest_resolvable_version) }
+              requirements.map do |req|
+                {
+                  requirement: require_exactly(@latest_resolvable_version),
+                  groups: nil,
+                  source: nil,
+                  file: req[:file]
+                }
+              end
+            else
+              requirements
             end
-            requirements
           end
 
           private
