@@ -14,7 +14,6 @@ RSpec.describe namespace::VersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      unlock_requirement: unlock_requirement,
       versions: versions
     )
   end
@@ -49,7 +48,7 @@ RSpec.describe namespace::VersionResolver do
   let(:dependency_requirement) { "13.1.1 <= v <= 13.1.1" }
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject { resolver.latest_resolvable_version(unlock_requirement: unlock_requirement) }
 
     context "allowing :none unlocks" do
       let(:unlock_requirement) { false }

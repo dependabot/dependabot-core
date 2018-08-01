@@ -22,21 +22,11 @@ module Dependabot
           # We're overriding can_update? bc otherwise
           # there'd be no distinction between :own and :all
           # given the logic in Dependabot::UpdateCheckers::Base
-          VersionResolver.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            unlock_requirement: requirements_to_unlock,
-            versions: versions
-          )
+          version_resolver.latest_resolvable_version(unlock_requirement: requirements_to_unlock)
         end
 
         def latest_resolvable_version
-          VersionResolver.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            unlock_requirement: :all,
-            versions: versions
-          ).latest_resolvable_version
+          version_resolver.latest_resolvable_version(unlock_requirement: :all)
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -65,13 +55,21 @@ module Dependabot
 
         private
 
+        def version_resolver
+          @version_resolver ||= VersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            versions: versions
+          )
+        end
+
         def updated_dependencies_after_full_unlock
-          # TODO: run updated_requirements on everyone on the force_updater
           throw NotImplemented
         end
 
         def latest_version_resolvable_with_full_unlock?
-          # TODO: create a force_updater or smth
+          # This is never called
+          throw NotImplemented
         end
 
         def versions

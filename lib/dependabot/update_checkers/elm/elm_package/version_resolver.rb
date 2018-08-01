@@ -10,27 +10,14 @@ module Dependabot
     module Elm
       class ElmPackage
         class VersionResolver
-          def initialize(dependency:, dependency_files:, unlock_requirement:,
+          def initialize(dependency:, dependency_files:,
                          versions:)
             @dependency = dependency
             @dependency_files = dependency_files
-            @unlock_requirement = unlock_requirement
             @versions = keep_higher_versions(versions, dependency.version)
           end
 
-          def latest_resolvable_version
-            @latest_resolvable_version ||= fetch_latest_resolvable_version
-          end
-
-          private
-
-          attr_reader :dependency, :dependency_files, :unlock_requirement
-
-          def keep_higher_versions(versions, lowest_version)
-            versions.keep_if { |v| (v <=> lowest_version) > 0 }
-          end
-
-          def fetch_latest_resolvable_version
+          def latest_resolvable_version(unlock_requirement:)
             # Elm has no lockfile, no unlock essentially means
             # "let elm-package install whatever satisfies .requirements"
             return @dependency.version if !unlock_requirement || unlock_requirement == :none
@@ -46,40 +33,54 @@ module Dependabot
             # but what we got here is compatible with what we'll have to do
             # in Elm 0.19 where you only get exact dependencies
             last_version = @versions.pop
-            return last_version if can_update?(last_version)
+            return last_version if can_update?(last_version, unlock_requirement)
 
             return dependency.version if @versions.empty?
-
-            # TODO: grab from let elm-package install the highest version we can got
           end
 
-          def can_update?(version)
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files_with(dependency.name, version)
+          private
 
-              # Elm package install outputs a preview of the actions to be performed
-              # We can use this preview to calculate whether it would do anything funny
-              command = "yes n | elm-package install"
-              response = run_shell_command(command)
+          attr_reader :dependency, :dependency_files
 
-              deps_after_install = CliParser.decode_install_preview(response)
+          def keep_higher_versions(versions, lowest_version)
+            versions.keep_if { |v| (v <=> lowest_version) > 0 }
+          end
 
-              elm_package = File.read("elm-package.json")
-              original_dependencies =
-                Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
+          def can_update?(version, unlock_requirement)
+            deps_after_install, original_dependencies = simulate_install(version)
 
-              result = install_result(original_dependencies,
-                                      deps_after_install)
+            result = install_result(original_dependencies,
+                                    deps_after_install)
 
-              if unlock_requirement == :own
-                result == :clean_bump
-              else
-                [:clean_bump, :forced_full_unlock_bump].include?(result)
-              end
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              # 5) 👎 We bump our dep but elm-package blows up
-              handle_elm_package_errors(error)
+            if unlock_requirement == :own
+              result == :clean_bump
+            else
+              [:clean_bump, :forced_full_unlock_bump].include?(result)
             end
+          end
+
+          def simulate_install(version)
+            @install_cache ||= {}
+            @install_cache[version] ||=
+              SharedHelpers.in_a_temporary_directory do
+                write_temporary_dependency_files_with(dependency.name, version)
+
+                # Elm package install outputs a preview of the actions to be performed
+                # We can use this preview to calculate whether it would do anything funny
+                command = "yes n | elm-package install"
+                response = run_shell_command(command)
+
+                deps_after_install = CliParser.decode_install_preview(response)
+
+                elm_package = File.read("elm-package.json")
+                original_dependencies =
+                  Dependabot::FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
+
+                [deps_after_install, original_dependencies]
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                # 5) 👎 We bump our dep but elm-package blows up
+                handle_elm_package_errors(error)
+              end
           end
 
           def install_result(original_dependencies, deps_after_install)
