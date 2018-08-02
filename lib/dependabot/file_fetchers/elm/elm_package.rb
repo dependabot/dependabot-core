@@ -17,24 +17,13 @@ module Dependabot
         private
 
         def fetch_files
-          required_files.
-            map { |filename| fetch_file_from_host(filename) }
+          # Note: We *do not* fetch the exact-dependencies.json file, as it is
+          # recommended that this is not committed
+          required_files.map { |filename| fetch_file_from_host(filename) }
         end
 
         def required_files
-          [elm_package]
-        end
-
-        def elm_package
-          "elm-package.json"
-        end
-
-        def exact_deps
-          # This file is not recommended to be checked in
-          # we shouldn't deal with it.
-          #
-          # Leaving this here merely to document.
-          "elm-stuff/exact-dependencies.json"
+          ["elm-package.json"]
         end
       end
     end
