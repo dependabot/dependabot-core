@@ -1,3 +1,7 @@
+## v0.63.28, 2 August 2018
+
+- JS: Prioritise getting version for package.json's requirement
+
 ## v0.63.27, 2 August 2018
 
 - JS: Handle subdependencies that import a git dependency properly
