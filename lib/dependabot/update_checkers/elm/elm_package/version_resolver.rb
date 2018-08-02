@@ -132,15 +132,19 @@ module Dependabot
 
                 deps_after_install = CliParser.decode_install_preview(response)
 
-                elm_package = dependency_files.first.content
-                original_dependencies =
-                  FileParsers::Elm::ElmPackage.dependency_set_for(elm_package)
-
-                [deps_after_install, original_dependencies]
+                [deps_after_install, original_dependency_details]
               rescue SharedHelpers::HelperSubprocessFailed => error
                 # 5) We bump our dep but elm-package blows up
                 handle_elm_package_errors(error)
               end
+          end
+
+          def original_dependency_details
+            @original_dependency_details ||=
+              FileParsers::Elm::ElmPackage.new(
+                dependency_files: dependency_files,
+                source: nil
+              ).parse
           end
 
           def install_result(original_dependencies, deps_after_install)

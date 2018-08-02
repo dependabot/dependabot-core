@@ -45,20 +45,24 @@ module Dependabot
 
           def update_requirement(content:, filename:, dependency:)
             updated_req =
-              dependency.requirements.find { |r| r[:file] == filename }.
+              dependency.requirements.
+              find { |r| r.fetch(:file) == filename }.
               fetch(:requirement)
 
             old_req =
               dependency.previous_requirements.
-              find { |r| r[:file] == filename }.
+              find { |r| r.fetch(:file) == filename }.
               fetch(:requirement)
 
             return content unless old_req
 
-            content.gsub(
-              /"#{dependency.name}": "[^"]+"/,
-              "\"#{dependency.name}\": \"#{updated_req}\""
-            )
+            dep = dependency
+            regex =
+              /"#{Regexp.quote(dep.name)}"\s*:\s+"#{Regexp.quote(old_req)}"/
+
+            content.gsub(regex) do |declaration|
+              declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+            end
           end
         end
       end

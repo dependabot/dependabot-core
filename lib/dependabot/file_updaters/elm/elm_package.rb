@@ -1,36 +1,39 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
-require "dependabot/utils/elm/version"
-require "dependabot/shared_helpers"
 
 module Dependabot
   module FileUpdaters
     module Elm
       class ElmPackage < Base
         require_relative "elm_package/elm_package_updater"
+
         def self.updated_files_regex
           [/^elm-package\.json$/]
         end
 
         def updated_dependency_files
-          elm_package_files.map do |file|
-            if file_changed?(file)
+          updated_files = []
+
+          elm_package_files.each do |file|
+            next unless file_changed?(file)
+
+            updated_files <<
               updated_file(
                 file: file,
                 content: updated_elm_package_content(file)
               )
-            else
-              file
-            end
           end
+
+          raise "No files have changed!" if updated_files.none?
+          updated_files
         end
 
         private
 
         def check_required_files
-          raise "No elm-package.json!" unless
-            get_original_file("elm-package.json")
+          return if get_original_file("elm-package.json")
+          raise "No elm-package.json!"
         end
 
         def updated_elm_package_content(file)

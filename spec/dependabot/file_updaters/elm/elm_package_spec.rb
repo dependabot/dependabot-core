@@ -3,6 +3,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/shared_helpers"
 require "dependabot/file_updaters/elm/elm_package"
 require_relative "../shared_examples_for_file_updaters"
 
@@ -38,13 +39,19 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
     Dependabot::Dependency.new(
       name: "rtfeldman/elm-css",
       version: "14.0.0",
-      requirements:
-        [{ file: "elm-package.json", requirement: "14.0.0 <= v <= 14.0.0",
-           groups: [], source: nil }],
+      requirements: [{
+        file: "elm-package.json",
+        requirement: "14.0.0 <= v <= 14.0.0",
+        groups: [],
+        source: nil
+      }],
       previous_version: "13.1.1",
-      previous_requirements:
-        [{ file: "elm-package.json", requirement: "13.1.1 <= v <= 13.1.1",
-           groups: [], source: nil }],
+      previous_requirements: [{
+        file: "elm-package.json",
+        requirement: "13.1.1 <= v <= 13.1.1",
+        groups: [],
+        source: nil
+      }],
       package_manager: "elm-package"
     )
   end
@@ -76,6 +83,34 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
           to include(%("rtfeldman/elm-css": "14.0.0 <= v <= 14.0.0",))
         expect(updated_elm_package_file_content).
           to include(%("NoRedInk/datetimepicker": "3.0.1 <= v <= 3.0.1"))
+      end
+
+      context "when the requirements haven't changed" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "rtfeldman/elm-css",
+            version: "14.0.0",
+            requirements: [{
+              file: "elm-package.json",
+              requirement: "13.1.1 <= v <= 13.1.1",
+              groups: [],
+              source: nil
+            }],
+            previous_version: "13.1.1",
+            previous_requirements: [{
+              file: "elm-package.json",
+              requirement: "13.1.1 <= v <= 13.1.1",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "elm-package"
+          )
+        end
+
+        it "raises a runtime error" do
+          expect { updated_elm_package_file_content }.
+            to raise_error("No files have changed!")
+        end
       end
     end
   end
