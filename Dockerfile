@@ -69,7 +69,6 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update && apt-get install -y yarn
 
-
 ### PHP
 
 # Install PHP 7.2 and Composer
@@ -138,3 +137,9 @@ ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle \
     GROOVY_HOME=/usr/local/groovy \
     GRADLE_HOME=/usr/local/gradle \
     PATH=/usr/local/groovy/bin/:/usr/local/gradle/bin:$PATH
+
+### Elm
+
+# Install Elm 0.18
+ENV PATH="$PATH:/node_modules/.bin"
+RUN npm install elm@0.18.0
