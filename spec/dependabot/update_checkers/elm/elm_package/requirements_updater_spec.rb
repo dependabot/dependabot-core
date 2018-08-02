@@ -48,8 +48,16 @@ RSpec.describe the_class do
       end
 
       context "with range requirement" do
-        let(:requirement_string) { "1.0.0 <= v < 1.4.0" }
-        its([:requirement]) { is_expected.to eq("1.5.0 <= v <= 1.5.0") }
+        let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
+
+        context "that needs updating" do
+          let(:latest_resolvable_version) { "2.0.0" }
+          its([:requirement]) { is_expected.to eq("1.0.0 <= v < 3.0.0") }
+        end
+
+        context "that doesn't need updating" do
+          its([:requirement]) { is_expected.to eq("1.0.0 <= v < 2.0.0") }
+        end
       end
     end
   end

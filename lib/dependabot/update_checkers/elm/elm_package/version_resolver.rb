@@ -120,7 +120,9 @@ module Dependabot
             @install_cache ||= {}
             @install_cache[version] ||=
               SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files_with(dependency.name, version)
+                write_temporary_dependency_files_with(
+                  dependency.name, dependency.requirements, version
+                )
 
                 # Elm package install outputs a preview of the actions to be
                 # performed. We can use this preview to calculate whether it
@@ -221,25 +223,29 @@ module Dependabot
             raise error
           end
 
-          def write_temporary_dependency_files_with(dependency_name, version)
+          def write_temporary_dependency_files_with(
+            dependency_name, requirements, version
+          )
             @dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               # TODO: optimize this to not decode and reencode every time
               File.write(path, swap_version(file.content, dependency_name,
-                                            version))
+                                            requirements, version))
             end
           end
 
-          def swap_version(content, dependency_name, version)
+          def swap_version(content, dependency_name, requirements, version)
             json = JSON.parse(content)
-            json["dependencies"][dependency_name] = requirement_for(version)
-            JSON.dump(json)
-          end
 
-          def requirement_for(version)
-            "#{version} <= v <= #{version}"
+            new_requirement = RequirementsUpdater.new(
+              requirements: requirements,
+              latest_resolvable_version: version.to_s
+            ).updated_requirements.first[:requirement]
+
+            json["dependencies"][dependency_name] = new_requirement
+            JSON.dump(json)
           end
         end
       end

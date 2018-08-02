@@ -9,7 +9,7 @@ module Dependabot
     module Elm
       class ElmPackage
         class RequirementsUpdater
-          # DEPENDENCY_REGEX = ->(name) /"#{name}": ("[^\"]+")/
+          RANGE_REQUIREMENT_REGEX = /(\d+\.\d+\.\d+) <= v < (\d+\.\d+\.\d+)/
 
           def initialize(requirements:, latest_resolvable_version:)
             @requirements = requirements
@@ -25,8 +25,13 @@ module Dependabot
           def updated_requirements
             if @latest_resolvable_version
               requirements.map do |req|
+                requirement = update_requirement(
+                  req[:requirement],
+                  @latest_resolvable_version
+                )
+
                 {
-                  requirement: require_exactly(@latest_resolvable_version),
+                  requirement: requirement,
                   groups: nil,
                   source: nil,
                   file: req[:file]
@@ -40,6 +45,21 @@ module Dependabot
           private
 
           attr_reader :requirements, :latest_resolvable_version
+
+          def update_requirement(old_req, new_version)
+            if Utils::Elm::Requirement.new(old_req).satisfied_by?(new_version)
+              old_req
+            elsif (match = RANGE_REQUIREMENT_REGEX.match(old_req))
+              require_range(match[1], new_version)
+            else
+              require_exactly(new_version)
+            end
+          end
+
+          def require_range(minimum, version)
+            major, _minor, _patch = version.to_s.split(".").map(&:to_i)
+            "#{minimum} <= v < #{major + 1}.0.0"
+          end
 
           def require_exactly(version)
             # Elm recommends folks to use exact versions
