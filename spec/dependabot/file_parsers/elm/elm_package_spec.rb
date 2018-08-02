@@ -42,14 +42,12 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq(elm_version("2.2.0"))
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "2.0.0 <= v <= 2.2.0",
-                file: "elm-package.json",
-                groups: nil,
-                source: nil
-              }
-            ]
+            [{
+              requirement: "2.0.0 <= v <= 2.2.0",
+              file: "elm-package.json",
+              groups: nil,
+              source: nil
+            }]
           )
         end
       end
@@ -61,14 +59,12 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.version).to eq(elm_version("1.0.0"))
             expect(dependency.requirements).to eq(
-              [
-                {
-                  requirement: "1.0.0 <= v < 1.0.1",
-                  file: "elm-package.json",
-                  groups: nil,
-                  source: nil
-                }
-              ]
+              [{
+                requirement: "1.0.0 <= v < 1.0.1",
+                file: "elm-package.json",
+                groups: nil,
+                source: nil
+              }]
             )
           end
         end
@@ -82,20 +78,18 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.version).to eq(elm_version("1.0.#{max_version}"))
             expect(dependency.requirements).to eq(
-              [
-                {
-                  requirement: "1.0.0 <= v < 1.1.0",
-                  file: "elm-package.json",
-                  groups: nil,
-                  source: nil
-                }
-              ]
+              [{
+                requirement: "1.0.0 <= v < 1.1.0",
+                file: "elm-package.json",
+                groups: nil,
+                source: nil
+              }]
             )
           end
         end
 
-        # not testing 1.0.0 because < 1.0.0 is already an invalid constraints
-        # elm packages start at 1.0.0
+        # Not testing 1.0.0 because < 1.0.0 is already an invalid constraint.
+        # Elm packages start at 1.0.0
 
         context "with 2.0.0" do
           let(:dependency_name) do
@@ -107,14 +101,12 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
             expect(dependency.version).
               to eq(elm_version("1.#{max_version}.#{max_version}"))
             expect(dependency.requirements).to eq(
-              [
-                {
-                  requirement: "1.0.0 <= v < 2.0.0",
-                  file: "elm-package.json",
-                  groups: nil,
-                  source: nil
-                }
-              ]
+              [{
+                requirement: "1.0.0 <= v < 2.0.0",
+                file: "elm-package.json",
+                groups: nil,
+                source: nil
+              }]
             )
           end
         end

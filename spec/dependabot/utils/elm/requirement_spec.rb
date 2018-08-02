@@ -20,7 +20,12 @@ RSpec.describe Dependabot::Utils::Elm::Requirement do
 
     context "with range requirement" do
       let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
-      it { is_expected.to eq(Gem::Requirement.new("< 2.0.0")) }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
+
+      context "which uses a <= operator" do
+        let(:requirement_string) { "1.0.0 <= v <= 2.0.0" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
+      end
     end
 
     context "with exact requirement" do
