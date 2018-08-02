@@ -87,6 +87,20 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
 
+      context "when updating a dep blocked by a sub-dep" do
+        let(:gemfile_fixture_name) { "blocked_by_subdep" }
+        let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
+        let(:dependency_name) { "activesupport" }
+        let(:dependency_version) { "5.2.0" }
+        let(:dependency_previous_version) { "5.0.0.1" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+        end
+        let(:previous_requirements) { requirements }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("5.2.0")) }
+      end
+
       context "that only appears in the lockfile" do
         let(:gemfile_fixture_name) { "subdependency" }
         let(:lockfile_fixture_name) { "subdependency.lock" }

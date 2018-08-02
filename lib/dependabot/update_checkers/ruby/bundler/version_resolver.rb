@@ -66,18 +66,12 @@ module Dependabot
           end
 
           def dependency_from_definition
-            dependencies_to_unlock = [dependency.name]
+            dependencies_to_unlock = [dependency.name, *subdependencies]
             begin
               definition = build_definition(dependencies_to_unlock)
               definition.resolve_remotely!
             rescue ::Bundler::GemNotFound => error
-              # Handle yanked dependencies
-              raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
-              gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                         named_captures["name"]
-              raise if dependencies_to_unlock.include?(gem_name)
-              dependencies_to_unlock << gem_name
-              retry
+              unlock_yanked_gem(dependencies_to_unlock, error) && retry
             rescue ::Bundler::HTTPError => error
               # Retry network errors
               attempt ||= 1
@@ -87,6 +81,25 @@ module Dependabot
             end
 
             definition.resolve.find { |d| d.name == dependency.name }
+          end
+
+          def unlock_yanked_gem(dependencies_to_unlock, error)
+            raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+            gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
+                       named_captures["name"]
+            raise if dependencies_to_unlock.include?(gem_name)
+            dependencies_to_unlock << gem_name
+          end
+
+          def subdependencies
+            # If there's no lockfile we don't need to worry about
+            # subdependencies
+            return [] unless lockfile
+
+            all_deps = ::Bundler::LockfileParser.new(lockfile.content).
+                       specs.map(&:name)
+            top_level = build_definition([]).dependencies.map(&:name)
+            all_deps - top_level
           end
 
           def ruby_version_incompatible?(dep)
