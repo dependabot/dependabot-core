@@ -36,7 +36,8 @@ module.exports = (oldLockfileContent, newLockfileContent, depName, newReq) => {
   });
 
   if (reqToReplace) {
-    newJson[`${depName}@${newReq}`] = newJson[`${depName}@${reqToReplace}`];
+    newJson[`${depName}@${newReq || oldPackageReqs[0]}`] =
+      newJson[`${depName}@${reqToReplace}`];
     delete newJson[`${depName}@${reqToReplace}`];
   }
 

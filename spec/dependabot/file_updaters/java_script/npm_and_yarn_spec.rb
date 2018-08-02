@@ -184,6 +184,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
             expect(updated_yarn_lock.content).to include("is-number")
+            expect(updated_yarn_lock.content).to include("0c6b15a88b")
             expect(updated_yarn_lock.content).to_not include("af885e2e890")
           end
 
@@ -225,6 +226,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
               expect(updated_yarn_lock.content).
                 to include('slick-carousel@git://github.com/brianfryer/slick":')
+              expect(updated_yarn_lock.content).to include("a2aa3fec")
               expect(updated_yarn_lock.content).to_not include("280b56016")
             end
           end
@@ -246,6 +248,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
               expect(updated_yarn_lock.content).to include("is-number")
+              expect(updated_yarn_lock.content).to_not include("0c6b15a88bc")
               expect(updated_yarn_lock.content).to_not include("af885e2e890")
               expect(updated_yarn_lock.content).
                 to include("is-number@git+ssh://git@github.com:jonschlinkert")
