@@ -1065,11 +1065,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
         let(:dependency_name) { "lodash" }
         let(:version) { "1.3.1" }
-        let(:previous_version) { "1.2.1" }
+        let(:previous_version) { "1.2.0" }
         let(:requirements) do
           [{
             file: "package.json",
-            requirement: "^1.3.1",
+            requirement: "1.3.1",
             groups: [],
             source: nil
           }, {
@@ -1087,7 +1087,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         let(:previous_requirements) do
           [{
             file: "package.json",
-            requirement: "^1.2.0",
+            requirement: "1.2.0",
             groups: [],
             source: nil
           }, {
@@ -1113,11 +1113,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             f.name == "other_package/package.json"
           end
 
-          expect(lockfile.content).to include("lodash@^1.3.1:")
+          expect(lockfile.content).to include("lodash@1.3.1:")
           expect(lockfile.content).to_not include("lodash@^1.2.1:")
           expect(lockfile.content).to_not include("workspace-aggregator")
 
-          expect(package.content).to include("\"lodash\": \"^1.3.1\"")
+          expect(package.content).to include("\"lodash\": \"1.3.1\"")
           expect(package.content).to include("\"./packages/*\",\n")
           expect(package1.content).to include("\"lodash\": \"^1.3.1\"")
           expect(other_package.content).to include("\"lodash\": \"^1.3.1\"")

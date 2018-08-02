@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/gocardless/bump-test#readme",
   "dependencies": {
-    "lodash": "^1.2.0"
+    "lodash": "1.2.0"
   },
   "workspaces": [
     "packages/*",
