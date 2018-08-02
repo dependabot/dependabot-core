@@ -796,7 +796,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         context "with workspaces" do
           let(:package_json_fixture_name) { "workspaces.json" }
           let(:yarn_lock_fixture_name) { "workspaces.lock" }
-          let(:files) { [package_json, lockfile, package1, other_package] }
+          let(:files) { [package1, package_json, lockfile, other_package] }
           let(:package1) do
             Dependabot::DependencyFile.new(
               name: "packages/package1/package.json",
@@ -835,6 +835,38 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                     requirement: "^1.0.0",
                     file: "other_package/package.json",
                     groups: ["devDependencies"],
+                    source: nil
+                  }
+                ]
+              )
+            end
+          end
+
+          describe "the duplicated dependency" do
+            subject { top_level_dependencies.find { |d| d.name == "lodash" } }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("lodash") }
+            its(:version) { is_expected.to eq("1.2.0") }
+            its(:requirements) do
+              is_expected.to match_array(
+                [
+                  {
+                    requirement: "1.2.0",
+                    file: "package.json",
+                    groups: ["dependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^1.2.1",
+                    file: "other_package/package.json",
+                    groups: ["dependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: "^1.2.1",
+                    file: "packages/package1/package.json",
+                    groups: ["dependencies"],
                     source: nil
                   }
                 ]

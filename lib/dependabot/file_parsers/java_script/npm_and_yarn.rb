@@ -266,9 +266,16 @@ module Dependabot
         end
 
         def package_files
-          dependency_files.
+          sub_packages =
+            dependency_files.
             select { |f| f.name.end_with?("package.json") }.
+            reject { |f| f.name == "package.json" }.
             reject { |f| f.type == "path_dependency" }
+
+          [
+            dependency_files.find { |f| f.name == "package.json" },
+            *sub_packages
+          ].compact
         end
 
         def sanitized_package_json_content(file)
