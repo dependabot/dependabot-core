@@ -29,7 +29,6 @@ module Dependabot
         end
 
         def updated_requirements
-          puts dependency.requirements
           dependency.requirements.map do |req|
             next req unless req.fetch(:source).fetch(:type) == "digest"
             next req unless updated_digest
