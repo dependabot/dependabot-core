@@ -1,0 +1,16 @@
+---
+0.1.0 activerecord:< 4.3&>= 3.2,activesupport:< 4.3&>= 3.2|checksum:1e3d6f6f0604075cc90b64a30166f327d0963fbaa8e6b9a04fc86776b46749b2
+0.2.0 activerecord:< 4.3&>= 3.2,activesupport:< 4.3&>= 3.2|checksum:9269b541e70135610b324b8b4337bc9fbad2911bd029d0ceb62842381a5c1722
+0.3.0 activerecord:< 4.3&>= 3.2,activesupport:< 4.3&>= 3.2|checksum:32801e7fb81705bfe977f851974108a10cb497e42840c7d03f9177dda4d7ee6c
+0.3.1 activerecord:< 4.3&>= 3.2,activesupport:< 4.3&>= 3.2|checksum:6c465b7f4781b7221e3a5da7cfa5a4cd165a8092f7c9dfcf88b83bae36b62cf2
+0.4.0 activerecord:< 5.1&>= 4.1,activesupport:< 5.1&>= 4.1|checksum:462d71641e15529798327c1cd8cc8b13538d57ca234846224019033a328f9041
+0.5.0 activerecord:= 4.2,activesupport:= 4.2|checksum:3460bc5fd8cde0840d42132fd24e3f03d0a07a61d5916a3f0199a355e7de0c6c
+0.5.1 activerecord:< 5.1&>= 4.1,activesupport:< 5.1&>= 4.1|checksum:be099c397b5133a1c1dd001c5d228a93b40f9a75a3936989ddb85295a892d375
+0.5.2 activerecord:< 5.1&>= 4.1,activesupport:< 5.1&>= 4.1|checksum:a9233031b0965b278f49340a83f51558a1758c873d4ae5a5614fdfabd9c660f4
+0.6.0 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:14c9ba1ccb3e5a44bafe0ae84bce2f7e82df7a71b05f1ef95e7bfb4c6c19ab7d
+0.7.0 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:a49b95963bf360100980ae03302a8dcabc9c542675f18781a16ad52c00d9efe8
+0.7.1 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:6ea78d9b06e85623496f14b1349546035e5901f963649c750028124e4f7ff07f
+0.7.2 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:0a32aaf9ef1faa00a0984341bb7733e1dbe9e5c59a192ad204eb145830df701d
+0.8.0 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:167083583f8277917f484ee538c8e055bb5f8b59bb904138cd512a7f0c514b0c,ruby:>= 2.1.0
+0.9.0 activerecord:< 5.2&>= 4.1,activesupport:< 5.2&>= 4.1|checksum:1988b1f7c7f5611d16bcabadf945bc44cbbe3a9e5028608c3cde6f0edab99f7f,ruby:>= 2.1.0
+0.10.0 activerecord:< 5.3&>= 4.1,activesupport:< 5.3&>= 4.1|checksum:5a502988cd2affff88af39ffabb5386e0209527249044b2c9bb71611710857c0,ruby:>= 2.1.0

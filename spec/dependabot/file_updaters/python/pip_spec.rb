@@ -144,8 +144,9 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
           and_return(dummy_updater)
         expect(dummy_updater).
           to receive(:updated_dependency_files).
-          and_return(["updated files"])
-        expect(updater.updated_dependency_files).to eq(["updated files"])
+          and_return([OpenStruct.new(name: "updated files")])
+        expect(updater.updated_dependency_files).
+          to eq([OpenStruct.new(name: "updated files")])
       end
     end
 
