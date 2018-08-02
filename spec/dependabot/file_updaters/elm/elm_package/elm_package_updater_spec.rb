@@ -25,13 +25,19 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage::ElmPackageUpdater do
     Dependabot::Dependency.new(
       name: "rtfeldman/elm-css",
       version: "14.0.0",
-      requirements:
-        [{ file: "elm-package.json", requirement: "14.0.0 <= v <= 14.0.0",
-           groups: [], source: nil }],
+      requirements: [{
+        file: "elm-package.json",
+        requirement: "14.0.0 <= v <= 14.0.0",
+        groups: [],
+        source: nil
+      }],
       previous_version: "13.1.1",
-      previous_requirements:
-        [{ file: "elm-package.json", requirement: "13.1.1 <= v <= 13.1.1",
-           groups: [], source: nil }],
+      previous_requirements: [{
+        file: "elm-package.json",
+        requirement: "13.1.1 <= v <= 13.1.1",
+        groups: [],
+        source: nil
+      }],
       package_manager: "elm-package"
     )
   end

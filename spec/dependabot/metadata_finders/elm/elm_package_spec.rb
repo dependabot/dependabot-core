@@ -12,13 +12,19 @@ RSpec.describe Dependabot::MetadataFinders::Elm::ElmPackage do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "14.0.0",
-      requirements:
-        [{ file: "elm-package.json", requirement: "14.0.0 <= v <= 14.0.0",
-           groups: [], source: nil }],
+      requirements: [{
+        file: "elm-package.json",
+        requirement: "14.0.0 <= v <= 14.0.0",
+        groups: [],
+        source: nil
+      }],
       previous_version: "13.1.1",
-      previous_requirements:
-        [{ file: "elm-package.json", requirement: "13.1.1 <= v <= 13.1.1",
-           groups: [], source: nil }],
+      previous_requirements: [{
+        file: "elm-package.json",
+        requirement: "13.1.1 <= v <= 13.1.1",
+        groups: [],
+        source: nil
+      }],
       package_manager: "elm-package"
     )
   end
