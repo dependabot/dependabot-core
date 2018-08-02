@@ -70,6 +70,13 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get update && apt-get install -y yarn
 
 
+### ELM
+
+# Install Elm 0.18
+ENV PATH="$PATH:/node_modules/.bin"
+RUN npm install elm@0.18.0
+
+
 ### PHP
 
 # Install PHP 7.2 and Composer
@@ -94,7 +101,7 @@ RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz \
 ENV PATH=/root/go/bin:$PATH
 
 
-### Elixir
+### ELIXIR
 
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
@@ -108,7 +115,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && mix local.hex --force
 
 
-### Rust
+### RUST
 
 # Install Rust
 ENV RUSTUP_HOME=/opt/rust \
@@ -116,7 +123,7 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 
-### Java, Groovy and Gradle
+### JAVA, GROOVY AND GRADLE
 
 # Install Java, Groovy and Gradle
 RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections \
