@@ -1,3 +1,7 @@
+## v0.63.29, 2 August 2018
+
+- Ruby: Unlock all subdependencies when checking for resolvability
+
 ## v0.63.28, 2 August 2018
 
 - JS: Prioritise getting version for package.json's requirement
