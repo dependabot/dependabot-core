@@ -10,26 +10,25 @@ module Dependabot
   module FileParsers
     module Elm
       class ElmPackage < Dependabot::FileParsers::Base
-        MAX_VERSION = 9999
         require "dependabot/file_parsers/base/dependency_set"
 
-        def parse
-          self.class.dependency_set_for(elm_package_file.content)
-        end
+        MAX_VERSION = 9999
+        REQUIREMENT_REGEX =
+          /(?<operator><=?)\s*(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$/
 
-        def self.dependency_set_for(content)
+        def parse
           dependency_set = DependencySet.new
 
-          decode(content).each do |dep|
+          parsed_package_file.fetch("dependencies").each do |name, req|
             dependency_set <<
               Dependency.new(
-                name: dep[:name],
-                version: dep[:max_version],
+                name: name,
+                version: max_version_for(req),
                 requirements: [{
-                  requirement: dep[:requirement], # 4.0 <= v <= 4.0
+                  requirement: req, # 4.0 <= v <= 4.0
                   groups: nil, # we don't have this (its dev vs non-dev)
                   source: nil, # elm-package only has elm-package sources
-                  file: dep[:file]
+                  file: "elm-package.json"
                 }],
                 package_manager: "elm-package"
               )
@@ -38,24 +37,25 @@ module Dependabot
           dependency_set.dependencies.sort_by(&:name)
         end
 
-        private_class_method def self.decode(content)
-          json = JSON.parse content
+        private
 
-          json["dependencies"].map do |k, v|
-            {
-              name: k,
-              requirement: v,
-              file: "elm-package.json",
-              max_version: max_of(v)
-            }
-          end
+        def check_required_files
+          raise "No elm-package.json!" unless elm_package_file
         end
 
-        private_class_method def self.max_of(version_requirement)
-          _, maybe_equals, *major_minor_patch =
-            /<(=)? (\d+)\.(\d+)\.(\d+)$/.match(version_requirement).to_a
-          major, minor, patch = major_minor_patch.map(&:to_i)
-          if maybe_equals != "="
+        def max_version_for(version_requirement)
+          unless version_requirement.match?(REQUIREMENT_REGEX)
+            raise "Unexpected elm version format: #{version_requirement}"
+          end
+
+          requirement_parts = version_requirement.match(REQUIREMENT_REGEX).
+                              named_captures
+
+          patch = requirement_parts.fetch("patch").to_i
+          minor = requirement_parts.fetch("minor").to_i
+          major = requirement_parts.fetch("major").to_i
+
+          if requirement_parts.fetch("operator") == "<"
             if patch.positive?
               patch -= 1
             elsif minor.positive?
@@ -70,10 +70,8 @@ module Dependabot
           Dependabot::Utils::Elm::Version.new("#{major}.#{minor}.#{patch}")
         end
 
-        private
-
-        def check_required_files
-          raise "No elm-package.json!" unless elm_package_file
+        def parsed_package_file
+          @parsed_package_file ||= JSON.parse(elm_package_file.content)
         end
 
         def elm_package_file
