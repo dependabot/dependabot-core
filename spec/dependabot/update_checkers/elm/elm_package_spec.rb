@@ -33,7 +33,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     )
   end
   let(:dependency_name) { "realWorld/ElmPackage" }
-  let(:dependency_version) { Dependabot::Utils::Elm::Version.new("2.2.0") }
+  let(:dependency_version) { "2.2.0" }
   let(:requirements) do
     [{
       file: "elm-package.json",
@@ -80,6 +80,27 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
   describe "can_update?" do
     subject { checker.can_update?(requirements_to_unlock: unlock_level) }
     let(:unlock_level) { :own }
+
+    context "with a version that is out of date, but needs a full unlock" do
+      let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
+      let(:dependency_name) { "NoRedInk/datetimepicker" }
+      let(:string_req) { "3.0.1 <= v <= 3.0.1" }
+      let(:dependency_version) { "3.0.1" }
+      let(:elm_package_url) do
+        "http://package.elm-lang.org/packages/NoRedInk/datetimepicker/"
+      end
+      let(:elm_package_response) do
+        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.html")
+      end
+      let(:unlock_level) { :all }
+
+      before do
+        stub_request(:get, elm_package_url).
+          to_return(status: 200, body: elm_package_response)
+      end
+
+      it { is_expected.to eq(true) }
+    end
 
     context "with a requirement that is out of date, but needs a full unlock" do
       let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }

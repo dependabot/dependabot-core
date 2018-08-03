@@ -85,12 +85,13 @@ module Dependabot
             **SharedHelpers.excon_defaults
           )
 
-          return [] unless response.status == 200
+          return @all_versions = [] unless response.status == 200
           unless response.body.match?(VERSIONS_LINE_REGEX)
             raise "Unexpected response body: #{response.body}"
           end
 
-          response.body.
+          @all_versions ||=
+            response.body.
             match(VERSIONS_LINE_REGEX).
             named_captures.fetch("versions").
             scan(VERSION_REGEX).
