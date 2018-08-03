@@ -43,7 +43,7 @@ RSpec.describe namespace::VersionResolver do
     )
   end
   let(:dependency_name) { "rtfeldman/elm-css" }
-  let(:dependency_version) { elm_version("13.1.1") }
+  let(:dependency_version) { "13.1.1" }
   let(:dependency_requirements) do
     [{
       file: "elm-package.json",
@@ -60,13 +60,12 @@ RSpec.describe namespace::VersionResolver do
     end
 
     context "allowing :none unlocks" do
-      let(:unlock_requirement) { false }
-
-      it { is_expected.to eq(dependency_version) }
+      let(:unlock_requirement) { :none }
+      it { is_expected.to eq(elm_version(dependency_version)) }
     end
 
     context "1) clean bump" do
-      let(:dependency_version) { elm_version("13.1.1") }
+      let(:dependency_version) { "13.1.1" }
 
       context ":own unlocks" do
         let(:unlock_requirement) { :own }
@@ -83,7 +82,7 @@ RSpec.describe namespace::VersionResolver do
       let(:fixture_name) { "elm_css_and_datetimepicker" }
       let(:dependency_name) { "NoRedInk/datetimepicker" }
       let(:dependency_requirement) { "3.0.1 <= v <= 3.0.1" }
-      let(:dependency_version) { elm_version("3.0.1") }
+      let(:dependency_version) { "3.0.1" }
       let(:versions) { [elm_version("3.0.1"), elm_version("3.0.2")] }
 
       context ":own unlocks" do
@@ -101,7 +100,7 @@ RSpec.describe namespace::VersionResolver do
       let(:fixture_name) { "elm_css_and_datetimepicker" }
       let(:dependency_name) { "rtfeldman/elm-css" }
       let(:dependency_requirement) { "13.1.1 <= v <= 13.1.1" }
-      let(:dependency_version) { elm_version("13.1.1") }
+      let(:dependency_version) { "13.1.1" }
       let(:versions) { [elm_version("13.1.1"), elm_version("14.0.0")] }
 
       context ":own unlocks" do
@@ -117,7 +116,7 @@ RSpec.describe namespace::VersionResolver do
 
     context "3) a <= v < b that doesn't require :own unlock" do
       let(:fixture_name) { "version_resolver_one_dep_lower_than" }
-      let(:dependency_version) { elm_version(max_version(14)) }
+      let(:dependency_version) { max_version(14) }
 
       context ":own unlocks" do
         let(:unlock_requirement) { :own }
@@ -132,7 +131,7 @@ RSpec.describe namespace::VersionResolver do
 
     context "4) empty elm-stuff bug means we don't bump" do
       let(:fixture_name) { "version_resolver_one_dep_lower_than" }
-      let(:dependency_version) { elm_version(max_version(14)) }
+      let(:dependency_version) { max_version(14) }
       let(:versions) { [elm_version("999.1.1")] }
 
       context ":own unlocks" do
@@ -148,7 +147,7 @@ RSpec.describe namespace::VersionResolver do
 
     context "5) dependencies too far apart" do
       let(:fixture_name) { "version_resolver_elm_package_error" }
-      let(:dependency_version) { elm_version("13.1.1") }
+      let(:dependency_version) { "13.1.1" }
 
       context ":own unlocks" do
         let(:unlock_requirement) { :own }
@@ -181,7 +180,7 @@ RSpec.describe namespace::VersionResolver do
       let(:fixture_name) { "elm_css_and_datetimepicker" }
       let(:dependency_name) { "NoRedInk/datetimepicker" }
       let(:dependency_requirement) { "3.0.1 <= v <= 3.0.1" }
-      let(:dependency_version) { elm_version("3.0.1") }
+      let(:dependency_version) { "3.0.1" }
       let(:versions) { [elm_version("3.0.1"), elm_version("3.0.2")] }
 
       it "bumps the other dependency too" do
@@ -210,6 +209,7 @@ RSpec.describe namespace::VersionResolver do
                                       file: "elm-package.json" }],
             package_manager: "elm-package"
           )
+
         expect(subject).to match_array([new_elm_css, new_datetimepicker])
       end
     end

@@ -23,7 +23,7 @@ module Dependabot
             dependency_set <<
               Dependency.new(
                 name: name,
-                version: max_version_for(req),
+                version: max_version_for(req).to_s,
                 requirements: [{
                   requirement: req, # 4.0 <= v <= 4.0
                   groups: nil, # we don't have this (its dev vs non-dev)
