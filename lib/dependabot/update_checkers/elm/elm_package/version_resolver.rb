@@ -14,8 +14,8 @@ module Dependabot
       class ElmPackage
         class VersionResolver
           class UnrecoverableState < StandardError; end
-          def initialize(dependency:, dependency_files:,
-                         versions:)
+
+          def initialize(dependency:, dependency_files:, versions:)
             @dependency = dependency
             @dependency_files = dependency_files
             @versions = keep_higher_versions(versions, dependency.version)
@@ -24,12 +24,12 @@ module Dependabot
           def latest_resolvable_version(unlock_requirement:)
             # Elm has no lockfile, no unlock essentially means
             # "let elm-package install whatever satisfies .requirements"
-            return @dependency.version if
-              !unlock_requirement ||
-              unlock_requirement == :none
+            if !unlock_requirement || unlock_requirement == :none
+              return dependency.version
+            end
 
             # don't look further if no other versions
-            return @dependency.version if @versions.empty?
+            return dependency.version if @versions.empty?
 
             # Otherwise, we gotta check a few conditions to see if bumping
             # wouldn't also bump other deps in elm-package.json
@@ -120,9 +120,7 @@ module Dependabot
             @install_cache ||= {}
             @install_cache[version] ||=
               SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files_with(
-                  dependency.name, dependency.requirements, version
-                )
+                write_temporary_dependency_files_with(version: version)
 
                 # Elm package install outputs a preview of the actions to be
                 # performed. We can use this preview to calculate whether it
@@ -208,7 +206,7 @@ module Dependabot
               raw_response = process.read
             end
 
-            # Raise an error with the output from the shell session if Cargo
+            # Raise an error with the output from the shell session if Elm
             # returns a non-zero status
             return raw_response if $CHILD_STATUS.success?
             raise SharedHelpers::HelperSubprocessFailed.new(
@@ -227,28 +225,25 @@ module Dependabot
             raise error
           end
 
-          def write_temporary_dependency_files_with(
-            dependency_name, requirements, version
-          )
-            @dependency_files.each do |file|
+          def write_temporary_dependency_files_with(version:)
+            dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               # TODO: optimize this to not decode and reencode every time
-              File.write(path, swap_version(file.content, dependency_name,
-                                            requirements, version))
+              File.write(path, swap_version(file.content, version))
             end
           end
 
-          def swap_version(content, dependency_name, requirements, version)
+          def swap_version(content, version)
             json = JSON.parse(content)
 
             new_requirement = RequirementsUpdater.new(
-              requirements: requirements,
+              requirements: dependency.requirements,
               latest_resolvable_version: version.to_s
             ).updated_requirements.first[:requirement]
 
-            json["dependencies"][dependency_name] = new_requirement
+            json["dependencies"][dependency.name] = new_requirement
             JSON.dump(json)
           end
         end

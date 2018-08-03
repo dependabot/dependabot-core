@@ -8,24 +8,22 @@ module Dependabot
     module Elm
       class ElmPackage
         class CliParser
-          INSTALL_DEPENDENCY_REGEX =
-            %r{([^\s]+\/[^\s]+) (\d+\.\d+\.\d+)}
+          INSTALL_DEPENDENCY_REGEX = %r{([^\s]+\/[^\s]+) (\d+\.\d+\.\d+)}
           UPGRADE_DEPENDENCY_REGEX =
             %r{([^\s]+\/[^\s]+) \(\d+\.\d+\.\d+ => (\d+\.\d+\.\d+)\)}
+
           def self.decode_install_preview(text)
-            installs = text.scan(INSTALL_DEPENDENCY_REGEX).
-                       map do |name, version|
-                         [name, Utils::Elm::Version.new(version)]
-                       end.
-                       to_h
+            installs = {}
 
-            upgrades = text.scan(UPGRADE_DEPENDENCY_REGEX).
-                       map do |name, version|
-                         [name, Utils::Elm::Version.new(version)]
-                       end.
-                       to_h
+            # Parse new installs
+            text.scan(INSTALL_DEPENDENCY_REGEX).
+              each { |n, v| installs[n] = Utils::Elm::Version.new(v) }
 
-            installs.merge(upgrades)
+            # Parse upgrades
+            text.scan(UPGRADE_DEPENDENCY_REGEX).
+              each { |n, v| installs[n] = Utils::Elm::Version.new(v) }
+
+            installs
           end
         end
       end
