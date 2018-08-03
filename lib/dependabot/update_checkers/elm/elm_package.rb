@@ -35,7 +35,9 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          version_resolver.latest_resolvable_version(unlock_requirement: :own)
+          @latest_resolvable_version ||=
+            version_resolver.
+            latest_resolvable_version(unlock_requirement: :own)
         end
 
         def latest_resolvable_version_with_no_unlock
