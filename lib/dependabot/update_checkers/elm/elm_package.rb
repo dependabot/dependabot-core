@@ -20,17 +20,22 @@ module Dependabot
           @latest_version ||= candidate_versions.max
         end
 
+        # Overwrite the base class to allow multi-dependency update PRs for
+        # dependencies for which we don't have a version.
         def can_update?(requirements_to_unlock:)
-          # We're overriding can_update? bc otherwise
-          # there'd be no distinction between :own and :all
-          # given the logic in Dependabot::UpdateCheckers::Base
-          version_resolver.latest_resolvable_version(
-            unlock_requirement: requirements_to_unlock
-          )
+          if dependency.appears_in_lockfile?
+            version_can_update?(requirements_to_unlock: requirements_to_unlock)
+          elsif requirements_to_unlock == :none
+            false
+          elsif requirements_to_unlock == :own
+            requirements_can_update?
+          elsif requirements_to_unlock == :all
+            updated_dependencies_after_full_unlock.any?
+          end
         end
 
         def latest_resolvable_version
-          version_resolver.latest_resolvable_version(unlock_requirement: :all)
+          version_resolver.latest_resolvable_version(unlock_requirement: :own)
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -58,13 +63,11 @@ module Dependabot
         end
 
         def updated_dependencies_after_full_unlock
-          version_resolver.
-            updated_dependencies_after_full_unlock(latest_resolvable_version)
+          version_resolver.updated_dependencies_after_full_unlock
         end
 
         def latest_version_resolvable_with_full_unlock?
-          # This is never called, but..
-          latest_version == latest_resolvable_version
+          version_resolver.latest_resolvable_version(unlock_requirement: :all)
         end
 
         def candidate_versions
@@ -93,6 +96,16 @@ module Dependabot
             scan(VERSION_REGEX).
             map { |v| version_class.new(v) }.
             sort
+        end
+
+        # Overwrite the base class's requirements_up_to_date? method to instead
+        # check whether the latest version is allowed
+        def requirements_up_to_date?
+          return false unless latest_version
+          dependency.requirements.
+            map { |r| r.fetch(:requirement) }.
+            map { |r| requirement_class.new(r) }.
+            all? { |r| r.satisfied_by?(latest_version) }
         end
 
         def ignore_reqs

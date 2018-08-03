@@ -46,14 +46,15 @@ module Dependabot
             current_version
           end
 
-          def updated_dependencies_after_full_unlock(version)
+          def updated_dependencies_after_full_unlock
+            version = latest_resolvable_version(unlock_requirement: :all)
             deps_after_install = fetch_install_metadata(target_version: version)
 
             original_dependency_details.map do |original_dep|
               new_version = deps_after_install.fetch(original_dep.name)
 
               old_reqs = original_dep.requirements.map do |req|
-                Dependabot::Utils::Elm::Requirement.new(req[:requirement])
+                requirement_class.new(req[:requirement])
               end
 
               next if old_reqs.all? { |req| req.satisfied_by?(new_version) }

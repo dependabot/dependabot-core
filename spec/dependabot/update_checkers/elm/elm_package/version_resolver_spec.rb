@@ -109,6 +109,13 @@ RSpec.describe namespace::VersionResolver do
       context ":all unlocks" do
         let(:unlock_requirement) { :all }
         it { is_expected.to eq(elm_version("3.0.2")) }
+
+        context "without a version" do
+          let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
+          let(:dependency_version) { nil }
+          let(:dependency_requirement) { "3.0.0 <= v <= 3.0.1" }
+          it { is_expected.to eq(elm_version("3.0.2")) }
+        end
       end
     end
 
@@ -150,7 +157,7 @@ RSpec.describe namespace::VersionResolver do
     context "4) empty elm-stuff bug means we don't bump" do
       let(:fixture_name) { "version_resolver_one_dep_lower_than" }
       let(:dependency_version) { elm_version("14.0.0") }
-      let(:versions) { [elm_version("999.1.1")] }
+      let(:candidate_versions) { [elm_version("999.1.1")] }
 
       context ":own unlocks" do
         let(:unlock_requirement) { :own }
@@ -192,23 +199,23 @@ RSpec.describe namespace::VersionResolver do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    subject { resolver.updated_dependencies_after_full_unlock(versions.last) }
+    subject { resolver.updated_dependencies_after_full_unlock }
 
     context "2) forced full unlock" do
       let(:fixture_name) { "elm_css_and_datetimepicker" }
       let(:dependency_name) { "NoRedInk/datetimepicker" }
       let(:dependency_requirement) { "3.0.1 <= v <= 3.0.1" }
       let(:dependency_version) { "3.0.1" }
-      let(:versions) { [elm_version("3.0.1"), elm_version("3.0.2")] }
+      let(:candidate_versions) { [elm_version("3.0.1"), elm_version("3.0.2")] }
 
       it "bumps the other dependency too" do
         new_datetimepicker =
           Dependabot::Dependency.new(
             name: dependency_name,
-            version: versions.last.to_s,
+            version: candidate_versions.last.to_s,
             requirements: [{ requirement: "3.0.2 <= v <= 3.0.2", groups: nil,
                              source: nil, file: "elm-package.json" }],
-            previous_version: dependency_version.to_s,
+            previous_version: dependency_version,
             previous_requirements: [{ requirement:  dependency_requirement,
                                       groups: nil, source: nil,
                                       file: "elm-package.json" }],
@@ -218,17 +225,70 @@ RSpec.describe namespace::VersionResolver do
           Dependabot::Dependency.new(
             name: "rtfeldman/elm-css",
             version: "14.0.0",
-            requirements: [{ requirement: "14.0.0 <= v <= 14.0.0",
-                             groups: nil, source: nil,
-                             file: "elm-package.json" }],
+            requirements: [{
+              requirement: "14.0.0 <= v <= 14.0.0",
+              groups: nil,
+              source: nil,
+              file: "elm-package.json"
+            }],
             previous_version: "13.1.1",
-            previous_requirements: [{ requirement:  "13.1.1 <= v <= 13.1.1",
-                                      groups: nil, source: nil,
-                                      file: "elm-package.json" }],
+            previous_requirements: [{
+              requirement:  "13.1.1 <= v <= 13.1.1",
+              groups: nil,
+              source: nil,
+              file: "elm-package.json"
+            }],
             package_manager: "elm-package"
           )
 
         expect(subject).to match_array([new_elm_css, new_datetimepicker])
+      end
+
+      context "with a range requirement" do
+        let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
+        let(:dependency_name) { "NoRedInk/datetimepicker" }
+        let(:dependency_requirement) { "3.0.0 <= v <= 3.0.1" }
+        let(:dependency_version) { nil }
+
+        it "bumps the other dependency too" do
+          new_datetimepicker =
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: candidate_versions.last.to_s,
+              requirements: [{
+                requirement: "3.0.2 <= v <= 3.0.2",
+                groups: nil,
+                source: nil,
+                file: "elm-package.json"
+              }],
+              previous_version: dependency_version,
+              previous_requirements: [{ requirement:  dependency_requirement,
+                                        groups: nil, source: nil,
+                                        file: "elm-package.json" }],
+              package_manager: "elm-package"
+            )
+          new_elm_css =
+            Dependabot::Dependency.new(
+              name: "rtfeldman/elm-css",
+              version: "14.0.0",
+              requirements: [{
+                requirement: "14.0.0 <= v <= 14.0.0",
+                groups: nil,
+                source: nil,
+                file: "elm-package.json"
+              }],
+              previous_version: nil,
+              previous_requirements: [{
+                requirement:  "13.1.0 <= v <= 13.1.1",
+                groups: nil,
+                source: nil,
+                file: "elm-package.json"
+              }],
+              package_manager: "elm-package"
+            )
+
+          expect(subject).to match_array([new_elm_css, new_datetimepicker])
+        end
       end
     end
   end
