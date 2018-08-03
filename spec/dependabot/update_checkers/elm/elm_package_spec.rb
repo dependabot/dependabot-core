@@ -14,12 +14,15 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: nil
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
   let(:dependency_files) { [elm_package] }
   let(:github_token) { "token" }
   let(:directory) { "/" }
+  let(:credentials) { nil }
+  let(:ignored_versions) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -65,7 +68,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
 
     context "when the registry 404s" do
       before { stub_request(:get, elm_package_url).to_return(status: 404) }
-      it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("2.2.0")) }
+      it { is_expected.to be_nil }
+    end
+
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 5.0.0"] }
+      it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("4.0.5")) }
     end
   end
 end
