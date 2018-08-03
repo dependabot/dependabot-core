@@ -82,8 +82,9 @@ module Dependabot
 
         pr_name +=
           if dependencies.count == 1
-            "#{dependencies.first.display_name} requirement to "\
-            "#{new_library_requirement(dependencies.first)}"
+            "#{dependencies.first.display_name} requirement "\
+            "from #{old_library_requirement(dependencies.first)} "\
+            "to #{new_library_requirement(dependencies.first)}"
           else
             names = dependencies.map(&:name)
             "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
@@ -471,14 +472,24 @@ module Dependabot
         end.compact.first
       end
 
+      def old_library_requirement(dependency)
+        old_reqs =
+          dependency.previous_requirements - dependency.requirements
+
+        gemspec =
+          old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
+        return gemspec.fetch(:requirement) if gemspec
+        old_reqs.first.fetch(:requirement)
+      end
+
       def new_library_requirement(dependency)
         updated_reqs =
           dependency.requirements - dependency.previous_requirements
 
         gemspec =
           updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec[:requirement] if gemspec
-        updated_reqs.first[:requirement]
+        return gemspec.fetch(:requirement) if gemspec
+        updated_reqs.first.fetch(:requirement)
       end
 
       def link_issues(text:, dependency:)

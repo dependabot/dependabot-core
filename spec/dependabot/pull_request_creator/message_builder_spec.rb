@@ -311,7 +311,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200, body: "[]", headers: json_header)
         end
 
-        it { is_expected.to eq("Update business requirement to ~> 1.5.0") }
+        it "has the right title" do
+          expect(pr_name).
+            to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0")
+        end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
@@ -347,7 +350,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "includes the directory" do
             expect(pr_name).
-              to eq("Update business requirement to ~> 1.5.0 in /directory")
+              to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0 "\
+                    "in /directory")
           end
         end
       end
@@ -362,7 +366,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "uses a semantic commit prefix" do
           expect(pr_name).
-            to eq("build(deps): update business requirement to ~> 1.5.0")
+            to eq("build(deps): update business requirement from ~> 1.4.0 "\
+                  "to ~> 1.5.0")
         end
 
         context "with a security vulnerability fixed" do
