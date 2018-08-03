@@ -69,7 +69,8 @@ module Dependabot
         end
 
         def latest_version_resolvable_with_full_unlock?
-          version_resolver.latest_resolvable_version(unlock_requirement: :all)
+          latest_version == version_resolver.
+                            latest_resolvable_version(unlock_requirement: :all)
         end
 
         def candidate_versions
