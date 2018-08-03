@@ -17,10 +17,7 @@ module Dependabot
           /versions: \[(?<versions>("#{VERSION_REGEX}",?\s*)+)\]/
 
         def latest_version
-          @latest_version ||=
-            all_versions.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-            max
+          @latest_version ||= candidate_versions.max
         end
 
         def can_update?(requirements_to_unlock:)
@@ -37,20 +34,10 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
-          # No concept of "unlocking" for elm-packages
-          # Elm-package installs whatever it wants
-          # to satisfy the minimum dependencies you set
-          #
-          # To complicate things more, it's not advised
-          # to commit the `exact-dependencies.json` file
-          # so no dependency `appears_in_lockfile?`.
-          #
-          # Given what's in base.rb, I imagine this will
-          # never be called
-          #
-          # Nevertheless, let's leave it the same as
-          # dependency.version
-          dependency.version
+          # Irrelevant, since Elm has a single dependency file (well, there's
+          # also `exact-dependencies.json`, but it's not recommended that that
+          # is committed).
+          nil
         end
 
         def updated_requirements
@@ -66,7 +53,7 @@ module Dependabot
           @version_resolver ||= VersionResolver.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            versions: all_versions
+            candidate_versions: candidate_versions
           )
         end
 
@@ -78,6 +65,11 @@ module Dependabot
         def latest_version_resolvable_with_full_unlock?
           # This is never called, but..
           latest_version == latest_resolvable_version
+        end
+
+        def candidate_versions
+          all_versions.
+            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
         end
 
         def all_versions

@@ -9,6 +9,7 @@
     "exposed-modules": [],
     "native-modules": true,
     "dependencies": {
+        "realWorldElmPackage/exact": "2.0.0 <= v <= 2.0.0",
         "realWorldElmPackage/withOrEqualsUpperBound": "2.0.0 <= v <= 2.2.0",
         "realWorldElmPackage/withMinimumUpperBound": "1.0.0 <= v < 1.0.1",
         "realWorldElmPackage/withZeroPatchUpperBound": "1.0.0 <= v < 1.1.0",

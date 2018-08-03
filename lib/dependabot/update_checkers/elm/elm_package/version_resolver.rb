@@ -15,11 +15,10 @@ module Dependabot
         class VersionResolver
           class UnrecoverableState < StandardError; end
 
-          def initialize(dependency:, dependency_files:, versions:)
+          def initialize(dependency:, dependency_files:, candidate_versions:)
             @dependency = dependency
             @dependency_files = dependency_files
-            @versions = versions.
-                        select { |v| v > version_class.new(dependency.version) }
+            @candidate_versions = candidate_versions
           end
 
           def latest_resolvable_version(unlock_requirement:)
@@ -27,11 +26,9 @@ module Dependabot
               raise "Invalid unlock setting: #{unlock_requirement}"
             end
 
-            # Elm has no lockfile, no unlock essentially means
-            # "let elm-package install whatever satisfies .requirements"
-            if unlock_requirement == :none
-              return version_class.new(dependency.version)
-            end
+            # Elm has no lockfile, so we will never create an update PR if
+            # unlock requirements are `none`. Just return the current version.
+            return current_version if unlock_requirement == :none
 
             # Otherwise, we gotta check a few conditions to see if bumping
             # wouldn't also bump other deps in elm-package.json
@@ -40,13 +37,13 @@ module Dependabot
             #        (i.e. 0.0.0 <= v <= 999.999.999)
             # but what we got here is compatible with what we'll have to do
             # in Elm 0.19 where you only get exact dependencies
-            versions.sort.reverse_each do |version|
+            candidate_versions.sort.reverse_each do |version|
               return version if can_update?(version, unlock_requirement)
             end
 
             # Fall back to returning the dependency's current version, which is
             # presumed to be resolvable
-            version_class.new(dependency.version)
+            current_version
           end
 
           def updated_dependencies_after_full_unlock(version)
@@ -80,12 +77,12 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :versions
+          attr_reader :dependency, :dependency_files, :candidate_versions
 
           def can_update?(version, unlock_requirement)
             deps_after_install = fetch_install_metadata(target_version: version)
 
-            result = check_install_result(deps_after_install)
+            result = check_install_result(deps_after_install, version)
 
             # If the install was clean then we can definitely update
             return true if result == :clean_bump
@@ -96,28 +93,7 @@ module Dependabot
             result == :forced_full_unlock_bump
           end
 
-          def fetch_install_metadata(target_version:)
-            @install_cache ||= {}
-            @install_cache[target_version.to_s] ||=
-              SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files(target_version: target_version)
-
-                # Elm package install outputs a preview of the actions to be
-                # performed. We can use this preview to calculate whether it
-                # would do anything funny
-                command = "yes n | elm-package install"
-                response = run_shell_command(command)
-
-                deps_after_install = CliParser.decode_install_preview(response)
-
-                deps_after_install
-              rescue SharedHelpers::HelperSubprocessFailed => error
-                # 5) We bump our dep but elm-package blows up
-                handle_elm_package_errors(error)
-              end
-          end
-
-          def check_install_result(deps_after_install)
+          def check_install_result(deps_after_install, target_version)
             # This can go one of 5 ways:
             # 1) We bump our dep and no other dep is bumped
             # 2) We bump our dep and another dep is bumped too
@@ -144,15 +120,15 @@ module Dependabot
             version_after_install = deps_after_install.fetch(dependency.name)
 
             # 3) We bump our dep but actually elm-package doesn't bump it
-            if version_after_install <= version_class.new(dependency.version)
-              return :downgrade_bug
-            end
+            return :downgrade_bug if version_after_install < target_version
 
             other_top_level_deps_bumped =
               original_dependency_details.
               reject { |dep| dep.name == dependency.name }.
               select do |dep|
-                deps_after_install[dep.name] > version_class.new(dep.version)
+                reqs = dep.requirements.map { |r| r.fetch(:requirement) }
+                reqs = reqs.map { |r| requirement_class.new(r) }
+                reqs.any? { |r| !r.satisfied_by?(deps_after_install[dep.name]) }
               end
 
             # 2) We bump our dep and another dep is bumped
@@ -160,6 +136,27 @@ module Dependabot
 
             # 1) We bump our dep and no other dep is bumped
             :clean_bump
+          end
+
+          def fetch_install_metadata(target_version:)
+            @install_cache ||= {}
+            @install_cache[target_version.to_s] ||=
+              SharedHelpers.in_a_temporary_directory do
+                write_temporary_dependency_files(target_version: target_version)
+
+                # Elm package install outputs a preview of the actions to be
+                # performed. We can use this preview to calculate whether it
+                # would do anything funny
+                command = "yes n | elm-package install"
+                response = run_shell_command(command)
+
+                deps_after_install = CliParser.decode_install_preview(response)
+
+                deps_after_install
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                # 5) We bump our dep but elm-package blows up
+                handle_elm_package_errors(error)
+              end
           end
 
           def run_shell_command(command)
@@ -219,8 +216,17 @@ module Dependabot
               ).parse
           end
 
+          def current_version
+            return unless dependency.version
+            version_class.new(dependency.version)
+          end
+
           def version_class
             Utils::Elm::Version
+          end
+
+          def requirement_class
+            Utils::Elm::Requirement
           end
         end
       end
