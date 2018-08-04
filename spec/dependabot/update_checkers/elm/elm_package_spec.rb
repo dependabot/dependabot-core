@@ -82,7 +82,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     let(:unlock_level) { :own }
 
     context "with a version that is out of date, but needs a full unlock" do
-      let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
+      let(:fixture_name) { "elm_css_and_datetimepicker" }
       let(:dependency_name) { "NoRedInk/datetimepicker" }
       let(:string_req) { "3.0.1 <= v <= 3.0.1" }
       let(:dependency_version) { "3.0.1" }
