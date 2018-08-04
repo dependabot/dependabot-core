@@ -43,7 +43,7 @@ RSpec.describe namespace::VersionResolver do
     [{
       file: "elm-package.json",
       requirement: dependency_requirement,
-      groups: ["default"],
+      groups: [],
       source: nil
     }]
   end
@@ -213,12 +213,19 @@ RSpec.describe namespace::VersionResolver do
           Dependabot::Dependency.new(
             name: dependency_name,
             version: candidate_versions.last.to_s,
-            requirements: [{ requirement: "3.0.2 <= v <= 3.0.2", groups: nil,
-                             source: nil, file: "elm-package.json" }],
+            requirements: [{
+              requirement: "3.0.2 <= v <= 3.0.2",
+              groups: [],
+              source: nil,
+              file: "elm-package.json"
+            }],
             previous_version: dependency_version,
-            previous_requirements: [{ requirement:  dependency_requirement,
-                                      groups: nil, source: nil,
-                                      file: "elm-package.json" }],
+            previous_requirements: [{
+              requirement:  dependency_requirement,
+              groups: [],
+              source: nil,
+              file: "elm-package.json"
+            }],
             package_manager: "elm-package"
           )
         new_elm_css =
@@ -227,14 +234,14 @@ RSpec.describe namespace::VersionResolver do
             version: "14.0.0",
             requirements: [{
               requirement: "14.0.0 <= v <= 14.0.0",
-              groups: nil,
+              groups: [],
               source: nil,
               file: "elm-package.json"
             }],
             previous_version: "13.1.1",
             previous_requirements: [{
               requirement:  "13.1.1 <= v <= 13.1.1",
-              groups: nil,
+              groups: [],
               source: nil,
               file: "elm-package.json"
             }],
@@ -257,14 +264,17 @@ RSpec.describe namespace::VersionResolver do
               version: candidate_versions.last.to_s,
               requirements: [{
                 requirement: "3.0.2 <= v <= 3.0.2",
-                groups: nil,
+                groups: [],
                 source: nil,
                 file: "elm-package.json"
               }],
               previous_version: dependency_version,
-              previous_requirements: [{ requirement:  dependency_requirement,
-                                        groups: nil, source: nil,
-                                        file: "elm-package.json" }],
+              previous_requirements: [{
+                requirement:  dependency_requirement,
+                groups: [],
+                source: nil,
+                file: "elm-package.json"
+              }],
               package_manager: "elm-package"
             )
           new_elm_css =
@@ -273,14 +283,14 @@ RSpec.describe namespace::VersionResolver do
               version: "14.0.0",
               requirements: [{
                 requirement: "14.0.0 <= v <= 14.0.0",
-                groups: nil,
+                groups: [],
                 source: nil,
                 file: "elm-package.json"
               }],
               previous_version: nil,
               previous_requirements: [{
                 requirement:  "13.1.0 <= v <= 13.1.1",
-                groups: nil,
+                groups: [],
                 source: nil,
                 file: "elm-package.json"
               }],

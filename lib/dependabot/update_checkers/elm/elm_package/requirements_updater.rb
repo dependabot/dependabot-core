@@ -23,19 +23,14 @@ module Dependabot
           end
 
           def updated_requirements
-            if @latest_resolvable_version
+            if latest_resolvable_version
               requirements.map do |req|
                 requirement = update_requirement(
                   req[:requirement],
-                  @latest_resolvable_version
+                  latest_resolvable_version
                 )
 
-                {
-                  requirement: requirement,
-                  groups: nil,
-                  source: nil,
-                  file: req[:file]
-                }
+                req.merge(requirement: requirement)
               end
             else
               requirements
