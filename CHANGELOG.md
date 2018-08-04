@@ -1,3 +1,7 @@
+## v0.64.0, 4 August 2018
+
+- Elm: Initial support (v0.18 only)
+
 ## v0.63.29, 2 August 2018
 
 - Ruby: Unlock all subdependencies when checking for resolvability
