@@ -1,3 +1,7 @@
+## v0.64.1, 4 August 2018
+
+- Elm: Fix file fetcher method dependence
+
 ## v0.64.0, 4 August 2018
 
 - Elm: Initial support (v0.18 only)
