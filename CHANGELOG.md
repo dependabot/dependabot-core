@@ -1,3 +1,7 @@
+## v0.64.2, 4 August 2018
+
+- Elm: Return an empty array for groups, not nil
+
 ## v0.64.1, 4 August 2018
 
 - Elm: Fix file fetcher method dependence
