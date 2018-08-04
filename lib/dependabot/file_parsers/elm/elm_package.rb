@@ -23,7 +23,7 @@ module Dependabot
                 version: version_for(req)&.to_s,
                 requirements: [{
                   requirement: req, # 4.0 <= v <= 4.0
-                  groups: nil, # we don't have this (its dev vs non-dev)
+                  groups: [], # we don't have this (its dev vs non-dev)
                   source: nil, # elm-package only has elm-package sources
                   file: "elm-package.json"
                 }],

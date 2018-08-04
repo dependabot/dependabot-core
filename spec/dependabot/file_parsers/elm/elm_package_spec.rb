@@ -42,7 +42,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
             [{
               requirement: "2.0.0 <= v <= 2.2.0",
               file: "elm-package.json",
-              groups: nil,
+              groups: [],
               source: nil
             }]
           )
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
               [{
                 requirement: "2.0.0 <= v <= 2.0.0",
                 file: "elm-package.json",
-                groups: nil,
+                groups: [],
                 source: nil
               }]
             )
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
               [{
                 requirement: "1.0.0 <= v < 1.0.1",
                 file: "elm-package.json",
-                groups: nil,
+                groups: [],
                 source: nil
               }]
             )
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
               [{
                 requirement: "1.0.0 <= v < 1.1.0",
                 file: "elm-package.json",
-                groups: nil,
+                groups: [],
                 source: nil
               }]
             )
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
               [{
                 requirement: "1.0.0 <= v < 2.0.0",
                 file: "elm-package.json",
-                groups: nil,
+                groups: [],
                 source: nil
               }]
             )
