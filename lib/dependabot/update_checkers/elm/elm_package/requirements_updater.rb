@@ -62,9 +62,6 @@ module Dependabot
           end
 
           def require_exactly(version)
-            # Elm recommends folks to use exact versions
-            # and Elm 0.19 won't support other requirement
-            # specifications, so lets force everyone towards it
             "#{version} <= v <= #{version}"
           end
         end
