@@ -1,0 +1,18 @@
+{
+  "name": "elm-package.json",
+  "path": "elm-package.json",
+  "sha": "2a973612d9eea36af18e1a8bce3606726c1ba643",
+  "size": 1019,
+  "url": "https://api.github.com/repos/rtfeldman/elm-spa-example/contents/elm-package.json?ref=master",
+  "html_url": "https://github.com/rtfeldman/elm-spa-example/blob/master/elm-package.json",
+  "git_url": "https://api.github.com/repos/rtfeldman/elm-spa-example/git/blobs/2a973612d9eea36af18e1a8bce3606726c1ba643",
+  "download_url": "https://raw.githubusercontent.com/rtfeldman/elm-spa-example/master/elm-package.json",
+  "type": "file",
+  "content": "ewogICAgInZlcnNpb24iOiAiMS4wLjAiLAogICAgInN1bW1hcnkiOiAiaGVs\ncGZ1bCBzdW1tYXJ5IG9mIHlvdXIgcHJvamVjdCwgbGVzcyB0aGFuIDgwIGNo\nYXJhY3RlcnMiLAogICAgInJlcG9zaXRvcnkiOiAiaHR0cHM6Ly9naXRodWIu\nY29tL3VzZXIvcHJvamVjdC5naXQiLAogICAgImxpY2Vuc2UiOiAiQlNEMyIs\nCiAgICAic291cmNlLWRpcmVjdG9yaWVzIjogWwogICAgICAgICJzcmMiCiAg\nICBdLAogICAgImV4cG9zZWQtbW9kdWxlcyI6IFtdLAogICAgImRlcGVuZGVu\nY2llcyI6IHsKICAgICAgICAiTm9SZWRJbmsvZWxtLWRlY29kZS1waXBlbGlu\nZSI6ICIzLjAuMCA8PSB2IDwgNC4wLjAiLAogICAgICAgICJlbG0tY29tbXVu\naXR5L2pzb24tZXh0cmEiOiAiMi4xLjAgPD0gdiA8IDMuMC4wIiwKICAgICAg\nICAiZWxtLWxhbmcvY29yZSI6ICI1LjEuMSA8PSB2IDwgNi4wLjAiLAogICAg\nICAgICJlbG0tbGFuZy9kb20iOiAiMS4xLjEgPD0gdiA8IDIuMC4wIiwKICAg\nICAgICAiZWxtLWxhbmcvaHRtbCI6ICIyLjAuMCA8PSB2IDwgMy4wLjAiLAog\nICAgICAgICJlbG0tbGFuZy9odHRwIjogIjEuMC4wIDw9IHYgPCAyLjAuMCIs\nCiAgICAgICAgImVsbS1sYW5nL25hdmlnYXRpb24iOiAiMi4xLjAgPD0gdiA8\nIDMuMC4wIiwKICAgICAgICAiZXZhbmN6L2VsbS1tYXJrZG93biI6ICIzLjAu\nMiA8PSB2IDwgNC4wLjAiLAogICAgICAgICJldmFuY3ovdXJsLXBhcnNlciI6\nICIyLjAuMSA8PSB2IDwgMy4wLjAiLAogICAgICAgICJsdWtld2VzdGJ5L2Vs\nbS1odHRwLWJ1aWxkZXIiOiAiNS4xLjAgPD0gdiA8IDYuMC4wIiwKICAgICAg\nICAibWdvbGQvZWxtLWRhdGUtZm9ybWF0IjogIjEuMy4wIDw9IHYgPCAyLjAu\nMCIsCiAgICAgICAgInJ0ZmVsZG1hbi9lbG0tdmFsaWRhdGUiOiAiMi4wLjAg\nPD0gdiA8IDMuMC4wIiwKICAgICAgICAicnRmZWxkbWFuL3NlbGVjdGxpc3Qi\nOiAiMS4wLjAgPD0gdiA8IDIuMC4wIgogICAgfSwKICAgICJlbG0tdmVyc2lv\nbiI6ICIwLjE4LjAgPD0gdiA8IDAuMTkuMCIKfQo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/rtfeldman/elm-spa-example/contents/elm-package.json?ref=master",
+    "git": "https://api.github.com/repos/rtfeldman/elm-spa-example/git/blobs/2a973612d9eea36af18e1a8bce3606726c1ba643",
+    "html": "https://github.com/rtfeldman/elm-spa-example/blob/master/elm-package.json"
+  }
+}

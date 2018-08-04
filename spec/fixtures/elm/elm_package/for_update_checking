@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "summary": "NoRedInk's UI",
+    "repository": "https://github.com/NoRedInk/noredink-ui.git",
+    "license": "UNLICENSED",
+    "source-directories": [
+        "."
+    ],
+    "exposed-modules": [],
+    "native-modules": true,
+    "dependencies": {
+        "realWorldElmPackage/alreadyUpToDate": "2.0.0 <= v <= 2.2.0",
+        "realWorldElmPackage/bumpPatch": "1.0.0 <= v < 1.1.0",
+        "realWorldElmPackage/bumpMinor": "1.0.0 <= v < 1.0.1",
+        "realWorldElmPackage/bumpMajor": "1.0.0 <= v < 2.0.0"
+    }
+}

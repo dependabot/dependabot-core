@@ -12,6 +12,7 @@ require "dependabot/file_updaters/elixir/hex"
 require "dependabot/file_updaters/rust/cargo"
 require "dependabot/file_updaters/dotnet/nuget"
 require "dependabot/file_updaters/go/dep"
+require "dependabot/file_updaters/elm/elm_package"
 
 module Dependabot
   module FileUpdaters
@@ -30,6 +31,7 @@ module Dependabot
       when "cargo" then FileUpdaters::Rust::Cargo
       when "nuget" then FileUpdaters::Dotnet::Nuget
       when "dep" then FileUpdaters::Go::Dep
+      when "elm-package" then FileUpdaters::Elm::ElmPackage
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

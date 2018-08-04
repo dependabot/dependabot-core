@@ -8,6 +8,7 @@ require "dependabot/utils/php/version"
 require "dependabot/utils/python/version"
 require "dependabot/utils/rust/version"
 require "dependabot/utils/go/version"
+require "dependabot/utils/elm/version"
 
 require "dependabot/utils/dotnet/requirement"
 require "dependabot/utils/elixir/requirement"
@@ -18,6 +19,7 @@ require "dependabot/utils/python/requirement"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/utils/rust/requirement"
 require "dependabot/utils/go/requirement"
+require "dependabot/utils/elm/requirement"
 
 # rubocop:disable Metrics/CyclomaticComplexity
 module Dependabot
@@ -34,6 +36,7 @@ module Dependabot
       when "hex" then Utils::Elixir::Version
       when "cargo" then Utils::Rust::Version
       when "dep" then Utils::Go::Version
+      when "elm-package" then Utils::Elm::Version
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
@@ -50,6 +53,7 @@ module Dependabot
       when "hex" then Utils::Elixir::Requirement
       when "cargo" then Utils::Rust::Requirement
       when "dep" then Utils::Go::Requirement
+      when "elm-package" then Utils::Elm::Requirement
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
