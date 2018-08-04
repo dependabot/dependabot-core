@@ -7,23 +7,27 @@ module Dependabot
     module Elm
       class ElmPackage < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (required_files - filenames).empty?
+          filenames.include?("elm-package.json")
         end
 
         def self.required_files_message
-          "Repo must contain an " + required_files.join(" and an ")
+          "Repo must contain an elm-package.json"
         end
 
         private
 
         def fetch_files
+          fetched_files = []
+
+          fetched_files << elm_package
           # Note: We *do not* fetch the exact-dependencies.json file, as it is
           # recommended that this is not committed
-          required_files.map { |filename| fetch_file_from_host(filename) }
+
+          fetched_files
         end
 
-        def required_files
-          ["elm-package.json"]
+        def elm_package
+          fetch_file_from_host("elm-package.json")
         end
       end
     end
