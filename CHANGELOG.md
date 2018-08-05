@@ -1,3 +1,7 @@
+## v0.64.4, 5 August 2018
+
+- .NET: Ignore v2 package APIs for now
+
 ## v0.64.3, 4 August 2018
 
 - Elm: Don't update groups to nil
