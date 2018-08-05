@@ -52,7 +52,8 @@ module Dependabot
             {
               type: "nuget_repo",
               url: source_details.fetch(:repo_url),
-              nuspec_url: source_details.fetch(:nuspec_url)
+              nuspec_url: source_details.fetch(:nuspec_url),
+              source_url: source_details.fetch(:source_url)
             }
           end
         end

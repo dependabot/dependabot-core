@@ -19,7 +19,7 @@ module Dependabot
             @config_file = config_file
           end
 
-          def v3_dependency_urls
+          def dependency_urls
             find_dependency_urls
           end
 
@@ -36,27 +36,32 @@ module Dependabot
                   next default_repository_details
                 end
 
-                repo_metadata_response = get_repo_metadata(details)
-                check_repo_reponse(repo_metadata_response, details)
-                next unless repo_metadata_response.status == 200
-
-                base_url =
-                  JSON.parse(repo_metadata_response.body).
-                  fetch("resources", []).
-                  find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
-                  fetch("@id")
-
-                {
-                  repository_url: details.fetch(:url),
-                  versions_url:
-                    File.join(base_url, dependency.name.downcase, "index.json"),
-                  auth_header: auth_header_for_token(details.fetch(:token))
-                }
-              rescue Excon::Error::Timeout, Excon::Error::Socket
-                handle_timeout(repo_metadata_url: details.fetch(:url))
-              rescue JSON::ParserError
-                nil # Caused by v2 sources returning XML
+                build_url_for_details(details)
               end.compact.uniq
+          end
+
+          def build_url_for_details(repo_details)
+            response = get_repo_metadata(repo_details)
+            check_repo_reponse(response, repo_details)
+            return unless response.status == 200
+
+            base_url =
+              JSON.parse(response.body).
+              fetch("resources", []).
+              find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
+              fetch("@id")
+
+            {
+              repository_url: repo_details.fetch(:url),
+              versions_url:
+                File.join(base_url, dependency.name.downcase, "index.json"),
+              auth_header: auth_header_for_token(repo_details.fetch(:token)),
+              repository_type: "v3"
+            }
+          rescue JSON::ParserError
+            build_v2_url(response, repo_details)
+          rescue Excon::Error::Timeout, Excon::Error::Socket
+            handle_timeout(repo_metadata_url: repo_details.fetch(:url))
           end
 
           def get_repo_metadata(repo_details)
@@ -68,15 +73,32 @@ module Dependabot
             )
           end
 
-          def handle_timeout(repo_metadata_url)
-            raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
-            raise PrivateSourceTimedOut, repo_metadata_url
+          def build_v2_url(response, repo_details)
+            doc = Nokogiri::XML(response.body)
+            doc.remove_namespaces!
+            base_url = doc.at_xpath("service")&.attributes&.fetch("base")&.value
+            return unless base_url
+
+            {
+              repository_url: base_url,
+              versions_url: File.join(
+                base_url,
+                "FindPackagesById()?id='#{dependency.name}'"
+              ),
+              auth_header: auth_header_for_token(repo_details.fetch(:token)),
+              repository_type: "v2"
+            }
           end
 
           def check_repo_reponse(response, details)
             return unless [401, 402, 403].include?(response.status)
             raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
             raise PrivateSourceAuthenticationFailure, details.fetch(:url)
+          end
+
+          def handle_timeout(repo_metadata_url)
+            raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
+            raise PrivateSourceTimedOut, repo_metadata_url
           end
 
           def known_repositories
@@ -129,10 +151,11 @@ module Dependabot
 
           def default_repository_details
             {
-              repository_url: DEFAULT_REPOSITORY_URL,
-              versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
-                              "#{dependency.name.downcase}/index.json",
-              auth_header:    {}
+              repository_url:  DEFAULT_REPOSITORY_URL,
+              versions_url:    "https://api.nuget.org/v3-flatcontainer/"\
+                               "#{dependency.name.downcase}/index.json",
+              auth_header:     {},
+              repository_type: "v3"
             }
           end
 

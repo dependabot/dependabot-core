@@ -25,6 +25,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
   let(:latest_version) { version_class.new("23.6-jre") }
   let(:source_details) do
     {
+      source_url: nil,
       repo_url:   "https://api.nuget.org/v3/index.json",
       nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                   "microsoft.extensions.dependencymodel/1.2.3/"\
@@ -86,6 +87,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                 source: {
                   type: "nuget_repo",
                   url: "https://api.nuget.org/v3/index.json",
+                  source_url: nil,
                   nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                               "microsoft.extensions.dependencymodel/1.2.3/"\
                               "microsoft.extensions.dependencymodel.nuspec"
@@ -98,6 +100,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                 source: {
                   type: "nuget_repo",
                   url: "https://api.nuget.org/v3/index.json",
+                  source_url: nil,
                   nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                               "microsoft.extensions.dependencymodel/1.2.3/"\
                               "microsoft.extensions.dependencymodel.nuspec"
@@ -120,6 +123,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                   source: {
                     type: "nuget_repo",
                     url: "https://api.nuget.org/v3/index.json",
+                    source_url: nil,
                     nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                                 "microsoft.extensions.dependencymodel/1.2.3/"\
                                 "microsoft.extensions.dependencymodel.nuspec"

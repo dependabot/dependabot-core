@@ -106,6 +106,57 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       end
 
       it { is_expected.to eq(version_class.new("2.1.0")) }
+
+      context "that uses the v2 API" do
+        let(:config_file) do
+          Dependabot::DependencyFile.new(
+            name: "NuGet.Config",
+            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
+          )
+        end
+
+        before do
+          v2_repo_urls = %w(
+            https://www.nuget.org/api/v2/
+            https://www.myget.org/F/azure-appservice/api/v2
+            https://www.myget.org/F/azure-appservice-staging/api/v2
+            https://www.myget.org/F/fusemandistfeed/api/v2
+            https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/
+          )
+
+          v2_repo_urls.each do |repo_url|
+            stub_request(:get, repo_url).
+              to_return(
+                status: 200,
+                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
+              )
+          end
+
+          url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
+          stub_request(:get, url).
+            to_return(
+              status: 200,
+              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            )
+
+          custom_v3_nuget_versions_url =
+            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
+            "microsoft.extensions.dependencymodel/index.json"
+          stub_request(:get, custom_v3_nuget_versions_url).
+            to_return(status: 404)
+
+          custom_v2_nuget_versions_url =
+            "https://www.nuget.org/api/v2/FindPackagesById()?id="\
+            "'Microsoft.Extensions.DependencyModel'"
+          stub_request(:get, custom_v2_nuget_versions_url).
+            to_return(
+              status: 200,
+              body: fixture("dotnet", "nuget_responses", "v2_versions.xml")
+            )
+        end
+
+        it { is_expected.to eq(version_class.new("4.8.1")) }
+      end
     end
 
     context "with a custom repo in the credentials" do
@@ -172,6 +223,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         requirements: dependency_requirements,
         latest_version: "2.1.0",
         source_details: {
+          source_url: nil,
           nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                       "microsoft.extensions.dependencymodel/2.1.0/"\
                       "microsoft.extensions.dependencymodel.nuspec",
@@ -187,6 +239,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             source: {
               type: "nuget_repo",
               url: "https://api.nuget.org/v3/index.json",
+              source_url: nil,
               nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                           "microsoft.extensions.dependencymodel/2.1.0/"\
                           "microsoft.extensions.dependencymodel.nuspec"
@@ -194,6 +247,92 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
           }
         ]
       )
+    end
+
+    context "with a custom repo in a nuget.config file" do
+      let(:config_file) do
+        Dependabot::DependencyFile.new(
+          name: "NuGet.Config",
+          content: fixture("dotnet", "configs", "nuget.config")
+        )
+      end
+      let(:dependency_files) { [csproj, config_file] }
+
+      context "that uses the v2 API" do
+        let(:config_file) do
+          Dependabot::DependencyFile.new(
+            name: "NuGet.Config",
+            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
+          )
+        end
+
+        before do
+          v2_repo_urls = %w(
+            https://www.nuget.org/api/v2/
+            https://www.myget.org/F/azure-appservice/api/v2
+            https://www.myget.org/F/azure-appservice-staging/api/v2
+            https://www.myget.org/F/fusemandistfeed/api/v2
+            https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/
+          )
+
+          v2_repo_urls.each do |repo_url|
+            stub_request(:get, repo_url).
+              to_return(
+                status: 200,
+                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
+              )
+          end
+
+          url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
+          stub_request(:get, url).
+            to_return(
+              status: 200,
+              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            )
+
+          custom_v3_nuget_versions_url =
+            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
+            "microsoft.extensions.dependencymodel/index.json"
+          stub_request(:get, custom_v3_nuget_versions_url).
+            to_return(status: 404)
+
+          custom_v2_nuget_versions_url =
+            "https://www.nuget.org/api/v2/FindPackagesById()?id="\
+            "'Microsoft.Extensions.DependencyModel'"
+          stub_request(:get, custom_v2_nuget_versions_url).
+            to_return(
+              status: 200,
+              body: fixture("dotnet", "nuget_responses", "v2_versions.xml")
+            )
+        end
+
+        it "delegates to the RequirementsUpdater" do
+          expect(described_class::RequirementsUpdater).to receive(:new).with(
+            requirements: dependency_requirements,
+            latest_version: "4.8.1",
+            source_details: {
+              nuspec_url: nil,
+              repo_url:   "https://www.nuget.org/api/v2",
+              source_url: "https://github.com/autofac/Autofac"
+            }
+          ).and_call_original
+          expect(updated_requirements).to eq(
+            [
+              {
+                file: "my.csproj",
+                requirement: "4.8.1",
+                groups: [],
+                source: {
+                  type: "nuget_repo",
+                  url: "https://www.nuget.org/api/v2",
+                  source_url: "https://github.com/autofac/Autofac",
+                  nuspec_url: nil
+                }
+              }
+            ]
+          )
+        end
+      end
     end
   end
 end

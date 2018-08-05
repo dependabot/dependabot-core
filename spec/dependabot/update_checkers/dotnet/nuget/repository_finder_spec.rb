@@ -36,16 +36,17 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
     )
   end
 
-  describe "v3_dependency_urls" do
-    subject(:v3_dependency_urls) { finder.v3_dependency_urls }
+  describe "dependency_urls" do
+    subject(:dependency_urls) { finder.dependency_urls }
 
     it "gets the right URL without making any requests" do
-      expect(v3_dependency_urls).to eq(
+      expect(dependency_urls).to eq(
         [{
-          repository_url: "https://api.nuget.org/v3/index.json",
-          versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
-                          "microsoft.extensions.dependencymodel/index.json",
-          auth_header:    {}
+          repository_url:  "https://api.nuget.org/v3/index.json",
+          versions_url:    "https://api.nuget.org/v3-flatcontainer/"\
+                           "microsoft.extensions.dependencymodel/index.json",
+          auth_header:     {},
+          repository_type: "v3"
         }]
       )
     end
@@ -80,14 +81,15 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
       end
 
       it "gets the right URL" do
-        expect(v3_dependency_urls).to eq(
+        expect(dependency_urls).to eq(
           [{
-            repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
-                            "index.json",
-            versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
-                            "flatcontainer/microsoft.extensions."\
-                            "dependencymodel/index.json",
-            auth_header:    { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" }
+            repository_url:  "https://www.myget.org/F/exceptionless/api/v3/"\
+                             "index.json",
+            versions_url:    "https://www.myget.org/F/exceptionless/api/v3/"\
+                             "flatcontainer/microsoft.extensions."\
+                             "dependencymodel/index.json",
+            auth_header:     { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+            repository_type: "v3"
           }]
         )
       end
@@ -104,7 +106,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
 
         it "raises a useful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { finder.v3_dependency_urls }.
+          expect { finder.dependency_urls }.
             to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq(custom_repo_url)
@@ -133,13 +135,14 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
       end
 
       it "gets the right URLs" do
-        expect(v3_dependency_urls).to match_array(
+        expect(dependency_urls).to match_array(
           [
             {
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url:   "https://api.nuget.org/v3-flatcontainer/"\
                               "microsoft.extensions.dependencymodel/index.json",
-              auth_header:    {}
+              auth_header:    {},
+              repository_type: "v3"
             },
             {
               repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
@@ -147,7 +150,8 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
               versions_url:   "https://www.myget.org/F/exceptionless/api/v3/"\
                               "flatcontainer/microsoft.extensions."\
                               "dependencymodel/index.json",
-              auth_header:    { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" }
+              auth_header:    { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
             }
           ]
         )
@@ -187,14 +191,22 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(v3_dependency_urls).to eq(
+          expect(dependency_urls).to match_array(
             [{
               repository_url:
                 "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json",
               versions_url:
                 "https://www.myget.org/F/exceptionless/api/v3/" \
                 "flatcontainer/microsoft.extensions.dependencymodel/index.json",
-              auth_header: {}
+              auth_header: {},
+              repository_type: "v3"
+            }, {
+              repository_url: "https://www.nuget.org/api/v2",
+              versions_url:
+                "https://www.nuget.org/api/v2/FindPackagesById()?id="\
+                "'Microsoft.Extensions.DependencyModel'",
+              auth_header: {},
+              repository_type: "v2"
             }]
           )
         end

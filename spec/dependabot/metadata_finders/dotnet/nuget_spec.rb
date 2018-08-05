@@ -68,6 +68,7 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
         {
           type: "nuget_repo",
           url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
+          source_url: nil,
           nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                       "flatcontainer/microsoft.extensions."\
                       "dependencymodel/2.1.0/"\
@@ -86,6 +87,38 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
       it "caches the call to nuget" do
         2.times { source_url }
         expect(WebMock).to have_requested(:get, nuget_url).once
+      end
+
+      context "that has a source_url" do
+        let(:source) do
+          {
+            type: "nuget_repo",
+            url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
+            source_url: "https://github.com/my/repo",
+            nuspec_url: nil
+          }
+        end
+
+        it { is_expected.to eq("https://github.com/my/repo") }
+      end
+
+      context "that has neither a source_url nor a nuspec_url" do
+        let(:source) do
+          {
+            type: "nuget_repo",
+            url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
+            source_url: nil,
+            nuspec_url: nil
+          }
+        end
+
+        let(:nuget_url) do
+          "https://api.nuget.org/v3-flatcontainer/"\
+          "microsoft.extensions.dependencymodel/2.1.0/"\
+          "microsoft.extensions.dependencymodel.nuspec"
+        end
+
+        it { is_expected.to eq("https://github.com/dotnet/core-setup") }
       end
 
       context "that requires authentication" do

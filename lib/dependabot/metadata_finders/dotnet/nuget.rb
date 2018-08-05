@@ -10,6 +10,7 @@ module Dependabot
         private
 
         def look_up_source
+          return Source.from_url(dependency_source_url) if dependency_source_url
           look_up_source_in_nuspec(dependency_nuspec_file)
         end
 
@@ -57,11 +58,30 @@ module Dependabot
           source = dependency.requirements.
                    find { |r| r&.fetch(:source) }&.fetch(:source)
 
-          source&.fetch(:nuspec_url, nil) ||
-            source&.fetch("nuspec_url") ||
+          if source&.key?(:nuspec_url)
+            source.fetch(:nuspec_url) ||
+              "https://api.nuget.org/v3-flatcontainer/"\
+              "#{dependency.name.downcase}/#{dependency.version}/"\
+              "#{dependency.name.downcase}.nuspec"
+          elsif source&.key?(:nuspec_url)
+            source.fetch("nuspec_url") ||
+              "https://api.nuget.org/v3-flatcontainer/"\
+              "#{dependency.name.downcase}/#{dependency.version}/"\
+              "#{dependency.name.downcase}.nuspec"
+          else
             "https://api.nuget.org/v3-flatcontainer/"\
             "#{dependency.name.downcase}/#{dependency.version}/"\
             "#{dependency.name.downcase}.nuspec"
+          end
+        end
+
+        def dependency_source_url
+          source = dependency.requirements.
+                   find { |r| r&.fetch(:source) }&.fetch(:source)
+
+          return unless source
+          return source.fetch(:source_url) if source.key?(:source_url)
+          source.fetch("source_url")
         end
 
         def auth_header

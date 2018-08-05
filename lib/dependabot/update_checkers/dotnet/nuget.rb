@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "excon"
+require "nokogiri"
+require "dependabot/source"
 require "dependabot/update_checkers/base"
 require "dependabot/utils/dotnet/requirement"
 require "dependabot/shared_helpers"
@@ -30,7 +33,7 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             source_details: latest_version_details&.
-                            slice(:nuspec_url, :repo_url)
+                            slice(:nuspec_url, :repo_url, :source_url)
           ).updated_requirements
         end
 
@@ -60,7 +63,11 @@ module Dependabot
         end
 
         def available_versions
-          nuget_listings.flat_map do |listing|
+          available_v3_versions + available_v2_versions
+        end
+
+        def available_v3_versions
+          v3_nuget_listings.flat_map do |listing|
             listing.
               fetch("versions", []).
               map do |v|
@@ -72,10 +79,41 @@ module Dependabot
                 {
                   version:    version_class.new(v),
                   nuspec_url: nuspec_url,
+                  source_url: nil,
                   repo_url:
                     listing.fetch("listing_details").fetch(:repository_url)
                 }
               end
+          end
+        end
+
+        def available_v2_versions
+          v2_nuget_listings.flat_map do |listing|
+            body = listing.fetch("xml_body", [])
+            doc = Nokogiri::XML(body)
+            doc.remove_namespaces!
+
+            doc.xpath("/feed/entry").map do |entry|
+              version = entry.at_xpath("./properties/Version").content.strip
+              source_urls = []
+              [
+                entry.at_xpath("./properties/ProjectUrl").content,
+                entry.at_xpath("./properties/ReleaseNotes").content
+              ].join(" ").scan(Source::SOURCE_REGEX) do
+                source_urls << Regexp.last_match.to_s
+              end
+
+              source_url = source_urls.find { |url| Source.from_url(url) }
+              source_url = Source.from_url(source_url)&.url if source_url
+
+              {
+                version:    version_class.new(version),
+                nuspec_url: nil,
+                source_url: source_url,
+                repo_url:
+                  listing.fetch("listing_details").fetch(:repository_url)
+              }
+            end
           end
         end
 
@@ -97,31 +135,52 @@ module Dependabot
           end
         end
 
-        def nuget_listings
-          return @nuget_listings unless @nuget_listings.nil?
+        def v3_nuget_listings
+          return @v3_nuget_listings unless @v3_nuget_listings.nil?
 
-          v3_dependency_urls.map do |url_details|
-            response = Excon.get(
-              url_details[:versions_url],
-              headers: url_details[:auth_header],
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
-            next unless response.status == 200
+          dependency_urls.
+            select { |details| details.fetch(:repository_type) == "v3" }.
+            map do |url_details|
+              response = Excon.get(
+                url_details[:versions_url],
+                headers: url_details[:auth_header],
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              )
+              next unless response.status == 200
 
-            @nuget_listing =
-              JSON.parse(response.body).
-              merge("listing_details" => url_details)
-          end.compact
+              JSON.parse(response.body).merge("listing_details" => url_details)
+            end.compact
         end
 
-        def v3_dependency_urls
-          @v3_dependency_urls ||=
+        def v2_nuget_listings
+          return @v2_nuget_listings unless @v2_nuget_listings.nil?
+
+          dependency_urls.
+            select { |details| details.fetch(:repository_type) == "v2" }.
+            map do |url_details|
+              response = Excon.get(
+                url_details[:versions_url],
+                headers: url_details[:auth_header],
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              )
+              next unless response.status == 200
+
+              {
+                "xml_body" => response.body,
+                "listing_details" => url_details
+              }
+            end.compact
+        end
+
+        def dependency_urls
+          @dependency_urls ||=
             RepositoryFinder.new(
               dependency: dependency,
               credentials: credentials,
               config_file: nuget_config
-            ).v3_dependency_urls
+            ).dependency_urls
         end
 
         def nuget_config
