@@ -19,7 +19,7 @@ module Dependabot
             @config_file = config_file
           end
 
-          def dependency_urls
+          def v3_dependency_urls
             find_dependency_urls
           end
 
@@ -54,6 +54,8 @@ module Dependabot
                 }
               rescue Excon::Error::Timeout, Excon::Error::Socket
                 handle_timeout(repo_metadata_url: details.fetch(:url))
+              rescue JSON::ParserError
+                nil # Caused by v2 sources returning XML
               end.compact.uniq
           end
 
@@ -72,8 +74,8 @@ module Dependabot
           end
 
           def check_repo_reponse(response, details)
-            raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
             return unless [401, 402, 403].include?(response.status)
+            raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
             raise PrivateSourceAuthenticationFailure, details.fetch(:url)
           end
 

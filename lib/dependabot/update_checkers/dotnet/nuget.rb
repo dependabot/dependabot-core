@@ -100,7 +100,7 @@ module Dependabot
         def nuget_listings
           return @nuget_listings unless @nuget_listings.nil?
 
-          dependency_urls.map do |url_details|
+          v3_dependency_urls.map do |url_details|
             response = Excon.get(
               url_details[:versions_url],
               headers: url_details[:auth_header],
@@ -115,13 +115,13 @@ module Dependabot
           end.compact
         end
 
-        def dependency_urls
-          @dependency_urls ||=
+        def v3_dependency_urls
+          @v3_dependency_urls ||=
             RepositoryFinder.new(
               dependency: dependency,
               credentials: credentials,
               config_file: nuget_config
-            ).dependency_urls
+            ).v3_dependency_urls
         end
 
         def nuget_config
