@@ -1,3 +1,7 @@
+## v0.64.5, 5 August 2018
+
+- .NET: Use v2 API for look up latest version when required
+
 ## v0.64.4, 5 August 2018
 
 - .NET: Ignore v2 package APIs for now
