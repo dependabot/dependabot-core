@@ -54,6 +54,7 @@ module Dependabot
           @dependency_nuspec_file = Nokogiri::XML(response.body)
         end
 
+        # rubocop:disable Metrics/AbcSize
         def dependency_nuspec_url
           source = dependency.requirements.
                    find { |r| r&.fetch(:source) }&.fetch(:source)
@@ -74,6 +75,7 @@ module Dependabot
             "#{dependency.name.downcase}.nuspec"
           end
         end
+        # rubocop:enable Metrics/AbcSize
 
         def dependency_source_url
           source = dependency.requirements.
