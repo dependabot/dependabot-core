@@ -1,3 +1,7 @@
+## v0.64.6, 5 August 2018
+
+- PHP: Bump Composer to 1.7.0
+
 ## v0.64.5, 5 August 2018
 
 - .NET: Use v2 API for look up latest version when required
