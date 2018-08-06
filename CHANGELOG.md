@@ -1,3 +1,7 @@
+## v0.64.12, 6 August 2018
+
+- Ruby: Use (simple) custom unlocking logic in UpdateChecker
+
 ## v0.64.11, 6 August 2018
 
 - Ruby: Handle another category of yanked subdependencies
