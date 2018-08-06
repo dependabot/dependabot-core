@@ -11,16 +11,6 @@ module Dependabot
           require_relative "git_source_remover"
           require_relative "requirement_replacer"
 
-          LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
-          GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
-          GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
-          GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
-          GEMSPEC_SOURCES = [
-            ::Bundler::Source::Path,
-            ::Bundler::Source::Gemspec
-          ].freeze
-          RETRYABLE_ERRORS = [::Bundler::HTTPError].freeze
-
           def initialize(dependencies:, gemfile:)
             @dependencies = dependencies
             @gemfile = gemfile
