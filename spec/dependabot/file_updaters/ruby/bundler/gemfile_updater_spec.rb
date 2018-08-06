@@ -42,7 +42,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemfileUpdater do
   end
 
   describe "#updated_gemfile_content" do
-
     subject(:updated_gemfile_content) { updater.updated_gemfile_content }
 
     context "when no change is required" do
