@@ -1,0 +1,57 @@
+GIT
+  remote: git://github.com/elastic/elasticsearch-rails.git
+  revision: 212b37a1e927015f2a095e0f841c897d377ad1c7
+  branch: 5.x
+  specs:
+    elasticsearch-model (5.1.0)
+      activesupport (> 3)
+      elasticsearch (~> 5)
+      hashie
+    elasticsearch-rails (5.1.0)
+
+GIT
+  remote: git://github.com/elasticsearch/elasticsearch-ruby.git
+  revision: 43f48b229a975b77c5339644d512c88389fefafa
+  branch: 5.x
+  specs:
+    elasticsearch (5.0.4)
+      elasticsearch-api (= 5.0.4)
+      elasticsearch-transport (= 5.0.4)
+    elasticsearch-api (5.0.4)
+      multi_json
+    elasticsearch-dsl (0.1.4)
+    elasticsearch-transport (5.0.4)
+      faraday
+      multi_json
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    activesupport (5.2.0)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+    concurrent-ruby (1.0.5)
+    faraday (0.15.2)
+      multipart-post (>= 1.2, < 3)
+    hashie (3.5.7)
+    i18n (1.0.1)
+      concurrent-ruby (~> 1.0)
+    minitest (5.11.3)
+    multi_json (1.13.1)
+    multipart-post (2.0.0)
+    thread_safe (0.3.6)
+    tzinfo (1.2.5)
+      thread_safe (~> 0.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  elasticsearch-dsl!
+  elasticsearch-model!
+  elasticsearch-rails!
+
+BUNDLED WITH
+   1.16.3

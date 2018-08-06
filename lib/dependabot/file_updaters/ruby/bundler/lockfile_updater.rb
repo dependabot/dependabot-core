@@ -10,6 +10,7 @@ require "bundler_git_source_patch"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/file_updaters/ruby/bundler"
+require "dependabot/git_commit_checker"
 
 module Dependabot
   module FileUpdaters
@@ -173,12 +174,17 @@ module Dependabot
 
           def lock_deps_being_updated_to_exact_versions(definition)
             dependencies.each_with_object({}) do |dep, old_reqs|
-              next unless Gem::Version.correct?(dep.version)
-              new_req = Gem::Requirement.create("= #{dep.version}")
               defn_dep = definition.dependencies.find { |d| d.name == dep.name }
               next unless defn_dep
-              old_reqs[dep.name] = defn_dep.requirement
-              defn_dep.instance_variable_set(:@requirement, new_req)
+
+              if git_dependency?(dep) &&
+                 defn_dep.source.is_a?(::Bundler::Source::Git)
+                defn_dep.source.unlock!
+              elsif Gem::Version.correct?(dep.version)
+                new_req = Gem::Requirement.create("= #{dep.version}")
+                old_reqs[dep.name] = defn_dep.requirement
+                defn_dep.instance_variable_set(:@requirement, new_req)
+              end
             end
           end
 
@@ -323,6 +329,13 @@ module Dependabot
               reject { |f| f.name.end_with?(".lock") }.
               reject { |f| f.name.end_with?(".ruby-version") }.
               reject { |f| f.name == "Gemfile" }
+          end
+
+          def git_dependency?(dep)
+            GitCommitChecker.new(
+              dependency: dep,
+              credentials: credentials
+            ).git_dependency?
           end
         end
       end
