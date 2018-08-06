@@ -96,9 +96,11 @@ module Dependabot
             # subdependencies
             return [] unless lockfile
 
-            all_deps = ::Bundler::LockfileParser.new(lockfile.content).
-                       specs.map(&:name)
-            top_level = build_definition([]).dependencies.map(&:name)
+            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+                        specs.map(&:name).map(&:to_s)
+            top_level = build_definition([]).dependencies.
+                        map(&:name).map(&:to_s)
+
             all_deps - top_level
           end
 
@@ -140,8 +142,14 @@ module Dependabot
           end
 
           def build_definition(dependencies_to_unlock)
+            # Note: we lock shared dependencies to avoid any top-level
+            # dependencies getting unlocked (which would happen if they were
+            # also subdependencies of the dependency being unlocked)
             ::Bundler::Definition.build(
-              "Gemfile", lockfile&.name, gems: dependencies_to_unlock
+              "Gemfile",
+              lockfile&.name,
+              gems: dependencies_to_unlock,
+              lock_shared_dependencies: true
             )
           end
 

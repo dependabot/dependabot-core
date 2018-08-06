@@ -91,12 +91,10 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:gemfile_fixture_name) { "blocked_by_subdep" }
         let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
         let(:dependency_name) { "activesupport" }
-        let(:dependency_version) { "5.2.0" }
-        let(:dependency_previous_version) { "5.0.0.1" }
+        let(:current_version) { "5.0.0.1" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
-        let(:previous_requirements) { requirements }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("5.2.0")) }
       end
@@ -134,8 +132,18 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:dependency_name) { "ibandit" }
 
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
-        # version compatible with the version of i18n in the Gemfile.
+        # version compatible with the version of i18n in the Gemfile.lock.
         its([:version]) { is_expected.to eq(Gem::Version.new("0.3.4")) }
+      end
+
+      context "with no update possible due to a version conflict" do
+        let(:gemfile_fixture_name) { "version_conflict_with_listed_subdep" }
+        let(:lockfile_fixture_name) do
+          "version_conflict_with_listed_subdep.lock"
+        end
+        let(:dependency_name) { "rspec-mocks" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
       end
 
       context "with a legacy Ruby which disallows the latest version" do

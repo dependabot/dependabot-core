@@ -142,9 +142,10 @@ module Dependabot
           end
 
           def unlock_blocking_subdeps(dependencies_to_unlock, error)
-            all_deps = ::Bundler::LockfileParser.new(lockfile.content).
-                       specs.map(&:name)
-            top_level = build_definition([]).dependencies.map(&:name)
+            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+                        specs.map(&:name).map(&:to_s)
+            top_level = build_definition([]).dependencies.
+                        map(&:name).map(&:to_s)
             allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
             # Unlock any sub-dependencies that Bundler reports caused the
