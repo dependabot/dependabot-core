@@ -787,7 +787,6 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         ).with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 404,
-            body: fixture("github", "package_json_content.json"),
             headers: { "content-type" => "application/json" }
           )
       end
@@ -798,6 +797,35 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to include("packages/package2/package.json")
         expect(file_fetcher_instance.files.map(&:name)).
           to_not include("other_package/package.json")
+      end
+
+      context "because one of the repos isn't fetchable" do
+        before do
+          stub_request(:get, File.join(url, "packages?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 404,
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(
+            :get,
+            File.join(url, "other_package/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies it can" do
+          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to_not include("packages/package2/package.json")
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("other_package/package.json")
+        end
       end
     end
   end

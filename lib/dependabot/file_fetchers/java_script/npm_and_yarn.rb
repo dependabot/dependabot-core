@@ -156,9 +156,9 @@ module Dependabot
 
         def expanded_paths(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
-          unglobbed_path = path.split("*").first.gsub(%r{(?<=/).*$}, "")
+          unglobbed_path = path.split("*").first.gsub(%r{(?<=/)[^/]*$}, "")
 
-          repo_contents(dir: unglobbed_path).
+          repo_contents(dir: unglobbed_path, raise_errors: false).
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
             select { |filename| File.fnmatch?(path, filename) }

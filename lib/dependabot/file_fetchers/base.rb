@@ -101,7 +101,7 @@ module Dependabot
         fetch_file_from_host(filename, type: type)
       end
 
-      def repo_contents(dir: ".")
+      def repo_contents(dir: ".", raise_errors: true)
         path = Pathname.new(File.join(directory, dir)).
                cleanpath.to_path.gsub(%r{^/*}, "")
 
@@ -118,6 +118,9 @@ module Dependabot
           when "gitlab" then gitlab_repo_contents(path)
           else raise "Unsupported provider '#{source.provider}'."
           end
+      rescue Octokit::NotFound, Gitlab::Error::NotFound
+        raise if raise_errors
+        []
       end
 
       def github_repo_contents(path)
