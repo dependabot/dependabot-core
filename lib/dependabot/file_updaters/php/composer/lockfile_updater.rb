@@ -103,6 +103,13 @@ module Dependabot
                        named_captures.fetch("source")
               raise PrivateSourceAuthenticationFailure, source
             end
+            if error.message.include?("Argument 1 passed to Composer")
+              msg = "One of your composer plugins is not compatible with the "\
+                    "latest version of Composer. Please update your composer "\
+                    "version and try running `composer update` to debug "\
+                    "further."
+              raise DependencyFileNotResolvable, msg
+            end
             raise error
           end
           # rubocop:enable Metrics/PerceivedComplexity

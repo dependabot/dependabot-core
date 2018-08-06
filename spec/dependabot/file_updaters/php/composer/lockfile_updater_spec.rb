@@ -6,7 +6,6 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters/php/composer/lockfile_updater"
 
 RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
-
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -118,6 +117,38 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+      end
+    end
+
+    context "with a plugin that conflicts with the current composer version" do
+      let(:manifest_fixture_name) { "outdated_flex" }
+      let(:lockfile_fixture_name) { "outdated_flex" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symphony/lock",
+          version: "4.1.3",
+          requirements: [{
+            file: "composer.json",
+            requirement: "^4.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "4.1.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "^4.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.to raise_error do |error|
+          expect(error).to be_a Dependabot::DependencyFileNotResolvable
+          expect(error.message).to start_with("One of your composer plugins")
+        end
       end
     end
 

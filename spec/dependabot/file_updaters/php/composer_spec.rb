@@ -76,7 +76,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer do
 
     it "doesn't store the files permanently or output to stdout" do
       expect { expect { updated_files }.to_not(output.to_stdout) }.
-        to_not change { Dir.entries(tmp_path) }
+        to_not(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
