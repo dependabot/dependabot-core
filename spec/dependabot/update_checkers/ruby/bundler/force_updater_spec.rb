@@ -32,11 +32,24 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       package_manager: "bundler"
     )
   end
-  let(:dependency_name) { "onfido" }
-  let(:current_version) { "0.7.1" }
-  let(:target_version) { "0.8.2" }
+  let(:dependency_name) { "rspec-mocks" }
+  let(:current_version) { "3.5.0" }
+  let(:target_version) { "3.6.0" }
   let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 0.7.1", groups: [], source: nil }]
+    [{
+      file: "Gemfile",
+      requirement: "~> 3.5.0",
+      groups: [:default],
+      source: nil
+    }]
+  end
+  let(:expected_requirements) do
+    [{
+      file: "Gemfile",
+      requirement: "~> 3.6.0",
+      groups: [:default],
+      source: nil
+    }]
   end
 
   let(:gemfile) do

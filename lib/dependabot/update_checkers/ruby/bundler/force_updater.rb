@@ -123,7 +123,8 @@ module Dependabot
             definition = ::Bundler::Definition.build(
               "Gemfile",
               lockfile&.name,
-              gems: gems_to_unlock
+              gems: gems_to_unlock + subdependencies,
+              lock_shared_dependencies: true
             )
 
             # Remove the Gemfile / gemspec requirements on the gems we're
@@ -139,6 +140,20 @@ module Dependabot
               instance_variable_set(:@requirement, new_req)
 
             definition
+          end
+
+          def subdependencies
+            # If there's no lockfile we don't need to worry about
+            # subdependencies
+            return [] unless lockfile
+
+            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+                        specs.map(&:name).map(&:to_s)
+            top_level = ::Bundler::Definition.
+                        build("Gemfile", lockfile.name, {}).
+                        dependencies.map(&:name).map(&:to_s)
+
+            all_deps - top_level
           end
 
           def unlock_gem(definition:, gem_name:)
@@ -174,22 +189,28 @@ module Dependabot
                 original_dependencies.find { |d| d.name == dep.name }
               spec = specs.find { |d| d.name == dep.name }
 
-              Dependency.new(
-                name: dep.name,
-                version: spec.version.to_s,
-                requirements:
-                  RequirementsUpdater.new(
-                    requirements: original_dep.requirements,
-                    library: library?,
-                    updated_source: source_for(original_dep),
-                    latest_version: spec.version.to_s,
-                    latest_resolvable_version: spec.version.to_s
-                  ).updated_requirements,
-                previous_version: original_dep.version,
-                previous_requirements: original_dep.requirements,
-                package_manager: original_dep.package_manager
-              )
-            end
+              next if spec.version.to_s == original_dep.version
+
+              build_dependency(original_dep, spec)
+            end.compact
+          end
+
+          def build_dependency(original_dep, updated_spec)
+            Dependency.new(
+              name: updated_spec.name,
+              version: updated_spec.version.to_s,
+              requirements:
+                RequirementsUpdater.new(
+                  requirements: original_dep.requirements,
+                  library: library?,
+                  updated_source: source_for(original_dep),
+                  latest_version: updated_spec.version.to_s,
+                  latest_resolvable_version: updated_spec.version.to_s
+                ).updated_requirements,
+              previous_version: original_dep.version,
+              previous_requirements: original_dep.requirements,
+              package_manager: original_dep.package_manager
+            )
           end
 
           def source_for(dependency)
