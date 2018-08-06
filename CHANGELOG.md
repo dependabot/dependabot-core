@@ -1,3 +1,7 @@
+## v0.64.8, 6 August 2018
+
+- PHP: Better error text for composer plugic clashes
+
 ## v0.64.7, 6 August 2018
 
 - PHP: Handle incompatible flex versions
