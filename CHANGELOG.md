@@ -1,3 +1,7 @@
+## v0.64.7, 6 August 2018
+
+- PHP: Handle incompatible flex versions
+
 ## v0.64.6, 5 August 2018
 
 - PHP: Bump Composer to 1.7.0
