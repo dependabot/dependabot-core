@@ -16,6 +16,7 @@ module Dependabot
     module Ruby
       class Bundler < Dependabot::FileUpdaters::Base
         require_relative "bundler/gemspec_sanitizer"
+        require_relative "bundler/gemfile_updater"
         require_relative "bundler/git_pin_replacer"
         require_relative "bundler/git_source_remover"
         require_relative "bundler/requirement_replacer"
@@ -99,42 +100,11 @@ module Dependabot
             reject { |f| f.name == "Gemfile" }
         end
 
-        def remove_git_source?(dependency)
-          old_gemfile_req =
-            dependency.previous_requirements.find { |f| f[:file] == "Gemfile" }
-          return false unless old_gemfile_req&.dig(:source, :type) == "git"
-
-          new_gemfile_req =
-            dependency.requirements.find { |f| f[:file] == "Gemfile" }
-
-          new_gemfile_req[:source].nil?
-        end
-
-        def update_git_pin?(dependency)
-          new_gemfile_req =
-            dependency.requirements.find { |f| f[:file] == "Gemfile" }
-          return false unless new_gemfile_req&.dig(:source, :type) == "git"
-
-          # If the new requirement is a git dependency with a ref then there's
-          # no harm in doing an update
-          new_gemfile_req.dig(:source, :ref)
-        end
-
         def updated_gemfile_content(file)
-          content = file.content
-
-          dependencies.each do |dependency|
-            content =
-              replace_gemfile_version_requirement(dependency, file, content)
-            if remove_git_source?(dependency)
-              content = remove_gemfile_git_source(dependency, content)
-            end
-            if update_git_pin?(dependency)
-              content = update_gemfile_git_pin(dependency, file, content)
-            end
-          end
-
-          content
+          GemfileUpdater.new(
+            dependencies: dependencies,
+            gemfile: file
+          ).updated_gemfile_content
         end
 
         def updated_gemspec_content(gemspec)
@@ -147,36 +117,6 @@ module Dependabot
           end
 
           content
-        end
-
-        def replace_gemfile_version_requirement(dependency, file, content)
-          return content unless requirement_changed?(file, dependency)
-
-          updated_requirement =
-            dependency.requirements.
-            find { |r| r[:file] == file.name }.
-            fetch(:requirement)
-
-          RequirementReplacer.new(
-            dependency: dependency,
-            file_type: :gemfile,
-            updated_requirement: updated_requirement
-          ).rewrite(content)
-        end
-
-        def remove_gemfile_git_source(dependency, content)
-          GitSourceRemover.new(dependency: dependency).rewrite(content)
-        end
-
-        def update_gemfile_git_pin(dependency, file, content)
-          new_pin =
-            dependency.requirements.
-            find { |f| f[:file] == file.name }.
-            fetch(:source).fetch(:ref)
-
-          GitPinReplacer.
-            new(dependency: dependency, new_pin: new_pin).
-            rewrite(content)
         end
 
         def replace_gemspec_version_requirement(gemspec, dependency, content)
