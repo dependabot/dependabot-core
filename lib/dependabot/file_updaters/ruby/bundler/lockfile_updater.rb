@@ -40,9 +40,11 @@ module Dependabot
             @updated_lockfile_content ||=
               begin
                 updated_content = build_updated_lockfile
+
                 if lockfile.content == updated_content
                   raise "Expected content to change!"
                 end
+
                 updated_content
               end
           end
@@ -143,6 +145,11 @@ module Dependabot
             top_level = build_definition([]).dependencies.map(&:name)
             allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
+            # If there's nothing more we can unlock, give up
+            raise if allowed_new_unlocks.none?
+
+            # Unlock any sub-dependencies that Bundler reports caused the
+            # conflict
             potentials_deps =
               error.cause.conflicts.values.
               flat_map(&:requirement_trees).
@@ -150,7 +157,11 @@ module Dependabot
                 tree.find { |req| allowed_new_unlocks.include?(req.name) }
               end.compact.map(&:name)
 
-            raise if potentials_deps.none?
+            # If we can't get the right subdependencies from the error above,
+            # throw everything at it and unlock all subdependencies.
+            # This happen because Bundler's `reduce_trees` method mutates the
+            # tree.
+            potentials_deps = allowed_new_unlocks if potentials_deps.none?
 
             dependencies_to_unlock.append(*potentials_deps)
           end
