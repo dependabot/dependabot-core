@@ -1,3 +1,7 @@
+## v0.64.14, 6 August 2018
+
+- Ruby: Handle git sources that multiple dependencies use
+
 ## v0.64.13, 6 August 2018
 
 - Ruby: Reject dependencies that don't update in ForceUpdater
