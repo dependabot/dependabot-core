@@ -1,3 +1,7 @@
+## v0.64.11, 6 August 2018
+
+- Ruby: Handle another category of yanked subdependencies
+
 ## v0.64.10, 6 August 2018
 
 - Ruby: Patch Bundler to avoid mutating conflict trees
