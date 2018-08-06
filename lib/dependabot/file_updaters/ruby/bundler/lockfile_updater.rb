@@ -4,6 +4,7 @@ require "bundler"
 
 require "bundler_definition_ruby_version_patch"
 require "bundler_definition_bundler_version_patch"
+require "bundler_resolver_version_conflict_patch"
 require "bundler_git_source_patch"
 
 require "dependabot/shared_helpers"
@@ -145,9 +146,6 @@ module Dependabot
             top_level = build_definition([]).dependencies.map(&:name)
             allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
-            # If there's nothing more we can unlock, give up
-            raise if allowed_new_unlocks.none?
-
             # Unlock any sub-dependencies that Bundler reports caused the
             # conflict
             potentials_deps =
@@ -157,11 +155,8 @@ module Dependabot
                 tree.find { |req| allowed_new_unlocks.include?(req.name) }
               end.compact.map(&:name)
 
-            # If we can't get the right subdependencies from the error above,
-            # throw everything at it and unlock all subdependencies.
-            # This happen because Bundler's `reduce_trees` method mutates the
-            # tree.
-            potentials_deps = allowed_new_unlocks if potentials_deps.none?
+            # If there's nothing more we can unlock, give up
+            raise if potentials_deps.none?
 
             dependencies_to_unlock.append(*potentials_deps)
           end
