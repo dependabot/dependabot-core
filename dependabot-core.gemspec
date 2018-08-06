@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "toml-rb", "~> 1.1"
 
   spec.add_development_dependency "rake"
-  spec.add_development_dependency "rspec", "~> 3.7.0"
+  spec.add_development_dependency "rspec", "~> 3.8.0"
   spec.add_development_dependency "rspec-its", "~> 1.2.0"
   spec.add_development_dependency "rubocop", "~> 0.58.0"
   spec.add_development_dependency "webmock", "~> 3.4.0"
