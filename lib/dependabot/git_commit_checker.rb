@@ -210,7 +210,8 @@ module Dependabot
 
       return true if status == "behind"
       allow_identical && status == "identical"
-    rescue Octokit::NotFound, Gitlab::Error::NotFound
+    rescue Octokit::NotFound, Gitlab::Error::NotFound,
+           Octokit::InternalServerError
       false
     end
 
