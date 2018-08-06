@@ -35,6 +35,11 @@ module Dependabot
               updated_file(file: lockfile, content: updated_lockfile_content)
           end
 
+          if updated_files.none? ||
+             updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+            raise "No files have changed!"
+          end
+
           updated_files
         end
 

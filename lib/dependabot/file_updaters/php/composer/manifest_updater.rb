@@ -28,13 +28,19 @@ module Dependabot
                   fetch(:requirement)
 
                 regex =
-                  /"#{Regexp.escape(dep.name)}"\s*:\s*"#{Regexp.escape(old_req)}"/
+                  /
+                    "#{Regexp.escape(dep.name)}"\s*:\s*
+                    "#{Regexp.escape(old_req)}"
+                  /x
 
                 updated_content = content.gsub(regex) do |declaration|
                   declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
                 end
 
-                raise "Expected content to change!" if content == updated_content
+                if content == updated_content
+                  raise "Expected content to change!"
+                end
+
                 updated_content
               end
 
@@ -54,10 +60,10 @@ module Dependabot
 
           def update_git_sources(content)
             # We need to replace `git` types with `vcs` so that auth works.
-            # Spacing is important so we don't accidentally replace the source for
-            # "type": "package" dependencies.
-            # We then replace any ssh URLs with ssl ones, and remove any requests
-            # not to use the GitHub API (which would break auth)
+            # Spacing is important so we don't accidentally replace the source
+            # for "type": "package" dependencies.
+            # We then replace any ssh URLs with ssl ones, and remove any
+            # requests not to use the GitHub API (which would break auth)
             content.gsub(
               /^      "type"\s*:\s*"git"/,
               '      "type": "vcs"'

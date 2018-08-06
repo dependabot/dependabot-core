@@ -1,0 +1,8 @@
+{
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "symfony/flex": "^1.0",
+        "symfony/lock": "^4.1"
+    }
+}

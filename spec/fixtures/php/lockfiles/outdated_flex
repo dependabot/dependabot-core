@@ -1,0 +1,172 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "1333de6c4a67d4bed002d8d77bac1f7c",
+    "packages": [
+        {
+            "name": "psr/log",
+            "version": "1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for logging libraries",
+            "homepage": "https://github.com/php-fig/log",
+            "keywords": [
+                "log",
+                "psr",
+                "psr-3"
+            ],
+            "time": "2016-10-10T12:19:37+00:00"
+        },
+        {
+            "name": "symfony/flex",
+            "version": "v1.0.82",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/flex.git",
+                "reference": "729aee08d62b47224e85b83c97e2824ff7d1735e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/flex/zipball/729aee08d62b47224e85b83c97e2824ff7d1735e",
+                "reference": "729aee08d62b47224e85b83c97e2824ff7d1735e",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0",
+                "php": "^7.0"
+            },
+            "require-dev": {
+                "composer/composer": "^1.0.2",
+                "symfony/phpunit-bridge": "^3.2.8"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev"
+                },
+                "class": "Symfony\\Flex\\Flex"
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Flex\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien.potencier@gmail.com"
+                }
+            ],
+            "time": "2018-05-02T19:08:56+00:00"
+        },
+        {
+            "name": "symfony/lock",
+            "version": "v4.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/lock.git",
+                "reference": "d508b5dd92272cb74300396ecaadde969d0f7976"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/lock/zipball/d508b5dd92272cb74300396ecaadde969d0f7976",
+                "reference": "d508b5dd92272cb74300396ecaadde969d0f7976",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.1.3",
+                "psr/log": "~1.0"
+            },
+            "require-dev": {
+                "predis/predis": "~1.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "4.1-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Lock\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                },
+                {
+                    "name": "Jérémy Derussé",
+                    "email": "jeremy@derusse.com"
+                }
+            ],
+            "description": "Symfony Lock Component",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "cas",
+                "flock",
+                "locking",
+                "mutex",
+                "redlock",
+                "semaphore"
+            ],
+            "time": "2018-06-21T11:15:46+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

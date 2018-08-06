@@ -92,7 +92,7 @@ module Dependabot
             if error.message.start_with?("Could not find a key for ACF PRO")
               raise MissingEnvironmentVariable, "ACF_PRO_KEY"
             end
-            if error.message.start_with?("Unknown downloader type: npm-signature")
+            if error.message.start_with?("Unknown downloader type: npm-signatu")
               raise DependencyFileNotResolvable, error.message
             end
             if error.message.start_with?("Allowed memory size")
@@ -131,11 +131,14 @@ module Dependabot
                   dep.requirements.find { |r| r[:file] == "composer.json" }&.
                   fetch(:requirement)
 
-                # When updating a subdependency there won't be an old requirement
+                # When updating a subdep there won't be an old requirement
                 next content unless old_req
 
                 regex =
-                  /"#{Regexp.escape(dep.name)}"\s*:\s*"#{Regexp.escape(old_req)}"/
+                  /
+                    "#{Regexp.escape(dep.name)}"\s*:\s*
+                    "#{Regexp.escape(old_req)}"
+                  /x
 
                 content.gsub(regex) do |declaration|
                   declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
@@ -211,7 +214,7 @@ module Dependabot
 
           def credentials_env
             credentials.
-              select { |cred| cred.fetch("type") == "php_environment_variable" }.
+              select { |c| c.fetch("type") == "php_environment_variable" }.
               map { |cred| [cred["env-key"], cred["env-value"]] }.
               to_h
           end
