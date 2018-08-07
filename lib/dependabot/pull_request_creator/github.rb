@@ -12,12 +12,12 @@ module Dependabot
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :target_branch, :author_details, :signature_key,
-                  :labeler, :reviewers, :assignees
+                  :labeler, :reviewers, :assignees, :milestone
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      target_branch:, author_details:, signature_key:,
-                     labeler:, reviewers:, assignees:)
+                     labeler:, reviewers:, assignees:, milestone:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -32,6 +32,7 @@ module Dependabot
         @labeler        = labeler
         @reviewers      = reviewers
         @assignees      = assignees
+        @milestone      = milestone
       end
 
       def create
@@ -164,6 +165,7 @@ module Dependabot
         labeler.label_pull_request(pull_request.number)
         add_reviewers_to_pull_request(pull_request) if reviewers&.any?
         add_assignees_to_pull_request(pull_request) if assignees&.any?
+        add_milestone_to_pull_request(pull_request) if milestone
       end
 
       def add_reviewers_to_pull_request(pull_request)
@@ -187,6 +189,14 @@ module Dependabot
           source.repo,
           pull_request.number,
           assignees
+        )
+      end
+
+      def add_milestone_to_pull_request(pull_request)
+        github_client_for_source.update_issue(
+          source.repo,
+          pull_request.number,
+          milestone: milestone
         )
       end
 

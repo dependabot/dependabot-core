@@ -20,7 +20,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       signature_key: signature_key,
       labeler: labeler,
       reviewers: reviewers,
-      assignees: assignees
+      assignees: assignees,
+      milestone: milestone
     )
   end
 
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:signature_key) { nil }
   let(:reviewers) { nil }
   let(:assignees) { nil }
+  let(:milestone) { nil }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -542,6 +544,25 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           to have_requested(
             :post, "#{repo_api_url}/issues/1347/assignees"
           ).with(body: { assignees: ["greysteil"] }.to_json)
+      end
+    end
+
+    context "when a milestone has been requested" do
+      let(:milestone) { 5 }
+      before do
+        stub_request(:patch, "#{repo_api_url}/issues/1347").
+          to_return(status: 201,
+                    body: fixture("github", "create_pr.json"),
+                    headers: json_header)
+      end
+
+      it "adds the milestone to the PR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(
+            :patch, "#{repo_api_url}/issues/1347"
+          ).with(body: { milestone: 5 }.to_json)
       end
     end
   end

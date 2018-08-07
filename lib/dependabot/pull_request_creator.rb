@@ -13,12 +13,13 @@ module Dependabot
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :target_branch,
                 :author_details, :signature_key, :custom_labels,
-                :vulnerabilities_fixed, :reviewers, :assignees
+                :vulnerabilities_fixed, :reviewers, :assignees, :milestone
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, target_branch: nil,
                    custom_labels: nil, author_details: nil, signature_key: nil,
-                   reviewers: nil, assignees: nil, vulnerabilities_fixed: {})
+                   reviewers: nil, assignees: nil, milestone: nil,
+                   vulnerabilities_fixed: {})
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -31,6 +32,7 @@ module Dependabot
       @custom_labels         = custom_labels
       @reviewers             = reviewers
       @assignees             = assignees
+      @milestone             = milestone
       @vulnerabilities_fixed = vulnerabilities_fixed
 
       check_dependencies_have_previous_version
@@ -69,7 +71,8 @@ module Dependabot
         signature_key: signature_key,
         labeler: labeler,
         reviewers: reviewers,
-        assignees: assignees
+        assignees: assignees,
+        milestone: milestone,
       )
     end
 
