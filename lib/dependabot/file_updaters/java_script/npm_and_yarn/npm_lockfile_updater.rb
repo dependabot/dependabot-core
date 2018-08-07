@@ -42,7 +42,7 @@ module Dependabot
                 updated_content
               end
           rescue SharedHelpers::HelperSubprocessFailed => error
-            handle_package_lock_updater_error(error, package_lock.path)
+            handle_package_lock_updater_error(error, package_lock)
           end
 
           private
@@ -83,13 +83,18 @@ module Dependabot
           # rubocop:disable Metrics/AbcSize
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
-          def handle_package_lock_updater_error(error, file_path)
+          def handle_package_lock_updater_error(error, package_lock)
             raise if error.message.include?("#{dependency.name}@")
             if error.message.start_with?("No matching vers", "404 Not Found") ||
                error.message.include?("not match any file(s) known to git") ||
                error.message.include?("Non-registry package missing package") ||
                error.message.include?("Cannot read property 'match' of undefin")
-              msg = "Error while updating #{file_path}:\n#{error.message}"
+              # This happens if a new version has been published that relies on
+              # subdependencies that have not yet been published.
+              raise if resolvable_before_update?(package_lock)
+
+              msg = "Error while updating #{package_lock.path}:\n"\
+                    "#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
             end
             if error.message.include?("fatal: reference is not a tree")
@@ -112,16 +117,38 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
 
-          def write_temporary_dependency_files
+          def resolvable_before_update?(package_lock)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files(update_package_json: false)
+
+              Dir.chdir(Pathname.new(package_lock.name).dirname) do
+                run_npm_updater
+              end
+            end
+
+            true
+          rescue SharedHelpers::HelperSubprocessFailed
+            false
+          end
+
+          def write_temporary_dependency_files(update_package_json: true)
             (yarn_locks + package_locks).each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
             end
+
             File.write(".npmrc", npmrc_content)
+
             package_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              updated_content = updated_package_json_content(file)
+
+              updated_content =
+                if update_package_json
+                  updated_package_json_content(file)
+                else
+                  file.content
+                end
 
               # When updating a package-lock.json we have to manually lock all
               # git dependencies, otherwise npm will (unhelpfully) update them

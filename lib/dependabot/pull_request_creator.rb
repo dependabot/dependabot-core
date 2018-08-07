@@ -72,7 +72,7 @@ module Dependabot
         labeler: labeler,
         reviewers: reviewers,
         assignees: assignees,
-        milestone: milestone,
+        milestone: milestone
       )
     end
 

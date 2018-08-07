@@ -39,7 +39,7 @@ module Dependabot
             @updated_yarn_lock_content[yarn_lock.name] =
               post_process_yarn_lockfile(new_content)
           rescue SharedHelpers::HelperSubprocessFailed => error
-            handle_yarn_lock_updater_error(error, yarn_lock.path)
+            handle_yarn_lock_updater_error(error, yarn_lock)
           end
 
           private
@@ -83,11 +83,16 @@ module Dependabot
             end.compact
           end
 
-          def handle_yarn_lock_updater_error(error, file_path)
+          def handle_yarn_lock_updater_error(error, yarn_lock)
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
               raise if error.message.include?(%("#{dependency.name}"))
-              msg = "Error while updating #{file_path}:\n#{error.message}"
+
+              # This happens if a new version has been published that relies on
+              # subdependencies that have not yet been published.
+              raise if resolvable_before_update?(yarn_lock)
+
+              msg = "Error while updating #{yarn_lock.path}:\n#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
             end
             if error.message.include?("Workspaces can only be enabled in priva")
@@ -103,16 +108,36 @@ module Dependabot
             raise
           end
 
-          def write_temporary_dependency_files
+          def resolvable_before_update?(yarn_lock)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files(update_package_json: false)
+
+              run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
+            end
+
+            true
+          rescue SharedHelpers::HelperSubprocessFailed
+            false
+          end
+
+          def write_temporary_dependency_files(update_package_json: true)
             (yarn_locks + package_locks).each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
             end
+
             File.write(".npmrc", npmrc_content)
+
             package_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              updated_content = updated_package_json_content(file)
+
+              updated_content =
+                if update_package_json
+                  updated_package_json_content(file)
+                else
+                  file.content
+                end
 
               updated_content = replace_ssh_sources(updated_content)
 
