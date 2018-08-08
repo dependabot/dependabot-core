@@ -125,6 +125,7 @@ module Dependabot
 
             File.write("composer.json", locked_composer_json_content)
             File.write("composer.lock", lockfile.content)
+            File.write("symfony.lock", symfony_lock.content) if symfony_lock
           end
 
           def locked_composer_json_content
@@ -243,6 +244,11 @@ module Dependabot
           def lockfile
             @lockfile ||=
               dependency_files.find { |f| f.name == "composer.lock" }
+          end
+
+          def symfony_lock
+            @symfony_lock ||=
+              dependency_files.find { |f| f.name == "symfony.lock" }
           end
 
           def path_dependencies
