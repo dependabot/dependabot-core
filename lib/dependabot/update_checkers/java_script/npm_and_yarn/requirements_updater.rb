@@ -42,9 +42,9 @@ module Dependabot
               next initial_req_after_source_change(req) unless req[:requirement]
               next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
               if update_strategy == :widen_ranges
-                widened_requirement(req)
+                widen_requirement(req)
               else
-                updated_version_requirement(req)
+                update_version_requirement(req)
               end
             end
           end
@@ -71,7 +71,7 @@ module Dependabot
             req.merge(requirement: "^#{latest_resolvable_version}")
           end
 
-          def updated_version_requirement(req)
+          def update_version_requirement(req)
             current_requirement = req[:requirement]
 
             if current_requirement.match?(/(<|-\s)/i)
@@ -84,7 +84,7 @@ module Dependabot
             req.merge(requirement: update_version_string(current_requirement))
           end
 
-          def widened_requirement(req)
+          def widen_requirement(req)
             current_requirement = req[:requirement]
             version = latest_resolvable_version
             return req if current_requirement.strip == ""

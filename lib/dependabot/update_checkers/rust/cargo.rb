@@ -56,7 +56,8 @@ module Dependabot
             updated_source: updated_source,
             latest_resolvable_version: latest_resolvable_version&.to_s,
             latest_version: latest_version&.to_s,
-            library: dependency.version.nil?
+            library: library?,
+            update_strategy: requirement_update_strategy
           ).updated_requirements
         end
 
@@ -69,6 +70,16 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def library?
+          # If it has a lockfile, treat it as an application. Otherwise treat it
+          # as a library.
+          dependency_files.none? { |f| f.name == "Cargo.lock" }
+        end
+
+        def requirement_update_strategy
+          library? ? :bump_versions_if_needed : :bump_versions
         end
 
         def latest_version_for_git_dependency

@@ -7,6 +7,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
+      update_strategy: update_strategy,
       library: library,
       updated_source: updated_source,
       latest_version: latest_version,
@@ -25,6 +26,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
   end
   let(:req_string) { "^1.4.0" }
 
+  let(:update_strategy) { :bump_versions }
   let(:library) { false }
   let(:latest_version) { "1.5.0" }
   let(:latest_resolvable_version) { "1.5.0" }
@@ -77,7 +79,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
       end
     end
 
-    context "for an app requirement" do
+    context "for a bump_versions strategy" do
+      let(:update_strategy) { :bump_versions }
       let(:library) { false }
 
       context "when there is a latest version" do
@@ -216,7 +219,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
       end
     end
 
-    context "for a library requirement" do
+    context "for a bump_versions_if_needed strategy" do
+      let(:update_strategy) { :bump_versions_if_needed }
       let(:library) { true }
 
       context "when there is a latest version" do

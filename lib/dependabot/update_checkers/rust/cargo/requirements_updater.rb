@@ -18,12 +18,17 @@ module Dependabot
           class UnfixableRequirement < StandardError; end
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
+          ALLOWED_UPDATE_STRATEGIES =
+            %i(bump_versions bump_versions_if_needed).freeze
 
-          def initialize(requirements:, library:, updated_source:,
-                         latest_version:, latest_resolvable_version:)
+          def initialize(requirements:, updated_source:, update_strategy:,
+                         library:, latest_version:, latest_resolvable_version:)
             @requirements = requirements
-            @library = library
             @updated_source = updated_source
+            @update_strategy = update_strategy
+            @library = library
+
+            check_update_strategy
 
             if latest_version && version_class.correct?(latest_version)
               @latest_version = version_class.new(latest_version)
@@ -44,28 +49,34 @@ module Dependabot
               next req unless latest_resolvable_version
               next req if req[:requirement].nil?
 
-              if library?
-                updated_library_requirement(req)
+              # TODO: Add a widen_ranges options
+              if update_strategy == :bump_versions_if_needed
+                update_version_if_needed_requirement(req)
               else
-                updated_app_requirement(req)
+                update_version_requirement(req)
               end
             end
           end
 
           private
 
-          attr_reader :requirements, :latest_version, :updated_source,
-                      :latest_resolvable_version
+          attr_reader :requirements, :updated_source, :update_strategy,
+                      :latest_version, :latest_resolvable_version
 
           def library?
             @library
+          end
+
+          def check_update_strategy
+            return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+            raise "Unknown update strategy: #{update_strategy}"
           end
 
           def target_version
             library? ? latest_version : latest_resolvable_version
           end
 
-          def updated_app_requirement(req)
+          def update_version_requirement(req)
             string_reqs = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
@@ -87,16 +98,13 @@ module Dependabot
             req.merge(requirement: new_requirement)
           end
 
-          def updated_library_requirement(req)
+          def update_version_if_needed_requirement(req)
             string_reqs = req[:requirement].split(",").map(&:strip)
             ruby_reqs = string_reqs.map { |r| Utils::Rust::Requirement.new(r) }
 
             return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }
 
-            # TODO: In future, we might want to treat libraries differently to
-            # applications. For now, since Rust allows multiple versions of the
-            # same dependeny, it's fine to upgrade them like apps if required
-            updated_app_requirement(req)
+            update_version_requirement(req)
           end
 
           def update_version_string(req_string)

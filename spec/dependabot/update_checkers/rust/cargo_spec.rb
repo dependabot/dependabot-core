@@ -415,6 +415,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           updated_source: nil,
           latest_version: "0.1.40",
           latest_resolvable_version: "0.1.40",
+          update_strategy: :bump_versions,
           library: false
         ).
         and_call_original
