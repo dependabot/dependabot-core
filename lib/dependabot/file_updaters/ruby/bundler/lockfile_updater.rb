@@ -12,6 +12,7 @@ require "dependabot/errors"
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/git_commit_checker"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module Ruby
@@ -353,3 +354,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
