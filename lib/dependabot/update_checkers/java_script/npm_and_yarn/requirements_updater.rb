@@ -16,7 +16,8 @@ module Dependabot
         class RequirementsUpdater
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
-          ALLOWED_UPDATE_STRATEGIES = %i(bump_versions widen_ranges).freeze
+          ALLOWED_UPDATE_STRATEGIES =
+            %i(widen_ranges bump_versions bump_versions_if_needed).freeze
 
           def initialize(requirements:, updated_source:, update_strategy:,
                          latest_version:, latest_resolvable_version:)
@@ -41,10 +42,13 @@ module Dependabot
               next req unless latest_resolvable_version
               next initial_req_after_source_change(req) unless req[:requirement]
               next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
-              if update_strategy == :widen_ranges
-                widen_requirement(req)
-              else
-                update_version_requirement(req)
+
+              case update_strategy
+              when :widen_ranges then widen_requirement(req)
+              when :bump_versions then update_version_requirement(req)
+              when :bump_versions_if_needed
+                update_version_requirement_if_needed(req)
+              else raise "Unexpected update strategy: #{update_strategy}"
               end
             end
           end
@@ -82,6 +86,17 @@ module Dependabot
             end
 
             req.merge(requirement: update_version_string(current_requirement))
+          end
+
+          def update_version_requirement_if_needed(req)
+            current_requirement = req[:requirement]
+            version = latest_resolvable_version
+            return req if current_requirement.strip == ""
+
+            ruby_reqs = ruby_requirements(current_requirement)
+            return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
+
+            update_version_requirement(req)
           end
 
           def widen_requirement(req)

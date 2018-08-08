@@ -51,7 +51,7 @@ module Dependabot
 
               # TODO: Add a widen_ranges options
               if update_strategy == :bump_versions_if_needed
-                update_version_if_needed_requirement(req)
+                update_version_requirement_if_needed(req)
               else
                 update_version_requirement(req)
               end
@@ -98,7 +98,7 @@ module Dependabot
             req.merge(requirement: new_requirement)
           end
 
-          def update_version_if_needed_requirement(req)
+          def update_version_requirement_if_needed(req)
             string_reqs = req[:requirement].split(",").map(&:strip)
             ruby_reqs = string_reqs.map { |r| Utils::Rust::Requirement.new(r) }
 

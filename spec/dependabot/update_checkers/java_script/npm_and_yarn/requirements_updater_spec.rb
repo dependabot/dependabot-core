@@ -328,6 +328,39 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       end
     end
 
+    context "for a requirement having its version bumped if required" do
+      let(:update_strategy) { :bump_versions_if_needed }
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+
+        context "and a full version was previously specified" do
+          let(:package_json_req_string) { "1.2.3" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "and v-prefix was previously used" do
+          let(:package_json_req_string) { "v1.2.3" }
+          its([:requirement]) { is_expected.to eq("v1.5.0") }
+
+          context "that is capitalised (and therefore invalid)" do
+            let(:package_json_req_string) { "V1.2.3" }
+            its([:requirement]) { is_expected.to eq("V1.2.3") }
+          end
+        end
+
+        context "and a caret was previously specified" do
+          let(:package_json_req_string) { "^1.2.3" }
+          its([:requirement]) { is_expected.to eq("^1.2.3") }
+
+          context "that this version doesn't satisfy" do
+            let(:package_json_req_string) { "^v0.2.3" }
+            its([:requirement]) { is_expected.to eq("^v1.5.0") }
+          end
+        end
+      end
+    end
+
     context "for a requirement being widened" do
       let(:update_strategy) { :widen_ranges }
 
