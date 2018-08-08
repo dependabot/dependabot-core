@@ -1,3 +1,9 @@
+## v0.64.16, 8 August 2018
+
+- Ruby: Don't accidentally unlock other top-level dependencies in FileUpdater
+- JS: Don't raise a resolvability error if package.json is currently resolvable
+- PHP: Bump composer/composer from 1.7.0 to 1.7.1
+
 ## v0.64.15, 7 August 2018
 
 - Add milestones to PRs if requested
