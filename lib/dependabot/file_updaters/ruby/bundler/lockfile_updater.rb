@@ -165,11 +165,22 @@ module Dependabot
           end
 
           def build_definition(dependencies_to_unlock)
-            ::Bundler::Definition.build(
+            defn = ::Bundler::Definition.build(
               "Gemfile",
               "Gemfile.lock",
               gems: dependencies_to_unlock
             )
+
+            # Bundler unlocks the sub-dependencies of gems it is passed even
+            # if those sub-deps are top-level dependencies. We only want true
+            # subdeps unlocked, like they were in the UpdateChecker, so we
+            # mutate the unlocked gems array.
+            unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
+            must_not_unlock = defn.dependencies.map(&:name).map(&:to_s) -
+                              dependencies_to_unlock
+            unlocked.reject! { |n| must_not_unlock.include?(n) }
+
+            defn
           end
 
           def lock_deps_being_updated_to_exact_versions(definition)
