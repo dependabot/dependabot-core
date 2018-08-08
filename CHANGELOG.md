@@ -1,3 +1,7 @@
+## v0.64.17, 8 August 2018
+
+- Python: Raise DependencyFileNotParseable error for unparseable Pipfiles
+
 ## v0.64.16, 8 August 2018
 
 - Ruby: Don't accidentally unlock other top-level dependencies in FileUpdater
