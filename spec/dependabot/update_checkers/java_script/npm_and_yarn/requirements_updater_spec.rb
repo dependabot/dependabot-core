@@ -10,7 +10,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       updated_source: updated_source,
-      library: library,
+      update_strategy: update_strategy,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -28,7 +28,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
   end
   let(:package_json_req_string) { "^1.4.0" }
 
-  let(:library) { false }
+  let(:update_strategy) { :bump_versions }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
   let(:version_class) { Dependabot::Utils::JavaScript::Version }
@@ -156,8 +156,8 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       end
     end
 
-    context "for an app requirement" do
-      let(:library) { false }
+    context "for a requirement having its version bumped" do
+      let(:update_strategy) { :bump_versions }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -328,8 +328,8 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
       end
     end
 
-    context "for a library requirement" do
-      let(:library) { true }
+    context "for a requirement being widened" do
+      let(:update_strategy) { :widen_ranges }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }

@@ -40,7 +40,7 @@ module Dependabot
                 latest_version_details&.fetch(:version, nil)&.to_s,
               latest_resolvable_version:
                 latest_version_details&.fetch(:version, nil)&.to_s,
-              library: library?
+              update_strategy: library? ? :widen_ranges : :bump_versions
             ).updated_requirements
         end
 

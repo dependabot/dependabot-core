@@ -1046,7 +1046,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           updated_source: nil,
           latest_version: "1.7.0",
           latest_resolvable_version: "1.7.0",
-          library: false
+          update_strategy: :bump_versions
         ).
         and_call_original
       expect(checker.updated_requirements).
@@ -1078,7 +1078,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             updated_source: nil,
             latest_version: "1.7.0",
             latest_resolvable_version: "1.7.0",
-            library: true
+            update_strategy: :widen_ranges
           ).
           and_call_original
         expect(checker.updated_requirements).
@@ -1159,7 +1159,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             },
             latest_version: "4.0.0",
             latest_resolvable_version: "4.0.0",
-            library: false
+            update_strategy: :bump_versions
           ).
           and_call_original
         expect(checker.updated_requirements).
@@ -1205,7 +1205,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
               updated_source: nil,
               latest_version: "4.0.0",
               latest_resolvable_version: "4.0.0",
-              library: false
+              update_strategy: :bump_versions
             ).
             and_call_original
           expect(checker.updated_requirements).
