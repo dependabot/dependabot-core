@@ -340,6 +340,36 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         end
       end
 
+      context "when unlocking another top-level dep would cause an error" do
+        let(:gemfile_fixture_name) { "cant_unlock_subdep" }
+        let(:lockfile_fixture_name) { "cant_unlock_subdep.lock" }
+        let(:dependency_name) { "ibandit" }
+        let(:dependency_version) { "0.11.5" }
+        let(:dependency_previous_version) { "0.6.6" }
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 0.6.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 0.11.5",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include("ibandit (0.11.5)")
+          expect(file.content).
+            to include("d049c7115f59689efb123d61430c078c6feb7537")
+        end
+      end
+
       context "with a Gemfile that includes a file with require_relative" do
         let(:dependency_files) { [gemfile, lockfile, required_file] }
         let(:gemfile_fixture_name) { "includes_require_relative" }
