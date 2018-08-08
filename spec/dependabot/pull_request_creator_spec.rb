@@ -17,6 +17,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       custom_labels: custom_labels,
       reviewers: reviewers,
       assignees: assignees,
+      milestone: milestone,
       author_details: author_details,
       signature_key: signature_key,
       target_branch: target_branch
@@ -38,6 +39,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:custom_labels) { nil }
   let(:reviewers) { nil }
   let(:assignees) { nil }
+  let(:milestone) { nil }
   let(:author_details) { nil }
   let(:signature_key) { nil }
   let(:target_branch) { nil }
@@ -127,7 +129,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             signature_key: signature_key,
             labeler: instance_of(described_class::Labeler),
             reviewers: reviewers,
-            assignees: assignees
+            assignees: assignees,
+            milestone: milestone
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create
