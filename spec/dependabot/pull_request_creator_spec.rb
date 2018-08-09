@@ -19,8 +19,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       assignees: assignees,
       milestone: milestone,
       author_details: author_details,
-      signature_key: signature_key,
-      target_branch: target_branch
+      signature_key: signature_key
     )
   end
 
@@ -42,7 +41,6 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:milestone) { nil }
   let(:author_details) { nil }
   let(:signature_key) { nil }
-  let(:target_branch) { nil }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
@@ -119,7 +117,6 @@ RSpec.describe Dependabot::PullRequestCreator do
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
-            target_branch: target_branch,
             credentials: credentials,
             files: files,
             commit_message: "Commit msg",
@@ -148,7 +145,6 @@ RSpec.describe Dependabot::PullRequestCreator do
             source: source,
             branch_name: "dependabot/bundler/business-1.5.0",
             base_commit: base_commit,
-            target_branch: target_branch,
             credentials: credentials,
             files: files,
             commit_message: "Commit msg",

@@ -11,17 +11,16 @@ module Dependabot
     class Github
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :signature_key,
+                  :author_details, :signature_key,
                   :labeler, :reviewers, :assignees, :milestone
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, signature_key:,
+                     author_details:, signature_key:,
                      labeler:, reviewers:, assignees:, milestone:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
-        @target_branch  = target_branch
         @credentials    = credentials
         @files          = files
         @commit_message = commit_message
@@ -203,7 +202,7 @@ module Dependabot
       def create_pull_request
         github_client_for_source.create_pull_request(
           source.repo,
-          target_branch || default_branch,
+          source.branch || default_branch,
           branch_name,
           pr_name,
           pr_description

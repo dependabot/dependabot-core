@@ -15,7 +15,6 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       commit_message: commit_message,
       pr_description: pr_description,
       pr_name: pr_name,
-      target_branch: target_branch,
       author_details: author_details,
       labeler: labeler,
       assignee: assignee
@@ -39,7 +38,6 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:commit_message) { "Commit msg" }
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
-  let(:target_branch) { nil }
   let(:author_details) { nil }
   let(:assignee) { nil }
   let(:labeler) do

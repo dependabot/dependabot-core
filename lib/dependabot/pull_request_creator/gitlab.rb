@@ -8,15 +8,14 @@ module Dependabot
     class Gitlab
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :target_branch, :author_details, :labeler, :assignee
+                  :author_details, :labeler, :assignee
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     target_branch:, author_details:, labeler:, assignee:)
+                     author_details:, labeler:, assignee:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
-        @target_branch  = target_branch
         @credentials    = credentials
         @files          = files
         @commit_message = commit_message
@@ -75,7 +74,7 @@ module Dependabot
         gitlab_client_for_source.merge_requests(
           source.repo,
           source_branch: branch_name,
-          target_branch: target_branch || default_branch,
+          target_branch: source.branch || default_branch,
           state: "all"
         ).any?
       end
@@ -112,7 +111,7 @@ module Dependabot
           source.repo,
           pr_name,
           source_branch: branch_name,
-          target_branch: target_branch || default_branch,
+          target_branch: source.branch || default_branch,
           description: pr_description,
           remove_source_branch: true,
           assignee_id: assignee,

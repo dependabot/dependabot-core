@@ -15,7 +15,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       commit_message: commit_message,
       pr_description: pr_description,
       pr_name: pr_name,
-      target_branch: target_branch,
       author_details: author_details,
       signature_key: signature_key,
       labeler: labeler,
@@ -42,7 +41,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:commit_message) { "Commit msg" }
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
-  let(:target_branch) { nil }
   let(:author_details) { nil }
   let(:signature_key) { nil }
   let(:reviewers) { nil }
@@ -371,7 +369,13 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     end
 
     context "with a target branch" do
-      let(:target_branch) { "my_branch" }
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          branch: "my_branch"
+        )
+      end
       let(:branch_name) { "dependabot/bundler/my_branch/business-1.5.0" }
 
       it "creates a PR with the right details" do

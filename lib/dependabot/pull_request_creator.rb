@@ -11,13 +11,13 @@ module Dependabot
     require "dependabot/pull_request_creator/labeler"
 
     attr_reader :source, :dependencies, :files, :base_commit,
-                :credentials, :pr_message_footer, :target_branch,
-                :author_details, :signature_key, :custom_labels,
-                :vulnerabilities_fixed, :reviewers, :assignees, :milestone
+                :credentials, :pr_message_footer, :custom_labels,
+                :author_details, :signature_key, :vulnerabilities_fixed,
+                :reviewers, :assignees, :milestone
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
-                   pr_message_footer: nil, target_branch: nil,
-                   custom_labels: nil, author_details: nil, signature_key: nil,
+                   pr_message_footer: nil, custom_labels: nil,
+                   author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {})
       @dependencies          = dependencies
@@ -26,7 +26,6 @@ module Dependabot
       @files                 = files
       @credentials           = credentials
       @pr_message_footer     = pr_message_footer
-      @target_branch         = target_branch
       @author_details        = author_details
       @signature_key         = signature_key
       @custom_labels         = custom_labels
@@ -61,7 +60,6 @@ module Dependabot
         source: source,
         branch_name: branch_namer.new_branch_name,
         base_commit: base_commit,
-        target_branch: target_branch,
         credentials: credentials,
         files: files,
         commit_message: message_builder.commit_message,
@@ -81,7 +79,6 @@ module Dependabot
         source: source,
         branch_name: branch_namer.new_branch_name,
         base_commit: base_commit,
-        target_branch: target_branch,
         credentials: credentials,
         files: files,
         commit_message: message_builder.commit_message,
@@ -111,7 +108,7 @@ module Dependabot
         BranchNamer.new(
           dependencies: dependencies,
           files: files,
-          target_branch: target_branch
+          target_branch: source.branch
         )
     end
 
