@@ -1,7 +1,13 @@
+## v0.66.0, 9 August 2018
+
+- BREAKING: Pass target branch via source, rather than as a separate option,
+  when passing it to PullRequestCreator
+
 ## v0.65.0, 9 August 2018
 
 - Better directory lookup in Dependabot::Source
-- BREAKING: Pass target branch via source, rather than as a separate option
+- BREAKING: Pass target branch via source, rather than as a separate option,
+  when passing it to FileFetcher
 
 ## v0.64.17, 8 August 2018
 
