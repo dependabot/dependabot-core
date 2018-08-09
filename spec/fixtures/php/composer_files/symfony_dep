@@ -1,0 +1,8 @@
+{
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "symfony/flex": "^1.0",
+        "phpoffice/phpspreadsheet": "v1.3.1"
+    }
+}

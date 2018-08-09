@@ -68,14 +68,15 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "the updated lockfile" do
-    subject(:updated_lockfile_content) do
-      raw = updater.updated_lockfile_content
+  describe "the updated composer lockfile" do
+    subject(:updated_composer_lockfile_content) do
+      raw = updater.updated_composer_lockfile_content
       JSON.parse(raw).to_json
     end
 
     it "has details of the updated item" do
-      expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+      expect(updated_composer_lockfile_content).
+        to include("\"version\":\"1.22.1\"")
     end
 
     it { is_expected.to include "\"prefer-stable\":false" }
@@ -105,7 +106,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
         end
 
         it "has details of the updated item" do
-          expect(updated_lockfile_content).
+          expect(updated_composer_lockfile_content).
             to include("\"version\":\"v5.4.36\"")
         end
       end
@@ -116,7 +117,8 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       let(:lockfile_fixture_name) { "plugin" }
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"1.22.1\"")
       end
     end
 
@@ -145,10 +147,53 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "raises a helpful error" do
-        expect { updated_lockfile_content }.to raise_error do |error|
+        expect { updated_composer_lockfile_content }.to raise_error do |error|
           expect(error.message).to start_with("One of your Composer plugins")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
+      end
+    end
+
+    context "with a symfony.lock that needs updating" do
+      let(:files) { [composer_json, lockfile, symfony_lockfile] }
+      let(:symfony_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "symfony.lock",
+          content: fixture("php", "symfony_locks", "phpspreadsheet")
+        )
+      end
+      let(:manifest_fixture_name) { "symfony_dep" }
+      let(:lockfile_fixture_name) { "symfony_dep" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phpoffice/phpspreadsheet",
+          version: "1.4.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "v1.4.0",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.3.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "v1.3.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "has details of the updated item" do
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"1.4.0\"")
+
+        # TODO: Update this to the correct value when we know what Dependabot
+        # should be doing here.
+        expect(updater.updated_symfony_lockfile_content).
+          to eq(symfony_lockfile.content)
       end
     end
 
@@ -157,7 +202,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
       context "that hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
-          expect { updated_lockfile_content }.to raise_error do |error|
+          expect { updated_composer_lockfile_content }.to raise_error do |error|
             expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
             expect(error.environment_variable).to eq("ACF_PRO_KEY")
           end
@@ -186,7 +231,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
         end
 
         it "runs just fine (we get a 400 here because our key is wrong)" do
-          expect { updated_lockfile_content }.to raise_error do |error|
+          expect { updated_composer_lockfile_content }.to raise_error do |error|
             expect(error).
               to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
             expect(error.message).to include("400 Bad Request")
@@ -228,7 +273,8 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"1.22.1\"")
       end
     end
 
@@ -258,7 +304,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        updated_dep = JSON.parse(updated_lockfile_content).
+        updated_dep = JSON.parse(updated_composer_lockfile_content).
                       fetch("packages").
                       find { |p| p["name"] == "monolog/monolog" }
 
@@ -271,7 +317,8 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       let(:lockfile_fixture_name) { "development_dependencies" }
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"1.22.1\"")
       end
     end
 
@@ -291,8 +338,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"v5.2.45\"")
-        expect(updated_lockfile_content).
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"v5.2.45\"")
+        expect(updated_composer_lockfile_content).
           to include("22bde7b048a33c702d9737fc1446234fff9b1363")
       end
     end
@@ -342,7 +390,8 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
         end
 
         it "has details of the updated item" do
-          expect(updated_lockfile_content).to include("\"version\":\"2.2.0\"")
+          expect(updated_composer_lockfile_content).
+            to include("\"version\":\"2.2.0\"")
         end
       end
     end
@@ -373,7 +422,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "raises a helpful errors" do
-        expect { updated_lockfile_content }.to raise_error do |error|
+        expect { updated_composer_lockfile_content }.to raise_error do |error|
           expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
           expect(error.dependency).to eq("monolog/monolog")
         end
@@ -434,7 +483,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "raises a helpful errors" do
-        expect { updated_lockfile_content }.to raise_error do |error|
+        expect { updated_composer_lockfile_content }.to raise_error do |error|
           expect(error).to be_a Dependabot::GitDependenciesNotReachable
           expect(error.dependency_urls).
             to eq(["https://github.com/no-exist-sorry/monolog.git"])
@@ -468,7 +517,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "doesn't strip the patches" do
-        updated_dep = JSON.parse(updated_lockfile_content).
+        updated_dep = JSON.parse(updated_composer_lockfile_content).
                       fetch("packages").
                       find { |p| p["name"] == "ehime/hello-world" }
 
@@ -503,7 +552,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        updated_dep = JSON.parse(updated_lockfile_content).
+        updated_dep = JSON.parse(updated_composer_lockfile_content).
                       fetch("packages-dev").
                       find { |p| p["name"] == "monolog/monolog" }
 
@@ -538,8 +587,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"v5.6.23\"")
-        expect(updated_lockfile_content).
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"v5.6.23\"")
+        expect(updated_composer_lockfile_content).
           to include("ba383d0a3bf6aa0b7a1307fdc4aa46ba")
       end
     end
@@ -570,8 +620,9 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
       end
 
       it "has details of the updated item" do
-        expect(updated_lockfile_content).to include("\"version\":\"v5.3.0\"")
-        expect(updated_lockfile_content).
+        expect(updated_composer_lockfile_content).
+          to include("\"version\":\"v5.3.0\"")
+        expect(updated_composer_lockfile_content).
           to include("e244eda135819216ac30441464e27d4d")
       end
     end
