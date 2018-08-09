@@ -6,7 +6,7 @@ module Dependabot
       (?<provider>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
       (?:\.com|\.org)[/:]
       (?<repo>[^/\s]+/(?:(?!\.git|.\s)[^/\s#"',])+)
-      (?:(?:/tree|/blob|/src)/master/(?<directory>.*)[\#|/])?
+      (?:(?:/tree|/blob|/src)/[^/]+/(?<directory>.*)[\#|/])?
     }x
 
     attr_reader :provider, :repo, :directory, :hostname, :api_endpoint

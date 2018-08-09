@@ -113,6 +113,13 @@ RSpec.describe Dependabot::Source do
           its(:repo) { is_expected.to eq("org/abc") }
           its(:directory) { is_expected.to eq("dir") }
         end
+
+        context "when not looking at the master branch" do
+          let(:url) { "https://github.com/org/abc/tree/custom/dir/readme.md" }
+          its(:provider) { is_expected.to eq("github") }
+          its(:repo) { is_expected.to eq("org/abc") }
+          its(:directory) { is_expected.to eq("dir") }
+        end
       end
     end
 
