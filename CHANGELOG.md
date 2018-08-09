@@ -1,3 +1,8 @@
+## v0.66.1, 9 August 2018
+
+- Add requirements_update_strategy option to UpdateChecker, and use it to
+  determine how to update JS requirements
+
 ## v0.66.0, 9 August 2018
 
 - BREAKING: Pass target branch via source, rather than as a separate option,
