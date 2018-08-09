@@ -58,6 +58,7 @@ RSpec.describe Dependabot::Source do
       its(:provider) { is_expected.to eq("github") }
       its(:repo) { is_expected.to eq("org/abc") }
       its(:directory) { is_expected.to be_nil }
+      its(:branch) { is_expected.to be_nil }
 
       context "with a git protocol" do
         let(:url) { "git@github.com:org/abc" }
@@ -106,6 +107,7 @@ RSpec.describe Dependabot::Source do
         its(:provider) { is_expected.to eq("github") }
         its(:repo) { is_expected.to eq("org/abc") }
         its(:directory) { is_expected.to eq("dir") }
+        its(:branch) { is_expected.to eq("master") }
 
         context "with the filename specified by a #" do
           let(:url) { "https://github.com/org/abc/tree/master/dir#readme.md" }
@@ -119,6 +121,7 @@ RSpec.describe Dependabot::Source do
           its(:provider) { is_expected.to eq("github") }
           its(:repo) { is_expected.to eq("org/abc") }
           its(:directory) { is_expected.to eq("dir") }
+          its(:branch) { is_expected.to eq("custom") }
         end
       end
     end

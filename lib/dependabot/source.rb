@@ -6,10 +6,10 @@ module Dependabot
       (?<provider>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
       (?:\.com|\.org)[/:]
       (?<repo>[^/\s]+/(?:(?!\.git|.\s)[^/\s#"',])+)
-      (?:(?:/tree|/blob|/src)/[^/]+/(?<directory>.*)[\#|/])?
+      (?:(?:/tree|/blob|/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x
 
-    attr_reader :provider, :repo, :directory, :hostname, :api_endpoint
+    attr_reader :provider, :repo, :directory, :branch, :hostname, :api_endpoint
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -19,11 +19,12 @@ module Dependabot
       new(
         provider: captures.fetch("provider"),
         repo: captures.fetch("repo"),
-        directory: captures.fetch("directory")
+        directory: captures.fetch("directory"),
+        branch: captures.fetch("branch")
       )
     end
 
-    def initialize(provider:, repo:, directory: nil, hostname: nil,
+    def initialize(provider:, repo:, directory: nil, branch: nil, hostname: nil,
                    api_endpoint: nil)
       if hostname.nil? ^ api_endpoint.nil?
         msg = "Both hostname and api_endpoint must be specified if either "\
@@ -35,6 +36,7 @@ module Dependabot
       @provider = provider
       @repo = repo
       @directory = directory
+      @branch = branch
       @hostname = hostname || default_hostname(provider)
       @api_endpoint = api_endpoint || default_api_endpoint(provider)
     end
