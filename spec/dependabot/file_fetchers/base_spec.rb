@@ -7,10 +7,17 @@ require "dependabot/file_fetchers/ruby/bundler"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
-    Dependabot::Source.new(provider: "github", repo: repo, directory: directory)
+    Dependabot::Source.new(
+      provider: provider,
+      repo: repo,
+      directory: directory,
+      branch: branch
+    )
   end
-  let(:directory) { "/" }
+  let(:provider) { "github" }
   let(:repo) { "gocardless/bump" }
+  let(:directory) { "/" }
+  let(:branch) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -63,13 +70,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
 
       context "with a target branch" do
-        let(:file_fetcher_instance) do
-          child_class.new(
-            source: source,
-            credentials: credentials,
-            target_branch: "my_branch"
-          )
-        end
+        let(:branch) { "my_branch" }
 
         before do
           stub_request(:get, url + "/git/refs/heads/my_branch").
@@ -100,13 +101,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitLab source" do
-      let(:source) do
-        Dependabot::Source.new(
-          provider: "gitlab",
-          repo: repo,
-          directory: directory
-        )
-      end
+      let(:provider) { "gitlab" }
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
       let(:branch_url) { project_url + "/repository/branches/master" }
@@ -125,13 +120,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       it { is_expected.to eq("f7dd067490fe57505f7226c3b54d3127d2f7fd46") }
 
       context "with a target branch" do
-        let(:file_fetcher_instance) do
-          child_class.new(
-            source: source,
-            credentials: credentials,
-            target_branch: "my_branch"
-          )
-        end
+        let(:branch) { "my_branch" }
         let(:branch_url) { project_url + "/repository/branches/my_branch" }
 
         before do
@@ -292,13 +281,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitLab source" do
-      let(:source) do
-        Dependabot::Source.new(
-          provider: "gitlab",
-          repo: repo,
-          directory: directory
-        )
-      end
+      let(:provider) { "gitlab" }
       let(:base_url) { "https://gitlab.com/api/v4" }
       let(:project_url) { base_url + "/projects/gocardless%2Fbump" }
 

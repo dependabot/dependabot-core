@@ -9,7 +9,7 @@ require "gitlab"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :target_branch
+      attr_reader :source, :credentials
 
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
@@ -19,10 +19,9 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(source:, credentials:, target_branch: nil)
+      def initialize(source:, credentials:)
         @source = source
         @credentials = credentials
-        @target_branch = target_branch
         @submodule_directories = {}
       end
 
@@ -32,6 +31,10 @@ module Dependabot
 
       def directory
         source.directory || "/"
+      end
+
+      def target_branch
+        source.branch
       end
 
       def files
