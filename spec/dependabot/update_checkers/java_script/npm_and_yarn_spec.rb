@@ -1060,6 +1060,40 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         )
     end
 
+    context "when a manifest_update_strategy has been explicitly specified" do
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          manifest_update_strategy: :bump_versions_if_needed
+        )
+      end
+
+      it "uses the specified manifest_update_strategy" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: nil,
+            latest_version: "1.7.0",
+            latest_resolvable_version: "1.7.0",
+            update_strategy: :bump_versions_if_needed
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }]
+          )
+      end
+    end
+
     context "with a library (that has a lockfile)" do
       let(:package_json) do
         # We've already stubbed hitting the registry for etag (since it's also

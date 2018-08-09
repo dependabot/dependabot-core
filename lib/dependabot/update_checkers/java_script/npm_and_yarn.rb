@@ -40,8 +40,16 @@ module Dependabot
                 latest_version_details&.fetch(:version, nil)&.to_s,
               latest_resolvable_version:
                 latest_version_details&.fetch(:version, nil)&.to_s,
-              update_strategy: library? ? :widen_ranges : :bump_versions
+              update_strategy: requirements_update_strategy
             ).updated_requirements
+        end
+
+        def requirements_update_strategy
+          # If passed in as an option (in the base class) honour that option
+          return @requirements_update_strategy if @requirements_update_strategy
+
+          # Otherwise, widen ranges for libraries and bump versions for apps
+          library? ? :widen_ranges : :bump_versions
         end
 
         private
