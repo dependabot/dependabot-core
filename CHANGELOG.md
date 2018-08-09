@@ -1,3 +1,8 @@
+## v0.65.0, 9 August 2018
+
+- Better directory lookup in Dependabot::Source
+- BREAKING: Pass target branch via source, rather than as a separate option
+
 ## v0.64.17, 8 August 2018
 
 - Python: Raise DependencyFileNotParseable error for unparseable Pipfiles
