@@ -67,16 +67,33 @@ module Dependabot
                                    "pyenv exec pipenv lock")
 
                 updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
-                updated_lockfile.dig(
-                  dependency_lockfile_group,
-                  dependency.name,
-                  "version"
-                ).gsub(/^==/, "")
+
+                fetch_version_from_parsed_lockfile(updated_lockfile)
               rescue SharedHelpers::HelperSubprocessFailed => error
                 handle_pipenv_errors(error)
               end
             return unless @latest_resolvable_version_string
             Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def fetch_version_from_parsed_lockfile(updated_lockfile)
+            if dependency.requirements.any?
+              updated_lockfile.dig(
+                dependency.requirements.first[:groups].first,
+                dependency.name,
+                "version"
+              ).gsub(/^==/, "")
+            end
+
+            FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
+              version = updated_lockfile.dig(
+                keys.fetch(:lockfile),
+                dependency.name,
+                "version"
+              )&.gsub(/^==/, "")
+
+              return version if version
+            end
           end
 
           # rubocop:disable Metrics/CyclomaticComplexity
@@ -256,20 +273,6 @@ module Dependabot
 
               ">= #{version_for_requirement || 0}"
             end
-          end
-
-          def dependency_version(dep_name, group)
-            parsed_lockfile.
-              dig(group, dep_name, "version")&.
-              gsub(/^==/, "")
-          end
-
-          def dependency_lockfile_group
-            dependency.requirements.first[:groups].first
-          end
-
-          def parsed_lockfile
-            @parsed_lockfile ||= JSON.parse(lockfile.content)
           end
 
           def pipfile

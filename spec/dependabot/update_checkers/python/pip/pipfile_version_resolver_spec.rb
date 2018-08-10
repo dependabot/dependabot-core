@@ -90,6 +90,15 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
+    context "with a subdependency" do
+      let(:dependency_name) { "py" }
+      let(:dependency_version) { "1.5.3" }
+      let(:dependency_requirements) { [] }
+      let(:latest_version) { Gem::Version.new("1.5.4") }
+
+      it { is_expected.to eq(Gem::Version.new("1.5.4")) }
+    end
+
     context "with a path dependency" do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do
