@@ -1,3 +1,7 @@
+## v0.66.4, 10 August 2018
+
+- Ruby: Fix requirement replacer when no previous requirement is passed
+
 ## v0.66.3, 10 August 2018
 
 - Ruby: Maintain whitespace before comments in Gemfile / gemspec
