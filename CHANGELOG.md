@@ -1,3 +1,7 @@
+## v0.66.2, 10 August 2018
+
+- Python: Handle subdependencies in PipfileVersionResolver
+
 ## v0.66.1, 9 August 2018
 
 - Add requirements_update_strategy option to UpdateChecker, and use it to
