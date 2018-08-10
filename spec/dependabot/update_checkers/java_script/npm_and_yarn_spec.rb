@@ -1060,18 +1060,18 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         )
     end
 
-    context "when a manifest_update_strategy has been explicitly specified" do
+    context "when a requirements_update_strategy has been specified" do
       let(:checker) do
         described_class.new(
           dependency: dependency,
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
-          manifest_update_strategy: :bump_versions_if_needed
+          requirements_update_strategy: :bump_versions_if_needed
         )
       end
 
-      it "uses the specified manifest_update_strategy" do
+      it "uses the specified requirements_update_strategy" do
         expect(described_class::RequirementsUpdater).
           to receive(:new).
           with(
