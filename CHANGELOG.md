@@ -1,3 +1,7 @@
+## v0.66.5, 10 August 2018
+
+- Rust: Better support for glob workspace declarations
+
 ## v0.66.4, 10 August 2018
 
 - Ruby: Fix requirement replacer when no previous requirement is passed
