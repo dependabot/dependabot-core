@@ -41,15 +41,9 @@ module Dependabot
             @insert_if_bare
           end
 
-          def requirement_length_changed?
-            # If no previous requirement was provided, don't worry about
-            # comparing
-            return unless previous_requirement
-
-            updated_requirement.length != previous_requirement.length
-          end
-
           def update_comment_spacing_if_required(content, updated_content)
+            return updated_content unless previous_requirement
+
             length_change = updated_requirement.length -
                             previous_requirement.length
 
