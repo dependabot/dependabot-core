@@ -1,3 +1,7 @@
+## v0.66.3, 10 August 2018
+
+- Ruby: Maintain whitespace before comments in Gemfile / gemspec
+
 ## v0.66.2, 10 August 2018
 
 - Python: Handle subdependencies in PipfileVersionResolver
