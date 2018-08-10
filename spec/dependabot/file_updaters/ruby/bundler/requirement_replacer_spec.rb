@@ -9,7 +9,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
     described_class.new(
       dependency: dependency,
       file_type: file_type,
-      updated_requirement: updated_requirement
+      updated_requirement: updated_requirement,
+      previous_requirement: previous_requirement
     )
   end
 
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
     }]
   end
   let(:updated_requirement) { "~> 1.5.0" }
+  let(:previous_requirement) { "~> 1.2.0" }
 
   let(:dependency_name) { "business" }
   let(:file_type) { :gemfile }
@@ -73,6 +75,38 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
         end
       end
 
+      context "with a length change and a comment" do
+        let(:previous_requirement) { "~> 1.9" }
+        let(:content) { "gem \"business\", \"~> 1.9\"    # description\n" }
+
+        context "when length has increased" do
+          let(:updated_requirement) { "~> 1.10" }
+
+          it "handles the change in required spaces" do
+            expect(rewrite).
+              to eq("gem \"business\", \"~> 1.10\"   # description\n")
+          end
+        end
+
+        context "when length has decreased" do
+          let(:updated_requirement) { "~> 2" }
+
+          it "handles the change in required spaces" do
+            expect(rewrite).
+              to eq("gem \"business\", \"~> 2\"      # description\n")
+          end
+
+          context "but there was only one space to start with" do
+            let(:content) { "gem \"business\", \"~> 1.9\" # description\n" }
+
+            it "doesn't update the spaces" do
+              expect(rewrite).
+                to eq("gem \"business\", \"~> 2\" # description\n")
+            end
+          end
+        end
+      end
+
       context "with a function requirement" do
         let(:content) { %(version = "1.0.0"\ngem "business", version) }
         it { is_expected.to eq(content) }
@@ -88,6 +122,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
               dependency: dependency,
               file_type: file_type,
               updated_requirement: updated_requirement,
+              previous_requirement: previous_requirement,
               insert_if_bare: true
             )
           end

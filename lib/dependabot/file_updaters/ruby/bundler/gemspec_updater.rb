@@ -38,10 +38,16 @@ module Dependabot
               find { |r| r[:file] == gemspec.name }.
               fetch(:requirement)
 
+            previous_requirement =
+              dependency.previous_requirements.
+              find { |r| r[:file] == gemspec.name }.
+              fetch(:requirement)
+
             RequirementReplacer.new(
               dependency: dependency,
               file_type: :gemspec,
-              updated_requirement: updated_requirement
+              updated_requirement: updated_requirement,
+              previous_requirement: previous_requirement
             ).rewrite(content)
           end
 

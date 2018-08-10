@@ -8,14 +8,16 @@ module Dependabot
     module Ruby
       class Bundler
         class RequirementReplacer
-          attr_reader :dependency, :file_type, :updated_requirement
+          attr_reader :dependency, :file_type, :updated_requirement,
+                      :previous_requirement
 
           def initialize(dependency:, file_type:, updated_requirement:,
-                         insert_if_bare: false)
-            @dependency          = dependency
-            @file_type           = file_type
-            @updated_requirement = updated_requirement
-            @insert_if_bare      = insert_if_bare
+                         previous_requirement: nil, insert_if_bare: false)
+            @dependency           = dependency
+            @file_type            = file_type
+            @updated_requirement  = updated_requirement
+            @previous_requirement = previous_requirement
+            @insert_if_bare       = insert_if_bare
           end
 
           def rewrite(content)
@@ -23,18 +25,52 @@ module Dependabot
             buffer.source = content
             ast = Parser::CurrentRuby.new.parse(buffer)
 
-            Rewriter.new(
+            updated_content = Rewriter.new(
               dependency: dependency,
               file_type: file_type,
               updated_requirement: updated_requirement,
               insert_if_bare: insert_if_bare?
             ).rewrite(buffer, ast)
+
+            update_comment_spacing_if_required(content, updated_content)
           end
 
           private
 
           def insert_if_bare?
             @insert_if_bare
+          end
+
+          def requirement_length_changed?
+            # If no previous requirement was provided, don't worry about
+            # comparing
+            return unless previous_requirement
+
+            updated_requirement.length != previous_requirement.length
+          end
+
+          def update_comment_spacing_if_required(content, updated_content)
+            length_change = updated_requirement.length -
+                            previous_requirement.length
+
+            return updated_content if updated_content == content
+            return updated_content if length_change.zero?
+
+            updated_lines = updated_content.lines
+            updated_line_index =
+              updated_lines.length.
+              times.find { |i| content.lines[i] != updated_content.lines[i] }
+            updated_line = updated_lines[updated_line_index]
+
+            updated_line =
+              if length_change.positive?
+                updated_line.sub(/(?<=\s)\s{#{length_change}}#/, "#")
+              elsif length_change.negative?
+                updated_line.sub(/(?<=\s{2})#/, " " * length_change.abs + "#")
+              end
+
+            updated_lines[updated_line_index] = updated_line
+            updated_lines.join
           end
 
           class Rewriter < Parser::TreeRewriter
