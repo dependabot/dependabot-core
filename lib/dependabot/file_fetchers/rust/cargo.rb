@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "pathname"
 require "toml-rb"
 
 require "dependabot/file_fetchers/base"
@@ -144,10 +145,14 @@ module Dependabot
         end
 
         def expand_workspaces(path)
+          path = Pathname.new(path).cleanpath.to_path
           dir = directory.gsub(%r{(^/|/$)}, "")
-          repo_contents(dir: path.gsub(/\*$/, "")).
+          unglobbed_path = path.split("*").first.gsub(%r{(?<=/)[^/]*$}, "")
+
+          repo_contents(dir: unglobbed_path, raise_errors: false).
             select { |file| file.type == "dir" }.
-            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+            map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
+            select { |filename| File.fnmatch?(path, filename) }
         end
 
         def parsed_file(file)

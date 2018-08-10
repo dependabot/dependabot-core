@@ -300,6 +300,24 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         expect(file_fetcher_instance.files.map(&:type).uniq).
           to eq(["file"])
       end
+
+      context "with a glob that excludes some directories" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_workspace_root_partial_glob.json"
+          )
+        end
+        before do
+          stub_request(:get, url + "packages?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_cargo_packages_extra.json"),
+              headers: json_header
+            )
+        end
+      end
     end
   end
 
