@@ -11,9 +11,10 @@ module Dependabot
   module UpdateCheckers
     module Python
       class Pip < Dependabot::UpdateCheckers::Base
-        require_relative "pip/requirements_updater"
+        require_relative "pip/poetry_version_resolver"
         require_relative "pip/pipfile_version_resolver"
         require_relative "pip/pip_compile_version_resolver"
+        require_relative "pip/requirements_updater"
 
         MAIN_PYPI_INDEXES = %w(
           https://pypi.python.org/simple/
@@ -29,19 +30,15 @@ module Dependabot
             case resolver_type
             when :pipfile
               PipfileVersionResolver.new(
-                dependency: dependency,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                unlock_requirement: true,
-                latest_allowable_version: latest_version
+                resolver_args.merge(unlock_requirement: true)
+              ).latest_resolvable_version
+            when :poetry
+              PoetryVersionResolver.new(
+                resolver_args.merge(unlock_requirement: true)
               ).latest_resolvable_version
             when :pip_compile
               PipCompileVersionResolver.new(
-                dependency: dependency,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                unlock_requirement: true,
-                latest_allowable_version: latest_version
+                resolver_args.merge(unlock_requirement: true)
               ).latest_resolvable_version
             when :requirements
               # pip doesn't (yet) do any dependency resolution, so if we don't
@@ -57,19 +54,15 @@ module Dependabot
             case resolver_type
             when :pipfile
               PipfileVersionResolver.new(
-                dependency: dependency,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                unlock_requirement: false,
-                latest_allowable_version: latest_version
+                resolver_args.merge(unlock_requirement: false)
+              ).latest_resolvable_version
+            when :poetry
+              PoetryVersionResolver.new(
+                resolver_args.merge(unlock_requirement: false)
               ).latest_resolvable_version
             when :pip_compile
               PipCompileVersionResolver.new(
-                dependency: dependency,
-                dependency_files: dependency_files,
-                credentials: credentials,
-                unlock_requirement: false,
-                latest_allowable_version: latest_version
+                resolver_args.merge(unlock_requirement: false)
               ).latest_resolvable_version
             when :requirements
               latest_pip_version_with_no_unlock
@@ -99,6 +92,8 @@ module Dependabot
           raise NotImplementedError
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def resolver_type
           reqs = dependency.requirements
 
@@ -107,12 +102,28 @@ module Dependabot
             return :pipfile
           end
 
+          if (pyproject && reqs.none?) ||
+             reqs.any? { |r| r.fetch(:file) == "pyproject.toml" }
+            return :poetry
+          end
+
           if (pip_compile_files.any? && reqs.none?) ||
              reqs.any? { |r| r.fetch(:file).end_with?(".in") }
             return :pip_compile
           end
 
           :requirements
+        end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        def resolver_args
+          {
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            latest_allowable_version: latest_version
+          }
         end
 
         def fetch_latest_version
@@ -288,6 +299,10 @@ module Dependabot
 
         def pipfile
           dependency_files.find { |f| f.name == "Pipfile" }
+        end
+
+        def pyproject
+          dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
         def requirements_files
