@@ -1,3 +1,7 @@
+## v0.66.6, 12 August 2018
+
+- Go: Make requirement update style configurable
+
 ## v0.66.5, 10 August 2018
 
 - Rust: Better support for glob workspace declarations
