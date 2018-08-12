@@ -4,6 +4,7 @@ require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/requirement"
 require "dependabot/errors"
@@ -12,8 +13,11 @@ module Dependabot
   module FileParsers
     module Python
       class Pip < Dependabot::FileParsers::Base
-        require "dependabot/file_parsers/base/dependency_set"
+        require_relative "pip/pipfile_files_parser"
+        require_relative "pip/poetry_files_parser"
 
+        POETRY_DEPENDENCY_TYPES =
+          %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
         DEPENDENCY_GROUP_KEYS = [
           {
             pipfile: "packages",
@@ -27,17 +31,47 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
-          if pipfile && lockfile
-            dependency_set += pipfile_dependencies
-            dependency_set += lockfile_dependencies
-          else
+
+          # Currently, we assume users will only be using one dependency
+          # management tool - Pipenv, Poetry, or pip-tools / requirements.txt.
+          # In future it would be nice to handle setups that use multiple
+          # managers at once (e.g., where a requirements.txt is generated from
+          # Pipfile.lock).
+          case parser_type
+          when :pipfile
+            dependency_set += pipfile_files_parser.dependency_set
+          when :poetry
+            dependency_set += poetry_files_parser.dependency_set
+          when :requirements_and_pip_compile
             dependency_set += requirement_dependencies
+          else raise "Unexpected parser type: #{parser_type}"
           end
+
           dependency_set += setup_file_dependencies if setup_file
           dependency_set.dependencies
         end
 
         private
+
+        def parser_type
+          return :pipfile if pipfile && pipfile_lock
+          return :poetry if pyproject && pyproject_lock
+          return :poetry if pyproject && requirement_files.none?
+
+          :requirements_and_pip_compile
+        end
+
+        def requirement_files
+          dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
+        end
+
+        def pipfile_files_parser
+          PipfileFilesParser.new(dependency_files: dependency_files)
+        end
+
+        def poetry_files_parser
+          PoetryFilesParser.new(dependency_files: dependency_files)
+        end
 
         def requirement_dependencies
           dependencies = DependencySet.new
@@ -83,59 +117,6 @@ module Dependabot
                 package_manager: "pip"
               )
           end
-          dependencies
-        end
-
-        def pipfile_dependencies
-          dependencies = DependencySet.new
-
-          DEPENDENCY_GROUP_KEYS.each do |keys|
-            next unless parsed_pipfile[keys[:pipfile]]
-
-            parsed_pipfile[keys[:pipfile]].map do |dep_name, req|
-              next unless req.is_a?(String) || req["version"]
-              next unless dependency_version(dep_name, keys[:lockfile])
-
-              dependencies <<
-                Dependency.new(
-                  name: normalised_name(dep_name),
-                  version: dependency_version(dep_name, keys[:lockfile]),
-                  requirements: [{
-                    requirement: req.is_a?(String) ? req : req["version"],
-                    file: pipfile.name,
-                    source: nil,
-                    groups: [keys[:lockfile]]
-                  }],
-                  package_manager: "pip"
-                )
-            end
-          end
-
-          dependencies
-        end
-
-        # Create a DependencySet where each element has no requirement. Any
-        # requirements will be added when combining the DependencySet with
-        # other DependencySets.
-        def lockfile_dependencies
-          dependencies = DependencySet.new
-
-          DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
-            next unless parsed_lockfile[key]
-
-            parsed_lockfile[key].each do |dep_name, details|
-              next unless details["version"]
-
-              dependencies <<
-                Dependency.new(
-                  name: dep_name,
-                  version: details["version"]&.gsub(/^===?/, ""),
-                  requirements: [],
-                  package_manager: "pip"
-                )
-            end
-          end
-
           dependencies
         end
 
@@ -207,12 +188,6 @@ module Dependabot
           File.join(project_root, "helpers/python/run.py")
         end
 
-        def dependency_version(dep_name, group)
-          parsed_lockfile.
-            dig(group, normalised_name(dep_name), "version")&.
-            gsub(/^===?/, "")
-        end
-
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name(name)
           name.downcase.tr("_", "-").tr(".", "-")
@@ -223,26 +198,25 @@ module Dependabot
           return if filenames.any? { |name| name.end_with?(".txt") }
           return if filenames.any? { |name| name.end_with?(".in") }
           return if (%w(Pipfile Pipfile.lock) - filenames).empty?
+          return if get_original_file("pyproject.toml")
           return if get_original_file("setup.py")
           raise "No requirements.txt or setup.py!"
-        end
-
-        def parsed_pipfile
-          TomlRB.parse(pipfile.content)
-        rescue TomlRB::ParseError
-          raise Dependabot::DependencyFileNotParseable, pipfile.path
-        end
-
-        def parsed_lockfile
-          JSON.parse(lockfile.content)
         end
 
         def pipfile
           @pipfile ||= get_original_file("Pipfile")
         end
 
-        def lockfile
-          @lockfile ||= get_original_file("Pipfile.lock")
+        def pipfile_lock
+          @pipfile_lock ||= get_original_file("Pipfile.lock")
+        end
+
+        def pyproject
+          @pyproject ||= get_original_file("pyproject.toml")
+        end
+
+        def pyproject_lock
+          @pyproject_lock ||= get_original_file("pyproject.lock")
         end
 
         def setup_file
