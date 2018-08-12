@@ -81,11 +81,13 @@ module Dependabot
           def updated_lockfile_content
             @updated_lockfile_content ||=
               begin
-                original_hash = parsed_lockfile["metadata"]["content-hash"]
-                updated_hash = pyproject_hash_for(updated_pyproject_content)
-
                 new_lockfile = updated_lockfile_content_for(prepared_pyproject)
-                new_lockfile.gsub(original_hash, updated_hash)
+
+                tmp_hash =
+                  TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
+                correct_hash = pyproject_hash_for(updated_pyproject_content)
+
+                new_lockfile.gsub(tmp_hash, correct_hash)
               end
           end
 
@@ -163,10 +165,10 @@ module Dependabot
 
           def pyproject_hash_for(pyproject_content)
             SharedHelpers.in_a_temporary_directory do |dir|
-              File.write(File.join(dir, "Pipfile"), pyproject_content)
+              File.write(File.join(dir, "pyproject.toml"), pyproject_content)
               SharedHelpers.run_helper_subprocess(
                 command:  "pyenv exec python #{python_helper_path}",
-                function: "get_pipfile_hash",
+                function: "get_pyproject_hash",
                 args: [dir]
               )
             end
@@ -202,10 +204,6 @@ module Dependabot
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)
             name.downcase.tr("_", "-").tr(".", "-")
-          end
-
-          def parsed_lockfile
-            @parsed_lockfile ||= TomlRB.parse(lockfile.content)
           end
 
           def pyproject

@@ -3,3 +3,4 @@ pip-tools==2.0.2
 hashin==0.13.3
 pipenv==2018.7.1
 pipfile==0.0.2
+poetry==0.11.4

@@ -76,9 +76,8 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PoetryFileUpdater do
       expect(requests["version"]).to eq("2.19.1")
       expect(pytest["version"]).to eq("3.5.0")
 
-      # TODO!
-      # expect(lockfile_obj["metadata"]["content-hash"]).
-      #   to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
+      expect(lockfile_obj["metadata"]["content-hash"]).
+        to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
     end
   end
 end

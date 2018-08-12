@@ -14,3 +14,5 @@ if __name__ == "__main__":
         print(hasher.get_dependency_hash(*args["args"]))
     elif args["function"] == "get_pipfile_hash":
         print(hasher.get_pipfile_hash(*args["args"]))
+    elif args["function"] == "get_pyproject_hash":
+        print(hasher.get_pyproject_hash(*args["args"]))
