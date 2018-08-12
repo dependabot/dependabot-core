@@ -333,7 +333,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       expect(described_class::RequirementsUpdater).to receive(:new).with(
         requirements: dependency.requirements,
         updated_source: source,
-        library: true,
+        update_strategy: :widen_ranges,
         latest_version: "3.2.0",
         latest_resolvable_version: "3.2.0"
       ).and_call_original
@@ -375,6 +375,36 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
         end
 
         it "updates the requirements for the new version range" do
+          expect(checker.updated_requirements).to eq(
+            [{
+              file: "Gopkg.toml",
+              requirement: "3.2.0",
+              groups: [],
+              source: { type: "default", source: "github.com/dgrijalva/jwt-go" }
+            }]
+          )
+        end
+      end
+
+      context "when a requirements_update_strategy has been specified" do
+        let(:checker) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            requirements_update_strategy: :bump_versions
+          )
+        end
+
+        it "uses the specified requirements_update_strategy" do
+          expect(described_class::RequirementsUpdater).to receive(:new).with(
+            requirements: dependency.requirements,
+            updated_source: source,
+            update_strategy: :bump_versions,
+            latest_version: "3.2.0",
+            latest_resolvable_version: "3.2.0"
+          ).and_call_original
           expect(checker.updated_requirements).to eq(
             [{
               file: "Gopkg.toml",

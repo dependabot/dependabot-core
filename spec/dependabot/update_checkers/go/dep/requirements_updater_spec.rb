@@ -8,7 +8,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       updated_source: updated_source,
-      library: library,
+      update_strategy: update_strategy,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -16,7 +16,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
 
   let(:requirements) { [manifest_req] }
   let(:updated_source) { nil }
-  let(:library) { true }
+  let(:update_strategy) { :widen_ranges }
   let(:manifest_req) do
     {
       file: "Gopkg.toml",
@@ -114,8 +114,8 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
       end
     end
 
-    context "for a library-style update" do
-      let(:library) { true }
+    context "for a widen_ranges update" do
+      let(:update_strategy) { :widen_ranges }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
@@ -367,8 +367,8 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
       end
     end
 
-    context "for a app-style update" do
-      let(:library) { false }
+    context "for a bump_versions update" do
+      let(:update_strategy) { :bump_versions }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }

@@ -45,10 +45,18 @@ module Dependabot
             RequirementsUpdater.new(
               requirements: dependency.requirements,
               updated_source: updated_source,
-              library: library?,
+              update_strategy: requirements_update_strategy,
               latest_version: latest_version&.to_s,
               latest_resolvable_version: latest_resolvable_version&.to_s
             ).updated_requirements
+        end
+
+        def requirements_update_strategy
+          # If passed in as an option (in the base class) honour that option
+          return @requirements_update_strategy if @requirements_update_strategy
+
+          # Otherwise, widen ranges for libraries and bump versions for apps
+          library? ? :widen_ranges : :bump_versions
         end
 
         private

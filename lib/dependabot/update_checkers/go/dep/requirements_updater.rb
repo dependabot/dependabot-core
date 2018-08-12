@@ -12,12 +12,15 @@ module Dependabot
           class UnfixableRequirement < StandardError; end
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
+          ALLOWED_UPDATE_STRATEGIES = %i(widen_ranges bump_versions).freeze
 
-          def initialize(requirements:, updated_source:, library:,
+          def initialize(requirements:, updated_source:, update_strategy:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
             @updated_source = updated_source
-            @library = library
+            @update_strategy = update_strategy
+
+            check_update_strategy
 
             if latest_version && version_class.correct?(latest_version)
               @latest_version = version_class.new(latest_version)
@@ -35,18 +38,22 @@ module Dependabot
               next req unless latest_resolvable_version
               next initial_req_after_source_change(req) unless req[:requirement]
 
-              next updated_library_requirement(req) if library?
-              updated_app_requirement(req)
+              case update_strategy
+              when :widen_ranges then widen_requirement(req)
+              when :bump_versions then update_version(req)
+              else raise "Unexpected update strategy: #{update_strategy}"
+              end
             end
           end
 
           private
 
-          attr_reader :requirements, :updated_source,
+          attr_reader :requirements, :updated_source, :update_strategy,
                       :latest_version, :latest_resolvable_version
 
-          def library?
-            @library
+          def check_update_strategy
+            return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+            raise "Unknown update strategy: #{update_strategy}"
           end
 
           def updating_from_git_to_version?
@@ -61,7 +68,7 @@ module Dependabot
             req.merge(requirement: "^#{latest_resolvable_version}")
           end
 
-          def updated_library_requirement(req)
+          def widen_requirement(req)
             current_requirement = req[:requirement]
             version = latest_resolvable_version
 
@@ -85,7 +92,7 @@ module Dependabot
             req.merge(requirement: updated_requirement)
           end
 
-          def updated_app_requirement(req)
+          def update_version(req)
             current_requirement = req[:requirement]
             version = latest_resolvable_version
 
