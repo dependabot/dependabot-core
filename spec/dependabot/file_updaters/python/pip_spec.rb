@@ -103,6 +103,52 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
     end
 
+    context "with a pyproject.toml and pyproject.lock" do
+      let(:dependency_files) { [pyproject, lockfile] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content:
+            fixture("python", "pyproject_files", "version_not_specified.toml")
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.lock",
+          content:
+            fixture("python", "pyproject_locks", "version_not_specified.lock")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "delegates to PoetryFileUpdater" do
+        expect(described_class::PoetryFileUpdater).
+          to receive(:new).and_call_original
+        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a pip-compile file" do
       let(:dependency_files) { [manifest_file, generated_file] }
       let(:manifest_file) do

@@ -43,9 +43,9 @@ module Dependabot
                 next unless locked_version
 
                 if poetry_object[dep_name].is_a?(Hash)
-                  poetry_object[dep_name]["version"] = locked_version
+                  poetry_object[key][dep_name]["version"] = locked_version
                 else
-                  poetry_object[dep_name] = locked_version
+                  poetry_object[key][dep_name] = locked_version
                 end
               end
             end
