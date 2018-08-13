@@ -136,7 +136,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(pyproject_content)
 
-              run_poetry_command("poetry lock")
+              run_poetry_command("pyenv exec poetry lock")
 
               File.read("pyproject.lock")
             end

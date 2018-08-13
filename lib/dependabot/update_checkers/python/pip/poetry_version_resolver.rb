@@ -53,7 +53,7 @@ module Dependabot
 
                 # Shell out to Poetry, which handles everything for us.
                 # Calling `lock` avoids doing an install.
-                run_poetry_command("poetry lock")
+                run_poetry_command("pyenv exec poetry lock")
 
                 updated_lockfile = TomlRB.parse(File.read("pyproject.lock"))
 
