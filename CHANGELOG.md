@@ -1,3 +1,7 @@
+## v0.66.8, 13 August 2018
+
+- Python: Fix missing method
+
 ## v0.66.7, 13 August 2018
 
 - Python: Add initial support for Poetry
