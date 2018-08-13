@@ -88,6 +88,7 @@ class Updater
 
         $result = [
             'composer.lock' => file_get_contents('composer.lock'),
+            'symfony.lock' => file_exists('symfony.lock') ? file_get_contents('symfony.lock') : null,
         ];
 
         chdir($originalDir);

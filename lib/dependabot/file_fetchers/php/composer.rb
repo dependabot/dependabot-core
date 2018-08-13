@@ -20,6 +20,7 @@ module Dependabot
           fetched_files = []
           fetched_files << composer_json
           fetched_files << composer_lock if composer_lock
+          fetched_files << symfony_lock if symfony_lock
           fetched_files += path_dependencies
           fetched_files
         end
@@ -32,6 +33,14 @@ module Dependabot
           return @composer_lock if @composer_lock_lookup_attempted
           @composer_lock_lookup_attempted = true
           @composer_lock ||= fetch_file_from_host("composer.lock")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
+
+        def symfony_lock
+          return @symfony_lock if @symfony_lock_lookup_attempted
+          @symfony_lock_lookup_attempted = true
+          @symfony_lock ||= fetch_file_from_host("symfony.lock")
         rescue Dependabot::DependencyFileNotFound
           nil
         end

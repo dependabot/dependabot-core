@@ -1,0 +1,17 @@
+{
+    "phpoffice/phpspreadsheet": {
+        "version": "1.3.1"
+    },
+    "psr/simple-cache": {
+        "version": "1.0.1"
+    },
+    "symfony/flex": {
+        "version": "1.0",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "master",
+            "version": "1.0",
+            "ref": "e921bdbfe20cdefa3b82f379d1cd36df1bc8d115"
+        }
+    }
+}

@@ -18,27 +18,39 @@ module Dependabot
             @credentials = credentials
           end
 
+          def updated_composer_lockfile_content
+            updated_lockfile_content.fetch("composer.lock")
+          end
+
+          def updated_symfony_lockfile_content
+            return unless symfony_lock
+            updated_lockfile_content.fetch("symfony.lock")
+          end
+
+          private
+
+          attr_reader :dependencies, :dependency_files, :credentials
+
           def updated_lockfile_content
             base_directory = dependency_files.first.directory
             @updated_lockfile_content ||=
               SharedHelpers.in_a_temporary_directory(base_directory) do
                 write_temporary_dependency_files
 
-                updated_content = run_update_helper.fetch("composer.lock")
+                updated_lockfiles = run_update_helper
 
-                updated_content = post_process_lockfile(updated_content)
-                if lockfile.content == updated_content
+                updated_lockfiles["composer.lock"] =
+                  post_process_lockfile(updated_lockfiles.fetch("composer.lock"))
+
+                if lockfile.content == updated_lockfiles.fetch("composer.lock")
                   raise "Expected content to change!"
                 end
-                updated_content
+
+                updated_lockfiles
               end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_composer_errors(error)
           end
-
-          private
-
-          attr_reader :dependencies, :dependency_files, :credentials
 
           def dependency
             # For now, we'll only ever be updating a single dependency for PHP
@@ -125,6 +137,7 @@ module Dependabot
 
             File.write("composer.json", locked_composer_json_content)
             File.write("composer.lock", lockfile.content)
+            File.write("symfony.lock", symfony_lock.content) if symfony_lock
           end
 
           def locked_composer_json_content
@@ -243,6 +256,11 @@ module Dependabot
           def lockfile
             @lockfile ||=
               dependency_files.find { |f| f.name == "composer.lock" }
+          end
+
+          def symfony_lock
+            @symfony_lock ||=
+              dependency_files.find { |f| f.name == "symfony.lock" }
           end
 
           def path_dependencies

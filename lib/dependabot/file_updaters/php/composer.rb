@@ -31,8 +31,10 @@ module Dependabot
           end
 
           if lockfile
-            updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
+            updated_files << updated_file(
+              file: lockfile,
+              content: updated_composer_lockfile_content
+            )
           end
 
           if updated_files.none? ||
@@ -56,13 +58,17 @@ module Dependabot
           ).updated_manifest_content
         end
 
-        def updated_lockfile_content
+        def updated_composer_lockfile_content
           @updated_lockfile_content ||=
-            LockfileUpdater.new(
-              dependencies: dependencies,
-              dependency_files: dependency_files,
-              credentials: credentials
-            ).updated_lockfile_content
+            lockfile_updater.updated_composer_lockfile_content
+        end
+
+        def lockfile_updater
+          @lockfile_content ||= LockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
         end
 
         def composer_json

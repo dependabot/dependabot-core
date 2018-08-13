@@ -44,6 +44,9 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
         body: fixture("github", "composer_lock_content.json"),
         headers: { "content-type" => "application/json" }
       )
+    stub_request(:get, url + "symfony.lock?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
   end
 
   it "fetches the composer.json and composer.lock" do
@@ -60,6 +63,23 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
     it "fetches the composer.json" do
       expect(file_fetcher_instance.files.map(&:name)).to eq(["composer.json"])
+    end
+  end
+
+  context "with a symfony.lock" do
+    before do
+      stub_request(:get, url + "symfony.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "composer_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the symfony.lock" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(composer.json composer.lock symfony.lock))
     end
   end
 
