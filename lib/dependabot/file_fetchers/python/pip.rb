@@ -19,6 +19,9 @@ module Dependabot
           # If this repo is using a Pipfile return true
           return true if (%w(Pipfile Pipfile.lock) - filenames).empty?
 
+          # If this repo is using Poetry return true
+          return true if filenames.include?("pyproject.toml")
+
           filenames.include?("setup.py")
         end
 
@@ -34,24 +37,37 @@ module Dependabot
 
           fetched_files << setup_file if setup_file
           fetched_files << pip_conf if pip_conf
-          fetched_files << pipfile if pipfile
-          fetched_files << lockfile if lockfile
 
-          if requirements_txt_files.any?
-            fetched_files += requirements_txt_files
-            fetched_files += child_requirement_files
-            fetched_files += constraints_files
-            fetched_files += path_setup_files
-          end
+          fetched_files += pipenv_files
+          fetched_files += pyproject_files
 
+          fetched_files += requirement_files if requirements_txt_files.any?
           fetched_files += requirements_in_files
 
           check_required_files_present
           fetched_files.uniq
         end
 
+        def pipenv_files
+          [pipfile, pipfile_lock].compact
+        end
+
+        def pyproject_files
+          [pyproject, pyproject_lock].compact
+        end
+
+        def requirement_files
+          [
+            *requirements_txt_files,
+            *child_requirement_files,
+            *constraints_files,
+            *path_setup_files
+          ]
+        end
+
         def check_required_files_present
-          if requirements_txt_files.any? || setup_file || (pipfile && lockfile)
+          if requirements_txt_files.any? || setup_file ||
+             (pipfile && pipfile_lock) || pyproject
             return
           end
 
@@ -72,8 +88,16 @@ module Dependabot
           @pipfile ||= fetch_file_if_present("Pipfile")
         end
 
-        def lockfile
-          @lockfile ||= fetch_file_if_present("Pipfile.lock")
+        def pipfile_lock
+          @pipfile_lock ||= fetch_file_if_present("Pipfile.lock")
+        end
+
+        def pyproject
+          @pyproject ||= fetch_file_if_present("pyproject.toml")
+        end
+
+        def pyproject_lock
+          @pyproject_lock ||= fetch_file_if_present("pyproject.lock")
         end
 
         def requirements_txt_files

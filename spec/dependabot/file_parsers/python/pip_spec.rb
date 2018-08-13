@@ -1087,5 +1087,46 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
       end
     end
+
+    context "with a pyproject.toml and pyproject.lock" do
+      let(:files) { [pyproject, pyproject_lock] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("python", "pyproject_files", "pyproject.toml")
+        )
+      end
+      let(:pyproject_lock) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.lock",
+          content: fixture("python", "pyproject_locks", "pyproject.lock")
+        )
+      end
+
+      its(:length) { is_expected.to eq(36) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) { parser.parse.select(&:top_level?) }
+        its(:length) { is_expected.to eq(15) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("geopy")
+            expect(dependency.version).to eq("1.14.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "^1.13",
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+    end
   end
 end

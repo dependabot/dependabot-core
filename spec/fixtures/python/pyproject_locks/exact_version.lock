@@ -1,0 +1,62 @@
+[[package]]
+category = "main"
+description = "Python package for providing Mozilla's CA Bundle."
+name = "certifi"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "2018.4.16"
+
+[[package]]
+category = "main"
+description = "Universal encoding detector for Python 2 and 3"
+name = "chardet"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "3.0.4"
+
+[[package]]
+category = "main"
+description = "Internationalized Domain Names in Applications (IDNA)"
+name = "idna"
+optional = false
+platform = "UNKNOWN"
+python-versions = "*"
+version = "2.5"
+
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "2.18.0"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+chardet = ">=3.0.2,<3.1.0"
+idna = ">=2.5,<2.6"
+urllib3 = ">=1.21.1,<1.22"
+
+[[package]]
+category = "main"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "urllib3"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "1.21.1"
+
+[metadata]
+content-hash = "a8d5762e953227a34625a209e9cc67a1c6fb2d7a971845829cf2f9cf61a5bd7c"
+platform = "*"
+python-versions = "^3.6"
+
+[metadata.hashes]
+certifi = ["13e698f54293db9f89122b0581843a782ad0934a4fe0172d2a980ba77fc61bb7", "9fa520c1bacfb634fa7af20a76bcbd3d5fb390481724c597da32c719a7dca4b0"]
+chardet = ["84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae", "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"]
+idna = ["3cb5ce08046c4e3a560fc02f138d0ac63e00f8ce5901a56b32ec8b7994082aab", "cc19709fd6d0cbfed39ea875d29ba6d4e22c0cebc510a76d6302a28385e8bb70"]
+requests = ["5e88d64aa56ac0fda54e77fb9762ebc65879e171b746d5479a33c4082519d6c6", "cd0189f962787284bff715fddaad478eb4d9c15aa167bd64e52ea0f661e7ea5c"]
+urllib3 = ["8ed6d5c1ff9d6ba84677310060d6a3a78ca3072ce0684cb3c645023009c114b1", "b14486978518ca0901a76ba973d7821047409d7f726f22156b24e83fd71382a5"]

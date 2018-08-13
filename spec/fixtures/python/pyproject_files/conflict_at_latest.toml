@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "Python Projects"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Various small python projects."
+
+[tool.poetry.dependencies]
+python = "^3.6"
+requests = "2.6.0"
+chardet = "3.0.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "3.4.0"

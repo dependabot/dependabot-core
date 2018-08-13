@@ -39,6 +39,11 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       it { is_expected.to eq(false) }
     end
 
+    context "with a pyproject.toml" do
+      let(:filenames) { %w(pyproject.toml) }
+      it { is_expected.to eq(true) }
+    end
+
     context "with no requirements" do
       let(:filenames) { %w(requirements-dev.md) }
       it { is_expected.to eq(false) }
@@ -182,6 +187,27 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Pipfile Pipfile.lock))
+      end
+    end
+
+    context "with only a pyproject.toml" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_pyproject.json")
+      end
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the pyproject.toml" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pyproject.toml))
       end
     end
 
