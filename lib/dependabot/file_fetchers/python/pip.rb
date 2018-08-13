@@ -26,8 +26,8 @@ module Dependabot
         end
 
         def self.required_files_message
-          "Repo must contain a requirements.txt, setup.py or a Pipfile and " \
-          "Pipfile.lock."
+          "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
+          "or a Pipfile and Pipfile.lock."
         end
 
         private
