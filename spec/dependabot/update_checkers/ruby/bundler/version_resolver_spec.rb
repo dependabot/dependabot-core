@@ -10,14 +10,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
-      dependency_files: dependency_files,
+      unprepared_dependency_files: dependency_files,
       ignored_versions: ignored_versions,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      }],
+      unlock_requirement: false
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -76,6 +77,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "with a ~> version specified constraining the update" do
         let(:gemfile_fixture_name) { "Gemfile" }
         let(:lockfile_fixture_name) { "Gemfile.lock" }
+        let(:requirement_string) { "~> 1.4.0" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
       end
@@ -83,6 +85,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "with a minor version specified that can update" do
         let(:gemfile_fixture_name) { "minor_version_specified" }
         let(:lockfile_fixture_name) { "Gemfile.lock" }
+        let(:requirement_string) { "~> 1.4" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
@@ -103,6 +106,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:gemfile_fixture_name) { "subdependency" }
         let(:lockfile_fixture_name) { "subdependency.lock" }
         let(:dependency_name) { "i18n" }
+        let(:requirements) { [] }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
       end
@@ -110,6 +114,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "with a Bundler version specified" do
         let(:gemfile_fixture_name) { "bundler_specified" }
         let(:lockfile_fixture_name) { "bundler_specified.lock" }
+        let(:requirement_string) { "~> 1.4.0" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
 
@@ -130,6 +135,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:gemfile_fixture_name) { "version_conflict_no_req_change" }
         let(:lockfile_fixture_name) { "version_conflict_no_req_change.lock" }
         let(:dependency_name) { "ibandit" }
+        let(:requirement_string) { "~> 0.1" }
 
         # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
         # version compatible with the version of i18n in the Gemfile.lock.
@@ -142,6 +148,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
           "version_conflict_with_listed_subdep.lock"
         end
         let(:dependency_name) { "rspec-mocks" }
+        let(:requirement_string) { ">= 0" }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
       end
@@ -150,6 +157,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:gemfile_fixture_name) { "legacy_ruby" }
         let(:lockfile_fixture_name) { "legacy_ruby.lock" }
         let(:dependency_name) { "public_suffix" }
+        let(:requirement_string) { ">= 0" }
 
         # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0.0
         # or greater.
@@ -198,6 +206,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:gemfile_fixture_name) { "jruby" }
         let(:lockfile_fixture_name) { "jruby.lock" }
         let(:dependency_name) { "json" }
+        let(:requirement_string) { ">= 0" }
 
         its([:version]) { is_expected.to be >= Gem::Version.new("1.4.6") }
       end
@@ -205,6 +214,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       context "when a gem has been yanked" do
         let(:gemfile_fixture_name) { "minor_version_specified" }
         let(:lockfile_fixture_name) { "yanked_gem.lock" }
+        let(:requirement_string) { "~> 1.4" }
 
         context "and it's that gem that we're attempting to bump" do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -212,6 +222,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
         context "and it's another gem" do
           let(:dependency_name) { "statesman" }
+          let(:requirement_string) { "~> 1.2" }
           its([:version]) { is_expected.to eq(Gem::Version.new("1.3.1")) }
         end
       end
@@ -220,6 +231,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     context "with a private gemserver source" do
       let(:gemfile_fixture_name) { "specified_source" }
       let(:lockfile_fixture_name) { "specified_source.lock" }
+      let(:requirement_string) { ">= 0" }
 
       before do
         gemfury_url = "https://repo.fury.io/greysteil/"
@@ -242,6 +254,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
 
     context "when the Gem can't be found" do
       let(:gemfile_fixture_name) { "unavailable_gem" }
+      let(:requirement_string) { "~> 1.4" }
 
       it "raises a DependencyFileNotResolvable error" do
         expect { subject }.
@@ -264,6 +277,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
     context "given a path source" do
       let(:gemfile_fixture_name) { "path_source" }
       let(:lockfile_fixture_name) { "path_source.lock" }
+      let(:requirement_string) { "~> 1.4.0" }
 
       context "without a downloaded gemspec" do
         let(:dependency_files) { [gemfile, lockfile] }

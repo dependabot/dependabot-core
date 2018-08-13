@@ -16,18 +16,26 @@ module Dependabot
     module Ruby
       class Bundler
         class VersionResolver
+          require_relative "file_preparer"
           require_relative "latest_version_finder"
           require_relative "shared_bundler_helpers"
           include SharedBundlerHelpers
 
           GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
-          def initialize(dependency:, dependency_files:, credentials:,
-                         ignored_versions:)
-            @dependency       = dependency
-            @dependency_files = dependency_files
-            @credentials      = credentials
-            @ignored_versions = ignored_versions
+          def initialize(dependency:, unprepared_dependency_files:,
+                         credentials:, ignored_versions:,
+                         replacement_git_pin: nil, remove_git_source: false,
+                         unlock_requirement: true,
+                         latest_allowable_version: nil)
+            @dependency                  = dependency
+            @unprepared_dependency_files = unprepared_dependency_files
+            @credentials                 = credentials
+            @ignored_versions            = ignored_versions
+            @replacement_git_pin         = replacement_git_pin
+            @remove_git_source           = remove_git_source
+            @unlock_requirement          = unlock_requirement
+            @latest_allowable_version    = latest_allowable_version
           end
 
           def latest_resolvable_version_details
@@ -37,8 +45,29 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :credentials,
-                      :ignored_versions
+          attr_reader :dependency, :unprepared_dependency_files, :credentials,
+                      :ignored_versions, :replacement_git_pin,
+                      :latest_allowable_version
+
+          def remove_git_source?
+            @remove_git_source
+          end
+
+          def unlock_requirement?
+            @unlock_requirement
+          end
+
+          def dependency_files
+            @dependency_files ||=
+              FilePreparer.new(
+                dependency: dependency,
+                dependency_files: unprepared_dependency_files,
+                replacement_git_pin: replacement_git_pin,
+                remove_git_source: remove_git_source?,
+                unlock_requirement: unlock_requirement?,
+                latest_allowable_version: latest_allowable_version
+              ).prepared_dependency_files
+          end
 
           def fetch_latest_resolvable_version_details
             return latest_version_details unless gemfile

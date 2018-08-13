@@ -183,17 +183,12 @@ module Dependabot
           return false if git_commit_checker.local_tag_for_latest_version.nil?
           replacement_tag = git_commit_checker.local_tag_for_latest_version
 
-          prepared_files = FilePreparer.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            replacement_git_pin: replacement_tag.fetch(:tag)
-          ).prepared_dependency_files
-
           VersionResolver.new(
             dependency: dependency,
-            dependency_files: prepared_files,
+            unprepared_dependency_files: dependency_files,
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            replacement_git_pin: replacement_tag.fetch(:tag)
           ).latest_resolvable_version_details
 
           @git_tag_resolvable = true
@@ -262,17 +257,14 @@ module Dependabot
           @version_resolver[remove_git_source] ||= {}
           @version_resolver[remove_git_source][unlock_requirement] ||=
             begin
-              prepared_dependency_files = prepared_dependency_files(
+              VersionResolver.new(
+                dependency: dependency,
+                unprepared_dependency_files: dependency_files,
+                credentials: credentials,
+                ignored_versions: ignored_versions,
                 remove_git_source: remove_git_source,
                 unlock_requirement: unlock_requirement,
                 latest_allowable_version: latest_version
-              )
-
-              VersionResolver.new(
-                dependency: dependency,
-                dependency_files: prepared_dependency_files,
-                credentials: credentials,
-                ignored_versions: ignored_versions
               )
             end
         end

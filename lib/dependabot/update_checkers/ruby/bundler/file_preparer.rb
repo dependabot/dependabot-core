@@ -34,13 +34,15 @@ module Dependabot
                          remove_git_source: false,
                          unlock_requirement: true,
                          replacement_git_pin: nil,
-                         latest_allowable_version: nil)
+                         latest_allowable_version: nil,
+                         lock_ruby_version: true)
             @dependency_files         = dependency_files
             @dependency               = dependency
             @remove_git_source        = remove_git_source
             @unlock_requirement       = unlock_requirement
             @replacement_git_pin      = replacement_git_pin
             @latest_allowable_version = latest_allowable_version
+            @lock_ruby_version        = lock_ruby_version
           end
 
           # rubocop:disable Metrics/AbcSize
@@ -141,7 +143,7 @@ module Dependabot
             content = replace_gemfile_constraint(content, file.name)
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
-            content = update_ruby_version(content) if file == gemfile
+            content = lock_ruby_version(content) if lock_ruby_version?(file)
             content
           end
 
@@ -222,13 +224,17 @@ module Dependabot
             ).rewrite(content)
           end
 
-          def update_ruby_version(gemfile_content)
+          def lock_ruby_version(gemfile_content)
             top_level_gemspecs.each do |gs|
               gemfile_content =
                 RubyRequirementSetter.new(gemspec: gs).rewrite(gemfile_content)
             end
 
             gemfile_content
+          end
+
+          def lock_ruby_version?(file)
+            @lock_ruby_version && file == gemfile
           end
 
           def replacement_version_for_gemspec(gemspec_content)
