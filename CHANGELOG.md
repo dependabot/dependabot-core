@@ -1,3 +1,7 @@
+## v0.66.7, 13 August 2018
+
+- Python: Add initial support for Poetry
+
 ## v0.66.6, 12 August 2018
 
 - Go: Make requirement update style configurable
