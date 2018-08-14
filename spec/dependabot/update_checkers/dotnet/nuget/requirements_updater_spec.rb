@@ -63,6 +63,16 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
+      context "and a wildcard requirement was previously specified" do
+        let(:csproj_req_string) { "22.*" }
+        its([:requirement]) { is_expected.to eq("23.*") }
+
+        context "for pre-release versions" do
+          let(:csproj_req_string) { "22.3-*" }
+          its([:requirement]) { is_expected.to eq("23.6-*") }
+        end
+      end
+
       context "and there were multiple requirements" do
         let(:requirements) { [csproj_req, other_csproj_req] }
 

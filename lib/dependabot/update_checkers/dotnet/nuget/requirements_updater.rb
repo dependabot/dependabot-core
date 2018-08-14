@@ -32,10 +32,15 @@ module Dependabot
               next req if req.fetch(:requirement).nil?
               next req if req.fetch(:requirement).include?(",")
 
-              # Since range requirements are excluded by the line above we can
-              # just do a `gsub` on anything that looks like a version
               new_req =
-                req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
+                if req.fetch(:requirement).include?("*")
+                  update_wildcard_requirement(req.fetch(:requirement))
+                else
+                  # Since range requirements are excluded by the line above we
+                  # can just do a `gsub` on anything that looks like a version
+                  req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
+                end
+
               req.merge(requirement: new_req, source: updated_source)
             end
           end
@@ -46,6 +51,16 @@ module Dependabot
 
           def version_class
             Utils::Dotnet::Version
+          end
+
+          def update_wildcard_requirement(req_string)
+            precision = req_string.split("*").first.split(/\.|\-/).count
+            wilcard_section = req_string.partition(/(?=[.\-]\*)/).last
+
+            version_parts = latest_version.segments.first(precision)
+            version = version_parts.join(".")
+
+            version + wilcard_section
           end
 
           def updated_source
