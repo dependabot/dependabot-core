@@ -527,7 +527,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(
             :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
-          ).with(body: { team_reviewers: [], reviewers: ["greysteil"] }.to_json)
+          ).with(body: { reviewers: ["greysteil"], team_reviewers: [] }.to_json)
       end
     end
 

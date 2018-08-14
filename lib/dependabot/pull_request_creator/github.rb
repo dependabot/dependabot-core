@@ -174,7 +174,7 @@ module Dependabot
         github_client_for_source.request_pull_request_review(
           source.repo,
           pull_request.number,
-          reviewers_hash[:reviewers],
+          reviewers: reviewers_hash[:reviewers] || [],
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => error
