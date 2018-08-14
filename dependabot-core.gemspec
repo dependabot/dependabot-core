@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.author       = "Dependabot"
   spec.email        = "support@dependabot.com"
   spec.homepage     = "https://github.com/hmarr/dependabot-core"
-  spec.license      = "GNU AGPL 3.0"
+  spec.license      = "License Zero Prosperity Public License"
 
   spec.require_path = "lib"
   spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
