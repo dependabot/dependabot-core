@@ -201,6 +201,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         let(:dependency_files) { [pipfile] }
         let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "that is unparseable" do
+          let(:pipfile_fixture_name) { "unparseable" }
+          let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
+          it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+        end
       end
 
       context "set in credentials" do
