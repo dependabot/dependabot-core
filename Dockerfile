@@ -54,7 +54,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.6 && cd - \
+    && cd /usr/local/.pyenv && git checkout v1.2.7 && cd - \
     && pyenv install 3.6.5 \
     && pyenv install 2.7.15 \
     && pyenv global 3.6.5
@@ -109,7 +109,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.0/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.2/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
@@ -132,10 +132,10 @@ RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true
     && apt-get update \
     && apt-get install -y oracle-java8-installer oracle-java8-set-default \
     && cd /tmp \
-    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.5.0.zip \
-    && unzip apache-groovy-binary-2.5.0.zip \
-    && mv groovy-2.5.0 /usr/local/groovy \
-    && rm -f apache-groovy-binary-2.5.0.zip \
+    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.5.2.zip \
+    && unzip apache-groovy-binary-2.5.2.zip \
+    && mv groovy-2.5.2 /usr/local/groovy \
+    && rm -f apache-groovy-binary-2.5.2.zip \
     && cd /tmp \
     && wget https://services.gradle.org/distributions/gradle-4.9-bin.zip \
     && unzip gradle-4.9-bin.zip \

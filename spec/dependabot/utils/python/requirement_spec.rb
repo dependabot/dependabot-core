@@ -101,6 +101,27 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
     end
   end
 
+  describe ".requirements_array" do
+    subject(:requirements_array) do
+      described_class.requirements_array(requirement_string)
+    end
+
+    context "with a single requirement" do
+      let(:requirement_string) { "1.2.1" }
+      it { is_expected.to eq([Gem::Requirement.new("1.2.1")]) }
+    end
+
+    context "with an || requirement" do
+      let(:requirement_string) { "1.2.1 || >= 1.5.0" }
+      it "generates the correct array of requirements" do
+        expect(requirements_array).
+          to match_array(
+            [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
+          )
+      end
+    end
+  end
+
   describe "#satisfied_by?" do
     subject { requirement.satisfied_by?(version) }
 

@@ -6,6 +6,8 @@ module Dependabot
   module Utils
     module Python
       class Requirement < Gem::Requirement
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+
         # Add equality and arbitrary-equality matchers
         OPS["=="] = ->(v, r) { v == r }
         OPS["==="] = ->(v, r) { v.to_s == r.to_s }
@@ -31,11 +33,15 @@ module Dependabot
           [matches[1] || "=", Utils::Python::Version.new(matches[2])]
         end
 
-        # For consistency with other langauges, we define a requirements array.
-        # Python doesn't have an `OR` separator for requirements, so it always
-        # contains a single element.
+        # Returns an array of requirements. At least one requirement from the
+        # returned array must be satisfied for a version to be valid.
+        #
+        # NOTE: Or requirements are only valid for Poetry.
         def self.requirements_array(requirement_string)
-          [new(requirement_string)]
+          return [new(nil)] if requirement_string.nil?
+          requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+            new(req_string)
+          end
         end
 
         def initialize(*requirements)
