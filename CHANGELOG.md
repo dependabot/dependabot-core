@@ -1,3 +1,7 @@
+## v0.66.11, 14 August 2018
+
+- Revert "Fix flaky spec using SharedHelpers.in_a_temporary_directory"
+
 ## v0.66.10, 14 August 2018
 
 - Python: Handle pyproject.toml requirement updates
