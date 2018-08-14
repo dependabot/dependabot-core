@@ -18,7 +18,9 @@ module Dependabot
             /^Pipfile\.lock$/,
             /.*\.txt$/,
             /.*\.in$/,
-            /^setup\.py$/
+            /^setup\.py$/,
+            /^pyproject\.toml$/
+            /^pyproject\.lock$/
           ]
         end
 
