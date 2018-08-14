@@ -91,6 +91,7 @@ module Dependabot
         def convert_caret_req(req_string)
           version = req_string.gsub(/^\^/, "")
           parts = version.split(".")
+          parts = parts.fill(0, parts.length...3)
           first_non_zero = parts.find { |d| d != "0" }
           first_non_zero_index =
             first_non_zero ? parts.index(first_non_zero) : parts.count - 1

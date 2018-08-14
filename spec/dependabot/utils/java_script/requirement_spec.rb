@@ -27,6 +27,16 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
     context "with a caret version specified" do
       let(:requirement_string) { "^1.0.0" }
       it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0.a")) }
+
+      context "for two digits" do
+        let(:requirement_string) { "^1.2" }
+        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
+      end
+
+      context "with a pre-1.0.0 dependency" do
+        let(:requirement_string) { "^0.2.3" }
+        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.a")) }
+      end
     end
 
     context "with a ~ version specified" do
@@ -56,7 +66,7 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with an x" do
       let(:requirement_string) { "^1.1.x" }
-      it { is_expected.to eq(described_class.new(">= 1.1", "< 2.0")) }
+      it { is_expected.to eq(described_class.new(">= 1.1", "< 2.0.0.a")) }
     end
 
     context "with a 'v' prefix" do
