@@ -1,3 +1,7 @@
+## v0.66.14, 14 August 2018
+
+- .NET: Handle wildcard versions
+
 ## v0.66.13, 14 August 2018
 
 - Bump groovy-all from 2.5.0 to 2.5.2
