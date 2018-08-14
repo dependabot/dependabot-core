@@ -2,7 +2,7 @@
 
 require "time"
 require "gpgme"
-require "dependabot/shared_helpers"
+require "tmpdir"
 require "dependabot/pull_request_creator"
 
 module Dependabot
@@ -23,8 +23,8 @@ module Dependabot
       def signature
         email = author_details[:email]
 
-        SharedHelpers.in_a_temporary_directory do |dir|
-          GPGME::Engine.home_dir = dir.to_s
+        Dir.mktmpdir do |dir|
+          GPGME::Engine.home_dir = dir
           GPGME::Key.import(signature_key)
 
           crypto = GPGME::Crypto.new(armor: true)

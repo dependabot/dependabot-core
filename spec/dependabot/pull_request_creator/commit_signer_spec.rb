@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "gpgme"
+require "tmpdir"
 require "dependabot/pull_request_creator/commit_signer"
 
 RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
@@ -15,8 +16,8 @@ RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
     )
   end
 
-  let!(:signature_key) { fixture("keys", "pgp.key") }
-  let!(:public_key) { fixture("keys", "pgp.pub") }
+  let(:signature_key) { fixture("keys", "pgp.key") }
+  let(:public_key) { fixture("keys", "pgp.pub") }
   let(:author_details) do
     {
       email: "support@dependabot.com",
@@ -40,8 +41,8 @@ RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
     it "signs the correct text, correctly" do
       signature = signer.signature
 
-      Dependabot::SharedHelpers.in_a_temporary_directory do |dir|
-        GPGME::Engine.home_dir = dir.to_s
+      Dir.mktmpdir do |dir|
+        GPGME::Engine.home_dir = dir
         GPGME::Key.import(public_key)
 
         crypto = GPGME::Crypto.new(armor: true)

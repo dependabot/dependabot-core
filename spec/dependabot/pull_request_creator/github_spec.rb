@@ -271,8 +271,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
 
       context "with a signature key" do
-        let!(:signature_key) { fixture("keys", "pgp.key") }
-        let!(:public_key) { fixture("keys", "pgp.pub") }
+        let(:signature_key) { fixture("keys", "pgp.key") }
+        let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
           "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n"\
           "parent basecommitsha\n"\
@@ -312,8 +312,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 signature = JSON.parse(req.body)["signature"]
                 valid_sig = false
 
-                Dependabot::SharedHelpers.in_a_temporary_directory do |dir|
-                  GPGME::Engine.home_dir = dir.to_s
+                Dir.mktmpdir do |dir|
+                  GPGME::Engine.home_dir = dir
                   GPGME::Key.import(public_key)
 
                   crypto = GPGME::Crypto.new(armor: true)
