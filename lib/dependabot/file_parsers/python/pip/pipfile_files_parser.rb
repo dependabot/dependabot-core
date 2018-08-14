@@ -112,7 +112,7 @@ module Dependabot
 
           def parsed_pipfile_lock
             @parsed_pipfile_lock ||= JSON.parse(pipfile_lock.content)
-          rescue JSON::ParseError
+          rescue JSON::ParserError
             raise Dependabot::DependencyFileNotParseable, pipfile_lock.path
           end
 

@@ -1005,6 +1005,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
       end
 
+      context "with a Pipfile.lock that isn't parseable" do
+        let(:lockfile_fixture_name) { "unparseable.lock" }
+
+        it "raises a Dependabot::DependencyFileNotParseable error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("Pipfile.lock")
+            end
+        end
+      end
+
       context "with no entry in the Pipfile.lock" do
         let(:pipfile_fixture_name) { "not_in_lockfile" }
         let(:lockfile_fixture_name) { "only_dev.lock" }
