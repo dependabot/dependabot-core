@@ -1,3 +1,9 @@
+## v0.66.13, 14 August 2018
+
+- Bump groovy-all from 2.5.0 to 2.5.2
+- Accept a custom branch name separator
+- Python: Handle || requirements (used in Poetry)
+
 ## v0.66.12, 14 August 2018
 
 - Python: Add poetry files to rebase triggereing regexes
