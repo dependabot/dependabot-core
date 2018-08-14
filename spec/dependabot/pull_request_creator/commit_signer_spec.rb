@@ -41,7 +41,8 @@ RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
     it "signs the correct text, correctly" do
       signature = signer.signature
 
-      Dir.mktmpdir do |dir|
+      dir = Dir.mktmpdir
+      begin
         GPGME::Engine.home_dir = dir
         GPGME::Key.import(public_key)
 
@@ -49,6 +50,8 @@ RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
         crypto.verify(signature, signed_text: text_to_sign) do |sig|
           expect(sig).to be_valid
         end
+      ensure
+        FileUtils.remove_entry(dir, true)
       end
     end
   end

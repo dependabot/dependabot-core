@@ -23,19 +23,22 @@ module Dependabot
       def signature
         email = author_details[:email]
 
-        Dir.mktmpdir do |dir|
-          GPGME::Engine.home_dir = dir
-          GPGME::Key.import(signature_key)
+        dir = Dir.mktmpdir
 
-          crypto = GPGME::Crypto.new(armor: true)
-          opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
-          crypto.sign(commit_object, opts).to_s
-        end
+        GPGME::Engine.home_dir = dir
+        GPGME::Key.import(signature_key)
+
+        crypto = GPGME::Crypto.new(armor: true)
+        opts = { mode: GPGME::SIG_MODE_DETACH, signer: email }
+        crypto.sign(commit_object, opts).to_s
       rescue Errno::ENOTEMPTY
+        FileUtils.remove_entry(dir, true)
         # This appears to be a Ruby bug which occurs very rarely
         raise if @retrying
         @retrying = true
         retry
+      ensure
+        FileUtils.remove_entry(dir, true)
       end
 
       private

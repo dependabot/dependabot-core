@@ -312,7 +312,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 signature = JSON.parse(req.body)["signature"]
                 valid_sig = false
 
-                Dir.mktmpdir do |dir|
+                dir = Dir.mktmpdir
+                begin
                   GPGME::Engine.home_dir = dir
                   GPGME::Key.import(public_key)
 
@@ -320,6 +321,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   crypto.verify(signature, signed_text: text_to_sign) do |sig|
                     valid_sig = sig.valid?
                   end
+                ensure
+                  FileUtils.remove_entry(dir, true)
                 end
 
                 valid_sig
