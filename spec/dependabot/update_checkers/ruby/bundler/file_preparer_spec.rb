@@ -204,6 +204,36 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
 
         its(:content) { is_expected.to include(%("business", version)) }
       end
+
+      context "with a required ruby version in the gemspec" do
+        let(:dependency_files) { [gemfile, lockfile, gemspec] }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: gemspec_body,
+            name: "example.gemspec"
+          )
+        end
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "old_required_ruby") }
+        let(:version) { "1.4.3" }
+
+        its(:content) { is_expected.to include("ruby '1.9.3'") }
+
+        context "when asked not to lock the Ruby version" do
+          let(:preparer) do
+            described_class.new(
+              dependency_files: dependency_files,
+              dependency: dependency,
+              remove_git_source: remove_git_source,
+              unlock_requirement: unlock_requirement,
+              replacement_git_pin: replacement_git_pin,
+              latest_allowable_version: latest_allowable_version,
+              lock_ruby_version: false
+            )
+          end
+
+          its(:content) { is_expected.to_not include("ruby '1.9.3'") }
+        end
+      end
     end
 
     describe "the updated gemspec" do
