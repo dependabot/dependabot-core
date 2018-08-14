@@ -10,11 +10,6 @@ module Dependabot
     module Python
       class Pip
         class LatestVersionFinder
-          MAIN_PYPI_INDEXES = %w(
-            https://pypi.python.org/simple/
-            https://pypi.org/simple/
-          ).freeze
-
           def initialize(dependency:, dependency_files:, credentials:,
                          ignored_versions:)
             @dependency       = dependency
@@ -171,6 +166,8 @@ module Dependabot
             end
             urls[:extra] = urls[:extra].uniq
 
+            urls
+          rescue TomlRB::ParseError
             urls
           end
 
