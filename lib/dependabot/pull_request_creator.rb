@@ -13,13 +13,13 @@ module Dependabot
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
                 :author_details, :signature_key, :vulnerabilities_fixed,
-                :reviewers, :assignees, :milestone
+                :reviewers, :assignees, :milestone, :branch_name_separator
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
-                   vulnerabilities_fixed: {})
+                   vulnerabilities_fixed: {}, branch_name_separator: "/")
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -33,6 +33,7 @@ module Dependabot
       @assignees             = assignees
       @milestone             = milestone
       @vulnerabilities_fixed = vulnerabilities_fixed
+      @branch_name_separator = branch_name_separator
 
       check_dependencies_have_previous_version
     end
@@ -108,7 +109,8 @@ module Dependabot
         BranchNamer.new(
           dependencies: dependencies,
           files: files,
-          target_branch: source.branch
+          target_branch: source.branch,
+          separator: branch_name_separator
         )
     end
 

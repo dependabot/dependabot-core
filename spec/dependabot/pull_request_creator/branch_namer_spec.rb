@@ -83,6 +83,19 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       it { is_expected.to eq("dependabot/bundler/my-branch/business-1.5.0") }
     end
 
+    context "with a custom branch name separator" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          separator: "-"
+        )
+      end
+
+      it { is_expected.to eq("dependabot-bundler-business-1.5.0") }
+    end
+
     context "with multiple dependencies" do
       let(:dependencies) { [dependency, dep2] }
       let(:dep2) do

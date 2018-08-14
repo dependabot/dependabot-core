@@ -8,12 +8,13 @@ module Dependabot
     class BranchNamer
       JAVA_PMS = %w(maven gradle).freeze
 
-      attr_reader :dependencies, :files, :target_branch
+      attr_reader :dependencies, :files, :target_branch, :separator
 
-      def initialize(dependencies:, files:, target_branch:)
-        @dependencies = dependencies
-        @files = files
+      def initialize(dependencies:, files:, target_branch:, separator: "/")
+        @dependencies  = dependencies
+        @files         = files
         @target_branch = target_branch
+        @separator     = separator
       end
 
       def new_branch_name
@@ -30,7 +31,10 @@ module Dependabot
             "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
           end
 
-        File.join(prefixes, @name).gsub(%r{/\.}, "/dot-")
+        branch_name = File.join(prefixes, @name).gsub(%r{/\.}, "/dot-")
+
+        # Some users need branch names without slashes
+        branch_name.gsub("/", separator)
       end
 
       private
