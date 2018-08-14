@@ -26,8 +26,12 @@ module Dependabot
 
           def updated_requirements
             requirements.map do |req|
-              if req[:file] == "setup.py" then updated_setup_requirement(req)
-              else updated_requirement(req)
+              case req[:file]
+              when "setup.py" then updated_setup_requirement(req)
+              when "pyproject.toml" then updated_pyproject_requirement(req)
+              when "Pipfile" then updated_pipfile_requirement(req)
+              when /\.txt$|\.in$/ then updated_requirement(req)
+              else raise "Unexpected filename: #{req[:file]}"
               end
             end
           end
@@ -57,6 +61,40 @@ module Dependabot
             req.merge(requirement: new_requirement)
           end
 
+          def updated_pipfile_requirement(req)
+            # For now, we just proxy to updated_requirement. In future this
+            # method may treat Pipfile requirements differently.
+            updated_requirement(req)
+          end
+
+          def updated_pyproject_requirement(req)
+            return req unless latest_resolvable_version
+            return req unless req.fetch(:requirement)
+
+            requirement_strings = req[:requirement].split(",").map(&:strip)
+
+            new_requirement =
+              if requirement_strings.any? { |r| r.match?(/^==|^\d/) }
+                # If there is an equality operator, just update that. It must
+                # be binding and any other requirements will be being ignored
+                find_and_update_equality_match(requirement_strings)
+              elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
+                # If a compatibility operator is being used, just bump its
+                # version (and remove any other requirements)
+                v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
+                bump_version(v_req, latest_resolvable_version.to_s)
+              elsif new_version_satisfies?(req)
+                # Otherwise we're looking at a range operator. No change
+                # required if it's already satisfied
+                req.fetch(:requirement)
+              else
+                # But if it's not, update it
+                update_requirements_range(requirement_strings)
+              end
+
+            req.merge(requirement: new_requirement)
+          end
+
           def updated_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -68,7 +106,7 @@ module Dependabot
                 find_and_update_equality_match(requirement_strings)
               elsif requirement_strings.any? { |r| r.start_with?("~=") }
                 tw_req = requirement_strings.find { |r| r.start_with?("~=") }
-                update_twiddle_version(tw_req, latest_resolvable_version.to_s)
+                bump_version(tw_req, latest_resolvable_version.to_s)
               elsif new_version_satisfies?(req)
                 req.fetch(:requirement)
               else
@@ -89,8 +127,10 @@ module Dependabot
               req = requirement_strings.find do |r|
                 requirement_class.new(r).exact?
               end
-              op = requirement_class.new(req).requirements.first.first
-              "#{op}#{latest_resolvable_version}"
+              req.sub(
+                PythonRequirementParser::VERSION,
+                latest_resolvable_version.to_s
+              )
             else
               # Prefix match
               requirement_strings.find { |r| r.start_with?("==") }.
@@ -136,9 +176,15 @@ module Dependabot
           end
 
           # Updates the version in a "~>" constraint to allow the given version
-          def update_twiddle_version(req_string, version_to_be_permitted)
-            old_version = req_string.gsub("~=", "")
-            "~=#{at_same_precision(version_to_be_permitted, old_version)}"
+          def bump_version(req_string, version_to_be_permitted)
+            old_version = req_string.
+                          match(/(#{PythonRequirementParser::VERSION})/).
+                          captures.first
+
+            req_string.sub(
+              old_version,
+              at_same_precision(version_to_be_permitted, old_version)
+            )
           end
 
           def convert_twidle_to_range(requirement, version_to_be_permitted)

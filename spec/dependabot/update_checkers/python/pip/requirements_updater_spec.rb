@@ -111,7 +111,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~=1.5") }
           end
 
-          context "that needs to be upated and maintain its precision" do
+          context "that needs to be updated and maintain its precision" do
             let(:requirement_txt_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
             its([:requirement]) { is_expected.to eq("~=2.1") }
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             it { is_expected.to eq(setup_py_req) }
           end
 
-          context "that needs to be upated and maintain its precision" do
+          context "that needs to be updated and maintain its precision" do
             let(:setup_py_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
             its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
@@ -208,6 +208,109 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
 
           context "along with an exact match" do
             let(:setup_py_req_string) { "==1.4.*, ==1.4.1" }
+            its([:requirement]) { is_expected.to eq("==1.5.0") }
+          end
+        end
+      end
+    end
+
+    context "for a pyproject.toml dependency" do
+      let(:requirements) { [pyproject_req].compact }
+      let(:pyproject_req) do
+        {
+          file: "pyproject.toml",
+          requirement: pyproject_req_string,
+          groups: [],
+          source: nil
+        }
+      end
+      subject do
+        updated_requirements.find { |r| r[:file] == "pyproject.toml" }
+      end
+      let(:pyproject_req_string) { "*" }
+
+      context "when there is no resolvable version" do
+        let(:latest_resolvable_version) { nil }
+        it { is_expected.to eq(pyproject_req) }
+      end
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        context "and a full version was previously pinned" do
+          let(:pyproject_req_string) { "1.4.0" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+
+          context "that has fewer digits than the new version" do
+            let(:pyproject_req_string) { "1.4" }
+            let(:latest_resolvable_version) { "1.5.0" }
+            its([:requirement]) { is_expected.to eq("1.5.0") }
+          end
+
+          context "that had a local version" do
+            let(:pyproject_req_string) { "1.4.0+gc.1" }
+            its([:requirement]) { is_expected.to eq("1.5.0") }
+          end
+
+          context "and used an equality matcher" do
+            let(:pyproject_req_string) { "==1.4.0" }
+            its([:requirement]) { is_expected.to eq("==1.5.0") }
+          end
+        end
+
+        context "and an asterisk was specified" do
+          let(:pyproject_req_string) { "*" }
+          it { is_expected.to eq(pyproject_req) }
+        end
+
+        context "and a range requirement was specified" do
+          let(:pyproject_req_string) { ">=1.3.0" }
+          it { is_expected.to eq(pyproject_req) }
+
+          context "that had a local version" do
+            let(:pyproject_req_string) { ">=1.3.0+gc.1" }
+            it { is_expected.to eq(pyproject_req) }
+          end
+
+          context "with an upper bound" do
+            let(:pyproject_req_string) { ">=1.3.0, <=1.5.0" }
+            it { is_expected.to eq(pyproject_req) }
+
+            context "that needs updating" do
+              let(:pyproject_req_string) { ">=1.3.0, <1.5" }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+            end
+          end
+        end
+
+        context "and a ~= requirement was specified" do
+          let(:pyproject_req_string) { "~=1.3.0" }
+          its([:requirement]) { is_expected.to eq("~=1.5.0") }
+        end
+
+        context "and a ~ requirement was specified" do
+          let(:pyproject_req_string) { "~1.3.0" }
+          its([:requirement]) { is_expected.to eq("~1.5.0") }
+        end
+
+        context "and a ^ requirement was specified" do
+          let(:pyproject_req_string) { "^1.3.0" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+        end
+
+        context "and a wildcard match was specified" do
+          context "that is satisfied" do
+            let(:pyproject_req_string) { "==1.*.*" }
+            it { is_expected.to eq(pyproject_req) }
+          end
+
+          context "that needs updating" do
+            let(:pyproject_req_string) { "==1.4.*" }
+            its([:requirement]) { is_expected.to eq("==1.5.*") }
+          end
+
+          context "along with an exact match" do
+            let(:pyproject_req_string) { "==1.4.*, ==1.4.1" }
             its([:requirement]) { is_expected.to eq("==1.5.0") }
           end
         end
