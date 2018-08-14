@@ -1,3 +1,10 @@
+## v0.66.9, 13 August 2018
+
+- Python: Handle unparseable pipfile when fetching indexes
+- Ruby: Don't raise error if locking Ruby version to one in gemspec causes
+  problems
+- Python: Rescue JSON::ParserError, not JSON::ParseError
+
 ## v0.66.8, 13 August 2018
 
 - Python: Fix missing method
