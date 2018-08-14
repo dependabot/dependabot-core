@@ -1,3 +1,7 @@
+## v0.66.12, 14 August 2018
+
+- Python: Add poetry files to rebase triggereing regexes
+
 ## v0.66.11, 14 August 2018
 
 - Revert "Fix flaky spec using SharedHelpers.in_a_temporary_directory"
