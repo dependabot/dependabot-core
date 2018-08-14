@@ -69,6 +69,8 @@ module Dependabot
               ).prepared_dependency_files
           end
 
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def fetch_latest_resolvable_version_details
             return latest_version_details unless gemfile
 
@@ -92,6 +94,31 @@ module Dependabot
               end
               details
             end
+          rescue Dependabot::DependencyFileNotResolvable => error
+            raise unless ruby_lock_error?(error)
+            @gemspec_ruby_unlocked = true
+            regenerate_dependency_files_without_ruby_lock && retry
+          end
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
+
+          def ruby_lock_error?(error)
+            return false unless error.message.include?(" for gem \"ruby\0\"")
+            return false if @gemspec_ruby_unlocked
+            dependency_files.any? { |f| f.name.end_with?(".gemspec") }
+          end
+
+          def regenerate_dependency_files_without_ruby_lock
+            @dependency_files =
+              FilePreparer.new(
+                dependency: dependency,
+                dependency_files: unprepared_dependency_files,
+                replacement_git_pin: replacement_git_pin,
+                remove_git_source: remove_git_source?,
+                unlock_requirement: unlock_requirement?,
+                latest_allowable_version: latest_allowable_version,
+                lock_ruby_version: false
+              ).prepared_dependency_files
           end
 
           def dependency_from_definition

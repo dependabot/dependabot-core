@@ -18,11 +18,12 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      unlock_requirement: false
+      unlock_requirement: unlock_requirement
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:ignored_versions) { [] }
+  let(:unlock_requirement) { false }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -285,6 +286,54 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         it "raises a PathDependenciesNotReachable error" do
           expect { subject }.
             to raise_error(Dependabot::PathDependenciesNotReachable)
+        end
+      end
+    end
+
+    context "with a gemspec and a Gemfile" do
+      let(:dependency_files) { [gemfile, gemspec] }
+      let(:gemfile_fixture_name) { "imports_gemspec" }
+      let(:gemspec_fixture_name) { "small_example" }
+      let(:unlock_requirement) { true }
+      let(:requirements) do
+        [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.2.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "example.gemspec",
+            requirement: "~> 1.0",
+            groups: [],
+            source: nil
+          }
+        ]
+      end
+
+      it "doesn't just fall back to latest_version" do
+        expect(resolver.latest_resolvable_version_details[:version]).
+          to eq(Gem::Version.new("1.8.0"))
+      end
+
+      context "when an old required ruby is specified in the gemspec" do
+        let(:gemspec_fixture_name) { "old_required_ruby" }
+        let(:dependency_name) { "statesman" }
+
+        it "takes the minimum ruby version into account" do
+          expect(resolver.latest_resolvable_version_details[:version]).
+            to eq(Gem::Version.new("2.0.1"))
+        end
+
+        context "that isn't satisfied by the dependencies" do
+          let(:gemfile_fixture_name) { "imports_gemspec_version_clash" }
+          let(:current_version) { "3.0.1" }
+
+          it "ignores the minimum ruby version in the gemspec" do
+            expect(resolver.latest_resolvable_version_details[:version]).
+              to eq(Gem::Version.new("3.2.0"))
+          end
         end
       end
     end
