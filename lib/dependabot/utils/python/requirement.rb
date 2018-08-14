@@ -66,8 +66,44 @@ module Dependabot
           return nil if req_string == "*"
           req_string = req_string.gsub("~=", "~>")
           req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
-          return req_string unless req_string.include?(".*")
 
+          if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
+          elsif req_string.start_with?("^") then convert_caret_req(req_string)
+          elsif req_string.include?(".*") then convert_wildcard(req_string)
+          else req_string
+          end
+        end
+
+        # Poetry uses ~ requirements.
+        # https://github.com/sdispater/poetry#tilde-requirements
+        def convert_tilde_req(req_string)
+          version = req_string.gsub(/^~\>?/, "")
+          parts = version.split(".")
+          parts << "0" if parts.count < 3
+          "~> #{parts.join('.')}"
+        end
+
+        # Poetry uses ^ requirements
+        # https://github.com/sdispater/poetry#caret-requirement
+        def convert_caret_req(req_string)
+          version = req_string.gsub(/^\^/, "")
+          parts = version.split(".")
+          parts = parts.fill(0, parts.length...3)
+          first_non_zero = parts.find { |d| d != "0" }
+          first_non_zero_index =
+            first_non_zero ? parts.index(first_non_zero) : parts.count - 1
+          upper_bound = parts.map.with_index do |part, i|
+            if i < first_non_zero_index then part
+            elsif i == first_non_zero_index then (part.to_i + 1).to_s
+            elsif i > first_non_zero_index && i == 2 then "0.a"
+            else 0
+            end
+          end.join(".")
+
+          [">= #{version}", "< #{upper_bound}"]
+        end
+
+        def convert_wildcard(req_string)
           # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
           # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
           req_string.

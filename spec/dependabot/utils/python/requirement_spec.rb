@@ -44,6 +44,36 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
       end
     end
 
+    context "with a ~" do
+      let(:requirement_string) { "~1.2.3" }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.2.3")) }
+
+      context "for two digits" do
+        let(:requirement_string) { "~1.2" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
+      end
+
+      context "for one digits" do
+        let(:requirement_string) { "~1" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+      end
+    end
+
+    context "with a ^" do
+      let(:requirement_string) { "^1.2.3" }
+      it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.a")) }
+
+      context "for two digits" do
+        let(:requirement_string) { "^1.2" }
+        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
+      end
+
+      context "with a pre-1.0.0 dependency" do
+        let(:requirement_string) { "^0.2.3" }
+        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.a")) }
+      end
+    end
+
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
       it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
