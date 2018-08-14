@@ -1,4 +1,10 @@
-## v0.66.9, 13 August 2018
+## v0.66.10, 14 August 2018
+
+- Python: Handle pyproject.toml requirement updates
+- Python: Handle ~ and ^ requirements (for poetry)
+- JS: Improve caret version handling
+
+## v0.66.9, 14 August 2018
 
 - Python: Handle unparseable pipfile when fetching indexes
 - Ruby: Don't raise error if locking Ruby version to one in gemspec causes
