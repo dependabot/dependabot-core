@@ -280,8 +280,8 @@ module Dependabot
 
         def sanitized_package_json_content(file)
           file.content.
-            gsub(/\{\{.*\}\}/, "something"). # {{ name }} syntax not allowed
-            gsub("\\ ", " ")                 # escaped whitespace not allowed
+            gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
+            gsub("\\ ", " ")                  # escaped whitespace not allowed
         end
 
         def lockfile?
