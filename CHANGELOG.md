@@ -1,3 +1,7 @@
+## v0.66.17, 15 August 2018
+
+- JS: Minimal sanitization of package.json content everywhere, with tests
+
 ## v0.66.16, 15 August 2018
 
 - JS: Minimal sanitization of package.json content
