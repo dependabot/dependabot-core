@@ -12,8 +12,7 @@ module Dependabot
     module Python
       class Pip
         class PoetryFilesParser
-          POETRY_DEPENDENCY_TYPES =
-            %w(dependencies dev-dependencies).freeze
+          POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
           def initialize(dependency_files:)
             @dependency_files = dependency_files
