@@ -1,3 +1,8 @@
+## v0.66.15, 15 August 2018
+
+- Java: Handle timeouts when looking up metadata
+- Python: Handle Poetry requirements better
+
 ## v0.66.14, 14 August 2018
 
 - .NET: Handle wildcard versions
