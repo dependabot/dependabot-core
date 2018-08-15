@@ -85,6 +85,8 @@ module Dependabot
           )
 
           @dependency_pom_file = Nokogiri::XML(response.body)
+        rescue Excon::Error::Timeout
+          @dependency_pom_file = Nokogiri::XML("")
         end
 
         def parent_pom_file(pom)
