@@ -63,8 +63,14 @@ module Dependabot
           end
 
           def pyproject_sources
+            return @pyproject_sources if @pyproject_sources
+
+            pyproject_sources ||=
+              TomlRB.parse(pyproject_content).
+              dig("tool", "poetry", "source")
+
             @pyproject_sources ||=
-              TomlRB.parse(pyproject_content).fetch("source", []).
+              (pyproject_sources || []).
               map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
           end
 
