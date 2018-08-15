@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "pendulum"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Python datetimes made easy"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+requests = "^1.0.0"

@@ -84,9 +84,8 @@ module Dependabot
           # If passed in as an option (in the base class) honour that option
           return @requirements_update_strategy if @requirements_update_strategy
 
-          # Otherwise, bump versions
-          # TODO: Add some kind of library detection
-          :bump_versions
+          # Otherwise, check if this is a poetry library or not
+          poetry_library? ? :widen_ranges : :bump_versions
         end
 
         private
@@ -152,6 +151,33 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions
           )
+        end
+
+        def poetry_library?
+          return false unless pyproject
+
+          # Hit PyPi and check whether there are details for a library with a
+          # matching name and description
+          details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
+          return false unless details
+
+          index_response = Excon.get(
+            "https://pypi.org/pypi/#{normalised_name(details['name'])}/json",
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          return false unless index_response.status == 200
+
+          pypi_info = JSON.parse(index_response.body)["info"] || {}
+          pypi_info["summary"] == details["description"]
+        rescue URI::InvalidURIError
+          false
+        end
+
+        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+        def normalised_name(name)
+          name.downcase.tr("_", "-").tr(".", "-")
         end
 
         def pipfile

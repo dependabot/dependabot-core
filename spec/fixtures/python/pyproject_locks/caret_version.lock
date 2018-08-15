@@ -1,0 +1,16 @@
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+platform = "UNKNOWN"
+python-versions = "*"
+version = "1.2.3"
+
+[metadata]
+content-hash = "8289fd2c93ad6e51a8a4f52ac2211d4234480e062a998bc4db6dd28c9c78dbe2"
+platform = "*"
+python-versions = "^3.6"
+
+[metadata.hashes]
+requests = ["156bf3ec27ba9ec7e0cf8fbe02808718099d218de403eb64a714d73ba1a29ab1"]

@@ -501,6 +501,51 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       its([:requirement]) { is_expected.to eq("==2.6.0") }
     end
 
+    context "when there is a pyproject.toml file" do
+      let(:dependency_files) { [requirements_file, pyproject] }
+      let(:pyproject_fixture_name) { "caret_version.toml" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.2.3",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      let(:pypi_url) { "https://pypi.python.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("python", "pypi_simple_response_requests.html")
+      end
+
+      context "for a library" do
+        before do
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+            to_return(
+              status: 200,
+              body: fixture("python", "pypi_response_pendulum.json")
+            )
+        end
+
+        its([:requirement]) { is_expected.to eq(">=1,<3") }
+      end
+
+      context "for a non-library" do
+        before do
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+            to_return(status: 404)
+        end
+
+        its([:requirement]) { is_expected.to eq("^2.19.1") }
+      end
+    end
+
     context "when there were multiple requirements" do
       let(:dependency) do
         Dependabot::Dependency.new(
