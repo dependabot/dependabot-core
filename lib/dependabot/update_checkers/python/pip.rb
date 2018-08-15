@@ -75,8 +75,18 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
-            latest_resolvable_version: latest_resolvable_version&.to_s
+            latest_resolvable_version: latest_resolvable_version&.to_s,
+            update_strategy: requirements_update_strategy
           ).updated_requirements
+        end
+
+        def requirements_update_strategy
+          # If passed in as an option (in the base class) honour that option
+          return @requirements_update_strategy if @requirements_update_strategy
+
+          # Otherwise, bump versions
+          # TODO: Add some kind of library detection
+          :bump_versions
         end
 
         private

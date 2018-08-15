@@ -40,7 +40,7 @@ module Dependabot
         def self.requirements_array(requirement_string)
           return [new(nil)] if requirement_string.nil?
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
-            new(req_string)
+            new(req_string.strip)
           end
         end
 
@@ -117,7 +117,7 @@ module Dependabot
             first(req_string.split(".").index("*") + 1).
             join(".").
             tr("*", "0").
-            gsub(/^(?<!!)==?/, "~>")
+            gsub(/^(?<!!)=*/, "~>")
         end
       end
     end

@@ -9,11 +9,16 @@ module Dependabot
     module Python
       class Pip
         class RequirementsUpdater
-          attr_reader :requirements, :latest_version, :latest_resolvable_version
+          PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+          PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/
 
-          def initialize(requirements:, latest_version:,
-                         latest_resolvable_version:)
+          attr_reader :requirements, :update_strategy,
+                      :latest_version, :latest_resolvable_version
+
+          def initialize(requirements:, update_strategy:,
+                         latest_version:, latest_resolvable_version:)
             @requirements = requirements
+            @update_strategy = update_strategy
 
             if latest_version
               @latest_version = Utils::Python::Version.new(latest_version)
@@ -50,10 +55,7 @@ module Dependabot
                 find_and_update_equality_match(req_strings)
               elsif req_strings.any? { |r| r.start_with?("~=", "==") }
                 tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
-                convert_twidle_to_range(
-                  requirement_class.new(tw_req),
-                  latest_resolvable_version
-                )
+                convert_to_range(tw_req, latest_resolvable_version)
               else
                 update_requirements_range(req_strings)
               end
@@ -71,6 +73,19 @@ module Dependabot
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
 
+            # If the requirement uses || syntax then we always want to widen it
+            if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
+              return widen_pyproject_requirement(req)
+            end
+
+            case update_strategy
+            when :widen_ranges then widen_pyproject_requirement(req)
+            when :bump_versions then update_pyproject_version(req)
+            else raise "Unexpected update strategy: #{update_strategy}"
+            end
+          end
+
+          def update_pyproject_version(req)
             requirement_strings = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
@@ -95,6 +110,60 @@ module Dependabot
             req.merge(requirement: new_requirement)
           end
 
+          def widen_pyproject_requirement(req)
+            return req if new_version_satisfies?(req)
+
+            new_requirement =
+              if req[:requirement].match?(PYPROJECT_OR_SEPARATOR)
+                add_new_requirement_option(req[:requirement])
+              else
+                widen_requirement_range(req[:requirement])
+              end
+
+            req.merge(requirement: new_requirement)
+          end
+
+          def add_new_requirement_option(req_string)
+            option_to_copy = req_string.split(PYPROJECT_OR_SEPARATOR).last.
+                             split(PYPROJECT_SEPARATOR).first.strip
+            operator       = option_to_copy.gsub(/\d.*/, "").strip
+
+            new_option =
+              case operator
+              when "", "==", "==="
+                find_and_update_equality_match([option_to_copy])
+              when "~=", "~", "^"
+                bump_version(option_to_copy, latest_resolvable_version.to_s)
+              else
+                # We don't expect to see OR conditions used with range
+                # operators. If / when we see it, we should handle it.
+                raise "Unexpected operator: #{operator}"
+              end
+
+            # TODO: Match source spacing
+            "#{req_string.strip} || #{new_option.strip}"
+          end
+
+          def widen_requirement_range(req_string)
+            requirement_strings = req_string.split(",").map(&:strip)
+
+            if requirement_strings.any? { |r| r.match?(/(^==|^\d)[^*]*$/) }
+              # If there is an equality operator, just update that.
+              # (i.e., assume it's being used deliberately)
+              find_and_update_equality_match(requirement_strings)
+            elsif requirement_strings.any? { |r| r.start_with?("~", "^") } ||
+                  requirement_strings.any? { |r| r.include?("*") }
+              # If a compatibility operator is being used, widen its
+              # range to include the new version
+              v_req = requirement_strings.
+                      find { |r| r.start_with?("~", "^") || r.include?("*") }
+              convert_to_range(v_req, latest_resolvable_version)
+            else
+              # Otherwise we have a range, and need to update the upper bound
+              update_requirements_range(requirement_strings)
+            end
+          end
+
           def updated_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -117,23 +186,22 @@ module Dependabot
           end
 
           def new_version_satisfies?(req)
-            requirement_class.new(req.fetch(:requirement).split(",")).
-              satisfied_by?(latest_resolvable_version)
+            requirement_class.
+              requirements_array(req.fetch(:requirement)).
+              any? { |r| r.satisfied_by?(latest_resolvable_version) }
           end
 
           def find_and_update_equality_match(requirement_strings)
             if requirement_strings.any? { |r| requirement_class.new(r).exact? }
               # True equality match
-              req = requirement_strings.find do |r|
-                requirement_class.new(r).exact?
-              end
-              req.sub(
-                PythonRequirementParser::VERSION,
-                latest_resolvable_version.to_s
-              )
+              requirement_strings.find { |r| requirement_class.new(r).exact? }.
+                sub(
+                  PythonRequirementParser::VERSION,
+                  latest_resolvable_version.to_s
+                )
             else
               # Prefix match
-              requirement_strings.find { |r| r.start_with?("==") }.
+              requirement_strings.find { |r| r.match?(/^(=+|\d)/) }.
                 sub(PythonRequirementParser::VERSION) do |v|
                   at_same_precision(latest_resolvable_version.to_s, v)
                 end
@@ -175,7 +243,7 @@ module Dependabot
               map(&:to_s).join(",").delete(" ")
           end
 
-          # Updates the version in a "~>" constraint to allow the given version
+          # Updates the version in a constraint to be the given version
           def bump_version(req_string, version_to_be_permitted)
             old_version = req_string.
                           match(/(#{PythonRequirementParser::VERSION})/).
@@ -187,19 +255,16 @@ module Dependabot
             )
           end
 
-          def convert_twidle_to_range(requirement, version_to_be_permitted)
-            version = requirement.requirements.first.last
-            version = version.release if version.prerelease?
-
-            index_to_update = version.segments.count - 2
-
+          def convert_to_range(req_string, version_to_be_permitted)
+            # Construct an upper bound at the same precision that the original
+            # requirement was at (taking into account ~ dynamics)
+            index_to_update = index_to_update_for(req_string)
             ub_segments = version_to_be_permitted.segments
             ub_segments << 0 while ub_segments.count <= index_to_update
             ub_segments = ub_segments[0..index_to_update]
             ub_segments[index_to_update] += 1
 
-            lb_segments = version.segments
-            lb_segments.pop while lb_segments.last.zero?
+            lb_segments = lower_bound_segments_for_req(req_string)
 
             # Ensure versions have the same length as each other (cosmetic)
             length = [lb_segments.count, ub_segments.count].max
@@ -207,6 +272,33 @@ module Dependabot
             ub_segments.fill(0, ub_segments.count...length)
 
             ">=#{lb_segments.join('.')},<#{ub_segments.join('.')}"
+          end
+
+          def lower_bound_segments_for_req(req_string)
+            requirement = requirement_class.new(req_string)
+            version = requirement.requirements.first.last
+            version = version.release if version.prerelease?
+
+            lb_segments = version.segments
+            lb_segments.pop while lb_segments.last.zero?
+
+            lb_segments
+          end
+
+          def index_to_update_for(req_string)
+            req = requirement_class.new(req_string.split(/[.\-]\*/).first)
+            version = req.requirements.first.last.release
+
+            if req_string.strip.start_with?("^")
+              version.segments.index { |i| i != 0 }
+            elsif req_string.include?("*")
+              version.segments.count - 1
+            elsif req_string.strip.start_with?("~=", "==")
+              version.segments.count - 2
+            elsif req_string.strip.start_with?("~")
+              req_string.split(".").count == 1 ? 0 : 1
+            else raise "Don't know how to convert #{req_string} to range"
+            end
           end
 
           # Updates the version in a "<" or "<=" constraint to allow the given
