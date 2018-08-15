@@ -222,13 +222,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
         {
           file: "pyproject.toml",
           requirement: pyproject_req_string,
-          groups: [],
+          groups: groups,
           source: nil
         }
       end
-      subject do
-        updated_requirements.find { |r| r[:file] == "pyproject.toml" }
-      end
+      let(:groups) { [] }
+      subject { updated_requirements.find { |r| r[:file] == "pyproject.toml" } }
       let(:pyproject_req_string) { "*" }
 
       context "when asked to bump versions" do
@@ -422,6 +421,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
                 let(:pyproject_req_string) { "^0.0.3" }
                 let(:latest_resolvable_version) { "0.0.5" }
                 its([:requirement]) { is_expected.to eq(">=0.0.3,<0.0.6") }
+              end
+
+              context "for a development dependency" do
+                let(:groups) { ["dev-dependencies"] }
+                its([:requirement]) { is_expected.to eq("^2.5.0") }
               end
             end
           end

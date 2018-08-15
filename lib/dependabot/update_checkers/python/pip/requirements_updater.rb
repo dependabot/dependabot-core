@@ -78,6 +78,12 @@ module Dependabot
               return widen_pyproject_requirement(req)
             end
 
+            # If the requirement is a development dependency we always want to
+            # bump it
+            if req.fetch(:groups).include?("dev-dependencies")
+              return update_pyproject_version(req)
+            end
+
             case update_strategy
             when :widen_ranges then widen_pyproject_requirement(req)
             when :bump_versions then update_pyproject_version(req)
