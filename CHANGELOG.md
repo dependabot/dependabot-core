@@ -1,3 +1,11 @@
+## v0.66.16, 15 August 2018
+
+- JS: Minimal sanitization of package.json content
+- Python: Detect poetry libraries
+- Python: Parse private poetry sources properly
+- Python: Always bump the version of Poetry dev dependencies
+- Python: Add poetry definition for production deps
+
 ## v0.66.15, 15 August 2018
 
 - Java: Handle timeouts when looking up metadata
