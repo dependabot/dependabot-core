@@ -1,3 +1,7 @@
+## v0.66.18, 16 August 2018
+
+- Symbolise requirements_update_strategy before passing to RequirementsUpdater
+
 ## v0.66.17, 15 August 2018
 
 - JS: Minimal sanitization of package.json content everywhere, with tests
