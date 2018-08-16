@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "octokit", "~> 4.6"
   spec.add_dependency "parseconfig", "~> 1.0"
   spec.add_dependency "parser", "~> 2.5"
-  spec.add_dependency "toml-rb", "~> 1.1"
+  spec.add_dependency "toml-rb", "~> 1.1", ">= 1.1.2"
 
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec", "~> 3.8.0"
