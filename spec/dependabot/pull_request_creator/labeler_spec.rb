@@ -105,6 +105,38 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           expect(WebMock).
             to_not have_requested(:post, "#{repo_api_url}/labels")
         end
+
+        context "that should be ignored" do
+          before do
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_custom_ignored.json"),
+                headers: json_header
+              )
+            stub_request(:post, "#{repo_api_url}/labels").
+              to_return(
+                status: 201,
+                body: fixture("github", "create_label.json"),
+                headers: json_header
+              )
+          end
+
+          it "creates a 'dependencies' label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/labels").
+              with(
+                body: {
+                  name: "dependencies",
+                  color: "0025ff",
+                  description: "Pull requests that update a dependency file"
+                }
+              )
+            expect(labeler.labels_for_pr).to include("dependencies")
+          end
+        end
       end
 
       context "when a custom dependencies label has been requested" do

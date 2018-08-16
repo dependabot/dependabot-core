@@ -7,6 +7,8 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class Labeler
+      DEPENDENCIES_LABEL_REGEX = %r{^dependenc[^/]+$}i
+
       def initialize(source:, custom_labels:, credentials:,
                      includes_security_fixes:)
         @source                  = source
@@ -66,12 +68,12 @@ module Dependabot
 
       def default_labels_for_pr
         if custom_labels then custom_labels & labels
-        else [labels.find { |l| l.match?(/dependenc/i) }]
+        else [labels.find { |l| l.match?(DEPENDENCIES_LABEL_REGEX) }]
         end
       end
 
       def dependencies_label_exists?
-        labels.any? { |l| l.match?(/dependenc/i) }
+        labels.any? { |l| l.match?(DEPENDENCIES_LABEL_REGEX) }
       end
 
       def security_label_exists?
