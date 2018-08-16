@@ -82,7 +82,9 @@ module Dependabot
 
         def requirements_update_strategy
           # If passed in as an option (in the base class) honour that option
-          return @requirements_update_strategy if @requirements_update_strategy
+          if @requirements_update_strategy
+            return @requirements_update_strategy.to_sym
+          end
 
           # Otherwise, check if this is a poetry library or not
           poetry_library? ? :widen_ranges : :bump_versions
