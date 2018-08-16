@@ -1,3 +1,8 @@
+## v0.66.19, 16 August 2018
+
+- Ignore existing dependency labels that contain a slash when checking for
+  default
+
 ## v0.66.18, 16 August 2018
 
 - Symbolise requirements_update_strategy before passing to RequirementsUpdater
