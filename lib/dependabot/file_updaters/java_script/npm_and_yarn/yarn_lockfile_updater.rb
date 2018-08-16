@@ -67,7 +67,9 @@ module Dependabot
               end
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("The registry may be down")
+            raise unless error.message.include?("The registry may be down") ||
+                         error.message.include?("ETIMEDOUT") ||
+                         error.message.include?("ENOBUFS")
             retry_count ||= 0
             retry_count += 1
             raise if retry_count > 2
