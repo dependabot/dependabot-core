@@ -1,3 +1,7 @@
+## v0.66.22, 17 August 2018
+
+- JS: Handle path dependencies specified by workspace packages
+
 ## v0.66.21, 17 August 2018
 
 - Ruby: Ignore timeouts from Rubygems
