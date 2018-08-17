@@ -1,3 +1,9 @@
+## v0.66.20, 17 August 2018
+
+- Escape issue number references prefixed with a backslash
+- PHP: Upgrade Composer to 1.7.2
+- JS: Retry more timeouts if Yarn resolution fails
+
 ## v0.66.19, 16 August 2018
 
 - Ignore existing dependency labels that contain a slash when checking for
