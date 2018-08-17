@@ -75,7 +75,7 @@ module Dependabot
               version: Gem::Version.new(dep["number"]),
               sha: dep["sha"]
             }
-          rescue JSON::ParserError
+          rescue JSON::ParserError, Excon::Error::Timeout
             nil
           end
 
