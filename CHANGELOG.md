@@ -1,3 +1,8 @@
+## v0.66.21, 17 August 2018
+
+- Ruby: Ignore timeouts from Rubygems
+- Python: Handle empty versions (convert them to 0)
+
 ## v0.66.20, 17 August 2018
 
 - Escape issue number references prefixed with a backslash
