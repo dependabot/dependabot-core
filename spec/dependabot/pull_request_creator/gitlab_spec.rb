@@ -45,7 +45,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       source: source,
       credentials: credentials,
       custom_labels: custom_labels,
-      includes_security_fixes: false
+      includes_security_fixes: false,
+      update_type: "patch"
     )
   end
   let(:custom_labels) { nil }
