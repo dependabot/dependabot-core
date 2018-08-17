@@ -133,9 +133,7 @@ module Dependabot
         end
 
         def fetch_imported_property_files(file:, previously_fetched_files:)
-          paths =
-            ImportPathsFinder.new(project_file: file).import_paths +
-            ImportPathsFinder.new(project_file: file).project_reference_paths
+          paths = ImportPathsFinder.new(project_file: file).import_paths
 
           paths.flat_map do |path|
             next if previously_fetched_files.map(&:name).include?(path)

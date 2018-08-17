@@ -31,19 +31,4 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget::ImportPathsFinder do
       end
     end
   end
-
-  describe "#project_reference_paths" do
-    subject(:project_reference_paths) { finder.project_reference_paths }
-
-    context "when the file does not reference any other projects" do
-      let(:fixture_name) { "basic.csproj" }
-      it { is_expected.to eq([]) }
-    end
-
-    context "when the file does reference another project" do
-      let(:fixture_name) { "project_reference.csproj" }
-      let(:csproj_name) { "nested/my.csproj" }
-      it { is_expected.to eq(["ref/another.csproj"]) }
-    end
-  end
 end
