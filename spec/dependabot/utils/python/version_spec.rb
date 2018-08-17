@@ -36,6 +36,15 @@ RSpec.describe Dependabot::Utils::Python::Version do
     end
   end
 
+  describe ".new" do
+    subject { described_class.new(version_string) }
+
+    context "with a blank string" do
+      let(:version_string) { "" }
+      it { is_expected.to eq(Gem::Version.new("0")) }
+    end
+  end
+
   describe "#to_s" do
     subject { version.to_s }
 
