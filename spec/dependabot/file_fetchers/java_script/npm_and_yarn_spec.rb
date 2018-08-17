@@ -715,6 +715,36 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a path dependency" do
+        before do
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_with_path_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/deps/etag/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.count).to eq(6)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/deps/etag/package.json")
+        end
+      end
+
       context "including an empty folder" do
         before do
           stub_request(

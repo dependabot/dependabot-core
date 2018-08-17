@@ -52,7 +52,9 @@ module Dependabot
           # rubocop:enable Security/Eval
 
           def current_dir
-            @current_dir ||= gemfile.name.split("/")[0..-2].last
+            @current_dir ||= gemfile.name.rpartition("/").first
+            @current_dir = nil if @current_dir == ""
+            @current_dir
           end
 
           def declares_path_dependency?(node)

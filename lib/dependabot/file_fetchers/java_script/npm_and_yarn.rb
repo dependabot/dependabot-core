@@ -66,7 +66,7 @@ module Dependabot
           package_json_files = []
           unfetchable_deps = []
 
-          path_dependency_details.each do |name, path|
+          path_dependency_details(fetched_files).each do |name, path|
             path = path.sub(/^file:/, "")
             filename = File.join(path, "package.json")
 
@@ -85,12 +85,13 @@ module Dependabot
           package_json_files
         end
 
-        def path_dependency_details
-          types = FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES
+        def path_dependency_details(fetched_files)
+          package_json_path_deps = []
 
-          package_json_path_deps =
-            parsed_package_json.values_at(*types).compact.flat_map(&:to_a).
-            select { |_, v| v.start_with?("file:") }
+          fetched_files.each do |file|
+            package_json_path_deps +=
+              path_dependency_details_from_manifest(file)
+          end
 
           package_lock_path_deps =
             parsed_package_lock.fetch("dependencies", []).to_a.
@@ -98,6 +99,25 @@ module Dependabot
             map { |k, v| [k, v.fetch("version")] }
 
           (package_json_path_deps + package_lock_path_deps).uniq
+        end
+
+        def path_dependency_details_from_manifest(file)
+          return [] unless file.name.end_with?("package.json")
+
+          current_dir = file.name.rpartition("/").first
+          current_dir = nil if current_dir == ""
+
+          JSON.parse(file.content).
+            values_at(*FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES).
+            compact.flat_map(&:to_a).
+            select { |_, v| v.start_with?("file:") }.
+            map do |name, path|
+              path = path.sub(/^file:/, "")
+              path = File.join(current_dir, path) unless current_dir.nil?
+              [name, Pathname.new(path).cleanpath.to_path]
+            end
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, file.path
         end
 
         def fetch_workspace_package_jsons
