@@ -30,7 +30,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       previous_version: "1.4.0",
       package_manager: "bundler",
       requirements:
-        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }],
+        [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
       previous_requirements:
         [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
@@ -157,6 +157,58 @@ RSpec.describe Dependabot::PullRequestCreator do
         expect(dummy_creator).to receive(:create)
         creator.create
       end
+    end
+  end
+
+  describe "#update_type (private method)" do
+    subject(:update_type) { creator.send(:update_type) }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: version,
+        previous_version: previous_version,
+        package_manager: "bundler",
+        requirements: requirements,
+        previous_requirements: previous_requirements
+      )
+    end
+
+    let(:version) { "1.5.0" }
+    let(:previous_version) { "1.4.0" }
+    let(:requirements) do
+      [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
+    end
+    let(:previous_requirements) do
+      [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+    end
+
+    context "with a version and a previous version" do
+      let(:previous_version) { "1.4.0" }
+
+      context "for a patch release" do
+        let(:version) { "1.4.1" }
+        it { is_expected.to eq("patch") }
+      end
+
+      context "for a minor release" do
+        let(:version) { "1.5.1" }
+        it { is_expected.to eq("minor") }
+      end
+
+      context "for a major release" do
+        let(:version) { "2.5.1" }
+        it { is_expected.to eq("major") }
+      end
+
+      context "for a non-semver release" do
+        let(:version) { "random" }
+        it { is_expected.to eq("non-semver") }
+      end
+    end
+
+    context "without a previous version" do
+      let(:previous_version) { nil }
+      it { is_expected.to be_nil }
     end
   end
 end

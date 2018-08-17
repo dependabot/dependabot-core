@@ -10,11 +10,12 @@ module Dependabot
       DEPENDENCIES_LABEL_REGEX = %r{^dependenc[^/]+$}i
 
       def initialize(source:, custom_labels:, credentials:,
-                     includes_security_fixes:)
+                     includes_security_fixes:, update_type:)
         @source                  = source
         @custom_labels           = custom_labels
         @credentials             = credentials
         @includes_security_fixes = includes_security_fixes
+        @update_type             = update_type
       end
 
       def create_default_labels_if_required
@@ -23,12 +24,11 @@ module Dependabot
       end
 
       def labels_for_pr
-        return default_labels_for_pr unless includes_security_fixes?
-
         [
           *default_labels_for_pr,
-          labels.find { |l| l.match?(/security/i) }
-        ].uniq
+          includes_security_fixes? ? security_label : nil,
+          semver_labels_exist? ? semver_label : nil
+        ].compact.uniq
       end
 
       def label_pull_request(pull_request_number)
@@ -46,7 +46,7 @@ module Dependabot
 
       private
 
-      attr_reader :source, :custom_labels, :credentials
+      attr_reader :source, :custom_labels, :credentials, :update_type
 
       def includes_security_fixes?
         @includes_security_fixes
@@ -77,7 +77,20 @@ module Dependabot
       end
 
       def security_label_exists?
-        labels.any? { |l| l.match?(/security/i) }
+        !security_label.nil?
+      end
+
+      def security_label
+        labels.find { |l| l.match?(/security/i) }
+      end
+
+      def semver_labels_exist?
+        (%w(major minor patch) - labels.map(&:downcase)).empty?
+      end
+
+      def semver_label
+        return unless update_type
+        labels.find { |l| l.downcase == update_type.to_s }
       end
 
       def labels

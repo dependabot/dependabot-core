@@ -10,7 +10,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       source: source,
       credentials: credentials,
       custom_labels: custom_labels,
-      includes_security_fixes: includes_security_fixes
+      includes_security_fixes: includes_security_fixes,
+      update_type: "patch"
     )
   end
 
@@ -158,6 +159,25 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             expect(WebMock).
               to_not have_requested(:post, "#{repo_api_url}/labels")
           end
+        end
+      end
+
+      context "for a repo without patch, minor and major labels" do
+        it "does not include a patch label" do
+          expect(labeler.labels_for_pr).to_not include("patch")
+        end
+      end
+
+      context "for a repo that has patch, minor and major labels" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+            to_return(status: 200,
+                      body: fixture("github", "labels_with_semver_tags.json"),
+                      headers: json_header)
+        end
+
+        it "uses the right label" do
+          expect(labeler.labels_for_pr).to include("patch")
         end
       end
 
