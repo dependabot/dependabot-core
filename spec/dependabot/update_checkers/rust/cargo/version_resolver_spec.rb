@@ -197,7 +197,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("0.4.3")) }
+      it { is_expected.to be >= Gem::Version.new("0.4.4") }
 
       context "but it is not correctly set up" do
         let(:unprepared_dependency_files) do
