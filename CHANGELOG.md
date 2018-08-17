@@ -1,3 +1,7 @@
+## v0.66.23, 17 August 2018
+
+- Label PRs with major, minor and patch if those labels exist
+
 ## v0.66.22, 17 August 2018
 
 - JS: Handle path dependencies specified by workspace packages
