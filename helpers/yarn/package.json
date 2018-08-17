@@ -2,7 +2,7 @@
   "name": "dependabot-core",
   "dependencies": {
     "@dependabot/yarn-lib": "^1.9.4",
-    "semver": "^5.5.0"
+    "semver": "^5.5.1"
   },
   "devDependencies": {
     "eslint": "^5.3.0",
