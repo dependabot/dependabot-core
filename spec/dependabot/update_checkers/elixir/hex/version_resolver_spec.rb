@@ -116,5 +116,28 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
         expect(resolver.latest_resolvable_version).to be_nil
       end
     end
+
+    context "without a lockfile" do
+      it "respects the resolvability of the mix.exs" do
+        expect(latest_resolvable_version).
+          to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).
+          to be < Gem::Version.new("1.4.0")
+      end
+
+      context "with a mix.exs that has caused trouble in the past" do
+        let(:files) { [mixfile] }
+        let(:mixfile_fixture_name) { "coxir" }
+        let(:dependency_name) { "kcl" }
+        let(:version) { nil }
+        let(:dependency_requirements) do
+          [{ file: "mix.exs", requirement: "~> 1.1", groups: [], source: nil }]
+        end
+
+        it "resolves without issue" do
+          expect(latest_resolvable_version).to be >= Gem::Version.new("1.1.0")
+        end
+      end
+    end
   end
 end
