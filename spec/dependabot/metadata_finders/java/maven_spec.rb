@@ -89,6 +89,37 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
           2.times { source_url }
           expect(WebMock).to have_requested(:get, maven_url).once
         end
+
+        context "that doesn't match the name of the artifact" do
+          let(:url) { "https://api.github.com/repos/square/unrelated_name" }
+          before do
+            stub_request(:get, parent_url).
+              to_return(
+                status: 200,
+                body: fixture("java", "poms", "parent-unrelated-3.10.0.xml")
+              )
+
+            allow_any_instance_of(Dependabot::FileFetchers::Base).
+              to receive(:commit).and_return("sha")
+            stub_request(:get, url + "/contents/?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", repo_contents_fixture_nm),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          context "and doesn't have a subdirectory with its name" do
+            let(:repo_contents_fixture_nm) { "contents_js_npm.json" }
+            it { is_expected.to be_nil }
+          end
+
+          context "and does have a subdirectory with its name" do
+            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+            it { is_expected.to eq("https://github.com/square/unrelated_name") }
+          end
+        end
       end
 
       context "and there isn't in the parent, either" do

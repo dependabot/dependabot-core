@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/metadata_finders/base"
+require "dependabot/file_fetchers/base"
 require "dependabot/file_parsers/java/maven"
 require "dependabot/file_parsers/java/maven/repositories_finder"
 
@@ -17,9 +18,27 @@ module Dependabot
 
           return unless (parent = parent_pom_file(dependency_pom_file))
           tmp_source = look_up_source_in_pom(parent)
+          return unless tmp_source
 
-          dependency_artifact = dependency.name.split(":").last
-          return tmp_source if tmp_source&.repo&.end_with?(dependency_artifact)
+          artifact = dependency.name.split(":").last
+          return tmp_source if tmp_source.repo.end_with?(artifact)
+          return tmp_source if repo_has_subdir_for_dep?(tmp_source)
+        end
+
+        def repo_has_subdir_for_dep?(tmp_source)
+          @repo_has_subdir_for_dep ||= {}
+          if @repo_has_subdir_for_dep[tmp_source]
+            return @repo_has_subdir_for_dep[tmp_source]
+          end
+
+          artifact = dependency.name.split(":").last
+          fetcher =
+            FileFetchers::Base.new(source: tmp_source, credentials: credentials)
+
+          @repo_has_subdir_for_dep[tmp_source] ||=
+            fetcher.send(:repo_contents, raise_errors: false).
+            select { |f| f.type == "dir" }.
+            any? { |f| artifact.end_with?(f.name) }
         end
 
         def look_up_source_in_pom(pom)
