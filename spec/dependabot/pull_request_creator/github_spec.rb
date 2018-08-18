@@ -52,10 +52,21 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       credentials: credentials,
       custom_labels: custom_labels,
       includes_security_fixes: false,
-      update_type: "patch"
+      dependencies: [dependency],
+      label_language: false
     )
   end
   let(:custom_labels) { nil }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "business",
+      version: "1.5.0",
+      previous_version: "1.4.0",
+      package_manager: "bundler",
+      requirements: [],
+      previous_requirements: []
+    )
+  end
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(

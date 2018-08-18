@@ -11,7 +11,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       credentials: credentials,
       custom_labels: custom_labels,
       includes_security_fixes: includes_security_fixes,
-      update_type: "patch"
+      dependencies: [dependency],
+      label_language: label_language
     )
   end
 
@@ -28,6 +29,26 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
   end
   let(:custom_labels) { nil }
   let(:includes_security_fixes) { false }
+  let(:label_language) { false }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "business",
+      version: version,
+      previous_version: previous_version,
+      package_manager: "bundler",
+      requirements: requirements,
+      previous_requirements: previous_requirements
+    )
+  end
+
+  let(:version) { "1.5.0" }
+  let(:previous_version) { "1.4.0" }
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
+  end
+  let(:previous_requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
@@ -140,14 +161,69 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
+      context "when label_language is true" do
+        let(:label_language) { true }
+
+        context "when the 'ruby' label doesn't yet exist" do
+          before do
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_dependencies.json"),
+                headers: json_header
+              )
+            stub_request(:post, "#{repo_api_url}/labels").
+              to_return(status: 201,
+                        body: fixture("github", "create_label.json"),
+                        headers: json_header)
+          end
+
+          it "creates a 'ruby' label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/labels").
+              with(body: { name: "ruby", color: "f44242" })
+            expect(labeler.labels_for_pr).to include("dependencies")
+          end
+        end
+
+        context "when the 'ruby' label already exists" do
+          before do
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_language.json"),
+                headers: json_header
+              )
+          end
+
+          it "does not create a 'ruby' label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).
+              to_not have_requested(:post, "#{repo_api_url}/labels")
+          end
+        end
+      end
+
       context "when a custom dependencies label has been requested" do
         let(:custom_labels) { ["wontfix"] }
 
         it "does not create a 'dependencies' label" do
           labeler.create_default_labels_if_required
+          expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/labels")
+        end
 
-          expect(WebMock).
-            to_not have_requested(:post, "#{repo_api_url}/labels")
+        context "when label_language is true" do
+          let(:label_language) { true }
+
+          it "does not create a 'ruby' label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).
+              to_not have_requested(:post, "#{repo_api_url}/labels")
+          end
         end
 
         context "that doesn't exist" do
@@ -175,9 +251,35 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                       body: fixture("github", "labels_with_semver_tags.json"),
                       headers: json_header)
         end
+        subject { labeler.labels_for_pr }
 
-        it "uses the right label" do
-          expect(labeler.labels_for_pr).to include("patch")
+        context "with a version and a previous version" do
+          let(:previous_version) { "1.4.0" }
+
+          context "for a patch release" do
+            let(:version) { "1.4.1" }
+            it { is_expected.to include("patch") }
+          end
+
+          context "for a minor release" do
+            let(:version) { "1.5.1" }
+            it { is_expected.to include("minor") }
+          end
+
+          context "for a major release" do
+            let(:version) { "2.5.1" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a non-semver release" do
+            let(:version) { "random" }
+            it { is_expected.to eq(["dependencies"]) }
+          end
+        end
+
+        context "without a previous version" do
+          let(:previous_version) { nil }
+          it { is_expected.to eq(["dependencies"]) }
         end
       end
 
@@ -386,6 +488,24 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
 
           it { is_expected.to eq(%w(dependencies security)) }
+        end
+      end
+
+      context "when a 'ruby' label exists" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+            to_return(
+              status: 200,
+              body: fixture("github", "labels_with_language.json"),
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq(["dependencies"]) }
+
+        context "and label_language is true" do
+          let(:label_language) { true }
+          it { is_expected.to match_array(%w(dependencies ruby)) }
         end
       end
 

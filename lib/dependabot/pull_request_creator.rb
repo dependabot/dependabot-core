@@ -19,7 +19,8 @@ module Dependabot
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
-                   vulnerabilities_fixed: {}, branch_name_separator: "/")
+                   vulnerabilities_fixed: {}, branch_name_separator: "/",
+                   label_language: false)
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -34,6 +35,7 @@ module Dependabot
       @milestone             = milestone
       @vulnerabilities_fixed = vulnerabilities_fixed
       @branch_name_separator = branch_name_separator
+      @label_language        = label_language
 
       check_dependencies_have_previous_version
     end
@@ -55,6 +57,10 @@ module Dependabot
     end
 
     private
+
+    def label_language?
+      @label_language
+    end
 
     def github_creator
       Github.new(
@@ -121,7 +127,8 @@ module Dependabot
           custom_labels: custom_labels,
           credentials: credentials,
           includes_security_fixes: includes_security_fixes?,
-          update_type: update_type
+          dependencies: dependencies,
+          label_language: label_language?
         )
     end
 
@@ -135,59 +142,6 @@ module Dependabot
 
     def includes_security_fixes?
       vulnerabilities_fixed.values.flatten.any?
-    end
-
-    # rubocop:disable Metrics/CyclomaticComplexity
-    # rubocop:disable Metrics/PerceivedComplexity
-    def update_type
-      return unless dependencies.any?(&:previous_version)
-
-      precison = dependencies.map do |dep|
-        new_version_parts = version(dep).split(".")
-        old_version_parts = previous_version(dep)&.split(".") || []
-        all_parts = new_version_parts.first(3) + old_version_parts.first(3)
-        next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
-        next 1 if new_version_parts[0] != old_version_parts[0]
-        next 2 if new_version_parts[1] != old_version_parts[1]
-        3
-      end.min
-
-      case precison
-      when 0 then "non-semver"
-      when 1 then "major"
-      when 2 then "minor"
-      when 3 then "patch"
-      end
-    end
-    # rubocop:enable Metrics/CyclomaticComplexity
-    # rubocop:enable Metrics/PerceivedComplexity
-
-    def version(dep)
-      return dep.version if version_class.correct?(dep.version)
-      source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
-      return dep.version unless source&.fetch("type") == "git"
-      version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
-      return dep.version unless version_from_ref
-      return dep.version unless version_class.correct?(version_from_ref)
-      version_from_ref
-    end
-
-    def previous_version(dep)
-      version_str = dep.previous_version
-      return version_str if version_class.correct?(version_str)
-      source = dep.previous_requirements.
-               find { |r| r.fetch(:source) }&.fetch(:source)
-      return version_str unless source&.fetch("type") == "git"
-      version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
-      return version_str unless version_from_ref
-      return version_str unless version_class.correct?(version_from_ref)
-      version_from_ref
-    end
-
-    def version_class
-      Utils.version_class_for_package_manager(
-        dependencies.first.package_manager
-      )
     end
 
     def requirements_changed?(dependency)
