@@ -1,3 +1,7 @@
+## v0.66.24, 18 August 2018
+
+- Java: Better repo lookup (handle monorepos much better)
+
 ## v0.66.23, 17 August 2018
 
 - Label PRs with major, minor and patch if those labels exist
