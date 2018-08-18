@@ -1,3 +1,7 @@
+## v0.66.25, 18 August 2018
+
+- Add option to label language when creating PRs
+
 ## v0.66.24, 18 August 2018
 
 - Java: Better repo lookup (handle monorepos much better)
