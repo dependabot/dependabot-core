@@ -10,7 +10,7 @@ module Dependabot
     class Labeler
       DEPENDENCIES_LABEL_REGEX = %r{^dependenc[^/]+$}i
       LANGUAGE_LABEL_DETAILS = {
-        "bundler" => { name: "ruby", colour: "f44242" },
+        "bundler" => { name: "ruby", colour: "ce2d2d" },
         "submodules" => { name: "submodules", colour: "000000" },
         "docker" => { name: "docker", colour: "21ceff" },
         "nuget" => { name: ".NET", colour: "7121c6" },
