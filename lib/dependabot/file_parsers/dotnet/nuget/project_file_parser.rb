@@ -26,6 +26,8 @@ module Dependabot
             doc = Nokogiri::XML(project_file.content)
             doc.remove_namespaces!
             doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+              next unless dependency_name(dependency_node)
+
               dependency_set <<
                 Dependency.new(
                   name: dependency_name(dependency_node),

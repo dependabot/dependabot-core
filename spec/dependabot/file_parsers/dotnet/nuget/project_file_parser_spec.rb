@@ -99,6 +99,22 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
           expect(dependencies[3].version).to be_nil
         end
       end
+
+      context "with an update specified" do
+        let(:file_body) { fixture("dotnet", "csproj", "update.csproj") }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to match_array(
+              %w(
+                Microsoft.Extensions.DependencyModel
+                Microsoft.AspNetCore.App
+                Microsoft.Extensions.PlatformAbstractions
+                System.Collections.Specialized
+              )
+            )
+        end
+      end
     end
   end
 end
