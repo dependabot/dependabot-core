@@ -1,3 +1,9 @@
+## v0.66.26, 19 August 2018
+
+- .NET: Handle csproj PackageReference lines that specify an Update, not an
+  Include
+- Ruby: Less ugly label colour
+
 ## v0.66.25, 18 August 2018
 
 - Add option to label language when creating PRs
