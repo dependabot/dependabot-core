@@ -29,49 +29,63 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       it { is_expected.to eq(%(\nadd_dependency "require")) }
     end
 
-    context "with an assignment to a constant" do
-      let(:content) { %(Spec.new { |s| s.version = Example::Version }) }
-      it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+    describe "version assignment" do
+      context "with an assignment to a constant" do
+        let(:content) { %(Spec.new { |s| s.version = Example::Version }) }
+        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
 
-      context "that is fully capitalised" do
-        let(:content) { %(Spec.new { |s| s.version = Example::VERSION }) }
+        context "that is fully capitalised" do
+          let(:content) { %(Spec.new { |s| s.version = Example::VERSION }) }
+          it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+        end
+
+        context "that is dup-ed" do
+          let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
+          it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+        end
+      end
+
+      context "with an assignment to a variable" do
+        let(:content) { "v = 'a'\n\nSpec.new { |s| s.version = v }" }
+        it do
+          is_expected.to eq(%(v = 'a'\n\nSpec.new { |s| s.version = "1.5.0" }))
+        end
+      end
+
+      context "with an assignment to a variable" do
+        let(:content) { %(Spec.new { |s| s.version = gem_version }) }
         it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
       end
 
-      context "that is dup-ed" do
-        let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
-        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+      context "with an assignment to a string" do
+        let(:content) { %(Spec.new { |s| s.version = "1.4.0" }) }
+        # Don't actually do the replacement
+        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.4.0" })) }
+      end
+
+      # rubocop:disable Lint/InterpolationCheck
+      context "with an assignment to a string-interpolated constant" do
+        let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
+        it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
+      end
+      # rubocop:enable Lint/InterpolationCheck
+
+      context "with a block" do
+        let(:content) { fixture("ruby", "gemspecs", "with_nested_block") }
+        specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
       end
     end
 
-    context "with an assignment to a variable" do
-      let(:content) { "v = 'a'\n\nSpec.new { |s| s.version = v }" }
-      it do
-        is_expected.to eq(%(v = 'a'\n\nSpec.new { |s| s.version = "1.5.0" }))
+    describe "files assignment" do
+      context "with an assignment to a method call (File.open)" do
+        let(:content) { "Spec.new { |s| s.files = File.open('file.txt') }" }
+        it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
       end
-    end
 
-    context "with an assignment to a variable" do
-      let(:content) { %(Spec.new { |s| s.version = gem_version }) }
-      it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
-    end
-
-    context "with an assignment to a string" do
-      let(:content) { %(Spec.new { |s| s.version = "1.4.0" }) }
-      # Don't actually do the replacement
-      it { is_expected.to eq(%(Spec.new { |s| s.version = "1.4.0" })) }
-    end
-
-    # rubocop:disable Lint/InterpolationCheck
-    context "with an assignment to a string-interpolated constant" do
-      let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
-      it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
-    end
-    # rubocop:enable Lint/InterpolationCheck
-
-    context "with a block" do
-      let(:content) { fixture("ruby", "gemspecs", "with_nested_block") }
-      specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
+      context "with an assignment to Dir[..]" do
+        let(:content) { fixture("ruby", "gemspecs", "example") }
+        it { is_expected.to include("spec.files        = []") }
+      end
     end
   end
 end
