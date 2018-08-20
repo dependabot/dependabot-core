@@ -1,3 +1,8 @@
+## v0.66.28, 20 August 2018
+
+- Make dependencies label regex looser
+- JS: Nicer JS label colour
+
 ## v0.66.27, 20 August 2018
 
 - Ruby: Sanitize gemspecs more thoroughly
