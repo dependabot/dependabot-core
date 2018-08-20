@@ -30,8 +30,17 @@ module Dependabot
             end
 
             def on_send(node)
+              # Remove any `require` or `require_relative` calls, as we won't
+              # have the required files
               remove(node.loc.expression) if requires_file?(node)
+
+              # Remove any assignments to a VERSION constant (or similar), as
+              # that constant probably comes from a required file
               replace_constant(node) if node_assigns_to_version_constant?(node)
+
+              # Replace the `s.files= ...` assignment with a blank array, as
+              # occassionally a File.open(..).readlines pattern is used
+              replace_file_assignment(node) if node_assigns_files_to_var?(node)
             end
 
             private
@@ -51,6 +60,14 @@ module Dependabot
               return true if node_is_version_constant?(node.children.last)
               return true if node_calls_version_constant?(node.children.last)
               node_interpolates_version_constant?(node.children.last)
+            end
+
+            def node_assigns_files_to_var?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :lvar
+              return false unless node.children[1] == :files=
+              node.children[2]&.type == :send
             end
 
             def node_is_version_constant?(node)
@@ -97,6 +114,10 @@ module Dependabot
               else
                 raise "Unexpected node type #{node.children.last&.type}"
               end
+            end
+
+            def replace_file_assignment(node)
+              replace(node.children.last.loc.expression, "[]")
             end
           end
         end
