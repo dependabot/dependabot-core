@@ -1,3 +1,7 @@
+## v0.66.27, 20 August 2018
+
+- Ruby: Sanitize gemspecs more thoroughly
+
 ## v0.66.26, 19 August 2018
 
 - .NET: Handle csproj PackageReference lines that specify an Update, not an
