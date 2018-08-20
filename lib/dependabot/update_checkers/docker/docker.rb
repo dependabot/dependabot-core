@@ -97,7 +97,6 @@ module Dependabot
               retry
             end
         rescue DockerRegistry2::RegistryAuthenticationException
-          raise unless private_registry?
           raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 
@@ -119,7 +118,6 @@ module Dependabot
               retry
             end
         rescue DockerRegistry2::RegistryAuthenticationException
-          raise if private_registry?
           raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 
@@ -143,11 +141,6 @@ module Dependabot
           credentials.
             select { |cred| cred["type"] == "docker_registry" }.
             find { |cred| cred["registry"] == registry_hostname }
-        end
-
-        def private_registry?
-          return false if registry_hostname.nil?
-          registry_hostname != "registry.hub.docker.com"
         end
 
         def docker_registry_client
