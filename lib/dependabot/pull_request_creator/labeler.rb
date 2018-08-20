@@ -16,7 +16,7 @@ module Dependabot
         "nuget" => { name: ".NET", colour: "7121c6" },
         "maven" => { name: "java", colour: "ffa221" },
         "gradle" => { name: "java", colour: "ffa221" },
-        "npm_and_yarn" => { name: "js", colour: "20c111" },
+        "npm_and_yarn" => { name: "javascript", colour: "168700" },
         "pip" => { name: "python", colour: "3174e0" },
         "composer" => { name: "php", colour: "45229e" },
         "hex" => { name: "elixir", colour: "9380dd" },
