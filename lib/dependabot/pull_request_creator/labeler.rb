@@ -8,7 +8,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class Labeler
-      DEPENDENCIES_LABEL_REGEX = %r{^dependenc[^/]+$}i
+      DEPENDENCIES_LABEL_REGEX = %r{^[^/]+dependenc[^/]+$}i
       LANGUAGE_LABEL_DETAILS = {
         "bundler" => { name: "ruby", colour: "ce2d2d" },
         "submodules" => { name: "submodules", colour: "000000" },
