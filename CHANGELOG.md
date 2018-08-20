@@ -1,3 +1,8 @@
+## v0.66.29, 20 August 2018
+
+- Docker: Raise PrivateSourceAuthenticationFailure error for private registies
+  on dockerhub
+
 ## v0.66.28, 20 August 2018
 
 - Make dependencies label regex looser
