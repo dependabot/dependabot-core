@@ -188,6 +188,21 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(updated_yarn_lock.content).to_not include("af885e2e890")
           end
 
+          context "when the package lock is empty" do
+            let(:npm_lock_fixture_name) { "no_dependencies.json" }
+
+            it "updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json yarn.lock))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(
+                parsed_package_lock["dependencies"]["is-number"]["version"]
+              ).to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+          end
+
           context "that previously caused problems" do
             let(:manifest_fixture_name) { "git_dependency_git_url.json" }
             let(:yarn_lock_fixture_name) { "git_dependency_git_url.lock" }
