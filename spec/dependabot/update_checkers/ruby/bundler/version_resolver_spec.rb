@@ -123,11 +123,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
           let(:dependency_name) { "bundler" }
           include_context "stub rubygems versions api"
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.16.4")) }
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
 
           context "when wrapped in a source block" do
             let(:gemfile_fixture_name) { "bundler_specified_in_source" }
-            its([:version]) { is_expected.to eq(Gem::Version.new("1.16.4")) }
+            its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
           end
         end
       end
