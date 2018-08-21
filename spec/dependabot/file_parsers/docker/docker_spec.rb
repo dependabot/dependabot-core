@@ -442,9 +442,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           content: dockerfile_body2
         )
       end
-      let(:dockerfile_body2) do
-        fixture("docker", "dockerfiles", "namespace")
-      end
+      let(:dockerfile_body2) { fixture("docker", "dockerfiles", "namespace") }
 
       its(:length) { is_expected.to eq(2) }
 

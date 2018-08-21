@@ -12,11 +12,13 @@ module Dependabot
         FROM_REGEX = /[Ff][Rr][Oo][Mm]/
 
         def self.updated_files_regex
-          [/^Dockerfile$/]
+          [/dockerfile/]
         end
 
         def updated_dependency_files
-          [updated_file(file: dockerfile, content: updated_dockerfile_content)]
+          dependency_files.map do |file|
+            updated_file(file: file, content: updated_dockerfile_content(file))
+          end
         end
 
         private
@@ -27,40 +29,38 @@ module Dependabot
         end
 
         def check_required_files
-          %w(Dockerfile).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          # Just check if there are any files at all.
+          return if dependency_files.any?
+          raise "No Dockerfile!"
         end
 
-        def updated_dockerfile_content
+        def updated_dockerfile_content(file)
           updated_content =
-            if specified_with_digest?
-              update_digest(dockerfile.content)
+            if specified_with_digest?(file)
+              update_digest(file)
             else
-              update_tag(dockerfile.content)
+              update_tag(file)
             end
 
-          if updated_content == dockerfile.content
-            raise "Expected content to change!"
-          end
+          raise "Expected content to change!" if updated_content == file.content
           updated_content
         end
 
-        def update_digest(content)
-          old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest}/
+        def update_digest(file)
+          old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest(file)}/
 
-          content.gsub(old_declaration_regex) do |old_dec|
+          file.content.gsub(old_declaration_regex) do |old_dec|
             old_dec.
-              gsub("@#{old_digest}", "@#{new_digest}").
+              gsub("@#{old_digest(file)}", "@#{new_digest(file)}").
               gsub(":#{dependency.previous_version}",
                    ":#{dependency.version}")
           end
         end
 
-        def update_tag(content)
+        def update_tag(file)
           old_declaration =
-            if private_registry_url
-              "#{private_registry_url}/"
+            if private_registry_url(file)
+              "#{private_registry_url(file)}/"
             else
               ""
             end
@@ -69,7 +69,7 @@ module Dependabot
 
           old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
 
-          content.gsub(old_declaration_regex) do |old_dec|
+          file.content.gsub(old_declaration_regex) do |old_dec|
             old_dec.gsub(
               ":#{dependency.previous_version}",
               ":#{dependency.version}"
@@ -77,26 +77,31 @@ module Dependabot
           end
         end
 
-        def dockerfile
-          @dockerfile ||= dependency_files.find { |f| f.name == "Dockerfile" }
+        def specified_with_digest?(file)
+          dependency.
+            requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source).fetch(:type) == "digest"
         end
 
-        def specified_with_digest?
-          dependency.requirements.first.fetch(:source).fetch(:type) == "digest"
+        def new_digest(file)
+          return unless specified_with_digest?(file)
+          dependency.requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source).fetch(:digest)
         end
 
-        def new_digest
-          return unless specified_with_digest?
-          dependency.requirements.first.fetch(:source).fetch(:digest)
+        def old_digest(file)
+          return unless specified_with_digest?(file)
+          dependency.previous_requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source).fetch(:digest)
         end
 
-        def old_digest
-          return unless specified_with_digest?
-          dependency.previous_requirements.first.fetch(:source).fetch(:digest)
-        end
-
-        def private_registry_url
-          dependency.requirements.first[:source][:registry]
+        def private_registry_url(file)
+          dependency.requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source)[:registry]
         end
       end
     end

@@ -12,11 +12,12 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
 
   let(:updater) do
     described_class.new(
-      dependency_files: [dockerfile],
+      dependency_files: files,
       dependencies: [dependency],
       credentials: credentials
     )
   end
+  let(:files) { [dockerfile] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -280,6 +281,79 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
                                    "myreg/ubuntu@sha256:3ea1ca1aa")
           end
           its(:content) { is_expected.to include "RUN apt-get update" }
+        end
+      end
+    end
+
+    context "when multiple dockerfiles to be updated" do
+      let(:files) { [dockerfile, dockefile2] }
+      let(:dockefile2) do
+        Dependabot::DependencyFile.new(
+          name: "custom-name",
+          content: dockerfile_body2
+        )
+      end
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "digest") }
+      let(:dockerfile_body2) do
+        fixture("docker", "dockerfiles", "digest_and_tag")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "12.04.5",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              type: "digest",
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                      "ca97eba880ebf600d68608"
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "custom-name",
+            source: {
+              type: "digest",
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                      "ca97eba880ebf600d68608"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              type: "digest",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                      "dfc38288cf73aa07485005"
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "custom-name",
+            source: {
+              type: "digest",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                      "dfc38288cf73aa07485005"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject { updated_files.find { |f| f.name == "Dockerfile" } }
+        its(:content) { is_expected.to include "FROM ubuntu@sha256:3ea1ca1aa" }
+      end
+
+      describe "the updated custom-name file" do
+        subject { updated_files.find { |f| f.name == "custom-name" } }
+
+        its(:content) do
+          is_expected.to include "FROM ubuntu:17.10@sha256:3ea1ca1aa"
         end
       end
     end
