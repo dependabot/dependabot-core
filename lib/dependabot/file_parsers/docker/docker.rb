@@ -31,24 +31,26 @@ module Dependabot
         def parse
           dependency_set = DependencySet.new
 
-          dockerfile.content.each_line do |line|
-            next unless FROM_LINE.match?(line)
-            parsed_from_line = FROM_LINE.match(line).named_captures
+          dockerfiles.each do |dockerfile|
+            dockerfile.content.each_line do |line|
+              next unless FROM_LINE.match?(line)
+              parsed_from_line = FROM_LINE.match(line).named_captures
 
-            version = version_from(parsed_from_line)
-            next unless version
+              version = version_from(parsed_from_line)
+              next unless version
 
-            dependency_set << Dependency.new(
-              name: parsed_from_line.fetch("image"),
-              version: version,
-              package_manager: "docker",
-              requirements: [
-                requirement: nil,
-                groups: [],
-                file: dockerfile.name,
-                source: source_from(parsed_from_line)
-              ]
-            )
+              dependency_set << Dependency.new(
+                name: parsed_from_line.fetch("image"),
+                version: version,
+                package_manager: "docker",
+                requirements: [
+                  requirement: nil,
+                  groups: [],
+                  file: dockerfile.name,
+                  source: source_from(parsed_from_line)
+                ]
+              )
+            end
           end
 
           dependency_set.dependencies
@@ -56,8 +58,10 @@ module Dependabot
 
         private
 
-        def dockerfile
-          @dockerfile ||= get_original_file("Dockerfile")
+        def dockerfiles
+          # The Docker file fetcher only fetches Dockerfiles, so no need to
+          # filter here
+          dependency_files
         end
 
         def version_from(parsed_from_line)
@@ -128,9 +132,9 @@ module Dependabot
         end
 
         def check_required_files
-          %w(Dockerfile).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          # Just check if there are any files at all.
+          return if dependency_files.any?
+          raise "No Dockerfile!"
         end
       end
     end

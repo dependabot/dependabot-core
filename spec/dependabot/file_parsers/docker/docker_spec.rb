@@ -408,5 +408,83 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
         end
       end
     end
+
+    context "with a non-standard filename" do
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(
+          name: "custom-name",
+          content: dockerfile_body
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "custom-name",
+            source: { type: "tag" }
+          }]
+        end
+
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "with multiple dockerfiles" do
+      let(:files) { [dockerfile, dockefile2] }
+      let(:dockefile2) do
+        Dependabot::DependencyFile.new(
+          name: "custom-name",
+          content: dockerfile_body2
+        )
+      end
+      let(:dockerfile_body2) do
+        fixture("docker", "dockerfiles", "namespace")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "custom-name",
+            source: { type: "tag" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("my-fork/ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end
