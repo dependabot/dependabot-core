@@ -132,7 +132,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files(update_package_json: true)
-            (yarn_locks + package_locks).each do |f|
+            package_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
             end
@@ -296,12 +296,6 @@ module Dependabot
             @package_locks ||=
               dependency_files.
               select { |f| f.name.end_with?("package-lock.json") }
-          end
-
-          def yarn_locks
-            @yarn_locks ||=
-              dependency_files.
-              select { |f| f.name.end_with?("yarn.lock") }
           end
 
           def package_files

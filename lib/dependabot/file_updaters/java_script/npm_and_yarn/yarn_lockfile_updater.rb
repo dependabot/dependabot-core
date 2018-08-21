@@ -123,7 +123,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files(update_package_json: true)
-            (yarn_locks + package_locks).each do |f|
+            yarn_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
             end
@@ -261,12 +261,6 @@ module Dependabot
             content.
               gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
               gsub("\\ ", " ")                  # escaped whitespace not allowed
-          end
-
-          def package_locks
-            @package_locks ||=
-              dependency_files.
-              select { |f| f.name.end_with?("package-lock.json") }
           end
 
           def yarn_locks
