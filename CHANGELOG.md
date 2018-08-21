@@ -1,3 +1,8 @@
+## v0.67.4, 21 August 2018
+
+- JS: Add InconsistentRegistryResponse error, and raise it when npm can't yet
+  use latest release
+
 ## v0.67.3, 21 August 2018
 
 - JS: Handle empty package-lock.json when updating a git dependency
