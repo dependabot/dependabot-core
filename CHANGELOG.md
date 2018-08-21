@@ -1,3 +1,9 @@
+## v0.67.0, 21 August 2018
+
+- Ruby: Bump Bundler to 1.16.4. This is considered a BREAKING change as you will
+  need to update the Bundler version in whatever environment you run Dependabot
+  in
+
 ## v0.66.29, 20 August 2018
 
 - Docker: Raise PrivateSourceAuthenticationFailure error for private registies
