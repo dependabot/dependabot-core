@@ -16,9 +16,21 @@ module Dependabot
         end
 
         def updated_dependency_files
-          dependency_files.map do |file|
-            updated_file(file: file, content: updated_dockerfile_content(file))
+          updated_files = []
+
+          files_with_requirement.each do |file|
+            updated_files <<
+              updated_file(
+                file: file,
+                content: updated_dockerfile_content(file)
+              )
           end
+
+          updated_files =
+            updated_files.reject { |f| dependency_files.include?(f) }
+          raise "No files changed!" if updated_files.none?
+
+          updated_files
         end
 
         private
@@ -26,6 +38,11 @@ module Dependabot
         def dependency
           # Dockerfiles will only ever be updating a single dependency
           dependencies.first
+        end
+
+        def files_with_requirement
+          filenames = dependency.requirements.map { |r| r[:file] }
+          dependency_files.select { |file| filenames.include?(file.name) }
         end
 
         def check_required_files
