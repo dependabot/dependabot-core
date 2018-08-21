@@ -10,6 +10,8 @@ module Dependabot
   module FileParsers
     module Docker
       class Docker < Dependabot::FileParsers::Base
+        require "dependabot/file_parsers/base/dependency_set"
+
         # Detials of Docker regular expressions is at
         # https://github.com/docker/distribution/blob/master/reference/regexp.go
         DOMAIN_COMPONENT = /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/
@@ -27,7 +29,7 @@ module Dependabot
           %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
 
         def parse
-          dependencies = []
+          dependency_set = DependencySet.new
 
           dockerfile.content.each_line do |line|
             next unless FROM_LINE.match?(line)
@@ -36,7 +38,7 @@ module Dependabot
             version = version_from(parsed_from_line)
             next unless version
 
-            dependencies << Dependency.new(
+            dependency_set << Dependency.new(
               name: parsed_from_line.fetch("image"),
               version: version,
               package_manager: "docker",
@@ -49,7 +51,7 @@ module Dependabot
             )
           end
 
-          dependencies
+          dependency_set.dependencies
         end
 
         private

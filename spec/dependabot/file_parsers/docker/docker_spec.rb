@@ -330,6 +330,31 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
+
+      context "that are idential" do
+        let(:dockerfile_fixture_name) { "multiple_identical" }
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { type: "tag" }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("node")
+            expect(dependency.version).to eq("10-alpine")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+      end
     end
 
     context "with a private registry and a tag" do
