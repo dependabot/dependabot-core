@@ -72,6 +72,42 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
 
+    context "when multiple identical lines need to be updated" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "multiple_identical")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "node",
+          version: "10.9-alpine",
+          previous_version: "10-alpine",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { type: "tag" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM node:10.9-alpine AS" }
+        its(:content) { is_expected.to include "FROM node:10.9-alpine\n" }
+        its(:content) { is_expected.to include "RUN apk add" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
