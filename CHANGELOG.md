@@ -1,3 +1,7 @@
+## v0.67.3, 21 August 2018
+
+- JS: Handle empty package-lock.json when updating a git dependency
+
 ## v0.67.2, 21 August 2018
 
 - Docker: Fetch custom named files (as long as they contain "dockerfile")
