@@ -1,3 +1,10 @@
+## v0.67.2, 21 August 2018
+
+- Docker: Fetch custom named files (as long as they contain "dockerfile")
+- Docker: Handle parsing multiple files in FileParser
+- Docker: Update multiple files at once in FileUpdater
+- Docker: Handle requirement changing in some files but not all
+
 ## v0.67.1, 21 August 2018
 
 - Docker: Parse multiple identical FROM lines in a Dockerfile as a single
