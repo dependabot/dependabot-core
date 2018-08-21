@@ -1,3 +1,8 @@
+## v0.67.1, 21 August 2018
+
+- Docker: Parse multiple identical FROM lines in a Dockerfile as a single
+  dependency
+
 ## v0.67.0, 21 August 2018
 
 - Ruby: Bump Bundler to 1.16.4. This is considered a BREAKING change as you will
