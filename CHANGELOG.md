@@ -1,3 +1,7 @@
+## v0.67.5, 21 August 2018
+
+- Elm: Update version finder to handle new Elm website (now with JSON API!)
+
 ## v0.67.4, 21 August 2018
 
 - JS: Add InconsistentRegistryResponse error, and raise it when npm can't yet
