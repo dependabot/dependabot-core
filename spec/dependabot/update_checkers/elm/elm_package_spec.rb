@@ -62,10 +62,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
       let(:string_req) { "3.0.0 <= v <= 3.0.1" }
       let(:dependency_version) { nil }
       let(:elm_package_url) do
-        "http://package.elm-lang.org/packages/NoRedInk/datetimepicker/"
+        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
+        "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.html")
+        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
       end
 
       before do
@@ -87,10 +88,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
       let(:string_req) { "3.0.1 <= v <= 3.0.1" }
       let(:dependency_version) { "3.0.1" }
       let(:elm_package_url) do
-        "http://package.elm-lang.org/packages/NoRedInk/datetimepicker/"
+        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
+        "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.html")
+        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
       end
       let(:unlock_level) { :all }
 
@@ -108,10 +110,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
       let(:string_req) { "3.0.0 <= v <= 3.0.1" }
       let(:dependency_version) { nil }
       let(:elm_package_url) do
-        "http://package.elm-lang.org/packages/NoRedInk/datetimepicker/"
+        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
+        "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.html")
+        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
       end
       let(:unlock_level) { :all }
 
@@ -128,10 +131,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
     subject { checker.latest_version }
 
     let(:elm_package_url) do
-      "http://package.elm-lang.org/packages/realWorld/ElmPackage/"
+      "https://package.elm-lang.org/packages/realWorld/ElmPackage/releases.json"
     end
     let(:elm_package_response) do
-      fixture("elm", "elm_package_responses", "elm-lang-core.html")
+      fixture("elm", "elm_package_responses", "elm-lang-core.json")
     end
 
     before do

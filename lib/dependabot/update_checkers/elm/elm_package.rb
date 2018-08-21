@@ -12,10 +12,6 @@ module Dependabot
         require_relative "elm_package/requirements_updater"
         require_relative "elm_package/version_resolver"
 
-        VERSION_REGEX = /\d+\.\d+\.\d+/
-        VERSIONS_LINE_REGEX =
-          /versions: \[(?<versions>("#{VERSION_REGEX}",?\s*)+)\]/
-
         def latest_version
           @latest_version ||= candidate_versions.max
         end
@@ -83,21 +79,17 @@ module Dependabot
           @version_lookup_attempted = true
 
           response = Excon.get(
-            "http://package.elm-lang.org/packages/#{dependency.name}/",
+            "https://package.elm-lang.org/packages/#{dependency.name}/"\
+            "releases.json",
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **Dependabot::SharedHelpers.excon_defaults
           )
 
           return @all_versions = [] unless response.status == 200
-          unless response.body.match?(VERSIONS_LINE_REGEX)
-            raise "Unexpected response body: #{response.body}"
-          end
 
-          @all_versions ||=
-            response.body.
-            match(VERSIONS_LINE_REGEX).
-            named_captures.fetch("versions").
-            scan(VERSION_REGEX).
+          @all_versions =
+            JSON.parse(response.body).
+            keys.
             map { |v| version_class.new(v) }.
             sort
         end
