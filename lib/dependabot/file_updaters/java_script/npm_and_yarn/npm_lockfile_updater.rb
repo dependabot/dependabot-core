@@ -83,12 +83,21 @@ module Dependabot
           # rubocop:disable Metrics/AbcSize
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/MethodLength
           def handle_package_lock_updater_error(error, package_lock)
-            raise if error.message.include?("#{dependency.name}@")
+            if error.message.include?("#{dependency.name}@") &&
+               error.message.start_with?("No matching vers") &&
+               resolvable_before_update?(package_lock)
+              # This happens if a new version has been published that relies on
+              # but npm is having consistency issues. We raise a bespoke error
+              # so we can capture and ignore it if we're trying to create a new
+              # PR (which will be created successfully at a later date).
+              raise Dependabot::InconsistentRegistryResponse, error.message
+            end
+
             if error.message.start_with?("No matching vers", "404 Not Found") ||
                error.message.include?("not match any file(s) known to git") ||
-               error.message.include?("Non-registry package missing package") ||
-               error.message.include?("Cannot read property 'match' of undefin")
+               error.message.include?("Non-registry package missing package")
               # This happens if a new version has been published that relies on
               # subdependencies that have not yet been published.
               raise if resolvable_before_update?(package_lock)
@@ -116,19 +125,28 @@ module Dependabot
           # rubocop:enable Metrics/AbcSize
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/MethodLength
 
           def resolvable_before_update?(package_lock)
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files(update_package_json: false)
-
-              Dir.chdir(Pathname.new(package_lock.name).dirname) do
-                run_npm_updater
-              end
+            @resolvable_before_update ||= {}
+            if @resolvable_before_update.key?(package_lock.name)
+              return @resolvable_before_update[package_lock.name]
             end
 
-            true
-          rescue SharedHelpers::HelperSubprocessFailed
-            false
+            @resolvable_before_update[package_lock.name] =
+              begin
+                SharedHelpers.in_a_temporary_directory do
+                  write_temporary_dependency_files(update_package_json: false)
+
+                  Dir.chdir(Pathname.new(package_lock.name).dirname) do
+                    run_npm_updater
+                  end
+                end
+
+                true
+              rescue SharedHelpers::HelperSubprocessFailed
+                false
+              end
           end
 
           def write_temporary_dependency_files(update_package_json: true)

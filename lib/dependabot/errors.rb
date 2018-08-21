@@ -110,6 +110,10 @@ module Dependabot
     end
   end
 
+  # Useful for JS file updaters, where the registry API sometimes returns
+  # different results to the actual update process
+  class InconsistentRegistryResponse < DependabotError; end
+
   ###########################
   # Dependency level errors #
   ###########################
