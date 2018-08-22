@@ -1,3 +1,7 @@
+## v0.67.7, 22 August 2018
+
+- Ruby: Handle out-of-sync git version for dependency
+
 ## v0.67.6, 22 August 2018
 
 - Docker: Handle non-existant directories
