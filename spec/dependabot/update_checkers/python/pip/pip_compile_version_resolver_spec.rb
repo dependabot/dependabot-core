@@ -104,6 +104,23 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to eq(Gem::Version.new("4.2.0")) }
     end
 
+    context "with a dependency with an unmet marker" do
+      let(:manifest_fixture_name) { "unmet_marker.in" }
+      let(:generated_fixture_name) { "pip_compile_unmet_marker.txt" }
+      let(:dependency_name) { "flaky" }
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "with a Python 2.7 library" do
       let(:manifest_fixture_name) { "legacy_python.in" }
       let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }

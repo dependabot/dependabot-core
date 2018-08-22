@@ -61,7 +61,7 @@ module Dependabot
 
                 updated_deps.
                   select { |dep| normalise(dep["name"]) == dependency.name }.
-                  find { |dep| dep["file"] == source_compiled_file_name }.
+                  find { |dep| dep["file"] == source_compiled_file_name }&.
                   fetch("version")
               end
             return unless @latest_resolvable_version_string

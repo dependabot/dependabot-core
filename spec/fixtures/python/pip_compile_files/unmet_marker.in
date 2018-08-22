@@ -1,0 +1,5 @@
+flaky; python_version <= '3.4'
+pytest
+pytest-xdist
+mock
+Attrs
