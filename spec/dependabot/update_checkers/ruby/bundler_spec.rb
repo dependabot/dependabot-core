@@ -596,9 +596,9 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
           end
 
           context "and the Gemfile doesn't specify a git source" do
-            # If this dependency has a git version in the Gemfile.lock but not in
-            # the Gemfile (i.e., because they're out-of-sync) we might not get a
-            # commit_sha back from Bundler. In that case, return `nil`.
+            # If the dependency has a git version in the Gemfile.lock but not in
+            # the Gemfile (i.e., because they're out-of-sync) we leave that
+            # problem to the user.
             let(:gemfile_fixture_name) { "Gemfile" }
             it { is_expected.to be_nil }
           end
