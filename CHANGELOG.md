@@ -1,3 +1,7 @@
+## v0.67.8, 22 August 2018
+
+- Python: Handle unmet markers in a pip-compile requirements file
+
 ## v0.67.7, 22 August 2018
 
 - Ruby: Handle out-of-sync git version for dependency
