@@ -170,8 +170,14 @@ module Dependabot
         end
 
         def latest_resolvable_commit_with_unchanged_git_source
-          latest_resolvable_version_details(remove_git_source: false).
-            fetch(:commit_sha)
+          details = latest_resolvable_version_details(remove_git_source: false)
+
+          # If this dependency has a git version in the Gemfile.lock but not in
+          # the Gemfile (i.e., because they're out-of-sync) we might not get a
+          # commit_sha back from Bundler. In that case, return `nil`.
+          return unless details.key?(:commit_sha)
+
+          details.fetch(:commit_sha)
         rescue Dependabot::DependencyFileNotResolvable
           nil
         end

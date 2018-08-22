@@ -594,6 +594,14 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             expect(version).to match(/^[0-9a-f]{40}$/)
             expect(version).to_not eq(current_version)
           end
+
+          context "and the Gemfile doesn't specify a git source" do
+            # If this dependency has a git version in the Gemfile.lock but not in
+            # the Gemfile (i.e., because they're out-of-sync) we might not get a
+            # commit_sha back from Bundler. In that case, return `nil`.
+            let(:gemfile_fixture_name) { "Gemfile" }
+            it { is_expected.to be_nil }
+          end
         end
 
         context "when the head of the branch is released" do
