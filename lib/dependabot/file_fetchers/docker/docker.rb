@@ -30,7 +30,7 @@ module Dependabot
 
         def dockerfiles
           @dockerfiles ||=
-            repo_contents.
+            repo_contents(raise_errors: false).
             select { |f| f.type == "file" && f.name.match?(/dockerfile/i) }.
             map { |f| fetch_file_from_host(f.name) }
         end

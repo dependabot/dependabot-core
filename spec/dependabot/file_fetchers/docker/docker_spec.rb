@@ -81,4 +81,23 @@ RSpec.describe Dependabot::FileFetchers::Docker::Docker do
         to match_array(%w(Dockerfile-base))
     end
   end
+
+  context "with a directory that doesn't exist" do
+    let(:directory) { "/non/existant" }
+
+    before do
+      stub_request(:get, url + "non/existant?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404,
+          body: fixture("github", "not_found.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises a helpful error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
 end
