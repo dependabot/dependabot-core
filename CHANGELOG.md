@@ -1,3 +1,7 @@
+## v0.67.6, 22 August 2018
+
+- Docker: Handle non-existant directories
+
 ## v0.67.5, 21 August 2018
 
 - Elm: Update version finder to handle new Elm website (now with JSON API!)
