@@ -151,4 +151,24 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
     end
   end
+
+  describe "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with a source that came from an http proxy" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/cloudposse/terraform-null-label.git",
+          branch: nil,
+          ref: "tags/0.3.7",
+          proxy_url: "https://my.example.com"
+        }
+      end
+
+      it { is_expected.to eq(false) }
+    end
+  end
 end

@@ -73,7 +73,7 @@ module Dependabot
         end
 
         def proxy_requirement?
-          dependencies.requirements.any? do |req|
+          dependency.requirements.any? do |req|
             req.fetch(:source)&.fetch(:proxy_url, nil)
           end
         end
