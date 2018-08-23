@@ -81,10 +81,56 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
     describe "the updated file" do
       subject(:updated_file) { updated_files.find { |f| f.name == "main.tf" } }
 
-      it "updates the requirement" do
-        expect(updated_file.content).to include(
-          "//github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1\"\n"
-        )
+      context "with a git dependency" do
+        it "updates the requirement" do
+          expect(updated_file.content).to include(
+            "//github.com/cloudposse/terraform-null-label.git"\
+            "?ref=tags/0.4.1\"\n"
+          )
+        end
+      end
+
+      context "with a registry dependency" do
+        let(:terraform_body) do
+          fixture("terraform", "config_files", "registry.tf")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.3.1",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.3.1",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/consul/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/consul/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        end
+
+        it "updates the requirement" do
+          expect(updated_file.content).to include(
+            "module \"consul\" {\n"\
+            "  source = \"hashicorp/consul/aws\"\n"\
+            "  version = \"0.3.1\"\n"\
+            "}"
+          )
+        end
       end
     end
   end

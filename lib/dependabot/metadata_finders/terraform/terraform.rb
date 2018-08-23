@@ -35,6 +35,8 @@ module Dependabot
           Source.from_url(url)
         end
 
+        # Registry API docs:
+        # https://www.terraform.io/docs/registry/api.html
         def find_source_from_registry_details
           info = dependency.requirements.map { |r| r[:source] }.compact.first
 
