@@ -710,6 +710,19 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }
         end
+
+        context "and a ref prefixed with tags/" do
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "tags/1.2.0"
+            }
+          end
+
+          its([:tag]) { is_expected.to eq("tags/v1.13.0") }
+        end
       end
     end
   end

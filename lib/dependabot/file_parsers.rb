@@ -13,6 +13,7 @@ require "dependabot/file_parsers/rust/cargo"
 require "dependabot/file_parsers/dotnet/nuget"
 require "dependabot/file_parsers/go/dep"
 require "dependabot/file_parsers/elm/elm_package"
+require "dependabot/file_parsers/terraform/terraform"
 
 module Dependabot
   module FileParsers
@@ -32,6 +33,7 @@ module Dependabot
       when "nuget" then FileParsers::Dotnet::Nuget
       when "dep" then FileParsers::Go::Dep
       when "elm-package" then FileParsers::Elm::ElmPackage
+      when "terraform" then FileParsers::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

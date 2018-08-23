@@ -13,6 +13,7 @@ require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/dotnet/nuget"
 require "dependabot/update_checkers/go/dep"
 require "dependabot/update_checkers/elm/elm_package"
+require "dependabot/update_checkers/terraform/terraform"
 
 module Dependabot
   module UpdateCheckers
@@ -32,6 +33,7 @@ module Dependabot
       when "nuget" then UpdateCheckers::Dotnet::Nuget
       when "dep" then UpdateCheckers::Go::Dep
       when "elm-package" then UpdateCheckers::Elm::ElmPackage
+      when "terraform" then UpdateCheckers::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
