@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "cgi"
 require "excon"
 require "nokogiri"
 require "dependabot/dependency"
@@ -25,7 +26,7 @@ module Dependabot
 
               source = source_from(details)
               dep_name =
-                source[:type] == :registry ? source[:module_identifier] : name
+                source[:type] == "registry" ? source[:module_identifier] : name
               version_req = details["version"]&.strip
 
               dependency_set << Dependency.new(
@@ -56,10 +57,8 @@ module Dependabot
             case source_type(bare_source)
             when :http_archive, :path, :mercurial, :s3
               { type: source_type(bare_source).to_s, url: bare_source }
-            when :github, :bitbucket
-              { type: "git", url: "https://" + bare_source }
-            when :git
-              { type: "git", url: bare_source.gsub(/^git::/, "") }
+            when :github, :bitbucket, :git
+              git_source_details_from(bare_source)
             when :registry
               registry_source_details_from(bare_source)
             end
@@ -73,19 +72,34 @@ module Dependabot
 
           if parts.count == 3
             {
-              source: "registry",
+              type: "registry",
               registry_hostname: "registry.terraform.io",
               module_identifier: source_string
             }
           elsif parts.count == 4
             {
-              source: "registry",
+              type: "registry",
               registry_hostname: parts.first,
-              module_identifier: source_string[1..3].join("/")
+              module_identifier: parts[1..3].join("/")
             }
           else
             raise "Unexpected registry format: #{source_string}"
           end
+        end
+
+        def git_source_details_from(source_string)
+          git_url = source_string.strip.gsub(/^git::/, "")
+          git_url = "https://" + git_url unless git_url.start_with?("http")
+
+          querystr = URI.parse(git_url).query
+          git_url = git_url.split(%r{(?<!:)//}).first.gsub("?#{querystr}", "")
+
+          {
+            type: "git",
+            url: git_url,
+            branch: nil,
+            ref: CGI.parse(querystr.to_s)["ref"].first
+          }
         end
 
         # See https://www.terraform.io/docs/modules/sources.html#http-urls for
@@ -93,11 +107,11 @@ module Dependabot
         def get_proxied_source(raw_source)
           return raw_source unless raw_source.start_with?("http")
 
-          uri = URI.parse(raw_source.split("//").first)
+          uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
           return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-          return raw_source if uri.query.include?("archive=")
+          return raw_source if URI.parse(raw_source).query.include?("archive=")
 
-          url = raw_source + (uri.query ? "&" : "?") + "terraform-get=1"
+          url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
 
           response = Excon.get(
             url,
@@ -131,9 +145,10 @@ module Dependabot
 
           return :registry unless source_string.start_with?("http")
 
-          uri = URI.parse(source_string.split("//").first)
-          return :http_archive if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-          return :http_archive if uri.query.include?("archive=")
+          path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
+          query_uri = URI.parse(source_string)
+          return :http_archive if path_uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+          return :http_archive if query_uri.query.include?("archive=")
 
           raise "HTTP source, but not an archive!"
         end
