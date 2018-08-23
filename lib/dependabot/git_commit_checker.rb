@@ -151,7 +151,7 @@ module Dependabot
         commit_sha =
           peeled_line ? sha_for_update_pack_line(peeled_line) : tag_sha
 
-        if dependency_source_details.fetch(:ref)&.start_with?("tags/")
+        if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
           tag_name = "tags/#{tag_name}"
         end
 
