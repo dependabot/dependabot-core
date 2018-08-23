@@ -5,6 +5,7 @@ require "excon"
 require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -22,24 +23,7 @@ module Dependabot
           terraform_files.each do |file|
             modules = parsed_file(file).fetch("module", []).map(&:first)
             modules.each do |name, details|
-              details = details.first
-
-              source = source_from(details)
-              dep_name =
-                source[:type] == "registry" ? source[:module_identifier] : name
-              version_req = details["version"]&.strip
-
-              dependency_set << Dependency.new(
-                name: dep_name,
-                version: version_req&.match?(/^\d/) ? version_req : nil,
-                package_manager: "terraform",
-                requirements: [
-                  requirement: version_req,
-                  groups: [],
-                  file: file.name,
-                  source: source
-                ]
-              )
+              dependency_set << build_dependency(file, name, details)
             end
           end
 
@@ -47,6 +31,31 @@ module Dependabot
         end
 
         private
+
+        def build_dependency(file, name, details)
+          details = details.first
+
+          source = source_from(details)
+          dep_name =
+            source[:type] == "registry" ? source[:module_identifier] : name
+          version_req = details["version"]&.strip
+          version =
+            if source[:type] == "git" then version_from_ref(source[:ref])
+            elsif version_req&.match?(/^\d/) then version_req
+            end
+
+          Dependency.new(
+            name: dep_name,
+            version: version,
+            package_manager: "terraform",
+            requirements: [
+              requirement: version_req,
+              groups: [],
+              file: file.name,
+              source: source
+            ]
+          )
+        end
 
         # Full docs at https://www.terraform.io/docs/modules/sources.html
         def source_from(details_hash)
@@ -100,6 +109,12 @@ module Dependabot
             branch: nil,
             ref: CGI.parse(querystr.to_s)["ref"].first
           }
+        end
+
+        def version_from_ref(ref)
+          version_regex = GitCommitChecker::VERSION_REGEX
+          return unless ref&.match?(version_regex)
+          ref.match(version_regex).named_captures.fetch("version")
         end
 
         # See https://www.terraform.io/docs/modules/sources.html#http-urls for

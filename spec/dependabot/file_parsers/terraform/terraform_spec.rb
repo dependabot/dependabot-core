@@ -151,7 +151,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("origin_label")
-          expect(dependency.version).to be_nil
+          expect(dependency.version).to eq("0.3.7")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("logs")
-          expect(dependency.version).to be_nil
+          expect(dependency.version).to eq("0.2.2")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("dns")
-          expect(dependency.version).to be_nil
+          expect(dependency.version).to eq("0.2.5")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

@@ -33,7 +33,7 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
     )
   end
   let(:dependency_name) { "origin_label" }
-  let(:version) { nil }
+  let(:version) { "0.3.7" }
   let(:requirements) do
     [{ requirement: nil, groups: [], file: "main.tf", source: source }]
   end
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
           )
       end
 
-      it { is_expected.to eq("tags/0.4.1") }
+      it { is_expected.to eq("0.4.1") }
     end
   end
 
@@ -111,8 +111,18 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
       let(:ref) { "tags/0.3.7" }
 
-      before { allow(checker).to receive(:latest_version).and_return(latest) }
-      let(:latest) { "delegated" }
+      before do
+        git_url = "https://github.com/cloudposse/terraform-null-label.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "terraform-null-label"),
+            headers: git_header
+          )
+      end
 
       context "with a reference" do
         let(:ref) { "tags/0.3.7" }
@@ -128,7 +138,7 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
                   type: "git",
                   url: "https://github.com/cloudposse/terraform-null-label.git",
                   branch: nil,
-                  ref: "delegated"
+                  ref: "tags/0.4.1"
                 }
               }]
             )
@@ -140,13 +150,8 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
         it { is_expected.to eq(requirements) }
       end
 
-      context "without a latest version" do
-        let(:latest) { nil }
-        it { is_expected.to eq(requirements) }
-      end
-
-      context "without a git SHA as the latest version" do
-        let(:latest) { "a" * 40 }
+      context "with a git SHA as the latest version" do
+        let(:ref) { "master" }
         it { is_expected.to eq(requirements) }
       end
     end

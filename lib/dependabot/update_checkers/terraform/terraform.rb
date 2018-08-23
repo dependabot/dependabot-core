@@ -27,9 +27,8 @@ module Dependabot
           dependency.requirements.map do |req|
             next req unless req.dig(:source, :type) == "git"
             next req unless req.dig(:source, :ref)
-            next req unless latest_version
-            next req if latest_version.to_s.match?(/^[0-9a-f]{40}$/)
-            req.merge(source: req[:source].merge(ref: latest_version))
+            next req unless tag_for_latest_version
+            req.merge(source: req[:source].merge(ref: tag_for_latest_version))
           end
         end
 
@@ -63,13 +62,29 @@ module Dependabot
           # we want to update that tag. Because we don't have a lockfile, the
           # latest version is the tag itself.
           if git_commit_checker.pinned_ref_looks_like_version?
-            latest_tag = git_commit_checker.local_tag_for_latest_version
-            return latest_tag&.fetch(:tag) || dependency.version
+            latest_tag = git_commit_checker.local_tag_for_latest_version&.
+                         fetch(:tag)
+            version_rgx = GitCommitChecker::VERSION_REGEX
+            return dependency.version unless latest_tag.match(version_rgx)
+            return latest_tag.match(version_rgx).named_captures.fetch("version")
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
           dependency.version
+        end
+
+        def tag_for_latest_version
+          return unless git_commit_checker.pinned?
+          return unless git_commit_checker.pinned_ref_looks_like_version?
+
+          latest_tag = git_commit_checker.local_tag_for_latest_version&.
+                       fetch(:tag)
+
+          version_rgx = GitCommitChecker::VERSION_REGEX
+          return unless latest_tag.match(version_rgx)
+
+          latest_tag
         end
 
         def proxy_requirement?

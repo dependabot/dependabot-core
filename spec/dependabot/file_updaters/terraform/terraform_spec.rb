@@ -41,8 +41,8 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "origin_label",
-      version: "tags/0.4.1",
-      previous_version: nil,
+      version: "0.4.1",
+      previous_version: "0.3.7",
       requirements: [{
         requirement: nil,
         groups: [],
