@@ -13,6 +13,7 @@ require "dependabot/file_updaters/rust/cargo"
 require "dependabot/file_updaters/dotnet/nuget"
 require "dependabot/file_updaters/go/dep"
 require "dependabot/file_updaters/elm/elm_package"
+require "dependabot/file_updaters/terraform/terraform"
 
 module Dependabot
   module FileUpdaters
@@ -32,6 +33,7 @@ module Dependabot
       when "nuget" then FileUpdaters::Dotnet::Nuget
       when "dep" then FileUpdaters::Go::Dep
       when "elm-package" then FileUpdaters::Elm::ElmPackage
+      when "terraform" then FileUpdaters::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
       end
     end

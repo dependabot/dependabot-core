@@ -12,6 +12,7 @@ require "dependabot/metadata_finders/rust/cargo"
 require "dependabot/metadata_finders/dotnet/nuget"
 require "dependabot/metadata_finders/go/dep"
 require "dependabot/metadata_finders/elm/elm_package"
+require "dependabot/metadata_finders/terraform/terraform"
 
 module Dependabot
   module MetadataFinders
@@ -30,6 +31,7 @@ module Dependabot
       when "nuget" then MetadataFinders::Dotnet::Nuget
       when "dep" then MetadataFinders::Go::Dep
       when "elm-package" then MetadataFinders::Elm::ElmPackage
+      when "terraform" then MetadataFinders::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
       end
     end
