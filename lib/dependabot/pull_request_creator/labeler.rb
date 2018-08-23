@@ -13,6 +13,7 @@ module Dependabot
         "bundler" => { name: "ruby", colour: "ce2d2d" },
         "submodules" => { name: "submodules", colour: "000000" },
         "docker" => { name: "docker", colour: "21ceff" },
+        "terraform" => { name: "terraform", colour: "5C4EE5" },
         "nuget" => { name: ".NET", colour: "7121c6" },
         "maven" => { name: "java", colour: "ffa221" },
         "gradle" => { name: "java", colour: "ffa221" },
