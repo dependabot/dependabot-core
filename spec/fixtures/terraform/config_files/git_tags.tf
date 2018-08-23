@@ -121,3 +121,13 @@ module "dns" {
   target_dns_name  = "${aws_cloudfront_distribution.default.domain_name}"
   target_zone_id   = "${aws_cloudfront_distribution.default.hosted_zone_id}"
 }
+
+module "duplicate_label" {
+  source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+  namespace  = "${var.namespace}"
+  stage      = "${var.stage}"
+  name       = "${var.name}"
+  delimiter  = "${var.delimiter}"
+  attributes = ["${compact(concat(var.attributes, list("origin")))}"]
+  tags       = "${var.tags}"
+}

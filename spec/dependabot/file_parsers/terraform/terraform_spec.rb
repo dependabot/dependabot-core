@@ -130,7 +130,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
     context "with git sources" do
       let(:terraform_fixture_name) { "git_tags.tf" }
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency (which uses git:: with a tag)" do
         subject(:dependency) { dependencies.first }

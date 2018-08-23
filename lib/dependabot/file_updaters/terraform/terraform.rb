@@ -62,8 +62,10 @@ module Dependabot
           tag = old_req.fetch(:source)[:ref]
           url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
 
-          updated_content.sub!(url_regex) do |url_match|
-            url_match.sub(old_req[:source][:ref], new_req[:source][:ref])
+          updated_content.sub!(git_declaration_regex) do |regex_match|
+            regex_match.sub(url_regex) do |url_match|
+              url_match.sub(old_req[:source][:ref], new_req[:source][:ref])
+            end
           end
         end
 
@@ -99,6 +101,13 @@ module Dependabot
             (?<=\{)
             (?:(?!^\}).)*
             source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
+            (?:(?!^\}).)*
+          /mx
+        end
+
+        def git_declaration_regex
+          /
+            module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
             (?:(?!^\}).)*
           /mx
         end

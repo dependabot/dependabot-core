@@ -84,8 +84,17 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
       context "with a git dependency" do
         it "updates the requirement" do
           expect(updated_file.content).to include(
-            "//github.com/cloudposse/terraform-null-label.git"\
-            "?ref=tags/0.4.1\"\n"
+            "module \"origin_label\" {\n"\
+            "  source     = \"git::https://github.com/cloudposse/"\
+            "terraform-null-label.git?ref=tags/0.4.1\"\n"
+          )
+        end
+
+        it "doesn't update the duplicate" do
+          expect(updated_file.content).to include(
+            "module \"duplicate_label\" {\n"\
+            "  source     = \"git::https://github.com/cloudposse/"\
+            "terraform-null-label.git?ref=tags/0.3.7\"\n"
           )
         end
       end
