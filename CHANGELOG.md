@@ -1,3 +1,7 @@
+## v0.68.2, 23 August 2018
+
+- Terraform: Parse version out of git reference
+
 ## v0.68.1, 23 August 2018
 
 - Terraform: Test requirements_unlocked_or_can_be? method (and fix it!)
