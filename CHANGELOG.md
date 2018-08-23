@@ -1,3 +1,7 @@
+## v0.68.3, 23 August 2018
+
+- Terraform: Return Gem::Version objects from latest_version, not strings
+
 ## v0.68.2, 23 August 2018
 
 - Terraform: Parse version out of git reference
