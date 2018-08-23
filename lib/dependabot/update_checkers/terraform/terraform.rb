@@ -65,13 +65,15 @@ module Dependabot
             latest_tag = git_commit_checker.local_tag_for_latest_version&.
                          fetch(:tag)
             version_rgx = GitCommitChecker::VERSION_REGEX
-            return dependency.version unless latest_tag.match(version_rgx)
-            return latest_tag.match(version_rgx).named_captures.fetch("version")
+            return unless latest_tag.match(version_rgx)
+            version = latest_tag.match(version_rgx).
+                      named_captures.fetch("version")
+            return version_class.new(version)
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version then there's nothing we can do.
-          dependency.version
+          nil
         end
 
         def tag_for_latest_version

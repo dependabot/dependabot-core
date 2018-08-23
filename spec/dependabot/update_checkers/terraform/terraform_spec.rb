@@ -72,7 +72,7 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
           )
       end
 
-      it { is_expected.to eq("0.4.1") }
+      it { is_expected.to eq(Gem::Version.new("0.4.1")) }
     end
   end
 
@@ -94,6 +94,41 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
 
       it { is_expected.to eq("delegated") }
+    end
+  end
+
+  describe "#can_update?" do
+    subject { checker.can_update?(requirements_to_unlock: :own) }
+
+    context "with a git dependency" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/cloudposse/terraform-null-label.git",
+          branch: nil,
+          ref: "tags/0.3.7"
+        }
+      end
+
+      before do
+        git_url = "https://github.com/cloudposse/terraform-null-label.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "terraform-null-label"),
+            headers: git_header
+          )
+      end
+
+      it { is_expected.to eq(true) }
+
+      context "when no requirements can be unlocked" do
+        subject { checker.can_update?(requirements_to_unlock: :none) }
+        it { is_expected.to be_falsey }
+      end
     end
   end
 
