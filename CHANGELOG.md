@@ -1,3 +1,7 @@
+## v0.68.0, 23 August 2018
+
+- Terraform: Initial support
+
 ## v0.67.8, 22 August 2018
 
 - Python: Handle unmet markers in a pip-compile requirements file
