@@ -55,5 +55,55 @@ RSpec.describe Dependabot::MetadataFinders::Terraform::Terraform do
     subject(:source_url) { finder.source_url }
 
     it { is_expected.to eq("https://github.com/cloudposse/terraform-null") }
+
+    context "with a registry-based dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hashicorp/consul/aws",
+          version: "0.3.8",
+          previous_version: "0.1.0",
+          requirements: [{
+            requirement: "0.3.8",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/consul/aws"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/consul/aws"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      end
+
+      let(:registry_url) do
+        "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8"
+      end
+      let(:registry_response) do
+        fixture(
+          "terraform",
+          "registry_responses",
+          "hashicorp_consul_aws_0.3.8.json"
+        )
+      end
+      before do
+        stub_request(:get, registry_url).
+          to_return(status: 200, body: registry_response)
+      end
+
+      it do
+        is_expected.to eq("https://github.com/hashicorp/terraform-aws-consul")
+      end
+    end
   end
 end
