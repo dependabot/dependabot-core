@@ -177,7 +177,20 @@ module Dependabot
         end
 
         def terraform_parser_path
-          Pathname.new("#{terraform_helper_path}/json2hcl").cleanpath.to_path
+          Pathname.new(
+            "#{terraform_helper_path}/json2hcl.#{platform}"
+          ).cleanpath.to_path
+        end
+
+        def platform
+          case RbConfig::CONFIG["arch"]
+          when /linux/
+            "linux"
+          when /darwin/
+            "darwin"
+          else
+            raise "Invalid platform #{RbConfig::CONFIG['arch']}"
+          end
         end
 
         def terraform_helper_path
