@@ -1,3 +1,7 @@
+## v0.68.4, 23 August 2018
+
+- Terraform: Handle config files with a duplicated git source
+
 ## v0.68.3, 23 August 2018
 
 - Terraform: Return Gem::Version objects from latest_version, not strings
