@@ -184,12 +184,9 @@ module Dependabot
 
         def platform
           case RbConfig::CONFIG["arch"]
-          when /linux/
-            "linux"
-          when /darwin/
-            "darwin"
-          else
-            raise "Invalid platform #{RbConfig::CONFIG['arch']}"
+          when /linux/ then "linux"
+          when /darwin/ then "darwin"
+          else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
           end
         end
 
