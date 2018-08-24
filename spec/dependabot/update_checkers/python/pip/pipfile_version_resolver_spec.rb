@@ -111,6 +111,11 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:pipfile_fixture_name) { "path_dependency" }
       let(:lockfile_fixture_name) { "path_dependency.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+
+      context "that needs to be sanitized" do
+        let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      end
     end
 
     context "with a required python version" do

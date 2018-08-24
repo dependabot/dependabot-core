@@ -112,8 +112,7 @@ module Dependabot
                   requirement: dep["requirement"],
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
-                  groups: [],
-                  metadata: { requirement_type: dep["requirement_type"] }
+                  groups: []
                 }],
                 package_manager: "pip"
               )

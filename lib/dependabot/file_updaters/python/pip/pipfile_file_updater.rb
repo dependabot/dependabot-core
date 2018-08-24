@@ -11,6 +11,7 @@ module Dependabot
       class Pip
         class PipfileFileUpdater
           require_relative "pipfile_preparer"
+          require_relative "setup_file_sanitizer"
 
           attr_reader :dependencies, :dependency_files, :credentials
 
@@ -163,11 +164,26 @@ module Dependabot
               File.write(path, file.content)
             end
 
-            # Workaround for Pipenv bug
-            FileUtils.mkdir_p("python_package.egg-info")
+            setup_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, sanitized_setup_file_content(file))
+            end
 
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content)
+          end
+
+          def sanitized_setup_file_content(file)
+            @sanitized_setup_file_content ||= {}
+            if @sanitized_setup_file_content[file.name]
+              return @sanitized_setup_file_content[file.name]
+            end
+
+            @sanitized_setup_file_content[file.name] =
+              SetupFileSanitizer.
+              new(setup_file: file).
+              sanitized_content
           end
 
           def pipfile_hash_for(pipfile_content)
@@ -223,6 +239,10 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Pipfile.lock" }
+          end
+
+          def setup_files
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
           end
         end
       end

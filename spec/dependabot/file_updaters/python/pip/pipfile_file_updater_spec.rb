@@ -262,6 +262,33 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
             to eq("==1.4")
         end
       end
+
+      context "with a path dependency" do
+        let(:dependency_files) { [pipfile, lockfile, setupfile] }
+        let(:setupfile) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", setupfile_fixture_name)
+          )
+        end
+        let(:setupfile_fixture_name) { "small.py" }
+        let(:pipfile_fixture_name) { "path_dependency" }
+        let(:lockfile_fixture_name) { "path_dependency.lock" }
+
+        it "updates the dependency" do
+          puts updated_lockfile.content
+          expect(json_lockfile["default"]["requests"]["version"]).
+            to eq("==2.18.4")
+        end
+
+        context "that needs to be sanitized" do
+          let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
+          it "updates the dependency" do
+            expect(json_lockfile["default"]["requests"]["version"]).
+              to eq("==2.18.4")
+          end
+        end
+      end
     end
   end
 

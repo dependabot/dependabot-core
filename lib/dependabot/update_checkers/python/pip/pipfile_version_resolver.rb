@@ -5,6 +5,7 @@ require "toml-rb"
 
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip/pipfile_preparer"
+require "dependabot/file_updaters/python/pip/setup_file_sanitizer"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
@@ -165,11 +166,26 @@ module Dependabot
               File.write(path, file.content)
             end
 
-            # Workaround for Pipenv bug
-            FileUtils.mkdir_p("python_package.egg-info")
+            setup_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, sanitized_setup_file_content(file))
+            end
 
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content) if update_pipfile
+          end
+
+          def sanitized_setup_file_content(file)
+            @sanitized_setup_file_content ||= {}
+            if @sanitized_setup_file_content[file.name]
+              return @sanitized_setup_file_content[file.name]
+            end
+
+            @sanitized_setup_file_content[file.name] =
+              FileUpdaters::Python::Pip::SetupFileSanitizer.
+              new(setup_file: file).
+              sanitized_content
           end
 
           def pipfile_content
@@ -281,6 +297,10 @@ module Dependabot
 
           def lockfile
             dependency_files.find { |f| f.name == "Pipfile.lock" }
+          end
+
+          def setup_files
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
           end
 
           def run_pipenv_command(command)
