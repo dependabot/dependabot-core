@@ -9,7 +9,8 @@ module Dependabot
       class Terraform < Dependabot::UpdateCheckers::Base
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
-          # TODO: Handle registry dependencies, too
+          return latest_version_for_registry_dependency if registry_dependency?
+          # Other sources (mercurial, path dependencies) just return `nil`
         end
 
         def latest_resolvable_version
@@ -25,10 +26,11 @@ module Dependabot
 
         def updated_requirements
           dependency.requirements.map do |req|
-            next req unless req.dig(:source, :type) == "git"
-            next req unless req.dig(:source, :ref)
-            next req unless tag_for_latest_version
-            req.merge(source: req[:source].merge(ref: tag_for_latest_version))
+            case req.dig(:source, :type)
+            when "git" then update_git_requirement(req)
+            when "registry" then update_registry_requirement(req)
+            else req
+            end
           end
         end
 
@@ -47,6 +49,76 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
+        end
+
+        def update_git_requirement(req)
+          return req unless req.dig(:source, :ref)
+          return req unless tag_for_latest_version
+          req.merge(source: req[:source].merge(ref: tag_for_latest_version))
+        end
+
+        def update_registry_requirement(req)
+          requirement = req.fetch(:requirement)
+          return req unless requirement
+
+          satisfied =
+            requirement_class.new(requirement).satisfied_by?(latest_version)
+          return req if satisfied
+
+          # TODO: More sophisticated updating of requirement types
+          req.merge(requirement: latest_version.to_s)
+        end
+
+        def latest_version_for_registry_dependency
+          return unless registry_dependency?
+
+          if @latest_version_for_registry_dependency
+            return @latest_version_for_registry_dependency
+          end
+
+          versions = all_registry_versions
+          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+
+          @latest_version_for_registry_dependency = versions.max
+        end
+
+        def all_registry_versions
+          hostname = dependency_source_details.fetch(:registry_hostname)
+          identifier = dependency_source_details.fetch(:module_identifier)
+
+          # TODO: Implement service discovery for custom registries
+          return unless hostname == "registry.terraform.io"
+
+          url = "https://registry.terraform.io/v1/modules/"\
+                "#{identifier}/versions"
+
+          response = Excon.get(
+            url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          unless response.status == 200
+            raise "Response from registry was #{response.status}"
+          end
+
+          JSON.parse(response.body).
+            fetch("modules").first.fetch("versions").
+            map { |release| version_class.new(release.fetch("version")) }
+        end
+
+        def wants_prerelease?
+          current_version = dependency.version
+          if current_version &&
+             version_class.correct?(current_version) &&
+             version_class.new(current_version).prerelease?
+            return true
+          end
+
+          dependency.requirements.any? do |req|
+            req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
+          end
         end
 
         def latest_version_for_git_dependency
@@ -97,6 +169,20 @@ module Dependabot
 
         def ignore_reqs
           ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+        end
+
+        def registry_dependency?
+          return false if dependency_source_details.nil?
+          dependency_source_details.fetch(:type) == "registry"
+        end
+
+        def dependency_source_details
+          sources =
+            dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+          sources.first
         end
 
         def git_dependency?

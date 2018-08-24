@@ -35,8 +35,9 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
   let(:dependency_name) { "origin_label" }
   let(:version) { "0.3.7" }
   let(:requirements) do
-    [{ requirement: nil, groups: [], file: "main.tf", source: source }]
+    [{ requirement: requirement, groups: [], file: "main.tf", source: source }]
   end
+  let(:requirement) { nil }
   let(:source) do
     {
       type: "git",
@@ -73,6 +74,30 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.4.1")) }
+    end
+
+    context "with a registry dependency" do
+      let(:source) do
+        {
+          type: "registry",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/consul/aws"
+        }
+      end
+
+      before do
+        url = "https://registry.terraform.io/v1/modules/"\
+              "hashicorp/consul/aws/versions"
+        registry_response = fixture(
+          "terraform",
+          "registry_responses",
+          "hashicorp_consul_aws_versions.json"
+        )
+
+        stub_request(:get, url).to_return(status: 200, body: registry_response)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("0.3.8")) }
     end
   end
 
@@ -124,6 +149,35 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
 
       it { is_expected.to eq(true) }
+
+      context "when no requirements can be unlocked" do
+        subject { checker.can_update?(requirements_to_unlock: :none) }
+        it { is_expected.to be_falsey }
+      end
+    end
+
+    context "with a registry dependency" do
+      let(:source) do
+        {
+          type: "registry",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/consul/aws"
+        }
+      end
+      let(:version) { nil }
+      let(:requirement) { "~> 0.2.1" }
+
+      before do
+        allow(checker).to receive(:latest_version).
+          and_return(Gem::Version.new("0.3.8"))
+      end
+
+      it { is_expected.to eq(true) }
+
+      context "when the requirement is already up-to-date" do
+        let(:requirement) { "~> 0.3.1" }
+        it { is_expected.to be_falsey }
+      end
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
@@ -187,6 +241,44 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
 
       context "with a git SHA as the latest version" do
         let(:ref) { "master" }
+        it { is_expected.to eq(requirements) }
+      end
+    end
+
+    context "with a registry dependency" do
+      let(:source) do
+        {
+          type: "registry",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/consul/aws"
+        }
+      end
+      let(:requirement) { "~> 0.2.1" }
+
+      before do
+        allow(checker).to receive(:latest_version).
+          and_return(Gem::Version.new("0.3.8"))
+      end
+
+      it "updates the requirement" do
+        # TODO: Would be better to keep the ~> here.
+        expect(updated_requirements).
+          to eq(
+            [{
+              requirement: "0.3.8",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/consul/aws"
+              }
+            }]
+          )
+      end
+
+      context "when the requirement is already up-to-date" do
+        let(:requirement) { "~> 0.3.1" }
         it { is_expected.to eq(requirements) }
       end
     end
