@@ -1,3 +1,7 @@
+## v0.68.6, 24 August 2018
+
+- Python: Sanitize setup.py for use with Pipenv
+
 ## v0.68.5, 24 August 2018
 
 - Terraform: Handle registry dependencies in update checker
