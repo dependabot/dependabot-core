@@ -54,7 +54,7 @@ def parse_setup(directory):
     # Parse the setup.py
     setup_packages = []
     if os.path.isfile(directory + '/setup.py'):
-        def parse_requirement(req):
+        def parse_requirement(req, req_type):
             install_req = InstallRequirement.from_line(req)
             if install_req.original_link:
                 return
@@ -66,7 +66,8 @@ def parse_setup(directory):
                 "name": install_req.req.name,
                 "version": version,
                 "file": "setup.py",
-                "requirement": str(install_req.specifier) or None
+                "requirement": str(install_req.specifier) or None,
+                "requirement_type": req_type
             })
 
         def setup(*args, **kwargs):
@@ -74,9 +75,9 @@ def parse_setup(directory):
                 if not kwargs.get(arg):
                     continue
                 for req in kwargs.get(arg):
-                    parse_requirement(req)
+                    parse_requirement(req, arg)
             for req in chain.from_iterable(kwargs.get('extras_require', {}).values()):
-                parse_requirement(req)
+                parse_requirement(req, 'extras_require')
         setuptools.setup = setup
 
         def noop(*args, **kwargs):
