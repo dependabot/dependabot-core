@@ -1,3 +1,7 @@
+## v0.68.5, 24 August 2018
+
+- Terraform: Handle registry dependencies in update checker
+
 ## v0.68.4, 23 August 2018
 
 - Terraform: Handle config files with a duplicated git source
