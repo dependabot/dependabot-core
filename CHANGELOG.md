@@ -1,3 +1,7 @@
+## v0.68.8, 25 August 2018
+
+- Pass preview header when creating dependencies label
+
 ## v0.68.7, 25 August 2018
 
 - Terraform: Add proper requirements updater class. that ensures `~> ...`
