@@ -5,6 +5,8 @@
 # https://www.terraform.io/docs/modules/usage.html#module-versions #
 ####################################################################
 
+require "dependabot/utils/terraform/version"
+require "dependabot/utils/terraform/requirement"
 require "dependabot/update_checkers/terraform/terraform"
 
 module Dependabot
@@ -78,13 +80,9 @@ module Dependabot
               next r if r.satisfied_by?(latest_version)
 
               case op = r.requirements.first.first
-              when "<", "<="
-                [update_greatest_version(r, latest_version)]
-              when "!="
-                []
-              else
-                raise "Unexpected operation for unsatisfied Gemfile "\
-                      "requirement: #{op}"
+              when "<", "<=" then [update_greatest_version(r, latest_version)]
+              when "!=" then []
+              else raise "Unexpected operation for unsatisfied req: #{op}"
               end
             end
           end
@@ -131,11 +129,11 @@ module Dependabot
           end
 
           def version_class
-            Gem::Version
+            Utils::Terraform::Version
           end
 
           def requirement_class
-            Utils::Ruby::Requirement
+            Utils::Terraform::Requirement
           end
         end
       end

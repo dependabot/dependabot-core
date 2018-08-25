@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/utils/terraform/version"
 require "dependabot/update_checkers/terraform/terraform/requirements_updater"
 
 namespace = Dependabot::UpdateCheckers::Terraform::Terraform
@@ -19,7 +20,7 @@ RSpec.describe namespace::RequirementsUpdater do
   let(:latest_version) { version_class.new("0.3.7") }
   let(:tag_for_latest_version) { nil }
 
-  let(:version_class) { Gem::Version }
+  let(:version_class) { Dependabot::Utils::Terraform::Version }
   let(:requirement) { "~> 0.2.1" }
   let(:source) do
     {
@@ -50,6 +51,11 @@ RSpec.describe namespace::RequirementsUpdater do
       context "and an exact requirement was previously specified" do
         let(:requirement) { "0.3.1" }
         its([:requirement]) { is_expected.to eq("0.3.7") }
+
+        context "and a pre-release version" do
+          let(:latest_version) { version_class.new("0.3.7-pre") }
+          its([:requirement]) { is_expected.to eq("0.3.7-pre") }
+        end
       end
 
       context "and a ~> requirement was previously specified" do
