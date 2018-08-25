@@ -7,6 +7,8 @@ module Dependabot
   module UpdateCheckers
     module Terraform
       class Terraform < Dependabot::UpdateCheckers::Base
+        require_relative "terraform/requirements_updater"
+
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
           return latest_version_for_registry_dependency if registry_dependency?
@@ -25,13 +27,11 @@ module Dependabot
         end
 
         def updated_requirements
-          dependency.requirements.map do |req|
-            case req.dig(:source, :type)
-            when "git" then update_git_requirement(req)
-            when "registry" then update_registry_requirement(req)
-            else req
-            end
-          end
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version&.to_s,
+            tag_for_latest_version: tag_for_latest_version
+          ).updated_requirements
         end
 
         def requirements_unlocked_or_can_be?
@@ -49,24 +49,6 @@ module Dependabot
 
         def updated_dependencies_after_full_unlock
           raise NotImplementedError
-        end
-
-        def update_git_requirement(req)
-          return req unless req.dig(:source, :ref)
-          return req unless tag_for_latest_version
-          req.merge(source: req[:source].merge(ref: tag_for_latest_version))
-        end
-
-        def update_registry_requirement(req)
-          requirement = req.fetch(:requirement)
-          return req unless requirement
-
-          satisfied =
-            requirement_class.new(requirement).satisfied_by?(latest_version)
-          return req if satisfied
-
-          # TODO: More sophisticated updating of requirement types
-          req.merge(requirement: latest_version.to_s)
         end
 
         def latest_version_for_registry_dependency
@@ -149,6 +131,7 @@ module Dependabot
         end
 
         def tag_for_latest_version
+          return unless git_commit_checker.git_dependency?
           return unless git_commit_checker.pinned?
           return unless git_commit_checker.pinned_ref_looks_like_version?
 

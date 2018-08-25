@@ -261,11 +261,10 @@ RSpec.describe Dependabot::UpdateCheckers::Terraform::Terraform do
       end
 
       it "updates the requirement" do
-        # TODO: Would be better to keep the ~> here.
         expect(updated_requirements).
           to eq(
             [{
-              requirement: "0.3.8",
+              requirement: "~> 0.3.8",
               groups: [],
               file: "main.tf",
               source: {
