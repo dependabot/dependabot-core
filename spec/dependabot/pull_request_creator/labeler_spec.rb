@@ -183,7 +183,13 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
             expect(WebMock).
               to have_requested(:post, "#{repo_api_url}/labels").
-              with(body: { name: "ruby", color: "ce2d2d" })
+              with(
+                body: {
+                  name: "ruby",
+                  color: "ce2d2d",
+                  description: "Pull requests that update Ruby code"
+                }
+              )
             expect(labeler.labels_for_pr).to include("dependencies")
           end
         end

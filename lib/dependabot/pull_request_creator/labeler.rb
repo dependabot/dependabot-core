@@ -232,7 +232,8 @@ module Dependabot
       def create_github_dependencies_label
         github_client_for_source.add_label(
           source.repo, "dependencies", "0025ff",
-          description: "Pull requests that update a dependency file"
+          description: "Pull requests that update a dependency file",
+          accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, "dependencies"].uniq
       rescue Octokit::UnprocessableEntity => error
@@ -251,7 +252,8 @@ module Dependabot
       def create_github_security_label
         github_client_for_source.add_label(
           source.repo, "security", "ee0701",
-          description: "Pull requests that address a security vulnerability"
+          description: "Pull requests that address a security vulnerability",
+          accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, "security"].uniq
       rescue Octokit::UnprocessableEntity => error
@@ -273,7 +275,10 @@ module Dependabot
         github_client_for_source.add_label(
           source.repo,
           langauge_name,
-          LANGUAGE_LABEL_DETAILS.fetch(package_manager).fetch(:colour)
+          LANGUAGE_LABEL_DETAILS.fetch(package_manager).fetch(:colour),
+          description: "Pull requests that update #{langauge_name.capitalize} "\
+                       "code",
+          accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, langauge_name].uniq
       rescue Octokit::UnprocessableEntity => error

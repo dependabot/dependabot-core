@@ -276,7 +276,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         let(:lockfile_fixture_name) { "path_dependency.lock" }
 
         it "updates the dependency" do
-          puts updated_lockfile.content
           expect(json_lockfile["default"]["requests"]["version"]).
             to eq("==2.18.4")
         end
