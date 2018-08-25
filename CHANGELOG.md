@@ -1,3 +1,10 @@
+## v0.68.7, 25 August 2018
+
+- Terraform: Add proper requirements updater class. that ensures `~> ...`
+  requirements are updated properly
+- Terraform: Add version and requirement classes to preserve pre-release
+  formatting
+
 ## v0.68.6, 24 August 2018
 
 - Python: Sanitize setup.py for use with Pipenv
