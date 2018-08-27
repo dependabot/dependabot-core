@@ -94,9 +94,9 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
       let(:dependency_requirements) { [] }
-      let(:latest_version) { Gem::Version.new("1.5.4") }
+      let(:latest_version) { Gem::Version.new("1.6.0") }
 
-      it { is_expected.to eq(Gem::Version.new("1.5.4")) }
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
     context "with a path dependency" do
