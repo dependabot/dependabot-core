@@ -67,6 +67,8 @@ module Dependabot
             gitlab_client.project(repo).default_branch
           else raise "Unsupported provider '#{source.provider}'."
           end
+      rescue Octokit::NotFound, Gitlab::Error::NotFound
+        raise Dependabot::RepoNotFound, source
       end
 
       def fetch_file_if_present(filename)

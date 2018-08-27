@@ -27,7 +27,7 @@ module Dependabot
 
         def repo_has_subdir_for_dep?(tmp_source)
           @repo_has_subdir_for_dep ||= {}
-          if @repo_has_subdir_for_dep[tmp_source]
+          if @repo_has_subdir_for_dep.key?(tmp_source)
             return @repo_has_subdir_for_dep[tmp_source]
           end
 
@@ -35,10 +35,12 @@ module Dependabot
           fetcher =
             FileFetchers::Base.new(source: tmp_source, credentials: credentials)
 
-          @repo_has_subdir_for_dep[tmp_source] ||=
+          @repo_has_subdir_for_dep[tmp_source] =
             fetcher.send(:repo_contents, raise_errors: false).
             select { |f| f.type == "dir" }.
             any? { |f| artifact.end_with?(f.name) }
+        rescue Dependabot::RepoNotFound
+          @repo_has_subdir_for_dep[tmp_source] = false
         end
 
         def look_up_source_in_pom(pom)

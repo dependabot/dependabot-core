@@ -119,6 +119,23 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
+
+          context "and the repo 404s" do
+            before do
+              allow_any_instance_of(Dependabot::FileFetchers::Base).
+                to receive(:commit).and_call_original
+              stub_request(:get, url).
+                with(headers: { "Authorization" => "token token" }).
+                to_return(
+                  status: 404,
+                  body: fixture("github", "not_found.json"),
+                  headers: { "content-type" => "application/json" }
+                )
+            end
+            let(:repo_contents_fixture_nm) { "not_found.json" }
+
+            it { is_expected.to be_nil }
+          end
         end
       end
 

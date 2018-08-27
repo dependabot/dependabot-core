@@ -14,14 +14,14 @@ module Dependabot
       @branch_name = branch_name
       super(msg)
     end
+  end
 
-    def file_name
-      branch_name.split("/").last
-    end
+  class RepoNotFound < DependabotError
+    attr_reader :source
 
-    def directory
-      # Directory should always start with a `/`
-      branch_name.split("/")[0..-2].join("/").sub(%r{^/*}, "/")
+    def initialize(source, msg = nil)
+      @source = source
+      super(msg)
     end
   end
 
