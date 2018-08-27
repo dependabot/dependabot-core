@@ -1,3 +1,7 @@
+## v0.69.2, 27 August 2018
+
+- PHP: Better handling of git sources
+
 ## v0.69.1, 27 August 2018
 
 - Java: Handle bad GitHub URLs in POMs
