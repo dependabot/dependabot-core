@@ -1,3 +1,7 @@
+## v0.69.0, 27 August 2018
+
+- Rename bump_versions_if_needed to bump_versions_if_necessary
+
 ## v0.68.8, 25 August 2018
 
 - Pass preview header when creating dependencies label
