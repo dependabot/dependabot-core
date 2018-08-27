@@ -1,3 +1,8 @@
+## v0.69.1, 27 August 2018
+
+- Java: Handle bad GitHub URLs in POMs
+- Handle changelog headers that start with ==
+
 ## v0.69.0, 27 August 2018
 
 - Rename bump_versions_if_needed to bump_versions_if_necessary
