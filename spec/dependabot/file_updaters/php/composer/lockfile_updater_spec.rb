@@ -169,19 +169,16 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
           described_class.new(
             dependency_files: files,
             dependencies: [dependency],
-            credentials: [
-              {
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              },
-              {
-                "type" => "php_environment_variable",
-                "env-key" => "ACF_PRO_KEY",
-                "env-value" => "example_key"
-              }
-            ]
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "php_environment_variable",
+              "env-key" => "ACF_PRO_KEY",
+              "env-value" => "example_key"
+            }]
           )
         end
 
@@ -325,20 +322,17 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
       context "with good credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "composer_repository",
-              "registry" => "php.fury.io",
-              "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
-              "password" => ""
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "php.fury.io",
+            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "password" => ""
+          }]
         end
 
         it "has details of the updated item" do
@@ -437,7 +431,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error).to be_a Dependabot::GitDependenciesNotReachable
           expect(error.dependency_urls).
-            to eq(["https://github.com/no-exist-sorry/monolog.git"])
+            to eq(["https://github.com/no-exist-sorry/monolog"])
         end
       end
     end
@@ -539,8 +533,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"v5.6.23\"")
-        expect(updated_lockfile_content).
-          to include("ba383d0a3bf6aa0b7a1307fdc4aa46ba")
+        expect(updated_lockfile_content).to include("ba383d0a3bf6aa0b7a1307fdc")
       end
     end
 
@@ -571,8 +564,7 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"v5.3.0\"")
-        expect(updated_lockfile_content).
-          to include("e244eda135819216ac30441464e27d4d")
+        expect(updated_lockfile_content).to include("e244eda135819216ac3044146")
       end
     end
   end

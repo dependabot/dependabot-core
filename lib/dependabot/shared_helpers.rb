@@ -126,11 +126,20 @@ module Dependabot
     end
 
     def self.configure_git_credentials(credentials)
+      # First, reset the credential helpers by appending an empty string to them
+      # (requires git 2.9 or greater). This is required so that any --system
+      # credential helpers aren't used.
       run_shell_command(
-        "git config --global --replace-all credential.helper "\
+        "git config --global --replace-all credential.helper ''"
+      )
+
+      # Then add a file-based credential store that loads a file in this repo
+      run_shell_command(
+        "git config --global credential.helper "\
         "'store --file=#{Dir.pwd}/git.store'"
       )
 
+      # Build the content for our credentials file
       git_store_content = ""
       credentials.each do |cred|
         next unless cred["type"] == "git_source"
@@ -141,6 +150,7 @@ module Dependabot
         git_store_content += authenticated_url + "\n"
       end
 
+      # Save the file
       File.write("git.store", git_store_content)
     end
 

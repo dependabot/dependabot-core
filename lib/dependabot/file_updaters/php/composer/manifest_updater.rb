@@ -43,8 +43,6 @@ module Dependabot
 
                 updated_content
               end
-
-            update_git_sources(updated_content)
           end
 
           private
@@ -56,21 +54,6 @@ module Dependabot
               dependency.requirements - dependency.previous_requirements
 
             changed_requirements.any? { |f| f[:file] == file.name }
-          end
-
-          def update_git_sources(content)
-            # We need to replace `git` types with `vcs` so that auth works.
-            # Spacing is important so we don't accidentally replace the source
-            # for "type": "package" dependencies.
-            # We then replace any ssh URLs with ssl ones, and remove any
-            # requests not to use the GitHub API (which would break auth)
-            content.gsub(
-              /^      "type"\s*:\s*"git"/,
-              '      "type": "vcs"'
-            ).gsub(
-              /^            "type"\s*:\s*"git"/,
-              '            "type": "vcs"'
-            ).gsub(%r{git@(.*?)[:/]}, 'https://\1/')
           end
         end
       end

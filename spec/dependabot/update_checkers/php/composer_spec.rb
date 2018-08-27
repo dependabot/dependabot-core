@@ -639,6 +639,13 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
 
+        context "with a git URL" do
+          let(:manifest_fixture_name) { "git_source_git_url" }
+          let(:lockfile_fixture_name) { "git_source_git_url" }
+
+          it { is_expected.to be >= Gem::Version.new("1.3.0") }
+        end
+
         context "that is unreachable" do
           let(:manifest_fixture_name) { "git_source_unreachable" }
           let(:lockfile_fixture_name) { "git_source_unreachable" }
@@ -648,7 +655,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                 expect(error.dependency_urls).
-                  to eq(["https://github.com/no-exist-sorry/monolog.git"])
+                  to eq(["https://github.com/no-exist-sorry/monolog"])
               end
           end
 
@@ -661,7 +668,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
                 to raise_error do |error|
                   expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                   expect(error.dependency_urls).
-                    to eq(["https://github.com/no-exist-sorry/monolog.git"])
+                    to eq(["git@github.com:no-exist-sorry/monolog"])
                 end
             end
           end

@@ -70,12 +70,6 @@ module Dependabot
           def prepared_composer_json_content
             content = composer_file.content
 
-            # We need to replace `git` types with `vcs` so that auth works. We
-            # also have to do this in the FileUpdater, and return the altered
-            # composer.json to the user.
-            content = content.gsub(/"type"\s*:\s*"git"/, '"type": "vcs"')
-            content = content.gsub(%r{git@(.*?)[:/]}, 'https://\1/')
-
             content.gsub(
               /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
               %("#{dependency.name}": "#{updated_version_requirement_string}")
