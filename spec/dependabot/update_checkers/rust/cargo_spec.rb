@@ -282,7 +282,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
         }
       end
 
-      it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+      it { is_expected.to eq("1024c5074ced00aad1a83be4d10119b39d2151bd") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -313,7 +313,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           }
         end
 
-        it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+        it { is_expected.to eq("1024c5074ced00aad1a83be4d10119b39d2151bd") }
       end
     end
   end
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
           )
       end
 
-      it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+      it { is_expected.to eq("1024c5074ced00aad1a83be4d10119b39d2151bd") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
