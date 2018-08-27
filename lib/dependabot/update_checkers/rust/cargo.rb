@@ -79,7 +79,7 @@ module Dependabot
         end
 
         def requirement_update_strategy
-          library? ? :bump_versions_if_needed : :bump_versions
+          library? ? :bump_versions_if_necessary : :bump_versions
         end
 
         def latest_version_for_git_dependency

@@ -19,7 +19,7 @@ module Dependabot
 
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
           ALLOWED_UPDATE_STRATEGIES =
-            %i(bump_versions bump_versions_if_needed).freeze
+            %i(bump_versions bump_versions_if_necessary).freeze
 
           def initialize(requirements:, updated_source:, update_strategy:,
                          library:, latest_version:, latest_resolvable_version:)
@@ -50,7 +50,7 @@ module Dependabot
               next req if req[:requirement].nil?
 
               # TODO: Add a widen_ranges options
-              if update_strategy == :bump_versions_if_needed
+              if update_strategy == :bump_versions_if_necessary
                 update_version_requirement_if_needed(req)
               else
                 update_version_requirement(req)

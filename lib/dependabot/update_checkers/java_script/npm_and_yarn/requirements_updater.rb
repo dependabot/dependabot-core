@@ -17,7 +17,7 @@ module Dependabot
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
           SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
           ALLOWED_UPDATE_STRATEGIES =
-            %i(widen_ranges bump_versions bump_versions_if_needed).freeze
+            %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 
           def initialize(requirements:, updated_source:, update_strategy:,
                          latest_version:, latest_resolvable_version:)
@@ -46,7 +46,7 @@ module Dependabot
               case update_strategy
               when :widen_ranges then widen_requirement(req)
               when :bump_versions then update_version_requirement(req)
-              when :bump_versions_if_needed
+              when :bump_versions_if_necessary
                 update_version_requirement_if_needed(req)
               else raise "Unexpected update strategy: #{update_strategy}"
               end

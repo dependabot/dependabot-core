@@ -219,8 +219,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
       end
     end
 
-    context "for a bump_versions_if_needed strategy" do
-      let(:update_strategy) { :bump_versions_if_needed }
+    context "for a bump_versions_if_necessary strategy" do
+      let(:update_strategy) { :bump_versions_if_necessary }
       let(:library) { true }
 
       context "when there is a latest version" do

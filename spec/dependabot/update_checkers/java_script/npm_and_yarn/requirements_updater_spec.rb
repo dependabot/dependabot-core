@@ -329,7 +329,7 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
     end
 
     context "for a requirement having its version bumped if required" do
-      let(:update_strategy) { :bump_versions_if_needed }
+      let(:update_strategy) { :bump_versions_if_necessary }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }

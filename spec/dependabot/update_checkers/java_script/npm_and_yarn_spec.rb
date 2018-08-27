@@ -1067,7 +1067,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
-          requirements_update_strategy: :bump_versions_if_needed
+          requirements_update_strategy: :bump_versions_if_necessary
         )
       end
 
@@ -1079,7 +1079,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             updated_source: nil,
             latest_version: "1.7.0",
             latest_resolvable_version: "1.7.0",
-            update_strategy: :bump_versions_if_needed
+            update_strategy: :bump_versions_if_necessary
           ).
           and_call_original
         expect(checker.updated_requirements).
