@@ -32,7 +32,7 @@ module Dependabot
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
             req_string.split(",").map do |r|
-              convert_php_constraint_to_ruby_constraint(r.strip)
+              convert_dotnet_constraint_to_ruby_constraint(r.strip)
             end
           end
 
@@ -46,7 +46,7 @@ module Dependabot
 
         private
 
-        def convert_php_constraint_to_ruby_constraint(req_string)
+        def convert_dotnet_constraint_to_ruby_constraint(req_string)
           return req_string unless req_string.include?("*")
           convert_wildcard_req(req_string)
         end

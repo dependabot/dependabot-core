@@ -25,6 +25,57 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
         )
       end
     end
+
+    context "with a range requirement" do
+      let(:requirement_string) { "[1.0.0,)" }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
+
+      context "which needs a > operator" do
+        let(:requirement_string) { "(1.0.0,)" }
+        it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
+      end
+
+      context "which needs a > and a < operator" do
+        let(:requirement_string) { "(1.0.0, 2.0.0)" }
+        it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
+      end
+
+      context "which needs a >= and a <= operator" do
+        let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
+      end
+    end
+
+    context "with exact requirement" do
+      let(:requirement_string) { "1.0.0" }
+      it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
+    end
+  end
+
+  describe ".requirements_array" do
+    subject(:array) { described_class.requirements_array(requirement_string) }
+
+    context "with exact requirement" do
+      let(:requirement_string) { "1.0.0" }
+      it { is_expected.to eq([described_class.new("= 1.0.0")]) }
+    end
+
+    context "with a range requirement" do
+      let(:requirement_string) { "[1.0.0,)" }
+      it { is_expected.to eq([described_class.new(">= 1.0.0")]) }
+    end
+
+    context "with two range requirements" do
+      let(:requirement_string) { "(,1.0.0),(1.0.0,)" }
+      it "builds the correct array of requirements" do
+        expect(array).to match_array(
+          [
+            described_class.new("> 1.0.0"),
+            described_class.new("< 1.0.0")
+          ]
+        )
+      end
+    end
   end
 
   describe "#satisfied_by?" do

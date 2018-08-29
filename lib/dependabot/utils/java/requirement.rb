@@ -25,16 +25,66 @@ module Dependabot
           [matches[1] || "=", Utils::Java::Version.new(matches[2])]
         end
 
-        # For consistency with other langauges, we define a requirements array.
-        # Java doesn't have an `OR` separator for requirements, so it always
-        # contains a single element.
         def self.requirements_array(requirement_string)
-          [new(requirement_string)]
+          split_java_requirement(requirement_string).map do |str|
+            new(str)
+          end
+        end
+
+        def initialize(*requirements)
+          requirements = requirements.flatten.flat_map do |req_string|
+            convert_java_constraint_to_ruby_constraint(req_string)
+          end
+
+          super(requirements)
         end
 
         def satisfied_by?(version)
           version = Utils::Java::Version.new(version.to_s)
           super
+        end
+
+        private
+
+        def self.split_java_requirement(req_string)
+          req_string.split(/(?<=\]|\)),/).flat_map do |str|
+            next str if str.start_with?("(", "[")
+            exacts, *rest = str.split(/,(?=\[|\()/)
+            [*exacts.split(","), *rest]
+          end
+        end
+        private_class_method :split_java_requirement
+
+        def convert_java_constraint_to_ruby_constraint(req_string)
+          return unless req_string
+
+          if self.class.send(:split_java_requirement, req_string).count > 1
+            raise "Can't convert multiple Java reqs to a single Ruby one"
+          end
+
+          # If a soft requirement is being used, treat it as an equality matcher
+          return req_string unless req_string&.start_with?("(", "[")
+
+          # Otherwise we have a range, and just need to convert it
+          convert_java_range_to_ruby_range(req_string)
+        end
+
+        def convert_java_range_to_ruby_range(req_string)
+          lower_b, upper_b = req_string.split(",").map(&:strip)
+
+          lower_b =
+            if ["(", "["].include?(lower_b) then nil
+            elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
+            else ">= #{lower_b.sub(/\[\s*/, '').strip}"
+            end
+
+          upper_b =
+            if [")", "]"].include?(upper_b) then nil
+            elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
+            else "<= #{upper_b.sub(/\s*\]/, '').strip}"
+            end
+
+          [lower_b, upper_b].compact
         end
       end
     end
