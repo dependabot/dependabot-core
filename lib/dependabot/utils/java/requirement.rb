@@ -62,11 +62,11 @@ module Dependabot
             raise "Can't convert multiple Java reqs to a single Ruby one"
           end
 
-          # If a soft requirement is being used, treat it as an equality matcher
-          return req_string unless req_string&.start_with?("(", "[")
+          if req_string&.include?(",")
+            return convert_java_range_to_ruby_range(req_string)
+          end
 
-          # Otherwise we have a range, and just need to convert it
-          convert_java_range_to_ruby_range(req_string)
+          convert_java_equals_req_to_ruby(req_string)
         end
 
         def convert_java_range_to_ruby_range(req_string)
@@ -85,6 +85,13 @@ module Dependabot
             end
 
           [lower_b, upper_b].compact
+        end
+
+        def convert_java_equals_req_to_ruby(req_string)
+          # If a soft requirement is being used, treat it as an equality matcher
+          return req_string unless req_string&.start_with?("[")
+
+          req_string.gsub(/[\[\]\(\)]/, "")
         end
       end
     end

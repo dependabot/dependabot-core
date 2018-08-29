@@ -46,8 +46,13 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
       end
     end
 
-    context "with exact requirement" do
+    context "with a soft requirement" do
       let(:requirement_string) { "1.0.0" }
+      it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
+    end
+
+    context "with a hard requirement" do
+      let(:requirement_string) { "[1.0.0]" }
       it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
     end
   end
