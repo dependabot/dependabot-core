@@ -1,3 +1,7 @@
+## v0.69.3, 29 August 2018
+
+- Java: Extend requirement class to understand range requirements
+
 ## v0.69.2, 27 August 2018
 
 - PHP: Better handling of git sources
