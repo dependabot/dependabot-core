@@ -1,3 +1,7 @@
+## v0.69.4, 29 August 2018
+
+- Java: Handle hard requirements
+
 ## v0.69.3, 29 August 2018
 
 - Java: Extend requirement class to understand range requirements
