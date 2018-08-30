@@ -1,3 +1,8 @@
+## v0.69.8, 30 August 2018
+
+- Python: Appease pip-tools, and spec that requirements are included
+- Python: Remove pbr requirement
+
 ## v0.69.7, 30 August 2018
 
 - Python: Add pbr as a requirement
