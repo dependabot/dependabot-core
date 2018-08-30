@@ -461,6 +461,35 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           end
         end
       end
+
+      context "with a file that must be executed as main" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "requires_main.py")
+          )
+        end
+
+        its(:length) { is_expected.to eq(6) }
+
+        describe "the last dependency" do
+          subject(:dependency) { dependencies.last }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("flask")
+            expect(dependency.version).to eq("0.12.2")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==0.12.2",
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
     end
 
     context "with child requirement files" do

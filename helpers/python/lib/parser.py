@@ -118,6 +118,9 @@ def parse_setup(directory):
             __license__ = 'something'
             __url__ = 'something'
 
+            # Run as main (since setup.py is a script)
+            __name__ = '__main__'
+
             # Exec the setup.py
             exec(content) in globals(), locals()
         except:
