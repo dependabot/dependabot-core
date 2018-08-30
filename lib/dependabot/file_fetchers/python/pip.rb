@@ -36,6 +36,7 @@ module Dependabot
           fetched_files = []
 
           fetched_files << setup_file if setup_file
+          fetched_files << setup_cfg if setup_cfg
           fetched_files << pip_conf if pip_conf
 
           fetched_files += pipenv_files
@@ -78,6 +79,10 @@ module Dependabot
 
         def setup_file
           @setup_file ||= fetch_file_if_present("setup.py")
+        end
+
+        def setup_cfg
+          @setup_cfg ||= fetch_file_if_present("setup.cfg")
         end
 
         def pip_conf

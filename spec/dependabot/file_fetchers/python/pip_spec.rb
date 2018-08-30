@@ -280,6 +280,35 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       end
     end
 
+    context "with a setup.py and a setup.cfg" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_with_setup_cfg.json")
+      end
+
+      before do
+        stub_request(:get, url + "setup.py?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the requirements.txt and the pip.conf file" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("setup.cfg")
+      end
+    end
+
     context "with a requirements.txt, a setup.py and a requirements folder" do
       let(:repo_contents) do
         fixture("github", "contents_python_repo.json")
