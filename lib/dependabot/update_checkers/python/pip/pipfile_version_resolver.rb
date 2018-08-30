@@ -11,6 +11,7 @@ require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module UpdateCheckers
     module Python
@@ -373,3 +374,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
