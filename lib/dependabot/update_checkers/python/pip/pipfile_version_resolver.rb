@@ -61,6 +61,9 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
+                # Initialize a git repo to appease pip-tools
+                IO.popen("git init", err: %i(child out)) if setup_files.any?
+
                 # Shell out to Pipenv, which handles everything for us.
                 # Whilst calling `lock` avoids doing an install as part of the
                 # pipenv flow, an install is still done by pip-tools in order
@@ -132,6 +135,9 @@ module Dependabot
           def original_requirements_resolvable?
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(update_pipfile: false)
+
+              # Initialize a git repo to appease pip-tools
+              IO.popen("git init", err: %i(child out)) if setup_files.any?
 
               run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
                                    "pyenv exec pipenv lock")

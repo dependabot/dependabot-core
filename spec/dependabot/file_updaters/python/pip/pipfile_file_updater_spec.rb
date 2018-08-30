@@ -289,12 +289,20 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         end
 
         context "that imports a setup.cfg" do
-          let(:dependency_files) { [pipfile, lockfile, setupfile, setup_cfg] }
+          let(:dependency_files) do
+            [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
+          end
           let(:setupfile_fixture_name) { "with_pbr.py" }
           let(:setup_cfg) do
             Dependabot::DependencyFile.new(
               name: "setup.cfg",
               content: fixture("python", "setup_files", "setup.cfg")
+            )
+          end
+          let(:requirements_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: fixture("python", "requirements", "pbr.txt")
             )
           end
 
