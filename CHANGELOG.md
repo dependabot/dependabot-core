@@ -1,3 +1,7 @@
+## v0.69.6, 30 August 2018
+
+- Python: Sanitize setup.cfg, too
+
 ## v0.69.5, 30 August 2018
 
 - JS: Bump npm from 6.4.0 to 6.4.1
