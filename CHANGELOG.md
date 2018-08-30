@@ -1,3 +1,7 @@
+## v0.69.7, 30 August 2018
+
+- Python: Add pbr as a requirement
+
 ## v0.69.6, 30 August 2018
 
 - Python: Sanitize setup.cfg, too
