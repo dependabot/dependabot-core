@@ -172,6 +172,12 @@ module Dependabot
               File.write(path, sanitized_setup_file_content(file))
             end
 
+            setup_cfg_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, "[metadata]\nname = sanitized-package\n")
+            end
+
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content) if update_pipfile
           end
@@ -307,6 +313,10 @@ module Dependabot
 
           def setup_files
             dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def setup_cfg_files
+            dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
 
           def run_pipenv_command(command)

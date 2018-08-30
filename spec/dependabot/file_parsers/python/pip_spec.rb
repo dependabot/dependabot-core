@@ -513,7 +513,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("pbr")
+            expect(dependency.name).to eq("raven")
             expect(dependency.version).to be_nil
             expect(dependency.requirements).to eq(
               [{

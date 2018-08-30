@@ -287,6 +287,23 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
               to eq("==2.18.4")
           end
         end
+
+        context "that imports a setup.cfg" do
+          let(:dependency_files) { [pipfile, lockfile, setupfile, setup_cfg] }
+          let(:setupfile_fixture_name) { "with_pbr.py" }
+          let(:setup_cfg) do
+            Dependabot::DependencyFile.new(
+              name: "setup.cfg",
+              content: fixture("python", "setup_files", "setup.cfg")
+            )
+          end
+
+          it "updates the dependency" do
+            expect(json_lockfile["default"]["requests"]["version"]).
+              to eq("==2.18.4")
+            expect(json_lockfile["default"]["pbr"]).to_not be_nil
+          end
+        end
       end
     end
   end

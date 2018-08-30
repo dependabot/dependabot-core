@@ -116,6 +116,19 @@ RSpec.describe namespace::PipfileVersionResolver do
         let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
+
+      context "that imports a setup.cfg" do
+        let(:dependency_files) { [pipfile, lockfile, setupfile, setup_cfg] }
+        let(:setupfile_fixture_name) { "with_pbr.py" }
+        let(:setup_cfg) do
+          Dependabot::DependencyFile.new(
+            name: "setup.cfg",
+            content: fixture("python", "setup_files", "setup.cfg")
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      end
     end
 
     context "with a required python version" do
