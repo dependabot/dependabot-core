@@ -1,3 +1,10 @@
+## v0.69.5, 30 August 2018
+
+- JS: Bump npm from 6.4.0 to 6.4.1
+- Python: Fetch setup.cfg if present
+- Python: Check whether setup.py is using pbr
+- Python: Handle setup.py files that use a __name__ == '__main__' structure
+
 ## v0.69.4, 29 August 2018
 
 - Java: Handle hard requirements
