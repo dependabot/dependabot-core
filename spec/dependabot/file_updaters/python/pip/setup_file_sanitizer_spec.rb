@@ -5,7 +5,9 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters/python/pip/setup_file_sanitizer"
 
 RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
-  let(:sanitizer) { described_class.new(setup_file: setup_file) }
+  let(:sanitizer) do
+    described_class.new(setup_file: setup_file, setup_cfg: setup_cfg)
+  end
 
   let(:setup_file) do
     Dependabot::DependencyFile.new(
@@ -13,6 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
       content: fixture("python", "setup_files", setup_file_fixture_name)
     )
   end
+  let(:setup_cfg) { nil }
   let(:setup_file_fixture_name) { "setup.py" }
 
   describe "#sanitized_content" do
@@ -27,6 +30,24 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
         '"raven==5.32.0","requests==2.12.*","scipy==0.18.1",'\
         '"scikit-learn==0.18.1"])'
       )
+    end
+
+    context "for a setup.py using pbr" do
+      let(:setup_file_fixture_name) { "with_pbr.py" }
+      let(:setup_cfg) do
+        Dependabot::DependencyFile.new(
+          name: "setup.cfg",
+          content: fixture("python", "setup_files", "setup.cfg")
+        )
+      end
+
+      it "includes pbr" do
+        expect(sanitized_content).to eq(
+          "from setuptools import setup\n\n"\
+          'setup(name="sanitized-package",version="0.0.1",'\
+          'install_requires=[],setup_requires=["pbr"],pbr=True)'
+        )
+      end
     end
   end
 end

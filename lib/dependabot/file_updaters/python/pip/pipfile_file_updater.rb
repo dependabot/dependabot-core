@@ -182,8 +182,14 @@ module Dependabot
 
             @sanitized_setup_file_content[file.name] =
               SetupFileSanitizer.
-              new(setup_file: file).
+              new(setup_file: file, setup_cfg: setup_cfg(file)).
               sanitized_content
+          end
+
+          def setup_cfg(file)
+            dependency_files.find do |f|
+              f.name == file.name.sub(/\.py$/, ".cfg")
+            end
           end
 
           def pipfile_hash_for(pipfile_content)
