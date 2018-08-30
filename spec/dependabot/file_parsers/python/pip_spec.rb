@@ -490,6 +490,42 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           end
         end
       end
+
+      context "with a setup.cfg" do
+        let(:files) { [requirements, setup_file, setup_cfg] }
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "with_pbr.py")
+          )
+        end
+        let(:setup_cfg) do
+          Dependabot::DependencyFile.new(
+            name: "setup.cfg",
+            content: fixture("python", "setup_files", "setup.cfg")
+          )
+        end
+
+        its(:length) { is_expected.to eq(3) }
+
+        describe "the last dependency" do
+          subject(:dependency) { dependencies.last }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("pbr")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "setup.py",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
     end
 
     context "with child requirement files" do

@@ -45,7 +45,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
         expect(sanitized_content).to eq(
           "from setuptools import setup\n\n"\
           'setup(name="sanitized-package",version="0.0.1",'\
-          'install_requires=[],setup_requires=["pbr"],pbr=True)'
+          'install_requires=["raven"],setup_requires=["pbr"],pbr=True)'
         )
       end
     end
