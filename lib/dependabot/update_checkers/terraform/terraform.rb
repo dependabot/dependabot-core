@@ -150,10 +150,6 @@ module Dependabot
           end
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
-        end
-
         def registry_dependency?
           return false if dependency_source_details.nil?
           dependency_source_details.fetch(:type) == "registry"

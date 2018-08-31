@@ -206,6 +206,10 @@ module Dependabot
         return false if changed_reqs.none?
         changed_reqs.none? { |r| r[:requirement] == :unfixable }
       end
+
+      def ignore_reqs
+        ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+      end
     end
   end
 end

@@ -4,7 +4,6 @@ require "excon"
 require "nokogiri"
 require "dependabot/source"
 require "dependabot/update_checkers/base"
-require "dependabot/utils/dotnet/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -126,12 +125,6 @@ module Dependabot
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
             reqs.any? { |r| r.include?("-") }
-          end
-        end
-
-        def ignore_reqs
-          ignored_versions.map do |req|
-            Utils::Dotnet::Requirement.new(req.split(","))
           end
         end
 

@@ -230,10 +230,6 @@ module Dependabot
           sources.first&.fetch(:type) == "path"
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
-        end
-
         def git_commit_checker
           @git_commit_checker ||=
             GitCommitChecker.new(

@@ -248,10 +248,6 @@ module Dependabot
           end
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
-        end
-
         def dependency_url
           "https://hex.pm/api/packages/#{dependency.name}"
         end
