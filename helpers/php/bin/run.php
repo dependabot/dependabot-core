@@ -33,14 +33,17 @@ try {
         case 'update':
             $updatedFiles = Updater::update($request['args']);
             fwrite(STDOUT, json_encode(['result' => $updatedFiles]));
+            error_clear_last();
             break;
         case 'get_latest_resolvable_version':
             $latestVersion = UpdateChecker::getLatestResolvableVersion($request['args']);
             fwrite(STDOUT, json_encode(['result' => $latestVersion]));
+            error_clear_last();
             break;
         case 'get_content_hash':
             $content_hash = Hasher::getContentHash($request['args']);
             fwrite(STDOUT, json_encode(['result' => $content_hash]));
+            error_clear_last();
             break;
         default:
             fwrite(STDOUT, '{"error": "Invalid function ' . $request['function'] . '" }');
