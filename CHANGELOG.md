@@ -1,3 +1,7 @@
+## v0.69.10, 31 August 2018
+
+- Docker: Consider tags of latest version when determining if release is a pre
+
 ## v0.69.9, 31 August 2018
 
 - PHP: Ignore errors that happened during lockfile generation, as long as
