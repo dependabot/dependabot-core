@@ -236,7 +236,6 @@
         "alpine3.4",
         "alpine3.6",
         "jessie",
-        "latest",
         "onbuild",
         "slim-jessie",
         "slim-stretch",

@@ -39,15 +39,17 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
   end
   let(:dependency_name) { "ubuntu" }
   let(:version) { "17.04" }
-  let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+  let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
+  let(:registry_tags) do
+    fixture("docker", "registry_tags", "ubuntu_no_latest.json")
+  end
 
   before do
     auth_url = "https://auth.docker.io/token?service=registry.docker.io"
     stub_request(:get, auth_url).
       and_return(status: 200, body: { token: "token" }.to_json)
 
-    tags_url = "https://registry.hub.docker.com/v2/library/ubuntu/tags/list"
-    stub_request(:get, tags_url).
+    stub_request(:get, repo_url + "tags/list").
       and_return(status: 200, body: registry_tags)
   end
 
@@ -85,15 +87,51 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       end
     end
 
-    context "when the dependency has a non-numeric version" do
-      let(:version) { "artful-20170619" }
+    context "when there is a latest tag" do
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      let(:version) { "12.10" }
+      let(:latest_version) { "17.04" }
+
+      before do
+        versions =
+          %w(10.04 12.04.5 12.04 12.10 13.04 13.10 14.04.1 14.04.2 14.04.3
+             14.04.4 14.04.5 14.04 14.10 15.04 15.10 16.04 16.10 17.04 17.10) -
+          [latest_version]
+
+        versions.each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response)
+            )
+        end
+
+        # Stub the latest version to return a different digest
+        [latest_version, "latest"].each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+      end
+
+      it { is_expected.to eq("17.04") }
+    end
+
+    context "when the dependency's version has a prefix" do
+      let(:version) { "artful-20170826" }
       it { is_expected.to eq("artful-20170916") }
     end
 
     context "when the docker registry times out" do
       before do
-        tags_url = "https://registry.hub.docker.com/v2/library/ubuntu/tags/list"
-        stub_request(:get, tags_url).
+        stub_request(:get, repo_url + "tags/list").
           to_raise(RestClient::Exceptions::OpenTimeout).then.
           to_return(status: 200, body: registry_tags)
       end
@@ -102,9 +140,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
 
       context "every time" do
         before do
-          tags_url =
-            "https://registry.hub.docker.com/v2/library/ubuntu/tags/list"
-          stub_request(:get, tags_url).
+          stub_request(:get, repo_url + "tags/list").
             to_raise(RestClient::Exceptions::OpenTimeout)
         end
 
@@ -170,6 +206,50 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       end
     end
 
+    context "when the latest tag points to an older version" do
+      let(:registry_tags) { fixture("docker", "registry_tags", "dotnet.json") }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      let(:version) { "2.0-sdk" }
+      let(:latest_versions) { %w(2-sdk 2.1-sdk 2.1.401-sdk) }
+
+      before do
+        versions =
+          %w(1-sdk 1.0-sdk 1.0.4-sdk 1.0.5-sdk 1.0.7-sdk 1.1-sdk 1.1.1-sdk
+             1.1.2-sdk 1.1.4-sdk 1.1.5-sdk 2-sdk 2.0-sdk 2.0.0-sdk 2.0.3-sdk
+             2.1-sdk 2.1.300-sdk 2.1.301-sdk 2.1.302-sdk 2.1.400-sdk 2.1.401-sdk
+             2.2-sdk) -
+          latest_versions
+
+        versions.each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response)
+            )
+        end
+
+        # Stub the latest version to return a different digest
+        [*latest_versions, "latest"].each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+      end
+
+      it { is_expected.to eq("2.1.401-sdk") }
+
+      context "and a suffix" do
+        let(:version) { "2.0-runtime" }
+        it { is_expected.to eq("2.1.3-runtime") }
+      end
+    end
+
     context "when the dependency's version has a suffix with periods" do
       let(:dependency_name) { "python" }
       let(:version) { "3.6.2-alpine3.6" }
@@ -202,7 +282,9 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
           package_manager: "docker"
         )
       end
-      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+      let(:registry_tags) do
+        fixture("docker", "registry_tags", "ubuntu_no_latest.json")
+      end
 
       before do
         tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
@@ -278,8 +360,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
           package_manager: "docker"
         )
       end
-
-      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"

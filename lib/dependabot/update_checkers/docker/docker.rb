@@ -55,8 +55,8 @@ module Dependabot
           original_version_number = numeric_version_from(dependency.version)
           latest_version_number = numeric_version_from(latest_version)
 
-          Gem::Version.new(latest_version_number) <=
-            Gem::Version.new(original_version_number)
+          version_class.new(latest_version_number) <=
+            version_class.new(original_version_number)
         end
 
         def version_can_update?(*)
@@ -75,50 +75,77 @@ module Dependabot
             select { |tag| tag.match?(NAME_WITH_VERSION) }.
             select { |tag| affix_of(tag) == original_affix }.
             reject { |tag| prerelease?(tag) && !wants_prerelease }.
-            max_by { |tag| Gem::Version.new(numeric_version_from(tag)) }
+            max_by { |tag| version_class.new(numeric_version_from(tag)) }
         end
 
-        def tags_from_registry
-          attempt = 1
-          @tags_from_registry ||=
-            begin
-              if dependency.name.split("/").count < 2
-                docker_registry_client.
-                  tags("library/#{dependency.name}").
-                  fetch("tags")
-              else
-                docker_registry_client.
-                  tags(dependency.name).
-                  fetch("tags")
-              end
-            rescue RestClient::Exceptions::Timeout
-              attempt += 1
-              raise if attempt > 3
-              retry
-            end
-        rescue DockerRegistry2::RegistryAuthenticationException
-          raise PrivateSourceAuthenticationFailure, registry_hostname
+        def version_of_latest_tag
+          return unless tags_from_registry.include?("latest")
+
+          tags_from_registry.
+            select { |tag| canonical_version?(tag) }.
+            select { |t| digest_of(t) == latest_digest }.
+            map { |t| version_class.new(numeric_version_from(t)) }.
+            max
+        end
+
+        def canonical_version?(tag)
+          return false unless numeric_version_from(tag)
+          return true if tag == numeric_version_from(tag)
+          # .NET tags are suffixed with -sdk. There may be other cases we need
+          # to consider in future, too.
+          tag == numeric_version_from(tag) + "-sdk"
         end
 
         def updated_digest
           return unless latest_version
-          attempt = 1
+
           @updated_digest ||=
             begin
-              image = dependency.name
-              repo = image.split("/").count < 2 ? "library/#{image}" : image
-              tag = latest_version
-
               docker_registry_client.
-                dohead("/v2/#{repo}/manifests/#{tag}").
+                dohead("/v2/#{docker_repo_name}/manifests/#{latest_version}").
                 headers.fetch(:docker_content_digest)
             rescue RestClient::Exceptions::Timeout
+              attempt ||= 1
               attempt += 1
               raise if attempt > 3
               retry
             end
         rescue DockerRegistry2::RegistryAuthenticationException
           raise PrivateSourceAuthenticationFailure, registry_hostname
+        end
+
+        def tags_from_registry
+          @tags_from_registry ||=
+            begin
+              docker_registry_client.tags(docker_repo_name).fetch("tags")
+            rescue RestClient::Exceptions::Timeout
+              attempt ||= 1
+              attempt += 1
+              raise if attempt > 3
+              retry
+            end
+        rescue DockerRegistry2::RegistryAuthenticationException
+          raise PrivateSourceAuthenticationFailure, registry_hostname
+        end
+
+        def latest_digest
+          return unless tags_from_registry.include?("latest")
+          digest_of("latest")
+        end
+
+        def digest_of(tag)
+          @digests ||= {}
+          @digests[tag] ||=
+            begin
+              docker_registry_client.
+                dohead("/v2/#{docker_repo_name}/manifests/#{tag}").
+                headers.fetch(:docker_content_digest)
+            rescue RestClient::Exceptions::Timeout
+              attempt ||= 1
+              attempt += 1
+              raise if attempt > 3
+              retry
+            end
         end
 
         def affix_of(tag)
@@ -126,10 +153,19 @@ module Dependabot
         end
 
         def prerelease?(tag)
-          numeric_version_from(tag).match?(/[a-zA-Z]/)
+          return true if numeric_version_from(tag).match?(/[a-zA-Z]/)
+
+          # If we're dealing with a numeric version we can compare it against
+          # the digest for the `latest` tag.
+          return false unless numeric_version_from(tag)
+          return false unless latest_digest
+          return false unless version_of_latest_tag
+
+          version_class.new(numeric_version_from(tag)) > version_of_latest_tag
         end
 
         def numeric_version_from(tag)
+          return unless tag.match?(NAME_WITH_VERSION)
           tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
         end
 
@@ -141,6 +177,14 @@ module Dependabot
           credentials.
             select { |cred| cred["type"] == "docker_registry" }.
             find { |cred| cred["registry"] == registry_hostname }
+        end
+
+        def docker_repo_name
+          @docker_repo_name ||=
+            begin
+              image = dependency.name
+              image.split("/").count < 2 ? "library/#{image}" : image
+            end
         end
 
         def docker_registry_client

@@ -335,7 +335,6 @@
         "alpine3.4",
         "alpine3.6",
         "jessie",
-        "latest",
         "onbuild",
         "rc-alpine",
         "rc-alpine3.6",
