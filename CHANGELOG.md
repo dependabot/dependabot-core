@@ -1,3 +1,8 @@
+## v0.69.9, 31 August 2018
+
+- PHP: Ignore errors that happened during lockfile generation, as long as
+  lockfile generated successfully
+
 ## v0.69.8, 30 August 2018
 
 - Python: Appease pip-tools, and spec that requirements are included
