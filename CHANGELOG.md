@@ -1,3 +1,7 @@
+## v0.69.11, 1 September 2018
+
+- Java: Handle properties with numeric components more sensitively
+
 ## v0.69.10, 31 August 2018
 
 - Docker: Consider tags of latest version when determining if release is a pre
