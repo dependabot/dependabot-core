@@ -141,6 +141,58 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
           )
         end
       end
+
+      context "with a terragrunt file" do
+        subject(:updated_file) do
+          updated_files.find { |f| f.name == "main.tfvars" }
+        end
+
+        let(:files) { [terragrunt_config, irrelevant_config] }
+        let(:terragrunt_config) do
+          Dependabot::DependencyFile.new(
+            name: "main.tfvars",
+            content: fixture("terraform", "config_files", "terragrunt.tfvars")
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gruntwork-io/modules-example",
+            version: "0.0.5",
+            previous_version: "0.0.2",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tfvars",
+              source: {
+                type: "git",
+                url: "git@github.com:gruntwork-io/modules-example.git",
+                branch: nil,
+                ref: "v0.0.5"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tfvars",
+              source: {
+                type: "git",
+                url: "git@github.com:gruntwork-io/modules-example.git",
+                branch: nil,
+                ref: "v0.0.2"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        end
+
+        it "updates the requirement" do
+          expect(updated_file.content).to include(
+            "source = \"git::git@github.com:gruntwork-io/modules-example.git//"\
+            "consul?ref=v0.0.5\""
+          )
+        end
+      end
     end
   end
 end
