@@ -1,3 +1,7 @@
+## v0.69.12, 1 September 2018
+
+- Terraform: Handle Terragrunt files, too
+
 ## v0.69.11, 1 September 2018
 
 - Java: Handle properties with numeric components more sensitively
