@@ -228,5 +228,45 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
         end
       end
     end
+
+    context "with a terragrunt file" do
+      let(:files) { [terragrunt_file] }
+      let(:terragrunt_file) do
+        Dependabot::DependencyFile.new(
+          name: "main.tfvars",
+          content: terragrunt_body
+        )
+      end
+      let(:terragrunt_body) do
+        fixture("terraform", "config_files", terragrunt_fixture_name)
+      end
+      let(:terragrunt_fixture_name) { "terragrunt.tfvars" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "main.tfvars",
+            source: {
+              type: "git",
+              url: "git@github.com:gruntwork-io/modules-example.git",
+              branch: nil,
+              ref: "v0.0.2"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("gruntwork-io/modules-example")
+          expect(dependency.version).to eq("0.0.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end

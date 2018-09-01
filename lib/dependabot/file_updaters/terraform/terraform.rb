@@ -16,7 +16,7 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          terraform_files.each do |file|
+          [*terraform_files, *terragrunt_files].each do |file|
             next unless file_changed?(file)
 
             updated_content = updated_terraform_file_content(file)
@@ -33,36 +33,38 @@ module Dependabot
         private
 
         def updated_terraform_file_content(file)
-          updated_content = file.content.dup
+          content = file.content.dup
 
           reqs = dependency.requirements.zip(dependency.previous_requirements).
                  reject { |new_req, old_req| new_req == old_req }
 
-          # Loop through each changed requirement and update the pomfiles
+          # Loop through each changed requirement and update the files
           reqs.each do |new_req, old_req|
             raise "Bad req match" unless new_req[:file] == old_req[:file]
             next unless new_req.fetch(:file) == file.name
 
             case new_req[:source][:type]
             when "git"
-              update_git_declaration(new_req, old_req, updated_content)
+              update_git_declaration(new_req, old_req, content, file.name)
             when "registry"
-              update_registry_declaration(new_req, old_req, updated_content)
+              update_registry_declaration(new_req, old_req, content)
             else
               raise "Don't know how to update a #{new_req[:source][:type]} "\
                     "declaration!"
             end
           end
 
-          updated_content
+          content
         end
 
-        def update_git_declaration(new_req, old_req, updated_content)
+        def update_git_declaration(new_req, old_req, updated_content, filename)
           url = old_req.fetch(:source)[:url].gsub(%r{^https://}, "")
           tag = old_req.fetch(:source)[:ref]
           url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
 
-          updated_content.sub!(git_declaration_regex) do |regex_match|
+          declaration_regex = git_declaration_regex(filename)
+
+          updated_content.sub!(declaration_regex) do |regex_match|
             regex_match.sub(url_regex) do |url_match|
               url_match.sub(old_req[:source][:ref], new_req[:source][:ref])
             end
@@ -91,8 +93,12 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".tf") }
         end
 
+        def terragrunt_files
+          dependency_files.select { |f| f.name.end_with?(".tfvars") }
+        end
+
         def check_required_files
-          return if terraform_files.any?
+          return if [*terraform_files, *terragrunt_files].any?
           raise "No Terraform configuration file!"
         end
 
@@ -105,7 +111,13 @@ module Dependabot
           /mx
         end
 
-        def git_declaration_regex
+        def git_declaration_regex(filename)
+          # For terragrunt dependencies there's not a lot we can base the
+          # regex on. Just look for declarations within a `terraform` block
+          return /terraform\s*\{(?:(?!^\}).)*/m if filename.end_with?(".tfvars")
+
+          # For modules we can do better - filter for module blocks that use the
+          # name of the dependency
           /
             module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
             (?:(?!^\}).)*

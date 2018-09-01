@@ -23,7 +23,16 @@ module Dependabot
           terraform_files.each do |file|
             modules = parsed_file(file).fetch("module", []).map(&:first)
             modules.each do |name, details|
-              dependency_set << build_dependency(file, name, details)
+              dependency_set << build_terraform_dependency(file, name, details)
+            end
+          end
+
+          terragrunt_files.each do |file|
+            modules = parsed_file(file).fetch("terragrunt", []).first || {}
+            modules = modules.fetch("terraform", [])
+            modules.each do |details|
+              next unless details["source"]
+              dependency_set << build_terragrunt_dependency(file, details)
             end
           end
 
@@ -32,7 +41,7 @@ module Dependabot
 
         private
 
-        def build_dependency(file, name, details)
+        def build_terraform_dependency(file, name, details)
           details = details.first
 
           source = source_from(details)
@@ -50,6 +59,30 @@ module Dependabot
             package_manager: "terraform",
             requirements: [
               requirement: version_req,
+              groups: [],
+              file: file.name,
+              source: source
+            ]
+          )
+        end
+
+        def build_terragrunt_dependency(file, details)
+          source = source_from(details)
+          dep_name =
+            if Source.from_url(source[:url])
+              Source.from_url(source[:url]).repo
+            else
+              source[:url]
+            end
+
+          version = version_from_ref(source[:ref])
+
+          Dependency.new(
+            name: dep_name,
+            version: version,
+            package_manager: "terraform",
+            requirements: [
+              requirement: nil,
               groups: [],
               file: file.name,
               source: source
@@ -98,9 +131,18 @@ module Dependabot
 
         def git_source_details_from(source_string)
           git_url = source_string.strip.gsub(/^git::/, "")
-          git_url = "https://" + git_url unless git_url.start_with?("http")
+          unless git_url.start_with?("git@") || git_url.include?("://")
+            git_url = "https://" + git_url
+          end
 
-          querystr = URI.parse(git_url).query
+          bare_uri =
+            if git_url.include?("git@")
+              git_url.split("git@").last.sub(":", "/")
+            else
+              git_url.sub(%r{.*?://}, "")
+            end
+
+          querystr = URI.parse("https://" + bare_uri).query
           git_url = git_url.split(%r{(?<!:)//}).first.gsub("?#{querystr}", "")
 
           {
@@ -217,8 +259,12 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".tf") }
         end
 
+        def terragrunt_files
+          dependency_files.select { |f| f.name.end_with?(".tfvars") }
+        end
+
         def check_required_files
-          return if terraform_files.any?
+          return if [*terraform_files, *terragrunt_files].any?
           raise "No Terraform configuration file!"
         end
       end
