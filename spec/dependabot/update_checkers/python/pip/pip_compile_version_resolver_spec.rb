@@ -92,7 +92,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       context "when the latest version is nil" do
         let(:latest_version) { nil }
-        it { is_expected.to eq(Gem::Version.new("18.1.0")) }
+        it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
     end
 
