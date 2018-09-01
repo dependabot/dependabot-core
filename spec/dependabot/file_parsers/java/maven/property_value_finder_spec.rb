@@ -40,6 +40,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
         let(:base_pom_fixture_name) { "profile_property_pom.xml" }
         its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
       end
+
+      context "when the property containts a tricky to split string" do
+        let(:property_name) { "accumulo.1.6.version" }
+        specify { expect { property_details }.to_not raise_error }
+      end
     end
 
     context "when the property is declared in a parent pom" do

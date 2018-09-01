@@ -10,6 +10,8 @@ module Dependabot
   module MetadataFinders
     module Java
       class Maven < Dependabot::MetadataFinders::Base
+        DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/])+)}
+
         private
 
         def look_up_source
@@ -73,8 +75,8 @@ module Dependabot
                 doc.at_xpath("/project/properties/#{nm}") ||
                 doc.at_xpath("/project/profiles/profile/properties/#{nm}")
               break candidate_node.content if candidate_node
-              break unless nm.include?(".")
-              nm = nm.sub(".", "/")
+              break unless nm.match?(DOT_SEPARATOR_REGEX)
+              nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
             end
 
           source_url.gsub("${#{property_name}}", property_value)

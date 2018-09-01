@@ -16,6 +16,8 @@ module Dependabot
         class PropertyValueFinder
           require_relative "repositories_finder"
 
+          DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/])+)}
+
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
@@ -35,8 +37,8 @@ module Dependabot
                   doc.at_xpath("/project/properties/#{nm}") ||
                   doc.at_xpath("/project/profiles/profile/properties/#{nm}")
                 break candidate_node if candidate_node
-                break unless nm.include?(".")
-                nm = nm.sub(".", "/")
+                break unless nm.match?(DOT_SEPARATOR_REGEX)
+                nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
               end
 
             # If we found a property, return it
