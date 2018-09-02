@@ -1,3 +1,8 @@
+## v0.69.13, 2 September 2018
+
+- Python: Handle Pipfile.lock with string versions
+- Add files ending in tfvars to updated_files_regex
+
 ## v0.69.12, 1 September 2018
 
 - Terraform: Handle Terragrunt files, too
