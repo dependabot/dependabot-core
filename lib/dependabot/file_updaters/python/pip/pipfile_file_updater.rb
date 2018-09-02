@@ -138,15 +138,17 @@ module Dependabot
 
           def updated_lockfile_content_for(pipfile_content)
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files(pipfile_content)
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                write_temporary_dependency_files(pipfile_content)
 
-              # Initialize a git repo to appease pip-tools
-              IO.popen("git init", err: %i(child out)) if setup_files.any?
+                # Initialize a git repo to appease pip-tools
+                IO.popen("git init", err: %i(child out)) if setup_files.any?
 
-              run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                 "pyenv exec pipenv lock")
+                run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                   "pyenv exec pipenv lock")
 
-              File.read("Pipfile.lock")
+                File.read("Pipfile.lock")
+              end
             end
           end
 
