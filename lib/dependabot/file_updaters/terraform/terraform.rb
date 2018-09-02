@@ -10,7 +10,7 @@ module Dependabot
     module Terraform
       class Terraform < Dependabot::FileUpdaters::Base
         def self.updated_files_regex
-          [/\.tf$/]
+          [/\.tf$/, /\.tfvars$/]
         end
 
         def updated_dependency_files
