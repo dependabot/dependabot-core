@@ -1,3 +1,8 @@
+## v0.69.18, 2 September 2018
+
+- Rust: Fetch rust-toolchain file if present
+- Rust: Write rust-toolchain before shelling out to cargo
+
 ## v0.69.17, 2 September 2018
 
 - Python: Don't double-wrap git credentials
