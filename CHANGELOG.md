@@ -1,3 +1,8 @@
+## v0.69.16, 2 September 2018
+
+- Python: Catch bad reference errors and raise them as such
+- Python: Raise a GitDependenciesNotReachable error for unreachable Pipfile deps
+
 ## v0.69.15, 2 September 2018
 
 - Python: Set git credentials before resolving Pipfiles
