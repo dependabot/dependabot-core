@@ -1,3 +1,7 @@
+## v0.69.14, 2 September 2018
+
+- Python: Handle edited Pipfile.lock in file preparer
+
 ## v0.69.13, 2 September 2018
 
 - Python: Handle Pipfile.lock with string versions
