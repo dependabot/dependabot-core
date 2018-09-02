@@ -92,8 +92,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl -O https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz \
-    && tar xvf go1.10.3.linux-amd64.tar.gz \
+RUN curl -O https://dl.google.com/go/go1.11.linux-amd64.tar.gz \
+    && tar xvf go1.11.linux-amd64.tar.gz \
     && wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
     && mv dep-linux-amd64 go/bin/dep \
     && chmod +x go/bin/dep \
@@ -109,7 +109,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.2/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.3/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
