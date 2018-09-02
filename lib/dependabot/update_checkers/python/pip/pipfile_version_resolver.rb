@@ -80,9 +80,9 @@ module Dependabot
                   updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
 
                   fetch_version_from_parsed_lockfile(updated_lockfile)
-                rescue SharedHelpers::HelperSubprocessFailed => error
-                  handle_pipenv_errors(error)
                 end
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                handle_pipenv_errors(error)
               end
             return unless @latest_resolvable_version_string
             Utils::Python::Version.new(@latest_resolvable_version_string)
