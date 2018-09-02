@@ -27,6 +27,8 @@ module Dependabot
         # still better than nothing, though.
         class PipfileVersionResolver
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          DEPENDENCY_UNREACHABLE_REGEX =
+            /Command "git clone -q (?<url>[^\s]+).*" failed with error code 128/
 
           attr_reader :dependency, :dependency_files, :credentials
 
@@ -126,6 +128,12 @@ module Dependabot
               # The latest version of the dependency we're updating is borked
               # (because it has an unevaluatable setup.py). Skip the update.
               return nil
+            end
+
+            if error.message.match?(DEPENDENCY_UNREACHABLE_REGEX)
+              url = error.message.match(DEPENDENCY_UNREACHABLE_REGEX).
+                    named_captures.fetch("url")
+              raise GitDependenciesNotReachable, url
             end
 
             raise unless error.message.include?("could not be resolved")

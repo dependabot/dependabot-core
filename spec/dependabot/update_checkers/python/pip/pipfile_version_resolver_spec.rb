@@ -227,6 +227,21 @@ RSpec.describe namespace::PipfileVersionResolver do
       end
     end
 
+    context "with a git source" do
+      context "for another dependency, that can't be reached" do
+        let(:pipfile_fixture_name) { "git_source_unreachable" }
+        let(:lockfile_fixture_name) { "git_source_unreachable.lock" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).
+                to eq(["https://github.com/greysteil/django.git"])
+            end
+        end
+      end
+    end
+
     context "with an environment variable source" do
       let(:pipfile_fixture_name) { "environment_variable_source" }
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
