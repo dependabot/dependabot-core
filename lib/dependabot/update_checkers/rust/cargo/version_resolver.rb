@@ -35,7 +35,7 @@ module Dependabot
                 # Shell out to Cargo, which handles everything for us, and does
                 # so without doing an install (so it's fast).
                 command = "cargo update -p #{dependency_spec} --verbose"
-                run_shell_command(command)
+                run_cargo_command(command)
               end
 
               new_lockfile_content = File.read("Cargo.lock")
@@ -79,7 +79,7 @@ module Dependabot
             spec
           end
 
-          def run_shell_command(command)
+          def run_cargo_command(command)
             raw_response = nil
             IO.popen(command, err: %i(child out)) do |process|
               raw_response = process.read
