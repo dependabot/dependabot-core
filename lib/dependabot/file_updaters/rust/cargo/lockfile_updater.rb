@@ -103,6 +103,7 @@ module Dependabot
             write_temporary_path_dependency_files
 
             File.write(lockfile.name, lockfile.content)
+            File.write(toolchain.name, toolchain.content) if toolchain
           end
 
           def write_temporary_manifest_files
@@ -233,6 +234,11 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          end
+
+          def toolchain
+            @toolchain ||=
+              dependency_files.find { |f| f.name == "rust-toolchain" }
           end
         end
       end

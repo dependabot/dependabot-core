@@ -95,18 +95,10 @@ module Dependabot
           end
 
           def write_temporary_dependency_files
-            manifest_files.each do |file|
-              path = file.name
-              dir = Pathname.new(path).dirname
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(file.name, file.content)
-
-              FileUtils.mkdir_p(File.join(dir, "src"))
-              File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
-              File.write(File.join(dir, "src/main.rs"), dummy_app_content)
-            end
+            write_manifest_files
 
             File.write(lockfile.name, lockfile.content) if lockfile
+            File.write(toolchain.name, toolchain.content) if toolchain
           end
 
           def handle_cargo_errors(error)
@@ -126,6 +118,19 @@ module Dependabot
               raise Dependabot::DependencyFileNotResolvable, msg
             end
             raise error
+          end
+
+          def write_manifest_files
+            manifest_files.each do |file|
+              path = file.name
+              dir = Pathname.new(path).dirname
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(file.name, file.content)
+
+              FileUtils.mkdir_p(File.join(dir, "src"))
+              File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
+              File.write(File.join(dir, "src/main.rs"), dummy_app_content)
+            end
           end
 
           def git_dependency_version
@@ -149,6 +154,11 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          end
+
+          def toolchain
+            @toolchain ||=
+              dependency_files.find { |f| f.name == "rust-toolchain" }
           end
 
           def git_dependency?
