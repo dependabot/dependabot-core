@@ -1,3 +1,7 @@
+## v0.69.17, 2 September 2018
+
+- Python: Don't double-wrap git credentials
+
 ## v0.69.16, 2 September 2018
 
 - Python: Catch bad reference errors and raise them as such
