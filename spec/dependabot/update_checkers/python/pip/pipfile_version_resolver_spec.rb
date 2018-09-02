@@ -240,6 +240,18 @@ RSpec.describe namespace::PipfileVersionResolver do
             end
         end
       end
+
+      context "for another dependency, that has a bad ref" do
+        let(:pipfile_fixture_name) { "git_source_bad_ref" }
+        let(:lockfile_fixture_name) { "git_source_bad_ref.lock" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency).to eq("django")
+            end
+        end
+      end
     end
 
     context "with an environment variable source" do

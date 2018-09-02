@@ -27,8 +27,11 @@ module Dependabot
         # still better than nothing, though.
         class PipfileVersionResolver
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-          DEPENDENCY_UNREACHABLE_REGEX =
+          GIT_DEPENDENCY_UNREACHABLE_REGEX =
             /Command "git clone -q (?<url>[^\s]+).*" failed with error code 128/
+
+          GIT_REFERENCE_NOT_FOUND_REGEX =
+            %r{Command "git reset --hard -q (?<tag>[^"]+)" .*/(?<name>.*?)$}
 
           attr_reader :dependency, :dependency_files, :credentials
 
@@ -107,6 +110,8 @@ module Dependabot
 
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
@@ -130,16 +135,24 @@ module Dependabot
               return nil
             end
 
-            if error.message.match?(DEPENDENCY_UNREACHABLE_REGEX)
-              url = error.message.match(DEPENDENCY_UNREACHABLE_REGEX).
+            if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+              url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                     named_captures.fetch("url")
               raise GitDependenciesNotReachable, url
+            end
+
+            if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+              name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                     named_captures.fetch("name")
+              raise GitDependencyReferenceNotFound, name
             end
 
             raise unless error.message.include?("could not be resolved")
           end
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           # Needed because Pipenv's resolver isn't perfect
           def original_requirements_resolvable?
