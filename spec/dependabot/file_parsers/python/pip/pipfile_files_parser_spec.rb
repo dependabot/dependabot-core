@@ -67,6 +67,41 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
       end
     end
 
+    context "with a lockfile that has been edited" do
+      # This lockfile has been edited to have a string version for requests
+      # (rather than a hash) and an array of garbage as the version for one
+      # of the subdependencies. The formed is allowed through, the later is
+      # excluded.
+      let(:lockfile_fixture_name) { "edited.lock" }
+
+      its(:length) { is_expected.to eq(6) }
+
+      describe "top level dependencies" do
+        subject(:dependencies) do
+          parser.dependency_set.dependencies.select(&:top_level?)
+        end
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          it { is_expected.to be_production }
+          its(:name) { is_expected.to eq("requests") }
+          its(:version) { is_expected.to eq("2.18.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+      end
+    end
+
     context "with a version specified" do
       let(:pipfile_fixture_name) { "exact_version" }
       let(:lockfile_fixture_name) { "exact_version.lock" }

@@ -78,12 +78,16 @@ module Dependabot
               next unless parsed_pipfile_lock[key]
 
               parsed_pipfile_lock[key].each do |dep_name, details|
-                next unless details["version"]
+                version = case details
+                          when String then details
+                          when Hash then details["version"]
+                          end
+                next unless version
 
                 dependencies <<
                   Dependency.new(
                     name: dep_name,
-                    version: details["version"]&.gsub(/^===?/, ""),
+                    version: version&.gsub(/^===?/, ""),
                     requirements: [],
                     package_manager: "pip"
                   )
@@ -94,9 +98,18 @@ module Dependabot
           end
 
           def dependency_version(dep_name, group)
-            parsed_pipfile_lock.
-              dig(group, normalised_name(dep_name), "version")&.
-              gsub(/^===?/, "")
+            details =
+              parsed_pipfile_lock.
+              dig(group, normalised_name(dep_name))
+
+            version =
+              case details
+              when String then details
+              when Hash then details["version"]
+              end
+
+            return unless version
+            version.gsub(/^===?/, "")
           end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
