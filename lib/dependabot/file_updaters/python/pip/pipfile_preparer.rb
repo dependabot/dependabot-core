@@ -27,7 +27,6 @@ module Dependabot
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pipfile_content unless lockfile
             pipfile_object = TomlRB.parse(pipfile_content)
-            parsed_lockfile = JSON.parse(lockfile.content)
             excluded_names = dependencies.map(&:name)
 
             FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
@@ -35,10 +34,11 @@ module Dependabot
 
               pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
                 next if excluded_names.include?(normalise(dep_name))
-                locked_version =
-                  parsed_lockfile.
-                  dig(keys[:lockfile], normalise(dep_name), "version")&.
-                  gsub(/^==/, "")
+                locked_version = version_from_lockfile(
+                  lockfile,
+                  keys[:lockfile],
+                  normalise(dep_name)
+                )
                 next unless locked_version
 
                 if pipfile_object[keys[:pipfile]][dep_name].is_a?(Hash)
@@ -57,6 +57,16 @@ module Dependabot
           private
 
           attr_reader :pipfile_content
+
+          def version_from_lockfile(lockfile, dep_type, dep_name)
+            details = JSON.parse(lockfile.content).
+                      dig(dep_type, normalise(dep_name))
+
+            case details
+            when String then details.gsub(/^==/, "")
+            when Hash then details["version"]&.gsub(/^==/, "")
+            end
+          end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)
