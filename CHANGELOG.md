@@ -1,3 +1,7 @@
+## v0.69.15, 2 September 2018
+
+- Python: Set git credentials before resolving Pipfiles
+
 ## v0.69.14, 2 September 2018
 
 - Python: Handle edited Pipfile.lock in file preparer
