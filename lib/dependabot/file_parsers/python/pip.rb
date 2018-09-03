@@ -32,53 +32,40 @@ module Dependabot
         def parse
           dependency_set = DependencySet.new
 
-          # Currently, we assume users will only be using one dependency
-          # management tool - Pipenv, Poetry, or pip-tools / requirements.txt.
-          # In future it would be nice to handle setups that use multiple
-          # managers at once (e.g., where a requirements.txt is generated from
-          # Pipfile.lock).
-          case parser_type
-          when :pipfile
-            dependency_set += pipfile_files_parser.dependency_set
-          when :poetry
-            dependency_set += poetry_files_parser.dependency_set
-          when :requirements_and_pip_compile
-            dependency_set += requirement_dependencies
-          else raise "Unexpected parser type: #{parser_type}"
-          end
-
+          dependency_set += pipenv_dependencies if pipfile
+          dependency_set += poetry_dependencies if pyproject
+          dependency_set += requirement_dependencies if requirement_files.any?
           dependency_set += setup_file_dependencies if setup_file
+
           dependency_set.dependencies
         end
 
         private
 
-        def parser_type
-          return :pipfile if pipfile && pipfile_lock
-          return :poetry if pyproject && pyproject_lock
-          return :poetry if pyproject && requirement_files.none?
-
-          :requirements_and_pip_compile
-        end
-
         def requirement_files
           dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
         end
 
-        def pipfile_files_parser
-          PipfileFilesParser.new(dependency_files: dependency_files)
+        def pipenv_dependencies
+          @pipenv_dependencies ||=
+            PipfileFilesParser.
+            new(dependency_files: dependency_files).
+            dependency_set
         end
 
-        def poetry_files_parser
-          PoetryFilesParser.new(dependency_files: dependency_files)
+        def poetry_dependencies
+          @poetry_dependencies ||=
+            PoetryFilesParser.
+            new(dependency_files: dependency_files).
+            dependency_set
         end
 
         def requirement_dependencies
           dependencies = DependencySet.new
           parsed_requirement_files.each do |dep|
             requirements =
-              if lockfile_for_pip_compile_file?(dep["file"])
-                []
+              if lockfile_for_pip_compile_file?(dep["file"]) then []
+              elsif included_in_pipenv_deps?(dep["name"]) then []
               else
                 [{
                   requirement: dep["requirement"],
@@ -97,6 +84,11 @@ module Dependabot
               )
           end
           dependencies
+        end
+
+        def included_in_pipenv_deps?(dep_name)
+          return false unless pipfile
+          pipenv_dependencies.dependencies.map(&:name).include?(dep_name)
         end
 
         def setup_file_dependencies
