@@ -36,7 +36,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
 
     context "with only a Pipfile" do
       let(:filenames) { %w(Pipfile) }
-      it { is_expected.to eq(false) }
+      it { is_expected.to eq(true) }
     end
 
     context "with a pyproject.toml" do

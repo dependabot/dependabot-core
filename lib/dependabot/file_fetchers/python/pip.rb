@@ -11,13 +11,13 @@ module Dependabot
         CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/
 
         def self.required_files_in?(filenames)
-          return true if filenames.any? { |name| name.end_with?(".txt") }
+          return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
 
           # If there is a directory of requirements return true
           return true if filenames.include?("requirements")
 
           # If this repo is using a Pipfile return true
-          return true if (%w(Pipfile Pipfile.lock) - filenames).empty?
+          return true if filenames.include?("Pipfile")
 
           # If this repo is using Poetry return true
           return true if filenames.include?("pyproject.toml")
@@ -27,7 +27,7 @@ module Dependabot
 
         def self.required_files_message
           "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
-          "or a Pipfile and Pipfile.lock."
+          "or a Pipfile."
         end
 
         private
@@ -67,8 +67,7 @@ module Dependabot
         end
 
         def check_required_files_present
-          if requirements_txt_files.any? || setup_file ||
-             (pipfile && pipfile_lock) || pyproject
+          if requirements_txt_files.any? || setup_file || pipfile || pyproject
             return
           end
 

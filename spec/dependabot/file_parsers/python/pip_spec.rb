@@ -904,7 +904,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
     end
 
     context "with a Pipfile but no Pipfile.lock" do
-      let(:files) { [pipfile, requirements] }
+      let(:files) { [pipfile] }
       let(:pipfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile",
@@ -912,7 +912,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -932,21 +932,51 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         end
       end
 
-      describe "the third dependency" do
-        subject(:dependency) { dependencies[2] }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("psycopg2")
-          expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "==2.6.1",
-              file: "requirements.txt",
-              groups: [],
-              source: nil
-            }]
+      context "and a requirements.txt" do
+        let(:files) { [pipfile, requirements] }
+        let(:pipfile) do
+          Dependabot::DependencyFile.new(
+            name: "Pipfile",
+            content: fixture("python", "pipfiles", "version_not_specified")
           )
+        end
+
+        its(:length) { is_expected.to eq(4) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "*",
+                file: "Pipfile",
+                groups: ["default"],
+                source: nil
+              }]
+            )
+          end
+        end
+
+        describe "the third dependency" do
+          subject(:dependency) { dependencies[2] }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("psycopg2")
+            expect(dependency.version).to eq("2.6.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
         end
       end
     end
