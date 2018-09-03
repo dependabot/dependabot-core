@@ -242,7 +242,7 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
           Dependabot::Dependency.new(
             name: "myreg/ubuntu",
             version: "17.10",
-            previous_version: "12.04.5",
+            previous_version: "17.10",
             requirements: [{
               requirement: nil,
               groups: [],

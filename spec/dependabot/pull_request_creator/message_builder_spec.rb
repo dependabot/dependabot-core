@@ -234,6 +234,50 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
         end
+
+        context "with a Docker digest update" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "ubuntu",
+              version: "17.10",
+              previous_version: previous_version,
+              package_manager: "docker",
+              requirements: [{
+                file: "Dockerfile",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "digest",
+                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                          "fc38288cf73aa07485005"
+                }
+              }],
+              previous_requirements: [{
+                file: "Dockerfile",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "digest",
+                  digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\
+                          "aaaaaaaaaaaaaaaaaaaaa"
+                }
+              }]
+            )
+          end
+          let(:previous_version) { "17.10" }
+
+          it "truncates the version" do
+            expect(pr_name).to eq("Bump ubuntu from `2167a21` to `1830542`")
+          end
+
+          context "due to a tag change" do
+            let(:previous_version) { "17.04" }
+
+            it "uses the tags" do
+              expect(pr_name).to eq("Bump ubuntu from 17.04 to 17.10")
+            end
+          end
+        end
       end
 
       context "that uses semantic commits" do

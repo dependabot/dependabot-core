@@ -446,6 +446,13 @@ module Dependabot
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
           return previous_ref(dependency) if ref_changed?(dependency)
           "`#{dependency.previous_version[0..6]}`"
+        elsif dependency.version == dependency.previous_version &&
+              package_manager == "docker"
+          digest =
+            dependency.previous_requirements.
+            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+            compact.first
+          "`#{digest.split(':').last[0..6]}`"
         else
           dependency.previous_version
         end
@@ -455,6 +462,13 @@ module Dependabot
         if dependency.version.match?(/^[0-9a-f]{40}$/)
           return new_ref(dependency) if ref_changed?(dependency)
           "`#{dependency.version[0..6]}`"
+        elsif dependency.version == dependency.previous_version &&
+              package_manager == "docker"
+          digest =
+            dependency.requirements.
+            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+            compact.first
+          "`#{digest.split(':').last[0..6]}`"
         else
           dependency.version
         end

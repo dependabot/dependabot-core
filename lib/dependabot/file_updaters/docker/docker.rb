@@ -53,7 +53,7 @@ module Dependabot
         def updated_dockerfile_content(file)
           updated_content =
             if specified_with_digest?(file)
-              update_digest(file)
+              update_digest_and_tag(file)
             else
               update_tag(file)
             end
@@ -62,7 +62,7 @@ module Dependabot
           updated_content
         end
 
-        def update_digest(file)
+        def update_digest_and_tag(file)
           old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest(file)}/
 
           file.content.gsub(old_declaration_regex) do |old_dec|
@@ -75,10 +75,8 @@ module Dependabot
 
         def update_tag(file)
           old_declaration =
-            if private_registry_url(file)
-              "#{private_registry_url(file)}/"
-            else
-              ""
+            if private_registry_url(file) then "#{private_registry_url(file)}/"
+            else ""
             end
           old_declaration += "#{dependency.name}:#{dependency.previous_version}"
           escaped_declaration = Regexp.escape(old_declaration)
