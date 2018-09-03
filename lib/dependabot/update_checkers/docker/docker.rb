@@ -137,9 +137,7 @@ module Dependabot
           @digests ||= {}
           @digests[tag] ||=
             begin
-              docker_registry_client.
-                dohead("/v2/#{docker_repo_name}/manifests/#{tag}").
-                headers.fetch(:docker_content_digest)
+              docker_registry_client.digest(docker_repo_name, tag)
             rescue RestClient::Exceptions::Timeout
               attempt ||= 1
               attempt += 1
