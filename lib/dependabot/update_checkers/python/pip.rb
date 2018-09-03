@@ -108,21 +108,22 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         def resolver_type
           reqs = dependency.requirements
+          req_files = reqs.map { |r| r.fetch(:file) }
 
-          if (pipfile && reqs.none?) ||
-             reqs.any? { |r| r.fetch(:file) == "Pipfile" }
-            return :pipfile
+          # If there are no requirements then this is a sub-dependency. It
+          # must come from one of Pipenv, Poetry or pip-tools, and can't come
+          # from the first two unless they have a lockfile.
+          if reqs.none?
+            return :pipfile if pipfile_lock
+            return :poetry if pyproject_lock
+            return :pip_compile if pip_compile_files.any?
           end
 
-          if (pyproject && reqs.none?) ||
-             reqs.any? { |r| r.fetch(:file) == "pyproject.toml" }
-            return :poetry
-          end
-
-          if (pip_compile_files.any? && reqs.none?) ||
-             reqs.any? { |r| r.fetch(:file).end_with?(".in") }
-            return :pip_compile
-          end
+          # Otherwise, this is a top-level dependency, and we can figure out
+          # which resolver to use based on the filename of its requirements
+          return :pipfile if req_files.any? { |f| f == "Pipfile" }
+          return :poetry if req_files.any? { |f| f == "pyproject.toml" }
+          return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
           :requirements
         end
@@ -186,8 +187,16 @@ module Dependabot
           dependency_files.find { |f| f.name == "Pipfile" }
         end
 
+        def pipfile_lock
+          dependency_files.find { |f| f.name == "Pipfile.lock" }
+        end
+
         def pyproject
           dependency_files.find { |f| f.name == "pyproject.toml" }
+        end
+
+        def pyproject_lock
+          dependency_files.find { |f| f.name == "pyproject.lock" }
         end
 
         def pip_compile_files
