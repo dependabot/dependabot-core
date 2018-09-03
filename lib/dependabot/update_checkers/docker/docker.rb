@@ -48,26 +48,48 @@ module Dependabot
           raise NotImplementedError
         end
 
-        def version_up_to_date?
-          return unless dependency.version.match?(NAME_WITH_VERSION)
-          return unless latest_version
-
-          original_version_number = numeric_version_from(dependency.version)
-          latest_version_number = numeric_version_from(latest_version)
-
-          version_class.new(latest_version_number) <=
-            version_class.new(original_version_number)
-        end
-
         def version_can_update?(*)
-          return false unless dependency.version.match?(NAME_WITH_VERSION)
-          return false unless latest_version
-
           !version_up_to_date?
         end
 
+        def version_up_to_date?
+          # If the tag isn't up-to-date then we can definitely update
+          return false if version_tag_up_to_date? == false
+
+          # Otherwise, if the Dockerfile specifies a digest check that that is
+          # up-to-date
+          digest_up_to_date?
+        end
+
+        def version_tag_up_to_date?
+          return unless dependency.version.match?(NAME_WITH_VERSION)
+
+          old_v = numeric_version_from(dependency.version)
+          latest_v = numeric_version_from(latest_version)
+
+          return true if version_class.new(latest_v) <= version_class.new(old_v)
+
+          # Check the precision of the potentially higher tag is the same as the
+          # one it would replace. In the event that it's not the same, check the
+          # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
+          return false if old_v.split(".").count == latest_v.split(".").count
+          digest_of(dependency.version) == digest_of(latest_version)
+        end
+
+        def digest_up_to_date?
+          dependency.requirements.all? do |req|
+            next true unless req.fetch(:source).fetch(:type) == "digest"
+            req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
+          end
+        end
+
+        # Note: It's important that this *always* returns a version (even if it
+        # is the exist one) as it is what we later check the digest of.
         def fetch_latest_version
-          return nil unless dependency.version.match?(NAME_WITH_VERSION)
+          unless dependency.version.match?(NAME_WITH_VERSION)
+            return dependency.version
+          end
+
           original_affix = affix_of(dependency.version)
           wants_prerelease = prerelease?(dependency.version)
 
@@ -97,13 +119,9 @@ module Dependabot
         end
 
         def updated_digest
-          return unless latest_version
-
           @updated_digest ||=
             begin
-              docker_registry_client.
-                dohead("/v2/#{docker_repo_name}/manifests/#{latest_version}").
-                headers.fetch(:docker_content_digest)
+              docker_registry_client.digest(docker_repo_name, latest_version)
             rescue RestClient::Exceptions::Timeout
               attempt ||= 1
               attempt += 1

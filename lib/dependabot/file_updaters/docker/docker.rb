@@ -26,8 +26,7 @@ module Dependabot
               )
           end
 
-          updated_files =
-            updated_files.reject { |f| dependency_files.include?(f) }
+          updated_files.reject! { |f| dependency_files.include?(f) }
           raise "No files changed!" if updated_files.none?
 
           updated_files

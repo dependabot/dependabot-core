@@ -32,13 +32,14 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         requirement: nil,
         groups: [],
         file: "Dockerfile",
-        source: { type: "tag" }
+        source: source
       }],
       package_manager: "docker"
     )
   end
   let(:dependency_name) { "ubuntu" }
   let(:version) { "17.04" }
+  let(:source) { { type: "tag" } }
   let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
   let(:registry_tags) do
     fixture("docker", "registry_tags", "ubuntu_no_latest.json")
@@ -69,6 +70,56 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     context "given a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_falsey }
+
+      context "and a digest" do
+        let(:source) { { type: "digest", digest: "old_digest" } }
+        let(:headers_response) do
+          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/artful").
+            and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        context "that is out-of-date" do
+          let(:source) { { type: "digest", digest: "old_digest" } }
+          it { is_expected.to be_truthy }
+        end
+
+        context "that is up-to-date" do
+          let(:source) do
+            {
+              type: "digest",
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97"\
+                      "eba880ebf600d68608"
+            }
+          end
+
+          it { is_expected.to be_falsey }
+        end
+      end
+    end
+
+    context "when the 'latest' version is just a more precise one" do
+      let(:dependency_name) { "python" }
+      let(:version) { "3.6" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "python.json") }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/python/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_request(:head, repo_url + "manifests/3.6").
+          and_return(status: 200, headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/3.6.3").
+          and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it { is_expected.to be_falsey }
     end
   end
 
@@ -79,11 +130,11 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
 
     context "when the dependency has a non-numeric version" do
       let(:version) { "artful" }
-      it { is_expected.to be_nil }
+      it { is_expected.to eq("artful") }
 
       context "that starts with a number" do
         let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
-        it { is_expected.to be_nil }
+        it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
       end
     end
 
@@ -156,10 +207,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:version) { "2.4.0-slim" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }
       before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
         tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
@@ -172,10 +219,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:dependency_name) { "moj/ruby" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }
       before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
@@ -189,10 +232,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:version) { "3.5" }
       let(:registry_tags) { fixture("docker", "registry_tags", "python.json") }
       before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
@@ -255,10 +294,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       let(:version) { "3.6.2-alpine3.6" }
       let(:registry_tags) { fixture("docker", "registry_tags", "python.json") }
       before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
@@ -362,10 +397,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       end
 
       before do
-        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
-
         new_headers =
           fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
         stub_request(:head, repo_url + "manifests/17.10").
