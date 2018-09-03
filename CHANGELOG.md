@@ -1,3 +1,7 @@
+## v0.69.21, 3 September 2018
+
+- Python: Handle hash versions in FileParser
+
 ## v0.69.20, 3 September 2018
 
 - Python: Update requirements.txt if it is an output from Pipenv
