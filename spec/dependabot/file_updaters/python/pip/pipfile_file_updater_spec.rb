@@ -316,11 +316,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
     end
   end
 
-  describe "#updated_pipfile_content" do
-    subject(:updated_pipfile_content) { updater.send(:updated_pipfile_content) }
+  describe "the updated pipfile" do
+    # Only update a Pipfile (speeds up tests)
+    let(:dependency_files) { [pipfile] }
+    subject(:updated_pipfile_content) do
+      updater.updated_dependency_files.find { |f| f.name == "Pipfile" }.content
+    end
 
     let(:pipfile_fixture_name) { "version_not_specified" }
-    let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
     context "with single quotes" do
       let(:pipfile_fixture_name) { "with_quotes" }
@@ -424,7 +427,6 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         )
       end
       let(:pipfile_fixture_name) { "hard_names" }
-      let(:lockfile_fixture_name) { "hard_names.lock" }
 
       it { is_expected.to include('Requests = "==2.18.4"') }
     end

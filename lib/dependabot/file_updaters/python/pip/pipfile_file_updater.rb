@@ -43,12 +43,14 @@ module Dependabot
                 updated_file(file: pipfile, content: updated_pipfile_content)
             end
 
-            if lockfile.content == updated_lockfile_content
-              raise "Expected Pipfile.lock to change!"
-            end
+            if lockfile
+              if lockfile.content == updated_lockfile_content
+                raise "Expected Pipfile.lock to change!"
+              end
 
-            updated_files <<
-              updated_file(file: lockfile, content: updated_lockfile_content)
+              updated_files <<
+                updated_file(file: lockfile, content: updated_lockfile_content)
+            end
 
             updated_files
           end
