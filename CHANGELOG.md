@@ -1,3 +1,13 @@
+## v0.69.19, 3 September 2018
+
+- Python: Parse Pipfiles without a Pipfile.lock
+- Python: Parse dependencies from multiple sources
+- Python: Allow Pipfile without Pipfile.lock in FileFetcher and FileParser
+- Python: Handle Pipfiles without a Pipfile.lock in FileUpdater
+- Python: Firm up logic around resolution manager selection in UpdateChecker
+- Python: Firm up logic around resolution manager selection in FileUpdater
+- Python: Add test for FileUpdater with only a Pipfile
+
 ## v0.69.18, 2 September 2018
 
 - Rust: Fetch rust-toolchain file if present
