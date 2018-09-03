@@ -103,6 +103,44 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       end
     end
 
+    context "with just a Pipfile" do
+      let(:dependency_files) { [pipfile, requirements] }
+      let(:pipfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile",
+          content: fixture("python", "pipfiles", "exact_version")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "delegates to PipfileFileUpdater" do
+        expect(described_class::PipfileFileUpdater).
+          to receive(:new).and_call_original
+        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a pyproject.toml and pyproject.lock" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:pyproject) do
