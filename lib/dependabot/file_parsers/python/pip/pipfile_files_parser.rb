@@ -47,18 +47,21 @@ module Dependabot
               next unless parsed_pipfile[keys[:pipfile]]
 
               parsed_pipfile[keys[:pipfile]].map do |dep_name, req|
+                group = keys[:lockfile]
                 next unless req.is_a?(String) || req["version"]
-                next unless dependency_version(dep_name, keys[:lockfile])
+                if pipfile_lock && !dependency_version(dep_name, req, group)
+                  next
+                end
 
                 dependencies <<
                   Dependency.new(
                     name: normalised_name(dep_name),
-                    version: dependency_version(dep_name, keys[:lockfile]),
+                    version: dependency_version(dep_name, req, group),
                     requirements: [{
                       requirement: req.is_a?(String) ? req : req["version"],
                       file: pipfile.name,
                       source: nil,
-                      groups: [keys[:lockfile]]
+                      groups: [group]
                     }],
                     package_manager: "pip"
                   )
@@ -73,6 +76,7 @@ module Dependabot
           # other DependencySets.
           def pipfile_lock_dependencies
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
+            return dependencies unless pipfile_lock
 
             DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
               next unless parsed_pipfile_lock[key]
@@ -97,19 +101,23 @@ module Dependabot
             dependencies
           end
 
-          def dependency_version(dep_name, group)
-            details =
-              parsed_pipfile_lock.
-              dig(group, normalised_name(dep_name))
+          def dependency_version(dep_name, requirement, group)
+            if pipfile_lock
+              details =
+                parsed_pipfile_lock.
+                dig(group, normalised_name(dep_name))
 
-            version =
-              case details
-              when String then details
-              when Hash then details["version"]
-              end
+              version =
+                case details
+                when String then details
+                when Hash then details["version"]
+                end
 
-            return unless version
-            version.gsub(/^===?/, "")
+              return unless version
+              version.gsub(/^===?/, "")
+            elsif requirement&.strip&.start_with?("==")
+              requirement.gsub(/^===?/, "")
+            end
           end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
