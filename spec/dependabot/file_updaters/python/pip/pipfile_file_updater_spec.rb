@@ -314,6 +314,73 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         end
       end
     end
+
+    context "with a requirements.txt" do
+      let(:dependency_files) { [pipfile, lockfile, requirements_file] }
+
+      context "that looks like the output of `pipenv lock -r`" do
+        let(:requirements_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: fixture(
+              "python",
+              "requirements",
+              "version_not_specified_runtime.txt"
+            )
+          )
+        end
+
+        it "updates the lockfile and the requirements.txt" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(Pipfile.lock requirements.txt))
+
+          updated_lock = updated_files.find { |f| f.name == "Pipfile.lock" }
+          updated_txt = updated_files.find { |f| f.name == "requirements.txt" }
+
+          JSON.parse(updated_lock.content).fetch("default").each do |nm, hash|
+            expect(updated_txt.content).to include("#{nm}#{hash['version']}")
+          end
+        end
+      end
+
+      context "that looks like the output of `pipenv lock -r -d`" do
+        let(:requirements_file) do
+          Dependabot::DependencyFile.new(
+            name: "req-dev.txt",
+            content: fixture(
+              "python",
+              "requirements",
+              "version_not_specified_dev.txt"
+            )
+          )
+        end
+
+        it "updates the lockfile and the requirements.txt" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(Pipfile.lock req-dev.txt))
+
+          updated_lock = updated_files.find { |f| f.name == "Pipfile.lock" }
+          updated_txt = updated_files.find { |f| f.name == "req-dev.txt" }
+
+          JSON.parse(updated_lock.content).fetch("develop").each do |nm, hash|
+            expect(updated_txt.content).to include("#{nm}#{hash['version']}")
+          end
+        end
+      end
+
+      context "that is unrelated" do
+        let(:requirements_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: fixture("python", "requirements", "pbr.txt")
+          )
+        end
+
+        it "updates the lockfile only" do
+          expect(updated_files.map(&:name)).to match_array(%w(Pipfile.lock))
+        end
+      end
+    end
   end
 
   describe "the updated pipfile" do

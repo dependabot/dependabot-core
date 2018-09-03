@@ -2,9 +2,11 @@
 
 require "toml-rb"
 
+require "python_requirement_parser"
 require "dependabot/file_updaters/python/pip"
 require "dependabot/shared_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module Python
@@ -52,6 +54,7 @@ module Dependabot
                 updated_file(file: lockfile, content: updated_lockfile_content)
             end
 
+            updated_files += updated_generated_requirements_files
             updated_files
           end
 
@@ -80,24 +83,58 @@ module Dependabot
 
           def updated_lockfile_content
             @updated_lockfile_content ||=
-              begin
-                pipfile_hash = pipfile_hash_for(updated_pipfile_content)
-                original_reqs = parsed_lockfile["_meta"]["requires"]
-                original_source = parsed_lockfile["_meta"]["sources"]
-
-                new_lockfile = updated_lockfile_content_for(prepared_pipfile)
-                new_lockfile_json = JSON.parse(new_lockfile)
-                new_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
-                new_lockfile_json["_meta"]["requires"] = original_reqs
-                new_lockfile_json["_meta"]["sources"] = original_source
-
-                JSON.pretty_generate(new_lockfile_json, indent: "    ").
-                  gsub(/\{\n\s*\}/, "{}").
-                  gsub(/\}\z/, "}\n")
-              end
+              updated_generated_files.fetch(:lockfile)
           end
 
-          def prepared_pipfile
+          def generate_updated_requirements_files?
+            return true if generated_requirements_files("default").any?
+            generated_requirements_files("develop").any?
+          end
+
+          def generated_requirements_files(type)
+            return [] unless lockfile
+            pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
+
+            regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+
+            # Find any requirement files that list the same dependencies as
+            # the (old) Pipfile.lock. Any such files were almost certainly
+            # generated using `pipenv lock -r`
+            requirements_files.select do |req_file|
+              deps = []
+              req_file.content.scan(regex) { deps << Regexp.last_match }
+              deps = deps.map { |m| normalise(m[:name]) }
+              deps.sort == pipfile_lock_deps
+            end
+          end
+
+          def updated_generated_requirements_files
+            updated_files = []
+
+            generated_requirements_files("default").each do |file|
+              next if file.content == updated_req_content
+              updated_files <<
+                updated_file(file: file, content: updated_req_content)
+            end
+
+            generated_requirements_files("develop").each do |file|
+              next if file.content == updated_dev_req_content
+              updated_files <<
+                updated_file(file: file, content: updated_dev_req_content)
+            end
+
+            updated_files
+          end
+
+          def updated_req_content
+            updated_generated_files.fetch(:requirements_txt)
+          end
+
+          def updated_dev_req_content
+            updated_generated_files.fetch(:dev_requirements_txt)
+          end
+
+          def prepared_pipfile_content
             content = updated_pipfile_content
             content = freeze_other_dependencies(content)
             content = freeze_dependencies_being_updated(content)
@@ -138,20 +175,59 @@ module Dependabot
               replace_sources(credentials)
           end
 
-          def updated_lockfile_content_for(pipfile_content)
-            SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(pipfile_content)
+          def updated_generated_files
+            @updated_generated_files ||=
+              SharedHelpers.in_a_temporary_directory do
+                SharedHelpers.with_git_configured(credentials: credentials) do
+                  write_temporary_dependency_files(prepared_pipfile_content)
 
-                # Initialize a git repo to appease pip-tools
-                IO.popen("git init", err: %i(child out)) if setup_files.any?
+                  # Initialize a git repo to appease pip-tools
+                  IO.popen("git init", err: %i(child out)) if setup_files.any?
 
-                run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv lock")
+                  run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                     "pyenv exec pipenv lock")
 
-                File.read("Pipfile.lock")
+                  result = { lockfile: File.read("Pipfile.lock") }
+                  result[:lockfile] = post_process_lockfile(result[:lockfile])
+
+                  # Generate updated requirement.txt entries, if needed.
+                  if generate_updated_requirements_files?
+                    generate_updated_requirements_files
+
+                    result[:requirements_txt] = File.read("req.txt")
+                    result[:dev_requirements_txt] = File.read("dev-req.txt")
+                  end
+
+                  result
+                end
               end
-            end
+          end
+
+          def post_process_lockfile(updated_lockfile_content)
+            pipfile_hash = pipfile_hash_for(updated_pipfile_content)
+            original_reqs = parsed_lockfile["_meta"]["requires"]
+            original_source = parsed_lockfile["_meta"]["sources"]
+
+            new_lockfile = updated_lockfile_content.dup
+            new_lockfile_json = JSON.parse(new_lockfile)
+            new_lockfile_json["_meta"]["hash"]["sha256"] = pipfile_hash
+            new_lockfile_json["_meta"]["requires"] = original_reqs
+            new_lockfile_json["_meta"]["sources"] = original_source
+
+            JSON.pretty_generate(new_lockfile_json, indent: "    ").
+              gsub(/\{\n\s*\}/, "{}").
+              gsub(/\}\z/, "}\n")
+          end
+
+          def generate_updated_requirements_files
+            run_pipenv_command(
+              "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+              "pyenv exec pipenv lock -r > req.txt"
+            )
+            run_pipenv_command(
+              "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+              "pyenv exec pipenv lock -r -d > dev-req.txt"
+            )
           end
 
           def run_pipenv_command(cmd)
@@ -267,8 +343,13 @@ module Dependabot
           def setup_cfg_files
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
+
+          def requirements_files
+            dependency_files.select { |f| f.name.end_with?(".txt") }
+          end
         end
       end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
