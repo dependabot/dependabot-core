@@ -102,21 +102,23 @@ module Dependabot
           end
 
           def dependency_version(dep_name, requirement, group)
+            req = case requirement
+                  when String then requirement.strip
+                  when Hash then requirement["version"].to_s.strip
+                  end
+
             if pipfile_lock
-              details =
-                parsed_pipfile_lock.
-                dig(group, normalised_name(dep_name))
+              details = parsed_pipfile_lock.
+                        dig(group, normalised_name(dep_name))
 
-              version =
-                case details
-                when String then details
-                when Hash then details["version"]
-                end
+              version = case details
+                        when String then details
+                        when Hash then details["version"]
+                        end
 
-              return unless version
-              version.gsub(/^===?/, "")
-            elsif requirement&.strip&.start_with?("==")
-              requirement.gsub(/^===?/, "")
+              version&.gsub(/^===?/, "")
+            elsif req.start_with?("==")
+              req.strip.gsub(/^===?/, "")
             end
           end
 
