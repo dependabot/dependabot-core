@@ -1,3 +1,7 @@
+## v0.69.20, 3 September 2018
+
+- Python: Update requirements.txt if it is an output from Pipenv
+
 ## v0.69.19, 3 September 2018
 
 - Python: Parse Pipfiles without a Pipfile.lock
