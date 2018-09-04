@@ -1,3 +1,7 @@
+## v0.69.27, 4 September 2018
+
+- Terraform: Swap error class
+
 ## v0.69.26, 4 September 2018
 
 - Terraform: Raise resolvability error for invalid registry sources
