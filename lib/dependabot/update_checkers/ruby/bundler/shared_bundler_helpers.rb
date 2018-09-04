@@ -147,10 +147,17 @@ module Dependabot
               raise Dependabot::PrivateSourceCertificateFailure, source
             when "Bundler::HTTPError"
               regex = /Could not fetch specs from (?<source>.*)$/
-              raise unless error.error_message.match?(regex)
-              source = error.error_message.match(regex)[:source]
-              raise if source.include?("rubygems.org")
-              raise Dependabot::PrivateSourceTimedOut, source
+              if error.error_message.match?(regex)
+                source = error.error_message.match(regex)[:source]
+                raise if source.include?("rubygems.org")
+                raise Dependabot::PrivateSourceTimedOut, source
+              end
+
+              # JFrog can serve a 403 if the credentials provided are good but
+              # don't have access to a particular gem.
+              raise unless error.error_message.include?("permitted to deploy")
+              raise unless jfrog_source
+              raise Dependabot::PrivateSourceAuthenticationFailure, jfrog_source
             else raise
             end
           end
@@ -183,6 +190,16 @@ module Dependabot
                     false
                   end
                 end
+            end
+          end
+
+          def jfrog_source
+            in_a_temporary_bundler_context(error_handling: false) do
+              ::Bundler::Definition.build("Gemfile", nil, {}).
+                send(:sources).
+                rubygems_remotes.
+                find { |uri| uri.host.include?("jfrog") }&.
+                host
             end
           end
 

@@ -78,7 +78,8 @@ module Dependabot
     def initialize(source)
       @source = source
       msg = "The following source could not be reached as it requires "\
-            "authentication (and any provided details were invalid): #{source}"
+            "authentication (and any provided details were invalid or lacked "\
+            "the required permissions): #{source}"
       super(msg)
     end
   end
