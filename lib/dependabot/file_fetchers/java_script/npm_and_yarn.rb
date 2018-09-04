@@ -110,7 +110,7 @@ module Dependabot
           JSON.parse(file.content).
             values_at(*FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES).
             compact.flat_map(&:to_a).
-            select { |_, v| v.start_with?("file:", "./", "../", "~/") }.
+            select { |_, v| v.start_with?("file:", "/", "./", "../", "~/") }.
             map do |name, path|
               path = path.sub(/^file:/, "")
               path = File.join(current_dir, path) unless current_dir.nil?
