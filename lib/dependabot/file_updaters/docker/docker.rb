@@ -18,7 +18,8 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          files_with_requirement.each do |file|
+          dependency_files.each do |file|
+            next unless requirement_changed?(file, dependency)
             updated_files <<
               updated_file(
                 file: file,
@@ -37,11 +38,6 @@ module Dependabot
         def dependency
           # Dockerfiles will only ever be updating a single dependency
           dependencies.first
-        end
-
-        def files_with_requirement
-          filenames = dependency.requirements.map { |r| r[:file] }
-          dependency_files.select { |file| filenames.include?(file.name) }
         end
 
         def check_required_files
@@ -74,20 +70,19 @@ module Dependabot
         end
 
         def update_tag(file)
+          return unless old_tag(file)
+
           old_declaration =
             if private_registry_url(file) then "#{private_registry_url(file)}/"
             else ""
             end
-          old_declaration += "#{dependency.name}:#{dependency.previous_version}"
+          old_declaration += "#{dependency.name}:#{old_tag(file)}"
           escaped_declaration = Regexp.escape(old_declaration)
 
           old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
 
           file.content.gsub(old_declaration_regex) do |old_dec|
-            old_dec.gsub(
-              ":#{dependency.previous_version}",
-              ":#{dependency.version}"
-            )
+            old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
           end
         end
 
@@ -95,7 +90,7 @@ module Dependabot
           dependency.
             requirements.
             find { |r| r[:file] == file.name }.
-            fetch(:source).fetch(:type) == "digest"
+            fetch(:source)[:digest]
         end
 
         def new_digest(file)
@@ -110,6 +105,18 @@ module Dependabot
           dependency.previous_requirements.
             find { |r| r[:file] == file.name }.
             fetch(:source).fetch(:digest)
+        end
+
+        def new_tag(file)
+          dependency.requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source)[:tag]
+        end
+
+        def old_tag(file)
+          dependency.previous_requirements.
+            find { |r| r[:file] == file.name }.
+            fetch(:source)[:tag]
         end
 
         def private_registry_url(file)
