@@ -1,3 +1,7 @@
+## v0.69.23, 3 September 2018
+
+- Ruby: Upgrade list of known rubies, and raise if unsatisfied
+
 ## v0.69.22, 3 September 2018
 
 - Update DockerRegistry client, and use new digest method
