@@ -37,6 +37,13 @@ RSpec.describe module_to_test::RubyRequirementSetter do
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
+      context "that none of our Ruby versions satisfy" do
+        let(:content) { fixture("ruby", "gemfiles", "Gemfile") }
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "impossible_ruby") }
+
+        specify { expect { rewrite }.to raise_error(/Ruby version/) }
+      end
+
       context "with an existing ruby version" do
         context "at top level" do
           let(:content) { fixture("ruby", "gemfiles", "explicit_ruby") }

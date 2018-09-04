@@ -9,7 +9,7 @@ module Dependabot
       class Bundler
         class RubyRequirementSetter
           RUBY_VERSIONS =
-            %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.9 2.3.6 2.4.3 2.5.0).freeze
+            %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.7 2.4.4 2.5.1).freeze
 
           attr_reader :gemspec
 
@@ -48,9 +48,13 @@ module Dependabot
           def ruby_version
             requirement = Gem::Requirement.new(ruby_requirement)
 
-            RUBY_VERSIONS.
+            ruby_version =
+              RUBY_VERSIONS.
               map { |v| Gem::Version.new(v) }.sort.
               find { |v| requirement.satisfied_by?(v) }
+
+            raise "Couldn't find Ruby version!" unless ruby_version
+            ruby_version
           end
 
           # rubocop:disable Security/Eval
