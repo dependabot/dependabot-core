@@ -138,7 +138,7 @@ module Dependabot
         end
 
         def local_path?(requirement)
-          requirement.start_with?("file:")
+          requirement.start_with?("file:", "/", "./", "../", "~/")
         end
 
         def alias_package?(requirement)
