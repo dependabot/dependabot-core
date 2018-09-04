@@ -1,3 +1,9 @@
+## v0.69.30, 4 September 2018
+
+- Docker: Store tag when parsing Dockerfile
+- Docker: Update source tag in UpdateChecker
+- Docker: Do file updating based on changes to requirement sources
+
 ## v0.69.29, 4 September 2018
 
 - Elixir: Handle multiline declarations that need to be updated
