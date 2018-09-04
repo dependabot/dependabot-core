@@ -1,3 +1,8 @@
+## v0.69.25, 4 September 2018
+
+- JS: Look for path dependencies that start with "/", too
+- JS: Parse file dependencies that start with a '/' as file dependencies
+
 ## v0.69.24, 4 September 2018
 
 - JS: Fetch / create path dependencies that don't prefix 'file:'
