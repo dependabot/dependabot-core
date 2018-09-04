@@ -1,3 +1,9 @@
+## v0.69.22, 3 September 2018
+
+- Update DockerRegistry client, and use new digest method
+- Docker: Update digest logic
+- Docker: Handle digest-only updates in PR creator
+
 ## v0.69.21, 3 September 2018
 
 - Python: Handle hash versions in FileParser
