@@ -30,9 +30,10 @@ module Dependabot
 
         def updated_requirements
           dependency.requirements.map do |req|
-            next req unless req.fetch(:source).fetch(:type) == "digest"
-            next req unless updated_digest
-            updated_source = req.fetch(:source).merge(digest: updated_digest)
+            updated_source = req.fetch(:source).dup
+            updated_source[:digest] = updated_digest if req[:source][:digest]
+            updated_source[:tag] = latest_version if req[:source][:tag]
+
             req.merge(source: updated_source)
           end
         end
@@ -78,7 +79,7 @@ module Dependabot
 
         def digest_up_to_date?
           dependency.requirements.all? do |req|
-            next true unless req.fetch(:source).fetch(:type) == "digest"
+            next true unless req.fetch(:source)[:digest]
             req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
           end
         end
