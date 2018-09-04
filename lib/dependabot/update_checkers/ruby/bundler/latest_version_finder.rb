@@ -44,7 +44,8 @@ module Dependabot
             case dependency_source
             when NilClass then latest_rubygems_version_details
             when ::Bundler::Source::Rubygems
-              if dependency_source.remotes.first.to_s == "https://rubygems.org/"
+              if dependency_source.remotes.none? ||
+                 dependency_source.remotes.first.to_s == "https://rubygems.org/"
                 latest_rubygems_version_details
               else
                 latest_private_version_details

@@ -162,6 +162,11 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::LatestVersionFinder do
           end
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+          context "when there is no default source" do
+            let(:gemfile_fixture_name) { "imports_gemspec_no_default_source" }
+            its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+          end
         end
       end
 
