@@ -1,4 +1,8 @@
-## v0.69.23, 3 September 2018
+## v0.69.24, 4 September 2018
+
+- JS: Fetch / create path dependencies that don't prefix 'file:'
+
+## v0.69.23, 4 September 2018
 
 - Ruby: Upgrade list of known rubies, and raise if unsatisfied
 
