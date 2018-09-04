@@ -34,6 +34,18 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
 
       its(:length) { is_expected.to eq(4) }
 
+      context "that are invalid" do
+        let(:terraform_fixture_name) { "invalid_registry.tf" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+              expect(err.message).
+                to eq("Invalid registry source specified: 'consul/aws'")
+            end
+        end
+      end
+
       describe "the first dependency (default registry with version)" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do

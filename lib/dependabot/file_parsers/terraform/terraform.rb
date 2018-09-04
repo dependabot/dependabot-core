@@ -125,7 +125,8 @@ module Dependabot
               module_identifier: parts[1..3].join("/")
             }
           else
-            raise "Unexpected registry format: #{source_string}"
+            msg = "Invalid registry source specified: '#{source_string}'"
+            raise DependencyFileNotResolvable, msg
           end
         end
 
