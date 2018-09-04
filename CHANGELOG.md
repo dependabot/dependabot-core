@@ -1,3 +1,7 @@
+## v0.69.26, 4 September 2018
+
+- Terraform: Raise resolvability error for invalid registry sources
+
 ## v0.69.25, 4 September 2018
 
 - JS: Look for path dependencies that start with "/", too
