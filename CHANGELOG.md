@@ -1,3 +1,7 @@
+## v0.69.28, 4 September 2018
+
+- Ruby: Handle JFrog permissions error
+
 ## v0.69.27, 4 September 2018
 
 - Terraform: Swap error class
