@@ -126,7 +126,7 @@ module Dependabot
             }
           else
             msg = "Invalid registry source specified: '#{source_string}'"
-            raise DependencyFileNotResolvable, msg
+            raise DependencyFileNotEvaluatable, msg
           end
         end
 
