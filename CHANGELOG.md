@@ -1,3 +1,8 @@
+## v0.69.29, 4 September 2018
+
+- Elixir: Handle multiline declarations that need to be updated
+- Ruby: Handle gemspec updates when Gemfile has now default source
+
 ## v0.69.28, 4 September 2018
 
 - Ruby: Handle JFrog permissions error
