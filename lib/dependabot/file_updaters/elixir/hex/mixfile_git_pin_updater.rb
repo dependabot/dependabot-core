@@ -34,9 +34,9 @@ module Dependabot
           def update_pin(content)
             requirement_line_regex =
               /
-                :#{Regexp.escape(dependency_name)},.*
+                \{\s*:#{Regexp.escape(dependency_name)},[^\}]*
                 (?:ref|tag):\s+["']#{Regexp.escape(previous_pin)}["']
-              /x
+              /mx
 
             content.gsub(requirement_line_regex) do |requirement_line|
               requirement_line.gsub(previous_pin, updated_pin)
