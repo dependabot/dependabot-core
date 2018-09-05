@@ -15,6 +15,7 @@ module Dependabot
           end
 
           def includes_dependency?
+            return false unless Parser::CurrentRuby.parse(gemfile.content)
             Parser::CurrentRuby.parse(gemfile.content).children.any? do |node|
               deep_check_for_gem(node)
             end

@@ -33,6 +33,11 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler::GemfileChecker do
       it { is_expected.to eq(false) }
     end
 
+    context "when the file is just comments" do
+      let(:gemfile_body) { "#Lol this is just a comment" }
+      it { is_expected.to eq(false) }
+    end
+
     context "when the file does include the dependency" do
       let(:dependency_name) { "business" }
       it { is_expected.to eq(true) }
