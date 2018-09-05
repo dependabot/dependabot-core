@@ -114,7 +114,8 @@ module Dependabot
             end
             if error.message.include?("failed to parse lock") ||
                error.message.include?("believes it's in a workspace") ||
-               error.message.include?("wasn't a root")
+               error.message.include?("wasn't a root") ||
+               error.message.include?("requires a nightly version")
               raise Dependabot::DependencyFileNotResolvable, msg
             end
             raise error
