@@ -33,7 +33,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(2) }
+    its(:length) { is_expected.to eq(3) }
 
     context "with a version specified" do
       describe "the first dependency" do
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -320,7 +320,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -538,7 +538,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       it "has the right details" do
         expect(dependencies).to match_array(
@@ -570,6 +570,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               version: "2.6.1",
               requirements: [{
                 requirement: "==2.6.1",
+                file: "more_requirements.txt",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "pytest",
+              version: "3.4.0",
+              requirements: [{
+                requirement: "==3.4.0",
                 file: "more_requirements.txt",
                 groups: [],
                 source: nil
