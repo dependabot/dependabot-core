@@ -1,3 +1,8 @@
+## v0.69.31, 5 September 2018
+
+- Use source API endpoint in labeler
+- Bump poetry from 0.11.4 to 0.11.5
+
 ## v0.69.30, 4 September 2018
 
 - Docker: Store tag when parsing Dockerfile
