@@ -336,6 +336,7 @@ module Dependabot
     end
 
     def wants_prerelease?
+      return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
       version = dependency_source_details.fetch(:ref).match(VERSION_REGEX).
                 named_captures.fetch("version")
