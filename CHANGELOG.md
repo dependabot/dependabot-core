@@ -1,3 +1,8 @@
+## v0.69.32, 5 September 2018
+
+- Truncate long commit message subject lines
+- Make Python label colour less ugly
+
 ## v0.69.31, 5 September 2018
 
 - Use source API endpoint in labeler
