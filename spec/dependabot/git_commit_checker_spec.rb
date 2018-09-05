@@ -706,6 +706,24 @@ RSpec.describe Dependabot::GitCommitChecker do
           is_expected.to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
         end
 
+        context "and a pre-release latest version" do
+          let(:upload_pack_fixture) { "k8s-apiextensions-apiserver" }
+          its([:tag]) { is_expected.to eq("kubernetes-1.11.2") }
+
+          context "when using a pre-release" do
+            let(:source) do
+              {
+                type: "git",
+                url: "https://github.com/gocardless/business",
+                branch: "master",
+                ref: "kubernetes-1.11.3-beta.0"
+              }
+            end
+
+            its([:tag]) { is_expected.to eq("kubernetes-1.13.0-alpha.0") }
+          end
+        end
+
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }

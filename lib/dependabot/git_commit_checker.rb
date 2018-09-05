@@ -60,18 +60,15 @@ module Dependabot
     end
 
     def local_tag_for_latest_version
-      tags =
+      tag =
         local_tags.
         select { |t| t.name.match?(VERSION_REGEX) }.
-        reject do |t|
+        reject { |t| tag_included_in_ignore_reqs?(t) }.
+        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
+        max_by do |t|
           version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-          ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
+          version_class.new(version)
         end
-
-      tag = tags.max_by do |t|
-        version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-        version_class.new(version)
-      end
 
       return unless tag
       {
@@ -336,6 +333,23 @@ module Dependabot
 
     def ignore_reqs
       ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+    end
+
+    def wants_prerelease?
+      return false unless pinned_ref_looks_like_version?
+      version = dependency_source_details.fetch(:ref).match(VERSION_REGEX).
+                named_captures.fetch("version")
+      version_class.new(version).prerelease?
+    end
+
+    def tag_included_in_ignore_reqs?(tag)
+      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
+      ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
+    end
+
+    def tag_is_prerelease?(tag)
+      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
+      version_class.new(version).prerelease?
     end
 
     def version_class
