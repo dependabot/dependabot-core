@@ -2,6 +2,7 @@
 
 require "dependabot/update_checkers/python/pip"
 require "dependabot/file_updaters/python/pip/requirement_replacer"
+require "dependabot/file_updaters/python/pip/setup_file_sanitizer"
 require "dependabot/utils/python/version"
 require "dependabot/shared_helpers"
 
@@ -52,6 +53,9 @@ module Dependabot
                       "#{source_pip_config_file_name}"
                 run_command(cmd)
 
+                # Remove the created package details (so they aren't parsed)
+                FileUtils.rm_rf("sanitized_package.egg-info")
+
                 updated_deps =
                   SharedHelpers.run_helper_subprocess(
                     command: "pyenv exec python #{python_helper_path}",
@@ -99,6 +103,36 @@ module Dependabot
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, unlock_dependency(file))
+            end
+
+            setup_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, sanitized_setup_file_content(file))
+            end
+
+            setup_cfg_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, "[metadata]\nname = sanitized-package\n")
+            end
+          end
+
+          def sanitized_setup_file_content(file)
+            @sanitized_setup_file_content ||= {}
+            if @sanitized_setup_file_content[file.name]
+              return @sanitized_setup_file_content[file.name]
+            end
+
+            @sanitized_setup_file_content[file.name] =
+              FileUpdaters::Python::Pip::SetupFileSanitizer.
+              new(setup_file: file, setup_cfg: setup_cfg(file)).
+              sanitized_content
+          end
+
+          def setup_cfg(file)
+            dependency_files.find do |f|
+              f.name == file.name.sub(/\.py$/, ".cfg")
             end
           end
 
@@ -184,6 +218,14 @@ module Dependabot
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)
             name.downcase.tr("_", "-").tr(".", "-")
+          end
+
+          def setup_files
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def setup_cfg_files
+            dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
         end
       end

@@ -121,6 +121,36 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be_nil }
     end
 
+    context "with an import of the setup.py" do
+      let(:dependency_files) { [manifest_file, generated_file, setup_file] }
+      let(:setup_file) do
+        Dependabot::DependencyFile.new(
+          name: "setup.py",
+          content: fixture("python", "setup_files", setup_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "imports_setup.in" }
+      let(:generated_fixture_name) { "pip_compile_imports_setup.txt" }
+      let(:setup_fixture_name) { "small.py" }
+      let(:dependency_name) { "attrs" }
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("18.1.0") }
+
+      context "that needs sanitizing" do
+        let(:setup_fixture_name) { "small_needs_sanitizing.py" }
+        it { is_expected.to be >= Gem::Version.new("18.1.0") }
+      end
+    end
+
     context "with a Python 2.7 library" do
       let(:manifest_fixture_name) { "legacy_python.in" }
       let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
