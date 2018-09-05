@@ -1,5 +1,9 @@
 ## v0.69.32, 5 September 2018
 
+- Python: Don't parse dependencies that won't be updated in FileUpdater
+
+## v0.69.32, 5 September 2018
+
 - Truncate long commit message subject lines
 - Make Python label colour less ugly
 
