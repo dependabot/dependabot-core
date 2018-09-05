@@ -1,3 +1,7 @@
+## v0.69.35, 5 September 2018
+
+- Ruby: Handle gemfiles that are just a comment in GemfileChecker
+
 ## v0.69.34, 5 September 2018
 
 - Exclude pre-release tags in GitCommitChecker
