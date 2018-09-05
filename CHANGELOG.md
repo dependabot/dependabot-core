@@ -1,3 +1,10 @@
+## v0.69.36, 5 September 2018
+
+- Assume no prereleases for git dependencies without a tag
+- Python: Raise a resolvability error for bad Python ranges in Pipfile
+- Python: Sanitize setup.py before use with pip-tool in UpdateChecker
+- Python: Sanitize setup.py before use with pip-tool in FileUpdater
+
 ## v0.69.35, 5 September 2018
 
 - Ruby: Handle gemfiles that are just a comment in GemfileChecker
