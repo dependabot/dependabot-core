@@ -10,6 +10,7 @@ module Dependabot
         class PipCompileFileUpdater
           require_relative "requirement_replacer"
           require_relative "requirement_file_updater"
+          require_relative "setup_file_sanitizer"
 
           attr_reader :dependencies, :dependency_files, :credentials
 
@@ -138,6 +139,36 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, freeze_dependency_requirement(file))
             end
+
+            setup_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, sanitized_setup_file_content(file))
+            end
+
+            setup_cfg_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, "[metadata]\nname = sanitized-package\n")
+            end
+          end
+
+          def sanitized_setup_file_content(file)
+            @sanitized_setup_file_content ||= {}
+            if @sanitized_setup_file_content[file.name]
+              return @sanitized_setup_file_content[file.name]
+            end
+
+            @sanitized_setup_file_content[file.name] =
+              SetupFileSanitizer.
+              new(setup_file: file, setup_cfg: setup_cfg(file)).
+              sanitized_content
+          end
+
+          def setup_cfg(file)
+            dependency_files.find do |f|
+              f.name == file.name.sub(/\.py$/, ".cfg")
+            end
           end
 
           def freeze_dependency_requirement(file)
@@ -230,6 +261,14 @@ module Dependabot
             end
 
             options.strip
+          end
+
+          def setup_files
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def setup_cfg_files
+            dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
         end
       end

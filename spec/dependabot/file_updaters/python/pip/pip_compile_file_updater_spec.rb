@@ -103,6 +103,36 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       end
     end
 
+    context "with an import of the setup.py" do
+      let(:dependency_files) { [manifest_file, generated_file, setup_file] }
+      let(:setup_file) do
+        Dependabot::DependencyFile.new(
+          name: "setup.py",
+          content: fixture("python", "setup_files", setup_fixture_name)
+        )
+      end
+      let(:manifest_fixture_name) { "imports_setup.in" }
+      let(:generated_fixture_name) { "pip_compile_imports_setup.txt" }
+      let(:setup_fixture_name) { "small.py" }
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).
+          to include("pbr==4.0.2                # via mock")
+        expect(updated_files.first.content).to include("# This file is autogen")
+        expect(updated_files.first.content).to_not include("--hash=sha")
+      end
+
+      context "that needs sanitizing" do
+        let(:setup_fixture_name) { "small_needs_sanitizing.py" }
+        it "updates the requirements.txt" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).to include("attrs==18.1.0")
+        end
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.2.0" }
