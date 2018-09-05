@@ -128,6 +128,15 @@ module Dependabot
               raise DependencyFileNotResolvable, msg
             end
 
+            puts error.message
+            if error.message.include?("Warning: Python >") &&
+               !original_requirements_resolvable?
+              msg = "Pipenv does not support specifying Python ranges "\
+                    "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+                    "details)."
+              raise DependencyFileNotResolvable, msg
+            end
+
             if error.message.include?('Command "python setup.py egg_info') &&
                error.message.include?(dependency.name)
               # The latest version of the dependency we're updating is borked
@@ -169,6 +178,7 @@ module Dependabot
                 true
               rescue SharedHelpers::HelperSubprocessFailed => error
                 return false if error.message.include?("not find a version")
+                return false if error.message.include?("Warning: Python >")
                 raise
               end
             end

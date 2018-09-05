@@ -136,6 +136,19 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:lockfile_fixture_name) { "required_python.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
+      context "that is invalid" do
+        let(:pipfile_fixture_name) { "required_python_invalid" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to start_with(
+                "Pipenv does not support specifying Python ranges"
+              )
+            end
+        end
+      end
+
       context "for a resolution that has caused trouble in the past" do
         let(:dependency_files) { [pipfile] }
         let(:pipfile_fixture_name) { "problematic_resolution" }
