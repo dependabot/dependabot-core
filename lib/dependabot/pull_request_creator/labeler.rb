@@ -18,7 +18,7 @@ module Dependabot
         "maven" => { name: "java", colour: "ffa221" },
         "gradle" => { name: "java", colour: "ffa221" },
         "npm_and_yarn" => { name: "javascript", colour: "168700" },
-        "pip" => { name: "python", colour: "3174e0" },
+        "pip" => { name: "python", colour: "2b67c6" },
         "composer" => { name: "php", colour: "45229e" },
         "hex" => { name: "elixir", colour: "9380dd" },
         "cargo" => { name: "rust", colour: "000000" },
