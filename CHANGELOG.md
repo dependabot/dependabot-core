@@ -1,3 +1,7 @@
+## v0.69.34, 5 September 2018
+
+- Exclude pre-release tags in GitCommitChecker
+
 ## v0.69.33, 5 September 2018
 
 - Python: Don't parse dependencies that won't be updated in FileUpdater
