@@ -52,7 +52,7 @@ module Dependabot
       end
 
       def commit_message
-        message = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:") + "\n\n"
+        message = commit_subject + "\n\n"
         message += commit_message_intro
         message += metadata_links
         message += "\n\n" + signoff_message if signoff_message
@@ -60,6 +60,12 @@ module Dependabot
       end
 
       private
+
+      def commit_subject
+        subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
+        return subject unless subject.length > 72
+        subject.split(" from ").first
+      end
 
       def commit_message_intro
         return requirement_commit_message_intro if library?

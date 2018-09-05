@@ -1197,6 +1197,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
     it { is_expected.to eq("PR name\n\nMessage\n\nLinks") }
 
+    context "with a PR name that is too long" do
+      before do
+        allow(builder).to receive(:pr_name).
+          and_return(
+            "build(deps-dev): update postcss-import requirement from "\
+            "^11.1.0 to ^12.0.0"
+          )
+      end
+
+      it "truncates the subject line sensibly" do
+        expect(commit_message).
+          to start_with("build(deps-dev): update postcss-import requirement\n")
+      end
+    end
+
     context "with author details" do
       let(:author_details) do
         {
