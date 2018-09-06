@@ -67,6 +67,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PoetryFilesParser do
         expect(dependencies.map(&:name)).to_not include("python")
       end
 
+      context "with a git dependency" do
+        let(:pyproject_fixture_name) { "git_dependency.toml" }
+        let(:pyproject_lock_fixture_name) { "git_dependency.lock" }
+
+        it "excludes the git dependency" do
+          expect(dependencies.map(&:name)).to_not include("toml")
+        end
+      end
+
       context "with a manifest declaration" do
         subject(:dependency) { dependencies.find { |f| f.name == "geopy" } }
 

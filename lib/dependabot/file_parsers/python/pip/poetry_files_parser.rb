@@ -39,6 +39,7 @@ module Dependabot
 
               deps_hash.each do |name, req|
                 next if normalised_name(name) == "python"
+                next if req.is_a?(Hash) && req.key?("git")
 
                 dependencies <<
                   Dependency.new(
@@ -65,6 +66,7 @@ module Dependabot
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
             parsed_pyproject_lock.fetch("package", []).each do |details|
+              next if details.dig("source", "type") == "git"
               dependencies <<
                 Dependency.new(
                   name: details.fetch("name"),
