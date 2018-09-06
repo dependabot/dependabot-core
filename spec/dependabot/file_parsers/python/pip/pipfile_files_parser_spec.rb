@@ -356,6 +356,16 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to be_nil }
           its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          context "with exact versions specified in the Pipfile" do
+            let(:pipfile_fixture_name) { "exact_version" }
+            its(:version) { is_expected.to eq("2.18.0") }
+          end
+
+          context "with wildcard versions specified in the Pipfile" do
+            let(:pipfile_fixture_name) { "wildcard" }
+            its(:version) { is_expected.to be_nil }
+          end
         end
       end
     end
