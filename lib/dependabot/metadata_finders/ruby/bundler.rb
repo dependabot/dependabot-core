@@ -77,8 +77,18 @@ module Dependabot
           response_body = augment_private_response_if_appropriate(response_body)
 
           @rubygems_listing = JSON.parse(response_body)
+          append_slash_to_source_code_uri(@rubygems_listing)
         rescue JSON::ParserError, Excon::Error::Timeout
           @rubygems_listing = {}
+        end
+
+        def append_slash_to_source_code_uri(listing)
+          # We have to do this so that `Source.from_url(...)` doesn't prune the
+          # last line off of the directory.
+          return listing unless listing&.fetch("source_code_uri")
+          return listing if listing.fetch("source_code_uri").end_with?("/")
+          listing["source_code_uri"] = listing["source_code_uri"] + "/"
+          listing
         end
 
         def augment_private_response_if_appropriate(response_body)

@@ -250,6 +250,18 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
           it { is_expected.to eq("https://github.com/gocardless/business") }
         end
+
+        context "that is in the source_code_uri field, and needs a / adding" do
+          let(:rubygems_response) do
+            fixture("ruby", "rubygems_response_source_code_uri.json")
+          end
+
+          it { is_expected.to eq("https://github.com/gocardless/business") }
+
+          it "stores the right directory" do
+            expect(finder.send(:source).directory).to eq("gems/business-dir")
+          end
+        end
       end
 
       context "when there is a bitbucket link in the rubygems response" do
