@@ -28,6 +28,10 @@ module Dependabot
             lockfile: "develop"
           }
         ].freeze
+        REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
+          InstallationError RequirementsFileParseError InvalidMarker
+          InvalidRequirement
+        ).freeze
 
         def parse
           dependency_set = DependencySet.new
@@ -137,10 +141,8 @@ module Dependabot
             requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
-          evaluation_errors =
-            %w(InstallationError RequirementsFileParseError InvalidMarker)
+          evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
           raise unless error.message.start_with?(*evaluation_errors)
-
           raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
 

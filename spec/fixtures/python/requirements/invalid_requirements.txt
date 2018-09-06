@@ -1,0 +1,7 @@
+# This is a cross-platform list tracking distribution packages needed by tests;
+# see http://docs.openstack.org/infra/bindep/ for additional information.
+
+build-essential [platform:dpkg]
+gcc [platform:rpm test]
+python-hacking [platform:rpm test]
+libopenssl-devel [platform:suse !platform:rpm]
