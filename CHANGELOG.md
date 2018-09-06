@@ -1,3 +1,8 @@
+## v0.69.41, 6 September 2018
+
+- Python: Handle invalid requirements in requirements.txt files
+- Python: Normalise name before checking if dep already exists
+
 ## v0.69.40, 6 September 2018
 
 - Go: Clean up not found regex
