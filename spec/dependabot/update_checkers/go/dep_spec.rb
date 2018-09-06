@@ -92,6 +92,102 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       )
   end
 
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+    it { is_expected.to eq(false) }
+
+    context "with a git dependency" do
+      let(:dependency_name) { "golang.org/x/text" }
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/golang/text",
+          branch: branch,
+          ref: ref
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/golang/text"
+        stub_request(:get, repo_url + "/compare/v0.3.0...r2018.04.23").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      context "that specifies a tag as a version" do
+        let(:manifest_fixture_name) { "tag_as_version.toml" }
+        let(:lockfile_fixture_name) { "tag_as_version.lock" }
+        let(:dependency_name) { "github.com/globalsign/mgo" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/globalsign/mgo",
+            branch: nil,
+            ref: "r2018.04.23"
+          }
+        end
+        let(:req_str) { nil }
+        let(:dependency_version) { "r2018.04.23" }
+
+        it { is_expected.to eq(false) }
+      end
+    end
+  end
+
+  describe "#can_update?" do
+    subject { checker.can_update?(requirements_to_unlock: :own) }
+    it { is_expected.to eq(true) }
+
+    context "with a git dependency" do
+      let(:dependency_name) { "golang.org/x/text" }
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/golang/text",
+          branch: branch,
+          ref: ref
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/golang/text"
+        stub_request(:get, repo_url + "/compare/v0.3.0...r2018.04.23").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      context "that specifies a tag as a version" do
+        let(:manifest_fixture_name) { "tag_as_version.toml" }
+        let(:lockfile_fixture_name) { "tag_as_version.lock" }
+        let(:dependency_name) { "github.com/globalsign/mgo" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/globalsign/mgo",
+            branch: nil,
+            ref: "r2018.04.23"
+          }
+        end
+        let(:req_str) { nil }
+        let(:dependency_version) { "r2018.04.23" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
+  end
+
   describe "#latest_version" do
     subject { checker.latest_version }
 
