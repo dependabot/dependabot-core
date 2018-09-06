@@ -1,3 +1,8 @@
+## v0.69.37, 5 September 2018
+
+- Rust: Raise error if nightly version required and no rust-toolchain provided
+- Python: Ignore git dependencies for Poetry (for now)
+
 ## v0.69.36, 5 September 2018
 
 - Assume no prereleases for git dependencies without a tag
