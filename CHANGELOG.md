@@ -1,3 +1,7 @@
+## v0.69.38, 6 September 2018
+
+- Rust: Don't prune out toolchain unnecessarily
+
 ## v0.69.37, 5 September 2018
 
 - Rust: Raise error if nightly version required and no rust-toolchain provided
