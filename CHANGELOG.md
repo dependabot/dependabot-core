@@ -1,3 +1,7 @@
+## v0.69.39, 6 September 2018
+
+- Go: Better regex for dep repo access issues
+
 ## v0.69.38, 6 September 2018
 
 - Rust: Don't prune out toolchain unnecessarily
