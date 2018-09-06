@@ -1,3 +1,8 @@
+## v0.69.40, 6 September 2018
+
+- Go: Clean up not found regex
+- Ruby: Handle source_code_uri directories correctly
+
 ## v0.69.39, 6 September 2018
 
 - Go: Better regex for dep repo access issues
