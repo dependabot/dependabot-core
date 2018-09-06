@@ -33,6 +33,7 @@ module Dependabot
               )
             end
             files << lockfile if lockfile
+            files << toolchain if toolchain
             files
           end
 
@@ -177,6 +178,11 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+          end
+
+          def toolchain
+            @toolchain ||=
+              dependency_files.find { |f| f.name == "rust-toolchain" }
           end
 
           def git_dependency?
