@@ -10,7 +10,9 @@ module Dependabot
     module Go
       class Dep
         class VersionResolver
-          NOT_FOUND_REGEX = /failed to list versions for (?<repo_url>.*): ERROR/
+          VERSIONS_FAILURE_REGEX =
+            /failed to list versions for (?<repo_url>.*): ERROR/
+          NOT_FOUND_REGEX = /repository '(?<repo_url>.*)' not found/
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
@@ -69,7 +71,14 @@ module Dependabot
           end
 
           def handle_dep_errors(error)
-            if error.message.include?("Repository not found")
+            if error.message.match?(VERSIONS_FAILURE_REGEX)
+              url = error.message.match(VERSIONS_FAILURE_REGEX).
+                    named_captures.fetch("repo_url")
+
+              raise Dependabot::GitDependenciesNotReachable, url
+            end
+
+            if error.message.match?(NOT_FOUND_REGEX)
               url = error.message.match(NOT_FOUND_REGEX).
                     named_captures.fetch("repo_url")
 
