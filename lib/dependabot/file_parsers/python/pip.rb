@@ -66,7 +66,7 @@ module Dependabot
             # This isn't ideal, but currently the FileUpdater won't update
             # deps that appear in a requirements.txt and Pipfile / Pipfile.lock
             # and *aren't* a straight lockfile for the Pipfile
-            next if included_in_pipenv_deps?(dep["name"])
+            next if included_in_pipenv_deps?(normalised_name(dep["name"]))
 
             requirements =
               if lockfile_for_pip_compile_file?(dep["file"]) then []
