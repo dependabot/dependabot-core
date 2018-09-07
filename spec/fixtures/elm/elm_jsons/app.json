@@ -23,7 +23,9 @@
         }
     },
     "test-dependencies": {
-        "direct": {},
+        "direct": {
+            "elm/regex": "1.0.0"
+        },
         "indirect": {}
     }
 }

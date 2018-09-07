@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/elm/elm_package"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -16,6 +17,13 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
     )
   end
   let(:elm_package_fixture_name) { "one_fixture_to_test_them_all" }
+  let(:elm_json) do
+    Dependabot::DependencyFile.new(
+      name: "elm.json",
+      content: fixture("elm", "elm_jsons", elm_json_fixture_name)
+    )
+  end
+  let(:elm_json_fixture_name) { "app.json" }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
@@ -25,103 +33,225 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
     )
   end
 
-  describe "parse" do
-    subject(:dependencies) { parser.parse.group_by(&:name) }
-    its(:length) { is_expected.to eq(5) }
+  describe "#parse" do
+    subject(:dependencies) { parser.parse }
 
-    context "dependency" do
-      subject(:dependency) { dependencies[dependency_name].first }
+    context "with an elm-package.json" do
+      let(:files) { [elm_package] }
 
-      context "with <=" do
-        let(:dependency_name) { "realWorldElmPackage/withOrEqualsUpperBound" }
+      its(:length) { is_expected.to eq(5) }
 
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "2.0.0 <= v <= 2.2.0",
-              file: "elm-package.json",
-              groups: [],
-              source: nil
-            }]
-          )
+      describe "the parsed dependenency details" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == dependency_name }
         end
 
-        context "and an exact match" do
-          let(:dependency_name) { "realWorldElmPackage/exact" }
+        context "with <=" do
+          let(:dependency_name) { "realWorldElmPackage/withOrEqualsUpperBound" }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to eq("2.0.0")
+            expect(dependency.version).to be_nil
             expect(dependency.requirements).to eq(
               [{
-                requirement: "2.0.0 <= v <= 2.0.0",
+                requirement: "2.0.0 <= v <= 2.2.0",
                 file: "elm-package.json",
                 groups: [],
                 source: nil
               }]
             )
+          end
+
+          context "and an exact match" do
+            let(:dependency_name) { "realWorldElmPackage/exact" }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to eq("2.0.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "2.0.0 <= v <= 2.0.0",
+                  file: "elm-package.json",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+
+        context "with <" do
+          context "with 1.0.1" do
+            let(:dependency_name) do
+              "realWorldElmPackage/withMinimumUpperBound"
+            end
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0 <= v < 1.0.1",
+                  file: "elm-package.json",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          context "with 1.1.0" do
+            let(:dependency_name) do
+              "realWorldElmPackage/withZeroPatchUpperBound"
+            end
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0 <= v < 1.1.0",
+                  file: "elm-package.json",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          # Not testing 1.0.0 because < 1.0.0 is already an invalid constraint.
+          # Elm packages start at 1.0.0
+
+          context "with 2.0.0" do
+            let(:dependency_name) do
+              "realWorldElmPackage/withZeroMinorUpperBound"
+            end
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0 <= v < 2.0.0",
+                  file: "elm-package.json",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+      end
+    end
+
+    context "with an elm.json" do
+      let(:files) { [elm_json] }
+
+      context "for an application" do
+        let(:elm_json_fixture_name) { "app.json" }
+
+        its(:length) { is_expected.to eq(13) }
+
+        describe "the parsed dependenency details" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == dependency_name }
+          end
+
+          context "a direct runtime dependency" do
+            let(:dependency_name) { "elm/html" }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to eq("1.0.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0",
+                  file: "elm.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          context "an indirect runtime dependency" do
+            let(:dependency_name) { "elm/parser" }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to eq("1.0.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0",
+                  file: "elm.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+
+          context "a test dependency" do
+            let(:dependency_name) { "elm/regex" }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to eq("1.0.0")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0",
+                  file: "elm.json",
+                  groups: ["test-dependencies"],
+                  source: nil
+                }]
+              )
+            end
           end
         end
       end
 
-      context "with <" do
-        context "with 1.0.1" do
-          let(:dependency_name) { "realWorldElmPackage/withMinimumUpperBound" }
+      context "for a package" do
+        let(:elm_json_fixture_name) { "package.json" }
 
-          it "has the right details" do
-            expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
-              [{
-                requirement: "1.0.0 <= v < 1.0.1",
-                file: "elm-package.json",
-                groups: [],
-                source: nil
-              }]
-            )
-          end
-        end
+        its(:length) { is_expected.to eq(4) }
 
-        context "with 1.1.0" do
-          let(:dependency_name) do
-            "realWorldElmPackage/withZeroPatchUpperBound"
+        describe "the parsed dependency details" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == dependency_name }
           end
 
-          it "has the right details" do
-            expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
-              [{
-                requirement: "1.0.0 <= v < 1.1.0",
-                file: "elm-package.json",
-                groups: [],
-                source: nil
-              }]
-            )
-          end
-        end
+          context "an indirect runtime dependency" do
+            let(:dependency_name) { "elm/json" }
 
-        # Not testing 1.0.0 because < 1.0.0 is already an invalid constraint.
-        # Elm packages start at 1.0.0
-
-        context "with 2.0.0" do
-          let(:dependency_name) do
-            "realWorldElmPackage/withZeroMinorUpperBound"
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0 <= v < 2.0.0",
+                  file: "elm.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
           end
 
-          it "has the right details" do
-            expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
-              [{
-                requirement: "1.0.0 <= v < 2.0.0",
-                file: "elm-package.json",
-                groups: [],
-                source: nil
-              }]
-            )
+          context "a test dependency" do
+            let(:dependency_name) { "elm/regex" }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.version).to be_nil
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "1.0.0 <= v < 2.0.0",
+                  file: "elm.json",
+                  groups: ["test-dependencies"],
+                  source: nil
+                }]
+              )
+            end
           end
         end
       end
