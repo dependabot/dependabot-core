@@ -25,7 +25,7 @@ RSpec.describe namespace::VersionResolver do
   let(:elm_package) do
     Dependabot::DependencyFile.new(
       name: "elm-package.json",
-      content: fixture("elm", "elm_package", fixture_name)
+      content: fixture("elm", "elm_packages", fixture_name)
     )
   end
   let(:fixture_name) { "version_resolver_one_simple_dep" }

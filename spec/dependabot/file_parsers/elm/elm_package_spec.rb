@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
   let(:elm_package) do
     Dependabot::DependencyFile.new(
       name: "elm-package.json",
-      content: fixture("elm", "elm_package", elm_package_fixture_name)
+      content: fixture("elm", "elm_packages", elm_package_fixture_name)
     )
   end
   let(:elm_package_fixture_name) { "one_fixture_to_test_them_all" }

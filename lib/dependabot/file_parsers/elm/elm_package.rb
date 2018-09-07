@@ -13,7 +13,20 @@ module Dependabot
       class ElmPackage < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
 
+        DEPENDENCY_TYPES = %w(dependencies test-dependencies).freeze
+
         def parse
+          dependency_set = DependencySet.new
+
+          dependency_set += elm_package_dependencies if elm_package_file
+          dependency_set += elm_json_dependencies if elm_json
+
+          dependency_set.dependencies.sort_by(&:name)
+        end
+
+        private
+
+        def elm_package_dependencies
           dependency_set = DependencySet.new
 
           parsed_package_file.fetch("dependencies").each do |name, req|
@@ -31,10 +44,19 @@ module Dependabot
               )
           end
 
-          dependency_set.dependencies.sort_by(&:name)
+          dependency_set
         end
 
-        private
+        # For docs on elm.json, see:
+        # https://github.com/elm/compiler/blob/master/docs/elm.json/application.md
+        # https://github.com/elm/compiler/blob/master/docs/elm.json/package.md
+        def elm_json_dependencies
+          dependency_set = DependencySet.new
+
+          # TODO: Do some parsing!
+
+          dependency_set
+        end
 
         def check_required_files
           raise "No elm-package.json!" unless elm_package_file
@@ -53,6 +75,14 @@ module Dependabot
 
         def elm_package_file
           @elm_package_file ||= get_original_file("elm-package.json")
+        end
+
+        def elm_json
+          @elm_json ||= get_original_file("elm.json")
+        end
+
+        def parsed_elm_json
+          @parsed_elm_json ||= JSON.parse(elm_json.content)
         end
       end
     end
