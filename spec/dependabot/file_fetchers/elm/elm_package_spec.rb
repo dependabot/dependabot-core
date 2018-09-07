@@ -29,6 +29,13 @@ RSpec.describe Dependabot::FileFetchers::Elm::ElmPackage do
   let(:json_header) { { "content-type" => "application/json" } }
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
   before do
+    stub_request(:get, url + "?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_elm_with_elm_package.json"),
+        headers: json_header
+      )
     stub_request(:get, url + "elm-package.json?ref=sha").
       with(headers: { "Authorization" => "token token" }).
       to_return(
@@ -41,5 +48,29 @@ RSpec.describe Dependabot::FileFetchers::Elm::ElmPackage do
   it "fetches the elm-package.json" do
     expect(file_fetcher_instance.files.map(&:name)).
       to match_array(%w(elm-package.json))
+  end
+
+  context "with an elm.json" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elm_with_elm_json.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "elm.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elm_package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the elm.json" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(elm.json))
+    end
   end
 end
