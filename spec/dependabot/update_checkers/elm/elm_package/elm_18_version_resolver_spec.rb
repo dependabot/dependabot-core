@@ -4,10 +4,10 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/elm/elm_package"
-require "dependabot/update_checkers/elm/elm_package/version_resolver"
+require "dependabot/update_checkers/elm/elm_package/elm_18_version_resolver"
 
 namespace = Dependabot::UpdateCheckers::Elm::ElmPackage
-RSpec.describe namespace::VersionResolver do
+RSpec.describe namespace::Elm18VersionResolver do
   def elm_version(version_string)
     Dependabot::Utils::Elm::Version.new(version_string)
   end

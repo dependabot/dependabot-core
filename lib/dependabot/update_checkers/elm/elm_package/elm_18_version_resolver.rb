@@ -12,7 +12,7 @@ module Dependabot
   module UpdateCheckers
     module Elm
       class ElmPackage
-        class VersionResolver
+        class Elm18VersionResolver
           class UnrecoverableState < StandardError; end
 
           def initialize(dependency:, dependency_files:, candidate_versions:)
