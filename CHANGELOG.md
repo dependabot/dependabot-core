@@ -1,3 +1,8 @@
+## v0.69.42, 7 September 2018
+
+- Ruby: Handle rubygems responses without a source_code_uri key (happens for
+  private repos)
+
 ## v0.69.41, 6 September 2018
 
 - Python: Handle invalid requirements in requirements.txt files
