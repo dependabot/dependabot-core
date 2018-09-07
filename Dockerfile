@@ -72,9 +72,13 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 
 ### ELM
 
-# Install Elm 0.18
+# Install Elm 0.18 and Elm 0.19
 ENV PATH="$PATH:/node_modules/.bin"
-RUN npm install elm@0.18.0
+RUN npm install elm@0.18.0 \
+    && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+    && tar xzf binaries-for-linux.tar.gz \
+    && mv elm /usr/local/bin/elm19 \
+    && rm -f binaries-for-linux.tar.gz \
 
 
 ### PHP
