@@ -93,27 +93,36 @@ module Dependabot
             doc.remove_namespaces!
 
             doc.xpath("/feed/entry").map do |entry|
-              version = entry.at_xpath("./properties/Version").content.strip
-              source_urls = []
-              [
-                entry.at_xpath("./properties/ProjectUrl").content,
-                entry.at_xpath("./properties/ReleaseNotes").content
-              ].join(" ").scan(Source::SOURCE_REGEX) do
-                source_urls << Regexp.last_match.to_s
-              end
+              listed = entry.at_xpath("./properties/Listed")&.content&.strip
+              next if listed&.casecmp("false")&.zero?
 
-              source_url = source_urls.find { |url| Source.from_url(url) }
-              source_url = Source.from_url(source_url)&.url if source_url
-
-              {
-                version:    version_class.new(version),
-                nuspec_url: nil,
-                source_url: source_url,
-                repo_url:
-                  listing.fetch("listing_details").fetch(:repository_url)
-              }
-            end
+              entry_details = dependency_details_from_v2_entry(entry)
+              entry_details.merge(
+                repo_url: listing.fetch("listing_details").
+                          fetch(:repository_url)
+              )
+            end.compact
           end
+        end
+
+        def dependency_details_from_v2_entry(entry)
+          version = entry.at_xpath("./properties/Version").content.strip
+          source_urls = []
+          [
+            entry.at_xpath("./properties/ProjectUrl").content,
+            entry.at_xpath("./properties/ReleaseNotes").content
+          ].join(" ").scan(Source::SOURCE_REGEX) do
+            source_urls << Regexp.last_match.to_s
+          end
+
+          source_url = source_urls.find { |url| Source.from_url(url) }
+          source_url = Source.from_url(source_url)&.url if source_url
+
+          {
+            version:    version_class.new(version),
+            nuspec_url: nil,
+            source_url: source_url
+          }
         end
 
         def wants_prerelease?
