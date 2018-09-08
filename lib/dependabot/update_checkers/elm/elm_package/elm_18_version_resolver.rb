@@ -32,11 +32,6 @@ module Dependabot
 
             # Otherwise, we gotta check a few conditions to see if bumping
             # wouldn't also bump other deps in elm-package.json
-            #
-            # For Elm 0.18 we could just free the requirement
-            #        (i.e. 0.0.0 <= v <= 999.999.999)
-            # but what we got here is compatible with what we'll have to do
-            # in Elm 0.19 where you only get exact dependencies
             candidate_versions.sort.reverse_each do |version|
               return version if can_update?(version, unlock_requirement)
             end

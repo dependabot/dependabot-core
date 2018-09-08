@@ -8,7 +8,7 @@ module Dependabot
     module Elm
       class ElmPackage
         class CliParser
-          INSTALL_DEPENDENCY_REGEX = %r{([^\s]+\/[^\s]+) (\d+\.\d+\.\d+)}
+          INSTALL_DEPENDENCY_REGEX = %r{([^\s]+\/[^\s]+)\s+(\d+\.\d+\.\d+)}
           UPGRADE_DEPENDENCY_REGEX =
             %r{([^\s]+\/[^\s]+) \(\d+\.\d+\.\d+ => (\d+\.\d+\.\d+)\)}
 

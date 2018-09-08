@@ -1,0 +1,97 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/file_parsers/elm/elm_package"
+require "dependabot/update_checkers/elm/elm_package/elm_19_version_resolver"
+
+namespace = Dependabot::UpdateCheckers::Elm::ElmPackage
+RSpec.describe namespace::Elm19VersionResolver do
+  def elm_version(version_string)
+    Dependabot::Utils::Elm::Version.new(version_string)
+  end
+
+  let(:resolver) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files
+    )
+  end
+  let(:unlock_requirement) { :none }
+  let(:dependency_files) { [elm_json] }
+  let(:elm_json) do
+    Dependabot::DependencyFile.new(
+      name: "elm.json",
+      content: fixture("elm", "elm_jsons", fixture_name)
+    )
+  end
+  let(:fixture_name) { "app.json" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "elm-package"
+    )
+  end
+  let(:dependency_name) { "elm/parser" }
+  let(:dependency_version) { "1.0.0" }
+  let(:dependency_requirements) do
+    [{
+      file: "elm.json",
+      requirement: dependency_requirement,
+      groups: ["dependencies"],
+      source: nil
+    }]
+  end
+  let(:dependency_requirement) { "1.0.0" }
+
+  describe "#latest_resolvable_version" do
+    subject do
+      resolver.latest_resolvable_version(unlock_requirement: unlock_requirement)
+    end
+
+    context "for an app" do
+      context "allowing :none unlocks" do
+        let(:unlock_requirement) { :none }
+        it { is_expected.to eq(elm_version(dependency_version)) }
+      end
+
+      context "1) clean bump" do
+        context ":own unlocks" do
+          let(:unlock_requirement) { :own }
+          it { is_expected.to eq(elm_version("1.1.0")) }
+        end
+
+        context ":all unlocks" do
+          let(:unlock_requirement) { :all }
+          it { is_expected.to eq(elm_version("1.1.0")) }
+        end
+      end
+
+      context "with an unsupported dependency" do
+        let(:fixture_name) { "unsupported_dep.json" }
+        let(:dependency_name) { "NoRedInk/datetimepicker" }
+        let(:dependency_version) { "3.0.0" }
+        let(:dependency_requirement) { "3.0.0" }
+
+        it { is_expected.to eq(elm_version(dependency_version)) }
+      end
+
+      context "with multiple updates required" do
+        let(:fixture_name) { "full_unlock_required.json" }
+        let(:dependency_name) { "rtfeldman/elm-css" }
+        let(:dependency_version) { "15.0.0" }
+        let(:dependency_requirement) { "15.0.0" }
+
+        it { is_expected.to eq(elm_version(dependency_version)) }
+
+        context ":all unlocks" do
+          let(:unlock_requirement) { :all }
+          it { is_expected.to eq(elm_version("15.1.0")) }
+        end
+      end
+    end
+  end
+end
