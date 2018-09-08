@@ -1,3 +1,9 @@
+## v0.69.43, 8 September 2018
+
+- .NET: Switch to using search endpoint to find versions for v3 repos. Means
+  that unlisted dependencies will be excluded
+- .NET: Exclude unlisted dependencies fetched using v2 API
+
 ## v0.69.42, 7 September 2018
 
 - Ruby: Handle rubygems responses without a source_code_uri key (happens for
