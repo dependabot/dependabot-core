@@ -24,11 +24,8 @@ module Dependabot
                   dependency: dep
                 )
 
-                if content == updated_content
-                  raise "Expected content to change!"
-                end
-
-                updated_content
+                next updated_content unless content == updated_content
+                raise "Expected content to change!"
               end
           end
 

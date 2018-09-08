@@ -7,6 +7,7 @@ module Dependabot
     module Elm
       class ElmPackage < Base
         require_relative "elm_package/elm_package_updater"
+        require_relative "elm_package/elm_json_updater"
 
         def self.updated_files_regex
           [/^elm-package\.json$/]
@@ -22,6 +23,16 @@ module Dependabot
               updated_file(
                 file: file,
                 content: updated_elm_package_content(file)
+              )
+          end
+
+          elm_json_files.each do |file|
+            next unless file_changed?(file)
+
+            updated_files <<
+              updated_file(
+                file: file,
+                content: updated_elm_json_content(file)
               )
           end
 
@@ -43,8 +54,19 @@ module Dependabot
           ).updated_elm_package_file_content
         end
 
+        def updated_elm_json_content(file)
+          ElmJsonUpdater.new(
+            dependencies: dependencies,
+            elm_json_file: file
+          ).updated_content
+        end
+
         def elm_package_files
           dependency_files.select { |f| f.name.end_with?("elm-package.json") }
+        end
+
+        def elm_json_files
+          dependency_files.select { |f| f.name.end_with?("elm.json") }
         end
       end
     end
