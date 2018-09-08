@@ -51,14 +51,23 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     "https://api.nuget.org/v3-flatcontainer/"\
     "microsoft.extensions.dependencymodel/index.json"
   end
+  let(:nuget_search_url) do
+    "https://api-v2v3search-0.nuget.org/query"\
+    "?q=microsoft.extensions.dependencymodel&prerelease=true"
+  end
   let(:version_class) { Dependabot::Utils::Dotnet::Version }
   let(:nuget_versions) do
     fixture("dotnet", "nuget_responses", "versions.json")
+  end
+  let(:nuget_search_results) do
+    fixture("dotnet", "nuget_responses", "search_results.json")
   end
 
   before do
     stub_request(:get, nuget_versions_url).
       to_return(status: 200, body: nuget_versions)
+    stub_request(:get, nuget_search_url).
+      to_return(status: 200, body: nuget_search_results)
   end
 
   describe "#latest_version" do
@@ -88,6 +97,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
+        stub_request(:get, nuget_search_url).to_return(status: 404)
 
         stub_request(:get, custom_repo_url).to_return(status: 404)
         stub_request(:get, custom_repo_url).
@@ -99,10 +109,17 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
           "microsoft.extensions.dependencymodel/index.json"
+        custom_nuget_search_url =
+          "https://www.myget.org/F/exceptionless/api/v3/"\
+          "query?q=microsoft.extensions.dependencymodel&prerelease=true"
         stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
         stub_request(:get, custom_nuget_versions_url).
           with(basic_auth: %w(my passw0rd)).
           to_return(status: 200, body: nuget_versions)
+        stub_request(:get, custom_nuget_search_url).to_return(status: 404)
+        stub_request(:get, custom_nuget_search_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(status: 200, body: nuget_search_results)
       end
 
       it { is_expected.to eq(version_class.new("2.1.0")) }
@@ -180,6 +197,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
+        stub_request(:get, nuget_search_url).to_return(status: 404)
 
         stub_request(:get, custom_repo_url).to_return(status: 404)
         stub_request(:get, custom_repo_url).
@@ -191,10 +209,17 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
           "microsoft.extensions.dependencymodel/index.json"
+        custom_nuget_search_url =
+          "https://www.myget.org/F/exceptionless/api/v3/"\
+          "query?q=microsoft.extensions.dependencymodel&prerelease=true"
         stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
         stub_request(:get, custom_nuget_versions_url).
           with(basic_auth: %w(my passw0rd)).
           to_return(status: 200, body: nuget_versions)
+        stub_request(:get, custom_nuget_search_url).to_return(status: 404)
+        stub_request(:get, custom_nuget_search_url).
+          with(basic_auth: %w(my passw0rd)).
+          to_return(status: 200, body: nuget_search_results)
       end
 
       it { is_expected.to eq(version_class.new("2.1.0")) }
@@ -294,6 +319,11 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
             "microsoft.extensions.dependencymodel/index.json"
           stub_request(:get, custom_v3_nuget_versions_url).
+            to_return(status: 404)
+          custom_v3_nuget_search_url =
+            "https://www.myget.org/F/exceptionless/api/v3/"\
+            "query?q=microsoft.extensions.dependencymodel&prerelease=true"
+          stub_request(:get, custom_v3_nuget_search_url).
             to_return(status: 404)
 
           custom_v2_nuget_versions_url =

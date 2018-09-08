@@ -45,19 +45,23 @@ module Dependabot
             check_repo_reponse(response, repo_details)
             return unless response.status == 200
 
-            base_url =
-              JSON.parse(response.body).
-              fetch("resources", []).
-              find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
-              fetch("@id")
+            base_url = base_url_from_v3_metadata(JSON.parse(response.body))
+            search_url = search_url_from_v3_metadata(JSON.parse(response.body))
 
-            {
+            details = {
               repository_url: repo_details.fetch(:url),
-              versions_url:
-                File.join(base_url, dependency.name.downcase, "index.json"),
               auth_header: auth_header_for_token(repo_details.fetch(:token)),
               repository_type: "v3"
             }
+            if base_url
+              details[:versions_url] =
+                File.join(base_url, dependency.name.downcase, "index.json")
+            end
+            if search_url
+              details[:search_url] =
+                search_url + "?q=#{dependency.name.downcase}&prerelease=true"
+            end
+            details
           rescue JSON::ParserError
             build_v2_url(response, repo_details)
           rescue Excon::Error::Timeout, Excon::Error::Socket
@@ -71,6 +75,20 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
+          end
+
+          def base_url_from_v3_metadata(metadata)
+            metadata.
+              fetch("resources", []).
+              find { |r| r.fetch("@type") == "PackageBaseAddress/3.0.0" }&.
+              fetch("@id")
+          end
+
+          def search_url_from_v3_metadata(metadata)
+            metadata.
+              fetch("resources", []).
+              find { |r| r.fetch("@type") == "SearchQueryService" }&.
+              fetch("@id")
           end
 
           def build_v2_url(response, repo_details)
@@ -154,6 +172,8 @@ module Dependabot
               repository_url:  DEFAULT_REPOSITORY_URL,
               versions_url:    "https://api.nuget.org/v3-flatcontainer/"\
                                "#{dependency.name.downcase}/index.json",
+              search_url:      "https://api-v2v3search-0.nuget.org/query"\
+                               "?q=#{dependency.name.downcase}&prerelease=true",
               auth_header:     {},
               repository_type: "v3"
             }

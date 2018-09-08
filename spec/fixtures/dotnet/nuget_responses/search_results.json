@@ -1,0 +1,136 @@
+{
+    "@context": {
+        "@base": "https://api.nuget.org/v3/registration3/",
+        "@vocab": "http://schema.nuget.org/schema#"
+    },
+    "data": [
+        {
+            "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json",
+            "@type": "Package",
+            "authors": [
+                "Microsoft.Extensions.DependencyModel"
+            ],
+            "description": "Abstractions for reading `.deps` files.",
+            "id": "Microsoft.Extensions.DependencyModel",
+            "licenseUrl": "https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT",
+            "projectUrl": "https://dot.net/",
+            "registration": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/index.json",
+            "summary": "",
+            "tags": [],
+            "title": "Microsoft.Extensions.DependencyModel",
+            "totalDownloads": 29889269,
+            "verified": true,
+            "version": "2.1.0",
+            "versions": [
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.0-rc2-002702.json",
+                    "downloads": 827924,
+                    "version": "1.0.0-rc2-002702"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.0-rc2-final.json",
+                    "downloads": 142507,
+                    "version": "1.0.0-rc2-final"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.0.json",
+                    "downloads": 8366756,
+                    "version": "1.0.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.1-beta-000933.json",
+                    "downloads": 46446,
+                    "version": "1.0.1-beta-000933"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.3.json",
+                    "downloads": 6990052,
+                    "version": "1.0.3"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.0.500-preview2-1-003177.json",
+                    "downloads": 68342,
+                    "version": "1.0.500-preview2-1-003177"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.1.0-preview1-001100.json",
+                    "downloads": 29025,
+                    "version": "1.1.0-preview1-001100"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.1.0.json",
+                    "downloads": 4039224,
+                    "version": "1.1.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.1.1.json",
+                    "downloads": 1684248,
+                    "version": "1.1.1"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/1.1.2.json",
+                    "downloads": 1397388,
+                    "version": "1.1.2"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.0.0-preview1-002111.json",
+                    "downloads": 48027,
+                    "version": "2.0.0-preview1-002111"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.0.0-preview2-25407-01.json",
+                    "downloads": 46018,
+                    "version": "2.0.0-preview2-25407-01"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.0.0.json",
+                    "downloads": 3710346,
+                    "version": "2.0.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.0.3.json",
+                    "downloads": 1436310,
+                    "version": "2.0.3"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.0.4.json",
+                    "downloads": 542335,
+                    "version": "2.0.4"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0-preview1-26216-03.json",
+                    "downloads": 30168,
+                    "version": "2.1.0-preview1-26216-03"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0-preview2-26406-04.json",
+                    "downloads": 45840,
+                    "version": "2.1.0-preview2-26406-04"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0-rc1.json",
+                    "downloads": 29014,
+                    "version": "2.1.0-rc1"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.1.0.json",
+                    "downloads": 402516,
+                    "version": "2.1.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.2.0-preview1-26216-03.json",
+                    "downloads": 402517,
+                    "version": "2.2.0-preview1-26216-03"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/microsoft.extensions.dependencymodel/2.2.0-preview2-26406-04.json",
+                    "downloads": 402518,
+                    "version": "2.2.0-preview2-26406-04"
+                }
+            ]
+        }
+    ],
+    "index": "v3-lucene2-v2v3-20171018",
+    "lastReopen": "2018-09-08T09:45:20.3958792Z",
+    "totalHits": 1
+}

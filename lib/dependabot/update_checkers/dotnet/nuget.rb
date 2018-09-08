@@ -143,15 +143,9 @@ module Dependabot
           dependency_urls.
             select { |details| details.fetch(:repository_type) == "v3" }.
             map do |url_details|
-              response = Excon.get(
-                url_details[:versions_url],
-                headers: url_details[:auth_header],
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              )
-              next unless response.status == 200
-
-              JSON.parse(response.body).merge("listing_details" => url_details)
+              versions = versions_for_v3_repository(url_details)
+              next unless versions
+              { "versions" => versions, "listing_details" => url_details }
             end.compact
         end
 
@@ -174,6 +168,35 @@ module Dependabot
                 "listing_details" => url_details
               }
             end.compact
+        end
+
+        def versions_for_v3_repository(repository_details)
+          # If we have a search URL we use it (since it will exclude unlisted
+          # versions)
+          if repository_details[:search_url]
+            response = Excon.get(
+              repository_details[:search_url],
+              headers: repository_details[:auth_header],
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            return unless response.status == 200
+
+            JSON.parse(response.body).fetch("data").
+              find { |d| d.fetch("id").casecmp(sanitized_name).zero? }&.
+              fetch("versions")&.
+              map { |d| d.fetch("version") }
+          # Otherwise, use the versions URL
+          elsif repository_details[:versions_url]
+            response = Excon.get(
+              repository_details[:versions_url],
+              headers: repository_details[:auth_header],
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            return unless response.status == 200
+            JSON.parse(response.body).fetch("versions")
+          end
         end
 
         def dependency_urls
