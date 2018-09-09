@@ -36,6 +36,7 @@ module Dependabot
 
             return unless latest_resolvable_version
             return unless version_class.correct?(latest_resolvable_version)
+
             @latest_resolvable_version =
               version_class.new(latest_resolvable_version)
           end
@@ -69,6 +70,7 @@ module Dependabot
 
           def check_update_strategy
             return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+
             raise "Unknown update strategy: #{update_strategy}"
           end
 
@@ -132,6 +134,7 @@ module Dependabot
           def update_range_requirements(string_reqs)
             string_reqs.map do |req|
               next req unless req.match?(/[<>]/)
+
               ruby_req = Utils::Rust::Requirement.new(req)
               next req if ruby_req.satisfied_by?(target_version)
 

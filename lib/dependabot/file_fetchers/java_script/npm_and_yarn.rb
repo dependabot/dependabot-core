@@ -122,6 +122,7 @@ module Dependabot
 
         def fetch_workspace_package_jsons
           return [] unless parsed_package_json["workspaces"]
+
           package_json_files = []
 
           workspace_paths(parsed_package_json["workspaces"]).each do |workspace|
@@ -139,6 +140,7 @@ module Dependabot
 
         def fetch_lerna_packages
           return [] unless parsed_lerna_json["packages"]
+
           dependency_files = []
 
           workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
@@ -192,6 +194,7 @@ module Dependabot
 
         def parsed_package_lock
           return {} unless package_lock
+
           JSON.parse(package_lock.content)
         rescue JSON::ParserError
           {}
@@ -199,6 +202,7 @@ module Dependabot
 
         def ignore_package_lock?
           return false unless npmrc
+
           npmrc.content.match?(/^package-lock\s*=\s*false/)
         end
 
@@ -218,6 +222,7 @@ module Dependabot
 
         def parsed_lerna_json
           return {} unless lerna_json
+
           JSON.parse(lerna_json.content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, lerna_json.path

@@ -120,6 +120,7 @@ module Dependabot
           if dependency.version&.match?(/^[0-9a-f]{40}$/)
             return tag&.fetch(:commit_sha)
           end
+
           tag&.fetch(:tag)
         end
 
@@ -172,9 +173,11 @@ module Dependabot
 
         def latest_git_tag_is_resolvable?
           return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+
           @latest_git_tag_is_resolvable_checked = true
 
           return false if git_commit_checker.local_tag_for_latest_version.nil?
+
           replacement_tag = git_commit_checker.local_tag_for_latest_version
 
           prepared_files = FilePreparer.new(
@@ -195,6 +198,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           # This should rescue resolvability errors in future
           raise unless error.message.include?("Solving failure")
+
           @git_tag_resolvable = false
         end
 
@@ -228,6 +232,7 @@ module Dependabot
         def should_switch_source_from_ref_to_release?
           return false unless git_dependency?
           return false if latest_resolvable_version_for_git_dependency.nil?
+
           Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
         end
 
@@ -250,6 +255,7 @@ module Dependabot
 
         def git_branch_or_ref_in_release?(release)
           return false unless release
+
           git_commit_checker.branch_or_ref_in_release?(release)
         end
 

@@ -128,6 +128,7 @@ module Dependabot
               unlock_blocking_subdeps(dependencies_to_unlock, error) && retry
             rescue *RETRYABLE_ERRORS
               raise if @retrying
+
               @retrying = true
               sleep(rand(1.0..5.0))
               retry
@@ -136,9 +137,11 @@ module Dependabot
 
           def unlock_yanked_gem(dependencies_to_unlock, error)
             raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+
             gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
                        named_captures["name"]
             raise if dependencies_to_unlock.include?(gem_name)
+
             dependencies_to_unlock << gem_name
           end
 
@@ -201,6 +204,7 @@ module Dependabot
 
           def write_ruby_version_file
             return unless ruby_version_file
+
             path = ruby_version_file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, ruby_version_file.content)
@@ -264,6 +268,7 @@ module Dependabot
               # Instead, we just return the default-ordered content just
               # generated.
               return lockfile_body unless i
+
               i
             end.join
 
@@ -299,6 +304,7 @@ module Dependabot
               dependency_name
 
             return gemspec_specs.first&.version || "0.0.1" unless gem_name
+
             spec = gemspec_specs.find { |s| s.name == gem_name }
             spec&.version || gemspec_specs.first&.version || "0.0.1"
           end
@@ -307,6 +313,7 @@ module Dependabot
             credentials.select do |cred|
               next true if cred["type"] == "git_source"
               next true if cred["type"] == "rubygems_server"
+
               false
             end
           end

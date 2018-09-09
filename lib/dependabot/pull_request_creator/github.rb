@@ -143,6 +143,7 @@ module Dependabot
         # Return quietly in the case of a race
         return nil if error.message.match?(/Reference already exists/i)
         raise if @retrying_branch_creation
+
         @retrying_branch_creation = true
 
         # Branch creation will fail if a branch called `dependabot` already
@@ -180,6 +181,7 @@ module Dependabot
       rescue Octokit::UnprocessableEntity => error
         return if error.message.include?("not a collaborator")
         return if error.message.include?("Could not resolve to a node")
+
         raise
       end
 

@@ -42,6 +42,7 @@ module Dependabot
             if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
               return latest_resolvable_version
             end
+
             version_class.new(latest_resolvable_version)
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_hex_errors(error)
@@ -81,6 +82,7 @@ module Dependabot
             return error_result(error) if includes_result?(error)
 
             raise error unless error.message.start_with?("Invalid requirement")
+
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
@@ -90,12 +92,14 @@ module Dependabot
             result_json = error.message&.split("\n")&.last
             result = JSON.parse(result_json)["result"]
             return version_class.new(result) if version_class.correct?(result)
+
             result
           end
 
           def includes_result?(error)
             result = error.message&.split("\n")&.last
             return false unless result
+
             JSON.parse(error.message&.split("\n")&.last)["result"]
             true
           rescue JSON::ParserError

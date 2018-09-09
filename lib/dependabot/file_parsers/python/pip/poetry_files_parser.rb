@@ -67,6 +67,7 @@ module Dependabot
 
             parsed_pyproject_lock.fetch("package", []).each do |details|
               next if details.dig("source", "type") == "git"
+
               dependencies <<
                 Dependency.new(
                   name: details.fetch("name"),

@@ -41,6 +41,7 @@ module Dependabot
     # rubocop:disable Metrics/PerceivedComplexity
     def production?
       return true unless top_level?
+
       groups = requirements.flat_map { |r| r.fetch(:groups).map(&:to_s) }
 
       case package_manager
@@ -66,6 +67,7 @@ module Dependabot
 
     def display_name
       return name unless %w(maven gradle).include?(package_manager)
+
       name.split(":").last
     end
 
@@ -105,6 +107,7 @@ module Dependabot
       end
 
       return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }
+
       raise ArgumentError, "blank strings must not be provided as requirements"
     end
 

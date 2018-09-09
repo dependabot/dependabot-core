@@ -55,6 +55,7 @@ module Dependabot
       result = Marshal.load(result) # rubocop:disable Security/MarshalLoad
 
       return result unless result.is_a?(Hash) && result[:_error_details]
+
       raise ChildProcessFailed, result[:_error_details]
     end
 
@@ -81,6 +82,7 @@ module Dependabot
       raise HelperSubprocessFailed.new(response["error"], command)
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(raw_response, command) if raw_response
+
       raise HelperSubprocessFailed.new("No output from command", command)
     end
 
@@ -143,6 +145,7 @@ module Dependabot
       git_store_content = ""
       credentials.each do |cred|
         next unless cred["type"] == "git_source"
+
         authenticated_url =
           "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
           "@#{cred.fetch('host')}"
@@ -170,6 +173,7 @@ module Dependabot
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
       return if $CHILD_STATUS.success?
+
       raise SharedHelpers::HelperSubprocessFailed.new(
         raw_response,
         command

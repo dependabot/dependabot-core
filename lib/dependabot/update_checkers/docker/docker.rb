@@ -74,12 +74,14 @@ module Dependabot
           # one it would replace. In the event that it's not the same, check the
           # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
           return false if old_v.split(".").count == latest_v.split(".").count
+
           digest_of(dependency.version) == digest_of(latest_version)
         end
 
         def digest_up_to_date?
           dependency.requirements.all? do |req|
             next true unless req.fetch(:source)[:digest]
+
             req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
           end
         end
@@ -114,6 +116,7 @@ module Dependabot
         def canonical_version?(tag)
           return false unless numeric_version_from(tag)
           return true if tag == numeric_version_from(tag)
+
           # .NET tags are suffixed with -sdk. There may be other cases we need
           # to consider in future, too.
           tag == numeric_version_from(tag) + "-sdk"
@@ -127,6 +130,7 @@ module Dependabot
               attempt ||= 1
               attempt += 1
               raise if attempt > 3
+
               retry
             end
         rescue DockerRegistry2::RegistryAuthenticationException
@@ -141,6 +145,7 @@ module Dependabot
               attempt ||= 1
               attempt += 1
               raise if attempt > 3
+
               retry
             end
         rescue DockerRegistry2::RegistryAuthenticationException
@@ -149,6 +154,7 @@ module Dependabot
 
         def latest_digest
           return unless tags_from_registry.include?("latest")
+
           digest_of("latest")
         end
 
@@ -161,6 +167,7 @@ module Dependabot
               attempt ||= 1
               attempt += 1
               raise if attempt > 3
+
               retry
             end
         end
@@ -183,6 +190,7 @@ module Dependabot
 
         def numeric_version_from(tag)
           return unless tag.match?(NAME_WITH_VERSION)
+
           tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
         end
 

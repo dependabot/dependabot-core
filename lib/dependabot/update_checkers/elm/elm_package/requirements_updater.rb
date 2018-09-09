@@ -17,6 +17,7 @@ module Dependabot
 
             return unless latest_resolvable_version
             return unless version_class.correct?(latest_resolvable_version)
+
             @latest_resolvable_version =
               version_class.new(latest_resolvable_version)
           end

@@ -39,6 +39,7 @@ module Dependabot
                 updated_content = updated_files.fetch("package-lock.json")
                 updated_content = post_process_npm_lockfile(updated_content)
                 raise "No change!" if package_lock.content == updated_content
+
                 updated_content
               end
           rescue SharedHelpers::HelperSubprocessFailed => error
@@ -61,6 +62,7 @@ module Dependabot
 
             requirements.map do |r|
               next unless r[:file].start_with?("#{path}/")
+
               r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
             end.compact
           end
@@ -111,6 +113,7 @@ module Dependabot
                     named_captures.fetch("ref")
               dep = find_npm_lockfile_dependency_with_ref(ref)
               raise unless dep
+
               raise Dependabot::GitDependencyReferenceNotFound, dep.fetch(:name)
             end
             if error.message.match?(UNREACHABLE_GIT)
@@ -118,6 +121,7 @@ module Dependabot
                 error.message.match(UNREACHABLE_GIT).
                 named_captures.fetch("url")
               raise if dependency_url.start_with?("ssh://")
+
               raise Dependabot::GitDependenciesNotReachable, dependency_url
             end
             raise
@@ -180,6 +184,7 @@ module Dependabot
 
           def lock_git_deps(content)
             return content if git_dependencies_to_lock.empty?
+
             types = FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES
 
             json = JSON.parse(content)
@@ -187,6 +192,7 @@ module Dependabot
               json.fetch(type, {}).each do |nm, _|
                 updated_version = git_dependencies_to_lock[nm]
                 next unless updated_version
+
                 json[type][nm] = git_dependencies_to_lock[nm]
               end
             end
@@ -207,6 +213,7 @@ module Dependabot
                 next if dependency_names.include?(nm)
                 next unless details["version"]
                 next unless details["version"].start_with?("git")
+
                 @git_dependencies_to_lock[nm] = details["version"]
               end
             end
@@ -242,6 +249,7 @@ module Dependabot
                 JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
                   next unless git_dependencies.map(&:name).include?(nm)
                   next unless requirement.start_with?("git+ssh:")
+
                   req = requirement.split("#").first
                   @git_ssh_requirements_to_swap << req
                 end

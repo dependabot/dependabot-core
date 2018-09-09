@@ -60,6 +60,7 @@ module Dependabot
             filename = declaring_requirement.fetch(:file)
             declaring_file = dependency_files.find { |f| f.name == filename }
             return declaring_file if declaring_file
+
             raise "No file found with name #{filename}!"
           end
         end

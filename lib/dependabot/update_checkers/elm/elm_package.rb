@@ -85,6 +85,7 @@ module Dependabot
 
         def all_versions
           return @all_versions if @version_lookup_attempted
+
           @version_lookup_attempted = true
 
           response = Excon.get(
@@ -107,6 +108,7 @@ module Dependabot
         # check whether the latest version is allowed
         def requirements_up_to_date?
           return false unless latest_version
+
           dependency.requirements.
             map { |r| r.fetch(:requirement) }.
             map { |r| requirement_class.new(r) }.

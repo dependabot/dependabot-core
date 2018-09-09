@@ -77,6 +77,7 @@ module Dependabot
           @requirements.sort! do |l, r|
             comp = l.last <=> r.last # first, sort by the requirement's version
             next comp unless comp.zero?
+
             l.first <=> r.first # then, sort by the operator (for stability)
           end
         end

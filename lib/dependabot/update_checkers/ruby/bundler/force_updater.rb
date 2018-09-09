@@ -50,6 +50,7 @@ module Dependabot
                   )
 
                 raise if new_dependencies_to_unlock.none?
+
                 other_updates += new_dependencies_to_unlock
                 retry
               end
@@ -97,6 +98,7 @@ module Dependabot
               reject do |tree|
                 next true unless tree.last.requirement.specific?
                 next false unless tree.last.name == dependency.name
+
                 tree.last.requirement.satisfied_by?(
                   Gem::Version.new(target_version)
                 )
@@ -243,6 +245,7 @@ module Dependabot
             credentials.select do |cred|
               next true if cred["type"] == "git_source"
               next true if cred["type"] == "rubygems_server"
+
               false
             end
           end

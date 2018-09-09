@@ -69,6 +69,7 @@ module Dependabot
                   fetch("version")
               end
             return unless @latest_resolvable_version_string
+
             Utils::Python::Version.new(@latest_resolvable_version_string)
           end
 
@@ -82,6 +83,7 @@ module Dependabot
             # Raise an error with the output from the shell session if
             # pip-compile returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -92,6 +94,7 @@ module Dependabot
               raise
             end
             raise if command.start_with?("pyenv local 2.7.15 &&")
+
             command = "pyenv local 2.7.15 && " +
                       command +
                       " && pyenv local --unset"

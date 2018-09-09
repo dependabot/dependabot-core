@@ -46,6 +46,7 @@ module Dependabot
           unless other.is_a?(DependencySet)
             raise ArgumentError, "must be a DependencySet"
           end
+
           other.dependencies.each { |dep| self << dep }
           self
         end

@@ -22,6 +22,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::Java::Version.new(matches[2])]
         end
 
@@ -49,6 +50,7 @@ module Dependabot
         def self.split_java_requirement(req_string)
           req_string.split(/(?<=\]|\)),/).flat_map do |str|
             next str if str.start_with?("(", "[")
+
             exacts, *rest = str.split(/,(?=\[|\()/)
             [*exacts.split(","), *rest]
           end

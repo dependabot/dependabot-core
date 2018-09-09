@@ -9,6 +9,9 @@ AllCops:
 Layout/DotPosition:
   EnforcedStyle: trailing
 
+Layout/RescueEnsureAlignment:
+  Enabled: false
+
 Metrics/ClassLength:
   Max: 250
 
@@ -34,6 +37,9 @@ Metrics/BlockLength:
 
 Metrics/ParameterLists:
   CountKeywordArgs: false
+
+Naming/FileName:
+  Enabled: false
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes

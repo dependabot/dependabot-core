@@ -40,6 +40,7 @@ module Dependabot
           end
 
           raise "No files have changed!" if updated_files.none?
+
           updated_files
         end
 
@@ -47,6 +48,7 @@ module Dependabot
 
         def check_required_files
           return if elm_json_files.any? || elm_package_files.any?
+
           raise "No elm.json or elm-package.json!"
         end
 

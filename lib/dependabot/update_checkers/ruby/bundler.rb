@@ -16,11 +16,13 @@ module Dependabot
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
+
           latest_version_details&.fetch(:version)
         end
 
         def latest_resolvable_version
           return latest_resolvable_version_for_git_dependency if git_dependency?
+
           latest_resolvable_version_details&.fetch(:version)
         end
 
@@ -74,6 +76,7 @@ module Dependabot
 
         def latest_version_resolvable_with_full_unlock?
           return false unless latest_version
+
           force_updater.updated_dependencies
           true
         rescue Dependabot::DependencyFileNotResolvable
@@ -163,6 +166,7 @@ module Dependabot
 
         def latest_resolvable_version_without_git_source
           return nil unless latest_version.is_a?(Gem::Version)
+
           latest_resolvable_version_details(remove_git_source: true)&.
           fetch(:version)
         rescue Dependabot::DependencyFileNotResolvable
@@ -184,9 +188,11 @@ module Dependabot
 
         def latest_git_tag_is_resolvable?
           return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+
           @latest_git_tag_is_resolvable_checked = true
 
           return false if git_commit_checker.local_tag_for_latest_version.nil?
+
           replacement_tag = git_commit_checker.local_tag_for_latest_version
 
           VersionResolver.new(
@@ -204,6 +210,7 @@ module Dependabot
 
         def git_branch_or_ref_in_release?(release)
           return false unless release
+
           git_commit_checker.branch_or_ref_in_release?(release)
         end
 
@@ -237,6 +244,7 @@ module Dependabot
         def should_switch_source_from_git_to_rubygems?
           return false unless git_dependency?
           return false if latest_resolvable_version_for_git_dependency.nil?
+
           Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
         end
 

@@ -32,6 +32,7 @@ module Dependabot
             end
 
             return unless latest_resolvable_version
+
             @latest_resolvable_version =
               version_class.new(latest_resolvable_version)
           end
@@ -60,11 +61,13 @@ module Dependabot
 
           def check_update_strategy
             return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+
             raise "Unknown update strategy: #{update_strategy}"
           end
 
           def updating_from_git_to_npm?
             return false unless updated_source.nil?
+
             original_source = requirements.map { |r| r[:source] }.compact.first
             original_source&.fetch(:type) == "git"
           end
@@ -72,6 +75,7 @@ module Dependabot
           def initial_req_after_source_change(req)
             return req unless updating_from_git_to_npm?
             return req unless req[:requirement].nil?
+
             req.merge(requirement: "^#{latest_resolvable_version}")
           end
 
@@ -81,6 +85,7 @@ module Dependabot
             if current_requirement.match?(/(<|-\s)/i)
               ruby_req = ruby_requirements(current_requirement).first
               return req if ruby_req.satisfied_by?(latest_resolvable_version)
+
               updated_req = update_range_requirement(current_requirement)
               return req.merge(requirement: updated_req)
             end

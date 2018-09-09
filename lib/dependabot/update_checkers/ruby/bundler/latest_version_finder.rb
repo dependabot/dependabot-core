@@ -67,11 +67,13 @@ module Dependabot
                 version = Gem::Version.new(d["number"])
                 next true if version.prerelease? && !wants_prerelease?
                 next true if ignore_reqs.any? { |r| r.satisfied_by?(version) }
+
                 false
               end
 
             dep = relevant_versions.max_by { |d| Gem::Version.new(d["number"]) }
             return unless dep
+
             {
               version: Gem::Version.new(dep["number"]),
               sha: dep["sha"]

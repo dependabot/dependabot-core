@@ -20,6 +20,7 @@ module Dependabot
 
         def releases_url
           return unless source
+
           case source.provider
           when "github" then "#{source.url}/releases"
           when "gitlab" then "#{source.url}/tags"
@@ -136,6 +137,7 @@ module Dependabot
 
         def release_for_version(version)
           return nil unless version
+
           release_regex = version_regex(version)
           # Doing two loops looks inefficient, but it ensures consistency
           all_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||

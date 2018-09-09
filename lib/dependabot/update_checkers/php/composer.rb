@@ -97,6 +97,7 @@ module Dependabot
           composer_file =
             dependency_files.find { |f| f.name == "composer.json" }
           raise "No composer.json!" unless composer_file
+
           composer_file
         end
 
@@ -147,6 +148,7 @@ module Dependabot
           return [] if listing.nil?
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
+
           listing.dig("packages", dependency.name.downcase).keys
         rescue Excon::Error::Socket, Excon::Error::Timeout
           []

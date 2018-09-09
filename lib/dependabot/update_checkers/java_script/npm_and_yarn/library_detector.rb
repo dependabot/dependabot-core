@@ -28,6 +28,7 @@ module Dependabot
             return false if project_name.match?(/\{\{.*\}\}/)
             return false unless parsed_package_json["version"]
             return false if parsed_package_json["private"]
+
             true
           end
 
@@ -43,6 +44,7 @@ module Dependabot
             )
 
             return false unless @project_npm_response.status == 200
+
             @project_npm_response.body.force_encoding("UTF-8").encode.
               include?(project_description)
           rescue Excon::Error::Socket, Excon::Error::Timeout

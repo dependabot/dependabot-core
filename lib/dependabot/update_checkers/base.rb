@@ -32,6 +32,7 @@ module Dependabot
         else
           # TODO: Handle full unlock updates for requirement files
           return false if requirements_to_unlock == :none
+
           requirements_can_update?
         end
       end
@@ -114,6 +115,7 @@ module Dependabot
 
       def version_up_to_date?
         return sha1_version_up_to_date? if existing_version_is_sha1?
+
         numeric_version_up_to_date?
       end
 
@@ -131,6 +133,7 @@ module Dependabot
 
       def existing_version_is_sha1?
         return false if version_class.correct?(dependency.version)
+
         dependency.version.match?(/^[0-9a-f]{6,}$/)
       end
 
@@ -187,6 +190,7 @@ module Dependabot
         return false unless latest_version
         return false unless version_class.correct?(latest_version.to_s)
         return false unless version_from_requirements
+
         version_from_requirements >= version_class.new(latest_version.to_s)
       end
 
@@ -204,6 +208,7 @@ module Dependabot
         changed_reqs = updated_requirements - dependency.requirements
 
         return false if changed_reqs.none?
+
         changed_reqs.none? { |r| r[:requirement] == :unfixable }
       end
 

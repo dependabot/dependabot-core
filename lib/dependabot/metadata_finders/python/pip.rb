@@ -79,6 +79,7 @@ module Dependabot
             end
 
           return unless @homepage_response&.status == 200
+
           @homepage_response.body
         end
 

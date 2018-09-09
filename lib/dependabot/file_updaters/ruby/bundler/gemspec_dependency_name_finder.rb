@@ -33,6 +33,7 @@ module Dependabot
           def find_dependency_name_node(node)
             return unless node.is_a?(Parser::AST::Node)
             return node if declares_dependency_name?(node)
+
             node.children.find do |cn|
               dependency_name_node = find_dependency_name_node(cn)
               break dependency_name_node if dependency_name_node
@@ -41,6 +42,7 @@ module Dependabot
 
           def declares_dependency_name?(node)
             return false unless node.is_a?(Parser::AST::Node)
+
             node.children[1] == :name=
           end
         end

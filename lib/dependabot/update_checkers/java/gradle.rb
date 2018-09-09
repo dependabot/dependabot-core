@@ -22,6 +22,7 @@ module Dependabot
           # The above is hard. Currently we just return the latest version and
           # hope (hence this package manager is in beta!)
           return nil if version_comes_from_multi_dependency_property?
+
           latest_version
         end
 
@@ -59,6 +60,7 @@ module Dependabot
 
         def latest_version_resolvable_with_full_unlock?
           return false unless version_comes_from_multi_dependency_property?
+
           property_updater.update_possible?
         end
 
@@ -68,11 +70,13 @@ module Dependabot
 
         def numeric_version_up_to_date?
           return false unless version_class.correct?(dependency.version)
+
           super
         end
 
         def numeric_version_can_update?(requirements_to_unlock:)
           return false unless version_class.correct?(dependency.version)
+
           super
         end
 
@@ -105,6 +109,7 @@ module Dependabot
 
             all_property_based_dependencies.any? do |dep|
               next false if dep.name == dependency.name
+
               dep.requirements.any? do |req|
                 req.dig(:metadata, :property_name) == property_name
               end

@@ -42,6 +42,7 @@ module Dependabot
           def declares_ruby_version?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return true if node.type == :send && node.children[1] == :ruby
+
             node.children.any? { |cn| declares_ruby_version?(cn) }
           end
 
@@ -54,6 +55,7 @@ module Dependabot
               find { |v| requirement.satisfied_by?(v) }
 
             raise "Couldn't find Ruby version!" unless ruby_version
+
             ruby_version
           end
 
@@ -70,6 +72,7 @@ module Dependabot
           def find_ruby_requirement_node(node)
             return unless node.is_a?(Parser::AST::Node)
             return node if declares_ruby_requirement?(node)
+
             node.children.find do |cn|
               requirement_node = find_ruby_requirement_node(cn)
               break requirement_node if requirement_node
@@ -78,6 +81,7 @@ module Dependabot
 
           def declares_ruby_requirement?(node)
             return false unless node.is_a?(Parser::AST::Node)
+
             node.children[1] == :required_ruby_version=
           end
 
@@ -100,6 +104,7 @@ module Dependabot
             def declares_ruby_version?(node)
               return false unless node.is_a?(Parser::AST::Node)
               return false unless node.type == :send
+
               node.children[1] == :ruby
             end
           end

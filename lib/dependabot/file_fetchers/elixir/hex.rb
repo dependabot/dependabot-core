@@ -32,6 +32,7 @@ module Dependabot
 
         def lockfile
           return @lockfile if @lockfile_lookup_attempted
+
           @lockfile_lookup_attempted = true
           @lockfile ||= fetch_file_from_host("mix.lock")
         rescue Dependabot::DependencyFileNotFound

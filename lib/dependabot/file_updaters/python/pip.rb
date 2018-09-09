@@ -108,6 +108,7 @@ module Dependabot
           return if pipfile
           return if pyproject
           return if get_original_file("setup.py")
+
           raise "No requirements.txt or setup.py!"
         end
 

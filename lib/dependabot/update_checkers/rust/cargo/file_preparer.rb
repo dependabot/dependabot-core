@@ -67,6 +67,7 @@ module Dependabot
 
             FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
               next unless (req = parsed_manifest.dig(type, dependency.name))
+
               updated_req = temporary_requirement_for_resolution(filename)
 
               if req.is_a?(Hash)
@@ -173,6 +174,7 @@ module Dependabot
               dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
 
             raise "No Cargo.toml!" if @manifest_files.none?
+
             @manifest_files
           end
 

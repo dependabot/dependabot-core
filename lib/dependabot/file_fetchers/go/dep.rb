@@ -43,6 +43,7 @@ module Dependabot
           go_files.each do |go_file|
             file = fetch_file_from_host(go_file.name, type: "package_main")
             next unless file.content.match?(/\s*package\s+main/)
+
             return @main = file
           end
 

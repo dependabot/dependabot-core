@@ -20,6 +20,7 @@ module Dependabot
 
           dependency_files.each do |file|
             next unless requirement_changed?(file, dependency)
+
             updated_files <<
               updated_file(
                 file: file,
@@ -43,6 +44,7 @@ module Dependabot
         def check_required_files
           # Just check if there are any files at all.
           return if dependency_files.any?
+
           raise "No Dockerfile!"
         end
 
@@ -55,6 +57,7 @@ module Dependabot
             end
 
           raise "Expected content to change!" if updated_content == file.content
+
           updated_content
         end
 
@@ -95,6 +98,7 @@ module Dependabot
 
         def new_digest(file)
           return unless specified_with_digest?(file)
+
           dependency.requirements.
             find { |r| r[:file] == file.name }.
             fetch(:source).fetch(:digest)
@@ -102,6 +106,7 @@ module Dependabot
 
         def old_digest(file)
           return unless specified_with_digest?(file)
+
           dependency.previous_requirements.
             find { |r| r[:file] == file.name }.
             fetch(:source).fetch(:digest)

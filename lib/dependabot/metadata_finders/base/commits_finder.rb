@@ -80,12 +80,14 @@ module Dependabot
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           source_type = sources.first[:type] || sources.first.fetch("type")
           source_type == "git"
         end
 
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
+
           dependency.previous_requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.compact.first

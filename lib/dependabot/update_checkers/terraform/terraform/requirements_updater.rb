@@ -21,6 +21,7 @@ module Dependabot
 
             return unless latest_version
             return unless version_class.correct?(latest_version)
+
             @latest_version = version_class.new(latest_version)
           end
 
@@ -46,6 +47,7 @@ module Dependabot
           def update_git_requirement(req)
             return req unless req.dig(:source, :ref)
             return req unless tag_for_latest_version
+
             req.merge(source: req[:source].merge(ref: tag_for_latest_version))
           end
 

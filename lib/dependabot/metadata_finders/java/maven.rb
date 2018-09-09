@@ -19,6 +19,7 @@ module Dependabot
           return tmp_source if tmp_source
 
           return unless (parent = parent_pom_file(dependency_pom_file))
+
           tmp_source = look_up_source_in_pom(parent)
           return unless tmp_source
 
@@ -76,6 +77,7 @@ module Dependabot
                 doc.at_xpath("/project/profiles/profile/properties/#{nm}")
               break candidate_node.content if candidate_node
               break unless nm.match?(DOT_SEPARATOR_REGEX)
+
               nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
             end
 

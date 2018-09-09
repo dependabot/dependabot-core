@@ -84,10 +84,12 @@ module Dependabot
                     split(/-|(\.tar\.gz)/).
                     first
                   next unless version_class.correct?(version)
+
                   version_class.new(version)
                 end.compact
             rescue Excon::Error::Timeout, Excon::Error::Socket
               next if MAIN_PYPI_INDEXES.include?(index_url)
+
               raise PrivateSourceAuthenticationFailure, sanitized_url
             end
           end
@@ -143,6 +145,7 @@ module Dependabot
             urls = { main: nil, extra: [] }
 
             return urls unless pip_conf
+
             content = pip_conf.content
 
             if content.match?(/index-url\s*=/x)
@@ -157,6 +160,7 @@ module Dependabot
             urls = { main: nil, extra: [] }
 
             return urls unless pipfile
+
             pipfile_object = TomlRB.parse(pipfile.content)
 
             urls[:main] = pipfile_object["source"].first&.fetch("url", nil)

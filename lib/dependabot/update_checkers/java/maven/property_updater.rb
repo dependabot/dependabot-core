@@ -22,6 +22,7 @@ module Dependabot
 
           def update_possible?
             return false unless target_version
+
             @update_possible ||=
               dependencies_using_property.all? do |dep|
                 VersionFinder.new(
@@ -74,6 +75,7 @@ module Dependabot
                                dig(:metadata, :property_name)
 
             raise "No requirement with a property name!" unless @property_name
+
             @property_name
           end
 

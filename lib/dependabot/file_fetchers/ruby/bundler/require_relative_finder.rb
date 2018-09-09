@@ -57,6 +57,7 @@ module Dependabot
 
           def declares_require_relative?(node)
             return false unless node.is_a?(Parser::AST::Node)
+
             node.children[1] == :require_relative
           end
         end

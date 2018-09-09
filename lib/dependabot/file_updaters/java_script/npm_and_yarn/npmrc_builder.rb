@@ -127,6 +127,7 @@ module Dependabot
             return if CENTRAL_REGISTRIES.include?(registry)
 
             return unless dependency_urls
+
             affected_urls = dependency_urls.
                             select { |url| url.include?(registry) }
 

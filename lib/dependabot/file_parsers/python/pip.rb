@@ -96,6 +96,7 @@ module Dependabot
 
         def included_in_pipenv_deps?(dep_name)
           return false unless pipfile
+
           pipenv_dependencies.dependencies.map(&:name).include?(dep_name)
         end
 
@@ -123,6 +124,7 @@ module Dependabot
         def lockfile_for_pip_compile_file?(filename)
           return false unless pip_compile_files.any?
           return false unless filename.end_with?(".txt")
+
           basename = filename.gsub(/\.txt$/, "")
           pip_compile_files.any? { |f| f.name == basename + ".in" }
         end
@@ -143,6 +145,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
           raise unless error.message.start_with?(*evaluation_errors)
+
           raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
 
@@ -161,12 +164,14 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.start_with?("InstallationError")
+
           raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
 
         def check_requirements(requirements)
           requirements.each do |dep|
             next unless dep["requirement"]
+
             Utils::Python::Requirement.new(dep["requirement"].split(","))
           rescue Gem::Requirement::BadRequirementError => error
             raise Dependabot::DependencyFileNotEvaluatable, error.message
@@ -197,6 +202,7 @@ module Dependabot
           return if pipfile
           return if pyproject
           return if setup_file
+
           raise "No requirements.txt or setup.py!"
         end
 

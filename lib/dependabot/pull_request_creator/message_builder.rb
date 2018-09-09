@@ -44,6 +44,7 @@ module Dependabot
 
       def pr_name
         return library_pr_name if library?
+
         application_pr_name
       end
 
@@ -64,22 +65,26 @@ module Dependabot
       def commit_subject
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
         return subject unless subject.length > 72
+
         subject.split(" from ").first
       end
 
       def commit_message_intro
         return requirement_commit_message_intro if library?
+
         version_commit_message_intro
       end
 
       def prefixed_pr_message_footer
         return "" unless pr_message_footer
+
         "\n\n#{pr_message_footer}"
       end
 
       def signoff_message
         return unless author_details.is_a?(Hash)
         return unless author_details[:name] && author_details[:email]
+
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
       end
 
@@ -200,6 +205,7 @@ module Dependabot
                            dig(:metadata, :property_name)
 
         raise "No property name!" unless @property_name
+
         @property_name
       end
 
@@ -388,6 +394,7 @@ module Dependabot
         %w(patched_versions unaffected_versions affected_versions).each do |tp|
           type = tp.split("_").first.capitalize
           next unless details[tp]
+
           versions_string = details[tp].any? ? details[tp].join("; ") : "none"
           versions_string = versions_string.gsub(/(?<!\\)~/, '\~')
           msg += "> #{type} versions: #{versions_string}\n"
@@ -451,6 +458,7 @@ module Dependabot
       def previous_version(dependency)
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
           return previous_ref(dependency) if ref_changed?(dependency)
+
           "`#{dependency.previous_version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
@@ -467,6 +475,7 @@ module Dependabot
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
           return new_ref(dependency) if ref_changed?(dependency)
+
           "`#{dependency.version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
@@ -499,6 +508,7 @@ module Dependabot
         gemspec =
           old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
         return gemspec.fetch(:requirement) if gemspec
+
         old_reqs.first.fetch(:requirement)
       end
 
@@ -509,6 +519,7 @@ module Dependabot
         gemspec =
           updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
         return gemspec.fetch(:requirement) if gemspec
+
         updated_reqs.first.fetch(:requirement)
       end
 
@@ -522,6 +533,7 @@ module Dependabot
       def sanitize_links_and_mentions(text)
         text = text.gsub(%r{(?<![A-Za-z0-9\-])@[A-Za-z0-9\-/]+}) do |mention|
           next mention if mention.include?("/")
+
           "[**#{mention.tr('@', '')}**]"\
           "(https://github.com/#{mention.tr('@', '')})"
         end
@@ -538,6 +550,7 @@ module Dependabot
           # Unclosed calls to template overflow out of the blockquote block,
           # wrecking the rest of our PRs. Other tags don't share this problem.
           next "\\#{tag}" if tag_contents.start_with?("template")
+
           tag
         end
       end
@@ -550,11 +563,13 @@ module Dependabot
       def library?
         filenames = files.map(&:name)
         return true if filenames.any? { |nm| nm.match?(%r{^[^/]*\.gemspec$}) }
+
         dependencies.none?(&:appears_in_lockfile?)
       end
 
       def switching_from_ref_to_release?(dependency)
         return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
+
         Gem::Version.correct?(dependency.version)
       end
 

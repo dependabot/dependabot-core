@@ -75,6 +75,7 @@ module Dependabot
         dir = File.dirname(filename)
         basename = File.basename(filename)
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
+
         fetch_file_from_host(filename)
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
@@ -125,6 +126,7 @@ module Dependabot
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         raise if raise_errors
+
         []
       end
 
@@ -210,6 +212,7 @@ module Dependabot
 
         tmp = github_client_for_source.blob(repo, file_details.sha)
         return tmp.content if tmp.encoding == "utf-8"
+
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize

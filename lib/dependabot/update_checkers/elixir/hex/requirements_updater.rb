@@ -23,6 +23,7 @@ module Dependabot
             unless Utils::Elixir::Version.correct?(latest_resolvable_version)
               return
             end
+
             @latest_resolvable_version =
               Utils::Elixir::Version.new(latest_resolvable_version)
           end

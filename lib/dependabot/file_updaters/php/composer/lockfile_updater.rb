@@ -30,6 +30,7 @@ module Dependabot
                 if lockfile.content == updated_content
                   raise "Expected content to change!"
                 end
+
                 updated_content
               end
           rescue SharedHelpers::HelperSubprocessFailed => error
@@ -77,6 +78,7 @@ module Dependabot
             if error.message.start_with?("Failed to execute git checkout")
               raise git_dependency_reference_error(error)
             end
+
             if error.message.start_with?("Failed to execute git clone")
               dependency_url =
                 error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).
@@ -98,6 +100,7 @@ module Dependabot
             if error.message.start_with?("Allowed memory size")
               raise "Composer out of memory"
             end
+
             if error.message.include?("403 Forbidden")
               source = error.message.match(%r{https?://(?<source>[^/]+)/}).
                        named_captures.fetch("source")
@@ -162,6 +165,7 @@ module Dependabot
               fetch("name")
 
             raise unless dependency_name
+
             raise GitDependencyReferenceNotFound, dependency_name
           end
 
@@ -184,6 +188,7 @@ module Dependabot
                   find { |d| d["name"] == details["name"] }
 
                 next unless updated_object_package
+
                 updated_object_package["extra"] ||= {}
                 updated_object_package["extra"]["patches_applied"] = patches
 

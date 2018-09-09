@@ -32,12 +32,14 @@ module Dependabot
 
           top_level_gemspecs.each do |file|
             next unless file_changed?(file)
+
             updated_files <<
               updated_file(file: file, content: updated_gemspec_content(file))
           end
 
           evaled_gemfiles.each do |file|
             next unless file_changed?(file)
+
             updated_files <<
               updated_file(file: file, content: updated_gemfile_content(file))
           end

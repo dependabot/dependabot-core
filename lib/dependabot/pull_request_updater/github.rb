@@ -114,6 +114,7 @@ module Dependabot
 
         # Return quietly if the branch has been merged
         return nil if error.message.match?(/Reference cannot be updated/i)
+
         raise
       end
 

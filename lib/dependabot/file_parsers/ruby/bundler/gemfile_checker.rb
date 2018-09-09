@@ -16,6 +16,7 @@ module Dependabot
 
           def includes_dependency?
             return false unless Parser::CurrentRuby.parse(gemfile.content)
+
             Parser::CurrentRuby.parse(gemfile.content).children.any? do |node|
               deep_check_for_gem(node)
             end
@@ -28,6 +29,7 @@ module Dependabot
           def deep_check_for_gem(node)
             return true if declares_targeted_gem?(node)
             return false unless node.is_a?(Parser::AST::Node)
+
             node.children.any? do |child_node|
               deep_check_for_gem(child_node)
             end
@@ -36,6 +38,7 @@ module Dependabot
           def declares_targeted_gem?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children[1] == :gem
+
             node.children[2].children.first == dependency.name
           end
         end

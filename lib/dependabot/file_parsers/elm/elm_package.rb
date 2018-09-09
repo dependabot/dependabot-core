@@ -90,6 +90,7 @@ module Dependabot
 
         def check_required_files
           return if elm_json || elm_package
+
           raise "No elm.json or elm-package.json!"
         end
 
@@ -97,6 +98,7 @@ module Dependabot
           req = Dependabot::Utils::Elm::Requirement.new(version_requirement)
 
           return unless req.exact?
+
           req.requirements.first.last
         end
 

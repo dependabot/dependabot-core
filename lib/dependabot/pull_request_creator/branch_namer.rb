@@ -58,6 +58,7 @@ module Dependabot
                            dig(:metadata, :property_name)
 
         raise "No property name!" unless @property_name
+
         @property_name
       end
 
@@ -82,6 +83,7 @@ module Dependabot
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
           return new_ref(dependency) if ref_changed?(dependency)
+
           dependency.version[0..6]
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
@@ -117,6 +119,7 @@ module Dependabot
         gemspec =
           updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
         return gemspec[:requirement] if gemspec
+
         updated_reqs.first[:requirement]
       end
 

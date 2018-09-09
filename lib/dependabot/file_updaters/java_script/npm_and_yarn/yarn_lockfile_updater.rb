@@ -70,9 +70,11 @@ module Dependabot
             raise unless error.message.include?("The registry may be down") ||
                          error.message.include?("ETIMEDOUT") ||
                          error.message.include?("ENOBUFS")
+
             retry_count ||= 0
             retry_count += 1
             raise if retry_count > 2
+
             sleep(rand(3.0..10.0)) && retry
           end
 
@@ -81,6 +83,7 @@ module Dependabot
 
             requirements.map do |r|
               next unless r[:file].start_with?("#{path}/")
+
               r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
             end.compact
           end
@@ -100,6 +103,7 @@ module Dependabot
             if error.message.include?("Workspaces can only be enabled in priva")
               raise Dependabot::DependencyFileNotEvaluatable, error.message
             end
+
             if error.message.include?("Couldn't find package")
               package_name =
                 error.message.match(/package "(?<package_req>.*)?"/).
@@ -197,6 +201,7 @@ module Dependabot
                 JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
                   next unless git_dependencies.map(&:name).include?(nm)
                   next unless requirement.start_with?("git+ssh:")
+
                   req = requirement.split("#").first
                   @git_ssh_requirements_to_swap << req
                 end

@@ -35,6 +35,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::Go::Version.new(matches[2])]
         end
 
@@ -42,6 +43,7 @@ module Dependabot
         # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)
           return [new(nil)] if requirement_string.nil?
+
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
             new(req_string)
           end
@@ -81,6 +83,7 @@ module Dependabot
             parts.map.with_index do |part, index|
               next "0" if part.match?(WILDCARD_REGEX)
               next part.to_i + 1 if parts[index + 1]&.match?(WILDCARD_REGEX)
+
               part
             end.join(".")
           else

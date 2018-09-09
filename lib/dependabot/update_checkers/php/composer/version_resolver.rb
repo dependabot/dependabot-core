@@ -33,6 +33,7 @@ module Dependabot
             version = fetch_latest_resolvable_version_string
             return if version.nil?
             return unless Utils::Php::Version.correct?(version)
+
             Utils::Php::Version.new(version)
           end
 
@@ -102,6 +103,7 @@ module Dependabot
             # unresolvable then the `latest_allowable_version` will be v3, and
             # we won't be ignoring v2.x releases like we should be.
             return lower_bound unless latest_allowable_version
+
             lower_bound + ", <= #{latest_allowable_version}"
           end
 

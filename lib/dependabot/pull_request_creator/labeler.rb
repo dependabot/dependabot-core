@@ -87,6 +87,7 @@ module Dependabot
           next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
           next 1 if new_version_parts[0] != old_version_parts[0]
           next 2 if new_version_parts[1] != old_version_parts[1]
+
           3
         end.min
 
@@ -102,23 +103,29 @@ module Dependabot
 
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
+
         source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
         return dep.version unless source&.fetch("type") == "git"
+
         version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
         return dep.version unless version_from_ref
         return dep.version unless version_class.correct?(version_from_ref)
+
         version_from_ref
       end
 
       def previous_version(dep)
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
+
         source = dep.previous_requirements.
                  find { |r| r.fetch(:source) }&.fetch(:source)
         return version_str unless source&.fetch("type") == "git"
+
         version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
         return version_str unless version_from_ref
         return version_str unless version_class.correct?(version_from_ref)
+
         version_from_ref
       end
 
@@ -172,6 +179,7 @@ module Dependabot
 
       def semver_label
         return unless update_type
+
         labels.find { |l| l.downcase == update_type.to_s }
       end
 
@@ -238,6 +246,7 @@ module Dependabot
         @labels = [*@labels, "dependencies"].uniq
       rescue Octokit::UnprocessableEntity => error
         raise unless error.errors.first.fetch(:code) == "already_exists"
+
         @labels = [*@labels, "dependencies"].uniq
       end
 
@@ -258,6 +267,7 @@ module Dependabot
         @labels = [*@labels, "security"].uniq
       rescue Octokit::UnprocessableEntity => error
         raise unless error.errors.first.fetch(:code) == "already_exists"
+
         @labels = [*@labels, "security"].uniq
       end
 
@@ -283,6 +293,7 @@ module Dependabot
         @labels = [*@labels, langauge_name].uniq
       rescue Octokit::UnprocessableEntity => error
         raise unless error.errors.first.fetch(:code) == "already_exists"
+
         @labels = [*@labels, langauge_name].uniq
       end
 

@@ -35,6 +35,7 @@ module Dependabot
         FileUtils.remove_entry(dir, true)
         # This appears to be a Ruby bug which occurs very rarely
         raise if @retrying
+
         @retrying = true
         retry
       ensure

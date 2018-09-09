@@ -55,6 +55,7 @@ module Dependabot
 
             def declares_targeted_gem?(node)
               return false unless node.children[1] == :gem
+
               node.children[2].children.first == dependency.name
             end
 

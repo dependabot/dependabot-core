@@ -73,12 +73,14 @@ module Dependabot
           def wants_prerelease?
             return false unless dependency.version
             return false unless version_class.correct?(dependency.version)
+
             version_class.new(dependency.version).prerelease?
           end
 
           def wants_date_based_version?
             return false unless dependency.version
             return false unless version_class.correct?(dependency.version)
+
             version_class.new(dependency.version) >= version_class.new(100)
           end
 
@@ -118,6 +120,7 @@ module Dependabot
                 central =
                   FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
                 raise if repository_details.fetch("url") == central
+
                 Nokogiri::XML("")
               end
           end

@@ -24,6 +24,7 @@ module Dependabot
 
           yarn_locks.each do |yarn_lock|
             next unless yarn_lock && yarn_lock_changed?(yarn_lock)
+
             updated_files << updated_file(
               file: yarn_lock,
               content: updated_yarn_lock_content(yarn_lock)
@@ -32,6 +33,7 @@ module Dependabot
 
           package_locks.each do |package_lock|
             next unless package_lock && package_lock_changed?(package_lock)
+
             updated_files << updated_file(
               file: package_lock,
               content: updated_package_lock_content(package_lock)
@@ -89,6 +91,7 @@ module Dependabot
           package_files.map do |file|
             updated_content = updated_package_json_content(file)
             next if updated_content == file.content
+
             updated_file(file: file, content: updated_content)
           end.compact
         end

@@ -169,6 +169,7 @@ module Dependabot
           if git_url?(requirement)
             return lock_version.split("#").last if lock_version&.include?("#")
             return lock_res.split("#").last if lock_res&.include?("#")
+
             return nil
           end
 
@@ -176,6 +177,7 @@ module Dependabot
           return if lock_version.include?("://")
           return if lock_version.include?("file:")
           return if lock_version.include?("#")
+
           lock_version
         end
         # rubocop:enable Metrics/CyclomaticComplexity
@@ -201,6 +203,7 @@ module Dependabot
 
         def requirement_for(requirement)
           return requirement unless git_url?(requirement)
+
           details = requirement.match(GIT_URL_REGEX).named_captures
           details["semver"]
         end
@@ -219,6 +222,7 @@ module Dependabot
           package_locks.each do |package_lock|
             parsed_package_lock_json = parse_package_lock(package_lock)
             next unless parsed_package_lock_json.dig("dependencies", name)
+
             return parsed_package_lock_json.dig("dependencies", name)
           end
 

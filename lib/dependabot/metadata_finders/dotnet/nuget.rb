@@ -11,6 +11,7 @@ module Dependabot
 
         def look_up_source
           return Source.from_url(dependency_source_url) if dependency_source_url
+
           look_up_source_in_nuspec(dependency_nuspec_file)
         end
 
@@ -83,6 +84,7 @@ module Dependabot
 
           return unless source
           return source.fetch(:source_url) if source.key?(:source_url)
+
           source.fetch("source_url")
         end
 

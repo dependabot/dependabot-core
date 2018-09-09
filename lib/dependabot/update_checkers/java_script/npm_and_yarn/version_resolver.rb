@@ -79,6 +79,7 @@ module Dependabot
 
             # Use the latest dist tag unless there's a reason not to
             return nil unless npm_details["dist-tags"]["latest"]
+
             latest = version_class.new(npm_details["dist-tags"]["latest"])
 
             wants_latest_dist_tag?(latest) ? latest : nil
@@ -95,6 +96,7 @@ module Dependabot
 
             dependency.requirements.any? do |req|
               next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
+
               Utils::JavaScript::Requirement.
                 requirements_array(req.fetch(:requirement)).
                 any? do |r|
@@ -106,6 +108,7 @@ module Dependabot
           def specified_dist_tag_requirement?
             dependency.requirements.any? do |req|
               next false if req[:requirement].nil?
+
               req[:requirement].match?(/^[A-Za-z]/)
             end
           end
@@ -117,20 +120,24 @@ module Dependabot
             return false if current_requirement_greater_than?(ver)
             return false if ignore_reqs.any? { |r| r.satisfied_by?(ver) }
             return false if yanked?(ver)
+
             true
           end
 
           def current_version_greater_than?(version)
             return false unless dependency.version
             return false unless version_class.correct?(dependency.version)
+
             version_class.new(dependency.version) > version
           end
 
           def current_requirement_greater_than?(version)
             dependency.requirements.any? do |req|
               next false unless req[:requirement]
+
               req_version = req[:requirement].sub(/^\^|~|>=?/, "")
               next false unless version_class.correct?(req_version)
+
               version_class.new(req_version) > version
             end
           end
@@ -163,6 +170,7 @@ module Dependabot
 
           def npm_details
             return @npm_details if @npm_details_lookup_attempted
+
             @npm_details_lookup_attempted = true
             @npm_details ||=
               begin
@@ -184,6 +192,7 @@ module Dependabot
                 if retry_count > 2
                   raise if dependency_registry == "registry.npmjs.org"
                   raise unless error.is_a?(Excon::Error::Timeout)
+
                   raise PrivateSourceTimedOut, dependency_registry
                 end
                 sleep(rand(3.0..10.0)) && retry

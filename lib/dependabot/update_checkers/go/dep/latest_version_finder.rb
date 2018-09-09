@@ -115,11 +115,13 @@ module Dependabot
             if dependency.version&.match?(/^[0-9a-f]{40}$/)
               return tag&.fetch(:commit_sha)
             end
+
             tag&.fetch(:tag)
           end
 
           def branch_or_ref_in_release?(release)
             return false unless release
+
             git_commit_checker.branch_or_ref_in_release?(release)
           end
 
@@ -148,12 +150,14 @@ module Dependabot
           def manifest
             @manifest ||= dependency_files.find { |f| f.name == "Gopkg.toml" }
             raise "No Gopkg.lock!" unless @manifest
+
             @manifest
           end
 
           def lockfile
             @lockfile = dependency_files.find { |f| f.name == "Gopkg.lock" }
             raise "No Gopkg.lock!" unless @lockfile
+
             @lockfile
           end
         end

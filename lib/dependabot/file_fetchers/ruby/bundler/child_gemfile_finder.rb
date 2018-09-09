@@ -60,6 +60,7 @@ module Dependabot
 
           def declares_eval_gemfile?(node)
             return false unless node.is_a?(Parser::AST::Node)
+
             node.children[1] == :eval_gemfile
           end
         end

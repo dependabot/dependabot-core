@@ -22,6 +22,7 @@ module Dependabot
 
     def git_dependency?
       return false if dependency_source_details.nil?
+
       dependency_source_details.fetch(:type) == "git"
     end
 
@@ -42,6 +43,7 @@ module Dependabot
 
     def pinned_ref_looks_like_version?
       return false unless pinned?
+
       dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
     end
 
@@ -56,6 +58,7 @@ module Dependabot
       line = local_upload_pack.lines.find { |l| l.include?(branch_ref) }
 
       return sha_for_update_pack_line(line) if line
+
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
@@ -71,6 +74,7 @@ module Dependabot
         end
 
       return unless tag
+
       {
         tag: tag.name,
         commit_sha: tag.commit_sha,
@@ -123,6 +127,7 @@ module Dependabot
 
     def local_tags
       return [] unless local_upload_pack
+
       tags_for_upload_pack(local_upload_pack)
     end
 
@@ -173,9 +178,11 @@ module Dependabot
       if response.status >= 500 && original_uri.match?(KNOWN_HOSTS)
         raise "Server error at #{original_uri}: #{response.body}"
       end
+
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
       raise if original_uri.match?(KNOWN_HOSTS)
+
       raise Dependabot::GitDependenciesNotReachable, [original_uri]
     end
 
@@ -210,6 +217,7 @@ module Dependabot
         end
 
       return true if status == "behind"
+
       allow_identical && status == "identical"
     rescue Octokit::NotFound, Gitlab::Error::NotFound,
            Octokit::InternalServerError
@@ -310,6 +318,7 @@ module Dependabot
 
     def listing_source_repo
       return unless listing_source_url
+
       Source.from_url(listing_source_url)&.repo
     end
 
@@ -321,6 +330,7 @@ module Dependabot
 
     def listing_tags
       return [] unless listing_upload_pack
+
       tags_for_upload_pack(listing_upload_pack)
     rescue GitDependenciesNotReachable
       []
@@ -328,6 +338,7 @@ module Dependabot
 
     def listing_upload_pack
       return unless listing_source_url
+
       @listing_upload_pack ||= fetch_upload_pack_for(listing_source_url)
     end
 
@@ -338,6 +349,7 @@ module Dependabot
     def wants_prerelease?
       return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
+
       version = dependency_source_details.fetch(:ref).match(VERSION_REGEX).
                 named_captures.fetch("version")
       version_class.new(version).prerelease?

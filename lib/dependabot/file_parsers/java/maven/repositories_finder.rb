@@ -58,6 +58,7 @@ module Dependabot
             version = doc.at_xpath("/project/parent/version")&.content&.strip
 
             return unless group_id && artifact_id
+
             name = [group_id, artifact_id].join(":")
 
             if internal_dependency_poms[name]

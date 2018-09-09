@@ -77,6 +77,7 @@ module Dependabot
                   end
 
                 raise "Content did not change!" if content == updated_content
+
                 updated_content
               end
           end
@@ -88,11 +89,13 @@ module Dependabot
 
           def generate_updated_requirements_files?
             return true if generated_requirements_files("default").any?
+
             generated_requirements_files("develop").any?
           end
 
           def generated_requirements_files(type)
             return [] unless lockfile
+
             pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
 
             regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
@@ -113,12 +116,14 @@ module Dependabot
 
             generated_requirements_files("default").each do |file|
               next if file.content == updated_req_content
+
               updated_files <<
                 updated_file(file: file, content: updated_req_content)
             end
 
             generated_requirements_files("develop").each do |file|
               next if file.content == updated_dev_req_content
+
               updated_files <<
                 updated_file(file: file, content: updated_dev_req_content)
             end
@@ -237,6 +242,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           end
 

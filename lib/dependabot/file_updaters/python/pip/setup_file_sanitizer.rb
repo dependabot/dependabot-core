@@ -41,6 +41,7 @@ module Dependabot
             @install_requires_array ||=
               parsed_setup_file.map do |dep|
                 next unless dep["requirement_type"] == "install_requires"
+
                 dep["name"] + dep["requirement"].to_s
               end.compact
           end
@@ -49,6 +50,7 @@ module Dependabot
             @setup_requires_array ||=
               parsed_setup_file.map do |dep|
                 next unless dep["requirement_type"] == "setup_requires"
+
                 dep["name"] + dep["requirement"].to_s
               end.compact
           end
@@ -72,6 +74,7 @@ module Dependabot
             File.write(path, setup_file.content)
 
             return unless setup_cfg
+
             path = setup_cfg.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, setup_cfg.content)

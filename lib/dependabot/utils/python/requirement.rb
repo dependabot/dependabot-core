@@ -30,6 +30,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::Python::Version.new(matches[2])]
         end
 
@@ -39,6 +40,7 @@ module Dependabot
         # NOTE: Or requirements are only valid for Poetry.
         def self.requirements_array(requirement_string)
           return [new(nil)] if requirement_string.nil?
+
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
             new(req_string.strip)
           end
@@ -47,6 +49,7 @@ module Dependabot
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
             next if req_string.nil?
+
             req_string.split(",").map do |r|
               convert_python_constraint_to_ruby_constraint(r)
             end
@@ -62,6 +65,7 @@ module Dependabot
 
         def exact?
           return false unless @requirements.size == 1
+
           %w(= == ===).include?(@requirements[0][0])
         end
 
@@ -70,6 +74,7 @@ module Dependabot
         def convert_python_constraint_to_ruby_constraint(req_string)
           return nil if req_string.nil?
           return nil if req_string == "*"
+
           req_string = req_string.gsub("~=", "~>")
           req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
 

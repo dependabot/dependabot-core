@@ -29,6 +29,7 @@ module Dependabot
 
         def self.correct?(version)
           return false if version.nil?
+
           version.to_s.match?(ANCHORED_VERSION_PATTERN)
         end
 
@@ -44,6 +45,7 @@ module Dependabot
         def prerelease?
           tokens.any? do |token|
             next false unless NAMED_QUALIFIERS_HIERARCHY[token]
+
             NAMED_QUALIFIERS_HIERARCHY[token] < 6
           end
         end
@@ -119,6 +121,7 @@ module Dependabot
 
           longest.count.times do |index|
             next unless shortest[index].nil?
+
             shortest[index] = longest[index].start_with?(".") ? ".0" : "-"
           end
 
@@ -142,6 +145,7 @@ module Dependabot
         def compare_token(token:, other_token:)
           if (token_hierarchy = NAMED_QUALIFIERS_HIERARCHY[token])
             return -1 unless NAMED_QUALIFIERS_HIERARCHY[other_token]
+
             return token_hierarchy <=> NAMED_QUALIFIERS_HIERARCHY[other_token]
           end
 

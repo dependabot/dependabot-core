@@ -15,6 +15,7 @@ module Dependabot
           if latest_version_listing["homepage"]
             return latest_version_listing["homepage"]
           end
+
           listing = all_version_listings.find { |_, l| l["homepage"] }
           listing&.last&.fetch("homepage", nil) || super
         end
@@ -64,6 +65,7 @@ module Dependabot
                     map { |r| r.fetch(:source) }.uniq.compact
 
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           sources.first
         end
 
@@ -125,6 +127,7 @@ module Dependabot
             @npm_listing = JSON.parse(response.body)
           rescue JSON::ParserError
             raise unless non_standard_registry?
+
             @npm_listing = {}
           end
         rescue Excon::Error::Timeout
@@ -144,6 +147,7 @@ module Dependabot
 
         def registry_auth_headers
           return {} unless auth_token
+
           { "Authorization" => "Bearer #{auth_token}" }
         end
 

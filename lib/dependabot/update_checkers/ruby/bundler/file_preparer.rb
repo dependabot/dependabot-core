@@ -250,6 +250,7 @@ module Dependabot
               dependency_name
 
             return gemspec_specs.first&.version || "0.0.1" unless gem_name
+
             spec = gemspec_specs.find { |s| s.name == gem_name }
             spec&.version || gemspec_specs.first&.version || "0.0.1"
           end

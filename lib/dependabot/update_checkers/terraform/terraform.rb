@@ -120,6 +120,7 @@ module Dependabot
                          fetch(:tag)
             version_rgx = GitCommitChecker::VERSION_REGEX
             return unless latest_tag.match(version_rgx)
+
             version = latest_tag.match(version_rgx).
                       named_captures.fetch("version")
             return version_class.new(version)
@@ -152,6 +153,7 @@ module Dependabot
 
         def registry_dependency?
           return false if dependency_source_details.nil?
+
           dependency_source_details.fetch(:type) == "registry"
         end
 

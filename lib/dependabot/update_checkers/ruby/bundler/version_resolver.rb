@@ -96,6 +96,7 @@ module Dependabot
             end
           rescue Dependabot::DependencyFileNotResolvable => error
             raise unless ruby_lock_error?(error)
+
             @gemspec_ruby_unlocked = true
             regenerate_dependency_files_without_ruby_lock && retry
           end
@@ -105,6 +106,7 @@ module Dependabot
           def ruby_lock_error?(error)
             return false unless error.message.include?(" for gem \"ruby\0\"")
             return false if @gemspec_ruby_unlocked
+
             dependency_files.any? { |f| f.name.end_with?(".gemspec") }
           end
 
@@ -133,6 +135,7 @@ module Dependabot
               attempt ||= 1
               attempt += 1
               raise if attempt > 3 || !error.message.include?("Network error")
+
               retry
             end
 
@@ -141,9 +144,11 @@ module Dependabot
 
           def unlock_yanked_gem(dependencies_to_unlock, error)
             raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
+
             gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
                        named_captures["name"]
             raise if dependencies_to_unlock.include?(gem_name)
+
             dependencies_to_unlock << gem_name
           end
 
@@ -162,6 +167,7 @@ module Dependabot
 
           def ruby_version_incompatible?(dep)
             return false unless dep.source.is_a?(::Bundler::Source::Rubygems)
+
             fetcher = dep.source.fetchers.first.fetchers.first
 
             # It's only the old index we have a problem with
@@ -188,6 +194,7 @@ module Dependabot
             # Give the benefit of the doubt if we can't find the version's
             # required Ruby version.
             return false unless ruby_requirement
+
             ruby_requirement = Utils::Ruby::Requirement.new(ruby_requirement)
 
             !ruby_requirement.satisfied_by?(ruby_version)
@@ -211,6 +218,7 @@ module Dependabot
 
           def ruby_version
             return nil unless gemfile
+
             @ruby_version ||= build_definition([]).ruby_version&.gem_version
           end
 

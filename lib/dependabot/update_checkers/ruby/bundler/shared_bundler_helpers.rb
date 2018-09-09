@@ -150,6 +150,7 @@ module Dependabot
               if error.error_message.match?(regex)
                 source = error.error_message.match(regex)[:source]
                 raise if source.include?("rubygems.org")
+
                 raise Dependabot::PrivateSourceTimedOut, source
               end
 
@@ -157,6 +158,7 @@ module Dependabot
               # don't have access to a particular gem.
               raise unless error.error_message.include?("permitted to deploy")
               raise unless jfrog_source
+
               raise Dependabot::PrivateSourceAuthenticationFailure, jfrog_source
             else raise
             end
