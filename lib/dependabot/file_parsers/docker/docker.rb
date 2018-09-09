@@ -34,6 +34,7 @@ module Dependabot
           dockerfiles.each do |dockerfile|
             dockerfile.content.each_line do |line|
               next unless FROM_LINE.match?(line)
+
               parsed_from_line = FROM_LINE.match(line).named_captures
 
               version = version_from(parsed_from_line)
@@ -66,6 +67,7 @@ module Dependabot
 
         def version_from(parsed_from_line)
           return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
+
           version_from_digest(
             registry: parsed_from_line.fetch("registry"),
             image: parsed_from_line.fetch("image"),
@@ -108,6 +110,7 @@ module Dependabot
           end
         rescue DockerRegistry2::RegistryAuthenticationException
           raise if standard_registry?(registry)
+
           raise PrivateSourceAuthenticationFailure, registry
         end
 
@@ -133,12 +136,14 @@ module Dependabot
 
         def standard_registry?(registry)
           return true if registry.nil?
+
           registry == "registry.hub.docker.com"
         end
 
         def check_required_files
           # Just check if there are any files at all.
           return if dependency_files.any?
+
           raise "No Dockerfile!"
         end
       end

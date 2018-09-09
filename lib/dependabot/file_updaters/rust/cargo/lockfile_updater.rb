@@ -55,6 +55,7 @@ module Dependabot
           def handle_cargo_error(error)
             raise unless error.message.include?("no matching version")
             raise if error.message.include?("`#{dependency.name}`")
+
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
@@ -80,6 +81,7 @@ module Dependabot
 
           def desired_lockfile_content
             return dependency.version if git_dependency?
+
             %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
           end
 
@@ -92,6 +94,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Cargo
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -157,6 +160,7 @@ module Dependabot
 
             FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
               next unless (req = parsed_manifest.dig(type, dependency.name))
+
               updated_req = "=#{dependency.version}"
 
               if req.is_a?(Hash)

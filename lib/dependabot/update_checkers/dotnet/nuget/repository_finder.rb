@@ -111,16 +111,19 @@ module Dependabot
           def check_repo_reponse(response, details)
             return unless [401, 402, 403].include?(response.status)
             raise if details.fetch(:url) == DEFAULT_REPOSITORY_URL
+
             raise PrivateSourceAuthenticationFailure, details.fetch(:url)
           end
 
           def handle_timeout(repo_metadata_url)
             raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
+
             raise PrivateSourceTimedOut, repo_metadata_url
           end
 
           def known_repositories
             return @known_repositories if @known_repositories
+
             @known_repositories = []
             @known_repositories += credential_repositories
             @known_repositories += config_file_repositories
@@ -183,6 +186,7 @@ module Dependabot
             sources.each do |source_details|
               key = source_details.fetch(:key)
               next source_details[:token] = nil unless key
+
               tag = key.gsub(" ", "_x0020_")
               creds_nodes = doc.css("configuration > packageSourceCredentials "\
                                     "> #{tag} > add")

@@ -19,6 +19,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::Dotnet::Version.new(matches[2])]
         end
 
@@ -48,6 +49,7 @@ module Dependabot
 
         def convert_dotnet_constraint_to_ruby_constraint(req_string)
           return req_string unless req_string.include?("*")
+
           convert_wildcard_req(req_string)
         end
 

@@ -80,6 +80,7 @@ module Dependabot
               @insert_if_bare      = insert_if_bare
 
               return if %i(gemfile gemspec).include?(file_type)
+
               raise "File type must be :gemfile or :gemspec. Got #{file_type}."
             end
 
@@ -114,12 +115,14 @@ module Dependabot
 
             def declaration_methods
               return %i(gem) if file_type == :gemfile
+
               %i(add_dependency add_runtime_dependency
                  add_development_dependency)
             end
 
             def declares_targeted_gem?(node)
               return false unless declaration_methods.include?(node.children[1])
+
               node.children[2].children.first == dependency.name
             end
 
@@ -153,6 +156,7 @@ module Dependabot
 
               ops = Gem::Requirement::OPS.keys
               return true if ops.none? { |op| req_string.include?(op) }
+
               req_string.include?(" ")
             end
 

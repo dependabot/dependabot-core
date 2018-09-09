@@ -64,6 +64,7 @@ module Dependabot
 
           def content_should_change?
             return false if previous_requirement == updated_requirement
+
             previous_requirement || insert_if_bare?
           end
         end

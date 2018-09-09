@@ -41,6 +41,7 @@ module Dependabot
               kwargs_node = node.children.last
               kwargs_node.children.each do |hash_pair|
                 next unless PIN_KEYS.include?(key_from_hash_pair(hash_pair))
+
                 update_value(hash_pair)
               end
             end
@@ -49,6 +50,7 @@ module Dependabot
 
             def declares_targeted_gem?(node)
               return false unless node.children[1] == :gem
+
               node.children[2].children.first == dependency.name
             end
 

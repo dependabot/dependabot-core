@@ -25,6 +25,7 @@ module Dependabot
                 )
 
                 next updated_content unless content == updated_content
+
                 raise "Expected content to change!"
               end
           end

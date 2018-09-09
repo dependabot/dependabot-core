@@ -39,6 +39,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::Elixir::Version.new(matches[2])]
         end
 

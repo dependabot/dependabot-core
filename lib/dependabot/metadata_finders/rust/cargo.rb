@@ -26,6 +26,7 @@ module Dependabot
 
           return "default" if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           sources.first[:type] || sources.first.fetch("type")
         end
 

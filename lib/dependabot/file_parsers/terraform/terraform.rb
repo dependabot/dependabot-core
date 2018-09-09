@@ -32,6 +32,7 @@ module Dependabot
             modules = modules.fetch("terraform", [])
             modules.each do |details|
               next unless details["source"]
+
               dependency_set << build_terragrunt_dependency(file, details)
             end
           end
@@ -157,6 +158,7 @@ module Dependabot
         def version_from_ref(ref)
           version_regex = GitCommitChecker::VERSION_REGEX
           return unless ref&.match?(version_regex)
+
           ref.match(version_regex).named_captures.fetch("version")
         end
 
@@ -266,6 +268,7 @@ module Dependabot
 
         def check_required_files
           return if [*terraform_files, *terragrunt_files].any?
+
           raise "No Terraform configuration file!"
         end
       end

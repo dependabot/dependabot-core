@@ -141,6 +141,7 @@ module Dependabot
               dependency_files.
               select { |f| f.name.end_with?("mix.exs") }
             raise "No mix.exs!" if mixfiles.none?
+
             mixfiles
           end
 

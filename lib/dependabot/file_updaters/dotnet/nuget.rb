@@ -33,6 +33,7 @@ module Dependabot
           updated_files.reject! { |f| dependency_files.include?(f) }
 
           raise "No files changed!" if updated_files.none?
+
           updated_files
         end
 
@@ -48,6 +49,7 @@ module Dependabot
 
         def check_required_files
           return if project_files.any? || packages_config
+
           raise "No project file or packages.config!"
         end
 
@@ -83,6 +85,7 @@ module Dependabot
           end
 
           raise "Expected content to change!" if updated_content == file.content
+
           updated_file(file: file, content: updated_content)
         end
 

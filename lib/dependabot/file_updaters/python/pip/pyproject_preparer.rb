@@ -26,6 +26,7 @@ module Dependabot
 
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pyproject_content unless lockfile
+
             pyproject_object = TomlRB.parse(pyproject_content)
             poetry_object = pyproject_object.fetch("tool").fetch("poetry")
             parsed_lockfile = TomlRB.parse(lockfile.content)
@@ -36,6 +37,7 @@ module Dependabot
 
               poetry_object.fetch(key).each do |dep_name, _|
                 next if excluded_names.include?(normalise(dep_name))
+
                 locked_version =
                   parsed_lockfile.fetch("package").
                   find { |d| d["name"] == normalise(dep_name) }&.

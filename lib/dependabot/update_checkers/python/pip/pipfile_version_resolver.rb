@@ -85,6 +85,7 @@ module Dependabot
                 handle_pipenv_errors(error)
               end
             return unless @latest_resolvable_version_string
+
             Utils::Python::Version.new(@latest_resolvable_version_string)
           end
 
@@ -117,6 +118,7 @@ module Dependabot
                error.message.include?("Invalid specifier:")
               msg = clean_error_message(error.message)
               raise if msg.empty?
+
               raise DependencyFileNotResolvable, msg
             end
 
@@ -125,6 +127,7 @@ module Dependabot
               msg = clean_error_message(error.message)
               msg.gsub!(/\s+\(from .*$/, "")
               raise if msg.empty?
+
               raise DependencyFileNotResolvable, msg
             end
 
@@ -179,6 +182,7 @@ module Dependabot
               rescue SharedHelpers::HelperSubprocessFailed => error
                 return false if error.message.include?("not find a version")
                 return false if error.message.include?("Warning: Python >")
+
                 raise
               end
             end
@@ -370,6 +374,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -389,6 +394,7 @@ module Dependabot
 
               regex = known_parts.map { |p| Regexp.quote(p) }.join(".*?")
               next if config_variable_source_urls.any? { |s| s.match?(regex) }
+
               raise PrivateSourceAuthenticationFailure, url
             end
           end

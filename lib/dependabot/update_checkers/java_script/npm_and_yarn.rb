@@ -14,6 +14,7 @@ module Dependabot
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
+
           latest_version_details&.fetch(:version)
         end
 
@@ -68,6 +69,7 @@ module Dependabot
         def latest_resolvable_version_with_no_unlock_for_git_dependency
           reqs = dependency.requirements.map do |r|
             next if r.fetch(:requirement).nil?
+
             requirement_class.requirements_array(r.fetch(:requirement))
           end.compact
 
@@ -94,11 +96,13 @@ module Dependabot
         def should_switch_source_from_git_to_registry?
           return false unless git_dependency?
           return false if latest_version_for_git_dependency.nil?
+
           version_class.correct?(latest_version_for_git_dependency)
         end
 
         def git_branch_or_ref_in_release?(release)
           return false unless release
+
           git_commit_checker.branch_or_ref_in_release?(release)
         end
 

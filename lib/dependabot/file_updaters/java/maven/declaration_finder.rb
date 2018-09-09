@@ -38,6 +38,7 @@ module Dependabot
             filename = declaring_requirement.fetch(:file)
             declaring_pom = dependency_files.find { |f| f.name == filename }
             return declaring_pom if declaring_pom
+
             raise "No pom found with name #{filename}!"
           end
 

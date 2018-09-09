@@ -79,6 +79,7 @@ module Dependabot
           end
 
           return if git_declaration?(declaration)
+
           declaration["version"]
         end
 

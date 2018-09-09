@@ -81,6 +81,7 @@ module Dependabot
           property_value = properties(buildfile).fetch(property_name, nil)
 
           return value unless property_value
+
           value.gsub(PROPERTY_REGEX, property_value)
         end
 

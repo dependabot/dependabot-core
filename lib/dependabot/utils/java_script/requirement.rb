@@ -27,6 +27,7 @@ module Dependabot
           end
 
           return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+
           [matches[1] || "=", Utils::JavaScript::Version.new(matches[2])]
         end
 
@@ -34,6 +35,7 @@ module Dependabot
         # returned array must be satisfied for a version to be valid.
         def self.requirements_array(requirement_string)
           return [new(nil)] if requirement_string.nil?
+
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
             requirements = req_string.strip.split(AND_SEPARATOR)
             new(requirements)

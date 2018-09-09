@@ -30,6 +30,7 @@ module Dependabot
 
         def composer_lock
           return @composer_lock if @composer_lock_lookup_attempted
+
           @composer_lock_lookup_attempted = true
           @composer_lock ||= fetch_file_from_host("composer.lock")
         rescue Dependabot::DependencyFileNotFound

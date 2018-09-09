@@ -92,6 +92,7 @@ module Dependabot
 
           def path_node_for_gem_declaration(node)
             return unless node.children.last.type == :hash
+
             kwargs_node = node.children.last
 
             path_hash_pair =

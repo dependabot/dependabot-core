@@ -93,6 +93,7 @@ module Dependabot
             raise "Unexpected dependency declaration: #{declaration}"
           end
           return declaration["version"] if declaration["version"]
+
           nil
         end
 
@@ -126,6 +127,7 @@ module Dependabot
             max_by { |p| version_class.new(p["version"]) }
 
           return unless package
+
           version_from_lockfile_details(package)
         end
 
@@ -142,6 +144,7 @@ module Dependabot
           unless package_details["source"]&.start_with?("git+")
             return package_details["version"]
           end
+
           package_details["source"].split("#").last
         end
 

@@ -110,6 +110,7 @@ module Dependabot
               parsed_file(file).fetch(type, {}).map do |_, details|
                 next unless details.is_a?(Hash)
                 next unless details["path"]
+
                 File.join(details["path"], "Cargo.toml")
               end
             end.compact
@@ -120,6 +121,7 @@ module Dependabot
                 t_details.fetch(type, {}).map do |_, details|
                   next unless details.is_a?(Hash)
                   next unless details["path"]
+
                   File.join(details["path"], "Cargo.toml")
                 end
               end.compact

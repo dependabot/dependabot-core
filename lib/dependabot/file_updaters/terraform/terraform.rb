@@ -99,6 +99,7 @@ module Dependabot
 
         def check_required_files
           return if [*terraform_files, *terragrunt_files].any?
+
           raise "No Terraform configuration file!"
         end
 

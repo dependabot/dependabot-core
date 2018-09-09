@@ -40,6 +40,7 @@ module Dependabot
                 file = get_original_file(req.fetch(:file)).dup
                 updated_content = updated_requirement_or_setup_file_content(req)
                 next if updated_content == file.content
+
                 file.content = updated_content
                 file
               end.compact
@@ -55,6 +56,7 @@ module Dependabot
               )
 
             raise "Expected content to change!" if content == updated_content
+
             updated_content
           end
 
@@ -66,6 +68,7 @@ module Dependabot
               content.scan(regex) { matches << Regexp.last_match }
             dec = matches.find { |m| normalise(m[:name]) == dependency.name }
             raise "Declaration not found for #{dependency.name}!" unless dec
+
             dec.to_s.strip
           end
 
@@ -103,6 +106,7 @@ module Dependabot
 
           def hash_algorithm(requirement)
             return unless requirement_includes_hashes?(requirement)
+
             original_dependency_declaration_string(requirement).
               match(PythonRequirementParser::HASHES).
               named_captures.fetch("algorithm")

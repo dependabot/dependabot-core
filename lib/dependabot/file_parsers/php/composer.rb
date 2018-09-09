@@ -38,6 +38,7 @@ module Dependabot
 
           DEPENDENCY_GROUP_KEYS.each do |keys|
             next unless parsed_composer_json[keys[:manifest]]
+
             parsed_composer_json[keys[:manifest]].each do |name, req|
               next unless package?(name)
 
@@ -102,6 +103,7 @@ module Dependabot
 
         def dependency_version(name:, type:)
           return unless lockfile
+
           key = lockfile_key(type)
 
           parsed_lockfile.
@@ -112,6 +114,7 @@ module Dependabot
 
         def dependency_source(name:, type:)
           return unless lockfile
+
           key = lockfile_key(type)
           package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
 
@@ -149,6 +152,7 @@ module Dependabot
 
         def parsed_lockfile
           return unless lockfile
+
           @parsed_lockfile ||= JSON.parse(lockfile.content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, lockfile.path

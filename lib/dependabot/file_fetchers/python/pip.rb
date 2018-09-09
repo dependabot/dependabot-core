@@ -114,6 +114,7 @@ module Dependabot
 
         def req_txt_and_in_files
           return @req_txt_and_in_files if @req_txt_and_in_files
+
           @req_txt_and_in_files = []
 
           repo_contents.
@@ -190,6 +191,7 @@ module Dependabot
           path_setup_file_paths.each do |path|
             path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
             next if path == "setup.py" && setup_file
+
             path_setup_files << fetch_file_from_host(path)
           rescue Dependabot::DependencyFileNotFound
             unfetchable_files << path

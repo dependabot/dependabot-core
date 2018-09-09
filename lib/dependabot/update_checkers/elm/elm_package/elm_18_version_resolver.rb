@@ -86,6 +86,7 @@ module Dependabot
             # Otherwise, we can still update if the result was a forced full
             # unlock and we're allowed to unlock other requirements
             return false unless unlock_requirement == :all
+
             result == :forced_full_unlock_bump
           end
 
@@ -164,6 +165,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Elm
             # returns a non-zero status
             return raw_response if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -214,6 +216,7 @@ module Dependabot
 
           def current_version
             return unless dependency.version
+
             version_class.new(dependency.version)
           end
 

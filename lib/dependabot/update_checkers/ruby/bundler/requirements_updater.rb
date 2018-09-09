@@ -19,6 +19,7 @@ module Dependabot
             @updated_source = updated_source
 
             return unless latest_resolvable_version
+
             @latest_resolvable_version =
               Gem::Version.new(latest_resolvable_version)
           end

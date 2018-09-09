@@ -8,6 +8,7 @@ module Dependabot
       class ElmPackage < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
           return true if filenames.include?("elm-package.json")
+
           filenames.include?("elm.json")
         end
 

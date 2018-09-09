@@ -41,6 +41,7 @@ module Dependabot
           def current_dir
             parts = project_file.name.split("/")[0..-2]
             return if parts.empty?
+
             parts.join("/")
           end
         end

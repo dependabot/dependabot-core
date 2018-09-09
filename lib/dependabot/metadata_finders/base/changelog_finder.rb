@@ -90,6 +90,7 @@ module Dependabot
             end
 
           return unless @upgrade_guide_text.valid_encoding?
+
           @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
@@ -136,18 +137,21 @@ module Dependabot
               ).body
             end
           return unless @full_changelog_text.valid_encoding?
+
           @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
         end
 
         def old_version_changelog_line
           old_version = git_source? ? previous_ref : dependency.previous_version
           return nil unless old_version
+
           changelog_line_for_version(old_version)
         end
 
         def new_version_changelog_line
           new_version = git_source? ? new_ref : dependency.version
           return nil unless new_version
+
           changelog_line_for_version(new_version)
         end
 
@@ -156,6 +160,7 @@ module Dependabot
         def changelog_line_for_version(version)
           raise "No changelog text" unless full_changelog_text
           return nil unless version
+
           version = version.gsub(/^v/, "")
 
           changelog_lines = full_changelog_text.split("\n")
@@ -167,6 +172,7 @@ module Dependabot
             next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
             next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
             next true if changelog_lines[index + 1]&.match?(/^[=\-\+]{3,}\s*$/)
+
             false
           end
         end
@@ -186,6 +192,7 @@ module Dependabot
             next false unless version <= version_class.new(dependency.version)
             next true unless dependency.previous_version
             next true unless version_class.correct?(dependency.previous_version)
+
             version > version_class.new(dependency.previous_version)
           end
         end
@@ -197,6 +204,7 @@ module Dependabot
               next true if line.start_with?("#", "!")
               next true if line.match?(/^v?\d\.\d/)
               next true if changelog_lines[index + 1]&.match?(/^[=-]+\s*$/)
+
               false
             end
 
@@ -204,6 +212,7 @@ module Dependabot
           header_lines.each do |line|
             cleaned_line = line.gsub(/^[^0-9]*/, "").gsub(/[\s,:].*/, "")
             next if cleaned_line.empty? || !version_class.correct?(cleaned_line)
+
             versions << version_class.new(cleaned_line)
           end
 
@@ -320,6 +329,7 @@ module Dependabot
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           source_type = sources.first[:type] || sources.first.fetch("type")
           source_type == "git"
         end

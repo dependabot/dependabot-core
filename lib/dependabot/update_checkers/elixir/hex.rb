@@ -91,6 +91,7 @@ module Dependabot
           # Resolution may fail, as Elixir updates straight to the tip of the
           # branch. Just return `nil` if it does (so no update).
           return if error.message.include?("resolution failed")
+
           raise error
         end
 
@@ -120,9 +121,11 @@ module Dependabot
 
         def latest_git_tag_is_resolvable?
           return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+
           @latest_git_tag_is_resolvable_checked = true
 
           return false if git_commit_checker.local_tag_for_latest_version.nil?
+
           replacement_tag = git_commit_checker.local_tag_for_latest_version
 
           prepared_files = FilePreparer.new(
@@ -140,6 +143,7 @@ module Dependabot
           @git_tag_resolvable = !resolver_result.nil?
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise error unless error.message.include?("resolution failed")
+
           @git_tag_resolvable = false
         end
 
@@ -230,6 +234,7 @@ module Dependabot
           )
 
           return unless response.status == 200
+
           @hex_registry_response = JSON.parse(response.body)
         rescue Excon::Error::Socket, Excon::Error::Timeout
           nil

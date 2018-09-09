@@ -105,6 +105,7 @@ module Dependabot
 
                 npmrc_file&.content.to_s.scan(AUTH_TOKEN_REGEX) do
                   next if Regexp.last_match[:registry].include?("${")
+
                   registries << {
                     "type" => "npm_registry",
                     "registry" => Regexp.last_match[:registry],
@@ -125,6 +126,7 @@ module Dependabot
             sources = dependency.requirements.
                       map { |r| r.fetch(:source) }.uniq.compact
             return sources.first unless sources.count > 1
+
             raise "Multiple sources! #{sources.join(', ')}"
           end
         end

@@ -60,6 +60,7 @@ module Dependabot
                 fetch_version_from_parsed_lockfile(updated_lockfile)
               end
             return unless @latest_resolvable_version_string
+
             Utils::Python::Version.new(@latest_resolvable_version_string)
           end
 
@@ -190,6 +191,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command

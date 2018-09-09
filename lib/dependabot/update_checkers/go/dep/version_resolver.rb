@@ -88,6 +88,7 @@ module Dependabot
             # Raise an error with the output from the shell session if dep
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -115,6 +116,7 @@ module Dependabot
 
           def packages_to_import
             return [] unless lockfile
+
             parsed_lockfile = TomlRB.parse(lockfile.content)
 
             # If the lockfile was created using dep v0.5.0+ then it will tell us
@@ -128,6 +130,7 @@ module Dependabot
             parsed_lockfile.fetch("projects").flat_map do |dep|
               dep["packages"].map do |package|
                 next if package.start_with?("internal")
+
                 package == "." ? dep["name"] : File.join(dep["name"], package)
               end.compact
             end

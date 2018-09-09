@@ -39,6 +39,7 @@ module Dependabot
 
         def packages_config_dependencies
           return DependencySet.new unless packages_config
+
           PackagesConfigParser.
             new(packages_config: packages_config).
             dependency_set
@@ -62,6 +63,7 @@ module Dependabot
 
         def check_required_files
           return if project_files.any? || packages_config
+
           raise "No project file or packages.config!"
         end
       end

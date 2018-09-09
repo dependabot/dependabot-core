@@ -30,12 +30,14 @@ module Dependabot
             end
 
             return unless latest_resolvable_version
+
             @latest_resolvable_version =
               version_class.new(latest_resolvable_version)
           end
 
           def updated_requirements
             return requirements unless latest_resolvable_version
+
             requirements.map { |req| updated_requirement(req) }
           end
 

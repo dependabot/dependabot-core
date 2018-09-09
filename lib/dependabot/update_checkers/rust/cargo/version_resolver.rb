@@ -43,6 +43,7 @@ module Dependabot
 
               return if updated_version.nil?
               return updated_version if git_dependency?
+
               version_class.new(updated_version)
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
@@ -88,6 +89,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Cargo
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -118,6 +120,7 @@ module Dependabot
                error.message.include?("requires a nightly version")
               raise Dependabot::DependencyFileNotResolvable, msg
             end
+
             raise error
           end
 

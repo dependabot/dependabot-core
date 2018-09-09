@@ -60,6 +60,7 @@ module Dependabot
 
               dependency_files.map do |file|
                 next unless file.name.end_with?(".txt")
+
                 updated_content = File.read(file.name)
 
                 updated_content =
@@ -76,9 +77,11 @@ module Dependabot
           def update_manifest_files
             dependency_files.map do |file|
               next unless file.name.end_with?(".in")
+
               file = file.dup
               updated_content = update_dependency_requirement(file)
               next if updated_content == file.content
+
               file.content = updated_content
               file
             end.compact
@@ -118,6 +121,7 @@ module Dependabot
             # Raise an error with the output from the shell session if
             # pip-compile returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(
               raw_response,
               command
@@ -127,6 +131,7 @@ module Dependabot
             raise unless error.message.include?("InstallationError") ||
                          error.message.include?("futures")
             raise if command.start_with?("pyenv local 2.7.15 &&")
+
             command = "pyenv local 2.7.15 && " +
                       command +
                       " && pyenv local --unset"

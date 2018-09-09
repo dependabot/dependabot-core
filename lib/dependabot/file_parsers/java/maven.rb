@@ -53,6 +53,7 @@ module Dependabot
           end
 
           raise errors.first if errors.any? && dependency_set.dependencies.none?
+
           dependency_set
         end
 
@@ -103,6 +104,7 @@ module Dependabot
 
         def dependency_requirement(pom, dependency_node)
           return unless dependency_node.at_xpath("./version")
+
           version_content = dependency_node.at_xpath("./version").content.strip
 
           evaluated_value(version_content, pom)
@@ -111,6 +113,7 @@ module Dependabot
         def packaging_type(pom, dependency_node)
           return "pom" if dependency_node.node_name == "parent"
           return "jar" unless dependency_node.at_xpath("./type")
+
           packaging_type_content = dependency_node.at_xpath("./type").
                                    content.strip
 
@@ -119,6 +122,7 @@ module Dependabot
 
         def version_property_name(dependency_node)
           return unless dependency_node.at_xpath("./version")
+
           version_content = dependency_node.at_xpath("./version").content.strip
 
           return unless version_content.match?(PROPERTY_REGEX)

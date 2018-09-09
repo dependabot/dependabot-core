@@ -100,6 +100,7 @@ module Dependabot
 
       def source
         return @source if @source_lookup_attempted
+
         @source_lookup_attempted = true
         @source = look_up_source
       end

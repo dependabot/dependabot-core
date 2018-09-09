@@ -30,6 +30,7 @@ module Dependabot
             )
 
             raise "Expected content to change!" if content == updated_content
+
             updated_content
           end
 
@@ -52,6 +53,7 @@ module Dependabot
               end
 
             raise "Declaration not found for #{dependency_name}!" unless dec
+
             dec.to_s.strip
           end
 

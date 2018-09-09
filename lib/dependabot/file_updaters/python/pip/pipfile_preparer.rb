@@ -26,6 +26,7 @@ module Dependabot
 
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pipfile_content unless lockfile
+
             pipfile_object = TomlRB.parse(pipfile_content)
             excluded_names = dependencies.map(&:name)
 
@@ -34,6 +35,7 @@ module Dependabot
 
               pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
                 next if excluded_names.include?(normalise(dep_name))
+
                 locked_version = version_from_lockfile(
                   lockfile,
                   keys[:lockfile],

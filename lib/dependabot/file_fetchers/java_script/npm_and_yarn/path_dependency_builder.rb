@@ -39,6 +39,7 @@ module Dependabot
             parsed_yarn_lock.to_a.
               find do |n, _|
                 next false unless n.split(/(?<=\w)\@/).first == dependency_name
+
                 n.split(/(?<=\w)\@/).last.start_with?("file:")
               end&.last
           end
@@ -74,6 +75,7 @@ module Dependabot
 
           def parsed_package_lock
             return {} unless package_lock
+
             JSON.parse(package_lock.content)
           rescue JSON::ParserError
             {}
@@ -81,6 +83,7 @@ module Dependabot
 
           def parsed_yarn_lock
             return {} unless yarn_lock
+
             @parsed_yarn_lock ||=
               SharedHelpers.in_a_temporary_directory do
                 File.write("yarn.lock", yarn_lock.content)

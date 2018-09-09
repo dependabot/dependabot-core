@@ -128,9 +128,11 @@ module Dependabot
 
         def latest_git_tag_is_resolvable?
           return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+
           @latest_git_tag_is_resolvable_checked = true
 
           return false if git_commit_checker.local_tag_for_latest_version.nil?
+
           replacement_tag = git_commit_checker.local_tag_for_latest_version
 
           prepared_files = FilePreparer.new(
@@ -148,6 +150,7 @@ module Dependabot
           @git_tag_resolvable = true
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise error unless error.message.include?("versions conflict")
+
           @git_tag_resolvable = false
         end
 
@@ -157,6 +160,7 @@ module Dependabot
           # Resolution may fail, as Cargo updates straight to the tip of the
           # branch. Just return `nil` if it does (so no update).
           return if error.message.include?("versions conflict")
+
           raise error
         end
 
@@ -227,6 +231,7 @@ module Dependabot
                     map { |r| r.fetch(:source) }.uniq.compact
 
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           sources.first&.fetch(:type) == "path"
         end
 

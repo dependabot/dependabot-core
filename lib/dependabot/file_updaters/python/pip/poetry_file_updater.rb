@@ -74,6 +74,7 @@ module Dependabot
                   end
 
                 raise "Content did not change!" if content == updated_content
+
                 updated_content
               end
           end
@@ -149,6 +150,7 @@ module Dependabot
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
             return if $CHILD_STATUS.success?
+
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           end
 

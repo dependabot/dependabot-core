@@ -35,6 +35,7 @@ module Dependabot
                 )
 
                 raise "Expected content to change!" if content == new_content
+
                 content = new_content
               end
 

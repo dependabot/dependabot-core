@@ -27,6 +27,7 @@ module Dependabot
 
           manifest_files.each do |file|
             next unless file_changed?(file)
+
             updated_files <<
               updated_file(
                 file: file,

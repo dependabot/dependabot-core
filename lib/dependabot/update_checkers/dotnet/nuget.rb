@@ -145,6 +145,7 @@ module Dependabot
             map do |url_details|
               versions = versions_for_v3_repository(url_details)
               next unless versions
+
               { "versions" => versions, "listing_details" => url_details }
             end.compact
         end
@@ -195,6 +196,7 @@ module Dependabot
               **SharedHelpers.excon_defaults
             )
             return unless response.status == 200
+
             JSON.parse(response.body).fetch("versions")
           end
         end

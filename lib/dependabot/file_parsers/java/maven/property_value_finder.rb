@@ -38,6 +38,7 @@ module Dependabot
                   doc.at_xpath("/project/profiles/profile/properties/#{nm}")
                 break candidate_node if candidate_node
                 break unless nm.match?(DOT_SEPARATOR_REGEX)
+
                 nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
               end
 
@@ -48,6 +49,7 @@ module Dependabot
 
             # Otherwise, look for a value in this pom's parent
             return unless (parent = parent_pom(pom))
+
             property_details(
               property_name: property_name,
               callsite_pom: parent
@@ -94,6 +96,7 @@ module Dependabot
             version = doc.at_xpath("/project/parent/version")&.content&.strip
 
             return unless group_id && artifact_id
+
             name = [group_id, artifact_id].join(":")
 
             if internal_dependency_poms[name]

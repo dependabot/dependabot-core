@@ -94,6 +94,7 @@ module Dependabot
                 next unless details["name"] == dependency.name
                 next if details["revision"] || details["branch"]
                 next if replacement_git_pin
+
                 updated_req = temporary_requirement_for_resolution(filename)
 
                 details["version"] = updated_req

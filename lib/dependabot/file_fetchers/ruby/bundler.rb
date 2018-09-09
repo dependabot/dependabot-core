@@ -73,6 +73,7 @@ module Dependabot
         def ruby_version_file
           return unless gemfile
           return unless gemfile.content.include?(".ruby-version")
+
           fetch_file_if_present(".ruby-version")
         end
 
@@ -148,6 +149,7 @@ module Dependabot
 
         def child_gemfiles
           return [] unless gemfile
+
           @child_gemfiles ||=
             fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
         end

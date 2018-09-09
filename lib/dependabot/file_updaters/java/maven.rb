@@ -34,6 +34,7 @@ module Dependabot
           if updated_files.any? { |f| f.name.end_with?("pom_parent.xml") }
             raise "Updated a supporting POM!"
           end
+
           updated_files
         end
 
@@ -93,6 +94,7 @@ module Dependabot
           end
 
           raise "Expected content to change!" if updated_content == pom.content
+
           updated_file(file: pom, content: updated_content)
         end
 

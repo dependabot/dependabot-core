@@ -21,6 +21,7 @@ module Dependabot
             @source_url = source_url
             @properties_to_update = properties_to_update
             return unless latest_version
+
             @latest_version = version_class.new(latest_version)
           end
 

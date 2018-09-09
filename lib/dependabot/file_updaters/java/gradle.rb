@@ -28,6 +28,7 @@ module Dependabot
           updated_files = updated_files.reject { |f| buildfiles.include?(f) }
 
           raise "No files changed!" if updated_files.none?
+
           updated_files
         end
 
@@ -104,6 +105,7 @@ module Dependabot
           if updated_content == buildfile.content
             raise "Expected content to change!"
           end
+
           updated_file(file: buildfile, content: updated_content)
         end
 
@@ -114,6 +116,7 @@ module Dependabot
           buildfile.content.lines.find do |line|
             next false unless line.include?(dependency.name.split(":").first)
             next false unless line.include?(dependency.name.split(":").last)
+
             line.include?(requirement.fetch(:requirement))
           end
         end

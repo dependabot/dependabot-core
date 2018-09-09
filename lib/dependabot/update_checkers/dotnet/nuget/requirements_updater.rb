@@ -19,6 +19,7 @@ module Dependabot
             @requirements = requirements
             @source_details = source_details
             return unless latest_version
+
             @latest_version = version_class.new(latest_version)
           end
 

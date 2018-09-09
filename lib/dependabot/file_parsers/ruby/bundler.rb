@@ -92,6 +92,7 @@ module Dependabot
           # other DependencySets.
           parsed_lockfile.specs.each do |dependency|
             next if dependency.source.is_a?(::Bundler::Source::Path)
+
             dependencies <<
               Dependency.new(
                 name: dependency.name,
@@ -206,6 +207,7 @@ module Dependabot
         def default_rubygems?(source)
           return true if source.nil?
           return false unless source.is_a?(::Bundler::Source::Rubygems)
+
           source.remotes.any? { |r| r.to_s.include?("rubygems.org") }
         end
 
@@ -225,6 +227,7 @@ module Dependabot
           if spec.source.instance_of?(::Bundler::Source::Git)
             return spec.source.revision
           end
+
           spec.version
         end
 

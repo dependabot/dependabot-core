@@ -25,6 +25,7 @@ module Dependabot
             end
 
             return unless latest_resolvable_version
+
             @latest_resolvable_version =
               Utils::Python::Version.new(latest_resolvable_version)
           end

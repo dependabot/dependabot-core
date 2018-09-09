@@ -44,6 +44,7 @@ module Dependabot
 
           return "default" if sources.empty?
           raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
           sources.first[:type] || sources.first.fetch("type")
         end
 
@@ -87,6 +88,7 @@ module Dependabot
           # last line off of the directory.
           return listing unless listing&.fetch("source_code_uri", nil)
           return listing if listing.fetch("source_code_uri").end_with?("/")
+
           listing["source_code_uri"] = listing["source_code_uri"] + "/"
           listing
         end
@@ -96,6 +98,7 @@ module Dependabot
 
           parsed_body = JSON.parse(response_body)
           return response_body if (SOURCE_KEYS - parsed_body.keys).none?
+
           digest = parsed_body.values_at("version", "authors", "info").hash
 
           source_url = parsed_body.
