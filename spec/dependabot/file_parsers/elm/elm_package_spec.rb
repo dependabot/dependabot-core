@@ -41,6 +41,17 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
       its(:length) { is_expected.to eq(5) }
 
+      context "that is not parseable" do
+        let(:elm_package_fixture_name) { "bad_json" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("elm-package.json")
+          end
+        end
+      end
+
       describe "the parsed dependenency details" do
         subject(:dependency) do
           dependencies.find { |d| d.name == dependency_name }
@@ -146,6 +157,17 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
     context "with an elm.json" do
       let(:files) { [elm_json] }
+
+      context "that is not parseable" do
+        let(:elm_json_fixture_name) { "bad_json.json" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("elm.json")
+          end
+        end
+      end
 
       context "for an application" do
         let(:elm_json_fixture_name) { "app.json" }

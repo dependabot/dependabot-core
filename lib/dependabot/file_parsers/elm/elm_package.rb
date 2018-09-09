@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/file_parsers/base"
 require "dependabot/utils/elm/requirement"
 
@@ -110,6 +111,14 @@ module Dependabot
 
         def parsed_package_file
           @parsed_package_file ||= JSON.parse(elm_package.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, elm_package.path
+        end
+
+        def parsed_elm_json
+          @parsed_elm_json ||= JSON.parse(elm_json.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, elm_json.path
         end
 
         def elm_package
@@ -118,10 +127,6 @@ module Dependabot
 
         def elm_json
           @elm_json ||= get_original_file("elm.json")
-        end
-
-        def parsed_elm_json
-          @parsed_elm_json ||= JSON.parse(elm_json.content)
         end
       end
     end
