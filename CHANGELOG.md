@@ -1,3 +1,7 @@
+## v0.70.1, 9 September 2018
+
+- Add elm.json to the list of updated files for Elm
+
 ## v0.70.0, 9 September 2018
 
 - Add support for Elm 0.19
