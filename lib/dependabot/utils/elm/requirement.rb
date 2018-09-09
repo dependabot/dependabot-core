@@ -11,6 +11,7 @@ module Dependabot
           "(#{Utils::Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
           "(#{Utils::Elm::Version::VERSION_PATTERN})"
         PATTERN = /\A#{PATTERN_RAW}\z/
+        EXACT_PATTERN = /\A#{Utils::Elm::Version::VERSION_PATTERN}\z/
 
         # Returns an array of requirements. At least one requirement from the
         # returned array must be satisfied for a version to be valid.
@@ -21,12 +22,17 @@ module Dependabot
         # Override the parser to create Utils::Elm::Versions and return an
         # array of parsed requirements
         def self.parse(obj)
+          # If a version is given this is an equals requirement
+          if EXACT_PATTERN.match?(obj.to_s)
+            return [["=", Utils::Elm::Version.new(obj.to_s)]]
+          end
+
           unless (matches = PATTERN.match(obj.to_s))
             msg = "Illformed requirement #{obj.inspect}"
             raise BadRequirementError, msg
           end
 
-          # If the two versions specified are identical this is a equals
+          # If the two versions specified are identical this is an equals
           # requirement
           if matches[1] == matches[4] && matches[3] == "<="
             return [["=", Utils::Elm::Version.new(matches[4])]]

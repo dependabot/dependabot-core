@@ -6,21 +6,21 @@ module Dependabot
   module FileUpdaters
     module Elm
       class ElmPackage
-        class ElmPackageUpdater
-          def initialize(elm_package_file:, dependencies:)
-            @elm_package_file = elm_package_file
+        class ElmJsonUpdater
+          def initialize(elm_json_file:, dependencies:)
+            @elm_json_file = elm_json_file
             @dependencies = dependencies
           end
 
-          def updated_elm_package_file_content
+          def updated_content
             dependencies.
-              select { |dep| requirement_changed?(elm_package_file, dep) }.
-              reduce(elm_package_file.content.dup) do |content, dep|
+              select { |dep| requirement_changed?(elm_json_file, dep) }.
+              reduce(elm_json_file.content.dup) do |content, dep|
                 updated_content = content
 
                 updated_content = update_requirement(
                   content: updated_content,
-                  filename: elm_package_file.name,
+                  filename: elm_json_file.name,
                   dependency: dep
                 )
 
@@ -31,7 +31,7 @@ module Dependabot
 
           private
 
-          attr_reader :elm_package_file, :dependencies
+          attr_reader :elm_json_file, :dependencies
 
           def requirement_changed?(file, dependency)
             changed_requirements =

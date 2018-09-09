@@ -10,30 +10,27 @@ module Dependabot
       class ElmPackage
         class RequirementsUpdater
           RANGE_REQUIREMENT_REGEX = /(\d+\.\d+\.\d+) <= v < (\d+\.\d+\.\d+)/
+          SINGLE_VERSION_REGEX = /\A(\d+\.\d+\.\d+)\z/
 
           def initialize(requirements:, latest_resolvable_version:)
             @requirements = requirements
 
             return unless latest_resolvable_version
-            unless Utils::Elm::Version.correct?(latest_resolvable_version)
-              return
-            end
+            return unless version_class.correct?(latest_resolvable_version)
             @latest_resolvable_version =
-              Utils::Elm::Version.new(latest_resolvable_version)
+              version_class.new(latest_resolvable_version)
           end
 
           def updated_requirements
-            if latest_resolvable_version
-              requirements.map do |req|
-                requirement = update_requirement(
-                  req[:requirement],
-                  latest_resolvable_version
-                )
+            return requirements unless latest_resolvable_version
 
-                req.merge(requirement: requirement)
-              end
-            else
-              requirements
+            requirements.map do |req|
+              updated_req_string = update_requirement(
+                req[:requirement],
+                latest_resolvable_version
+              )
+
+              req.merge(requirement: updated_req_string)
             end
           end
 
@@ -42,10 +39,12 @@ module Dependabot
           attr_reader :requirements, :latest_resolvable_version
 
           def update_requirement(old_req, new_version)
-            if Utils::Elm::Requirement.new(old_req).satisfied_by?(new_version)
+            if requirement_class.new(old_req).satisfied_by?(new_version)
               old_req
             elsif (match = RANGE_REQUIREMENT_REGEX.match(old_req))
               require_range(match[1], new_version)
+            elsif SINGLE_VERSION_REGEX.match?(old_req)
+              new_version.to_s
             else
               require_exactly(new_version)
             end
@@ -58,6 +57,14 @@ module Dependabot
 
           def require_exactly(version)
             "#{version} <= v <= #{version}"
+          end
+
+          def version_class
+            Utils::Elm::Version
+          end
+
+          def requirement_class
+            Utils::Elm::Requirement
           end
         end
       end

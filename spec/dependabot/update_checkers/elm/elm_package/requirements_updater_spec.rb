@@ -45,6 +45,11 @@ RSpec.describe the_class do
       context "with exact requirement" do
         let(:requirement_string) { "1.2.3 <= v <= 1.2.3" }
         its([:requirement]) { is_expected.to eq("1.5.0 <= v <= 1.5.0") }
+
+        context "specified as a single version" do
+          let(:requirement_string) { "1.2.3" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
       end
 
       context "with range requirement" do

@@ -33,6 +33,11 @@ RSpec.describe Dependabot::Utils::Elm::Requirement do
       it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.0.0")) }
       it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.0.1")) }
+
+      context "specified as a version" do
+        let(:requirement_string) { "1.0.0" }
+        it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
+      end
     end
   end
 

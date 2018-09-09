@@ -10,7 +10,7 @@ module Dependabot
     module Elm
       class ElmPackage < Dependabot::UpdateCheckers::Base
         require_relative "elm_package/requirements_updater"
-        require_relative "elm_package/version_resolver"
+        require_relative "elm_package/elm_18_version_resolver"
 
         def latest_version
           @latest_version ||= candidate_versions.max
@@ -53,7 +53,7 @@ module Dependabot
         private
 
         def version_resolver
-          @version_resolver ||= VersionResolver.new(
+          @version_resolver ||= Elm18VersionResolver.new(
             dependency: dependency,
             dependency_files: dependency_files,
             candidate_versions: candidate_versions

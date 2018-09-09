@@ -15,7 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage::ElmPackageUpdater do
 
   let(:elm_package_file) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm", "elm_package", elm_package_file_fixture_name),
+      content: fixture("elm", "elm_packages", elm_package_file_fixture_name),
       name: "elm-package.json"
     )
   end
