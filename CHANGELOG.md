@@ -1,3 +1,9 @@
+## v0.70.3, 9 September 2018
+
+- Elm: Treat indirect dependencies as sub-dependencies
+- Elm: Raise DependencyFileNotParseable errors for invalid JSON
+- Elm: More error handling in update checker
+
 ## v0.70.2, 9 September 2018
 
 - Elm: Use Elm 0.19 update checker if an elm.json is present
