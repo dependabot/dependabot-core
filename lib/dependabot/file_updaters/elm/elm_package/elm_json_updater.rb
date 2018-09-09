@@ -13,7 +13,20 @@ module Dependabot
           end
 
           def updated_content
-            # TODO: Write me!
+            dependencies.
+              select { |dep| requirement_changed?(elm_json_file, dep) }.
+              reduce(elm_json_file.content.dup) do |content, dep|
+                updated_content = content
+
+                updated_content = update_requirement(
+                  content: updated_content,
+                  filename: elm_json_file.name,
+                  dependency: dep
+                )
+
+                next updated_content unless content == updated_content
+                raise "Expected content to change!"
+              end
           end
 
           private
@@ -25,6 +38,28 @@ module Dependabot
               dependency.requirements - dependency.previous_requirements
 
             changed_requirements.any? { |f| f[:file] == file.name }
+          end
+
+          def update_requirement(content:, filename:, dependency:)
+            updated_req =
+              dependency.requirements.
+              find { |r| r.fetch(:file) == filename }.
+              fetch(:requirement)
+
+            old_req =
+              dependency.previous_requirements.
+              find { |r| r.fetch(:file) == filename }.
+              fetch(:requirement)
+
+            return content unless old_req
+
+            dep = dependency
+            regex =
+              /"#{Regexp.quote(dep.name)}"\s*:\s+"#{Regexp.quote(old_req)}"/
+
+            content.gsub(regex) do |declaration|
+              declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+            end
           end
         end
       end

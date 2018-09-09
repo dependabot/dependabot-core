@@ -26,7 +26,7 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
       "password" => "token"
     }]
   end
-  let(:files) { [elm_package_file] }
+  let(:files) { [elm_package_file, elm_json_file] }
   let(:elm_package_file) do
     Dependabot::DependencyFile.new(
       content: fixture("elm", "elm_packages", elm_package_file_fixture_name),
@@ -34,6 +34,13 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
     )
   end
   let(:elm_package_file_fixture_name) { "elm_css_and_datetimepicker" }
+  let(:elm_json_file) do
+    Dependabot::DependencyFile.new(
+      content: fixture("elm", "elm_jsons", elm_json_file_fixture_name),
+      name: "elm.json"
+    )
+  end
+  let(:elm_json_file_fixture_name) { "app.json" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -111,6 +118,40 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
           expect { updated_elm_package_file_content }.
             to raise_error("No files have changed!")
         end
+      end
+    end
+
+    describe "the elm.json file" do
+      subject(:updated_elm_json_file_content) do
+        updated_files.find { |f| f.name == "elm.json" }.content
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "elm/regex",
+          version: "1.1.0",
+          requirements: [{
+            file: "elm.json",
+            requirement: "1.1.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.0",
+          previous_requirements: [{
+            file: "elm.json",
+            requirement: "1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "elm-package"
+        )
+      end
+
+      it "updates the right dependency" do
+        expect(updated_elm_json_file_content).
+          to include(%("elm/regex": "1.1.0"))
+        expect(updated_elm_json_file_content).
+          to include(%("elm/html": "1.0.0"))
       end
     end
   end

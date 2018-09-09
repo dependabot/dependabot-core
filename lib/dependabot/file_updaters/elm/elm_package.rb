@@ -43,8 +43,8 @@ module Dependabot
         private
 
         def check_required_files
-          return if get_original_file("elm-package.json")
-          raise "No elm-package.json!"
+          return if elm_json_files.any? || elm_package_files.any?
+          raise "No elm.json or elm-package.json!"
         end
 
         def updated_elm_package_content(file)
