@@ -125,11 +125,12 @@ module Dependabot
           end
 
           def handle_elm_errors(error)
-            if error.message.include?("do not work with Elm 0.19.0")
+            if error.message.include?("OLD DEPENDENCIES") ||
+               error.message.include?("BAD JSON")
               raise Dependabot::DependencyFileNotResolvable, error.message
             end
 
-            # I don't know any other errors
+            # Raise any unrecognised errors
             raise error
           end
 

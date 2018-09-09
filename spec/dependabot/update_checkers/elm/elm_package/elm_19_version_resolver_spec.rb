@@ -18,7 +18,7 @@ RSpec.describe namespace::Elm19VersionResolver do
       dependency_files: dependency_files
     )
   end
-  let(:unlock_requirement) { :none }
+  let(:unlock_requirement) { :own }
   let(:dependency_files) { [elm_json] }
   let(:elm_json) do
     Dependabot::DependencyFile.new(
@@ -46,12 +46,12 @@ RSpec.describe namespace::Elm19VersionResolver do
     end
 
     context "for an app" do
-      context "allowing :none unlocks" do
+      context "allowing no unlocks" do
         let(:unlock_requirement) { :none }
         it { is_expected.to eq(elm_version(dependency_version)) }
       end
 
-      context "1) clean bump" do
+      context "with an update that only changes a single version" do
         context ":own unlocks" do
           let(:unlock_requirement) { :own }
           it { is_expected.to eq(elm_version("1.1.0")) }
@@ -69,7 +69,30 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_version) { "3.0.0" }
         let(:dependency_requirement) { "3.0.0" }
 
-        it { is_expected.to eq(elm_version(dependency_version)) }
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the temporary path isn't included in the error message
+              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).to include("do not work with Elm 0.19.0")
+            end
+        end
+      end
+
+      context "with an invalid file layout" do
+        let(:fixture_name) { "invalid_layout.json" }
+        let(:dependency_name) { "elm/regex" }
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency_requirement) { "1.0.0" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the temporary path isn't included in the error message
+              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).to include("object at project.dependencies")
+            end
+        end
       end
 
       context "with multiple updates required" do
