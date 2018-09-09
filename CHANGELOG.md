@@ -1,3 +1,9 @@
+## v0.70.0, 9 September 2018
+
+- Add support for Elm 0.19
+- Updates the container Dependabot Core uses to v0.1.31 (which includes both
+  Elm 0.18 and Elm 0.19)
+
 ## v0.69.43, 8 September 2018
 
 - .NET: Switch to using search endpoint to find versions for v3 repos. Means
