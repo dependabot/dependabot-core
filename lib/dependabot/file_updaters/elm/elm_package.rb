@@ -10,7 +10,10 @@ module Dependabot
         require_relative "elm_package/elm_json_updater"
 
         def self.updated_files_regex
-          [/^elm-package\.json$/]
+          [
+            /^elm-package\.json$/,
+            /^elm\.json$/
+          ]
         end
 
         def updated_dependency_files
