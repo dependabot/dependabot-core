@@ -1,6 +1,10 @@
+## v0.70.2, 9 September 2018
+
+- Elm: Use Elm 0.19 update checker if an elm.json is present
+
 ## v0.70.1, 9 September 2018
 
-- Add elm.json to the list of updated files for Elm
+- Elm: Add elm.json to the list of updated files for Elm
 
 ## v0.70.0, 9 September 2018
 
