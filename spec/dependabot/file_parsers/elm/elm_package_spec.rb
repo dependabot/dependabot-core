@@ -152,6 +152,11 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
 
         its(:length) { is_expected.to eq(13) }
 
+        describe "top level dependencies" do
+          subject { dependencies.select(&:top_level?) }
+          its(:length) { is_expected.to eq(10) }
+        end
+
         describe "the parsed dependenency details" do
           subject(:dependency) do
             dependencies.find { |d| d.name == dependency_name }
@@ -180,14 +185,7 @@ RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.version).to eq("1.0.0")
-              expect(dependency.requirements).to eq(
-                [{
-                  requirement: "1.0.0",
-                  file: "elm.json",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              )
+              expect(dependency.requirements).to eq([])
             end
           end
 

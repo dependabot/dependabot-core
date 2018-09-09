@@ -52,16 +52,22 @@ module Dependabot
 
           DEPENDENCY_TYPES.each do |dep_type|
             if repo_type == "application"
-              %w(direct indirect).each do |import_type|
-                dependencies_hash = parsed_elm_json.fetch(dep_type, {})
-                dependencies_hash.fetch(import_type, {}).each do |name, req|
-                  dependency_set <<
-                    build_elm_json_dependency(name, dep_type, req)
-                end
+              dependencies_hash = parsed_elm_json.fetch(dep_type, {})
+              dependencies_hash.fetch("direct", {}).each do |name, req|
+                dependency_set << build_elm_json_dependency(
+                  name: name, group: dep_type, requirement: req, direct: true
+                )
+              end
+              dependencies_hash.fetch("indirect", {}).each do |name, req|
+                dependency_set << build_elm_json_dependency(
+                  name: name, group: dep_type, requirement: req, direct: false
+                )
               end
             elsif repo_type == "package"
               parsed_elm_json.fetch(dep_type, {}).each do |name, req|
-                dependency_set << build_elm_json_dependency(name, dep_type, req)
+                dependency_set << build_elm_json_dependency(
+                  name: name, group: dep_type, requirement: req, direct: true
+                )
               end
             else raise "Unexpected repo type for Elm repo: #{repo_type}"
             end
@@ -70,16 +76,18 @@ module Dependabot
           dependency_set
         end
 
-        def build_elm_json_dependency(name, type, requirement)
+        def build_elm_json_dependency(name:, group:, requirement:, direct:)
+          requirements = [{
+            requirement: requirement,
+            groups: [group],
+            source: nil,
+            file: "elm.json"
+          }]
+
           Dependency.new(
             name: name,
             version: version_for(requirement)&.to_s,
-            requirements: [{
-              requirement: requirement,
-              groups: [type],
-              source: nil,
-              file: "elm.json"
-            }],
+            requirements: direct ? requirements : [],
             package_manager: "elm-package"
           )
         end

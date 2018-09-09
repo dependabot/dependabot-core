@@ -37,14 +37,7 @@ RSpec.describe namespace::Elm19VersionResolver do
   end
   let(:dependency_name) { "elm/parser" }
   let(:dependency_version) { "1.0.0" }
-  let(:dependency_requirements) do
-    [{
-      file: "elm.json",
-      requirement: dependency_requirement,
-      groups: ["dependencies"],
-      source: nil
-    }]
-  end
+  let(:dependency_requirements) { [] }
   let(:dependency_requirement) { "1.0.0" }
 
   describe "#latest_resolvable_version" do
