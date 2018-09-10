@@ -1,3 +1,9 @@
+## v0.70.4, 10 September 2018
+
+- Python: Stop swallowing errors when parsing setup.py
+- Python: Add alternative approach to parsing setup.py files
+- Python: Fall back to new parsing approach in setup.py sanitization
+
 ## v0.70.3, 9 September 2018
 
 - Elm: Treat indirect dependencies as sub-dependencies
