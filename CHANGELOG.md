@@ -1,3 +1,7 @@
+## v0.70.6, 10 September 2018
+
+- PHP: Handle packages provided by another package
+
 ## v0.70.5, 10 September 2018
 
 - Python: Implement PEP-0503 properly (replace runs of characters with a single
