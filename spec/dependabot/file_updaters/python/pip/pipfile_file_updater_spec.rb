@@ -319,13 +319,15 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 
       context "that looks like the output of `pipenv lock -r`" do
+        let(:pipfile_fixture_name) { "hard_names" }
+        let(:lockfile_fixture_name) { "hard_names.lock" }
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",
             content: fixture(
               "python",
               "requirements",
-              "version_not_specified_runtime.txt"
+              "hard_names_runtime.txt"
             )
           )
         end

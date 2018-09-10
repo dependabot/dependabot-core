@@ -97,6 +97,7 @@ module Dependabot
             return [] unless lockfile
 
             pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
+            pipfile_lock_deps = pipfile_lock_deps.map { |n| normalise(n) }
 
             regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
