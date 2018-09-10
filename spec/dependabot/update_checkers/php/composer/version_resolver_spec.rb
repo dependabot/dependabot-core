@@ -85,5 +85,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
         expect(resolver.latest_resolvable_version).to be_nil
       end
     end
+
+    context "with a dependecy that's provided by another dep" do
+      let(:manifest_fixture_name) { "provided_dependency" }
+      let(:dependency_files) { [manifest] }
+      let(:string_req) { "^1.0" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:dependency_name) { "php-http/client-implementation" }
+      let(:dependency_version) { nil }
+
+      it { is_expected.to eq(Dependabot::Utils::Php::Version.new("1.0")) }
+    end
   end
 end

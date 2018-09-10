@@ -104,6 +104,20 @@ class UpdateChecker
             }
         }
 
+        // Similarly, check if the package was provided by any other package.
+        foreach ($composer->getPackage()->getProvides() as $link) {
+            if ($link->getTarget() == $dependencyName) {
+                return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
+            }
+        }
+        foreach ($installedPackages as $package) {
+            foreach ($package->getProvides() as $link) {
+                if ($link->getTarget() == $dependencyName) {
+                    return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
+                }
+            }
+        }
+
         throw new \RuntimeException('Package not found in updated packages!');
     }
 }
