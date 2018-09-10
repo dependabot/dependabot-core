@@ -11,6 +11,11 @@ module Dependabot
     module Python
       class Pip
         class SetupFileParser
+          INSTALL_REQUIRES_REGEX = /install_requires=(\[.*?\])[,)\n]/m
+          SETUP_REQUIRES_REGEX = /setup_requires=(\[.*?\])[,)\n]/m
+          TESTS_REQUIRE_REGEX = /tests_require=(\[.*?\])[,)\n]/m
+          EXTRAS_REQUIRE_REGEX = /extras_require=(\{.*?\})[,)\n]/m
+
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
@@ -53,9 +58,26 @@ module Dependabot
               requirements
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.start_with?("InstallationError")
+            if error.message.start_with?("InstallationError")
+              raise Dependabot::DependencyFileNotEvaluatable, error.message
+            end
 
-            raise Dependabot::DependencyFileNotEvaluatable, error.message
+            parsed_sanitized_setup_file
+          end
+
+          def parsed_sanitized_setup_file
+            SharedHelpers.in_a_temporary_directory do
+              write_sanitized_setup_file
+
+              requirements = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python #{python_helper_path}",
+                function: "parse_setup",
+                args: [Dir.pwd]
+              )
+
+              check_requirements(requirements)
+              requirements
+            end
           end
 
           def check_requirements(requirements)
@@ -76,6 +98,35 @@ module Dependabot
             end
           end
 
+          # Write a setup.py with only entries for the requires fields.
+          #
+          # This sanitization is far from perfect (it will fail if any of the
+          # entries are dynamic), but it is an alternative approach to the one
+          # used in parser.py which sometimes succeeds when that has failed.
+          def write_sanitized_setup_file
+            original_content = setup_file.content
+
+            install_requires =
+              original_content.match(INSTALL_REQUIRES_REGEX)&.captures&.first
+            setup_requires =
+              original_content.match(SETUP_REQUIRES_REGEX)&.captures&.first
+            tests_require =
+              original_content.match(TESTS_REQUIRE_REGEX)&.captures&.first
+            extras_require =
+              original_content.match(EXTRAS_REQUIRE_REGEX)&.captures&.first
+
+            tmp = "from setuptools import setup\n\n"\
+                  "setup(name=\"sanitized-package\",version=\"0.0.1\","
+
+            tmp += "install_requires=#{install_requires}," if install_requires
+            tmp += "setup_requires=#{setup_requires}," if setup_requires
+            tmp += "tests_require=#{tests_require}," if tests_require
+            tmp += "extras_require=#{extras_require}," if extras_require
+            tmp += ")"
+
+            File.write("setup.py", tmp)
+          end
+
           def python_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
             File.join(project_root, "helpers/python/run.py")
@@ -84,6 +135,10 @@ module Dependabot
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalised_name(name)
             name.downcase.tr("_", "-").tr(".", "-")
+          end
+
+          def setup_file
+            dependency_files.find { |f| f.name == "setup.py" }
           end
         end
       end

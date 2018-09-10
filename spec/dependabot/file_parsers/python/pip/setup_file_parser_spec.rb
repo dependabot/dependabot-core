@@ -97,34 +97,22 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
     end
 
     context "without a `tests_require` key" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "no_tests_require.py")
-        )
-      end
-
+      let(:setup_file_fixture_name) { "no_tests_require.py" }
       its(:length) { is_expected.to eq(12) }
     end
 
     context "with a `print` statement" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "with_print.py")
-        )
-      end
-
+      let(:setup_file_fixture_name) { "with_print.py" }
       its(:length) { is_expected.to eq(14) }
     end
 
+    context "with an import statements that can't be handled" do
+      let(:setup_file_fixture_name) { "impossible_imports.py" }
+      its(:length) { is_expected.to eq(12) }
+    end
+
     context "with an illformed_requirement" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "illformed_req.py")
-        )
-      end
+      let(:setup_file_fixture_name) { "illformed_req.py" }
 
       it "raises a helpful error" do
         expect { parser.dependency_set }.
@@ -138,35 +126,17 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
     end
 
     context "with an `open` statement" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "with_open.py")
-        )
-      end
-
+      let(:setup_file_fixture_name) { "with_open.py" }
       its(:length) { is_expected.to eq(14) }
     end
 
     context "with the setup.py from requests" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "requests_setup.py")
-        )
-      end
-
+      let(:setup_file_fixture_name) { "requests_setup.py" }
       its(:length) { is_expected.to eq(13) }
     end
 
     context "with an import of a config file" do
-      let(:setup_file) do
-        Dependabot::DependencyFile.new(
-          name: "setup.py",
-          content: fixture("python", "setup_files", "imports_version.py")
-        )
-      end
-
+      let(:setup_file_fixture_name) { "imports_version.py" }
       its(:length) { is_expected.to eq(14) }
     end
   end
