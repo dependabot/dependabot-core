@@ -1,3 +1,9 @@
+## v0.70.5, 10 September 2018
+
+- Python: Implement PEP-0503 properly (replace runs of characters with a single
+  dash)
+- Python: Add workaround for Pipfile.lock not normalising quoted names fully
+
 ## v0.70.4, 10 September 2018
 
 - Python: Stop swallowing errors when parsing setup.py
