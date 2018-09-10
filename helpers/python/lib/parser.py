@@ -98,32 +98,29 @@ def parse_setup(directory):
                        "__url__ = 'something'\n")
             return io.StringIO(content)
 
-        try:
-            content = open(directory + '/setup.py', 'r').read()
+        content = open(directory + '/setup.py', 'r').read()
 
-            # Remove `print`, `open`, `log` and import statements
-            content = re.sub(r"print\s*\(", "noop(", content)
-            content = re.sub(r"log\s*(\.\w+)*\(", "noop(", content)
-            content = re.sub(r"\b(\w+\.)*(open|file)\s*\(", "fake_open(", content)
-            content = content.replace("parse_requirements(", "fake_parse(")
-            version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
-            content = re.sub(version_re, "", content)
+        # Remove `print`, `open`, `log` and import statements
+        content = re.sub(r"print\s*\(", "noop(", content)
+        content = re.sub(r"log\s*(\.\w+)*\(", "noop(", content)
+        content = re.sub(r"\b(\w+\.)*(open|file)\s*\(", "fake_open(", content)
+        content = content.replace("parse_requirements(", "fake_parse(")
+        version_re = re.compile(r"^.*import.*__version__.*$", re.MULTILINE)
+        content = re.sub(version_re, "", content)
 
-            # Set variables likely to be imported
-            __version__ = '0.0.1'
-            __author__ = 'someone'
-            __title__ = 'something'
-            __description__ = 'something'
-            __author_email__ = 'something'
-            __license__ = 'something'
-            __url__ = 'something'
+        # Set variables likely to be imported
+        __version__ = '0.0.1'
+        __author__ = 'someone'
+        __title__ = 'something'
+        __description__ = 'something'
+        __author_email__ = 'something'
+        __license__ = 'something'
+        __url__ = 'something'
 
-            # Run as main (since setup.py is a script)
-            __name__ = '__main__'
+        # Run as main (since setup.py is a script)
+        __name__ = '__main__'
 
-            # Exec the setup.py
-            exec(content) in globals(), locals()
-        except:
-            pass
+        # Exec the setup.py
+        exec(content) in globals(), locals()
 
     return json.dumps({ "result": setup_packages })
