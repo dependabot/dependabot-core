@@ -198,7 +198,7 @@ module Dependabot
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalised_name
-            dependency.name.downcase.tr("_", "-").tr(".", "-")
+            dependency.name.downcase.gsub(/[-_.]+/, "-")
           end
 
           def name_regex

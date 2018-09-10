@@ -134,7 +134,7 @@ module Dependabot
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalised_name(name)
-            name.downcase.tr("_", "-").tr(".", "-")
+            name.downcase.gsub(/[-_.]+/, "-")
           end
 
           def setup_file
