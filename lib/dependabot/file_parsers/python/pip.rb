@@ -15,6 +15,7 @@ module Dependabot
       class Pip < Dependabot::FileParsers::Base
         require_relative "pip/pipfile_files_parser"
         require_relative "pip/poetry_files_parser"
+        require_relative "pip/setup_file_parser"
 
         POETRY_DEPENDENCY_TYPES =
           %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
@@ -101,24 +102,10 @@ module Dependabot
         end
 
         def setup_file_dependencies
-          dependencies = DependencySet.new
-          return dependencies unless setup_file
-
-          parsed_setup_file.each do |dep|
-            dependencies <<
-              Dependency.new(
-                name: normalised_name(dep["name"]),
-                version: dep["version"]&.include?("*") ? nil : dep["version"],
-                requirements: [{
-                  requirement: dep["requirement"],
-                  file: Pathname.new(dep["file"]).cleanpath.to_path,
-                  source: nil,
-                  groups: []
-                }],
-                package_manager: "pip"
-              )
-          end
-          dependencies
+          @setup_file_dependencies ||=
+            SetupFileParser.
+            new(dependency_files: dependency_files).
+            dependency_set
         end
 
         def lockfile_for_pip_compile_file?(filename)
@@ -145,25 +132,6 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
           raise unless error.message.start_with?(*evaluation_errors)
-
-          raise Dependabot::DependencyFileNotEvaluatable, error.message
-        end
-
-        def parsed_setup_file
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
-
-            requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{python_helper_path}",
-              function: "parse_setup",
-              args: [Dir.pwd]
-            )
-
-            check_requirements(requirements)
-            requirements
-          end
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          raise unless error.message.start_with?("InstallationError")
 
           raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
