@@ -35,7 +35,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
           [{
             requirement: "==1.3.1",
             file: "setup.py",
-            groups: [],
+            groups: ["install_requires"],
             source: nil
           }]
         )
@@ -53,7 +53,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
           [{
             requirement: "==1.11.0",
             file: "setup.py",
-            groups: [],
+            groups: ["setup_requires"],
             source: nil
           }]
         )
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
           [{
             requirement: "==0.5.1",
             file: "setup.py",
-            groups: [],
+            groups: ["tests_require"],
             source: nil
           }]
         )
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
           [{
             requirement: "==0.12.2",
             file: "setup.py",
-            groups: [],
+            groups: ["extras_require"],
             source: nil
           }]
         )

@@ -416,7 +416,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               {
                 requirement: "==2.12.*",
                 file: "setup.py",
-                groups: [],
+                groups: ["install_requires"],
                 source: nil
               }
             ]
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             [{
               requirement: "==0.12.2",
               file: "setup.py",
-              groups: [],
+              groups: ["extras_require"],
               source: nil
             }]
           )
@@ -492,7 +492,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               [{
                 requirement: "==0.12.2",
                 file: "setup.py",
-                groups: [],
+                groups: ["extras_require"],
                 source: nil
               }]
             )
@@ -528,7 +528,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               [{
                 requirement: nil,
                 file: "setup.py",
-                groups: [],
+                groups: ["install_requires"],
                 source: nil
               }]
             )
@@ -742,7 +742,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             [{
               requirement: "==1.3.1",
               file: "setup.py",
-              groups: [],
+              groups: ["install_requires"],
               source: nil
             }]
           )

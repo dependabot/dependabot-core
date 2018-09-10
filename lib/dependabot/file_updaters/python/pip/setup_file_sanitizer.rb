@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "json"
-require "dependabot/shared_helpers"
 require "dependabot/file_updaters/python/pip"
+require "dependabot/file_parsers/python/pip/setup_file_parser"
 
 module Dependabot
   module FileUpdaters
@@ -39,50 +38,29 @@ module Dependabot
 
           def install_requires_array
             @install_requires_array ||=
-              parsed_setup_file.map do |dep|
-                next unless dep["requirement_type"] == "install_requires"
+              parsed_setup_file.dependencies.map do |dep|
+                next unless dep.requirements.first[:groups].
+                            include?("install_requires")
 
-                dep["name"] + dep["requirement"].to_s
+                dep.name + dep.requirements.first[:requirement].to_s
               end.compact
           end
 
           def setup_requires_array
             @setup_requires_array ||=
-              parsed_setup_file.map do |dep|
-                next unless dep["requirement_type"] == "setup_requires"
+              parsed_setup_file.dependencies.map do |dep|
+                next unless dep.requirements.first[:groups].
+                            include?("setup_requires")
 
-                dep["name"] + dep["requirement"].to_s
+                dep.name + dep.requirements.first[:requirement].to_s
               end.compact
           end
 
           def parsed_setup_file
             @parsed_setup_file ||=
-              SharedHelpers.in_a_temporary_directory do
-                write_temporary_files
-
-                SharedHelpers.run_helper_subprocess(
-                  command: "pyenv exec python #{python_helper_path}",
-                  function: "parse_setup",
-                  args: [Dir.pwd]
-                )
-              end
-          end
-
-          def write_temporary_files
-            path = setup_file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, setup_file.content)
-
-            return unless setup_cfg
-
-            path = setup_cfg.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, setup_cfg.content)
-          end
-
-          def python_helper_path
-            project_root = File.join(File.dirname(__FILE__), "../../../../..")
-            File.join(project_root, "helpers/python/run.py")
+              FileParsers::Python::Pip::SetupFileParser.new(
+                dependency_files: [setup_file, setup_cfg].compact
+              ).dependency_set
           end
         end
       end

@@ -32,7 +32,7 @@ module Dependabot
                     requirement: dep["requirement"],
                     file: Pathname.new(dep["file"]).cleanpath.to_path,
                     source: nil,
-                    groups: []
+                    groups: [dep["requirement_type"]]
                   }],
                   package_manager: "pip"
                 )
