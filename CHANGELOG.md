@@ -1,3 +1,7 @@
+## v0.71.0, 11 September 2018
+
+- BREAKING: Rename `nuget_repository` credential to `nuget_feed`
+
 ## v0.70.7, 11 September 2018
 
 - Python: Minor parsing improvement
