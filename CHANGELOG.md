@@ -1,3 +1,8 @@
+## v0.71.4, 11 September 2018
+
+- .NET: Actually cache latest_version_details
+- .NET: Ensure requirements don't change if req stays the same
+
 ## v0.71.3, 11 September 2018
 
 - JS: Handle 403s in NpmLockfileUpdater
