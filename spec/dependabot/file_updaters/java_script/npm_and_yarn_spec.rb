@@ -888,9 +888,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
             it "raises an unhandled error" do
               expect { updated_files }.
-                to raise_error(
-                  Dependabot::SharedHelpers::HelperSubprocessFailed
-                )
+                to raise_error(Dependabot::InconsistentRegistryResponse)
             end
           end
         end

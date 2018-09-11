@@ -91,7 +91,14 @@ module Dependabot
           def handle_yarn_lock_updater_error(error, yarn_lock)
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
-              raise if error.message.include?(%("#{dependency.name}"))
+
+              if error.message.include?(%("#{dependency.name}"))
+                # This happens if a new version has been published but npm is
+                # having consistency issues. We raise a bespoke error so we can
+                # capture and ignore it if we're trying to create a new PR
+                # (which will be created successfully at a later date).
+                raise Dependabot::InconsistentRegistryResponse, error.message
+              end
 
               # This happens if a new version has been published that relies on
               # subdependencies that have not yet been published.
