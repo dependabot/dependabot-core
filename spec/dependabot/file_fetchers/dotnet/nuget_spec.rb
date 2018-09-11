@@ -281,7 +281,7 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
         )
     end
 
-    it "fetches the packages.config" do
+    it "fetches the files the .sln points to" do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
@@ -291,6 +291,25 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
             src/src.props
           )
         )
+    end
+
+    context "when one of the sln files isn't reachable" do
+      before do
+        stub_request(:get, File.join(url, "src/src.props?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
+
+      it "fetches the other files" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.Config
+              src/GraphQL.Common/GraphQL.Common.csproj
+            )
+          )
+      end
     end
   end
 

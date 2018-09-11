@@ -82,7 +82,14 @@ module Dependabot
               paths = SlnProjectPathsFinder.
                       new(sln_file: sln_file).
                       project_paths
-              paths.map { |path| fetch_file_from_host(path) }
+
+              paths.map do |path|
+                fetch_file_from_host(path)
+              rescue Dependabot::DependencyFileNotFound
+                # Don't worry about missing files too much for now (at least
+                # until we start resolving properties)
+                nil
+              end.compact
             end
         end
 
