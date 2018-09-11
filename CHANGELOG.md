@@ -1,3 +1,7 @@
+## v0.71.5, 11 September 2018
+
+- Ruby: Update subdependencies to a specific version
+
 ## v0.71.4, 11 September 2018
 
 - .NET: Actually cache latest_version_details
