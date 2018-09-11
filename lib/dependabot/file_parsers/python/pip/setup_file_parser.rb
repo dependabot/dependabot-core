@@ -80,7 +80,7 @@ module Dependabot
             end
           rescue SharedHelpers::HelperSubprocessFailed
             # Assume there are no dependencies in setup.py files that fail to
-            # parse. This isn't ideal, and we should continue to improve
+            # parse. This isn't ideal, and we should continue to improve
             # parsing, but there are a *lot* of things that can go wrong at
             # the moment!
             []
