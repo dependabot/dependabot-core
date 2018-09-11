@@ -1,3 +1,7 @@
+## v0.71.2, 11 September 2018
+
+- JS: Better sanitization of escaped whitespace
+
 ## v0.71.1, 11 September 2018
 
 - .NET: Process repos even if all dependency files can't be fetched
