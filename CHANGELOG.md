@@ -1,3 +1,7 @@
+## v0.71.1, 11 September 2018
+
+- .NET: Process repos even if all dependency files can't be fetched
+
 ## v0.71.0, 11 September 2018
 
 - BREAKING: Rename `nuget_repository` credential to `nuget_feed`
