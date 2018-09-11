@@ -71,6 +71,11 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
           let(:csproj_req_string) { "22.3-*" }
           its([:requirement]) { is_expected.to eq("23.6-*") }
         end
+
+        context "that doesn't need updating" do
+          let(:csproj_req_string) { "23.*" }
+          it { is_expected.to eq(csproj_req) }
+        end
       end
 
       context "and there were multiple requirements" do

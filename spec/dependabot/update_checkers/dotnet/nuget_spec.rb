@@ -178,19 +178,16 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
     context "with a custom repo in the credentials" do
       let(:credentials) do
-        [
-          {
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          },
-          {
-            "type" => "nuget_feed",
-            "url" => custom_repo_url,
-            "token" => "my:passw0rd"
-          }
-        ]
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "nuget_feed",
+          "url" => custom_repo_url,
+          "token" => "my:passw0rd"
+        }]
       end
       let(:custom_repo_url) do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -256,21 +253,19 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         }
       ).and_call_original
       expect(updated_requirements).to eq(
-        [
-          {
-            file: "my.csproj",
-            requirement: "2.1.0",
-            groups: [],
-            source: {
-              type: "nuget_repo",
-              url: "https://api.nuget.org/v3/index.json",
-              source_url: nil,
-              nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                          "microsoft.extensions.dependencymodel/2.1.0/"\
-                          "microsoft.extensions.dependencymodel.nuspec"
-            }
+        [{
+          file: "my.csproj",
+          requirement: "2.1.0",
+          groups: [],
+          source: {
+            type: "nuget_repo",
+            url: "https://api.nuget.org/v3/index.json",
+            source_url: nil,
+            nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                        "microsoft.extensions.dependencymodel/2.1.0/"\
+                        "microsoft.extensions.dependencymodel.nuspec"
           }
-        ]
+        }]
       )
     end
 
@@ -347,19 +342,17 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             }
           ).and_call_original
           expect(updated_requirements).to eq(
-            [
-              {
-                file: "my.csproj",
-                requirement: "4.8.1",
-                groups: [],
-                source: {
-                  type: "nuget_repo",
-                  url: "https://www.nuget.org/api/v2",
-                  source_url: "https://github.com/autofac/Autofac",
-                  nuspec_url: nil
-                }
+            [{
+              file: "my.csproj",
+              requirement: "4.8.1",
+              groups: [],
+              source: {
+                type: "nuget_repo",
+                url: "https://www.nuget.org/api/v2",
+                source_url: "https://github.com/autofac/Autofac",
+                nuspec_url: nil
               }
-            ]
+            }]
           )
         end
       end

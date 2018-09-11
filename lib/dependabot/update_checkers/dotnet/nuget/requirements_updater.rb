@@ -42,6 +42,8 @@ module Dependabot
                   req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
                 end
 
+              next req if new_req == req.fetch(:requirement)
+
               req.merge(requirement: new_req, source: updated_source)
             end
           end
