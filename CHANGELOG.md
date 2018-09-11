@@ -1,3 +1,7 @@
+## v0.70.7, 11 September 2018
+
+- Python: Minor parsing improvement
+
 ## v0.70.6, 10 September 2018
 
 - PHP: Handle packages provided by another package
