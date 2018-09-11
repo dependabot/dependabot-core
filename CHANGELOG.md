@@ -1,3 +1,8 @@
+## v0.71.3, 11 September 2018
+
+- JS: Handle 403s in NpmLockfileUpdater
+- JS: Handle npm inconsistencies better when updating Yarn lockfiles
+
 ## v0.71.2, 11 September 2018
 
 - JS: Better sanitization of escaped whitespace
