@@ -11,10 +11,10 @@ module Dependabot
     module Python
       class Pip
         class SetupFileParser
-          INSTALL_REQUIRES_REGEX = /install_requires=(\[.*?\])[,)\n]/m
-          SETUP_REQUIRES_REGEX = /setup_requires=(\[.*?\])[,)\n]/m
-          TESTS_REQUIRE_REGEX = /tests_require=(\[.*?\])[,)\n]/m
-          EXTRAS_REQUIRE_REGEX = /extras_require=(\{.*?\})[,)\n]/m
+          INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*(\[.*?\])[,)\s]/m
+          SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*(\[.*?\])[,)\s]/m
+          TESTS_REQUIRE_REGEX = /tests_require\s*=\s*(\[.*?\])[,)\s]/m
+          EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*(\{.*?\})[,)\s]/m
 
           def initialize(dependency_files:)
             @dependency_files = dependency_files
@@ -78,6 +78,12 @@ module Dependabot
               check_requirements(requirements)
               requirements
             end
+          rescue SharedHelpers::HelperSubprocessFailed
+            # Assume there are no dependencies in setup.py files that fail to
+            # parse. This isn't ideal, and we should continue to improve
+            # parsing, but there are a *lot* of things that can go wrong at
+            # the moment!
+            []
           end
 
           def check_requirements(requirements)
