@@ -2,9 +2,11 @@
 
 require "dependabot/file_updaters/java_script/npm_and_yarn"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
+require "dependabot/update_checkers/java_script/npm_and_yarn/registry_finder"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module JavaScript
@@ -51,6 +53,7 @@ module Dependabot
           attr_reader :dependencies, :dependency_files, :credentials
 
           UNREACHABLE_GIT = /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/
+          FORBIDDEN_PACKAGE = /403 Forbidden: (?<package_req>.*)/
 
           def dependency
             # For now, we'll only ever be updating a single dependency for JS
@@ -116,6 +119,13 @@ module Dependabot
 
               raise Dependabot::GitDependencyReferenceNotFound, dep.fetch(:name)
             end
+            if error.message.match?(FORBIDDEN_PACKAGE)
+              package_name =
+                error.message.match(FORBIDDEN_PACKAGE).
+                named_captures["package_req"].
+                split(/(?<=\w)\@/).first
+              handle_missing_package(package_name)
+            end
             if error.message.match?(UNREACHABLE_GIT)
               dependency_url =
                 error.message.match(UNREACHABLE_GIT).
@@ -130,6 +140,28 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/MethodLength
+
+          def handle_missing_package(package_name)
+            missing_dep = FileParsers::JavaScript::NpmAndYarn.new(
+              dependency_files: dependency_files,
+              source: nil,
+              credentials: credentials
+            ).parse.find { |dep| dep.name == package_name }
+
+            return unless missing_dep
+
+            reg = UpdateCheckers::JavaScript::NpmAndYarn::RegistryFinder.new(
+              dependency: missing_dep,
+              credentials: credentials,
+              npmrc_file: dependency_files.find { |f| f.name == ".npmrc" }
+            ).registry
+
+            if reg == "registry.npmjs.org" && !package_name.start_with?("@")
+              return
+            end
+
+            raise Dependabot::PrivateSourceAuthenticationFailure, reg
+          end
 
           def resolvable_before_update?(package_lock)
             @resolvable_before_update ||= {}
@@ -332,3 +364,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
