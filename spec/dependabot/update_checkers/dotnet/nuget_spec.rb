@@ -186,7 +186,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             "password" => "token"
           },
           {
-            "type" => "nuget_repository",
+            "type" => "nuget_feed",
             "url" => custom_repo_url,
             "token" => "my:passw0rd"
           }

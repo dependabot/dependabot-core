@@ -141,7 +141,7 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
                 "password" => "token"
               },
               {
-                "type" => "nuget_repository",
+                "type" => "nuget_feed",
                 "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
                          "index.json",
                 "token" => "my:passw0rd"

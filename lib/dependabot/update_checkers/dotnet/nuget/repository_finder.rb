@@ -138,7 +138,7 @@ module Dependabot
           def credential_repositories
             @credential_repositories ||=
               credentials.
-              select { |cred| cred["type"] == "nuget_repository" }.
+              select { |cred| cred["type"] == "nuget_feed" }.
               map { |c| { url: c.fetch("url"), token: c.fetch("token") } }
           end
 

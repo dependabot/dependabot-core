@@ -94,7 +94,7 @@ module Dependabot
           url = source&.fetch(:url, nil) || source&.fetch("url")
 
           token = credentials.
-                  select { |cred| cred["type"] == "nuget_repository" }.
+                  select { |cred| cred["type"] == "nuget_feed" }.
                   find { |cred| cred["url"] == url }&.
                   fetch("token")
 
