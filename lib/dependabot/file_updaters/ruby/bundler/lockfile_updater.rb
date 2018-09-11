@@ -116,9 +116,10 @@ module Dependabot
               definition.resolve_remotely!
 
               old_reqs.each do |dep_name, old_req|
-                definition.dependencies.
-                  find { |d| d.name == dep_name }.
-                  instance_variable_set(:@requirement, old_req)
+                d_dep = definition.dependencies.find { |d| d.name == dep_name }
+                if old_req == :none then definition.dependencies.delete(d_dep)
+                else d_dep.instance_variable_set(:@requirement, old_req)
+                end
               end
 
               definition.to_lock
@@ -189,10 +190,13 @@ module Dependabot
           def lock_deps_being_updated_to_exact_versions(definition)
             dependencies.each_with_object({}) do |dep, old_reqs|
               defn_dep = definition.dependencies.find { |d| d.name == dep.name }
-              next unless defn_dep
 
-              if git_dependency?(dep) &&
-                 defn_dep.source.is_a?(::Bundler::Source::Git)
+              if defn_dep.nil?
+                definition.dependencies <<
+                  ::Bundler::Dependency.new(dep.name, dep.version)
+                old_reqs[dep.name] = :none
+              elsif git_dependency?(dep) &&
+                    defn_dep.source.is_a?(::Bundler::Source::Git)
                 defn_dep.source.unlock!
               elsif Gem::Version.correct?(dep.version)
                 new_req = Gem::Requirement.create("= #{dep.version}")

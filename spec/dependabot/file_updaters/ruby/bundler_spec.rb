@@ -134,7 +134,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:gemfile_fixture_name) { "subdependency" }
         let(:lockfile_fixture_name) { "subdependency.lock" }
         let(:dependency_name) { "i18n" }
-        let(:dependency_version) { "1.6.0.beta" }
+        let(:dependency_version) { "0.7.0" }
         let(:dependency_previous_version) { "0.7.0.beta1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
@@ -265,6 +265,19 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
         let(:previous_requirements) { [] }
 
         its(:content) { is_expected.to include("i18n (0.7.0)") }
+
+        context "which is blocked by another sub-dep" do
+          let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
+          let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
+          let(:dependency_name) { "activesupport" }
+          let(:dependency_version) { "5.2.0" }
+          let(:dependency_previous_version) { "5.0.0.1" }
+
+          it "updates the lockfile correctly" do
+            expect(file.content).to include("activesupport (5.2.0)")
+            expect(file.content).to_not include("\n  activesupport (= 5.2.0)")
+          end
+        end
       end
 
       context "when updating a dep blocked by a sub-dep" do
