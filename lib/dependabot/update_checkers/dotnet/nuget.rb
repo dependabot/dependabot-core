@@ -48,7 +48,7 @@ module Dependabot
         end
 
         def latest_version_details
-          @latest_version_details =
+          @latest_version_details ||=
             begin
               versions = available_versions
               unless wants_prerelease?
