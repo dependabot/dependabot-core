@@ -1,3 +1,7 @@
+## v0.71.12, 12 September 2018
+
+- Gradle: Ignore bad URLs
+
 ## v0.71.11, 12 September 2018
 
 - Rust: Handle creating versions from existing versions
