@@ -1,3 +1,7 @@
+## v0.71.8, 12 September 2018
+
+- .NET: Handle bespoke project extensions
+
 ## v0.71.7, 12 September 2018
 
 - Better monorepo handling in ReleaseFinder
