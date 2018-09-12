@@ -11,7 +11,7 @@ module Dependabot
 
         def self.updated_files_regex
           [
-            %r{^[^/]*\.(cs|vb|fs)proj$},
+            %r{^[^/]*\.[a-z]{2}proj$},
             /^packages\.config$/i
           ]
         end
@@ -40,7 +40,7 @@ module Dependabot
         private
 
         def project_files
-          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
+          dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
         end
 
         def packages_config

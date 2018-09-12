@@ -17,6 +17,7 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget::SlnProjectPathsFinder do
     subject(:project_paths) { finder.project_paths }
 
     let(:fixture_name) { "GraphQL.Client.sln" }
+
     it "gets the correct paths" do
       expect(project_paths).
         to match_array(
@@ -28,6 +29,15 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget::SlnProjectPathsFinder do
             samples/GraphQL.Client.Sample/GraphQL.Client.Sample.csproj
           )
         )
+    end
+
+    context "with non-standard project names" do
+      let(:fixture_name) { "nanoFramework.Runtime.Events.sln" }
+
+      it "gets the correct paths" do
+        expect(project_paths).
+          to match_array(%w(nanoFramework.Runtime.Events.nfproj))
+      end
     end
 
     context "when this project is already in a nested directory" do

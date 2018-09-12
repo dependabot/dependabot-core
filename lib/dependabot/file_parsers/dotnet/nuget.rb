@@ -46,7 +46,7 @@ module Dependabot
         end
 
         def project_files
-          dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
+          dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
         end
 
         def packages_config
