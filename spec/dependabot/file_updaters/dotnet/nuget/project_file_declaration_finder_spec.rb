@@ -88,5 +88,23 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
         end
       end
     end
+
+    context "with a nuproj file" do
+      let(:csproj_fixture_name) { "basic.nuproj" }
+
+      context "and the version as a child node" do
+        let(:dependency_name) { "nanoFramework.CoreLibrary" }
+        let(:declaring_requirement_string) { "[1.0.0-preview062]" }
+
+        it "finds the declaration" do
+          expect(declaration_strings.count).to eq(1)
+
+          expect(declaration_strings.first).
+            to eq('<Dependency Include="nanoFramework.CoreLibrary">'\
+                  "\n      <Version>[1.0.0-preview062]</Version>"\
+                  "\n    </Dependency>")
+        end
+      end
+    end
   end
 end

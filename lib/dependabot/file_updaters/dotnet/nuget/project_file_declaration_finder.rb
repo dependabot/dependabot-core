@@ -10,7 +10,11 @@ module Dependabot
         class ProjectFileDeclarationFinder
           DECLARATION_REGEX =
             %r{<PackageReference [^>]*?/>|
-               <PackageReference [^>]*?[^/]>.*?</PackageReference>}mx
+               <PackageReference [^>]*?[^/]>.*?</PackageReference>|
+               <Dependency [^>]*?/>|
+               <Dependency [^>]*?[^/]>.*?</Dependency>|
+               <DevelopmentDependency [^>]*?/>|
+               <DevelopmentDependency [^>]*?[^/]>.*?</DevelopmentDependency>}mx
 
           attr_reader :dependency_name, :declaring_requirement,
                       :dependency_files
@@ -38,7 +42,9 @@ module Dependabot
             deep_find_declarations(declaring_file.content).select do |nd|
               node = Nokogiri::XML(nd)
               node.remove_namespaces!
-              node = node.at_xpath("/PackageReference")
+              node = node.at_xpath("/PackageReference") ||
+                     node.at_xpath("/Dependency") ||
+                     node.at_xpath("/DevelopmentDependency")
 
               node_name = node.attribute("Include")&.value&.strip ||
                           node.at_xpath("./Include")&.content&.strip

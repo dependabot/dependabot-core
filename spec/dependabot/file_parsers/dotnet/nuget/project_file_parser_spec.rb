@@ -115,6 +115,15 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
             )
         end
       end
+
+      context "with a nuproj" do
+        let(:file_body) { fixture("dotnet", "csproj", "basic.nuproj") }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to match_array(%w(nanoFramework.CoreLibrary))
+        end
+      end
     end
   end
 end

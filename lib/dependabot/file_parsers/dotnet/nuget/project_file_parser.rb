@@ -14,7 +14,9 @@ module Dependabot
         class ProjectFileParser
           require "dependabot/file_parsers/base/dependency_set"
 
-          DEPENDENCY_SELECTOR = "ItemGroup > PackageReference"
+          DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, "\
+                                "ItemGroup > Dependency, "\
+                                "ItemGroup > DevelopmentDependency"\
 
           def initialize(project_file:)
             @project_file = project_file
