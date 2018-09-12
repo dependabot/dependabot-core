@@ -15,7 +15,7 @@ module Dependabot
 
         def initialize(version)
           @version_string = version.to_s
-          version, @build_version = version.split("+")
+          version, @build_version = version&.to_s&.split("+")
           super
         end
 
