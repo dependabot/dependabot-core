@@ -1,3 +1,7 @@
+## v0.71.7, 12 September 2018
+
+- Better monorepo handling in ReleaseFinder
+
 ## v0.71.6, 12 September 2018
 
 - .NET: Handle custom feeds without authentication details
