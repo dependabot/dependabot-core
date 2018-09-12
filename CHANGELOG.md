@@ -1,3 +1,7 @@
+## v0.71.11, 12 September 2018
+
+- Rust: Handle creating versions from existing versions
+
 ## v0.71.10, 12 September 2018
 
 - Gradle: Switch dependency and repository parsing to be regex-based
