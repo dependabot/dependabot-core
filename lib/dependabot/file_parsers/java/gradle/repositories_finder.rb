@@ -13,15 +13,17 @@ module Dependabot
           # it as a default.
           CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
+          REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/
+          MAVEN_REPO_REGEX =
+            /maven\s*\{[^\}]*\surl[\s\(]\s*['"](?<url>[^'"]+)['"]/
+
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
 
           def repository_urls
             repository_urls =
-              parsed_buildfile.
-              fetch("repositories").
-              map { |details| details.fetch("url") }.
+              buildfile_repositories.
               map { |url| url.strip.gsub(%r{/$}, "") }.
               # Reject non-http URLs because they're probably parsing mistakes
               select { |url| url.start_with?("http") }.
@@ -36,48 +38,46 @@ module Dependabot
 
           attr_reader :dependency_files
 
-          def parsed_buildfile
-            @parsed_buildfile ||=
-              SharedHelpers.in_a_temporary_directory do
-                write_temporary_files
+          def buildfile_repositories
+            repositories = []
 
-                command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
-                raw_response = nil
-                IO.popen(command) { |process| raw_response = process.read }
+            repository_blocks = []
+            buildfile.content.scan(REPOSITORIES_BLOCK_START) do
+              mtch = Regexp.last_match
+              repository_blocks <<
+                mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+            end
 
-                unless $CHILD_STATUS.success?
-                  raise SharedHelpers::HelperSubprocessFailed.new(
-                    raw_response,
-                    command
-                  )
-                end
-
-                result = File.read("result.json")
-                JSON.parse(result)
+            repository_blocks.each do |block|
+              if block.include?(" google(")
+                repositories << "https://maven.google.com/"
               end
+
+              if block.include?(" mavenCentral(")
+                repositories << "https://repo.maven.apache.org/maven2/"
+              end
+
+              if block.include?(" jcenter(")
+                repositories << "https://jcenter.bintray.com/"
+              end
+
+              block.scan(MAVEN_REPO_REGEX) do
+                repositories << Regexp.last_match.named_captures.fetch("url")
+              end
+            end
+
+            repositories.uniq
           end
 
-          def write_temporary_files
-            File.write(
-              "build.gradle",
-              prepared_buildfile_content(buildfile.content)
-            )
-          end
+          def closing_bracket_index(string, offset = 0)
+            return 0 unless string.index("}", offset)
+            return string.index("}", offset) unless string.index("{", offset)
 
-          def gradle_parser_path
-            "#{gradle_helper_path}/buildfile_parser.jar"
-          end
+            if string.index("}", offset) < string.index("{", offset)
+              return string.index("}", offset)
+            end
 
-          def gradle_helper_path
-            File.join(project_root, "helpers/gradle/")
-          end
-
-          def project_root
-            File.join(File.dirname(__FILE__), "../../../../..")
-          end
-
-          def prepared_buildfile_content(buildfile_content)
-            buildfile_content.gsub(/^\s*import\s.*$/, "")
+            closing_bracket_index(string, string.index("}", offset) + 1)
           end
 
           def buildfile

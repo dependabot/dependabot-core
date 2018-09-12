@@ -38,7 +38,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
       end
 
       context "that URLs from a variable" do
-        let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
+        let(:buildfile_fixture_name) { "variable_repos_build.gradle" }
 
         pending "includes the additional declarations" do
           expect(repository_urls).to match_array(
