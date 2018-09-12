@@ -37,7 +37,20 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
         )
       end
 
-      context "that URLs from a variable" do
+      context "that eval code within them" do
+        let(:buildfile_fixture_name) { "eval_repo_build.gradle" }
+
+        it "ignores the repo that needs evaling" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://jcenter.bintray.com
+              https://maven.google.com
+            )
+          )
+        end
+      end
+
+      context "that get URLs from a variable" do
         let(:buildfile_fixture_name) { "variable_repos_build.gradle" }
 
         pending "includes the additional declarations" do

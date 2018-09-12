@@ -25,8 +25,7 @@ module Dependabot
             repository_urls =
               buildfile_repositories.
               map { |url| url.strip.gsub(%r{/$}, "") }.
-              # Reject non-http URLs because they're probably parsing mistakes
-              select { |url| url.start_with?("http") }.
+              select { |url| valid_url?(url) }.
               uniq
 
             return repository_urls unless repository_urls.empty?
@@ -69,15 +68,24 @@ module Dependabot
             repositories.uniq
           end
 
-          def closing_bracket_index(string, offset = 0)
-            return 0 unless string.index("}", offset)
-            return string.index("}", offset) unless string.index("{", offset)
+          def closing_bracket_index(string)
+            closes_required = 1
 
-            if string.index("}", offset) < string.index("{", offset)
-              return string.index("}", offset)
+            string.chars.each_with_index do |char, index|
+              closes_required += 1 if char == "{"
+              closes_required -= 1 if char == "}"
+              return index if closes_required.zero?
             end
+          end
 
-            closing_bracket_index(string, string.index("}", offset) + 1)
+          def valid_url?(url)
+            # Reject non-http URLs because they're probably parsing mistakes
+            return false unless url.start_with?("http")
+
+            URI.parse(url)
+            true
+          rescue URI::InvalidURIError
+            false
           end
 
           def buildfile
