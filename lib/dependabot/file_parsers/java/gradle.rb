@@ -21,6 +21,12 @@ module Dependabot
             (?:\$(?<property_name>.*))
           /x
 
+        DEPENDENCY_DECLARATION_REGEX =
+          /(?:\(|\s)\s*['"](?<declaration>[^\s,'":]+:[^\s,'":]+:[^\s,'":]+)['"]/
+
+        PROPERTY_DECLARATION_REGEX =
+          /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/
+
         def parse
           dependency_set = DependencySet.new
           buildfiles.each do |buildfile|
@@ -31,14 +37,53 @@ module Dependabot
 
         private
 
+        def map_value_regex(key)
+          /(?:^|\s|,|\()#{Regexp.quote(key)}:\s*['"](?<value>[^'"]+)['"]/
+        end
+
         def buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          parsed_buildfile(buildfile)["dependencies"].each do |dep|
-            next if dep.values_at(*ATTRS).any? { |v| v.nil? || v.empty? }
+          dependency_set += shortform_buildfile_dependencies(buildfile)
+          dependency_set += keyword_arg_buildfile_dependencies(buildfile)
+
+          dependency_set
+        end
+
+        def shortform_buildfile_dependencies(buildfile)
+          dependency_set = DependencySet.new
+
+          buildfile.content.scan(DEPENDENCY_DECLARATION_REGEX) do
+            declaration = Regexp.last_match.named_captures.fetch("declaration")
+            details = {
+              group: declaration.split(":").first,
+              name: declaration.split(":")[1],
+              version: declaration.split(":").last
+            }
 
             dependency_set <<
-              dependency_from(details_hash: dep, buildfile: buildfile)
+              dependency_from(details_hash: details, buildfile: buildfile)
+          end
+
+          dependency_set
+        end
+
+        def keyword_arg_buildfile_dependencies(buildfile)
+          dependency_set = DependencySet.new
+
+          buildfile.content.lines.each do |line|
+            name    = line.match(map_value_regex("name"))&.
+                      named_captures&.fetch("value")
+            group   = line.match(map_value_regex("group"))&.
+                      named_captures&.fetch("value")
+            version = line.match(map_value_regex("version"))&.
+                      named_captures&.fetch("value")
+            next unless name && group && version
+
+            details = { name: name, group: group, version: version }
+
+            dependency_set <<
+              dependency_from(details_hash: details, buildfile: buildfile)
           end
 
           dependency_set
@@ -46,21 +91,21 @@ module Dependabot
 
         def dependency_from(details_hash:, buildfile:)
           dependency_name = [
-            evaluated_value(details_hash["group"], buildfile),
-            evaluated_value(details_hash["name"], buildfile)
+            evaluated_value(details_hash[:group], buildfile),
+            evaluated_value(details_hash[:name], buildfile)
           ].join(":")
 
           version_property_name =
-            details_hash["version"].
+            details_hash[:version].
             match(PROPERTY_REGEX)&.
             named_captures&.fetch("property_name")
 
           Dependency.new(
             name: dependency_name,
-            version: evaluated_value(details_hash["version"], buildfile),
+            version: evaluated_value(details_hash[:version], buildfile),
             requirements: [{
               requirement:
-                evaluated_value(details_hash["version"], buildfile),
+                evaluated_value(details_hash[:version], buildfile),
               file: buildfile.name,
               source: nil,
               groups: [],
@@ -85,58 +130,18 @@ module Dependabot
           value.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def parsed_buildfile(buildfile)
-          @parsed_buildfile ||= {}
-          @parsed_buildfile[buildfile.name] ||=
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_files(buildfile)
-
-              command = "java -jar #{gradle_parser_path} #{Dir.pwd}"
-              raw_response = nil
-              IO.popen(command) { |process| raw_response = process.read }
-
-              unless $CHILD_STATUS.success?
-                raise SharedHelpers::HelperSubprocessFailed.new(
-                  raw_response,
-                  command
-                )
-              end
-
-              result = File.read("result.json")
-              JSON.parse(result)
-            end
-        end
-
-        def write_temporary_files(buildfile)
-          File.write(
-            "build.gradle",
-            prepared_buildfile_content(buildfile.content)
-          )
-        end
-
-        def gradle_parser_path
-          "#{gradle_helper_path}/buildfile_parser.jar"
-        end
-
-        def gradle_helper_path
-          File.join(project_root, "helpers/gradle/")
-        end
-
-        def project_root
-          File.join(File.dirname(__FILE__), "../../../..")
-        end
-
         def properties(buildfile)
           @properties ||= {}
-          @properties[buildfile.name] ||=
-            parsed_buildfile(buildfile)["properties"].
-            each_with_object({}) do |prop, hash|
-              hash[prop.fetch("name")] = prop.fetch("value")
-            end
-        end
+          return @properties[buildfile.name] if @properties[buildfile.name]
 
-        def prepared_buildfile_content(buildfile_content)
-          buildfile_content.gsub(/^\s*import\s.*$/, "")
+          @properties[buildfile.name] = {}
+          buildfile.content.scan(PROPERTY_DECLARATION_REGEX) do
+            captures = Regexp.last_match.named_captures
+            name = captures.fetch("name").sub(/^ext\./, "")
+            @properties[buildfile.name][name] = captures.fetch("value")
+          end
+
+          @properties[buildfile.name]
         end
 
         def buildfiles
