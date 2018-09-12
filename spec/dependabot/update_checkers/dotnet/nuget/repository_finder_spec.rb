@@ -119,6 +119,46 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
             end
         end
       end
+
+      context "without a token" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "nuget_feed",
+            "url" => custom_repo_url
+          }]
+        end
+
+        before do
+          stub_request(:get, custom_repo_url).
+            with(basic_auth: nil).
+            to_return(
+              status: 200,
+              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            )
+        end
+
+        it "gets the right URL" do
+          expect(dependency_urls).to eq(
+            [{
+              repository_url:  "https://www.myget.org/F/exceptionless/api/v3/"\
+                               "index.json",
+              versions_url:    "https://www.myget.org/F/exceptionless/api/v3/"\
+                               "flatcontainer/microsoft.extensions."\
+                               "dependencymodel/index.json",
+              search_url:      "https://www.myget.org/F/exceptionless/api/v3/"\
+                               "query?q=microsoft.extensions.dependencymodel"\
+                               "&prerelease=true",
+              auth_header:     {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
     end
 
     context "with a URL included in the nuget.config" do

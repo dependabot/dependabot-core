@@ -96,7 +96,7 @@ module Dependabot
           token = credentials.
                   select { |cred| cred["type"] == "nuget_feed" }.
                   find { |cred| cred["url"] == url }&.
-                  fetch("token")
+                  fetch("token", nil)
 
           return {} unless token
 
