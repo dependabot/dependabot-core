@@ -1,3 +1,7 @@
+## v0.71.6, 12 September 2018
+
+- .NET: Handle custom feeds without authentication details
+
 ## v0.71.5, 11 September 2018
 
 - Ruby: Update subdependencies to a specific version
