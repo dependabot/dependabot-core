@@ -1,0 +1,2 @@
+include(':..:ganttproject',
+        '..:biz.ganttproject.core')

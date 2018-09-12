@@ -1,1 +1,1 @@
-include 'buildfile_parser', 'settings_file_parser'
+include 'buildfile_parser'
