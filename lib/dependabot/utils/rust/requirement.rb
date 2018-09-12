@@ -12,6 +12,12 @@ module Dependabot
   module Utils
     module Rust
       class Requirement < Gem::Requirement
+        quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+        version_pattern = Utils::Rust::Version::VERSION_PATTERN
+
+        PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+        PATTERN = /\A#{PATTERN_RAW}\z/
+
         # Use Utils::Rust::Version rather than Gem::Version to ensure that
         # pre-release versions aren't transformed.
         def self.parse(obj)

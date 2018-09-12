@@ -63,7 +63,6 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
 
       context "with no version specified" do
         let(:manifest_fixture_name) { "blank_version" }
-        let(:lockfile_fixture_name) { "blank_version" }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
@@ -488,6 +487,29 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
               expect(dependency.requirements).to eq(
                 [{
                   requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+
+        context "with a build version specified" do
+          let(:manifest_fixture_name) { "build_version" }
+          let(:lockfile_fixture_name) { "build_version" }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("zstd")
+              expect(dependency.version).to eq("0.4.19+zstd.1.3.5")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "0.4.17+zstd.1.3.3",
                   file: "Cargo.toml",
                   groups: ["dependencies"],
                   source: nil

@@ -22,6 +22,14 @@ RSpec.describe Dependabot::Utils::Rust::Requirement do
       end
     end
 
+    context "with a build-version" do
+      let(:requirement_string) { "4.0.0+something" }
+      it "preserves the build version" do
+        expect(requirement.requirements.first.last.to_s).
+          to eq("4.0.0+something")
+      end
+    end
+
     describe "wildcards" do
       context "with only a *" do
         let(:requirement_string) { "*" }

@@ -24,6 +24,11 @@ RSpec.describe Dependabot::Utils::Rust::Version do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end
+
+    context "with a build version" do
+      let(:version_string) { "1.0.0-pre1+something" }
+      it { is_expected.to eq "1.0.0-pre1+something" }
+    end
   end
 
   describe "compatibility with Gem::Requirement" do

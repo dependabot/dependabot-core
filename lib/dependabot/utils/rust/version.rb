@@ -8,13 +8,23 @@ module Dependabot
   module Utils
     module Rust
       class Version < Gem::Version
+        VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+                          '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
+                          '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
+        ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
+
         def initialize(version)
           @version_string = version.to_s
+          version, @build_version = version.split("+")
           super
         end
 
         def to_s
           @version_string
+        end
+
+        def inspect # :nodoc:
+          "#<#{self.class} #{@version_string}>"
         end
       end
     end
