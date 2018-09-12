@@ -38,6 +38,19 @@ module Dependabot
 
         private
 
+        def all_dep_releases
+          releases = all_releases
+          dep_prefix = dependency.name.downcase
+
+          releases_with_dependency_name =
+            releases.
+            reject { |r| r.tag_name.nil? }.
+            select { |r| r.tag_name.downcase.include?(dep_prefix) }
+
+          return releases unless releases_with_dependency_name.any?
+          releases_with_dependency_name
+        end
+
         def all_releases
           @all_releases ||= fetch_dependency_releases
         end
@@ -67,13 +80,13 @@ module Dependabot
           return [updated_release].compact unless previous_version
 
           if previous_release && version_class.correct?(previous_version)
-            releases = filter_releases_using_previous_release(all_releases)
+            releases = filter_releases_using_previous_release(all_dep_releases)
             filter_releases_using_previous_version(releases, conservative: true)
           elsif previous_release
-            filter_releases_using_previous_release(all_releases)
+            filter_releases_using_previous_release(all_dep_releases)
           elsif version_class.correct?(previous_version)
             filter_releases_using_previous_version(
-              all_releases,
+              all_dep_releases,
               conservative: false
             )
           else
@@ -93,8 +106,8 @@ module Dependabot
           previous_version = version_class.new(dependency.previous_version)
 
           releases.reject do |release|
-            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
-            cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
+            cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
+            cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
 
             tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
                           select { |nm| version_class.correct?(nm) }.
@@ -112,8 +125,8 @@ module Dependabot
           updated_version = version_class.new(dependency.version)
 
           releases.reject do |release|
-            cleaned_tag = release.tag_name.gsub(/^[^0-9\.]*/, "")
-            cleaned_name = release.name&.gsub(/^[^0-9\.]*/, "")
+            cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
+            cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
 
             tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
                           select { |nm| version_class.correct?(nm) }.
@@ -140,8 +153,8 @@ module Dependabot
 
           release_regex = version_regex(version)
           # Doing two loops looks inefficient, but it ensures consistency
-          all_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||
-            all_releases.find { |r| release_regex.match?(r.name.to_s) }
+          all_dep_releases.find { |r| release_regex.match?(r.tag_name.to_s) } ||
+            all_dep_releases.find { |r| release_regex.match?(r.name.to_s) }
         end
 
         def serialize_release(release)

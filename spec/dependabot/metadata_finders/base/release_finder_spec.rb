@@ -76,7 +76,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "with a github repo" do
       let(:github_url) do
-        "https://api.github.com/repos/gocardless/business/releases?per_page=100"
+        "https://api.github.com/repos/gocardless/#{dependency_name}/"\
+        "releases?per_page=100"
       end
 
       let(:github_status) { 200 }
@@ -293,6 +294,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                 "## v1.7.0\n"\
                 "- Add 2018-2027 TARGET holiday defintions\n"\
                 "- Add 2018-2027 Bankgirot holiday defintions"
+              )
+          end
+        end
+
+        context "when the tags are for a monorepo" do
+          let(:dependency_name) { "Flurl.Http" }
+          let(:dependency_version) { "2.4.0" }
+          let(:dependency_previous_version) { "2.3.2" }
+          let(:github_response) { fixture("github", "releases_monorepo.json") }
+          it "gets the right text" do
+            expect(subject).
+              to eq(
+                "## Flurl.Http 2.4.0\n"\
+                "- Improved `ConnectionLeaseTimeout` implementation (#330)"
               )
           end
         end
