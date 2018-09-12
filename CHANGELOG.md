@@ -1,3 +1,8 @@
+## v0.71.9, 12 September 2018
+
+- .NET: Handle .nuproj file dependency declarations
+- Gradle: Use regex to parse setttings.gradle
+
 ## v0.71.8, 12 September 2018
 
 - .NET: Handle bespoke project extensions
