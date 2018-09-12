@@ -48,6 +48,7 @@ module Dependabot
             select { |r| r.tag_name.downcase.include?(dep_prefix) }
 
           return releases unless releases_with_dependency_name.any?
+
           releases_with_dependency_name
         end
 
