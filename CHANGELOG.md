@@ -1,3 +1,8 @@
+## v0.71.10, 12 September 2018
+
+- Gradle: Switch dependency and repository parsing to be regex-based
+- Rust: Don't error on versions with build metadata
+
 ## v0.71.9, 12 September 2018
 
 - .NET: Handle .nuproj file dependency declarations
