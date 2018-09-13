@@ -1,3 +1,7 @@
+## v0.71.14, 13 September 2018
+
+- Gradle: Don't update SHA versions
+
 ## v0.71.13, 13 September 2018
 
 - Gradle: Strip out comments before parsing files
