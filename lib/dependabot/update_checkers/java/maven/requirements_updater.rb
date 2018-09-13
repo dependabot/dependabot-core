@@ -7,14 +7,13 @@
 
 require "dependabot/update_checkers/java/maven"
 require "dependabot/utils/java/version"
+require "dependabot/utils/java/requirement"
 
 module Dependabot
   module UpdateCheckers
     module Java
       class Maven
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/
-
           def initialize(requirements:, latest_version:, source_url:,
                          properties_to_update:)
             @requirements = requirements
@@ -41,9 +40,11 @@ module Dependabot
               end
 
               # Since range requirements are excluded by the line above we can
-              # just do a `gsub` on anything that looks like a version
+              # just do a `gsub` on the previous version
+              old_version = requirement_class.new(req[:requirement]).
+                            requirements.first.last
               new_req =
-                req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
+                req[:requirement].gsub(old_version.to_s, latest_version.to_s)
               req.merge(requirement: new_req, source: updated_source)
             end
           end
@@ -55,6 +56,10 @@ module Dependabot
 
           def version_class
             Utils::Java::Version
+          end
+
+          def requirement_class
+            Utils::Java::Requirement
           end
 
           def updated_source
