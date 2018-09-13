@@ -1,3 +1,7 @@
+## v0.71.16, 13 September 2018
+
+- Gradle: Better property lookup logic
+
 ## v0.71.15, 13 September 2018
 
 - Gradle: Look up repository URLs based on the current project and its root
