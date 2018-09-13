@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/file_parsers/java/gradle"
-require "dependabot/shared_helpers"
 
 module Dependabot
   module FileParsers

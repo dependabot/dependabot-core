@@ -12,6 +12,7 @@ module Dependabot
     module Java
       class Gradle < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
+        require_relative "gradle/property_value_finder"
 
         ATTRS = %w(name group version).freeze
         PROPERTY_REGEX =
@@ -23,9 +24,6 @@ module Dependabot
 
         DEPENDENCY_DECLARATION_REGEX =
           /(?:\(|\s)\s*['"](?<declaration>[^\s,'":]+:[^\s,'":]+:[^\s,'":]+)['"]/
-
-        PROPERTY_DECLARATION_REGEX =
-          /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/
 
         def parse
           dependency_set = DependencySet.new
@@ -123,25 +121,19 @@ module Dependabot
 
           property_name  = value.match(PROPERTY_REGEX).
                            named_captures.fetch("property_name")
-          property_value = properties(buildfile).fetch(property_name, nil)
+          property_value = property_value_finder.property_value(
+            property_name: property_name,
+            callsite_buildfile: buildfile
+          )
 
           return value unless property_value
 
           value.gsub(PROPERTY_REGEX, property_value)
         end
 
-        def properties(buildfile)
-          @properties ||= {}
-          return @properties[buildfile.name] if @properties[buildfile.name]
-
-          @properties[buildfile.name] = {}
-          prepared_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
-            captures = Regexp.last_match.named_captures
-            name = captures.fetch("name").sub(/^ext\./, "")
-            @properties[buildfile.name][name] = captures.fetch("value")
-          end
-
-          @properties[buildfile.name]
+        def property_value_finder
+          @property_value_finder ||=
+            PropertyValueFinder.new(dependency_files: dependency_files)
         end
 
         def prepared_content(buildfile)
