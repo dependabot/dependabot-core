@@ -1,3 +1,8 @@
+## v0.71.17, 13 September 2018
+
+- Gradle: handle properties prefixed with `properties`, too
+- Gradle: Update lines that include a property in their name
+
 ## v0.71.16, 13 September 2018
 
 - Gradle: Better property lookup logic
