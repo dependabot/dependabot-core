@@ -43,6 +43,36 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
         )
       end
 
+      context "some of which are for subprojects" do
+        let(:buildfile_fixture_name) { "subproject_repos.gradle" }
+
+        it "doesn't include the subproject declarations" do
+          expect(repository_urls).
+            to match_array(%w(https://jcenter.bintray.com))
+        end
+
+        context "and this is a subproject" do
+          let(:dependency_files) { [buildfile, subproject] }
+          let(:target_dependency_file) { subproject }
+          let(:subproject) do
+            Dependabot::DependencyFile.new(
+              name: "myapp/build.gradle",
+              content: fixture("java", "buildfiles", "basic_build.gradle")
+            )
+          end
+
+          it "includes the subproject declarations, too" do
+            expect(repository_urls).to match_array(
+              %w(
+                https://jcenter.bintray.com
+                https://dl.bintray.com/magnusja/maven
+                https://maven.google.com
+              )
+            )
+          end
+        end
+      end
+
       context "that eval code within them" do
         let(:buildfile_fixture_name) { "eval_repo_build.gradle" }
 
