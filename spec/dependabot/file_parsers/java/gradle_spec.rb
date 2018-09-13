@@ -92,6 +92,13 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       its(:length) { is_expected.to eq(4) }
     end
 
+    context "with a dependencyVerification section" do
+      let(:buildfile_fixture_name) { "gradle_witness.gradle" }
+
+      # Really we're testing this doesn't include all the verification lines
+      its(:length) { is_expected.to eq(34) }
+    end
+
     context "specified as implementations" do
       let(:buildfile_fixture_name) { "android_build.gradle" }
 

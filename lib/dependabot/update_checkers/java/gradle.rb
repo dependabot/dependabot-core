@@ -12,9 +12,6 @@ module Dependabot
         require_relative "gradle/property_updater"
 
         def latest_version
-          # TODO: Update SHA1 versions
-          return if dependency.version.match?(/^[0-9a-f]{64}$/)
-
           latest_version_details&.fetch(:version)
         end
 

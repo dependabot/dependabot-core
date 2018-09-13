@@ -53,7 +53,7 @@ module Dependabot
         def shortform_buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          comment_free_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
+          prepared_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
             declaration = Regexp.last_match.named_captures.fetch("declaration")
             details = {
               group: declaration.split(":").first,
@@ -71,7 +71,7 @@ module Dependabot
         def keyword_arg_buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          comment_free_content(buildfile).lines.each do |line|
+          prepared_content(buildfile).lines.each do |line|
             name    = line.match(map_value_regex("name"))&.
                       named_captures&.fetch("value")
             group   = line.match(map_value_regex("group"))&.
@@ -135,7 +135,7 @@ module Dependabot
           return @properties[buildfile.name] if @properties[buildfile.name]
 
           @properties[buildfile.name] = {}
-          comment_free_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
+          prepared_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
             captures = Regexp.last_match.named_captures
             name = captures.fetch("name").sub(/^ext\./, "")
             @properties[buildfile.name][name] = captures.fetch("value")
@@ -144,10 +144,32 @@ module Dependabot
           @properties[buildfile.name]
         end
 
-        def comment_free_content(buildfile)
-          buildfile.content.
+        def prepared_content(buildfile)
+          # Remove any comments
+          prepared_content =
+            buildfile.content.
             gsub(%r{(?<=^|\s)//.*$}, "\n").
             gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+
+          # Remove the dependencyVerification section added by Gradle Witness
+          # (TODO: Support updating this in the FileUpdater)
+          prepared_content.dup.scan(/dependencyVerification\s*{/) do
+            mtch = Regexp.last_match
+            block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+            prepared_content.gsub!(block, "")
+          end
+
+          prepared_content
+        end
+
+        def closing_bracket_index(string)
+          closes_required = 1
+
+          string.chars.each_with_index do |char, index|
+            closes_required += 1 if char == "{"
+            closes_required -= 1 if char == "}"
+            return index if closes_required.zero?
+          end
         end
 
         def buildfiles
