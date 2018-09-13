@@ -36,6 +36,21 @@ RUN apt-get update \
     && locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
+### DotNET
+
+# DotNet (https://www.microsoft.com/net/download/linux-package-manager/ubuntu18-04/sdk-current)
+RUN wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && apt-get install -y apt-transport-https \
+    && apt-get update \
+    && apt-get install dotnet-sdk-2.1 
+
+# Mono (https://www.mono-project.com/download/stable/#download-lin)
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF \
+    && echo "deb https://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list \
+    && apt-get update \
+    && apt-get install -y mono-complete
+
 
 ### RUBY
 
@@ -78,7 +93,7 @@ RUN npm install elm@0.18.0 \
     && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
     && tar xzf binaries-for-linux.tar.gz \
     && mv elm /usr/local/bin/elm19 \
-    && rm -f binaries-for-linux.tar.gz \
+    && rm -f binaries-for-linux.tar.gz
 
 
 ### PHP
