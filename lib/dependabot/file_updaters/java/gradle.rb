@@ -133,6 +133,7 @@ module Dependabot
               callsite_buildfile: buildfile
             )
             next unless property_value
+
             result.sub!(Regexp.last_match.to_s, property_value)
           end
 
