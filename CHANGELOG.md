@@ -1,3 +1,8 @@
+## v0.71.15, 13 September 2018
+
+- Gradle: Look up repository URLs based on the current project and its root
+- Gradle: Don't parse Gradle Witness lines
+
 ## v0.71.14, 13 September 2018
 
 - Gradle: Don't update SHA versions
