@@ -1,3 +1,7 @@
+## v0.71.13, 13 September 2018
+
+- Gradle: Strip out comments before parsing files
+
 ## v0.71.12, 12 September 2018
 
 - Gradle: Ignore bad URLs
