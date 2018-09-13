@@ -114,13 +114,13 @@ module Dependabot
       end
 
       def version_up_to_date?
-        return sha1_version_up_to_date? if existing_version_is_sha1?
+        return sha1_version_up_to_date? if existing_version_is_sha?
 
         numeric_version_up_to_date?
       end
 
       def version_can_update?(requirements_to_unlock:)
-        if existing_version_is_sha1?
+        if existing_version_is_sha?
           return sha1_version_can_update?(
             requirements_to_unlock: requirements_to_unlock
           )
@@ -131,7 +131,7 @@ module Dependabot
         )
       end
 
-      def existing_version_is_sha1?
+      def existing_version_is_sha?
         return false if version_class.correct?(dependency.version)
 
         dependency.version.match?(/^[0-9a-f]{6,}$/)

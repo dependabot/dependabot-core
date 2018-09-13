@@ -75,7 +75,7 @@ module Dependabot
         # Override the base class's check for whether this is a git dependency,
         # since not all dep git dependencies have a SHA version (sometimes their
         # version is the tag)
-        def existing_version_is_sha1?
+        def existing_version_is_sha?
           git_dependency?
         end
 

@@ -67,6 +67,14 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
       it { is_expected.to eq(version_class.new("23.6-jre")) }
     end
 
+    context "when the current version is a SHA hash" do
+      let(:dependency_version) do
+        "9d8cee7cd40eff22ebdeb90c8e70f5ee96c5bd25cb2c3e3b3940e27285a3e98a"
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the user wants a pre-release" do
       let(:dependency_version) { "23.0-rc1-android" }
       it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
