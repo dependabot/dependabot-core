@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/file_updaters/base"
+require "dependabot/file_parsers/java/gradle"
 
 module Dependabot
   module FileUpdaters
@@ -114,11 +115,34 @@ module Dependabot
           # single line.
           buildfile = buildfiles.find { |f| f.name == requirement.fetch(:file) }
           buildfile.content.lines.find do |line|
+            line = evaluate_properties(line, buildfile)
             next false unless line.include?(dependency.name.split(":").first)
             next false unless line.include?(dependency.name.split(":").last)
 
             line.include?(requirement.fetch(:requirement))
           end
+        end
+
+        def evaluate_properties(string, buildfile)
+          result = string.dup
+
+          string.scan(FileParsers::Java::Gradle::PROPERTY_REGEX) do
+            prop_name = Regexp.last_match.named_captures.fetch("property_name")
+            property_value = property_value_finder.property_value(
+              property_name: prop_name,
+              callsite_buildfile: buildfile
+            )
+            next unless property_value
+            result.sub!(Regexp.last_match.to_s, property_value)
+          end
+
+          result
+        end
+
+        def property_value_finder
+          @property_value_finder ||=
+            FileParsers::Java::Gradle::PropertyValueFinder.
+            new(dependency_files: dependency_files)
         end
 
         def updated_buildfile_declaration(dependency, previous_req, requirement)

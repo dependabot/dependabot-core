@@ -154,6 +154,41 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
         end
       end
 
+      context "with a dependency name defined by a property" do
+        let(:buildfile_fixture_name) { "name_property.gradle" }
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
+              version: "23.6-jre",
+              previous_version: "1.1.4-3",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "23.6-jre",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "1.1.4-3",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        it "updates the version in the build.gradle" do
+          expect(updated_buildfile.content).
+            to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
+        end
+      end
+
       context "with a dependency version defined by a property" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
         let(:dependencies) do

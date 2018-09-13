@@ -60,7 +60,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
           to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
       end
 
-      context "the property dependency" do
+      describe "the property dependency" do
         subject(:dependency) do
           dependencies.find do |dep|
             dep.name == "org.jetbrains.kotlin:kotlin-stdlib-jre8"
@@ -81,6 +81,15 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
               metadata: { property_name: "kotlin_version" }
             }]
           )
+        end
+      end
+
+      context "when the name uses a property" do
+        let(:buildfile_fixture_name) { "name_property.gradle" }
+
+        it "includes the property dependency" do
+          expect(dependencies.map(&:name)).
+            to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")
         end
       end
     end

@@ -17,9 +17,9 @@ module Dependabot
         ATTRS = %w(name group version).freeze
         PROPERTY_REGEX =
           /
-            (?:\$\{property\((?<property_name>.*?)\)\})|
-            (?:\$\{(?<property_name>.*?)\})|
-            (?:\$(?<property_name>.*))
+            (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
+            (?:\$\{(?<property_name>[^:\s]*?)\})|
+            (?:\$(?<property_name>[^:\s]*))
           /x
 
         DEPENDENCY_DECLARATION_REGEX =
