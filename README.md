@@ -26,10 +26,10 @@ Highlights include:
 ## Setup
 
 To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
-Elm, Java and Rust installed. However, if you just wish to run it for a single
+Elm and Rust installed. However, if you just wish to run it for a single
 language you can get away with just having that language and Ruby.
 
-The main library is written in Ruby, while JavaScript, Python, PHP, Java, Elm,
+The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
 Elixir, Go and Rust are required for dealing with updates for their respective
 languages.
 
