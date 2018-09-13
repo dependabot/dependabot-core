@@ -5,9 +5,15 @@ require "dependabot/dependency_file"
 require "dependabot/file_parsers/java/gradle/repositories_finder"
 
 RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
-  let(:finder) { described_class.new(dependency_files: dependency_files) }
+  let(:finder) do
+    described_class.new(
+      dependency_files: dependency_files,
+      target_dependency_file: target_dependency_file
+    )
+  end
 
   let(:dependency_files) { [buildfile] }
+  let(:target_dependency_file) { buildfile }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",

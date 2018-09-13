@@ -131,10 +131,18 @@ module Dependabot
           end
 
           def repository_urls
+            requirement_files =
+              dependency.requirements.
+              map { |r| r.fetch(:file) }.
+              map { |nm| dependency_files.find { |f| f.name == nm } }
+
             @repository_urls ||=
-              FileParsers::Java::Gradle::RepositoriesFinder.new(
-                dependency_files: dependency_files
-              ).repository_urls
+              requirement_files.flat_map do |target_file|
+                FileParsers::Java::Gradle::RepositoriesFinder.new(
+                  dependency_files: dependency_files,
+                  target_dependency_file: target_file
+                ).repository_urls
+              end.uniq
           end
 
           def matches_dependency_version_type?(comparison_version)

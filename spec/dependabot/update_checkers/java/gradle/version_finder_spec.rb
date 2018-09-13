@@ -34,7 +34,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
   let(:buildfile_fixture_name) { "basic_build.gradle" }
 
   let(:dependency_requirements) do
-    [{ file: "pom.xml", requirement: "23.3-jre", groups: [], source: nil }]
+    [{ file: "build.gradle", requirement: "23.3-jre", groups: [], source: nil }]
   end
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }

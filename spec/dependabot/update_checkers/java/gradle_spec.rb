@@ -98,7 +98,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
       end
       let(:dependency_requirements) do
         [{
-          file: "pom.xml",
+          file: "build.gradle",
           requirement: "1.1.4-3",
           groups: [],
           source: nil,
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
       end
       let(:dependency_requirements) do
         [{
-          file: "pom.xml",
+          file: "build.gradle",
           requirement: "1.1.4-3",
           groups: [],
           source: nil,

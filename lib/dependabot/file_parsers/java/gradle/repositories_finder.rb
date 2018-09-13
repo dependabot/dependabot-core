@@ -17,16 +17,17 @@ module Dependabot
           MAVEN_REPO_REGEX =
             /maven\s*\{[^\}]*\surl[\s\(]\s*['"](?<url>[^'"]+)['"]/
 
-          def initialize(dependency_files:)
+          def initialize(dependency_files:, target_dependency_file:)
             @dependency_files = dependency_files
+            @target_dependency_file = target_dependency_file
+            raise "No target file!" unless target_dependency_file
           end
 
           def repository_urls
-            repository_urls =
-              buildfile_repositories.
-              map { |url| url.strip.gsub(%r{/$}, "") }.
-              select { |url| valid_url?(url) }.
-              uniq
+            repository_urls = []
+            repository_urls += inherited_repository_urls
+            repository_urls += own_buildfile_repository_urls
+            repository_urls = repository_urls.uniq
 
             return repository_urls unless repository_urls.empty?
 
@@ -35,13 +36,50 @@ module Dependabot
 
           private
 
-          attr_reader :dependency_files
+          attr_reader :dependency_files, :target_dependency_file
 
-          def buildfile_repositories
-            repositories = []
+          def inherited_repository_urls
+            return [] unless top_level_buildfile
+
+            buildfile_content = comment_free_content(top_level_buildfile)
+            subproject_blocks = []
+
+            buildfile_content.scan(/(?:^|\s)allprojects\s*\{/) do
+              mtch = Regexp.last_match
+              subproject_blocks <<
+                mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+            end
+
+            if top_level_buildfile != target_dependency_file
+              buildfile_content.scan(/(?:^|\s)subprojects\s*\{/) do
+                mtch = Regexp.last_match
+                subproject_blocks <<
+                  mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+              end
+            end
+
+            repository_urls_from(subproject_blocks.join("\n"))
+          end
+
+          def own_buildfile_repository_urls
+            buildfile_content = comment_free_content(target_dependency_file)
+
+            buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
+              mtch = Regexp.last_match
+              buildfile_content.gsub!(
+                mtch.post_match[0..closing_bracket_index(mtch.post_match)],
+                ""
+              )
+            end
+
+            repository_urls_from(buildfile_content)
+          end
+
+          def repository_urls_from(buildfile_content)
+            repository_urls = []
 
             repository_blocks = []
-            comment_free_content(buildfile).scan(REPOSITORIES_BLOCK_START) do
+            buildfile_content.scan(REPOSITORIES_BLOCK_START) do
               mtch = Regexp.last_match
               repository_blocks <<
                 mtch.post_match[0..closing_bracket_index(mtch.post_match)]
@@ -49,23 +87,26 @@ module Dependabot
 
             repository_blocks.each do |block|
               if block.include?(" google(")
-                repositories << "https://maven.google.com/"
+                repository_urls << "https://maven.google.com/"
               end
 
               if block.include?(" mavenCentral(")
-                repositories << "https://repo.maven.apache.org/maven2/"
+                repository_urls << "https://repo.maven.apache.org/maven2/"
               end
 
               if block.include?(" jcenter(")
-                repositories << "https://jcenter.bintray.com/"
+                repository_urls << "https://jcenter.bintray.com/"
               end
 
               block.scan(MAVEN_REPO_REGEX) do
-                repositories << Regexp.last_match.named_captures.fetch("url")
+                repository_urls << Regexp.last_match.named_captures.fetch("url")
               end
             end
 
-            repositories.uniq
+            repository_urls.
+              map { |url| url.strip.gsub(%r{/$}, "") }.
+              select { |url| valid_url?(url) }.
+              uniq
           end
 
           def closing_bracket_index(string)
@@ -94,8 +135,8 @@ module Dependabot
               gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
           end
 
-          def buildfile
-            @buildfile ||=
+          def top_level_buildfile
+            @top_level_buildfile ||=
               dependency_files.find { |f| f.name == "build.gradle" }
           end
         end
