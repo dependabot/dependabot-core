@@ -41,7 +41,7 @@ module Dependabot
             repositories = []
 
             repository_blocks = []
-            buildfile.content.scan(REPOSITORIES_BLOCK_START) do
+            comment_free_content(buildfile).scan(REPOSITORIES_BLOCK_START) do
               mtch = Regexp.last_match
               repository_blocks <<
                 mtch.post_match[0..closing_bracket_index(mtch.post_match)]
@@ -86,6 +86,12 @@ module Dependabot
             true
           rescue URI::InvalidURIError
             false
+          end
+
+          def comment_free_content(buildfile)
+            buildfile.content.
+              gsub(%r{(?<=^|\s)//.*$}, "\n").
+              gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
           end
 
           def buildfile

@@ -53,7 +53,7 @@ module Dependabot
         def shortform_buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          buildfile.content.scan(DEPENDENCY_DECLARATION_REGEX) do
+          comment_free_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
             declaration = Regexp.last_match.named_captures.fetch("declaration")
             details = {
               group: declaration.split(":").first,
@@ -71,7 +71,7 @@ module Dependabot
         def keyword_arg_buildfile_dependencies(buildfile)
           dependency_set = DependencySet.new
 
-          buildfile.content.lines.each do |line|
+          comment_free_content(buildfile).lines.each do |line|
             name    = line.match(map_value_regex("name"))&.
                       named_captures&.fetch("value")
             group   = line.match(map_value_regex("group"))&.
@@ -135,13 +135,19 @@ module Dependabot
           return @properties[buildfile.name] if @properties[buildfile.name]
 
           @properties[buildfile.name] = {}
-          buildfile.content.scan(PROPERTY_DECLARATION_REGEX) do
+          comment_free_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
             captures = Regexp.last_match.named_captures
             name = captures.fetch("name").sub(/^ext\./, "")
             @properties[buildfile.name][name] = captures.fetch("value")
           end
 
           @properties[buildfile.name]
+        end
+
+        def comment_free_content(buildfile)
+          buildfile.content.
+            gsub(%r{(?<=^|\s)//.*$}, "\n").
+            gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
         end
 
         def buildfiles
