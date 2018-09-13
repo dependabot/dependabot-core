@@ -27,6 +27,11 @@ module Dependabot
               property_name = property_name.sub("project.", "")
             end
 
+            # If a `properties` prefix was specified strip that out, too
+            if property_name.start_with?("properties.")
+              property_name = property_name.sub("properties.", "")
+            end
+
             # Look for a property in the callsite buildfile. If that fails, look
             # for the property in the top-level buildfile
             if properties(callsite_buildfile).fetch(property_name, nil)
