@@ -1,3 +1,7 @@
+## v0.71.18, 13 September 2018
+
+- Maven: Fix requirement updating for versions with multiple dashes
+
 ## v0.71.17, 13 September 2018
 
 - Gradle: handle properties prefixed with `properties`, too
