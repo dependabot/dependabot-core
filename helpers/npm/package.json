@@ -10,7 +10,7 @@
     "eslint-plugin-prettier": "^2.6.2",
     "fs-extra": "^7.0.0",
     "jest": "^23.6.0",
-    "nock": "^9.6.1",
+    "nock": "^10.0.0",
     "prettier": "^1.14.2"
   }
 }
