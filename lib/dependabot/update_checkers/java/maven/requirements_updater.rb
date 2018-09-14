@@ -39,12 +39,7 @@ module Dependabot
                 next req
               end
 
-              # Since range requirements are excluded by the line above we can
-              # just do a `gsub` on the previous version
-              old_version = requirement_class.new(req[:requirement]).
-                            requirements.first.last
-              new_req =
-                req[:requirement].gsub(old_version.to_s, latest_version.to_s)
+              new_req = update_requirement(req[:requirement])
               req.merge(requirement: new_req, source: updated_source)
             end
           end
@@ -53,6 +48,31 @@ module Dependabot
 
           attr_reader :requirements, :latest_version, :source_url,
                       :properties_to_update
+
+          def update_requirement(req_string)
+            if req_string.include?(".+")
+              update_dynamic_requirement(req_string)
+            else
+              # Since range requirements are excluded this must be exact
+              update_exact_requirement(req_string)
+            end
+          end
+
+          def update_exact_requirement(req_string)
+            old_version = requirement_class.new(req_string).
+                          requirements.first.last
+            req_string.gsub(old_version.to_s, latest_version.to_s)
+          end
+
+          # This is really only a Gradle thing, but Gradle relies on this
+          # RequirementsUpdater too
+          def update_dynamic_requirement(req_string)
+            precision = req_string.split(".").take_while { |s| s != "+" }.count
+
+            version_parts = latest_version.segments.first(precision)
+
+            version_parts.join(".") + ".+"
+          end
 
           def version_class
             Utils::Java::Version
