@@ -1,3 +1,7 @@
+## v0.71.20, 14 September 2018
+
+- Maven: Evaluate properties in Maven repos whenever possible
+
 ## v0.71.19, 14 September 2018
 
 - Gradle: Handle wildcard requirements in Utils::Java::Requirement
