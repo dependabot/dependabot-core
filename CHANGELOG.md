@@ -1,3 +1,8 @@
+## v0.71.19, 14 September 2018
+
+- Gradle: Handle wildcard requirements in Utils::Java::Requirement
+- Gradle: Update dynamic version requirements correctly
+
 ## v0.71.18, 13 September 2018
 
 - Maven: Fix requirement updating for versions with multiple dashes
