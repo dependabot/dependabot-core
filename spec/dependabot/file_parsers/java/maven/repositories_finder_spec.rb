@@ -39,6 +39,25 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
         )
       end
 
+      context "that use properties" do
+        let(:base_pom_fixture_name) { "property_repo_pom.xml" }
+
+        it "handles the property interpolation" do
+          expect(repository_urls).to match_array(
+            %w(
+              http://download.eclipse.org/technology/m2e/releases
+              http://download.eclipse.org/releases/neon
+              http://eclipse-cs.sf.net/update
+              https://dl.bintray.com/pmd/pmd-eclipse-plugin/updates
+              http://findbugs.cs.umd.edu/eclipse
+              http://download.eclipse.org/tools/orbit/downloads/drops/R20160221192158/repository
+              https://repo.maven.apache.org/maven2
+              http://repository.sonatype.org/content/groups/sonatype-public-grid
+            )
+          )
+        end
+      end
+
       context "in the parent POM" do
         let(:dependency_files) { [base_pom, child_pom] }
         let(:child_pom) do

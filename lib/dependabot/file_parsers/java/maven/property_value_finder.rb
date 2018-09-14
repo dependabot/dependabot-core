@@ -115,7 +115,10 @@ module Dependabot
 
           def repositories_finder
             @repositories_finder ||=
-              RepositoriesFinder.new(dependency_files: dependency_files)
+              RepositoriesFinder.new(
+                dependency_files: dependency_files,
+                evaluate_properties: false
+              )
           end
 
           def fetch_remote_parent_pom(group_id, artifact_id, version, pom)

@@ -5,6 +5,7 @@ require "nokogiri"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/java/maven"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 # For documentation, see:
 # - http://maven.apache.org/pom.html#Repositories
@@ -14,6 +15,7 @@ module Dependabot
     module Java
       class Maven
         class RepositoriesFinder
+          require_relative "property_value_finder"
           # In theory we should check the artifact type and either look in
           # <repositories> or <pluginRepositories>. In practice it's unlikely
           # anyone makes this distinction.
@@ -24,8 +26,13 @@ module Dependabot
           # always inherited from.
           CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
-          def initialize(dependency_files:)
+          def initialize(dependency_files:, evaluate_properties: true)
             @dependency_files = dependency_files
+
+            # We need the option not to evaluate properties so as not to have a
+            # circular dependency between this class and the PropertyValueFinder
+            # class
+            @evaluate_properties = evaluate_properties
           end
 
           # Collect all repository URLs from this POM and its parents
@@ -34,7 +41,9 @@ module Dependabot
               Nokogiri::XML(pom.content).
               css(REPOSITORY_SELECTOR).
               map { |node| node.at_css("url").content.strip.gsub(%r{/$}, "") }.
-              select { |url| url.start_with?("http") }
+              reject { |url| contains_property?(url) && !evaluate_properties? }.
+              select { |url| url.start_with?("http") }.
+              map { |url| evaluated_value(url, pom) }
 
             return repo_urls_in_pom + [CENTRAL_REPO_URL] if exclude_inherited
 
@@ -48,6 +57,10 @@ module Dependabot
           private
 
           attr_reader :dependency_files
+
+          def evaluate_properties?
+            @evaluate_properties
+          end
 
           def parent_pom(pom, repo_urls)
             doc = Nokogiri::XML(pom.content)
@@ -122,6 +135,45 @@ module Dependabot
             "#{base_repo_url}/"\
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
             "#{artifact_id}-#{version}.pom"
+          end
+
+          def contains_property?(value)
+            value.match?(property_regex)
+          end
+
+          def evaluated_value(value, pom)
+            return value unless contains_property?(value)
+
+            property_name = value.match(property_regex).
+                            named_captures.fetch("property")
+            property_value = value_for_property(property_name, pom)
+
+            value.gsub(property_regex, property_value)
+          end
+
+          def value_for_property(property_name, pom)
+            value =
+              property_value_finder.
+              property_details(
+                property_name: property_name,
+                callsite_pom: pom
+              )&.fetch(:value)
+
+            return value if value
+
+            msg = "Property not found: #{property_name}"
+            raise DependencyFileNotEvaluatable, msg
+          end
+
+          # Cached, since this can makes calls to the registry (to get property
+          # values from parent POMs)
+          def property_value_finder
+            @property_value_finder ||=
+              PropertyValueFinder.new(dependency_files: dependency_files)
+          end
+
+          def property_regex
+            FileParsers::Java::Maven::PROPERTY_REGEX
           end
 
           def pom?(content)
