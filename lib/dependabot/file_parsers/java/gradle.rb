@@ -22,8 +22,10 @@ module Dependabot
             (?:\$(?<property_name>[^:\s]*))
           /x
 
+        PART = /[^\s,@'":]+/
+        VSN_PART = /[^\s,'":]+/
         DEPENDENCY_DECLARATION_REGEX =
-          /(?:\(|\s)\s*['"](?<declaration>[^\s,'":]+:[^\s,'":]+:[^\s,'":]+)['"]/
+          /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/
 
         def parse
           dependency_set = DependencySet.new

@@ -20,6 +20,13 @@ repositories {
     mavenCentral()
 }
 
+// Here to ensure we don't parse SCM URLs as dependency declarations
+scm {
+    url 'scm:git@github.com:mapfish/mapfish-print.git'
+    connection 'scm:git@github.com:mapfish/mapfish-print.git'
+    developerConnection 'scm:git@github.com:mapfish/mapfish-print.git'
+}
+
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "com.sparkjava:spark-core:2.5.4"
