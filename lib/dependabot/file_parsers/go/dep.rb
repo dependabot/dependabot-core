@@ -18,17 +18,26 @@ module Dependabot
     module Go
       class Dep < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
+        require_relative "go_mod_parser"
 
         REQUIREMENT_TYPES = %w(constraint override).freeze
 
         def parse
           dependency_set = DependencySet.new
-          dependency_set += manifest_dependencies
-          dependency_set += lockfile_dependencies
+          dependency_set += go_mod_dependencies if go_mod
+          dependency_set += manifest_dependencies if manifest
+          dependency_set += lockfile_dependencies if lockfile
           dependency_set.dependencies
         end
 
         private
+
+        def go_mod_dependencies
+          @go_mod_dependencies ||=
+            GoModParser.
+            new(dependency_files: dependency_files, credentials: credentials).
+            dependency_set
+        end
 
         def manifest_dependencies
           dependency_set = DependencySet.new
@@ -156,6 +165,10 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, file.path
         end
 
+        def go_mod
+          @go_mod ||= get_original_file("go.mod")
+        end
+
         def manifest
           @manifest ||= get_original_file("Gopkg.toml")
         end
@@ -165,9 +178,10 @@ module Dependabot
         end
 
         def check_required_files
-          %w(Gopkg.toml Gopkg.lock).each do |filename|
-            raise "No #{filename}!" unless get_original_file(filename)
-          end
+          return if manifest && lockfile
+          return if go_mod
+
+          raise "No Gopkg.toml or go.mod!"
         end
       end
     end

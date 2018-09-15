@@ -234,6 +234,29 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       end
     end
 
+    context "with a go modules dependency" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("go", "go_mods", "go.mod")
+          )
+        ]
+      end
+
+      it "delegates to LatestVersionFinder" do
+        expect(described_class::LatestVersionFinder).to receive(:new).with(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions
+        ).and_call_original
+
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("3.2.0"))
+      end
+    end
+
     context "with a git dependency" do
       let(:dependency_name) { "golang.org/x/text" }
       let(:source) do
