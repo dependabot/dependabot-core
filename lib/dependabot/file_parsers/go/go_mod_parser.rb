@@ -45,7 +45,7 @@ module Dependabot
             dependencies <<
               Dependency.new(
                 name: dep["Path"],
-                version: dep["Version"],
+                version: dep["Version"]&.sub(/^v?/, ""),
                 requirements: dep["Indirect"] ? [] : reqs,
                 package_manager: "dep"
               )

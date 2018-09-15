@@ -45,7 +45,7 @@ RSpec.describe Dependabot::FileParsers::Go::GoModParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("rsc.io/quote")
-          expect(dependency.version).to eq("v1.4.0")
+          expect(dependency.version).to eq("1.4.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "v1.4.0",
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::FileParsers::Go::GoModParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("github.com/fatih/color")
-          expect(dependency.version).to eq("v1.7.0")
+          expect(dependency.version).to eq("1.7.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "v1.7.0",
