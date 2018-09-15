@@ -52,6 +52,10 @@ module Dependabot
           @lockfile ||= get_original_file("Gopkg.lock")
         end
 
+        def go_mod
+          @lockfile ||= get_original_file("go.mod")
+        end
+
         def updated_manifest_content
           ManifestUpdater.new(
             dependencies: dependencies,
@@ -65,6 +69,14 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials
           ).updated_lockfile_content
+        end
+
+        def go_mod_content
+          GoModUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_go_mod_content
         end
       end
     end
