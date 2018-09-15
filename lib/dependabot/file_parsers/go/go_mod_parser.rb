@@ -64,6 +64,7 @@ module Dependabot
                 unless $CHILD_STATUS.success?
                   raise Dependabot::DependencyFileNotParseable, go_mod.path
                 end
+
                 output
               end
             end

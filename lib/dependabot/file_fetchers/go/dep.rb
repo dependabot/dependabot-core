@@ -8,6 +8,7 @@ module Dependabot
       class Dep < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
           return true if (%w(Gopkg.toml Gopkg.lock) - filenames).empty?
+
           filenames.include?("go.mod")
         end
 

@@ -54,6 +54,7 @@ module Dependabot
         def check_required_files
           return if get_original_file("Gopkg.toml")
           return if get_original_file("go.mod")
+
           raise "No Gopkg.toml or go.mod!"
         end
 
