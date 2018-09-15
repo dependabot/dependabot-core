@@ -1,3 +1,7 @@
+## v0.72.2, 15 September 2018
+
+- Go: Add PathConverter util and use it in UpdateChecker and MetadataFinder
+
 ## v0.72.1, 15 September 2018
 
 - Go: Strip v from parsed go modules versions
