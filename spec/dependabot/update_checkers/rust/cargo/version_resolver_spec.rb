@@ -105,6 +105,20 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       end
     end
 
+    context "using a feature that is not enabled" do
+      let(:manifest_fixture_name) { "disabled_feature" }
+      let(:lockfile_fixture_name) { "bare_version_specified" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            # Test that the temporary path isn't included in the error message
+            expect(error.message).to_not include("dependabot_20")
+            expect(error.message).to include("feature `edition` is required")
+          end
+      end
+    end
+
     context "with a blank requirement string" do
       let(:manifest_fixture_name) { "blank_version" }
       let(:lockfile_fixture_name) { "blank_version" }
