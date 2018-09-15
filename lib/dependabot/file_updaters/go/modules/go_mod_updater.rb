@@ -22,7 +22,7 @@ module Dependabot
                   deps = dependencies.map do |dep|
                     {
                       name: dep.name,
-                      version: dep.version,
+                      version: "v" + dep.version.sub(/^v/i, ""),
                       indirect: dep.requirements.empty?
                     }
                   end
