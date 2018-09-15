@@ -1,3 +1,7 @@
+## v0.72.0, 15 September 2018
+
+- Go: Add initial support for modules
+
 ## v0.71.21, 15 September 2018
 
 - Gradle: Don't allow '@' characters in dependency names
