@@ -233,7 +233,7 @@ module Dependabot
           return false if dependency_files.any? { |f| f.name == "Gopkg.lock" }
           return false if dependency_files.any? { |f| f.name == "Gopkg.toml" }
 
-          return true
+          true
         end
 
         def git_dependency?

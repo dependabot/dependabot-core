@@ -2,15 +2,16 @@
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
-require "dependabot/file_parsers/python/pip"
+require "dependabot/file_parsers/go/dep"
 require "dependabot/errors"
 
 module Dependabot
   module FileParsers
     module Go
       class GoModParser
-        def initialize(dependency_files:)
+        def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files
+          @credentials = credentials
         end
 
         def dependency_set
@@ -21,19 +22,14 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files
+        attr_reader :dependency_files, :credentials
 
         def go_mod_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           i = 0
-          chunks = module_info(go_mod).lines.group_by do |line|
-            if line == "{\n"
-              i += 1
-            else
-              i
-            end
-          end
+          chunks = module_info(go_mod).lines.
+                   group_by { |line| line == "{\n" ? i += 1 : i }
           deps = chunks.values.map { |chunk| JSON.parse(chunk.join) }
 
           deps.each do |dep|
@@ -41,12 +37,9 @@ module Dependabot
             next if dep["Main"]
 
             reqs = [{
-              requirement: dep["Indirect"] ? nil : dep["Version"],
+              requirement: dep["Version"],
               file: go_mod.name,
-              source: { # TODO
-                type: "default",
-                source: dep["Path"]
-              },
+              source: { type: "default", source: dep["Path"] },
               groups: []
             }]
             dependencies <<
@@ -54,38 +47,30 @@ module Dependabot
                 name: dep["Path"],
                 version: dep["Version"],
                 requirements: dep["Indirect"] ? [] : reqs,
-                package_manager: "go" # TODO
+                package_manager: "dep"
               )
           end
 
           dependencies
         end
 
-        def version_from_lockfile(dep_name)
-          return unless pyproject_lock
-
-          parsed_pyproject_lock.fetch("package", []).
-            find { |p| p.fetch("name") == normalised_name(dep_name) }&.
-            fetch("verison", nil)
-        end
-
         def module_info(go_mod)
-          # TODO go.sum
           @module_info ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write("go.mod", go_mod.content)
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                File.write("go.mod", go_mod.content)
 
-              output = %x[GO111MODULE=on go list -m -json all]
-              unless $CHILD_STATUS.success?
-                raise Dependabot::DependencyFileNotParseable, go_mod.path
+                output = `GO111MODULE=on go list -m -json all`
+                unless $CHILD_STATUS.success?
+                  raise Dependabot::DependencyFileNotParseable, go_mod.path
+                end
+                output
               end
-              output
             end
         end
 
         def go_mod
-          @go_mod ||=
-            dependency_files.find { |f| f.name == "go.mod" }
+          @go_mod ||= dependency_files.find { |f| f.name == "go.mod" }
         end
       end
     end

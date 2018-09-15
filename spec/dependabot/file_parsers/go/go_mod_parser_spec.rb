@@ -2,12 +2,21 @@
 
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/go/go_mod_parser"
-require_relative "../shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::FileParsers::Go::GoModParser do
-  let(:parser) { described_class.new(dependency_files: files) }
+  let(:parser) do
+    described_class.new(dependency_files: files, credentials: credentials)
+  end
 
   let(:files) { [go_mod] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:go_mod) do
     Dependabot::DependencyFile.new(
       name: "go.mod",
@@ -22,7 +31,9 @@ RSpec.describe Dependabot::FileParsers::Go::GoModParser do
     its(:length) { is_expected.to eq(5) }
 
     describe "top level dependencies" do
-      subject(:dependencies) { parser.dependency_set.dependencies.select(&:top_level?) }
+      subject(:dependencies) do
+        parser.dependency_set.dependencies.select(&:top_level?)
+      end
 
       its(:length) { is_expected.to eq(2) }
 
