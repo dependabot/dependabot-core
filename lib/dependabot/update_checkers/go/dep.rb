@@ -24,7 +24,9 @@ module Dependabot
 
         def latest_resolvable_version
           @latest_resolvable_version ||=
-            if git_dependency?
+            if modules_dependency?
+              latest_version
+            elsif git_dependency?
               latest_resolvable_version_for_git_dependency
             else
               latest_resolvable_released_version(unlock_requirement: true)
@@ -222,6 +224,16 @@ module Dependabot
           return false unless git_dependency?
           return false if latest_resolvable_version_for_git_dependency.nil?
           Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
+        end
+
+        def modules_dependency?
+          # If dep is being used then we use that to determine the latest
+          # version we can update to (since it will have resolvability
+          # requirements, whereas Go modules won't)
+          return false if dependency_files.any? { |f| f.name == "Gopkg.lock" }
+          return false if dependency_files.any? { |f| f.name == "Gopkg.toml" }
+
+          return true
         end
 
         def git_dependency?
