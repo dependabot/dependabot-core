@@ -1,3 +1,7 @@
+## v0.71.21, 15 September 2018
+
+- Gradle: Don't allow '@' characters in dependency names
+
 ## v0.71.20, 14 September 2018
 
 - Maven: Evaluate properties in Maven repos whenever possible
