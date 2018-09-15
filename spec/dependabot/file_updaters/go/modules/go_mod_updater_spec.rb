@@ -9,7 +9,13 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
   let(:updater) do
     described_class.new(
       go_mod: go_mod,
-      dependencies: [dependency]
+      dependencies: [dependency],
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
 

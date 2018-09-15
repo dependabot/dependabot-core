@@ -16,25 +16,29 @@ module Dependabot
           def updated_go_mod_content
             @updated_go_mod_content ||=
               SharedHelpers.in_a_temporary_directory do
-                File.write("go.mod", @go_mod.content)
+                SharedHelpers.with_git_configured(credentials: credentials) do
+                  File.write("go.mod", go_mod.content)
 
-                deps = @dependencies.map do |dep|
-                  {
-                    name: dep.name,
-                    version: dep.version,
-                    indirect: dep.requirements.empty?
-                  }
+                  deps = dependencies.map do |dep|
+                    {
+                      name: dep.name,
+                      version: dep.version,
+                      indirect: dep.requirements.empty?
+                    }
+                  end
+
+                  SharedHelpers.run_helper_subprocess(
+                    command: go_helper_path,
+                    function: "updateDependencyFile",
+                    args: { dependencies: deps }
+                  )
                 end
-
-                SharedHelpers.run_helper_subprocess(
-                  command: go_helper_path,
-                  function: "updateDependencyFile",
-                  args: { dependencies: deps }
-                )
               end
           end
 
           private
+
+          attr_reader :dependencies, :go_mod, :credentials
 
           def go_helper_path
             File.join(project_root, "helpers/go/updater/updater.#{platform}64")
