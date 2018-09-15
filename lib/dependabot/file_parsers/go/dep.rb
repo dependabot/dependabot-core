@@ -9,6 +9,7 @@ require "dependabot/source"
 
 require "dependabot/file_parsers/base"
 require "dependabot/utils/go/requirement"
+require "dependabot/utils/go/path_converter"
 
 # Relevant dep docs can be found at:
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
@@ -131,31 +132,7 @@ module Dependabot
         end
 
         def git_source(path)
-          # Save a query by doing the conversion of golang.org/x names manually
-          updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
-
-          # Currently, Dependabot::Source.new will return `nil` if it can't find
-          # a git SCH associated with a path. If it is ever extended to handle
-          # non-git sources we'll need to add an additional check here.
-          return Source.from_url(updated_path) if Source.from_url(updated_path)
-
-          # TODO: This is not robust! Instead, we should shell out to Go and use
-          # https://github.com/Masterminds/vcs.
-          uri = "https://#{path}?go-get=1"
-          response = Excon.get(
-            uri,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-
-          return unless response.status == 200
-
-          response.body.scan(Dependabot::Source::SOURCE_REGEX) do
-            source_url = Regexp.last_match.to_s
-            return Source.from_url(source_url)
-          end
-
-          nil
+          Dependabot::Utils::Go::PathConverter.git_source_for_path(path)
         end
 
         def parsed_file(file)

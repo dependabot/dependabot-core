@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders/base"
+require "dependabot/utils/go/path_converter"
 
 module Dependabot
   module MetadataFinders
@@ -11,10 +12,8 @@ module Dependabot
         def look_up_source
           return look_up_git_dependency_source if git_dependency?
 
-          source_string = (specified_source_string || dependency.name).
-                          gsub(%r{^golang\.org/x}, "github.com/golang")
-
-          Source.from_url(source_string)
+          path_string = (specified_source_string || dependency.name)
+          Dependabot::Utils::Go::PathConverter.git_source_for_path(path_string)
         end
 
         def git_dependency?

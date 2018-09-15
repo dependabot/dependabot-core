@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require "excon"
 require "toml-rb"
 
 require "dependabot/source"
 require "dependabot/update_checkers/go/dep"
 require "dependabot/git_commit_checker"
+require "dependabot/utils/go/path_converter"
 
 module Dependabot
   module UpdateCheckers
@@ -58,11 +60,7 @@ module Dependabot
                    map { |r| r.dig(:source, :source) }.compact.first
             path ||= dependency.name
 
-            updated_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
-            # Currently, Dependabot::Source.new will return `nil` if it can't
-            # find a git SCH associated with a path. If it is ever extended to
-            # handle non-git sources we'll need to add an additional check here.
-            source = Source.from_url(updated_path)
+            source = git_source(path)
             return unless source
 
             # Given a source, we want to find the latest tag. Piggy-back off the
@@ -107,6 +105,10 @@ module Dependabot
             # If the dependency is pinned to a tag that doesn't look like a
             # version then there's nothing we can do.
             nil
+          end
+
+          def git_source(path)
+            Dependabot::Utils::Go::PathConverter.git_source_for_path(path)
           end
 
           def version_from_tag(tag)
