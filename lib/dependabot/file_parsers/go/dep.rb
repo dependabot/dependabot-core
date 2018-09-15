@@ -23,12 +23,20 @@ module Dependabot
 
         def parse
           dependency_set = DependencySet.new
+          dependency_set += go_mod_dependencies if go_mod
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies
           dependency_set.dependencies
         end
 
         private
+
+        def go_mod_dependencies
+          @go_mod_dependencies ||=
+            GoModParser.
+              new(dependency_files: dependency_files).
+              dependency_set
+        end
 
         def manifest_dependencies
           dependency_set = DependencySet.new
@@ -153,6 +161,10 @@ module Dependabot
           @parsed_file[file.name] ||= TomlRB.parse(file.content)
         rescue TomlRB::ParseError
           raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        def go_mod
+          @go_mod ||= get_original_file("go.mod")
         end
 
         def manifest
