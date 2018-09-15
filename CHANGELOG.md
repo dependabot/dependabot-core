@@ -1,3 +1,8 @@
+## v0.72.1, 15 September 2018
+
+- Go: Strip v from parsed go modules versions
+- Go: Add "v" prefix to go.mod versions in FileUpdater
+
 ## v0.72.0, 15 September 2018
 
 - Go: Add initial support for modules
