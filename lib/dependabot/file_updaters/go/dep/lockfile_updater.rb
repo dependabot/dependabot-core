@@ -31,8 +31,9 @@ module Dependabot
                   # Note: We are currently doing a full install here (we're not
                   # passing no-vendor) because dep needs to generate the digests
                   # for each project.
+                  deps = dependencies.select { |d| appears_in_lockfile(d) }
                   command = "dep ensure -update "\
-                            "#{dependencies.map(&:name).join(' ')}"
+                            "#{deps.map(&:name).join(' ')}"
                   dir_parts = dir.realpath.to_s.split("/")
                   gopath = File.join(dir_parts[0..-(base_parts + 1)])
                   run_shell_command(command, "GOPATH" => gopath)
@@ -84,6 +85,7 @@ module Dependabot
 
             dependencies.each do |dep|
               req = dep.requirements.find { |r| r[:file] == manifest.name }
+              next unless appears_in_lockfile(dep)
 
               if req
                 update_constraint!(parsed_manifest, dep)
@@ -166,6 +168,11 @@ module Dependabot
                 package == "." ? dep["name"] : File.join(dep["name"], package)
               end.compact
             end
+          end
+
+          def appears_in_lockfile(dep)
+            !parsed_file(lockfile).fetch("projects").
+              find { |p| p["name"] == dep.name }.nil?
           end
 
           def parsed_file(file)

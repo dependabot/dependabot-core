@@ -7,9 +7,10 @@ module Dependabot
     module Go
       module Modules
         class GoModUpdater
-          def initialize(dependencies:, go_mod:)
+          def initialize(dependencies:, go_mod:, credentials:)
             @dependencies = dependencies
             @go_mod = go_mod
+            @credentials = credentials
           end
 
           def updated_go_mod_content
@@ -36,11 +37,19 @@ module Dependabot
           private
 
           def go_helper_path
-            File.join(project_root, "helpers/go/updater/updater")
+            File.join(project_root, "helpers/go/updater/updater.#{platform}64")
           end
 
           def project_root
             File.join(File.dirname(__FILE__), "../../../../..")
+          end
+
+          def platform
+            case RbConfig::CONFIG["arch"]
+            when /linux/ then "linux"
+            when /darwin/ then "darwin"
+            else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
+            end
           end
         end
       end

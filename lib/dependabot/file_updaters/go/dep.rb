@@ -9,22 +9,33 @@ module Dependabot
       class Dep < Dependabot::FileUpdaters::Base
         require_relative "dep/manifest_updater"
         require_relative "dep/lockfile_updater"
+        require_relative "modules/go_mod_updater"
 
         def self.updated_files_regex
           [
             /^Gopkg\.toml$/,
-            /^Gopkg\.lock$/
+            /^Gopkg\.lock$/,
+            /^go\.mod$/,
+            /^go\.sum$/
           ]
         end
 
         def updated_dependency_files
           updated_files = []
 
-          if file_changed?(manifest)
+          if manifest && file_changed?(manifest)
             updated_files <<
               updated_file(
                 file: manifest,
                 content: updated_manifest_content
+              )
+          end
+
+          if go_mod && file_changed?(go_mod)
+            updated_files <<
+              updated_file(
+                file: go_mod,
+                content: updated_go_mod_content
               )
           end
 
@@ -41,7 +52,9 @@ module Dependabot
         private
 
         def check_required_files
-          raise "No Gopkg.toml!" unless get_original_file("Gopkg.toml")
+          return if get_original_file("Gopkg.toml")
+          return if get_original_file("go.mod")
+          raise "No Gopkg.toml or go.mod!"
         end
 
         def manifest
@@ -53,7 +66,7 @@ module Dependabot
         end
 
         def go_mod
-          @lockfile ||= get_original_file("go.mod")
+          @go_mod ||= get_original_file("go.mod")
         end
 
         def updated_manifest_content
@@ -71,10 +84,10 @@ module Dependabot
           ).updated_lockfile_content
         end
 
-        def go_mod_content
-          GoModUpdater.new(
+        def updated_go_mod_content
+          Modules::GoModUpdater.new(
             dependencies: dependencies,
-            dependency_files: dependency_files,
+            go_mod: go_mod,
             credentials: credentials
           ).updated_go_mod_content
         end
