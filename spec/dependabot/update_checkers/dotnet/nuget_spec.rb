@@ -230,6 +230,43 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       expect(checker).to receive(:latest_version).and_return("latest_version")
       expect(latest_resolvable_version).to eq("latest_version")
     end
+
+    context "with a property dependency" do
+      let(:dependency_requirements) do
+        [{
+          requirement: "0.1.434",
+          file: "my.csproj",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "NukeVersion" }
+        }]
+      end
+      let(:dependency_name) { "Nuke.Common" }
+      let(:dependency_version) { "0.1.434" }
+
+      context "that is used for multiple dependencies" do
+        let(:csproj_body) do
+          fixture("dotnet", "csproj", "property_version.csproj")
+        end
+
+        it "does not delegate to latest_version" do
+          expect(checker).to_not receive(:latest_version)
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
+
+      context "that is used for a single dependencies" do
+        let(:csproj_body) do
+          fixture("dotnet", "csproj", "single_dep_property_version.csproj")
+        end
+
+        it "delegates to latest_version" do
+          expect(checker).to receive(:latest_version).
+            and_return("latest_version")
+          expect(latest_resolvable_version).to eq("latest_version")
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do

@@ -2,7 +2,9 @@
 
 require "excon"
 require "nokogiri"
+
 require "dependabot/source"
+require "dependabot/file_parsers/dotnet/nuget"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 
@@ -19,6 +21,8 @@ module Dependabot
 
         def latest_resolvable_version
           # TODO: Check version resolution!
+          return nil if version_comes_from_multi_dependency_property?
+
           latest_version
         end
 
@@ -208,6 +212,36 @@ module Dependabot
               credentials: credentials,
               config_file: nuget_config
             ).dependency_urls
+        end
+
+        def version_comes_from_multi_dependency_property?
+          declarations_using_a_property.any? do |requirement|
+            property_name = requirement.fetch(:metadata).fetch(:property_name)
+
+            all_property_based_dependencies.any? do |dep|
+              next false if dep.name == dependency.name
+
+              dep.requirements.any? do |req|
+                req.dig(:metadata, :property_name) == property_name
+              end
+            end
+          end
+        end
+
+        def declarations_using_a_property
+          @declarations_using_a_property ||=
+            dependency.requirements.
+            select { |req| req.dig(:metadata, :property_name) }
+        end
+
+        def all_property_based_dependencies
+          @all_property_based_dependencies ||=
+            FileParsers::Dotnet::Nuget.new(
+              dependency_files: dependency_files,
+              source: nil
+            ).parse.select do |dep|
+              dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            end
         end
 
         def nuget_config
