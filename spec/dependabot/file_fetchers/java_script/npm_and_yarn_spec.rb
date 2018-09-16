@@ -174,6 +174,33 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
     end
   end
 
+  context "with an npm-shrinkwrap.json but no package-lock.json file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_js_shrinkwrap.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, File.join(url, "npm-shrinkwrap.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "package_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the package.json and npm-shrinkwrap.json" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(package.json npm-shrinkwrap.json))
+    end
+  end
+
   context "with a package-lock.json file but no yarn.lock" do
     before do
       stub_request(:get, url + "?ref=sha").
