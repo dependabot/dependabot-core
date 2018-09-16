@@ -1,3 +1,10 @@
+## v0.72.3, 16 September 2018
+
+- Gradle: Ignore dependencies that use properties we can't find
+- .NET: Parse property versions
+- .NET: Handle property value updates in FileUpdater
+- .NET: Only attempt to update properties that affect a single dependency
+
 ## v0.72.2, 15 September 2018
 
 - Go: Add PathConverter util and use it in UpdateChecker and MetadataFinder
