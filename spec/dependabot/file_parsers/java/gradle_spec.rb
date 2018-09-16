@@ -94,6 +94,17 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       end
     end
 
+    context "with a missing property" do
+      let(:buildfile_fixture_name) { "missing_property.gradle" }
+
+      its(:length) { is_expected.to eq(8) }
+
+      it "excludes the dependency with the missing property" do
+        expect(dependencies.map(&:name)).
+          to_not include("org.gradle:gradle-tooling-api")
+      end
+    end
+
     context "with an import" do
       let(:buildfile_fixture_name) { "with_import_build.gradle" }
 
@@ -163,7 +174,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
     context "various different specifications" do
       let(:buildfile_fixture_name) { "duck_duck_go_build.gradle" }
 
-      its(:length) { is_expected.to eq(38) }
+      its(:length) { is_expected.to eq(37) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }

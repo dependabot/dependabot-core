@@ -61,8 +61,8 @@ module Dependabot
               version: declaration.split(":").last
             }
 
-            dependency_set <<
-              dependency_from(details_hash: details, buildfile: buildfile)
+            dep = dependency_from(details_hash: details, buildfile: buildfile)
+            dependency_set << dep if dep
           end
 
           dependency_set
@@ -82,18 +82,23 @@ module Dependabot
 
             details = { name: name, group: group, version: version }
 
-            dependency_set <<
-              dependency_from(details_hash: details, buildfile: buildfile)
+            dep = dependency_from(details_hash: details, buildfile: buildfile)
+            dependency_set << dep if dep
           end
 
           dependency_set
         end
 
         def dependency_from(details_hash:, buildfile:)
-          dependency_name = [
-            evaluated_value(details_hash[:group], buildfile),
-            evaluated_value(details_hash[:name], buildfile)
-          ].join(":")
+          group   = evaluated_value(details_hash[:group], buildfile)
+          name    = evaluated_value(details_hash[:name], buildfile)
+          version = evaluated_value(details_hash[:version], buildfile)
+
+          dependency_name = "#{group}:#{name}"
+
+          # If we couldn't evaluate a property they we won't be able to
+          # update this dependency
+          return if "#{dependency_name}:#{version}".match?(PROPERTY_REGEX)
 
           version_property_name =
             details_hash[:version].
@@ -102,10 +107,9 @@ module Dependabot
 
           Dependency.new(
             name: dependency_name,
-            version: evaluated_value(details_hash[:version], buildfile),
+            version: version,
             requirements: [{
-              requirement:
-                evaluated_value(details_hash[:version], buildfile),
+              requirement: version,
               file: buildfile.name,
               source: nil,
               groups: [],
