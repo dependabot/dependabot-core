@@ -8,6 +8,7 @@ module Dependabot
       class Nuget < Dependabot::FileUpdaters::Base
         require_relative "nuget/packages_config_declaration_finder"
         require_relative "nuget/project_file_declaration_finder"
+        require_relative "nuget/property_value_updater"
 
         def self.updated_files_regex
           [
@@ -67,11 +68,26 @@ module Dependabot
             next if new_req[:requirement] == old_req[:requirement]
 
             file = files.find { |f| f.name == new_req.fetch(:file) }
+
             files[files.index(file)] =
-              update_version_in_file(dependency, file, old_req, new_req)
+              if new_req.dig(:metadata, :property_name)
+                update_property_value_in_file(file, new_req)
+              else
+                update_version_in_file(dependency, file, old_req, new_req)
+              end
           end
 
           files
+        end
+
+        def update_property_value_in_file(file, req)
+          property_name = req.fetch(:metadata).fetch(:property_name)
+
+          PropertyValueUpdater.new(project_file: file).
+            update_file_for_property_change(
+              property_name: property_name,
+              updated_value: req.fetch(:requirement)
+            )
         end
 
         def update_version_in_file(dependency, file, old_req, new_req)

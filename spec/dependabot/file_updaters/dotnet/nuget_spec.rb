@@ -101,6 +101,38 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
 
         its(:content) { is_expected.to include '"Dep1" Version="[1.0,2.1]" />' }
       end
+
+      context "with a property version" do
+        let(:csproj_body) do
+          fixture("dotnet", "csproj", "property_version.csproj")
+        end
+        let(:dependency_name) { "Nuke.Common" }
+        let(:version) { "0.1.500" }
+        let(:previous_version) { "0.1.434" }
+        let(:requirements) do
+          [{
+            requirement: "0.1.500",
+            file: "my.csproj",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "NukeVersion" }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "0.1.434",
+            file: "my.csproj",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "NukeVersion" }
+          }]
+        end
+
+        it "updates the property correctly" do
+          expect(updated_csproj_file.content).
+            to include("<NukeVersion>0.1.500</NukeVersion>")
+        end
+      end
     end
 
     context "with a packages.config file" do
