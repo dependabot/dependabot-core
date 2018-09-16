@@ -103,7 +103,16 @@ module Dependabot
             select { |_, v| v.fetch("version", "").start_with?("file:") }.
             map { |k, v| [k, v.fetch("version")] }
 
-          (package_json_path_deps + package_lock_path_deps).uniq
+          shrinkwrap_path_deps =
+            parsed_shrinkwrap.fetch("dependencies", []).to_a.
+            select { |_, v| v.fetch("version", "").start_with?("file:") }.
+            map { |k, v| [k, v.fetch("version")] }
+
+          [
+            *package_json_path_deps,
+            *package_lock_path_deps,
+            *shrinkwrap_path_deps
+          ].uniq
         end
 
         def path_dependency_details_from_manifest(file)
@@ -203,6 +212,14 @@ module Dependabot
           return {} unless package_lock
 
           JSON.parse(package_lock.content)
+        rescue JSON::ParserError
+          {}
+        end
+
+        def parsed_shrinkwrap
+          return {} unless shrinkwrap
+
+          JSON.parse(shrinkwrap.content)
         rescue JSON::ParserError
           {}
         end
