@@ -116,6 +116,60 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
         end
       end
 
+      context "with a property version" do
+        let(:file_body) do
+          fixture("dotnet", "csproj", "property_version.csproj")
+        end
+
+        describe "the property dependency" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "Nuke.Common" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Nuke.Common")
+            expect(dependency.version).to eq("0.1.434")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.1.434",
+                file: "my.csproj",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "NukeVersion" }
+              }]
+            )
+          end
+        end
+
+        context "that can't be found" do
+          let(:file_body) do
+            fixture("dotnet", "csproj", "missing_property_version.csproj")
+          end
+
+          describe "the property dependency" do
+            subject(:dependency) do
+              dependencies.find { |d| d.name == "Nuke.Common" }
+            end
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Nuke.Common")
+              expect(dependency.version).to eq("$UnknownVersion")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "$(UnknownVersion)",
+                  file: "my.csproj",
+                  groups: [],
+                  source: nil,
+                  metadata: { property_name: "UnknownVersion" }
+                }]
+              )
+            end
+          end
+        end
+      end
+
       context "with a nuproj" do
         let(:file_body) { fixture("dotnet", "csproj", "basic.nuproj") }
 
