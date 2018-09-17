@@ -105,29 +105,39 @@ module Dependabot
         end
 
         def path_dependency_paths_from_file(file)
-          general_dependency_paths =
-            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
-              parsed_file(file).fetch(type, {}).map do |_, details|
+          paths = []
+
+          # Paths specified in dependency declaration
+          FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+            parsed_file(file).fetch(type, {}).each do |_, details|
+              next unless details.is_a?(Hash)
+              next unless details["path"]
+
+              paths << File.join(details["path"], "Cargo.toml")
+            end
+          end
+
+          # Paths specified for target-specific dependencies
+          parsed_file(file).fetch("target", {}).each do |_, t_details|
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+              t_details.fetch(type, {}).each do |_, details|
                 next unless details.is_a?(Hash)
                 next unless details["path"]
 
-                File.join(details["path"], "Cargo.toml")
+                paths << File.join(details["path"], "Cargo.toml")
               end
-            end.compact
-
-          target_specific_dependency_paths =
-            parsed_file(file).fetch("target", {}).flat_map do |_, t_details|
-              FileParsers::Rust::Cargo::DEPENDENCY_TYPES.flat_map do |type|
-                t_details.fetch(type, {}).map do |_, details|
-                  next unless details.is_a?(Hash)
-                  next unless details["path"]
-
-                  File.join(details["path"], "Cargo.toml")
-                end
-              end.compact
             end
+          end
 
-          general_dependency_paths + target_specific_dependency_paths
+          # Paths specified as replacements
+          parsed_file(file).fetch("replace", {}).each do |_, details|
+            next unless details.is_a?(Hash)
+            next unless details["path"]
+
+            paths << File.join(details["path"], "Cargo.toml")
+          end
+
+          paths
         end
 
         def workspace_dependency_paths_from_file(file)

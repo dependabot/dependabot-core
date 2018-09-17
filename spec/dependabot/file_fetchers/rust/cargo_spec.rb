@@ -170,6 +170,17 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         end
       end
 
+      context "for a replacement source" do
+        let(:parent_fixture) do
+          fixture("github", "contents_cargo_manifest_replacement_path.json")
+        end
+
+        it "fetches the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml src/s3/Cargo.toml))
+        end
+      end
+
       context "with a directory" do
         let(:source) do
           Dependabot::Source.new(
@@ -235,6 +246,17 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
       it "raises a DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }.
           to raise_error(Dependabot::DependencyFileNotFound)
+      end
+
+      context "for a replacement source" do
+        let(:parent_fixture) do
+          fixture("github", "contents_cargo_manifest_replacement_path.json")
+        end
+
+        it "raises a DependencyFileNotFound error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound)
+        end
       end
     end
   end
