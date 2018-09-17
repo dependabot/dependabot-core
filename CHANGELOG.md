@@ -1,3 +1,7 @@
+## v0.72.4, 17 September 2018
+
+- JS: Update npm-shrinkwrap files
+
 ## v0.72.3, 16 September 2018
 
 - Gradle: Ignore dependencies that use properties we can't find
