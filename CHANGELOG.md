@@ -1,3 +1,7 @@
+## v0.72.8, 17 September 2018
+
+- JS: Add workaround for JFrog bug
+
 ## v0.72.7, 17 September 2018
 
 - Rust: Consider `replace` section when determining path dependencies to pull
