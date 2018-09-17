@@ -19,7 +19,7 @@ module Dependabot
     module Go
       class Dep < Dependabot::FileParsers::Base
         require "dependabot/file_parsers/base/dependency_set"
-        require_relative "go_mod_parser"
+        require_relative "modules/go_mod_parser"
 
         REQUIREMENT_TYPES = %w(constraint override).freeze
 

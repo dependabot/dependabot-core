@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/go/go_mod_parser"
+require "dependabot/file_parsers/go/modules/go_mod_parser"
 
-RSpec.describe Dependabot::FileParsers::Go::GoModParser do
+RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
   let(:parser) do
     described_class.new(dependency_files: files, credentials: credentials)
   end
