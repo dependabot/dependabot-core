@@ -1,3 +1,7 @@
+## v0.72.6, 17 September 2018
+
+- Go: Fix modules parser import (and add test)
+
 ## v0.72.5, 17 September 2018
 
 - Bump Rust version in Dockerfile, and remove Java, Gradle and Groovy
