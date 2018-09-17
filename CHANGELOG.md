@@ -1,3 +1,8 @@
+## v0.72.7, 17 September 2018
+
+- Rust: Consider `replace` section when determining path dependencies to pull
+  down
+
 ## v0.72.6, 17 September 2018
 
 - Go: Fix modules parser import (and add test)
