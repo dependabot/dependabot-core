@@ -174,29 +174,40 @@ module Dependabot
             @npm_details_lookup_attempted = true
             @npm_details ||=
               begin
-                npm_response = Excon.get(
-                  dependency_url,
-                  SharedHelpers.excon_defaults.merge(
-                    headers: registry_auth_headers,
-                    idempotent: true
-                  )
-                )
+                npm_response = fetch_npm_response
 
-                check_npm_response(npm_response)
-
-                JSON.parse(npm_response.body)
+                if affected_by_jfrog_bug?(npm_response)
+                  {}
+                else
+                  check_npm_response(npm_response)
+                  JSON.parse(npm_response.body)
+                end
               rescue JSON::ParserError, Excon::Error::Timeout,
                      RegistryError => error
                 retry_count ||= 0
                 retry_count += 1
-                if retry_count > 2
-                  raise if dependency_registry == "registry.npmjs.org"
-                  raise unless error.is_a?(Excon::Error::Timeout)
-
-                  raise PrivateSourceTimedOut, dependency_registry
-                end
+                raise_npm_details_error(error) if retry_count > 2
                 sleep(rand(3.0..10.0)) && retry
               end
+          end
+
+          def fetch_npm_response
+            Excon.get(
+              dependency_url,
+              SharedHelpers.excon_defaults.merge(
+                headers: registry_auth_headers,
+                idempotent: true
+              )
+            )
+          end
+
+          def affected_by_jfrog_bug?(npm_response)
+            # JFrog has a bug that causes it to return 403s for any dependencies
+            # that start with `api`.
+            return false unless npm_response.status == 403
+            return false unless dependency_registry.include?("jfrog")
+
+            dependency.name.start_with?("api")
           end
 
           def check_npm_response(npm_response)
@@ -215,6 +226,13 @@ module Dependabot
 
             msg = "Got #{status} response with body #{npm_response.body}"
             raise RegistryError, msg
+          end
+
+          def raise_npm_details_error(error)
+            raise if dependency_registry == "registry.npmjs.org"
+            raise unless error.is_a?(Excon::Error::Timeout)
+
+            raise PrivateSourceTimedOut, dependency_registry
           end
 
           def private_dependency_not_reachable?(npm_response)
