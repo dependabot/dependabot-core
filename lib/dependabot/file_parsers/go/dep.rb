@@ -35,7 +35,7 @@ module Dependabot
 
         def go_mod_dependencies
           @go_mod_dependencies ||=
-            GoModParser.
+            Modules::GoModParser.
             new(dependency_files: dependency_files, credentials: credentials).
             dependency_set
         end
