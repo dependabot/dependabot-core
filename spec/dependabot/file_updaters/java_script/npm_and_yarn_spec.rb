@@ -130,6 +130,20 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"]).
           to eq("0.0.2")
       end
+
+      context "and a package-json.lock" do
+        let(:files) { [package_json, shrinkwrap, package_lock] }
+
+        it "updates the shrinkwrap and the package-lock.json" do
+          parsed_shrinkwrap = JSON.parse(updated_shrinkwrap.content)
+          expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.0.2")
+
+          parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_npm_lock["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.0.2")
+        end
+      end
     end
 
     context "with a git dependency" do

@@ -32,7 +32,7 @@ module Dependabot
             @updated_lockfile_content ||= {}
             @updated_lockfile_content[lockfile.name] ||=
               SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files
+                write_temporary_dependency_files(lockfile.name)
 
                 updated_files = Dir.chdir(path) { run_npm_updater(name) }
                 updated_content = updated_files.fetch(name)
@@ -170,7 +170,10 @@ module Dependabot
             @resolvable_before_update[lockfile.name] =
               begin
                 SharedHelpers.in_a_temporary_directory do
-                  write_temporary_dependency_files(update_package_json: false)
+                  write_temporary_dependency_files(
+                    lockfile.name,
+                    update_package_json: false
+                  )
 
                   Dir.chdir(Pathname.new(lockfile.name).dirname) do
                     run_npm_updater(Pathname.new(lockfile.name).basename)
@@ -183,12 +186,9 @@ module Dependabot
               end
           end
 
-          def write_temporary_dependency_files(update_package_json: true)
-            [*package_locks, *shrinkwraps].each do |f|
-              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, f.content)
-            end
-
+          def write_temporary_dependency_files(lockfile_name,
+                                               update_package_json: true)
+            write_lockfiles(lockfile_name)
             File.write(".npmrc", npmrc_content)
 
             package_files.each do |file|
@@ -209,6 +209,20 @@ module Dependabot
 
               updated_content = sanitized_package_json_content(updated_content)
               File.write(file.name, updated_content)
+            end
+          end
+
+          def write_lockfiles(lockfile_name)
+            excluded_lock =
+              case lockfile_name
+              when "package-lock.json" then "npm-shrinkwrap.json"
+              when "npm-shrinkwrap.json" then "package-lock.json"
+              end
+            [*package_locks, *shrinkwraps].each do |f|
+              next if f.name == excluded_lock
+
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, f.content)
             end
           end
 
