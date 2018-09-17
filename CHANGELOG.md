@@ -1,3 +1,8 @@
+## v0.72.9, 17 September 2018
+
+- JS: Don't attempt to update symlinked dependencies
+- JS: Remove JFrog workaround
+
 ## v0.72.8, 17 September 2018
 
 - JS: Add workaround for JFrog bug
