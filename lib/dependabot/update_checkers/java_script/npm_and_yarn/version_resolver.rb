@@ -176,12 +176,8 @@ module Dependabot
               begin
                 npm_response = fetch_npm_response
 
-                if affected_by_jfrog_bug?(npm_response)
-                  {}
-                else
-                  check_npm_response(npm_response)
-                  JSON.parse(npm_response.body)
-                end
+                check_npm_response(npm_response)
+                JSON.parse(npm_response.body)
               rescue JSON::ParserError, Excon::Error::Timeout,
                      RegistryError => error
                 retry_count ||= 0
@@ -199,15 +195,6 @@ module Dependabot
                 idempotent: true
               )
             )
-          end
-
-          def affected_by_jfrog_bug?(npm_response)
-            # JFrog has a bug that causes it to return 403s for any dependencies
-            # that start with `api`.
-            return false unless npm_response.status == 403
-            return false unless dependency_registry.include?("jfrog")
-
-            dependency.name.start_with?("api")
           end
 
           def check_npm_response(npm_response)
