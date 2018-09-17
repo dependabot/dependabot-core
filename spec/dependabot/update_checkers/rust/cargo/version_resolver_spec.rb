@@ -79,16 +79,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:manifest_fixture_name) { "bare_version_specified" }
       let(:lockfile_fixture_name) { "missing_dependency" }
 
-      it "raises a DependencyFileNotResolvable error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            # Test that the temporary path isn't included in the error message
-            expect(error.message).to_not include("dependabot_20")
-
-            # Test that the name of the missing dep is included
-            expect(error.message).to include("memchr")
-          end
-      end
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
     context "with a missing rust-toolchain file" do

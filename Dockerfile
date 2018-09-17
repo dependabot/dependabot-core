@@ -121,31 +121,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust
+# Install Rust 1.29.0
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
-
-
-### JAVA, GROOVY AND GRADLE
-
-# Install Java, Groovy and Gradle
-RUN echo "oracle-java8-installer shared/accepted-oracle-license-v1-1 select true" | debconf-set-selections \
-    && echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu bionic main" > /etc/apt/sources.list.d/webupd8team-java-trusty.list \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886 \
-    && apt-get update \
-    && apt-get install -y oracle-java8-installer oracle-java8-set-default \
-    && cd /tmp \
-    && wget http://dl.bintray.com/groovy/maven/apache-groovy-binary-2.5.2.zip \
-    && unzip apache-groovy-binary-2.5.2.zip \
-    && mv groovy-2.5.2 /usr/local/groovy \
-    && rm -f apache-groovy-binary-2.5.2.zip \
-    && cd /tmp \
-    && wget https://services.gradle.org/distributions/gradle-4.9-bin.zip \
-    && unzip gradle-4.9-bin.zip \
-    && mv gradle-4.9 /usr/local/gradle \
-    && rm -f gradle-4.9-bin.zip
-ENV JAVA_HOME=/usr/lib/jvm/java-8-oracle \
-    GROOVY_HOME=/usr/local/groovy \
-    GRADLE_HOME=/usr/local/gradle \
-    PATH=/usr/local/groovy/bin/:/usr/local/gradle/bin:$PATH
