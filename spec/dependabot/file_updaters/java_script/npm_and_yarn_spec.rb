@@ -104,9 +104,31 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       let(:files) { [package_json] }
       its(:length) { is_expected.to eq(1) }
 
-      context "whe nothing has changed" do
+      context "when nothing has changed" do
         let(:requirements) { previous_requirements }
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+    end
+
+    context "with a shrinkwrap" do
+      let(:files) { [package_json, shrinkwrap] }
+      let(:shrinkwrap) do
+        Dependabot::DependencyFile.new(
+          name: "npm-shrinkwrap.json",
+          content: shrinkwrap_body
+        )
+      end
+      let(:shrinkwrap_body) do
+        fixture("javascript", "shrinkwraps", "npm-shrinkwrap.json")
+      end
+      let(:updated_shrinkwrap) do
+        updated_files.find { |f| f.name == "npm-shrinkwrap.json" }
+      end
+
+      it "updates the shrinkwrap" do
+        parsed_shrinkwrap = JSON.parse(updated_shrinkwrap.content)
+        expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"]).
+          to eq("0.0.2")
       end
     end
 

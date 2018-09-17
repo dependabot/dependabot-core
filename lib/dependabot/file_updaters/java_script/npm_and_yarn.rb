@@ -22,25 +22,8 @@ module Dependabot
         def updated_dependency_files
           updated_files = []
 
-          yarn_locks.each do |yarn_lock|
-            next unless yarn_lock && yarn_lock_changed?(yarn_lock)
-
-            updated_files << updated_file(
-              file: yarn_lock,
-              content: updated_yarn_lock_content(yarn_lock)
-            )
-          end
-
-          package_locks.each do |package_lock|
-            next unless package_lock && package_lock_changed?(package_lock)
-
-            updated_files << updated_file(
-              file: package_lock,
-              content: updated_package_lock_content(package_lock)
-            )
-          end
-
-          updated_files += updated_package_files
+          updated_files += updated_manifest_files
+          updated_files += updated_lockfiles
 
           if updated_files.none? ||
              updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
@@ -75,6 +58,12 @@ module Dependabot
             select { |f| f.name.end_with?("yarn.lock") }
         end
 
+        def shrinkwraps
+          @shrinkwraps ||=
+            dependency_files.
+            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+        end
+
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
         end
@@ -87,13 +76,50 @@ module Dependabot
           package_lock.content != updated_package_lock_content(package_lock)
         end
 
-        def updated_package_files
+        def shrinkwrap_changed?(shrinkwrap)
+          shrinkwrap.content != updated_package_lock_content(shrinkwrap)
+        end
+
+        def updated_manifest_files
           package_files.map do |file|
             updated_content = updated_package_json_content(file)
             next if updated_content == file.content
 
             updated_file(file: file, content: updated_content)
           end.compact
+        end
+
+        def updated_lockfiles
+          updated_files = []
+
+          yarn_locks.each do |yarn_lock|
+            next unless yarn_lock_changed?(yarn_lock)
+
+            updated_files << updated_file(
+              file: yarn_lock,
+              content: updated_yarn_lock_content(yarn_lock)
+            )
+          end
+
+          package_locks.each do |package_lock|
+            next unless package_lock_changed?(package_lock)
+
+            updated_files << updated_file(
+              file: package_lock,
+              content: updated_package_lock_content(package_lock)
+            )
+          end
+
+          shrinkwraps.each do |shrinkwrap|
+            next unless shrinkwrap_changed?(shrinkwrap)
+
+            updated_files << updated_file(
+              file: shrinkwrap,
+              content: updated_shrinkwrap_content(shrinkwrap)
+            )
+          end
+
+          updated_files
         end
 
         def updated_yarn_lock_content(yarn_lock)
@@ -110,7 +136,11 @@ module Dependabot
         end
 
         def updated_package_lock_content(package_lock)
-          npm_lockfile_updater.updated_package_lock_content(package_lock)
+          npm_lockfile_updater.updated_lockfile_content(package_lock)
+        end
+
+        def updated_shrinkwrap_content(shrinkwrap)
+          npm_lockfile_updater.updated_lockfile_content(shrinkwrap)
         end
 
         def npm_lockfile_updater

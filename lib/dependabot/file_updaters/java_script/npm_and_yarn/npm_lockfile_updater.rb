@@ -21,31 +21,28 @@ module Dependabot
             @credentials = credentials
           end
 
-          def updated_package_lock_content(package_lock)
-            path = Pathname.new(package_lock.name).dirname
+          def updated_lockfile_content(lockfile)
+            path = Pathname.new(lockfile.name).dirname.to_s
+            name = Pathname.new(lockfile.name).basename.to_s
             if npmrc_disables_lockfile? ||
                requirements_for_path(dependency.requirements, path).empty?
-              return package_lock.content
+              return lockfile.content
             end
 
-            @updated_package_lock_content ||= {}
-            @updated_package_lock_content[package_lock.name] ||=
+            @updated_lockfile_content ||= {}
+            @updated_lockfile_content[lockfile.name] ||=
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
-                updated_files =
-                  Dir.chdir(Pathname.new(package_lock.name).dirname) do
-                    run_npm_updater
-                  end
-
-                updated_content = updated_files.fetch("package-lock.json")
+                updated_files = Dir.chdir(path) { run_npm_updater(name) }
+                updated_content = updated_files.fetch(name)
                 updated_content = post_process_npm_lockfile(updated_content)
-                raise "No change!" if package_lock.content == updated_content
+                raise "No change!" if lockfile.content == updated_content
 
                 updated_content
               end
           rescue SharedHelpers::HelperSubprocessFailed => error
-            handle_package_lock_updater_error(error, package_lock)
+            handle_npm_updater_error(error, lockfile)
           end
 
           private
@@ -70,7 +67,7 @@ module Dependabot
             end.compact
           end
 
-          def run_npm_updater
+          def run_npm_updater(lockfile_name)
             SharedHelpers.with_git_configured(credentials: credentials) do
               SharedHelpers.run_helper_subprocess(
                 command: "node #{npm_helper_path}",
@@ -79,7 +76,8 @@ module Dependabot
                   Dir.pwd,
                   dependency.name,
                   dependency.version,
-                  dependency.requirements
+                  dependency.requirements,
+                  lockfile_name
                 ]
               )
             end
@@ -89,10 +87,10 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/MethodLength
-          def handle_package_lock_updater_error(error, package_lock)
+          def handle_npm_updater_error(error, lockfile)
             if error.message.include?("#{dependency.name}@") &&
                error.message.start_with?("No matching vers") &&
-               resolvable_before_update?(package_lock)
+               resolvable_before_update?(lockfile)
               # This happens if a new version has been published that relies on
               # but npm is having consistency issues. We raise a bespoke error
               # so we can capture and ignore it if we're trying to create a new
@@ -105,9 +103,9 @@ module Dependabot
                error.message.include?("Non-registry package missing package")
               # This happens if a new version has been published that relies on
               # subdependencies that have not yet been published.
-              raise if resolvable_before_update?(package_lock)
+              raise if resolvable_before_update?(lockfile)
 
-              msg = "Error while updating #{package_lock.path}:\n"\
+              msg = "Error while updating #{lockfile.path}:\n"\
                     "#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
             end
@@ -163,19 +161,19 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, reg
           end
 
-          def resolvable_before_update?(package_lock)
+          def resolvable_before_update?(lockfile)
             @resolvable_before_update ||= {}
-            if @resolvable_before_update.key?(package_lock.name)
-              return @resolvable_before_update[package_lock.name]
+            if @resolvable_before_update.key?(lockfile.name)
+              return @resolvable_before_update[lockfile.name]
             end
 
-            @resolvable_before_update[package_lock.name] =
+            @resolvable_before_update[lockfile.name] =
               begin
                 SharedHelpers.in_a_temporary_directory do
                   write_temporary_dependency_files(update_package_json: false)
 
-                  Dir.chdir(Pathname.new(package_lock.name).dirname) do
-                    run_npm_updater
+                  Dir.chdir(Pathname.new(lockfile.name).dirname) do
+                    run_npm_updater(Pathname.new(lockfile.name).basename)
                   end
                 end
 
@@ -186,7 +184,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files(update_package_json: true)
-            package_locks.each do |f|
+            [*package_locks, *shrinkwraps].each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
             end
@@ -354,6 +352,12 @@ module Dependabot
             @package_locks ||=
               dependency_files.
               select { |f| f.name.end_with?("package-lock.json") }
+          end
+
+          def shrinkwraps
+            @shrinkwraps ||=
+              dependency_files.
+              select { |f| f.name.end_with?("npm-shrinkwrap.json") }
           end
 
           def package_files
