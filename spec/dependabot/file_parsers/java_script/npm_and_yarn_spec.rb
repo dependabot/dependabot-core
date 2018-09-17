@@ -731,6 +731,17 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
         end
 
+        context "with a symlinked dependency" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_fixture_name) { "symlinked_dependency.json" }
+          let(:yarn_lock_fixture_name) { "symlinked_dependency.lock" }
+
+          it "doesn't include the link dependency" do
+            expect(top_level_dependencies.length).to eq(3)
+            expect(top_level_dependencies.map(&:name)).to_not include("etag")
+          end
+        end
+
         context "with an aliased dependency" do
           let(:files) { [package_json, lockfile] }
           let(:package_json_fixture_name) { "aliased_dependency.json" }

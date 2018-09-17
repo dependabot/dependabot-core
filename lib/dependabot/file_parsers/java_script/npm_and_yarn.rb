@@ -162,7 +162,7 @@ module Dependabot
         end
 
         def local_path?(requirement)
-          requirement.start_with?("file:", "/", "./", "../", "~/")
+          requirement.start_with?("link:", "file:", "/", "./", "../", "~/")
         end
 
         def alias_package?(requirement)
@@ -200,6 +200,7 @@ module Dependabot
           return unless lock_version
           return if lock_version.include?("://")
           return if lock_version.include?("file:")
+          return if lock_version.include?("link:")
           return if lock_version.include?("#")
 
           lock_version
