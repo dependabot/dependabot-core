@@ -498,6 +498,41 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with an npm-shrinkwrap.json" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "npm-shrinkwrap.json",
+            content: lockfile_body
+          )
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "shrinkwraps", shrinkwrap_fixture_name)
+        end
+        let(:shrinkwrap_fixture_name) { "npm-shrinkwrap.json" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        context "with a version specified" do
+          describe "the first dependency" do
+            subject { top_level_dependencies.first }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("fetch-factory") }
+            its(:version) { is_expected.to eq("0.0.1") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+      end
+
       context "with a yarn.lock" do
         let(:lockfile) do
           Dependabot::DependencyFile.new(

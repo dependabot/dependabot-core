@@ -26,6 +26,7 @@ module Dependabot
           fetched_files << npmrc if npmrc
           fetched_files << package_lock if package_lock && !ignore_package_lock?
           fetched_files << yarn_lock if yarn_lock
+          fetched_files << shrinkwrap if shrinkwrap
           fetched_files << lerna_json if lerna_json
           fetched_files += workspace_package_jsons
           fetched_files += lerna_packages
@@ -44,6 +45,10 @@ module Dependabot
 
         def yarn_lock
           @yarn_lock ||= fetch_file_if_present("yarn.lock")
+        end
+
+        def shrinkwrap
+          @shrinkwrap ||= fetch_file_if_present("npm-shrinkwrap.json")
         end
 
         def npmrc
@@ -98,7 +103,16 @@ module Dependabot
             select { |_, v| v.fetch("version", "").start_with?("file:") }.
             map { |k, v| [k, v.fetch("version")] }
 
-          (package_json_path_deps + package_lock_path_deps).uniq
+          shrinkwrap_path_deps =
+            parsed_shrinkwrap.fetch("dependencies", []).to_a.
+            select { |_, v| v.fetch("version", "").start_with?("file:") }.
+            map { |k, v| [k, v.fetch("version")] }
+
+          [
+            *package_json_path_deps,
+            *package_lock_path_deps,
+            *shrinkwrap_path_deps
+          ].uniq
         end
 
         def path_dependency_details_from_manifest(file)
@@ -147,12 +161,14 @@ module Dependabot
             package_json_path = File.join(workspace, "package.json")
             npm_lock_path = File.join(workspace, "package-lock.json")
             yarn_lock_path = File.join(workspace, "yarn.lock")
+            shrinkwrap_path = File.join(workspace, "npm-shrinkwrap.json")
 
             begin
               dependency_files << fetch_file_from_host(package_json_path)
               dependency_files += [
                 fetch_file_if_present(npm_lock_path),
-                fetch_file_if_present(yarn_lock_path)
+                fetch_file_if_present(yarn_lock_path),
+                fetch_file_if_present(shrinkwrap_path)
               ].compact
             rescue Dependabot::DependencyFileNotFound
               nil
@@ -196,6 +212,14 @@ module Dependabot
           return {} unless package_lock
 
           JSON.parse(package_lock.content)
+        rescue JSON::ParserError
+          {}
+        end
+
+        def parsed_shrinkwrap
+          return {} unless shrinkwrap
+
+          JSON.parse(shrinkwrap.content)
         rescue JSON::ParserError
           {}
         end

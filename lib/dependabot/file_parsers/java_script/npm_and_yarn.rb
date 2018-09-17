@@ -7,6 +7,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileParsers
     module JavaScript
@@ -34,6 +35,7 @@ module Dependabot
           dependency_set += manifest_dependencies
           dependency_set += yarn_lock_dependencies if yarn_locks.any?
           dependency_set += package_lock_dependencies if package_locks.any?
+          dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
           dependency_set.dependencies
         end
 
@@ -89,6 +91,28 @@ module Dependabot
 
           package_locks.each do |package_lock|
             parse_package_lock(package_lock).
+              fetch("dependencies", {}).each do |name, details|
+                next unless details["version"]
+
+                # TODO: This isn't quite right, as it will only give us one
+                # version of each dependency (when in fact there are many)
+                dependency_set << Dependency.new(
+                  name: name,
+                  version: details["version"],
+                  package_manager: "npm_and_yarn",
+                  requirements: []
+                )
+              end
+          end
+
+          dependency_set
+        end
+
+        def shrinkwrap_dependencies
+          dependency_set = DependencySet.new
+
+          shrinkwraps.each do |shrinkwrap|
+            parse_shrinkwrap(shrinkwrap).
               fetch("dependencies", {}).each do |name, details|
                 next unless details["version"]
 
@@ -248,6 +272,12 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, package_lock.path
         end
 
+        def parse_shrinkwrap(shrinkwrap)
+          JSON.parse(shrinkwrap.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, shrinkwrap.path
+        end
+
         def parse_yarn_lock(yarn_lock)
           @parsed_yarn_lock ||= {}
           @parsed_yarn_lock[yarn_lock.name] ||=
@@ -303,7 +333,14 @@ module Dependabot
             dependency_files.
             select { |f| f.name.end_with?("yarn.lock") }
         end
+
+        def shrinkwraps
+          @shrinkwraps ||=
+            dependency_files.
+            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+        end
       end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

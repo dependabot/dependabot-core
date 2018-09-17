@@ -6,6 +6,7 @@
  *  - name of the dependency to be updated
  *  - new dependency version
  *  - previous requirements for this dependency
+ *  - the name of the lockfile (package-lock.json or npm-shrinkwrap.json)
  *
  * Outputs:
  *  - updated package.json and package-lock.json files
@@ -25,14 +26,15 @@ async function updateDependencyFiles(
   directory,
   depName,
   desiredVersion,
-  requirements
+  requirements,
+  lockfile_name
 ) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
   await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
-  const oldLockfile = JSON.parse(readFile("package-lock.json"));
+  const oldLockfile = JSON.parse(readFile(lockfile_name));
   const installer = installer_for_lockfile(oldLockfile);
 
   const dryRun = true;
@@ -60,9 +62,9 @@ async function updateDependencyFiles(
     unmute();
   }
 
-  const updatedLockfile = readFile("package-lock.json");
+  const updatedLockfile = readFile(lockfile_name);
 
-  return { "package-lock.json": updatedLockfile };
+  return { [lockfile_name]: updatedLockfile };
 }
 
 function install_args(depName, desiredVersion, requirements, oldLockfile) {
