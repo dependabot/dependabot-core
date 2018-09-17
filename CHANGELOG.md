@@ -1,3 +1,8 @@
+## v0.72.5, 17 September 2018
+
+- Bump Rust version in Dockerfile, and remove Java, Gradle and Groovy
+- Go: Handle Gopkg.toml files without any constraints
+
 ## v0.72.4, 17 September 2018
 
 - JS: Update npm-shrinkwrap files
