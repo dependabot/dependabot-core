@@ -19,6 +19,9 @@ module Dependabot
           end
 
           def updated_lockfile_content
+            deps = dependencies.select { |d| appears_in_lockfile(d) }
+            return lockfile.content if deps.none?
+
             base_directory = File.join("src", "project",
                                        dependency_files.first.directory)
             base_parts = base_directory.split("/").length
@@ -31,9 +34,7 @@ module Dependabot
                   # Note: We are currently doing a full install here (we're not
                   # passing no-vendor) because dep needs to generate the digests
                   # for each project.
-                  deps = dependencies.select { |d| appears_in_lockfile(d) }
-                  command = "dep ensure -update "\
-                            "#{deps.map(&:name).join(' ')}"
+                  command = "dep ensure -update #{deps.map(&:name).join(' ')}"
                   dir_parts = dir.realpath.to_s.split("/")
                   gopath = File.join(dir_parts[0..-(base_parts + 1)])
                   run_shell_command(command, "GOPATH" => gopath)
@@ -140,6 +141,7 @@ module Dependabot
               details["revision"] = dep.version
             end
 
+            parsed_manifest["constraint"] ||= []
             parsed_manifest["constraint"] << details
           end
 

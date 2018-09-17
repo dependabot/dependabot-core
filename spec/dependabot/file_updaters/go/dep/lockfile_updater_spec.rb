@@ -122,6 +122,23 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
       end
     end
 
+    context "with a subdependency" do
+      let(:previous_requirements) { [] }
+
+      context "if there are no constraints in the manifest at all" do
+        let(:manifest_fixture_name) { "no_constraints.toml" }
+
+        let(:dependency_version) { "1.0.2" }
+        let(:dependency_previous_version) { "1.0.1" }
+
+        it "updates the lockfile correctly" do
+          expect(updated_lockfile_content).to include(%(version = "v1.0.2"))
+          expect(updated_lockfile_content).
+            to include("0987fb8fd48e32823701acdac19f5cfe47339de4")
+        end
+      end
+    end
+
     context "with a git dependency" do
       context "updating to the tip of a branch" do
         let(:manifest_fixture_name) { "branch.toml" }

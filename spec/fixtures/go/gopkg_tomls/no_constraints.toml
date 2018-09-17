@@ -1,0 +1,3 @@
+required = [
+ "github.com/dgrijalva/jwt-go",
+ ]
