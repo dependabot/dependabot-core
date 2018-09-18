@@ -1,3 +1,9 @@
+## v0.72.11, 18 September 2018
+
+- Go: Assume go.mod dependencies are being pinned to a ref if using git version
+- JS: More specific package.json section updating
+- JS: Update peer dependencies if updating a dev dependency
+
 ## v0.72.10, 18 September 2018
 
 - Go: Parse git dependencies in go.mod as git dependencies
