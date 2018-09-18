@@ -14,7 +14,7 @@ module Dependabot
             @dependency_files = dependency_files
           end
 
-          def property_value(property_name:, callsite_buildfile:)
+          def property_details(property_name:, callsite_buildfile:)
             # If the root project was specified, just look in the top-level
             # buildfile
             if property_name.start_with?("rootProject.")
@@ -41,6 +41,13 @@ module Dependabot
             properties(top_level_buildfile).fetch(property_name, nil)
           end
 
+          def property_value(property_name:, callsite_buildfile:)
+            property_details(
+              property_name: property_name,
+              callsite_buildfile: callsite_buildfile
+            )&.fetch(:value)
+          end
+
           private
 
           attr_reader :dependency_files
@@ -51,9 +58,14 @@ module Dependabot
 
             @properties[buildfile.name] = {}
             prepared_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
+              declaration_string = Regexp.last_match.to_s
               captures = Regexp.last_match.named_captures
               name = captures.fetch("name").sub(/^ext\./, "")
-              @properties[buildfile.name][name] = captures.fetch("value")
+              @properties[buildfile.name][name] = {
+                value: captures.fetch("value"),
+                declaration_string: declaration_string,
+                file: buildfile.name
+              }
             end
 
             @properties[buildfile.name]

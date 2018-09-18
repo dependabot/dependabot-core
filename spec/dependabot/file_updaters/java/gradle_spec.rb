@@ -190,7 +190,17 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
       end
 
       context "with a dependency version defined by a property" do
-        let(:buildfile_fixture_name) { "shortform_build.gradle" }
+        let(:dependency_files) { [buildfile, subproject_buildfile] }
+        let(:subproject_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "subproject/build.gradle",
+            content:
+              fixture("java", "buildfiles", subproject_fixture_name)
+          )
+        end
+
+        let(:buildfile_fixture_name) { "basic_build.gradle" }
+        let(:subproject_fixture_name) { "shortform_build.gradle" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -198,7 +208,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
               version: "23.6-jre",
               previous_version: "1.1.4-3",
               requirements: [{
-                file: "build.gradle",
+                file: "subproject/build.gradle",
                 requirement: "23.6-jre",
                 groups: [],
                 source: {
@@ -208,7 +218,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
                 metadata: { property_name: "kotlin_version" }
               }],
               previous_requirements: [{
-                file: "build.gradle",
+                file: "subproject/build.gradle",
                 requirement: "1.1.4-3",
                 groups: [],
                 source: nil,
@@ -221,7 +231,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
               version: "23.6-jre",
               previous_version: "1.1.4-3",
               requirements: [{
-                file: "build.gradle",
+                file: "subproject/build.gradle",
                 requirement: "23.6-jre",
                 groups: [],
                 source: {
@@ -231,7 +241,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
                 metadata: { property_name: "kotlin_version" }
               }],
               previous_requirements: [{
-                file: "build.gradle",
+                file: "subproject/build.gradle",
                 requirement: "1.1.4-3",
                 groups: [],
                 source: nil,
@@ -242,9 +252,21 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
           ]
         end
 
-        it "updates the version in the build.gradle" do
-          expect(updated_buildfile.content).
+        it "updates the version in the subproject/build.gradle" do
+          expect(updated_files.map(&:name)).to eq(["subproject/build.gradle"])
+          expect(updated_files.first.content).
             to include("ext.kotlin_version = '23.6-jre'")
+        end
+
+        context "that is inherited from the parent buildfile" do
+          let(:buildfile_fixture_name) { "shortform_build.gradle" }
+          let(:subproject_fixture_name) { "inherited_property.gradle" }
+
+          it "updates the version in the build.gradle" do
+            expect(updated_files.map(&:name)).to eq(["build.gradle"])
+            expect(updated_files.first.content).
+              to include("ext.kotlin_version = '23.6-jre'")
+          end
         end
       end
     end

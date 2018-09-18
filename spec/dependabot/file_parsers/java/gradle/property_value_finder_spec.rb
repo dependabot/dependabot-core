@@ -16,9 +16,9 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
   end
   let(:buildfile_fixture_name) { "single_property_build.gradle" }
 
-  describe "#property_value" do
-    subject(:property_value) do
-      finder.property_value(
+  describe "#property_details" do
+    subject(:property_details) do
+      finder.property_details(
         property_name: property_name,
         callsite_buildfile: callsite_buildfile
       )
@@ -29,16 +29,22 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
         let(:buildfile_fixture_name) { "single_property_build.gradle" }
         let(:property_name) { "kotlin_version" }
         let(:callsite_buildfile) { buildfile }
-        it { is_expected.to eq("1.1.4-3") }
+        its([:value]) { is_expected.to eq("1.1.4-3") }
+        its([:declaration_string]) do
+          is_expected.to eq("\n    ext.kotlin_version = '1.1.4-3'")
+        end
+        its([:file]) { is_expected.to eq("build.gradle") }
 
         context "and the property name has a `project.` prefix" do
           let(:property_name) { "project.kotlin_version" }
-          it { is_expected.to eq("1.1.4-3") }
+          its([:value]) { is_expected.to eq("1.1.4-3") }
+          its([:file]) { is_expected.to eq("build.gradle") }
         end
 
         context "and the property name has a `rootProject.` prefix" do
           let(:property_name) { "rootProject.kotlin_version" }
-          it { is_expected.to eq("1.1.4-3") }
+          its([:value]) { is_expected.to eq("1.1.4-3") }
+          its([:file]) { is_expected.to eq("build.gradle") }
         end
       end
     end
@@ -55,16 +61,19 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
       end
       let(:callsite_fixture_name) { "basic_build.gradle" }
 
-      it { is_expected.to eq("1.1.4-3") }
+      its([:value]) { is_expected.to eq("1.1.4-3") }
+      its([:file]) { is_expected.to eq("build.gradle") }
 
       context "and the property name has a `project.` prefix" do
         let(:property_name) { "project.kotlin_version" }
-        it { is_expected.to eq("1.1.4-3") }
+        its([:value]) { is_expected.to eq("1.1.4-3") }
+        its([:file]) { is_expected.to eq("build.gradle") }
       end
 
       context "and the property name has a `rootProject.` prefix" do
         let(:property_name) { "rootProject.kotlin_version" }
-        it { is_expected.to eq("1.1.4-3") }
+        its([:value]) { is_expected.to eq("1.1.4-3") }
+        its([:file]) { is_expected.to eq("build.gradle") }
       end
 
       context "with a property that only appears in the callsite buildfile" do
@@ -73,7 +82,8 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
 
         context "and the property name has a `project.` prefix" do
           let(:property_name) { "project.kotlin_version" }
-          it { is_expected.to eq("1.1.4-3") }
+          its([:value]) { is_expected.to eq("1.1.4-3") }
+          its([:file]) { is_expected.to eq("myapp/build.gradle") }
         end
 
         context "and the property name has a `rootProject.` prefix" do

@@ -8,6 +8,8 @@ module Dependabot
   module FileUpdaters
     module Java
       class Gradle < Dependabot::FileUpdaters::Base
+        require_relative "gradle/property_value_updater"
+
         def self.updated_files_regex
           [/^build\.gradle$/, %r{/build\.gradle$}]
         end
@@ -75,20 +77,14 @@ module Dependabot
           files = buildfiles.dup
           property_name = new_req.fetch(:metadata).fetch(:property_name)
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
-          old_version = old_req.fetch(:requirement)
 
-          # This is crude, but we don't expect to be only updating a single
-          # buildfile for long and can rewrite later.
-          regex =
-            /#{Regexp.quote(property_name)}.*=.*#{Regexp.quote(old_version)}/
-          updated_content =
-            buildfile.content.gsub(regex) do |match_string|
-              match_string.gsub(old_version, new_req.fetch(:requirement))
-            end
-
-          files[files.index(buildfile)] =
-            updated_file(file: buildfile, content: updated_content)
-          files
+          PropertyValueUpdater.new(dependency_files: files).
+            update_files_for_property_change(
+              property_name: property_name,
+              callsite_buildfile: buildfile,
+              previous_value: old_req.fetch(:requirement),
+              updated_value: new_req.fetch(:requirement)
+            )
         end
 
         def update_version_in_buildfile(dependency, buildfile, previous_req,
