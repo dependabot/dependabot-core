@@ -180,6 +180,13 @@ module Dependabot
 
           def update_package_json_sections(sections, content, old_line,
                                            new_line)
+            # Currently, Dependabot doesn't update peerDependencies. However,
+            # if a development dependency is being updated and its requirement
+            # matches the requirement on a peer dependency we probably want to
+            # update the peer too.
+            #
+            #  TODO: Move this logic to the UpdateChecker (and parse peer deps)
+            sections = sections + ["peerDependencies"]
             sections_regex = /#{sections.join("|")}/
 
             declaration_blocks = []
