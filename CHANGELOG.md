@@ -1,3 +1,7 @@
+## v0.72.10, 18 September 2018
+
+- Go: Parse git dependencies in go.mod as git dependencies
+
 ## v0.72.9, 17 September 2018
 
 - JS: Don't attempt to update symlinked dependencies
