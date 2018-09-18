@@ -81,6 +81,13 @@ RSpec.describe Dependabot::Source do
         its(:directory) { is_expected.to be_nil }
       end
 
+      context "with a trailing space" do
+        let(:url) { "https://github.com/org/abc " }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
       context "with a trailing /" do
         let(:url) { "https://github.com/org/abc/" }
         its(:provider) { is_expected.to eq("github") }
