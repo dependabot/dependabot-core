@@ -98,10 +98,13 @@ module Dependabot
 
             # Currently, we have no way of knowing whether the commit tagged
             # is being used because a branch is being followed or because a
-            # particular ref is in use. (The go.mod gives no information.)
+            # particular ref is in use. We *assume* that a particular ref is in
+            # use (which means we'll only propose updates when its included in
+            # a release)
             {
               type: "git",
-              url: url || dep["Path"]
+              url: url || dep["Path"],
+              ref: git_revision(dep)
             }
           end
 

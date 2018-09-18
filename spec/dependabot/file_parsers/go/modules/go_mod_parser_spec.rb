@@ -102,7 +102,8 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/golang/crypto"
+                  url: "https://github.com/golang/crypto",
+                  ref: "027cca12c2d6"
                 }
               }]
             )
