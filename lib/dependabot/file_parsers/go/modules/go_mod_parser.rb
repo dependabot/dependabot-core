@@ -104,7 +104,8 @@ module Dependabot
             {
               type: "git",
               url: url || dep["Path"],
-              ref: git_revision(dep)
+              ref: git_revision(dep),
+              branch: nil
             }
           end
 
