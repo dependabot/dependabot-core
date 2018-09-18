@@ -82,6 +82,33 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
           )
         end
       end
+
+      context "with git dependencies" do
+        let(:go_mod_fixture_name) { "git_dependency.mod" }
+
+        describe "a git revision dependency" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "golang.org/x/crypto" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("golang.org/x/crypto")
+            expect(dependency.version).to eq("027cca12c2d6")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "go.mod",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/golang/crypto"
+                }
+              }]
+            )
+          end
+        end
+      end
     end
   end
 end
