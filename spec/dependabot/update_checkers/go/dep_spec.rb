@@ -90,6 +90,18 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
       )
+
+    color_service_pack_url =
+      "https://github.com/fatih/color.git/info/refs"\
+      "?service=git-upload-pack"
+    stub_request(:get, color_service_pack_url).
+      to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", "color"),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
   end
 
   describe "#up_to_date?" do
@@ -465,6 +477,62 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
           source: { type: "default", source: "github.com/dgrijalva/jwt-go" }
         }]
       )
+    end
+
+    context "with a go modules git dependency" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "go.mod",
+            content: fixture("go", "go_mods", "git_dependency.mod")
+          )
+        ]
+      end
+      let(:dependency_name) { "github.com/fatih/color" }
+      let(:dependency_version) { "11bf3cb1d0ef" }
+      let(:requirements) do
+        [{ file: "go.mod", requirement: nil, groups: [], source: source }]
+      end
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/fatih/color",
+          ref: "11bf3cb1d0ef",
+          branch: nil
+        }
+      end
+
+      before do
+        repo_url = "https://api.github.com/repos/fatih/color"
+        stub_request(:get, repo_url + "/compare/v1.7.0...11bf3cb1d0ef").
+          to_return(
+            status: 200,
+            body: commit_compare_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_behind.json")
+      end
+
+      it "delegates to RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).to receive(:new).with(
+          requirements: dependency.requirements,
+          updated_source: { type: "default", source: "github.com/fatih/color" },
+          update_strategy: :widen_ranges,
+          latest_version: "1.7.0",
+          latest_resolvable_version: "1.7.0"
+        ).and_call_original
+
+        expect(checker.updated_requirements).to eq(
+          [{
+            file: "go.mod",
+            requirement: "v1.7.0",
+            groups: [],
+            source: { type: "default", source: "github.com/fatih/color" }
+          }]
+        )
+      end
     end
 
     context "with a manifest file that needs unlocking" do

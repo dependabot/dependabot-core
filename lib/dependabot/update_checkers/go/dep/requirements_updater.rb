@@ -67,9 +67,15 @@ module Dependabot
 
           def initial_req_after_source_change(req)
             return req unless updating_from_git_to_version?
-            return req unless req[:requirement].nil?
+            return req unless req.fetch(:requirement).nil?
 
-            req.merge(requirement: "^#{latest_resolvable_version}")
+            new_req =
+              if req.fetch(:file) == "go.mod"
+                "v#{latest_resolvable_version.to_s.gsub(/^v/, '')}"
+              else
+                "^#{latest_resolvable_version}"
+              end
+            req.merge(requirement: new_req)
           end
 
           def widen_requirement(req)
