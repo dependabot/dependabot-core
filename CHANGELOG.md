@@ -1,3 +1,7 @@
+## v0.72.13, 18 September 2018
+
+- Go: Specify a branch when parsing git dependencies (even if nil)
+
 ## v0.72.12, 18 September 2018
 
 - Gradle: Update properties that are inherited
