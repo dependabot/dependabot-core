@@ -83,7 +83,14 @@ module Dependabot
               new_req: new_req
             )
 
-            package_json_content.sub(original_line, replacement_line)
+            groups = new_req.fetch(:groups)
+
+            update_package_json_sections(
+              groups,
+              package_json_content,
+              original_line,
+              replacement_line
+            )
           end
 
           # For full details on how Yarn resolutions work, see
@@ -115,7 +122,9 @@ module Dependabot
                 new_req: { requirement: new_resolution }
               )
 
-              content = content.gsub(original_line, replacement_line)
+              content = update_package_json_sections(
+                ["resolutions"], content, original_line, replacement_line
+              )
             end
             content
           end
@@ -167,6 +176,35 @@ module Dependabot
               %(\##{old_req.dig(:source, :ref)}"),
               %(\##{new_req.dig(:source, :ref)}")
             )
+          end
+
+          def update_package_json_sections(sections, content, old_line,
+                                           new_line)
+            sections_regex = /#{sections.join("|")}/
+
+            declaration_blocks = []
+
+            content.scan(/['"]#{sections_regex}['"]\s*:\s*\{/m) do
+              mtch = Regexp.last_match
+              declaration_blocks <<
+                mtch.to_s +
+                mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+            end
+
+            declaration_blocks.reduce(content.dup) do |new_content, block|
+              updated_block = block.sub(old_line, new_line)
+              new_content.sub!(block, updated_block)
+            end
+          end
+
+          def closing_bracket_index(string)
+            closes_required = 1
+
+            string.chars.each_with_index do |char, index|
+              closes_required += 1 if char == "{"
+              closes_required -= 1 if char == "}"
+              return index if closes_required.zero?
+            end
           end
         end
       end

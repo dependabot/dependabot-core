@@ -27,12 +27,18 @@ RSpec.describe namespace::PackageJsonUpdater do
       name: "fetch-factory",
       version: "0.0.2",
       package_manager: "npm_and_yarn",
-      requirements: [
-        { file: "package.json", requirement: "^0.0.2", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "package.json", requirement: "^0.0.1", groups: [], source: nil }
-      ]
+      requirements: [{
+        file: "package.json",
+        requirement: "^0.0.2",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      previous_requirements: [{
+        file: "package.json",
+        requirement: "^0.0.1",
+        groups: ["dependencies"],
+        source: nil
+      }]
     )
   end
 
@@ -52,13 +58,13 @@ RSpec.describe namespace::PackageJsonUpdater do
           requirements: [{
             file: "package.json",
             requirement: "0.2.x",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "package.json",
             requirement: "0.1.x",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )
@@ -77,13 +83,13 @@ RSpec.describe namespace::PackageJsonUpdater do
           requirements: [{
             file: "package.json",
             requirement: "^1.8.1",
-            groups: [],
+            groups: ["devDependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "package.json",
             requirement: "^1.0.0",
-            groups: [],
+            groups: ["devDependencies"],
             source: nil
           }]
         )
@@ -202,13 +208,13 @@ RSpec.describe namespace::PackageJsonUpdater do
           requirements: [{
             file: "package.json",
             requirement: "^1.3.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "package.json",
             requirement: "^1.2.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )

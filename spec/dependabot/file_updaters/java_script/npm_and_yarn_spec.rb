@@ -70,10 +70,20 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   let(:version) { "0.0.2" }
   let(:previous_version) { "0.0.1" }
   let(:requirements) do
-    [{ file: "package.json", requirement: "^0.0.2", groups: [], source: nil }]
+    [{
+      file: "package.json",
+      requirement: "^0.0.2",
+      groups: ["dependencies"],
+      source: nil
+    }]
   end
   let(:previous_requirements) do
-    [{ file: "package.json", requirement: "^0.0.1", groups: [], source: nil }]
+    [{
+      file: "package.json",
+      requirement: "^0.0.1",
+      groups: ["dependencies"],
+      source: nil
+    }]
   end
 
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -487,7 +497,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         [{
           file: "package.json",
           requirement: "^1.3.1",
-          groups: [],
+          groups: ["dependencies"],
           source: nil
         }]
       end
@@ -495,7 +505,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         [{
           file: "package.json",
           requirement: "^1.2.1",
-          groups: [],
+          groups: ["dependencies"],
           source: nil
         }]
       end
@@ -722,7 +732,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         [{
           file: "package.json",
           requirement: "*",
-          groups: [],
+          groups: ["dependencies"],
           source: nil
         }]
       end
@@ -823,7 +833,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "next",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -862,7 +872,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^22.0.4",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -917,7 +927,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               [{
                 file: "package.json",
                 requirement: "^5.0.2",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             end
@@ -990,7 +1000,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^1.3.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -998,7 +1008,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^1.2.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -1048,7 +1058,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^6.26.0",
-            groups: [],
+            groups: ["devDependencies"],
             source: nil
           }]
         end
@@ -1056,7 +1066,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^6.24.1",
-            groups: [],
+            groups: ["devDependencies"],
             source: nil
           }]
         end
@@ -1078,7 +1088,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "^3.0",
-            groups: [],
+            groups: ["devDependencies"],
             source: nil
           }]
         end
@@ -1119,17 +1129,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "1.3.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "packages/package1/package.json",
             requirement: "^1.3.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "other_package/package.json",
             requirement: "^1.3.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -1137,17 +1147,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           [{
             file: "package.json",
             requirement: "1.2.0",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "packages/package1/package.json",
             requirement: "^1.2.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "other_package/package.json",
             requirement: "^1.2.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -1180,7 +1190,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             [{
               file: "packages/package1/package.json",
               requirement: "0.4.0",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           end
@@ -1188,7 +1198,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             [{
               file: "packages/package1/package.json",
               requirement: "0.3.0",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           end
