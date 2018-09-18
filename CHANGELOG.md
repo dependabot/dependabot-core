@@ -1,3 +1,7 @@
+## v0.72.12, 18 September 2018
+
+- Gradle: Update properties that are inherited
+
 ## v0.72.11, 18 September 2018
 
 - Go: Assume go.mod dependencies are being pinned to a ref if using git version
