@@ -1,3 +1,7 @@
+## v0.72.14, 18 September 2018
+
+- Fix Dependabot::Source regex
+
 ## v0.72.13, 18 September 2018
 
 - Go: Specify a branch when parsing git dependencies (even if nil)
