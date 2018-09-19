@@ -25,14 +25,14 @@ module Dependabot
 
             @update_possible ||=
               dependencies_using_property.all? do |dep|
-                VersionFinder.new(
+                versions = VersionFinder.new(
                   dependency: dep,
                   dependency_files: dependency_files,
                   credentials: credentials,
                   ignored_versions: ignored_versions
-                ).versions.
-                  map { |v| v.fetch(:version) }.
-                  include?(target_version)
+                ).versions.map { |v| v.fetch(:version) }
+
+                versions.include?(target_version) || versions.none?
               end
           end
 

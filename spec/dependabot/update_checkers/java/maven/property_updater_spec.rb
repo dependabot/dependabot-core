@@ -98,6 +98,15 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
 
       it { is_expected.to eq(false) }
     end
+
+    context "when one dependency isn't listed" do
+      before do
+        stub_request(:get, maven_central_metadata_url_context).
+          to_return(status: 404)
+      end
+
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#updated_dependencies" do
