@@ -144,7 +144,7 @@ module Dependabot
             /
               #{Regexp.quote("dependencies.#{dep.name}]")}
               (?:(?!^\[).)+
-              (?<version_declaration>version\s*=.*)$
+              (?<version_declaration>version\s*=[^\[]*)$
             /mx
           end
 
@@ -152,7 +152,7 @@ module Dependabot
             /
               #{Regexp.quote("dependencies.#{dep.name}]")}
               (?:(?!^\[).)+
-              (?<pin_declaration>(?:tag|rev)\s*=.*)$
+              (?<pin_declaration>(?:tag|rev)\s*=[^\[]*)$
             /mx
           end
         end

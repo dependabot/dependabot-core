@@ -219,6 +219,8 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::ManifestUpdater do
         it "includes the new requirement" do
           expect(updated_manifest_content).
             to include(%([dependencies.gtk]\nversion = "0.4.0"\nfeatures))
+          expect(updated_manifest_content).
+            to include(%([dependencies.pango]\nversion = "0.3.0"\n))
         end
       end
     end
