@@ -17,7 +17,7 @@ module Dependabot
           def subproject_paths
             subprojects = []
 
-            settings_file.content.scan(function_regex("include")) do
+            comment_free_content.scan(function_regex("include")) do
               args = Regexp.last_match.named_captures.fetch("args")
               args = args.split(",")
               args = args.map { |p| p.gsub(/["']/, "").strip }.compact
@@ -27,8 +27,8 @@ module Dependabot
             subprojects = subprojects.uniq
 
             subproject_dirs = subprojects.map do |proj|
-              if settings_file.content.match?(project_dir_regex(proj))
-                settings_file.content.match(project_dir_regex(proj)).
+              if comment_free_content.match?(project_dir_regex(proj))
+                comment_free_content.match(project_dir_regex(proj)).
                   named_captures.fetch("path").sub(%r{^/}, "")
               else
                 proj.tr(":", "/").sub(%r{^/}, "")
@@ -41,6 +41,12 @@ module Dependabot
           private
 
           attr_reader :settings_file
+
+          def comment_free_content
+            settings_file.content.
+              gsub(%r{(?<=^|\s)//.*$}, "\n").
+              gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          end
 
           def function_regex(function_name)
             /

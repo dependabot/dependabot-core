@@ -26,6 +26,14 @@ RSpec.describe Dependabot::FileFetchers::Java::Gradle::SettingsFileParser do
       end
     end
 
+    context "with commented out subproject declarations" do
+      let(:fixture_name) { "comment_settings.gradle" }
+
+      it "includes the additional declarations" do
+        expect(subproject_paths).to match_array(%w(app))
+      end
+    end
+
     context "with multiple subprojects" do
       let(:fixture_name) { "multi_subproject_settings.gradle" }
 
