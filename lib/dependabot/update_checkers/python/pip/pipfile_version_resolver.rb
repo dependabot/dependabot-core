@@ -112,7 +112,6 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
-          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
@@ -122,22 +121,9 @@ module Dependabot
               raise DependencyFileNotResolvable, msg
             end
 
-            if error.message.include?("Could not find a version") &&
-               !original_requirements_resolvable?
-              msg = clean_error_message(error.message)
-              msg.gsub!(/\s+\(from .*$/, "")
-              raise if msg.empty?
-
-              raise DependencyFileNotResolvable, msg
-            end
-
-            puts error.message
-            if error.message.include?("Warning: Python >") &&
-               !original_requirements_resolvable?
-              msg = "Pipenv does not support specifying Python ranges "\
-                    "(see https://github.com/pypa/pipenv/issues/1050 for more "\
-                    "details)."
-              raise DependencyFileNotResolvable, msg
+            if error.message.include?("Could not find a version") ||
+               error.message.include?("Warning: Python >")
+              check_original_requirements_resolvable
             end
 
             if error.message.include?('Command "python setup.py egg_info') &&
@@ -164,10 +150,12 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
-          # rubocop:enable Metrics/MethodLength
 
-          # Needed because Pipenv's resolver isn't perfect
-          def original_requirements_resolvable?
+          # Needed because Pipenv's resolver isn't perfect.
+          # Note: We raise errors from this method, rather than returning a
+          # boolean, so that all deps for this repo will raise identical
+          # errors when failing to update
+          def check_original_requirements_resolvable
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(update_pipfile: false)
@@ -180,8 +168,20 @@ module Dependabot
 
                 true
               rescue SharedHelpers::HelperSubprocessFailed => error
-                return false if error.message.include?("not find a version")
-                return false if error.message.include?("Warning: Python >")
+                if error.message.include?("Could not find a version")
+                  msg = clean_error_message(error.message)
+                  msg.gsub!(/\s+\(from .*$/, "")
+                  raise if msg.empty?
+
+                  raise DependencyFileNotResolvable, msg
+                end
+
+                if error.message.include?("Warning: Python >")
+                  msg = "Pipenv does not support specifying Python ranges "\
+                    "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+                    "details)."
+                  raise DependencyFileNotResolvable, msg
+                end
 
                 raise
               end
