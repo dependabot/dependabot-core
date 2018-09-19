@@ -102,6 +102,8 @@ module Dependabot
                 any? do |r|
                   r.requirements.any? { |a| a.last.release == version.release }
                 end
+            rescue Gem::Requirement::BadRequirementError
+              false
             end
           end
 

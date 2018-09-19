@@ -375,6 +375,24 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
+      context "when the user has specified a bad requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "babel-core@^7.0.0-bridge.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "and the user wants a .x version" do
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -587,9 +605,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
             to_timeout
 
-          # Speed up spec by stopping any retry logic
+          # Speed up spec by stopping any sleep logic
           resolver = checker.send(:version_resolver)
-          resolver.instance_variable_set(:@retry_count, 10)
+          allow(resolver).to receive(:sleep).and_return(true)
         end
 
         it "raises a to Dependabot::PrivateSourceTimedOut error" do
@@ -776,9 +794,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         stub_request(:get, registry_listing_url).
           to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
 
-        # Speed up spec by stopping any retry logic
+        # Speed up spec by stopping any sleep logic
         resolver = checker.send(:version_resolver)
-        resolver.instance_variable_set(:@retry_count, 10)
+        allow(resolver).to receive(:sleep).and_return(true)
       end
 
       it "raises an error" do
@@ -792,9 +810,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         stub_request(:get, registry_listing_url).
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
 
-        # Speed up spec by stopping any retry logic
+        # Speed up spec by stopping any sleep logic
         resolver = checker.send(:version_resolver)
-        resolver.instance_variable_set(:@retry_count, 10)
+        allow(resolver).to receive(:sleep).and_return(true)
       end
 
       it "raises an error" do
