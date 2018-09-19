@@ -1,3 +1,8 @@
+## v0.72.16, 19 September 2018
+
+- Python: Raise same error for all dependencies if handling resolution issue
+- JS: Handle badly specified requirements more gracefully
+
 ## v0.72.15, 18 September 2018
 
 - Go: Handle switches from git source to version source when using a go.mod
