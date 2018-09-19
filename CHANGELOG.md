@@ -1,3 +1,8 @@
+## v0.72.18, 19 September 2018
+
+- Gradle: Ignore commented out declarations in settings.gradle
+- Gradle: Ignore missing projects
+
 ## v0.72.17, 19 September 2018
 
 - Gradle: Handle custom path declarations in settings.gradle
