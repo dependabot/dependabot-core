@@ -1,3 +1,7 @@
+## v0.72.17, 19 September 2018
+
+- Gradle: Handle custom path declarations in settings.gradle
+
 ## v0.72.16, 19 September 2018
 
 - Python: Raise same error for all dependencies if handling resolution issue
