@@ -15,17 +15,27 @@ module Dependabot
           end
 
           def subproject_paths
-            subproject_paths = []
+            subprojects = []
 
             settings_file.content.scan(function_regex("include")) do
               args = Regexp.last_match.named_captures.fetch("args")
               args = args.split(",")
               args = args.map { |p| p.gsub(/["']/, "").strip }.compact
-              args = args.map { |p| p.tr(":", "/").sub(%r{^/}, "") }
-              subproject_paths += args
+              subprojects += args
             end
 
-            subproject_paths.uniq
+            subprojects = subprojects.uniq
+
+            subproject_dirs = subprojects.map do |proj|
+              if settings_file.content.match?(project_dir_regex(proj))
+                settings_file.content.match(project_dir_regex(proj)).
+                  named_captures.fetch("path").sub(%r{^/}, "")
+              else
+                proj.tr(":", "/").sub(%r{^/}, "")
+              end
+            end
+
+            subproject_dirs.uniq
           end
 
           private
@@ -37,6 +47,11 @@ module Dependabot
               (?:^|\s)#{Regexp.quote(function_name)}(?:\(|\s)
               (?<args>\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)
             /mx
+          end
+
+          def project_dir_regex(proj)
+            prefixed_proj = ":#{proj.gsub(/^:/, '')}"
+            /['"]#{prefixed_proj}['"].*dir\s*=.*['"](?<path>.*?)['"]/i
           end
         end
       end

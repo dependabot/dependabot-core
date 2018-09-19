@@ -43,5 +43,14 @@ RSpec.describe Dependabot::FileFetchers::Java::Gradle::SettingsFileParser do
         end
       end
     end
+
+    context "with custom paths specified" do
+      let(:fixture_name) { "custom_dir_settings.gradle" }
+
+      it "uses the custom declarations" do
+        expect(subproject_paths).
+          to match_array(%w(subprojects/chrome-trace examples/java))
+      end
+    end
   end
 end
