@@ -58,7 +58,7 @@ module Dependabot
 
             @properties[buildfile.name] = {}
             prepared_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
-              declaration_string = Regexp.last_match.to_s
+              declaration_string = Regexp.last_match.to_s.strip
               captures = Regexp.last_match.named_captures
               name = captures.fetch("name").sub(/^ext\./, "")
               @properties[buildfile.name][name] = {

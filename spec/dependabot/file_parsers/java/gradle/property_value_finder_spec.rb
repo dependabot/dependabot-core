@@ -31,7 +31,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
         let(:callsite_buildfile) { buildfile }
         its([:value]) { is_expected.to eq("1.1.4-3") }
         its([:declaration_string]) do
-          is_expected.to eq("\n    ext.kotlin_version = '1.1.4-3'")
+          is_expected.to eq("ext.kotlin_version = '1.1.4-3'")
         end
         its([:file]) { is_expected.to eq("build.gradle") }
 
@@ -45,6 +45,42 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
           let(:property_name) { "rootProject.kotlin_version" }
           its([:value]) { is_expected.to eq("1.1.4-3") }
           its([:file]) { is_expected.to eq("build.gradle") }
+        end
+
+        context "and tricky properties" do
+          let(:buildfile_fixture_name) { "properties.gradle" }
+
+          context "and the property is declared with ext.name" do
+            let(:property_name) { "kotlin_version" }
+            its([:value]) { is_expected.to eq("1.2.61") }
+            its([:declaration_string]) do
+              is_expected.to eq("ext.kotlin_version = '1.2.61'")
+            end
+          end
+
+          context "and the property is declared in an ext block" do
+            let(:property_name) { "buildToolsVersion" }
+            its([:value]) { is_expected.to eq("27.0.3") }
+            its([:declaration_string]) do
+              is_expected.to eq("buildToolsVersion = '27.0.3'")
+            end
+          end
+
+          context "and the property is preceded by a comment" do
+            # This is important because the declaration string must not include
+            # whitespace that will be different to when the FileUpdater uses it
+            # (i.e., before the comments are stripped out)
+            let(:property_name) { "supportVersion" }
+            its([:value]) { is_expected.to eq("27.1.1") }
+            its([:declaration_string]) do
+              is_expected.to eq("supportVersion = '27.1.1'")
+            end
+          end
+
+          context "and the property is commented out" do
+            let(:property_name) { "commentedVersion" }
+            it { is_expected.to be_nil }
+          end
         end
       end
     end
