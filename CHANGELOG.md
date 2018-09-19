@@ -1,3 +1,7 @@
+## v0.72.20, 19 September 2018
+
+- Gradle: Better property value parsing (fixes FileUpdater regex problem)
+
 ## v0.72.19, 19 September 2018
 
 - Rust: Ensure FileUpdater only updates version of the dependency being
