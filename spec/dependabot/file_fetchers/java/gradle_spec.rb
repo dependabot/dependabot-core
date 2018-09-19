@@ -73,6 +73,20 @@ RSpec.describe Dependabot::FileFetchers::Java::Gradle do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(build.gradle app/build.gradle))
       end
+
+      context "when the subproject can't fe found" do
+        before do
+          stub_request(:get, File.join(url, "app/build.gradle?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+        end
+
+        it "fetches the main buildfile" do
+          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(build.gradle))
+        end
+      end
     end
   end
 end

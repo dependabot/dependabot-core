@@ -40,8 +40,9 @@ module Dependabot
           subproject_paths.map do |path|
             fetch_file_from_host(File.join(path, "build.gradle"))
           rescue Dependabot::DependencyFileNotFound
-            raise "Couldn't find a Gradle file. Investigate!"
-          end
+            # Gradle itself doesn't worry about missing subprojects, so we don't
+            nil
+          end.compact
         end
 
         def settings_file
