@@ -1,3 +1,8 @@
+## v0.73.1, 20 September 2018
+
+- Maven: Use Maven default groupID when parsing plugins that don't specify one
+- Maven: Handle plugins which don't specify a groupId in FileUpdater
+
 ## v0.73.0, 20 September 2018
 
 - BREAKING: Update the base branch of a PR when updating it, if necessary.
