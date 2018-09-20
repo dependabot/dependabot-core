@@ -174,6 +174,48 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         )
     end
 
+    context "when the default branch has changed" do
+      before do
+        stub_request(:get, pull_request_url).
+          to_return(
+            status: 200,
+            body: fixture("github", "pull_request_not_default_branch.json"),
+            headers: json_header
+          )
+
+        stub_request(:patch, pull_request_url).
+          to_return(
+            status: 200,
+            body: fixture("github", "pull_request_not_default_branch.json"),
+            headers: json_header
+          )
+      end
+
+      it "updates the base branch" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:patch, pull_request_url).
+          with(body: { base: "develop" })
+      end
+
+      context "but this PR wasn't targeting the default branch" do
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            branch: "master"
+          )
+        end
+
+        it "does not update the base branch" do
+          updater.update
+
+          expect(WebMock).to_not have_requested(:patch, pull_request_url)
+        end
+      end
+    end
+
     context "with author details" do
       subject(:updater) do
         Dependabot::PullRequestUpdater.new(
