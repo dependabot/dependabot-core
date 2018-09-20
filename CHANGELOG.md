@@ -1,3 +1,8 @@
+## v0.72.21, 20 September 2018
+
+- Maven: Allow multi-dependency property updates where some deps can't be found
+- Maven: Update setting parser regexp to quote project name
+
 ## v0.72.20, 19 September 2018
 
 - Gradle: Better property value parsing (fixes FileUpdater regex problem)
