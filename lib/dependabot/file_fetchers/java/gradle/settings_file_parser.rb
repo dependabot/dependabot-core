@@ -56,7 +56,7 @@ module Dependabot
           end
 
           def project_dir_regex(proj)
-            prefixed_proj = ":#{proj.gsub(/^:/, '')}"
+            prefixed_proj = Regexp.quote(":#{proj.gsub(/^:/, '')}")
             /['"]#{prefixed_proj}['"].*dir\s*=.*['"](?<path>.*?)['"]/i
           end
         end
