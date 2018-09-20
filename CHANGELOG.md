@@ -1,3 +1,8 @@
+## v0.73.2, 20 September 2018
+
+- Gradle: Stricter regex for groupId and artifactId parts
+- Python: Pip Poetry git dependencies correctly
+
 ## v0.73.1, 20 September 2018
 
 - Maven: Use Maven default groupID when parsing plugins that don't specify one
