@@ -27,10 +27,23 @@ module Dependabot
         return unless branch_exists?
 
         commit = create_commit
-        update_branch(commit)
+        branch = update_branch(commit)
+        update_pull_request_target_branch
+        branch
       end
 
       private
+
+      def update_pull_request_target_branch
+        target_branch = source.branch || pull_request.base.repo.default_branch
+        return if target_branch == pull_request.base.ref
+
+        github_client_for_source.update_pull_request(
+          source.repo,
+          pull_request_number,
+          base: target_branch
+        )
+      end
 
       def github_client_for_source
         @github_client_for_source ||=
