@@ -102,6 +102,36 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         its(:content) { is_expected.to include "<version>[23.3-jre]</version>" }
       end
 
+      context "with a plugin dependency using the default groupId" do
+        let(:pom_body) do
+          fixture("java", "poms", "plugin_dependencies_missing_group_id.xml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.plugins:spring-boot-maven-plugin",
+            version: "1.6.0.RELEASE",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "1.6.0.RELEASE",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "1.5.8.RELEASE",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include("<version>1.6.0.RELEASE</version>")
+        end
+        its(:content) { is_expected.to include("<version>0.7.9</version>") }
+      end
+
       context "with a repeated dependency" do
         let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
         let(:dependency) do

@@ -50,11 +50,11 @@ module Dependabot
             deep_find_declarations(declaring_pom.content).select do |nd|
               node = Nokogiri::XML(nd)
               node.remove_namespaces!
-              next false unless node.at_xpath("./*/groupId")
+              next false unless node_group_id(node)
               next false unless node.at_xpath("./*/artifactId")
 
               node_name = [
-                evaluated_value(node.at_xpath("./*/groupId").content.strip),
+                node_group_id(node),
                 evaluated_value(node.at_xpath("./*/artifactId").content.strip)
               ].compact.join(":")
 
@@ -62,6 +62,17 @@ module Dependabot
 
               declaring_requirement_matches?(node)
             end
+          end
+
+          def node_group_id(node)
+            unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
+              return
+            end
+            unless node.at_xpath("./*/groupId")
+              return "org.apache.maven.plugins"
+            end
+
+            evaluated_value(node.at_xpath("./*/groupId").content.strip)
           end
 
           def deep_find_declarations(string)

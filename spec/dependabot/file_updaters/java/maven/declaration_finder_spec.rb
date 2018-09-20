@@ -114,6 +114,26 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           to eq("jacoco-maven-plugin")
         expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
       end
+
+      context "missing a groupId" do
+        let(:pom_fixture_name) { "plugin_dependencies_missing_group_id.xml" }
+        let(:dependency_name) do
+          "org.apache.maven.plugins:spring-boot-maven-plugin"
+        end
+        let(:dependency_version) { "1.5.8.RELEASE" }
+
+        it "finds the declaration" do
+          expect(declaration_nodes.count).to eq(1)
+
+          declaration_node = declaration_nodes.first
+          expect(declaration_node).to be_a(Nokogiri::XML::Node)
+          expect(declaration_node.at_css("version").content).
+            to eq("1.5.8.RELEASE")
+          expect(declaration_node.at_css("artifactId").content).
+            to eq("spring-boot-maven-plugin")
+          expect(declaration_node.at_css("groupId")).to be_nil
+        end
+      end
     end
 
     context "with a dependency in the extensions node" do
