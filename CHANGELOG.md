@@ -1,3 +1,9 @@
+## v0.73.0, 20 September 2018
+
+- BREAKING: Update the base branch of a PR when updating it, if necessary.
+  If you weren't passing a `Source` with a branch when updating PRs which had a
+  custom base branch you will now need to
+
 ## v0.72.21, 20 September 2018
 
 - Maven: Allow multi-dependency property updates where some deps can't be found
