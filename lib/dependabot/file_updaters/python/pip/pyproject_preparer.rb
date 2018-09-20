@@ -24,12 +24,11 @@ module Dependabot
             TomlRB.dump(pyproject_object)
           end
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pyproject_content unless lockfile
 
-            pyproject_object = TomlRB.parse(pyproject_content)
-            poetry_object = pyproject_object.fetch("tool").fetch("poetry")
-            parsed_lockfile = TomlRB.parse(lockfile.content)
+            poetry_object = TomlRB.parse(pyproject_content)["tool"]["poetry"]
             excluded_names = dependencies.map(&:name) + ["python"]
 
             %w(dependencies dev-dependencies).each do |key|
@@ -38,13 +37,16 @@ module Dependabot
               poetry_object.fetch(key).each do |dep_name, _|
                 next if excluded_names.include?(normalise(dep_name))
 
-                locked_version =
-                  parsed_lockfile.fetch("package").
-                  find { |d| d["name"] == normalise(dep_name) }&.
-                  fetch("version")
-                next unless locked_version
+                locked_details = locked_details(dep_name, lockfile)
 
-                if poetry_object[dep_name].is_a?(Hash)
+                next unless (locked_version = locked_details&.fetch("version"))
+
+                if locked_details&.dig("source", "type") == "git"
+                  poetry_object[key][dep_name] = {
+                    "git" => locked_details&.dig("source", "url"),
+                    "rev" => locked_details&.dig("source", "reference")
+                  }
+                elsif poetry_object[dep_name].is_a?(Hash)
                   poetry_object[key][dep_name]["version"] = locked_version
                 else
                   poetry_object[key][dep_name] = locked_version
@@ -54,10 +56,18 @@ module Dependabot
 
             TomlRB.dump(pyproject_object)
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           private
 
           attr_reader :pyproject_content
+
+          def locked_details(dep_name, lockfile)
+            parsed_lockfile = TomlRB.parse(lockfile.content)
+
+            parsed_lockfile.fetch("package").
+              find { |d| d["name"] == normalise(dep_name) }
+          end
 
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)

@@ -37,7 +37,7 @@ RSpec.describe namespace::PoetryVersionResolver do
   let(:pyproject_lock) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
-      content: fixture("python", "lockfiles", lockfile_fixture_name)
+      content: fixture("python", "pyproject_locks", lockfile_fixture_name)
     )
   end
   let(:lockfile_fixture_name) { "exact_version.lock" }
@@ -115,6 +115,23 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       # Conflict with chardet is introduced in v2.16.0
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
+    end
+
+    context "resolvable only if git references are preserved" do
+      let(:pyproject_fixture_name) { "git_conflict.toml" }
+      let(:lockfile_fixture_name) { "git_conflict.lock" }
+      let(:dependency_name) { "django-widget-tweaks" }
+      let(:dependency_version) { "1.4.2" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "^1.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
   end
 end
