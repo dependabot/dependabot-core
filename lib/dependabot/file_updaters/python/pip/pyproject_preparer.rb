@@ -28,7 +28,8 @@ module Dependabot
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pyproject_content unless lockfile
 
-            poetry_object = TomlRB.parse(pyproject_content)["tool"]["poetry"]
+            pyproject_object = TomlRB.parse(pyproject_content)
+            poetry_object = pyproject_object["tool"]["poetry"]
             excluded_names = dependencies.map(&:name) + ["python"]
 
             %w(dependencies dev-dependencies).each do |key|
