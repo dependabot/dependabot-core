@@ -143,7 +143,30 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
           fixture("java", "poms", "plugin_dependencies_missing_group_id.xml")
         end
 
-        its(:length) { is_expected.to eq(0) }
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).
+              to eq("org.apache.maven.plugins:spring-boot-maven-plugin")
+            expect(dependency.version).to eq("1.5.8.RELEASE")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.5.8.RELEASE",
+                file: "pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: nil,
+                  packaging_type: "jar"
+                }
+              }]
+            )
+          end
+        end
       end
 
       context "with a groupId buried in a configuration" do

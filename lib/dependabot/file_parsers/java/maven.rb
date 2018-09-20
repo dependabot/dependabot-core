@@ -22,8 +22,8 @@ module Dependabot
         # - Any extensions
         DEPENDENCY_SELECTOR = "project > parent, "\
                               "dependencies > dependency, "\
-                              "plugins > plugin, "\
-                              "extensions > extension"\
+                              "extensions > extension"
+        PLUGIN_SELECTOR     = "plugins > plugin"
 
         # Regex to get the property name from a declaration that uses a property
         PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
@@ -42,12 +42,17 @@ module Dependabot
           errors = []
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
-          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            next unless (name = dependency_name(dependency_node, pom))
-            next if internal_dependency_names.include?(name)
 
-            dependency_set <<
-              dependency_from_dependency_node(pom, dependency_node, name)
+          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+            dep = dependency_from_dependency_node(pom, dependency_node)
+            dependency_set << dep if dep
+          rescue DependencyFileNotEvaluatable => error
+            errors << error
+          end
+
+          doc.css(PLUGIN_SELECTOR).each do |dependency_node|
+            dep = dependency_from_plugin_node(pom, dependency_node)
+            dependency_set << dep if dep
           rescue DependencyFileNotEvaluatable => error
             errors << error
           end
@@ -57,7 +62,21 @@ module Dependabot
           dependency_set
         end
 
-        def dependency_from_dependency_node(pom, dependency_node, name)
+        def dependency_from_dependency_node(pom, dependency_node)
+          return unless (name = dependency_name(dependency_node, pom))
+          return if internal_dependency_names.include?(name)
+
+          build_dependency(pom, dependency_node, name)
+        end
+
+        def dependency_from_plugin_node(pom, dependency_node)
+          return unless (name = plugin_name(dependency_node, pom))
+          return if internal_dependency_names.include?(name)
+
+          build_dependency(pom, dependency_node, name)
+        end
+
+        def build_dependency(pom, dependency_node, name)
           Dependency.new(
             name: name,
             version: dependency_version(pom, dependency_node),
@@ -89,6 +108,28 @@ module Dependabot
               pom
             )
           ].join(":")
+        end
+
+        def plugin_name(dependency_node, pom)
+          return unless plugin_group_id(pom, dependency_node)
+          return unless dependency_node.at_xpath("./artifactId")
+
+          [
+            plugin_group_id(pom, dependency_node),
+            evaluated_value(
+              dependency_node.at_xpath("./artifactId").content.strip,
+              pom
+            )
+          ].join(":")
+        end
+
+        def plugin_group_id(pom, node)
+          return "org.apache.maven.plugins" unless node.at_xpath("./groupId")
+
+          evaluated_value(
+            node.at_xpath("./groupId").content.strip,
+            pom
+          )
         end
 
         def dependency_version(pom, dependency_node)
