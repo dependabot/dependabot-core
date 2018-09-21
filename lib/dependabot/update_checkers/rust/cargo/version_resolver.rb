@@ -12,6 +12,7 @@ module Dependabot
     module Rust
       class Cargo
         class VersionResolver
+          BRANCH_NOT_FOUND_REGEX = /failed to find branch `(?<branch>[^`]+)`/
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files
@@ -109,15 +110,27 @@ module Dependabot
               # for the specified features
               return nil
             end
-            if error.message.include?("failed to parse lock") ||
-               error.message.include?("believes it's in a workspace") ||
-               error.message.include?("wasn't a root") ||
-               error.message.include?("requires a nightly version") ||
-               error.message.match?(/feature `[^\`]+` is required/)
+
+            if error.message.match?(BRANCH_NOT_FOUND_REGEX)
+              branch = error.message.match(BRANCH_NOT_FOUND_REGEX).
+                       named_captures.fetch("branch")
+              raise Dependabot::BranchNotFound, branch
+            end
+
+            if resolvability_error?(error.message)
               raise Dependabot::DependencyFileNotResolvable, error.message
             end
 
             raise error
+          end
+
+          def resolvability_error?(message)
+            return true if message.include?("failed to parse lock")
+            return true if message.include?("believes it's in a workspace")
+            return true if message.include?("wasn't a root")
+            return true if message.include?("requires a nightly version")
+
+            message.match?(/feature `[^\`]+` is required/)
           end
 
           def write_manifest_files

@@ -160,6 +160,27 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
 
         it { is_expected.to eq(dependency_version) }
       end
+
+      context "with an unreachable branch" do
+        let(:manifest_fixture_name) { "git_dependency_with_unreachable_branch" }
+        let(:lockfile_fixture_name) { "git_dependency_with_unreachable_branch" }
+        let(:dependency_version) { "d5094c7e9456f2965dec20de671094a98c6929c2" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: "no_exist",
+            ref: nil
+          }
+        end
+
+        it "raises a BranchNotFound error" do
+          expect { subject }.
+            to raise_error(Dependabot::BranchNotFound) do |error|
+              expect(error.branch_name).to eq("no_exist")
+            end
+        end
+      end
     end
 
     context "with a feature dependency, when the feature has been removed" do
