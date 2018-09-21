@@ -111,12 +111,7 @@ module Dependabot
           end
 
           def raise_unresolvable_error(error)
-            path_regex =
-              Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
-              Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
-            msg =
-              error.error_class + " with message: " +
-              error.error_message.gsub(/#{path_regex}/, "/dependabot_tmp_dir")
+            msg = error.error_class + " with message: " + error.error_message
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 

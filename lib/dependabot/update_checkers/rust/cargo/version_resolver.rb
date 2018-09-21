@@ -104,11 +104,6 @@ module Dependabot
           end
 
           def handle_cargo_errors(error)
-            path_regex =
-              Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
-              Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
-            msg = error.message.gsub(/#{path_regex}/, "dependabot_tmp_dir")
-
             if error.message.include?("does not have these features")
               # TODO: Ideally we should update the declaration not to ask
               # for the specified features
@@ -119,7 +114,7 @@ module Dependabot
                error.message.include?("wasn't a root") ||
                error.message.include?("requires a nightly version") ||
                error.message.match?(/feature `[^\`]+` is required/)
-              raise Dependabot::DependencyFileNotResolvable, msg
+              raise Dependabot::DependencyFileNotResolvable, error.message
             end
 
             raise error

@@ -1,7 +1,24 @@
 # frozen_string_literal: true
 
 module Dependabot
-  class DependabotError < StandardError; end
+  class DependabotError < StandardError
+    def initialize(msg = nil)
+      msg = sanitize_message(msg)
+      super(msg)
+    end
+
+    private
+
+    def sanitize_message(message)
+      return unless message
+
+      path_regex =
+        Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
+        Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
+
+      message.gsub(/#{path_regex}/, "/dependabot_tmp_dir")
+    end
+  end
 
   #####################
   # Repo leval errors #
@@ -12,6 +29,7 @@ module Dependabot
 
     def initialize(branch_name, msg = nil)
       @branch_name = branch_name
+      msg = sanitize_message(msg)
       super(msg)
     end
   end
