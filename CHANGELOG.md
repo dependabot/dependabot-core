@@ -1,3 +1,7 @@
+## v0.73.6, 21 September 2018
+
+- Rust: Recognise branch not found errors and raise then
+
 ## v0.73.5, 21 September 2018
 
 - Ruby: Sanitize gemspec by removing all File.read calls
