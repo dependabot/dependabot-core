@@ -25,6 +25,7 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files += project_files
+          fetched_files += directory_build_props_files
           fetched_files += imported_property_files
 
           fetched_files << packages_config if packages_config
@@ -72,6 +73,31 @@ module Dependabot
               file = repo_contents.find { |f| f.name.end_with?(".sln") }
               fetch_file_from_host(file.name) if file
             end
+        end
+
+        def directory_build_props_files
+          return @directory_build_props_files if @directory_build_checked
+
+          @directory_build_checked = true
+          attempted_paths = []
+          @directory_build_props_files = []
+
+          project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
+            possible_paths = dir.split("/").map.with_index do |_, i|
+              dir.split("/").first(i + 1).join("/") + "/Directory.Build.props"
+            end.reverse
+
+            possible_paths.each do |path|
+              break if attempted_paths.include?(path)
+
+              attempted_paths << path
+              @directory_build_props_files << fetch_file_from_host(path)
+            rescue Dependabot::DependencyFileNotFound
+              next
+            end
+          end
+
+          @directory_build_props_files
         end
 
         def sln_project_files
@@ -129,7 +155,7 @@ module Dependabot
         def imported_property_files
           imported_property_files = []
 
-          project_files.each do |proj_file|
+          [*project_files, *directory_build_props_files].each do |proj_file|
             previously_fetched_files = project_files + imported_property_files
             imported_property_files +=
               fetch_imported_property_files(
@@ -149,6 +175,7 @@ module Dependabot
           paths.flat_map do |path|
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
+            next if path.include?("$(")
 
             fetched_file = fetch_file_from_host(path)
             grandchild_property_files = fetch_imported_property_files(

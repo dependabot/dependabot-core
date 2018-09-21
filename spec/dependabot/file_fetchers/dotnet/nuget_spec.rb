@@ -47,6 +47,10 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
           body: fixture("github", "contents_dotnet_csproj_basic.json"),
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .csproj" do
@@ -172,6 +176,10 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
           body: fixture("github", "contents_dotnet_csproj_basic.json"),
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .vbproj" do
@@ -198,6 +206,10 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
           body: fixture("github", "contents_dotnet_csproj_basic.json"),
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .vbproj" do
@@ -279,6 +291,16 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
           body: fixture("github", "contents_dotnet_csproj_basic.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(
+        :get, File.join(url, "src/GraphQL.Common/Directory.Build.props?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, File.join(url, "src/Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the files the .sln points to" do
@@ -291,6 +313,51 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
             src/src.props
           )
         )
+    end
+
+    context "with a Directory.Build.props file" do
+      before do
+        stub_request(:get, File.join(url, "src/Directory.Build.props?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_directory_build_props.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get, File.join(url, "src/build/dependencies.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.Config
+              src/GraphQL.Common/GraphQL.Common.csproj
+              src/src.props
+              src/Directory.Build.props
+              src/build/dependencies.props
+              src/build/sources.props
+            )
+          )
+      end
     end
 
     context "when one of the sln files isn't reachable" do
