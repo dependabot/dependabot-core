@@ -479,15 +479,25 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
       )
     end
 
-    context "with a go modules git dependency" do
+    context "with a go modules git dependency (and unrelated dep files)" do
       let(:dependency_files) do
         [
           Dependabot::DependencyFile.new(
             name: "go.mod",
             content: fixture("go", "go_mods", "git_dependency.mod")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gopkg.toml",
+            content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gopkg.lock",
+            content: fixture("go", "gopkg_locks", lockfile_fixture_name)
           )
         ]
       end
+      let(:manifest_fixture_name) { "tilda.toml" }
+      let(:lockfile_fixture_name) { "tilda.lock" }
       let(:dependency_name) { "github.com/fatih/color" }
       let(:dependency_version) { "11bf3cb1d0ef" }
       let(:requirements) do

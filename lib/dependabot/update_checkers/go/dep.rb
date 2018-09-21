@@ -248,10 +248,16 @@ module Dependabot
           # If dep is being used then we use that to determine the latest
           # version we can update to (since it will have resolvability
           # requirements, whereas Go modules won't)
-          return false if dependency_files.any? { |f| f.name == "Gopkg.lock" }
-          return false if dependency_files.any? { |f| f.name == "Gopkg.toml" }
+          !dependency_in_gopkg_lock?
+        end
 
-          true
+        def dependency_in_gopkg_lock?
+          lockfile = dependency_files.find { |f| f.name == "Gopkg.lock" }
+          return false unless lockfile
+
+          parsed_file(lockfile).fetch("projects", []).any? do |details|
+            details.fetch("name") == dependency.name
+          end
         end
 
         def git_dependency?
@@ -271,7 +277,8 @@ module Dependabot
 
           {
             type: "default",
-            source: original_declaration["source"] || dependency.name
+            source:
+              original_declaration&.fetch("source", nil) || dependency.name
           }
         end
 
