@@ -30,7 +30,7 @@ module Dependabot
         if dependency.appears_in_lockfile?
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else
-          # TODO: Handle full unlock updates for requirement files
+          # TODO: Handle full unlock updates for dependencies without a lockfile
           return false if requirements_to_unlock == :none
 
           requirements_can_update?
