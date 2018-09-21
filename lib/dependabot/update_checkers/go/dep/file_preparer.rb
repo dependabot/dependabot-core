@@ -65,7 +65,7 @@ module Dependabot
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
             content = replace_version_constraint(content, file.name)
-            content = add_fsnotify_source(content, file.name)
+            content = add_fsnotify_source(content)
 
             content
           end
@@ -127,7 +127,7 @@ module Dependabot
 
           # A dep bug means we have to specify a source for gopkg.in/fsnotify.v1
           # or we get `panic: version queue is empty` errors
-          def add_fsnotify_source(content, filename)
+          def add_fsnotify_source(content)
             parsed_manifest = TomlRB.parse(content)
 
             FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|

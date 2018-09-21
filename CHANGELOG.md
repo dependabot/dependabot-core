@@ -1,3 +1,8 @@
+## v0.73.3, 20 September 2018
+
+- Python: Fix bug in Poetry file preparation
+- Go: Add workaround for Dep bug with gopkg.in/fsnotify.v1
+
 ## v0.73.2, 20 September 2018
 
 - Gradle: Stricter regex for groupId and artifactId parts
