@@ -29,6 +29,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       it { is_expected.to eq(%(\nadd_dependency "require")) }
     end
 
+    context "with a File.read line" do
+      let(:content) do
+        %(version = File.read("something").strip\ncode = "require")
+      end
+      it { is_expected.to eq(%(version = "text".strip\ncode = "require")) }
+    end
+
     describe "version assignment" do
       context "with an assignment to a constant" do
         let(:content) { %(Spec.new { |s| s.version = Example::Version }) }

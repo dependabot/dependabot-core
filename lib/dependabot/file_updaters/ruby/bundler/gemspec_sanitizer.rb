@@ -41,6 +41,9 @@ module Dependabot
               # Replace the `s.files= ...` assignment with a blank array, as
               # occassionally a File.open(..).readlines pattern is used
               replace_file_assignment(node) if node_assigns_files_to_var?(node)
+
+              # Replace the `File.read(...)` calls with a dummy string
+              replace_file_reads(node)
             end
 
             private
@@ -70,6 +73,22 @@ module Dependabot
               return false unless node.children[1] == :files=
 
               node.children[2]&.type == :send
+            end
+
+            def replace_file_reads(node)
+              return unless node.is_a?(Parser::AST::Node)
+              return replace_file_read(node) if node_reads_a_file?(node)
+
+              node.children.each { |child| replace_file_reads(child) }
+            end
+
+            def node_reads_a_file?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :const
+              return false unless node.children.first.children.last == :File
+
+              node.children[1] == :read
             end
 
             def node_is_version_constant?(node)
@@ -122,6 +141,10 @@ module Dependabot
 
             def replace_file_assignment(node)
               replace(node.children.last.loc.expression, "[]")
+            end
+
+            def replace_file_read(node)
+              replace(node.loc.expression, '"text"')
             end
           end
         end
