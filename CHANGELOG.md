@@ -1,3 +1,9 @@
+## v0.73.7, 21 September 2018
+
+- Go: Better determination of whether a dependency is using Dep
+- .NET: Fetch Directory.Build.props files
+- Docker: Remove unneeded "type" key in source details
+
 ## v0.73.6, 21 September 2018
 
 - Rust: Recognise branch not found errors and raise then
