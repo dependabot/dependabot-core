@@ -134,6 +134,22 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
           end
         end
 
+        context "with a dependency on fsnotify" do
+          let(:manifest_fixture_name) { "fsnotify_dep.toml" }
+          let(:lockfile_fixture_name) { "fsnotify_dep.lock" }
+          let(:dependency_name) { "gopkg.in/fsnotify.v1" }
+          let(:dependency_version) { "1.2.0" }
+          let(:string_req) { "~1.2.0" }
+          let(:source) do
+            { type: "default", source: "gopkg.in/fsnotify.v1" }
+          end
+
+          it "updates the requirement" do
+            expect(prepared_manifest_file.content).
+              to include('source = "gopkg.in/fsnotify/fsnotify.v1"')
+          end
+        end
+
         context "with a git requirement" do
           context "with a branch" do
             let(:manifest_fixture_name) { "branch.toml" }

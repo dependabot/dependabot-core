@@ -65,6 +65,7 @@ module Dependabot
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
             content = replace_version_constraint(content, file.name)
+            content = add_fsnotify_source(content, file.name)
 
             content
           end
@@ -78,6 +79,26 @@ module Dependabot
 
                 details.delete("revision")
                 details.delete("branch")
+              end
+            end
+
+            TomlRB.dump(parsed_manifest)
+          end
+
+          def replace_git_pin(content)
+            parsed_manifest = TomlRB.parse(content)
+
+            FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|
+              (parsed_manifest[type] || []).each do |details|
+                next unless details["name"] == dependency.name
+
+                raise "Invalid details! #{details}" if details["branch"]
+
+                if details["version"]
+                  details["version"] = replacement_git_pin
+                else
+                  details["revision"] = replacement_git_pin
+                end
               end
             end
 
@@ -104,20 +125,17 @@ module Dependabot
             TomlRB.dump(parsed_manifest)
           end
 
-          def replace_git_pin(content)
+          # A dep bug means we have to specify a source for gopkg.in/fsnotify.v1
+          # or we get `panic: version queue is empty` errors
+          def add_fsnotify_source(content, filename)
             parsed_manifest = TomlRB.parse(content)
 
             FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|
               (parsed_manifest[type] || []).each do |details|
-                next unless details["name"] == dependency.name
+                next unless details["name"] == "gopkg.in/fsnotify.v1"
+                next if details["source"]
 
-                raise "Invalid details! #{details}" if details["branch"]
-
-                if details["version"]
-                  details["version"] = replacement_git_pin
-                else
-                  details["revision"] = replacement_git_pin
-                end
+                details["source"] = "gopkg.in/fsnotify/fsnotify.v1"
               end
             end
 
