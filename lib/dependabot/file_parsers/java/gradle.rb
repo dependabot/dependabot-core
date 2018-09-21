@@ -22,8 +22,8 @@ module Dependabot
             (?:\$(?<property_name>[^:\s]*))
           /x
 
-        PART = %r{[^\s,@'":/]+}
-        VSN_PART = /[^\s,'":]+/
+        PART = %r{[^\s,@'":/\\]+}
+        VSN_PART = %r{[^\s,'":/\\]+}
         DEPENDENCY_DECLARATION_REGEX =
           /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/
 
