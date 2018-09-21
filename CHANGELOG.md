@@ -1,3 +1,7 @@
+## v0.73.4, 21 September 2018
+
+- Gradle: Stricter regex for groupId and artifactId parts
+
 ## v0.73.3, 20 September 2018
 
 - Python: Fix bug in Poetry file preparation
