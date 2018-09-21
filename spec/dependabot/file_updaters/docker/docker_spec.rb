@@ -42,13 +42,13 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
         requirement: nil,
         groups: [],
         file: "Dockerfile",
-        source: { type: "tag", tag: "17.10" }
+        source: { tag: "17.10" }
       }],
       previous_requirements: [{
         requirement: nil,
         groups: [],
         file: "Dockerfile",
-        source: { type: "tag", tag: "17.04" }
+        source: { tag: "17.04" }
       }],
       package_manager: "docker"
     )
@@ -86,13 +86,13 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "10.9-alpine" }
+            source: { tag: "10.9-alpine" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "10-alpine" }
+            source: { tag: "10-alpine" }
           }],
           package_manager: "docker"
         )
@@ -120,13 +120,13 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.10" }
+            source: { tag: "17.10" }
           }],
           previous_requirements: [{
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }],
           package_manager: "docker"
         )
@@ -156,7 +156,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "tag",
               registry: "registry-host.io:5000",
               tag: "17.10"
             }
@@ -166,7 +165,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "tag",
               registry: "registry-host.io:5000",
               tag: "17.04"
             }
@@ -202,7 +200,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "digest",
               digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                       "ca97eba880ebf600d68608"
             }
@@ -212,7 +209,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "digest",
               digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
                       "dfc38288cf73aa07485005"
             }
@@ -256,7 +252,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "digest",
                 registry: "registry-host.io:5000",
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                         "ca97eba880ebf600d68608"
@@ -267,7 +262,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "digest",
                 registry: "registry-host.io:5000",
                 digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
                         "dfc38288cf73aa07485005"
@@ -315,7 +309,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "digest",
               digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                       "ca97eba880ebf600d68608"
             }
@@ -324,7 +317,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "custom-name",
             source: {
-              type: "digest",
               digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                       "ca97eba880ebf600d68608",
               tag: "17.10"
@@ -335,7 +327,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "digest",
               digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
                       "dfc38288cf73aa07485005"
             }
@@ -344,7 +335,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
             groups: [],
             file: "custom-name",
             source: {
-              type: "digest",
               digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
                       "dfc38288cf73aa07485005",
               tag: "12.04.5"
@@ -380,7 +370,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               groups: [],
               file: "custom-name",
               source: {
-                type: "digest",
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                         "ca97eba880ebf600d68608"
               }
@@ -390,7 +379,6 @@ RSpec.describe Dependabot::FileUpdaters::Docker::Docker do
               groups: [],
               file: "custom-name",
               source: {
-                type: "digest",
                 digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
                         "dfc38288cf73aa07485005"
               }

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/shared_helpers"
+
 module Dependabot
   class DependabotError < StandardError
     def initialize(msg = nil)

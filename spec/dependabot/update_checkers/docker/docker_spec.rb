@@ -39,7 +39,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
   end
   let(:dependency_name) { "ubuntu" }
   let(:version) { "17.04" }
-  let(:source) { { type: "tag", tag: version } }
+  let(:source) { { tag: version } }
   let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
   let(:registry_tags) do
     fixture("docker", "registry_tags", "ubuntu_no_latest.json")
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it { is_expected.to be_falsey }
 
       context "and a digest" do
-        let(:source) { { type: "digest", digest: "old_digest" } }
+        let(:source) { { digest: "old_digest" } }
         let(:headers_response) do
           fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
         end
@@ -83,14 +83,13 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         end
 
         context "that is out-of-date" do
-          let(:source) { { type: "digest", digest: "old_digest" } }
+          let(:source) { { digest: "old_digest" } }
           it { is_expected.to be_truthy }
         end
 
         context "that is up-to-date" do
           let(:source) do
             {
-              type: "digest",
               digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97"\
                       "eba880ebf600d68608"
             }
@@ -312,7 +311,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", registry: "registry-host.io:5000" }
+            source: { registry: "registry-host.io:5000" }
           }],
           package_manager: "docker"
         )
@@ -381,7 +380,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     subject { checker.updated_requirements }
 
     context "when specified with a tag" do
-      let(:source) { { type: "tag", tag: version } }
+      let(:source) { { tag: version } }
 
       it "updates the tag" do
         expect(checker.updated_requirements).
@@ -390,14 +389,14 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { type: "tag", tag: "17.10" }
+              source: { tag: "17.10" }
             }]
           )
       end
     end
 
     context "when specified with a digest" do
-      let(:source) { { type: "digest", digest: "old_digest" } }
+      let(:source) { { digest: "old_digest" } }
 
       before do
         new_headers =
@@ -414,7 +413,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "digest",
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                         "ca97eba880ebf600d68608"
               }
@@ -424,7 +422,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     end
 
     context "when specified with a digest and a tag" do
-      let(:source) { { type: "digest", digest: "old_digest", tag: "17.04" } }
+      let(:source) { { digest: "old_digest", tag: "17.04" } }
 
       before do
         new_headers =
@@ -441,7 +439,6 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "digest",
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
                         "ca97eba880ebf600d68608",
                 tag: "17.10"

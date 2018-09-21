@@ -76,9 +76,7 @@ module Dependabot
         end
 
         def source_from(parsed_from_line)
-          # TODO: Should be able to drop (or repurpose) the `type` field and
-          # rely on the presence of keys / values.
-          source = { type: parsed_from_line.fetch("digest") ? "digest" : "tag" }
+          source = {}
 
           if parsed_from_line.fetch("registry")
             source[:registry] = parsed_from_line.fetch("registry")

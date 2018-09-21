@@ -38,7 +38,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
           requirement: nil,
           groups: [],
           file: "Dockerfile",
-          source: { type: "tag", tag: "17.04" }
+          source: { tag: "17.04" }
         }]
       end
 
@@ -65,7 +65,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -134,7 +134,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "artful" }
+            source: { tag: "artful" }
           }]
         end
 
@@ -202,7 +202,6 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "digest",
                 digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
                         "fc38288cf73aa07485005"
               }
@@ -268,7 +267,6 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
                   groups: [],
                   file: "Dockerfile",
                   source: {
-                    type: "digest",
                     registry: "registry-host.io:5000",
                     digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
                             "e4c8dfc38288cf73aa07485005"
@@ -300,7 +298,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -319,7 +317,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "3.6.3" }
+            source: { tag: "3.6.3" }
           }]
         end
 
@@ -343,7 +341,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
               requirement: nil,
               groups: [],
               file: "Dockerfile",
-              source: { type: "tag", tag: "10-alpine" }
+              source: { tag: "10-alpine" }
             }]
           end
 
@@ -370,7 +368,6 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             groups: [],
             file: "Dockerfile",
             source: {
-              type: "tag",
               registry: "registry-host.io:5000",
               tag: "17.04"
             }
@@ -397,7 +394,6 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
               groups: [],
               file: "Dockerfile",
               source: {
-                type: "tag",
                 registry: "aws-account-id.dkr.ecr.region.amazonaws.com",
                 tag: "17.04"
               }
@@ -431,7 +427,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "custom-name",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -458,7 +454,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
@@ -477,7 +473,7 @@ RSpec.describe Dependabot::FileParsers::Docker::Docker do
             requirement: nil,
             groups: [],
             file: "custom-name",
-            source: { type: "tag", tag: "17.04" }
+            source: { tag: "17.04" }
           }]
         end
 
