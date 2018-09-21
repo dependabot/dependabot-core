@@ -1,3 +1,8 @@
+## v0.73.5, 21 September 2018
+
+- Ruby: Sanitize gemspec by removing all File.read calls
+- Always sanitize file paths in errors
+
 ## v0.73.4, 21 September 2018
 
 - Gradle: Stricter regex for groupId and artifactId parts
