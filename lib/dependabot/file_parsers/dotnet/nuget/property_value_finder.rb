@@ -72,15 +72,15 @@ module Dependabot
           def buildfile_for_project(project_file)
             dir = File.dirname(project_file.name)
 
+            # Nuget walks up the directory structure looking for a
+            # Directory.Build.props file
             possible_paths = dir.split("/").map.with_index do |_, i|
-              dir.split("/").first(i + 1).join("/") + "/Directory.Build.props"
+              base = dir.split("/").first(i + 1).join("/")
+              Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
             end.reverse
 
-            path =
-              possible_paths.map { |p| Pathname.new(p).cleanpath.to_path }.
-              find { |p| dependency_files.find { |f| f.name == p } }
-
-            return unless path
+            path = possible_paths.
+                   find { |p| dependency_files.find { |f| f.name == p } }
 
             dependency_files.find { |f| f.name == path }
           end
