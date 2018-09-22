@@ -5,7 +5,7 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters/dotnet/nuget/property_value_updater"
 
 RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
-  let(:updater) { described_class.new(project_file: project_file) }
+  let(:updater) { described_class.new(dependency_files: [project_file]) }
 
   let(:project_file) do
     Dependabot::DependencyFile.new(
@@ -19,7 +19,8 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
     subject(:updated_file) do
       updater.update_file_for_property_change(
         property_name: property_name,
-        updated_value: updated_value
+        updated_value: updated_value,
+        callsite_file: project_file
       )
     end
     let(:property_name) { "NukeVersion" }

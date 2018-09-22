@@ -30,8 +30,8 @@ module Dependabot
           dependency_set = DependencySet.new
 
           (project_files + project_import_files).each do |file|
-            parser = ProjectFileParser.new(project_file: file)
-            dependency_set += parser.dependency_set
+            parser = project_file_parser
+            dependency_set += parser.dependency_set(project_file: file)
           end
 
           dependency_set
@@ -43,6 +43,11 @@ module Dependabot
           PackagesConfigParser.
             new(packages_config: packages_config).
             dependency_set
+        end
+
+        def project_file_parser
+          @project_file_parser ||=
+            ProjectFileParser.new(dependency_files: dependency_files)
         end
 
         def project_files

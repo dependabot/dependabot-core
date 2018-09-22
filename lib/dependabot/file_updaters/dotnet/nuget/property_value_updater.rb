@@ -11,33 +11,39 @@ module Dependabot
     module Dotnet
       class Nuget
         class PropertyValueUpdater
-          def initialize(project_file:)
-            @project_file = project_file
+          def initialize(dependency_files:)
+            @dependency_files = dependency_files
           end
 
-          def update_file_for_property_change(property_name:, updated_value:)
-            declaration_details = property_value_finder.
-                                  property_details(property_name: property_name)
+          def update_file_for_property_change(property_name:, updated_value:,
+                                              callsite_file:)
+            declaration_details =
+              property_value_finder.
+              property_details(
+                property_name: property_name,
+                callsite_file: callsite_file
+              )
+
             node = declaration_details.fetch(:node)
 
-            updated_content = project_file.content.sub(
+            updated_content = callsite_file.content.sub(
               %r{<#{Regexp.quote(node.name)}>
                  \s*#{Regexp.quote(node.content)}\s*
                  </#{Regexp.quote(node.name)}>}xm,
               "<#{node.name}>#{updated_value}</#{node.name}>"
             )
 
-            update_file(file: project_file, content: updated_content)
+            update_file(file: callsite_file, content: updated_content)
           end
 
           private
 
-          attr_reader :project_file
+          attr_reader :dependency_files
 
           def property_value_finder
             @property_value_finder ||=
               FileParsers::Dotnet::Nuget::PropertyValueFinder.
-              new(project_file: project_file)
+              new(dependency_files: dependency_files)
           end
 
           def update_file(file:, content:)

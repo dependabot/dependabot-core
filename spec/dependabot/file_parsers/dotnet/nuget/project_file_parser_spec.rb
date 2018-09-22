@@ -10,10 +10,10 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
   let(:file_body) { fixture("dotnet", "csproj", "basic.csproj") }
-  let(:parser) { described_class.new(project_file: file) }
+  let(:parser) { described_class.new(dependency_files: [file]) }
 
   describe "dependency_set" do
-    subject(:dependency_set) { parser.dependency_set }
+    subject(:dependency_set) { parser.dependency_set(project_file: file) }
 
     it { is_expected.to be_a(Dependabot::FileParsers::Base::DependencySet) }
 

@@ -10,12 +10,12 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
   let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
-  let(:finder) { described_class.new(project_file: file) }
+  let(:finder) { described_class.new(dependency_files: [file]) }
   let(:property_name) { "NukeVersion" }
 
   describe "property_details" do
     subject(:property_details) do
-      finder.property_details(property_name: property_name)
+      finder.property_details(property_name: property_name, callsite_file: file)
     end
 
     context "with a property that can be found" do

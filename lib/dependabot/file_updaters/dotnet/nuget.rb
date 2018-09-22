@@ -83,11 +83,16 @@ module Dependabot
         def update_property_value_in_file(file, req)
           property_name = req.fetch(:metadata).fetch(:property_name)
 
-          PropertyValueUpdater.new(project_file: file).
-            update_file_for_property_change(
-              property_name: property_name,
-              updated_value: req.fetch(:requirement)
-            )
+          property_value_updater.update_file_for_property_change(
+            property_name: property_name,
+            updated_value: req.fetch(:requirement),
+            callsite_file: file
+          )
+        end
+
+        def property_value_updater
+          @property_value_updater ||=
+            PropertyValueUpdater.new(dependency_files: dependency_files)
         end
 
         def update_version_in_file(dependency, file, old_req, new_req)

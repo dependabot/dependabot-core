@@ -21,20 +21,21 @@ module Dependabot
 
           PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
 
-          def initialize(project_file:)
-            @project_file = project_file
+          def initialize(dependency_files:)
+            @dependency_files = dependency_files
           end
 
-          def dependency_set
+          def dependency_set(project_file:)
             dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
             doc = Nokogiri::XML(project_file.content)
             doc.remove_namespaces!
             doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-              next unless dependency_name(dependency_node)
+              next unless dependency_name(dependency_node, project_file)
 
               requirement = {
-                requirement: dependency_requirement(dependency_node),
+                requirement:
+                  dependency_requirement(dependency_node, project_file),
                 file: project_file.name,
                 groups: [],
                 source: nil
@@ -47,8 +48,8 @@ module Dependabot
 
               dependency_set <<
                 Dependency.new(
-                  name: dependency_name(dependency_node),
-                  version: dependency_version(dependency_node),
+                  name: dependency_name(dependency_node, project_file),
+                  version: dependency_version(dependency_node, project_file),
                   package_manager: "nuget",
                   requirements: [requirement]
                 )
@@ -59,28 +60,28 @@ module Dependabot
 
           private
 
-          attr_reader :project_file
+          attr_reader :dependency_files
 
-          def dependency_name(dependency_node)
+          def dependency_name(dependency_node, project_file)
             raw_name =
               dependency_node.attribute("Include")&.value&.strip ||
               dependency_node.at_xpath("./Include")&.content&.strip
             return unless raw_name
 
-            evaluated_value(raw_name)
+            evaluated_value(raw_name, project_file)
           end
 
-          def dependency_requirement(dependency_node)
+          def dependency_requirement(dependency_node, project_file)
             raw_requirement =
               dependency_node.attribute("Version")&.value&.strip ||
               dependency_node.at_xpath("./Version")&.content&.strip
             return unless raw_requirement
 
-            evaluated_value(raw_requirement)
+            evaluated_value(raw_requirement, project_file)
           end
 
-          def dependency_version(dependency_node)
-            requirement = dependency_requirement(dependency_node)
+          def dependency_version(dependency_node, project_file)
+            requirement = dependency_requirement(dependency_node, project_file)
             return unless requirement
 
             # Remove brackets if present
@@ -109,12 +110,12 @@ module Dependabot
               named_captures.fetch("property")
           end
 
-          def evaluated_value(value)
+          def evaluated_value(value, project_file)
             return value unless value.match?(PROPERTY_REGEX)
 
             property_name = value.match(PROPERTY_REGEX).
                             named_captures.fetch("property")
-            property_value = value_for_property(property_name)
+            property_value = value_for_property(property_name, project_file)
 
             # Don't halt parsing for a missing property value until we're
             # confident we're fetching property values correctly
@@ -123,15 +124,17 @@ module Dependabot
             value.gsub(PROPERTY_REGEX, property_value)
           end
 
-          def value_for_property(property_name)
+          def value_for_property(property_name, project_file)
             property_value_finder.
-              property_details(property_name: property_name)&.
-              fetch(:value)
+              property_details(
+                property_name: property_name,
+                callsite_file: project_file
+              )&.fetch(:value)
           end
 
           def property_value_finder
             @property_value_finder ||=
-              PropertyValueFinder.new(project_file: project_file)
+              PropertyValueFinder.new(dependency_files: dependency_files)
           end
         end
       end
