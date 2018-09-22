@@ -77,9 +77,9 @@ module Dependabot
             possible_paths = dir.split("/").map.with_index do |_, i|
               base = dir.split("/").first(i + 1).join("/")
               Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
-            end.reverse
+            end.reverse + ["Directory.Build.props"]
 
-            path = possible_paths.
+            path = possible_paths.uniq.
                    find { |p| dependency_files.find { |f| f.name == p } }
 
             dependency_files.find { |f| f.name == path }

@@ -33,6 +33,13 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
     context "from a directory.build.props file" do
       let(:files) { [file, build_file, imported_file] }
 
+      let(:file) do
+        Dependabot::DependencyFile.new(
+          name: "nested/my.csproj",
+          content: file_body
+        )
+      end
+      let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
       let(:build_file) do
         Dependabot::DependencyFile.new(
           name: "Directory.Build.props",
