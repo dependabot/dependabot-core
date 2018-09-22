@@ -1,3 +1,7 @@
+## v0.73.8, 22 September 2018
+
+- .NET: Handle inherited properties in PropertyValueFinder
+
 ## v0.73.7, 21 September 2018
 
 - Go: Better determination of whether a dependency is using Dep
