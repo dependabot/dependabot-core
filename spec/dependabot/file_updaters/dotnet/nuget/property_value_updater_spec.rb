@@ -5,7 +5,8 @@ require "dependabot/dependency_file"
 require "dependabot/file_updaters/dotnet/nuget/property_value_updater"
 
 RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
-  let(:updater) { described_class.new(dependency_files: [project_file]) }
+  let(:updater) { described_class.new(dependency_files: files) }
+  let(:files) { [project_file] }
 
   let(:project_file) do
     Dependabot::DependencyFile.new(
@@ -15,9 +16,9 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
   end
   let(:csproj_fixture_name) { "property_version.csproj" }
 
-  describe "#update_file_for_property_change" do
-    subject(:updated_file) do
-      updater.update_file_for_property_change(
+  describe "#update_files_for_property_change" do
+    subject(:updated_files) do
+      updater.update_files_for_property_change(
         property_name: property_name,
         updated_value: updated_value,
         callsite_file: project_file
@@ -27,9 +28,53 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
     let(:updated_value) { "0.1.500" }
 
     it "updates the property" do
-      expect(updated_file.content).
+      expect(updated_files.first.content).
         to include("<NukeVersion>0.1.500</NukeVersion>")
-      expect(updated_file.content).to include('Version="$(NukeVersion)" />')
+      expect(updated_files.first.content).
+        to include('Version="$(NukeVersion)" />')
+    end
+
+    context "when the property is inherited" do
+      let(:files) { [project_file, build_file, imported_file] }
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "nested/my.csproj",
+          content: file_body
+        )
+      end
+      let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
+      let(:build_file) do
+        Dependabot::DependencyFile.new(
+          name: "Directory.Build.props",
+          content: build_file_body
+        )
+      end
+      let(:build_file_body) { fixture("dotnet", "property_files", "imports") }
+      let(:imported_file) do
+        Dependabot::DependencyFile.new(
+          name: "build/dependencies.props",
+          content: imported_file_body
+        )
+      end
+      let(:imported_file_body) do
+        fixture("dotnet", "property_files", "dependency.props")
+      end
+
+      let(:property_name) { "XunitPackageVersion" }
+
+      it "updates the property" do
+        expect(updated_files.count).to eq(3)
+
+        changed_files = updated_files - files
+        expect(changed_files.count).to eq(1)
+
+        changed_file = changed_files.first
+
+        expect(changed_file.name).to eq("build/dependencies.props")
+        expect(changed_file.content).
+          to include("<XunitPackageVersion>0.1.500</XunitPackageVersion>")
+      end
     end
   end
 end

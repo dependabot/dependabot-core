@@ -15,8 +15,8 @@ module Dependabot
             @dependency_files = dependency_files
           end
 
-          def update_file_for_property_change(property_name:, updated_value:,
-                                              callsite_file:)
+          def update_files_for_property_change(property_name:, updated_value:,
+                                               callsite_file:)
             declaration_details =
               property_value_finder.
               property_details(
@@ -24,16 +24,22 @@ module Dependabot
                 callsite_file: callsite_file
               )
 
+            declaration_file = dependency_files.find do |f|
+              declaration_details.fetch(:file) == f.name
+            end
             node = declaration_details.fetch(:node)
 
-            updated_content = callsite_file.content.sub(
+            updated_content = declaration_file.content.sub(
               %r{<#{Regexp.quote(node.name)}>
                  \s*#{Regexp.quote(node.content)}\s*
                  </#{Regexp.quote(node.name)}>}xm,
               "<#{node.name}>#{updated_value}</#{node.name}>"
             )
 
-            update_file(file: callsite_file, content: updated_content)
+            files = dependency_files.dup
+            files[files.index(declaration_file)] =
+              update_file(file: declaration_file, content: updated_content)
+            files
           end
 
           private

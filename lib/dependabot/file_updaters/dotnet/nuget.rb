@@ -55,8 +55,6 @@ module Dependabot
         end
 
         def update_files_for_dependency(files:, dependency:)
-          files = files.dup
-
           # The UpdateChecker ensures the order of requirements is preserved
           # when updating, so we can zip them together in new/old pairs.
           reqs = dependency.requirements.zip(dependency.previous_requirements).
@@ -69,33 +67,33 @@ module Dependabot
 
             file = files.find { |f| f.name == new_req.fetch(:file) }
 
-            files[files.index(file)] =
+            files =
               if new_req.dig(:metadata, :property_name)
-                update_property_value_in_file(file, new_req)
+                update_property_value(files, file, new_req)
               else
-                update_version_in_file(dependency, file, old_req, new_req)
+                update_declaration(files, dependency, file, old_req, new_req)
               end
           end
 
           files
         end
 
-        def update_property_value_in_file(file, req)
+        def update_property_value(files, file, req)
+          files = files.dup
           property_name = req.fetch(:metadata).fetch(:property_name)
 
-          property_value_updater.update_file_for_property_change(
-            property_name: property_name,
-            updated_value: req.fetch(:requirement),
-            callsite_file: file
-          )
+          PropertyValueUpdater.
+            new(dependency_files: files).
+            update_files_for_property_change(
+              property_name: property_name,
+              updated_value: req.fetch(:requirement),
+              callsite_file: file
+            )
         end
 
-        def property_value_updater
-          @property_value_updater ||=
-            PropertyValueUpdater.new(dependency_files: dependency_files)
-        end
+        def update_declaration(files, dependency, file, old_req, new_req)
+          files = files.dup
 
-        def update_version_in_file(dependency, file, old_req, new_req)
           updated_content = file.content
 
           original_declarations(dependency, old_req).each do |old_dec|
@@ -107,7 +105,9 @@ module Dependabot
 
           raise "Expected content to change!" if updated_content == file.content
 
-          updated_file(file: file, content: updated_content)
+          files[files.index(file)] =
+            updated_file(file: file, content: updated_content)
+          files
         end
 
         def original_declarations(dependency, requirement)
