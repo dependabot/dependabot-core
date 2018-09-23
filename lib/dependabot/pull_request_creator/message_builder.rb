@@ -8,7 +8,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      JAVA_PMS = %w(maven gradle).freeze
+      PROPERTY_PMS = %w(maven gradle nuget).freeze
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
       GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
@@ -114,9 +114,9 @@ module Dependabot
             dependency = dependencies.first
             "#{dependency.display_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
-          elsif JAVA_PMS.include?(package_manager)
+          elsif PROPERTY_PMS.include?(package_manager)
             dependency = dependencies.first
-            "#{java_property_name} from #{previous_version(dependency)} "\
+            "#{property_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
@@ -163,8 +163,8 @@ module Dependabot
       end
 
       def version_commit_message_intro
-        if dependencies.count > 1 && JAVA_PMS.include?(package_manager)
-          return multidependency_java_intro
+        if dependencies.count > 1 && PROPERTY_PMS.include?(package_manager)
+          return multidependency_property_intro
         end
 
         return multidependency_intro if dependencies.count > 1
@@ -185,10 +185,10 @@ module Dependabot
         msg
       end
 
-      def multidependency_java_intro
+      def multidependency_property_intro
         dependency = dependencies.first
 
-        "Bumps `#{java_property_name}` "\
+        "Bumps `#{property_name}` "\
         "from #{previous_version(dependency)} "\
         "to #{new_version(dependency)}."
       end
@@ -199,7 +199,7 @@ module Dependabot
         "dependencies needed to be updated together."
       end
 
-      def java_property_name
+      def property_name
         @property_name ||= dependencies.first.requirements.
                            find { |r| r.dig(:metadata, :property_name) }&.
                            dig(:metadata, :property_name)

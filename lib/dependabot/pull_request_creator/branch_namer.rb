@@ -6,7 +6,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      JAVA_PMS = %w(maven gradle).freeze
+      PROPERTY_PMS = %w(maven gradle nuget).freeze
 
       attr_reader :dependencies, :files, :target_branch, :separator
 
@@ -19,8 +19,8 @@ module Dependabot
 
       def new_branch_name
         @name ||=
-          if dependencies.count > 1 && JAVA_PMS.include?(package_manager)
-            java_property_name
+          if dependencies.count > 1 && PROPERTY_PMS.include?(package_manager)
+            property_name
           elsif dependencies.count > 1
             dependencies.map(&:name).join("-and-").tr(":", "-")
           elsif library?
@@ -52,7 +52,7 @@ module Dependabot
         dependencies.first.package_manager
       end
 
-      def java_property_name
+      def property_name
         @property_name ||= dependencies.first.requirements.
                            find { |r| r.dig(:metadata, :property_name) }&.
                            dig(:metadata, :property_name)

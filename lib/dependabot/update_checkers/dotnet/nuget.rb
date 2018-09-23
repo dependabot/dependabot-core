@@ -8,6 +8,7 @@ module Dependabot
     module Dotnet
       class Nuget < Dependabot::UpdateCheckers::Base
         require_relative "nuget/version_finder"
+        require_relative "nuget/property_updater"
         require_relative "nuget/requirements_updater"
 
         def latest_version
@@ -38,12 +39,13 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for Dotnet (yet)
-          false
+          return false unless version_comes_from_multi_dependency_property?
+
+          property_updater.update_possible?
         end
 
         def updated_dependencies_after_full_unlock
-          raise NotImplementedError
+          property_updater.updated_dependencies
         end
 
         def latest_version_details
@@ -55,6 +57,17 @@ module Dependabot
             VersionFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions
+            )
+        end
+
+        def property_updater
+          @property_updater ||=
+            PropertyUpdater.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              target_version_details: latest_version_details,
               credentials: credentials,
               ignored_versions: ignored_versions
             )

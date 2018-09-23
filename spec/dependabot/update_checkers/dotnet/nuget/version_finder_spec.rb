@@ -68,7 +68,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
   end
 
   describe "#latest_version_details" do
-    subject { finder.latest_version_details }
+    subject(:latest_version_details) { finder.latest_version_details }
     its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
     context "when the user wants a pre-release" do
@@ -219,6 +219,23 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+  end
+
+  describe "#versions" do
+    subject(:versions) { finder.versions }
+
+    it "includes the correct versions" do
+      expect(versions.count).to eq(21)
+      expect(versions.first).to eq(
+        nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                    "microsoft.extensions.dependencymodel/1.0.0-rc2-002702/"\
+                    "microsoft.extensions.dependencymodel.nuspec",
+        repo_url: "https://api.nuget.org/v3/index.json",
+        source_url: nil,
+        version: Dependabot::Utils::Dotnet::Version.
+                 new("1.0.0.pre.rc2.pre.002702")
+      )
     end
   end
 end

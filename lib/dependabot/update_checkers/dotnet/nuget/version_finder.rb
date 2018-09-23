@@ -26,25 +26,25 @@ module Dependabot
           def latest_version_details
             @latest_version_details ||=
               begin
-                versions = available_versions
+                tmp_versions = versions
                 unless wants_prerelease?
-                  versions.reject! { |hash| hash.fetch(:version).prerelease? }
+                  tmp_versions.reject! { |d| d.fetch(:version).prerelease? }
                 end
-                versions.reject! do |hash|
+                tmp_versions.reject! do |hash|
                   ignore_reqs.any? { |r| r.satisfied_by?(hash.fetch(:version)) }
                 end
-                versions.max_by { |hash| hash.fetch(:version) }
+                tmp_versions.max_by { |hash| hash.fetch(:version) }
               end
+          end
+
+          def versions
+            available_v3_versions + available_v2_versions
           end
 
           attr_reader :dependency, :dependency_files, :credentials,
                       :ignored_versions
 
           private
-
-          def available_versions
-            available_v3_versions + available_v2_versions
-          end
 
           def available_v3_versions
             v3_nuget_listings.flat_map do |listing|

@@ -9,6 +9,8 @@ module Dependabot
     module Java
       class Gradle
         class PropertyUpdater
+          require_relative "version_finder"
+
           def initialize(dependency:, dependency_files:,
                          target_version_details:, ignored_versions:)
             @dependency       = dependency
