@@ -74,152 +74,17 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     subject { checker.latest_version }
     it { is_expected.to eq(version_class.new("2.1.0")) }
 
-    context "when the user wants a pre-release" do
-      let(:dependency_version) { "2.2.0-preview1-26216-03" }
-      it { is_expected.to eq(version_class.new("2.2.0-preview2-26406-04")) }
-    end
+    it "delegates to the VersionFinder class" do
+      version_finder_class = described_class::VersionFinder
+      dummy_version_finder = instance_double(version_finder_class)
+      allow(version_finder_class).
+        to receive(:new).
+        and_return(dummy_version_finder)
+      allow(dummy_version_finder).
+        to receive(:latest_version_details).
+        and_return(version: "dummy_version")
 
-    context "when the user is ignoring the latest version" do
-      let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
-      it { is_expected.to eq(version_class.new("1.1.2")) }
-    end
-
-    context "with a custom repo in a nuget.config file" do
-      let(:config_file) do
-        Dependabot::DependencyFile.new(
-          name: "NuGet.Config",
-          content: fixture("dotnet", "configs", "nuget.config")
-        )
-      end
-      let(:dependency_files) { [csproj, config_file] }
-      let(:custom_repo_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/index.json"
-      end
-      before do
-        stub_request(:get, nuget_versions_url).to_return(status: 404)
-        stub_request(:get, nuget_search_url).to_return(status: 404)
-
-        stub_request(:get, custom_repo_url).to_return(status: 404)
-        stub_request(:get, custom_repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
-            status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
-          )
-        custom_nuget_versions_url =
-          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-          "microsoft.extensions.dependencymodel/index.json"
-        custom_nuget_search_url =
-          "https://www.myget.org/F/exceptionless/api/v3/"\
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true"
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_versions)
-        stub_request(:get, custom_nuget_search_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_search_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_search_results)
-      end
-
-      it { is_expected.to eq(version_class.new("2.1.0")) }
-
-      context "that uses the v2 API" do
-        let(:config_file) do
-          Dependabot::DependencyFile.new(
-            name: "NuGet.Config",
-            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
-          )
-        end
-
-        before do
-          v2_repo_urls = %w(
-            https://www.nuget.org/api/v2/
-            https://www.myget.org/F/azure-appservice/api/v2
-            https://www.myget.org/F/azure-appservice-staging/api/v2
-            https://www.myget.org/F/fusemandistfeed/api/v2
-            https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/
-          )
-
-          v2_repo_urls.each do |repo_url|
-            stub_request(:get, repo_url).
-              to_return(
-                status: 200,
-                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
-              )
-          end
-
-          url = "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json"
-          stub_request(:get, url).
-            to_return(
-              status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
-            )
-
-          custom_v3_nuget_versions_url =
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-            "microsoft.extensions.dependencymodel/index.json"
-          stub_request(:get, custom_v3_nuget_versions_url).
-            to_return(status: 404)
-
-          custom_v2_nuget_versions_url =
-            "https://www.nuget.org/api/v2/FindPackagesById()?id="\
-            "'Microsoft.Extensions.DependencyModel'"
-          stub_request(:get, custom_v2_nuget_versions_url).
-            to_return(
-              status: 200,
-              body: fixture("dotnet", "nuget_responses", "v2_versions.xml")
-            )
-        end
-
-        it { is_expected.to eq(version_class.new("4.8.1")) }
-      end
-    end
-
-    context "with a custom repo in the credentials" do
-      let(:credentials) do
-        [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }, {
-          "type" => "nuget_feed",
-          "url" => custom_repo_url,
-          "token" => "my:passw0rd"
-        }]
-      end
-      let(:custom_repo_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/index.json"
-      end
-      before do
-        stub_request(:get, nuget_versions_url).to_return(status: 404)
-        stub_request(:get, nuget_search_url).to_return(status: 404)
-
-        stub_request(:get, custom_repo_url).to_return(status: 404)
-        stub_request(:get, custom_repo_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(
-            status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
-          )
-        custom_nuget_versions_url =
-          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-          "microsoft.extensions.dependencymodel/index.json"
-        custom_nuget_search_url =
-          "https://www.myget.org/F/exceptionless/api/v3/"\
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true"
-        stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_versions_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_versions)
-        stub_request(:get, custom_nuget_search_url).to_return(status: 404)
-        stub_request(:get, custom_nuget_search_url).
-          with(basic_auth: %w(my passw0rd)).
-          to_return(status: 200, body: nuget_search_results)
-      end
-
-      it { is_expected.to eq(version_class.new("2.1.0")) }
+      expect(checker.latest_version).to eq("dummy_version")
     end
   end
 
