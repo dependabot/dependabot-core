@@ -1,3 +1,7 @@
+## v0.73.10, 23 September 2018
+
+- .NET: Handle mutli-dependency property updates
+
 ## v0.73.9, 23 September 2018
 
 - .NET: Handle inherited properties in FileUpdater
