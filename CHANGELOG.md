@@ -1,3 +1,7 @@
+## v0.73.9, 23 September 2018
+
+- .NET: Handle inherited properties in FileUpdater
+
 ## v0.73.8, 22 September 2018
 
 - .NET: Handle inherited properties in PropertyValueFinder
