@@ -9,8 +9,6 @@ module Dependabot
       class Bundler
         class GemspecSanitizer
           UNNECESSARY_ASSIGNMENTS = %i(
-            author=
-            authors=
             bindir=
             cert_chain=
             description=

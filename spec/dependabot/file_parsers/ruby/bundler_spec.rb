@@ -161,7 +161,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "git@github.com:gocardless/que",
+              url: "git@github.com:chanks/que",
               branch: "master",
               ref: "v0.11.7"
             },
