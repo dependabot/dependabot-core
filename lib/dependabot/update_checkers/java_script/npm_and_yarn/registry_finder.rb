@@ -26,7 +26,7 @@ module Dependabot
           end
 
           def dependency_url
-            "#{registry_url}/#{escaped_dependency_name}"
+            "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
           end
 
           private
