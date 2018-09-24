@@ -31,28 +31,14 @@ module Dependabot
             doc = Nokogiri::XML(project_file.content)
             doc.remove_namespaces!
             doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-              next unless dependency_name(dependency_node, project_file)
+              name = dependency_name(dependency_node, project_file)
+              req = dependency_requirement(dependency_node, project_file)
+              version = dependency_version(dependency_node, project_file)
+              prop_name = req_property_name(dependency_node)
 
-              requirement = {
-                requirement:
-                  dependency_requirement(dependency_node, project_file),
-                file: project_file.name,
-                groups: [],
-                source: nil
-              }
-
-              if req_property_name(dependency_node)
-                requirement[:metadata] =
-                  { property_name: req_property_name(dependency_node) }
-              end
-
-              dependency_set <<
-                Dependency.new(
-                  name: dependency_name(dependency_node, project_file),
-                  version: dependency_version(dependency_node, project_file),
-                  package_manager: "nuget",
-                  requirements: [requirement]
-                )
+              dependency =
+                build_dependency(name, req, version, prop_name, project_file)
+              dependency_set << dependency if dependency
             end
 
             dependency_set
@@ -61,6 +47,28 @@ module Dependabot
           private
 
           attr_reader :dependency_files
+
+          def build_dependency(name, req, version, prop_name, project_file)
+            return unless name
+
+            # Exclude any dependencies specified using interpolation
+            return if [name, req, version].any? { |s| s&.include?("%(") }
+
+            requirement = {
+              requirement: req,
+              file: project_file.name,
+              groups: [],
+              source: nil
+            }
+            requirement[:metadata] = { property_name: prop_name } if prop_name
+
+            Dependency.new(
+              name: name,
+              version: version,
+              package_manager: "nuget",
+              requirements: [requirement]
+            )
+          end
 
           def dependency_name(dependency_node, project_file)
             raw_name =

@@ -178,6 +178,14 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
             to match_array(%w(nanoFramework.CoreLibrary))
         end
       end
+
+      context "with an interpolated value" do
+        let(:file_body) { fixture("dotnet", "csproj", "interpolated.proj") }
+
+        it "excludes the dependencies specified using interpolation" do
+          expect(dependencies.count).to eq(0)
+        end
+      end
     end
   end
 end
