@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Utils::Go::Requirement do
       it { is_expected.to eq(described_class.new(">= v1.0.0")) }
     end
 
+    context "with an 'incompatible' suffix" do
+      let(:requirement_string) { ">=v1.0.0+incompatible" }
+      it { is_expected.to eq(described_class.new(">= v1.0.0+incompatible")) }
+    end
+
     context "with a pre-release" do
       let(:requirement_string) { "4.0.0-beta3" }
       it "preserves the pre-release formatting" do

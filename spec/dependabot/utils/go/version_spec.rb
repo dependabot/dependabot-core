@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Utils::Go::Version do
       it { is_expected.to eq(true) }
     end
 
+    context "with an 'incompatible' suffix" do
+      let(:version_string) { "v1.0.0+incompatible" }
+      it { is_expected.to eq(true) }
+    end
+
     context "with an invalid string" do
       let(:version_string) { "va1.0.0" }
       it { is_expected.to eq(false) }
@@ -51,6 +56,11 @@ RSpec.describe Dependabot::Utils::Go::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with an 'incompatible' suffix" do
+      let(:version_string) { "1.0.0+incompatible" }
       it { is_expected.to eq(true) }
     end
 

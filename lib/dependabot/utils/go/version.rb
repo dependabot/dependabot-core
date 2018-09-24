@@ -9,14 +9,21 @@ module Dependabot
   module Utils
     module Go
       class Version < Gem::Version
+        VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+                          '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
+                          '(\+incompatible)?'
+        ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
+
         def self.correct?(version)
           version = version.gsub(/^v/, "") if version.is_a?(String)
+          version = version&.to_s&.split("+")&.first
           super(version)
         end
 
         def initialize(version)
           @version_string = version.to_s
           version = version.gsub(/^v/, "") if version.is_a?(String)
+          version = version&.to_s&.split("+")&.first
           super
         end
 
