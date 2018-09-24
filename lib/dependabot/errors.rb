@@ -18,7 +18,7 @@ module Dependabot
         Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
         Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
 
-      message.gsub(/#{path_regex}/, "/dependabot_tmp_dir")
+      message.gsub(/#{path_regex}/, "dependabot_tmp_dir")
     end
   end
 
