@@ -163,7 +163,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
               type: "git",
               url: "git@github.com:chanks/que",
               branch: "master",
-              ref: "v0.11.7"
+              ref: "v0.11.6"
             },
             groups: [:default]
           }]
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) do
-          is_expected.to eq("5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3")
+          is_expected.to eq("997d1a6ee76a1f254fd72ce16acbc8d347fcaee3")
         end
       end
 

@@ -33,7 +33,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GitPinReplacer do
       end
 
       it "leaves other tags alone" do
-        expect(rewrite).to include(%(tag: "v0.11.7"))
+        expect(rewrite).to include(%(tag: "v0.11.6"))
       end
     end
 

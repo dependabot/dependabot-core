@@ -584,7 +584,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           old_lock = lockfile_body.split(/^/)
           new_lock = file.content.split(/^/)
 
-          %w(business prius que uk_phone_numbers).each do |dep|
+          %w(business prius uk_phone_numbers).each do |dep|
             original_remote_line =
               old_lock.find { |l| l.include?("gocardless/#{dep}") }
             original_revision_line =
@@ -609,7 +609,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             old_lock = lockfile_body.split(/^/)
             new_lock = file.content.split(/^/)
 
-            %w(business prius que uk_phone_numbers).each do |dep|
+            %w(business prius uk_phone_numbers).each do |dep|
               original_remote_line =
                 old_lock.find { |l| l.include?("gocardless/#{dep}") }
               original_revision_line =
