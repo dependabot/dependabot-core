@@ -90,6 +90,23 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
+    context "with a dependency with a hard name" do
+      let(:pipfile_fixture_name) { "hard_names" }
+      let(:lockfile_fixture_name) { "hard_names.lock" }
+      let(:dependency_name) { "discord-py" }
+      let(:dependency_version) { "0.16.1" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==0.16.1",
+          groups: ["default"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("0.16.12") }
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }

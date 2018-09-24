@@ -91,19 +91,23 @@ module Dependabot
 
           def fetch_version_from_parsed_lockfile(updated_lockfile)
             if dependency.requirements.any?
-              updated_lockfile.dig(
-                dependency.requirements.first[:groups].first,
-                dependency.name,
-                "version"
-              ).gsub(/^==/, "")
+              group = dependency.requirements.first[:groups].first
+              deps = updated_lockfile[group] || {}
+
+              version =
+                deps.transform_keys { |k| normalise(k) }.
+                dig(dependency.name, "version")&.
+                gsub(/^==/, "")
+
+              return version
             end
 
             FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
-              version = updated_lockfile.dig(
-                keys.fetch(:lockfile),
-                dependency.name,
-                "version"
-              )&.gsub(/^==/, "")
+              deps = updated_lockfile[keys.fetch(:lockfile)] || {}
+              version =
+                deps.transform_keys { |k| normalise(k) }.
+                dig(dependency.name, "version")&.
+                gsub(/^==/, "")
 
               return version if version
             end
