@@ -1,3 +1,9 @@
+## v0.73.12, 24 September 2018
+
+- JS: Handle private registries that end with a trailing slash
+- Better error path sanitization
+- Ruby: More aggressive gemspec sanitization
+
 ## v0.73.11, 24 September 2018
 
 - .NET: Exclude dependency declarations that use interpolation
