@@ -1,3 +1,7 @@
+## v0.73.14, 24 September 2018
+
+- Ruby: Handle HEREDOC strings when sanitizaing gemspec
+
 ## v0.73.13, 24 September 2018
 
 - Ruby: Fix tests and gemspec sanitization
