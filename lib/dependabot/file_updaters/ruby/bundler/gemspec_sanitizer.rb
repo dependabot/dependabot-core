@@ -8,6 +8,23 @@ module Dependabot
     module Ruby
       class Bundler
         class GemspecSanitizer
+          UNNECESSARY_ASSIGNMENTS = %i(
+            author=
+            authors=
+            bindir=
+            cert_chain=
+            description=
+            email=
+            executables=
+            extra_rdoc_files=
+            homepage=
+            license=
+            licenses=
+            metadata=
+            post_install_message=
+            rdoc_options=
+          ).freeze
+
           attr_reader :replacement_version
 
           def initialize(replacement_version:)
@@ -42,8 +59,10 @@ module Dependabot
               # occassionally a File.open(..).readlines pattern is used
               replace_file_assignment(node) if node_assigns_files_to_var?(node)
 
-              # Replace the `File.read(...)` calls with a dummy string
+              # Replace any `File.read(...)` calls with a dummy string
               replace_file_reads(node)
+
+              remove_unnecessary_assignments(node)
             end
 
             private
@@ -89,6 +108,26 @@ module Dependabot
               return false unless node.children.first.children.last == :File
 
               node.children[1] == :read
+            end
+
+            def remove_unnecessary_assignments(node)
+              return unless node.is_a?(Parser::AST::Node)
+
+              if unnecessary_assignment?(node)
+                return remove(node.loc.expression)
+              end
+
+              node.children.each do |child|
+                remove_unnecessary_assignments(child)
+              end
+            end
+
+            def unnecessary_assignment?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :lvar
+
+              UNNECESSARY_ASSIGNMENTS.include?(node.children[1])
             end
 
             def node_is_version_constant?(node)

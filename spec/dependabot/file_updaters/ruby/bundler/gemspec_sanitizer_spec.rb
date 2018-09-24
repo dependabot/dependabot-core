@@ -36,6 +36,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       it { is_expected.to eq(%(version = "text".strip\ncode = "require")) }
     end
 
+    context "with an unnecessary assignment" do
+      let(:content) do
+        %(Spec.new { |s| s.version = "0.1.0"\n s.post_install_message = "a" })
+      end
+      it { is_expected.to eq(%(Spec.new { |s| s.version = "0.1.0"\n  })) }
+    end
+
     describe "version assignment" do
       context "with an assignment to a constant" do
         let(:content) { %(Spec.new { |s| s.version = Example::Version }) }
