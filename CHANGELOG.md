@@ -1,3 +1,8 @@
+## v0.73.11, 24 September 2018
+
+- .NET: Exclude dependency declarations that use interpolation
+- Python: Handle names that need to be sanitized when looking up in Pipfile.lock
+
 ## v0.73.10, 23 September 2018
 
 - .NET: Handle mutli-dependency property updates
