@@ -1,3 +1,7 @@
+## v0.73.13, 24 September 2018
+
+- Ruby: Fix tests and gemspec sanitization
+
 ## v0.73.12, 24 September 2018
 
 - JS: Handle private registries that end with a trailing slash
