@@ -11,7 +11,6 @@ module Dependabot
           UNNECESSARY_ASSIGNMENTS = %i(
             bindir=
             cert_chain=
-            description=
             email=
             executables=
             extra_rdoc_files=
