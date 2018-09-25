@@ -56,6 +56,8 @@ module Dependabot
 
       access_tokens = args.delete(:access_tokens) || []
       access_tokens << args[:access_token] if args[:access_token]
+      access_tokens << nil if access_tokens.empty?
+      access_tokens.uniq!
 
       @max_retries = max_retries || 1
       @clients = access_tokens.map do |token|
