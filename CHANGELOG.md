@@ -1,3 +1,9 @@
+## v0.73.16, 25 September 2018
+
+- JS: Handle multiple private registries with the same host
+- JS: Remove npm bug workaround
+- Handle multiple GitHub credentials
+
 ## v0.73.15, 25 September 2018
 
 - Ruby: Don't sanitize gemspec descriptions (may be used alongside summary)
