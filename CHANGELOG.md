@@ -1,5 +1,9 @@
 ## v0.73.16, 25 September 2018
 
+- JS: Retry 500s from registry using different auth strategy
+
+## v0.73.16, 25 September 2018
+
 - JS: Handle multiple private registries with the same host
 - JS: Remove npm bug workaround
 - Handle multiple GitHub credentials
