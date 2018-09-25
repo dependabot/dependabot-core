@@ -1,3 +1,9 @@
+## v0.73.15, 25 September 2018
+
+- Ruby: Don't sanitize gemspec descriptions (may be used alongside summary)
+- Go: Handle +incompatible suffices
+- Python: Bump pip-tools from 2.0.2 to 3.0.0 in /helpers/python
+
 ## v0.73.14, 24 September 2018
 
 - Ruby: Handle HEREDOC strings when sanitizaing gemspec
