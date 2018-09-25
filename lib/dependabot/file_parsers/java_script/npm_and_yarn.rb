@@ -218,12 +218,7 @@ module Dependabot
           return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
           return if resolved_url.include?("github.com")
 
-          url =
-            if resolved_url.include?("/~/") then resolved_url.split("/~/").first
-            else resolved_url.split("/")[0..2].join("/")
-            end
-
-          { type: "private_registry", url: url }
+          private_registry_source_for(resolved_url)
         end
 
         def requirement_for(requirement)
@@ -241,6 +236,30 @@ module Dependabot
             branch: nil,
             ref: details["ref"] || "master"
           }
+        end
+
+        def private_registry_source_for(resolved_url)
+          url =
+            if resolved_url.include?("/~/") then resolved_url.split("/~/").first
+            elsif (cred_url = credential_url(resolved_url)) then cred_url
+            else resolved_url.split("/")[0..2].join("/")
+            end
+
+          { type: "private_registry", url: url }
+        end
+
+        def credential_url(resolved_url)
+          registries = credentials.
+                       select { |cred| cred["type"] == "npm_registry" }
+
+          registries.each do |details|
+            reg = details["registry"]
+            next unless resolved_url.include?(reg)
+
+            return resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
+          end
+
+          false
         end
 
         def lockfile_details(name, requirement)

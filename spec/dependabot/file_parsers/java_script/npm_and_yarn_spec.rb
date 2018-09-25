@@ -17,7 +17,13 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
     )
   end
   let(:package_json_fixture_name) { "package.json" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      credentials: credentials
+    )
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -25,6 +31,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
       directory: "/"
     )
   end
+  let(:credentials) { [] }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -228,6 +235,53 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                   }
                 }]
               )
+            end
+          end
+
+          describe "the third dependency" do
+            subject { top_level_dependencies[0] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("fetch-factory") }
+            its(:version) { is_expected.to eq("0.0.1") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://artifactory01.mydomain.com"
+                  }
+                }]
+              )
+            end
+
+            context "with credentials" do
+              let(:credentials) do
+                [{
+                  "type" => "npm_registry",
+                  "registry" =>
+                    "artifactory01.mydomain.com/artifactory/api/npm/my-repo",
+                  "token" => "secret_token"
+                }]
+              end
+
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: "^0.0.1",
+                    file: "package.json",
+                    groups: ["dependencies"],
+                    source: {
+                      type: "private_registry",
+                      url: "https://artifactory01.mydomain.com/artifactory/"\
+                           "api/npm/my-repo"
+                    }
+                  }]
+                )
+              end
             end
           end
         end

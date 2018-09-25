@@ -34,7 +34,7 @@
         },
         "fetch-factory": {
             "version": "0.0.1",
-            "resolved": "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
+            "resolved": "https://artifactory01.mydomain.com/artifactory/api/npm/my-repo/fetch-factory/-/fetch-factory-0.0.1.tgz",
             "integrity": "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE=",
             "requires": {
                 "es6-promise": "3.3.1",
