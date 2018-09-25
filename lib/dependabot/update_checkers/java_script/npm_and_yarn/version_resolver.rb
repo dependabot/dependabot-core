@@ -190,10 +190,29 @@ module Dependabot
           end
 
           def fetch_npm_response
-            Excon.get(
+            response = Excon.get(
               dependency_url,
               SharedHelpers.excon_defaults.merge(
                 headers: registry_auth_headers,
+                idempotent: true
+              )
+            )
+
+            return response unless response.status == 500
+            return response unless registry_auth_headers["Authorization"]
+
+            auth = registry_auth_headers["Authorization"]
+            return response unless auth.start_with?("Basic")
+
+            decoded_token = Base64.decode64(auth.gsub("Basic ", ""))
+            return unless decoded_token.include?(":")
+
+            username, password = decoded_token.split(":")
+            Excon.get(
+              dependency_url,
+              SharedHelpers.excon_defaults.merge(
+                user: username,
+                password: password,
                 idempotent: true
               )
             )
