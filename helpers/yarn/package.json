@@ -1,7 +1,7 @@
 {
   "name": "dependabot-core",
   "dependencies": {
-    "@dependabot/yarn-lib": "^1.9.4",
+    "@dependabot/yarn-lib": "^1.10.0",
     "semver": "^5.5.1"
   },
   "devDependencies": {
