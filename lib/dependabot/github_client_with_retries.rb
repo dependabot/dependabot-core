@@ -25,26 +25,26 @@ module Dependabot
     #######################
 
     def self.for_source(source:, credentials:)
-      access_token =
+      access_tokens =
         credentials.
         select { |cred| cred["type"] == "git_source" }.
-        find { |cred| cred["host"] == source.hostname }&.
-        fetch("password")
+        select { |cred| cred["host"] == source.hostname }.
+        map { |cred| cred.fetch("password") }
 
       new(
-        access_token: access_token,
+        access_tokens: access_tokens,
         api_endpoint: source.api_endpoint
       )
     end
 
     def self.for_github_dot_com(credentials:)
-      access_token =
+      access_tokens =
         credentials.
         select { |cred| cred["type"] == "git_source" }.
-        find { |cred| cred["host"] == "github.com" }&.
-        fetch("password")
+        select { |cred| cred["host"] == "github.com" }.
+        map { |cred| cred.fetch("password") }
 
-      new(access_token: access_token)
+      new(access_tokens: access_tokens)
     end
 
     ############
@@ -54,23 +54,37 @@ module Dependabot
     def initialize(max_retries: 1, **args)
       args = DEFAULT_CLIENT_ARGS.merge(args)
 
+      access_tokens = args.delete(:access_tokens) || []
+      access_tokens << args[:access_token] if args[:access_token]
+
       @max_retries = max_retries || 1
-      @client = Octokit::Client.new(args)
+      @clients = access_tokens.map do |token|
+        Octokit::Client.new(args.merge(access_token: token))
+      end
     end
 
     def method_missing(method_name, *args, &block)
-      retry_connection_failures do
-        if @client.respond_to?(method_name)
-          mutatable_args = args.map(&:dup)
-          @client.public_send(method_name, *mutatable_args, &block)
-        else
-          super
+      untried_clients = @clients.dup
+      client = untried_clients.pop
+
+      begin
+        retry_connection_failures do
+          if client.respond_to?(method_name)
+            mutatable_args = args.map(&:dup)
+            client.public_send(method_name, *mutatable_args, &block)
+          else
+            super
+          end
         end
+      rescue Octokit::NotFound, Octokit::Unauthorized, Octokit::Forbidden
+        raise unless (client = untried_clients.pop)
+
+        retry
       end
     end
 
     def respond_to_missing?(method_name, include_private = false)
-      @client.respond_to?(method_name) || super
+      @clients.first.respond_to?(method_name) || super
     end
 
     def retry_connection_failures
