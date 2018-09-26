@@ -14,6 +14,9 @@ describe("updater", () => {
     nock("https://registry.yarnpkg.com")
       .get("/left-pad")
       .reply(200, helpers.loadFixture("yarnpkg-left-pad.json"));
+    nock("https://registry.yarnpkg.com")
+      .get("/is-positive")
+      .reply(200, helpers.loadFixture("yarnpkg-is-positive.json"));
 
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
