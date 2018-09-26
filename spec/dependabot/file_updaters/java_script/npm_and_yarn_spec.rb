@@ -911,8 +911,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             let(:yarn_lock_fixture_name) { "private_source.lock" }
 
             it "raises a helpful error" do
+              # TODO: Raise custom error here
               expect { updater.updated_dependency_files }.
-                to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+                to raise_error(Dependabot::DependencyFileNotResolvable)
             end
           end
 
