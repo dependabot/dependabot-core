@@ -1075,6 +1075,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "removes details of the old version" do
           expect(updated_yarn_lock.content).
             to_not include("babel-register@^6.24.1:")
+          expect(updated_yarn_lock.content).
+            to_not include("integrity sha512-")
         end
       end
 
