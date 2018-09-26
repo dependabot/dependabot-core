@@ -1,4 +1,8 @@
-## v0.73.16, 25 September 2018
+## v0.73.18, 26 September 2018
+
+- JS: Bump @dependabot/yarn-lib from 1.9.4 to 1.10.0 in /helpers/yarn
+
+## v0.73.17, 25 September 2018
 
 - JS: Retry 500s from registry using different auth strategy
 
