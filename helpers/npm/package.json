@@ -1,5 +1,7 @@
 {
   "name": "dependabot-core",
+  "version": "0.0.0",
+  "private": true,
   "dependencies": {
     "npm": "6.4.1",
     "npm5": "file:./npm5",
