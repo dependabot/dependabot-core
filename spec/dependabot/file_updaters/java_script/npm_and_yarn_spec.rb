@@ -911,8 +911,9 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             let(:yarn_lock_fixture_name) { "private_source.lock" }
 
             it "raises a helpful error" do
+              # TODO: Raise custom error here
               expect { updater.updated_dependency_files }.
-                to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+                to raise_error(Dependabot::DependencyFileNotResolvable)
             end
           end
 
@@ -1074,6 +1075,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "removes details of the old version" do
           expect(updated_yarn_lock.content).
             to_not include("babel-register@^6.24.1:")
+          expect(updated_yarn_lock.content).
+            to_not include("integrity sha512-")
         end
       end
 

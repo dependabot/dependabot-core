@@ -226,7 +226,19 @@ module Dependabot
               updated_content = updated_content.gsub(new_req, req)
             end
 
+            if remove_integrity_lines?
+              updated_content = remove_integrity_lines(updated_content)
+            end
+
             updated_content
+          end
+
+          def remove_integrity_lines?
+            yarn_locks.none? { |f| f.content.include?("integrity sha512-") }
+          end
+
+          def remove_integrity_lines(content)
+            content.lines.reject { |l| l.match?(/\s*integrity sha512-/) }.join
           end
 
           def handle_missing_package(package_name)
