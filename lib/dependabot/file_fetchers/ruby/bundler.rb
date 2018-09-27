@@ -136,12 +136,12 @@ module Dependabot
             parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
             parsed_lockfile.specs.
               select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
-              map { |s| s.source.path }
+              map { |s| s.source.path }.uniq
           else
             gemfiles = ([gemfile] + child_gemfiles).compact
             gemfiles.flat_map do |file|
               PathGemspecFinder.new(gemfile: file).path_gemspec_paths
-            end
+            end.uniq
           end
         rescue ::Bundler::LockfileError
           raise Dependabot::DependencyFileNotParseable, lockfile.path
