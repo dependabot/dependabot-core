@@ -120,12 +120,21 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
           body: fixture("github", "composer_json_content.json"),
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, url + "components/another-dep/composer.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "composer_json_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     it "fetches the composer.json, composer.lock and the path dependency" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
-          %w(composer.json composer.lock components/bump-core/composer.json)
+          %w(composer.json composer.lock components/bump-core/composer.json
+             components/another-dep/composer.json)
         )
     end
 
@@ -165,7 +174,8 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
       it "fetches the composer.json, composer.lock and the path dependency" do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
-            %w(composer.json composer.lock components/bump-core/composer.json)
+            %w(composer.json composer.lock components/bump-core/composer.json
+               components/another-dep/composer.json)
           )
       end
 
@@ -203,12 +213,22 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
               body: fixture("github", "composer_json_content.json"),
               headers: { "content-type" => "application/json" }
             )
+          stub_request(
+            :get,
+            base_url + "components/another-dep/composer.json?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "composer_json_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches the composer.json, composer.lock and the path dependency" do
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(
-              %w(composer.json composer.lock components/bump-core/composer.json)
+              %w(composer.json composer.lock components/bump-core/composer.json
+                 components/another-dep/composer.json)
             )
         end
       end
