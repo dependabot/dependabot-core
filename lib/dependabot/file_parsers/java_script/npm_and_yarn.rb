@@ -263,7 +263,7 @@ module Dependabot
         end
 
         def lockfile_details(name, requirement)
-          package_locks.each do |package_lock|
+          [*package_locks, *shrinkwraps].each do |package_lock|
             parsed_package_lock_json = parse_package_lock(package_lock)
             next unless parsed_package_lock_json.dig("dependencies", name)
 
