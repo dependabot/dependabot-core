@@ -1,3 +1,8 @@
+## v0.73.20, 27 September 2018
+
+- Ruby: Only fetch path gemspecs once
+- JS: Add version and private keys to helper package.json files
+
 ## v0.73.19, 27 September 2018
 
 - JS: Bump @dependabot/yarn-lib from 1.10.0 to 1.10.1
