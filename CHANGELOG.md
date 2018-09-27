@@ -1,3 +1,8 @@
+## v0.73.19, 27 September 2018
+
+- JS: Bump @dependabot/yarn-lib from 1.10.0 to 1.10.1
+- JS: Better check for Yarn version
+
 ## v0.73.18, 26 September 2018
 
 - JS: Bump @dependabot/yarn-lib from 1.9.4 to 1.10.0 in /helpers/yarn
