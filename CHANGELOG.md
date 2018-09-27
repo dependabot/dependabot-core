@@ -1,3 +1,7 @@
+## v0.73.21, 27 September 2018
+
+- JS: Handle worspace path that is just an asterisk
+
 ## v0.73.20, 27 September 2018
 
 - Ruby: Only fetch path gemspecs once
