@@ -26,6 +26,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       "password" => "token"
     }]
   end
+  let(:json_header) { { "content-type" => "application/json" } }
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -35,7 +36,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       to_return(
         status: 200,
         body: fixture("github", "contents_js_npm.json"),
-        headers: { "content-type" => "application/json" }
+        headers: json_header
       )
 
     stub_request(:get, File.join(url, "package.json?ref=sha")).
@@ -43,7 +44,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       to_return(
         status: 200,
         body: fixture("github", "package_json_content.json"),
-        headers: { "content-type" => "application/json" }
+        headers: json_header
       )
 
     stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
@@ -51,7 +52,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       to_return(
         status: 200,
         body: fixture("github", "package_lock_content.json"),
-        headers: { "content-type" => "application/json" }
+        headers: json_header
       )
   end
 
@@ -62,7 +63,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_npm_with_config.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
 
       stub_request(:get, File.join(url, ".npmrc?ref=sha")).
@@ -70,7 +71,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "npmrc_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -88,7 +89,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "npmrc_content_no_lockfile.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -108,7 +109,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_library.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
@@ -127,7 +128,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_with_path_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -154,7 +155,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_yarn.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
@@ -164,7 +165,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "yarn_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -181,7 +182,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_shrinkwrap.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
@@ -191,7 +192,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "package_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -208,7 +209,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_npm.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "yarn.lock?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
@@ -218,7 +219,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "package_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -235,21 +236,21 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_npm_and_yarn.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "yarn.lock?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "yarn_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "package_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -266,7 +267,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "package_json_with_path_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -277,7 +278,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "gemfile_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -296,7 +297,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -335,7 +336,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_lock_with_path_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -358,21 +359,21 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "contents_js_npm.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
           stub_request(:get, File.join(url, "package.json?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
               body: fixture("github", "package_json_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
           stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
               body: fixture("github", "package_lock_with_path_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -395,14 +396,14 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "contents_js_npm_lerna.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
       stub_request(:get, File.join(url, "lerna.json?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
           body: fixture("github", "lerna_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -413,7 +414,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "packages_files.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -422,7 +423,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -431,7 +432,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "contents_js_library.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -440,7 +441,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -449,7 +450,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "contents_js_library.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -458,7 +459,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -467,7 +468,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "contents_js_library.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -489,7 +490,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "lerna_content_two_stars.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -507,7 +508,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "lerna_content_specific.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -527,7 +528,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "lerna_content_prefix.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -545,7 +546,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "contents_js_npm.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
           stub_request(
             :get,
@@ -554,7 +555,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_lock_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -576,7 +577,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "packages_files_nested.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -595,7 +596,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "packages_files.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -604,7 +605,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -613,7 +614,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "contents_js_library.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -622,7 +623,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -631,7 +632,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "contents_js_library.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -640,7 +641,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 404,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -663,7 +664,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "package_json_with_workspaces_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
 
       stub_request(:get, File.join(url, "yarn.lock?ref=sha")).
@@ -671,7 +672,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         to_return(
           status: 200,
           body: fixture("github", "yarn_lock_content.json"),
-          headers: { "content-type" => "application/json" }
+          headers: json_header
         )
     end
 
@@ -682,7 +683,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "packages_files.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -691,7 +692,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -700,7 +701,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -709,7 +710,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
       end
 
@@ -731,7 +732,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_json_with_hash_workspaces.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -739,6 +740,39 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           expect(file_fetcher_instance.files.count).to eq(5)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("packages/package2/package.json")
+        end
+      end
+
+      context "specified with a top-level wildcard" do
+        before do
+          stub_request(:get, File.join(url, "package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "package_json_with_wildcard_workspace.json"),
+              headers: json_header
+            )
+
+          %w(build_scripts data migrations tests).each do |dir|
+            stub_request(:get, url + "#{dir}/package.json?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404, headers: json_header)
+          end
+
+          stub_request(:get, File.join(url, "app/package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.count).to eq(4)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("app/package.json")
         end
       end
 
@@ -751,7 +785,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_json_with_path_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
 
           stub_request(
@@ -761,7 +795,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_json_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -799,7 +833,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "packages_files_nested.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
@@ -818,7 +852,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "packages_files.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -827,7 +861,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
@@ -836,16 +870,13 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to_return(
             status: 200,
             body: fixture("github", "package_json_content.json"),
-            headers: { "content-type" => "application/json" }
+            headers: json_header
           )
         stub_request(
           :get,
           File.join(url, "other_package/package.json?ref=sha")
         ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 404,
-            headers: { "content-type" => "application/json" }
-          )
+          to_return(status: 404, headers: json_header)
       end
 
       it "fetches package.json from the workspace dependencies it can" do
@@ -862,7 +893,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 404,
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
 
           stub_request(
@@ -872,7 +903,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to_return(
               status: 200,
               body: fixture("github", "package_json_content.json"),
-              headers: { "content-type" => "application/json" }
+              headers: json_header
             )
         end
 
