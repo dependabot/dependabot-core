@@ -234,11 +234,11 @@ module Dependabot
           end
 
           def remove_integrity_lines?
-            yarn_locks.none? { |f| f.content.include?("integrity sha512-") }
+            yarn_locks.none? { |f| f.content.include?(" integrity sha") }
           end
 
           def remove_integrity_lines(content)
-            content.lines.reject { |l| l.match?(/\s*integrity sha512-/) }.join
+            content.lines.reject { |l| l.match?(/\s*integrity sha/) }.join
           end
 
           def handle_missing_package(package_name)
