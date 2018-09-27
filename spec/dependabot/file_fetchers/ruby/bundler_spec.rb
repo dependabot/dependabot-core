@@ -259,12 +259,39 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
               body: fixture("github", "gemspec_content.json"),
               headers: { "content-type" => "application/json" }
             )
+          stub_request(:get, url + "plugins/bump-core/another-dep?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_ruby_path_directory.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(
+            :get,
+            url + "plugins/bump-core/another-dep/bump-core.gemspec?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemspec_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches gemspec from path dependency" do
-          expect(file_fetcher_instance.files.count).to eq(3)
+          expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("plugins/bump-core/bump-core/bump-core.gemspec")
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("plugins/bump-core/another-dep/bump-core.gemspec")
+
+          expect(WebMock).
+            to have_requested(:get, url + "plugins/bump-core?ref=sha").
+            once
+          expect(WebMock).
+            to have_requested(
+              :get,
+              url + "plugins/bump-core/bump-core/bump-core.gemspec?ref=sha"
+            ).once
         end
       end
 
