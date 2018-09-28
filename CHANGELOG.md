@@ -1,3 +1,7 @@
+## v0.73.22, 28 September 2018
+
+- More robust lookup of branch/ref git SHA
+
 ## v0.73.21, 27 September 2018
 
 - JS: Handle worspace path that is just an asterisk
