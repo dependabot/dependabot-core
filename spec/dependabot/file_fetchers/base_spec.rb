@@ -483,6 +483,66 @@ RSpec.describe Dependabot::FileFetchers::Base do
             end
         end
       end
+
+      context "when fetching the file only if present" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files_in?(filenames)
+              filenames.include?("requirements.txt")
+            end
+
+            def self.required_files_message
+              "Repo must contain a requirements.txt."
+            end
+
+            private
+
+            def fetch_files
+              [fetch_file_if_present("requirements.txt")].compact
+            end
+          end
+        end
+
+        let(:repo_contents_url) { repo_url + "/src/sha/?pagelen=100" }
+
+        before do
+          stub_request(:get, repo_contents_url).
+            to_return(status: 200,
+                      body: fixture("bitbucket", "business_files.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("required_rubygems_version") }
+        end
+
+        context "that can't be found" do
+          before do
+            stub_request(:get, repo_contents_url).
+              to_return(status: 200,
+                        body: fixture("bitbucket", "no_files.json"),
+                        headers: { "content-type" => "application/json" })
+          end
+
+          its(:length) { is_expected.to eq(0) }
+        end
+
+        context "with a directory" do
+          let(:directory) { "/app" }
+          let(:repo_contents_url) { repo_url + "/src/sha/app?pagelen=100" }
+          let(:url) { repo_url + "/src/sha/app/requirements.txt" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
     end
 
     context "with an interesting filename" do

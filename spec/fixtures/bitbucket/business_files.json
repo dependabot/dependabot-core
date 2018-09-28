@@ -761,13 +761,13 @@
             },
             "links": {
                 "meta": {
-                    "href": "https://api.bitbucket.org/2.0/repositories/ged/ruby-pg/src/0db600938b1772915dff5f88a1ad07b5affbc48b/appveyor.yml?format=meta"
+                    "href": "https://api.bitbucket.org/2.0/repositories/ged/ruby-pg/src/0db600938b1772915dff5f88a1ad07b5affbc48b/requirements.txt?format=meta"
                 },
                 "self": {
-                    "href": "https://api.bitbucket.org/2.0/repositories/ged/ruby-pg/src/0db600938b1772915dff5f88a1ad07b5affbc48b/appveyor.yml"
+                    "href": "https://api.bitbucket.org/2.0/repositories/ged/ruby-pg/src/0db600938b1772915dff5f88a1ad07b5affbc48b/requirements.txt"
                 }
             },
-            "path": "appveyor.yml",
+            "path": "requirements.txt",
             "size": 1035,
             "type": "commit_file"
         },

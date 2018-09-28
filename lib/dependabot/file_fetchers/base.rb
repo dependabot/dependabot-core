@@ -286,7 +286,7 @@ module Dependabot
         response =
           Excon.get(
             "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}/?pagelen=100",
+            "src/#{commit}/#{path.gsub(%r{/+$}, '')}?pagelen=100",
             user: bitbucket_credential&.fetch("username"),
             password: bitbucket_credential&.fetch("password"),
             idempotent: true,
