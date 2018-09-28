@@ -1,10 +1,11 @@
 ## v0.73.22, 28 September 2018
 
+- JS: Consider shrinkwraps when trying to determine a version
 - More robust lookup of branch/ref git SHA
 
 ## v0.73.21, 27 September 2018
 
-- JS: Handle worspace path that is just an asterisk
+- JS: Handle workspace path that is just an asterisk
 
 ## v0.73.20, 27 September 2018
 
