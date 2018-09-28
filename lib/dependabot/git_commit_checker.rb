@@ -55,7 +55,7 @@ module Dependabot
       return dependency.version if pinned?
 
       branch_ref = ref_or_branch ? "refs/heads/#{ref_or_branch}" : "HEAD"
-      line = local_upload_pack.lines.find { |l| l.include?(branch_ref) }
+      line = local_upload_pack.lines.find { |l| l.include?(" #{branch_ref}") }
 
       return sha_for_update_pack_line(line) if line
 

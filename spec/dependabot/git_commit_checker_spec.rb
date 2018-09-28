@@ -480,6 +480,20 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
 
+        context "with a symref specified" do
+          before do
+            stub_request(:get, git_url).
+              with(headers: { "Authorization" => auth_header }).
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "sym-linked"),
+                headers: git_header
+              )
+          end
+
+          it { is_expected.to eq("c01b0c78663a92f5cb7057cc92f910919f4085fc") }
+        end
+
         context "with no branch specified" do
           let(:source) do
             {
