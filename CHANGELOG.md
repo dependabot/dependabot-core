@@ -1,3 +1,8 @@
+## v0.73.24, 28 September 2018
+
+- Python: More precise lookup of requirement to update in requirements.txt
+- PHP: Raise PrivateSourceTimedOut error if private sources time out
+
 ## v0.73.23, 28 September 2018
 
 - Add BitBucket support in FileFetcher
