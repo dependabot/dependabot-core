@@ -81,9 +81,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
       let(:dependency_name) { "doctrine/dbal" }
       let(:dependency_version) { "2.1.5" }
 
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect(resolver.latest_resolvable_version).to be_nil
-      end
+      it { is_expected.to be_nil }
     end
 
     context "with a dependecy that's provided by another dep" do
@@ -96,5 +94,23 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
 
       it { is_expected.to eq(Dependabot::Utils::Php::Version.new("1.0")) }
     end
+
+    # This test is extremely slow, as it neds to wait for Composer to time out.
+    # As a result we currently keep it commented out.
+    # context "with an unreachable private registry" do
+    #   let(:manifest_fixture_name) { "unreachable_private_registry" }
+    #   let(:dependency_files) { [manifest] }
+    #   let(:dependency_name) { "dependabot/dummy-pkg-a" }
+    #   let(:dependency_version) { nil }
+    #   let(:string_req) { "*" }
+    #   let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+
+    #   it "raises a Dependabot::PrivateSourceTimedOut error" do
+    #     expect { resolver.latest_resolvable_version }.
+    #       to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+    #         expect(error.source).to eq("https://composer.dependabot.com")
+    #       end
+    #   end
+    # end
   end
 end
