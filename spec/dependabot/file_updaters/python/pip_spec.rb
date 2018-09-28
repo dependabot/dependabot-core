@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
       }],
       previous_requirements: [{
         file: "requirements.txt",
-        requirement: "==2.7.1",
+        requirement: "==2.6.1",
         groups: [],
         source: nil
       }],
