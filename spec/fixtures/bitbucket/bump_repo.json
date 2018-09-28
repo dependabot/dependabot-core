@@ -1,0 +1,91 @@
+{
+    "created_on": "2009-10-28T22:42:39.366297+00:00",
+    "description": "The 'pg' Ruby library, an interface to the PostgreSQL Relational Database Management System.",
+    "fork_policy": "allow_forks",
+    "full_name": "gocardless/bump",
+    "has_issues": true,
+    "has_wiki": true,
+    "is_private": false,
+    "language": "c",
+    "links": {
+        "avatar": {
+            "href": "https://bytebucket.org/ravatar/%7B5c90c765-fa64-474a-b9de-e8fe69162212%7D?ts=c"
+        },
+        "branches": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/refs/branches"
+        },
+        "clone": [
+            {
+                "href": "https://bitbucket.org/gocardless/bump",
+                "name": "https"
+            },
+            {
+                "href": "ssh://hg@bitbucket.org/gocardless/bump",
+                "name": "ssh"
+            }
+        ],
+        "commits": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commits"
+        },
+        "downloads": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/downloads"
+        },
+        "forks": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/forks"
+        },
+        "hooks": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/hooks"
+        },
+        "html": {
+            "href": "https://bitbucket.org/gocardless/bump"
+        },
+        "issues": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/issues"
+        },
+        "pullrequests": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/pullrequests"
+        },
+        "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump"
+        },
+        "source": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/src"
+        },
+        "tags": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/refs/tags"
+        },
+        "watchers": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/watchers"
+        }
+    },
+    "mainbranch": {
+        "name": "default",
+        "type": "named_branch"
+    },
+    "name": "bump",
+    "owner": {
+        "account_id": "557058:c459507a-e829-46cc-a701-e2a216fabee4",
+        "display_name": "Michael Granger",
+        "links": {
+            "avatar": {
+                "href": "https://bitbucket.org/account/gocardless/avatar/"
+            },
+            "html": {
+                "href": "https://bitbucket.org/gocardless/"
+            },
+            "self": {
+                "href": "https://api.bitbucket.org/2.0/users/gocardless"
+            }
+        },
+        "type": "user",
+        "username": "gocardless",
+        "uuid": "{681a1558-dc80-4f50-ac1a-60f9900bf1d2}"
+    },
+    "scm": "hg",
+    "size": 1960428,
+    "slug": "bump",
+    "type": "repository",
+    "updated_on": "2018-09-07T22:07:56.921770+00:00",
+    "uuid": "{5c90c765-fa64-474a-b9de-e8fe69162212}",
+    "website": ""
+}

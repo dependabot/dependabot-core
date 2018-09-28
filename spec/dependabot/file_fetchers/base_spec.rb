@@ -133,6 +133,40 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it { is_expected.to eq("b7dd067490fe57505f7226c3b54d3127d2f7fd41") }
       end
     end
+
+    context "with a Bitbucket source" do
+      let(:provider) { "bitbucket" }
+      let(:base_url) { "https://api.bitbucket.org/2.0" }
+      let(:repo_url) { base_url + "/repositories/gocardless/bump" }
+      let(:branch_url) { repo_url + "/refs/branches/default" }
+
+      before do
+        stub_request(:get, repo_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket", "default_branch.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      it { is_expected.to eq("0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37") }
+
+      context "with a target branch" do
+        let(:branch) { "my_branch" }
+        let(:branch_url) { repo_url + "/refs/branches/my_branch" }
+
+        before do
+          stub_request(:get, branch_url).
+            to_return(status: 200,
+                      body: fixture("bitbucket", "other_branch.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
+      end
+    end
   end
 
   describe "#files" do
@@ -361,6 +395,83 @@ RSpec.describe Dependabot::FileFetchers::Base do
             to_return(
               status: 404,
               body: fixture("gitlab", "not_found.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_name).to eq("requirements.txt")
+            end
+        end
+      end
+    end
+
+    context "with a Bitbucket source" do
+      let(:provider) { "bitbucket" }
+      let(:base_url) { "https://api.bitbucket.org/2.0" }
+      let(:repo_url) { base_url + "/repositories/gocardless/bump" }
+      let(:url) { repo_url + "/src/sha/requirements.txt" }
+
+      before do
+        stub_request(:get, url).
+          to_return(status: 200,
+                    body: fixture("bitbucket", "gemspec_content"),
+                    headers: { "content-type" => "text/plain" })
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
+
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("required_rubygems_version") }
+      end
+
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(source: source, credentials: credentials)
+        end
+
+        context "that ends in a slash" do
+          let(:directory) { "app/" }
+          let(:url) { repo_url + "/src/sha/app/requirements.txt" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that begins with a slash" do
+          let(:directory) { "/app" }
+          let(:url) { repo_url + "/src/sha/app/requirements.txt" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that includes a slash" do
+          let(:directory) { "a/pp" }
+          let(:url) { repo_url + "/src/sha/a/pp/requirements.txt" }
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+
+      context "when a dependency file can't be found" do
+        before do
+          stub_request(:get, url).
+            to_return(
+              status: 404,
+              body: fixture("bitbucket", "file_not_found.json"),
               headers: { "content-type" => "application/json" }
             )
         end
