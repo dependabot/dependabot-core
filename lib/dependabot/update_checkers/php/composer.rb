@@ -113,8 +113,6 @@ module Dependabot
             fetch("repositories", []).
             select { |r| r.is_a?(Hash) }
 
-          @registry_versions = []
-
           urls = repositories.
                  select { |h| h["type"] == "composer" }.
                  map { |h| h["url"] }.compact.
@@ -124,10 +122,10 @@ module Dependabot
             urls << "https://packagist.org/p/#{dependency.name.downcase}.json"
           end
 
+          @registry_versions = []
           urls.each do |url|
             @registry_versions += fetch_registry_versions_from_url(url)
           end
-
           @registry_versions.uniq
         end
 

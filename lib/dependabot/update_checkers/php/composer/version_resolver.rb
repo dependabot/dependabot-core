@@ -10,6 +10,8 @@ module Dependabot
       class Composer
         class VersionResolver
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          SOURCE_TIMED_OUT_REGEX =
+            /The "(?<url>[^"]+packages.json)".*Connection timed out/
 
           def initialize(credentials:, dependency:, dependency_files:,
                          requirements_to_unlock:, latest_allowable_version:)
@@ -146,6 +148,12 @@ module Dependabot
                 error.message.match(%r{https?://(?<source>[^/]+)/}).
                 named_captures.fetch("source")
               raise Dependabot::PrivateSourceAuthenticationFailure, source
+            elsif error.message.match?(SOURCE_TIMED_OUT_REGEX)
+              url = error.message.match(SOURCE_TIMED_OUT_REGEX).
+                    named_captures.fetch("url")
+              source = url.gsub(%r{/packages.json$}, "")
+              raise if url.include?("packagist.org")
+              raise Dependabot::PrivateSourceTimedOut, source
             elsif error.message.start_with?("Allowed memory size")
               raise "Composer out of memory"
             elsif error.message.start_with?("Package not found in updated") &&
