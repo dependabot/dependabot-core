@@ -35,8 +35,6 @@ module Dependabot
 
         private
 
-        UNREACHABLE_GIT = /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/
-
         def dependency
           # For now, we'll only ever be updating a single dependency for JS
           dependencies.first

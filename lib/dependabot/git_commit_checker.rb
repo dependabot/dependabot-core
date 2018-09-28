@@ -55,7 +55,13 @@ module Dependabot
       return dependency.version if pinned?
 
       branch_ref = ref_or_branch ? "refs/heads/#{ref_or_branch}" : "HEAD"
-      line = local_upload_pack.lines.find { |l| l.include?(" #{branch_ref}") }
+
+      # Remove the opening clause of the upload pack as this isn't always
+      # followed by a line break. When it isn't (e.g., with Bitbucket) it causes
+      # problems for our `sha_for_update_pack_line` logic
+      line = local_upload_pack.
+             gsub(/.*git-upload-pack/, "").
+             lines.find { |l| l.include?(" #{branch_ref}") }
 
       return sha_for_update_pack_line(line) if line
 
