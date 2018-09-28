@@ -1,3 +1,7 @@
+## v0.73.27, 28 September 2018
+
+- Ruby: Sanitize require_paths, rather than require_path
+
 ## v0.73.26, 28 September 2018
 
 - Ruby: Sanitize `require_path` in gemspec
