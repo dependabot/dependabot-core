@@ -34,13 +34,14 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
       }],
       previous_requirements: [{
         file: "requirements.txt",
-        requirement: "==2.7.1",
+        requirement: previous_requirement_string,
         groups: [],
         source: nil
       }],
       package_manager: "pip"
     )
   end
+  let(:previous_requirement_string) { "==2.6.1" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -69,16 +70,19 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
 
       context "when only the minor version is specified" do
         let(:requirements_fixture_name) { "minor_version_specified.txt" }
+        let(:previous_requirement_string) { "==2.6" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when a local version is specified" do
         let(:requirements_fixture_name) { "local_version.txt" }
+        let(:previous_requirement_string) { "==2.6.1+gc.1" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when there is a comment" do
         let(:requirements_fixture_name) { "comments.txt" }
+        let(:previous_requirement_string) { "==2.6.1" }
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
       end
 
@@ -205,6 +209,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
 
       context "when there are unused lines" do
         let(:requirements_fixture_name) { "invalid_lines.txt" }
+        let(:previous_requirement_string) { "==2.6.1" }
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
         its(:content) { is_expected.to include "# This is just a comment" }
       end
@@ -225,7 +230,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
             }],
             previous_requirements: [{
               file: "more_requirements.txt",
-              requirement: "==2.7.1",
+              requirement: "==2.6.1",
               groups: [],
               source: nil
             }],
@@ -270,7 +275,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
           }],
           previous_requirements: [{
             file: "setup.py",
-            requirement: "==2.7.1",
+            requirement: "==2.6.1",
             groups: [],
             source: nil
           }],

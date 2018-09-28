@@ -32,27 +32,28 @@ module Dependabot
           end
 
           def fetch_updated_dependency_files
-            changed_requirements =
-              dependency.requirements - dependency.previous_requirements
+            reqs = dependency.requirements.zip(dependency.previous_requirements)
 
-            changed_requirements.
-              map do |req|
-                file = get_original_file(req.fetch(:file)).dup
-                updated_content = updated_requirement_or_setup_file_content(req)
-                next if updated_content == file.content
+            reqs.map do |(new_req, old_req)|
+              next if new_req == old_req
 
-                file.content = updated_content
-                file
-              end.compact
+              file = get_original_file(new_req.fetch(:file)).dup
+              updated_content =
+                updated_requirement_or_setup_file_content(new_req, old_req)
+              next if updated_content == file.content
+
+              file.content = updated_content
+              file
+            end.compact
           end
 
-          def updated_requirement_or_setup_file_content(requirement)
-            content = get_original_file(requirement.fetch(:file)).content
+          def updated_requirement_or_setup_file_content(new_req, old_req)
+            content = get_original_file(new_req.fetch(:file)).content
 
             updated_content =
               content.gsub(
-                original_declaration_replacement_regex(requirement),
-                updated_dependency_declaration_string(requirement)
+                original_declaration_replacement_regex(old_req),
+                updated_dependency_declaration_string(new_req, old_req)
               )
 
             raise "Expected content to change!" if content == updated_content
@@ -66,30 +67,33 @@ module Dependabot
 
             get_original_file(requirement.fetch(:file)).
               content.scan(regex) { matches << Regexp.last_match }
-            dec = matches.find { |m| normalise(m[:name]) == dependency.name }
+            dec = matches.
+                  select { |m| normalise(m[:name]) == dependency.name }.
+                  find do |m|
+                    m[:requirements]&.gsub(/\s/, "") ==
+                      requirement.fetch(:requirement)
+                  end
+
             raise "Declaration not found for #{dependency.name}!" unless dec
 
             dec.to_s.strip
           end
 
-          def updated_dependency_declaration_string(requirement)
+          def updated_dependency_declaration_string(new_req, old_req)
             updated_string =
-              original_dependency_declaration_string(requirement).sub(
+              original_dependency_declaration_string(old_req).sub(
                 PythonRequirementParser::REQUIREMENTS,
-                requirement.fetch(:requirement)
+                new_req.fetch(:requirement)
               )
-
-            unless requirement_includes_hashes?(requirement)
-              return updated_string
-            end
+            return updated_string unless requirement_includes_hashes?(old_req)
 
             updated_string.sub(
               PythonRequirementParser::HASHES,
               package_hashes_for(
                 name: dependency.name,
                 version: dependency.version,
-                algorithm: hash_algorithm(requirement)
-              ).join(hash_separator(requirement))
+                algorithm: hash_algorithm(old_req)
+              ).join(hash_separator(old_req))
             )
           end
 
