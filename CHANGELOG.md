@@ -1,3 +1,7 @@
+## v0.73.25, 28 September 2018
+
+- Take even more care when processing upload packs
+
 ## v0.73.24, 28 September 2018
 
 - Python: More precise lookup of requirement to update in requirements.txt
