@@ -56,6 +56,12 @@ module Dependabot
               # occassionally a File.open(..).readlines pattern is used
               replace_file_assignment(node) if node_assigns_files_to_var?(node)
 
+              # Replace the `s.require_path= ...` assignment, as
+              # occassionally a Dir['lib'] pattern is used
+              if node_assigns_require_path?(node)
+                replace_require_path_assignment(node)
+              end
+
               # Replace any `File.read(...)` calls with a dummy string
               replace_file_reads(node)
 
@@ -89,6 +95,14 @@ module Dependabot
               return false unless node.children[1] == :files=
 
               node.children[2]&.type == :send
+            end
+
+            def node_assigns_require_path?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :lvar
+
+              node.children[1] == :require_path=
             end
 
             def replace_file_reads(node)
@@ -183,6 +197,10 @@ module Dependabot
 
             def replace_file_assignment(node)
               replace(node.children.last.loc.expression, "[]")
+            end
+
+            def replace_require_path_assignment(node)
+              replace(node.children.last.loc.expression, "['lib']")
             end
 
             def replace_file_read(node)

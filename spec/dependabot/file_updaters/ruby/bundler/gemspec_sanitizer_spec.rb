@@ -118,5 +118,12 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
         it { is_expected.to include("spec.files        = []") }
       end
     end
+
+    describe "require_path assignment" do
+      context "with an assignment to Dir[..]" do
+        let(:content) { "Spec.new { |s| s.require_path = Dir['lib'] }" }
+        it { is_expected.to eq("Spec.new { |s| s.require_path = ['lib'] }") }
+      end
+    end
   end
 end

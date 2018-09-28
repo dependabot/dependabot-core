@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.homepage     = "https://github.com/hmarr/example"
   spec.license      = "MIT"
 
-  spec.require_path = "lib"
+  spec.require_path = Dir["lib"]
   spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
                           "lib/**/*", "helpers/**/*"]
 
