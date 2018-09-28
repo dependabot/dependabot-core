@@ -1,3 +1,7 @@
+## v0.73.26, 28 September 2018
+
+- Ruby: Sanitize `require_path` in gemspec
+
 ## v0.73.25, 28 September 2018
 
 - Take even more care when processing upload packs
