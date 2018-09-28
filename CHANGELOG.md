@@ -1,3 +1,7 @@
+## v0.73.23, 28 September 2018
+
+- Add BitBucket support in FileFetcher
+
 ## v0.73.22, 28 September 2018
 
 - JS: Consider shrinkwraps when trying to determine a version
