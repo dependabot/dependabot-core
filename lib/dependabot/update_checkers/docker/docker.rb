@@ -4,6 +4,7 @@ require "docker_registry2"
 
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
+require "dependabot/utils/docker/credentials_finder"
 
 module Dependabot
   module UpdateCheckers
@@ -199,9 +200,12 @@ module Dependabot
         end
 
         def registry_credentials
-          credentials.
-            select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred["registry"] == registry_hostname }
+          credentials_finder.credentials_for_registry(registry_hostname)
+        end
+
+        def credentials_finder
+          @credentials_finder ||=
+            Utils::Docker::CredentialsFinder.new(credentials)
         end
 
         def docker_repo_name

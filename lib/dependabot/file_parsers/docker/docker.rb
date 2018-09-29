@@ -5,6 +5,7 @@ require "docker_registry2"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "dependabot/utils/docker/credentials_finder"
 
 module Dependabot
   module FileParsers
@@ -27,6 +28,8 @@ module Dependabot
         NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/
         FROM_LINE =
           %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
+
+        AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/
 
         def parse
           dependency_set = DependencySet.new
@@ -96,8 +99,7 @@ module Dependabot
         def version_from_digest(registry:, image:, digest:)
           return unless digest
 
-          repo = image.split("/").count < 2 ? "library/#{image}" : image
-
+          repo = full_repo_name(image, registry)
           registry_client = docker_registry_client(registry)
           registry_client.tags(repo).fetch("tags").find do |tag|
             digest == registry_client.digest(repo, tag)
@@ -110,6 +112,13 @@ module Dependabot
           raise if standard_registry?(registry)
 
           raise PrivateSourceAuthenticationFailure, registry
+        end
+
+        def full_repo_name(image, registry)
+          return image unless standard_registry?(registry)
+          return image unless image.split("/").count < 2
+
+          "library/#{image}"
         end
 
         def docker_registry_client(registry)
@@ -127,9 +136,12 @@ module Dependabot
         end
 
         def registry_credentials(registry_url)
-          credentials.
-            select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred["registry"] == registry_url }
+          credentials_finder.credentials_for_registry(registry_url)
+        end
+
+        def credentials_finder
+          @credentials_finder ||=
+            Utils::Docker::CredentialsFinder.new(credentials)
         end
 
         def standard_registry?(registry)
