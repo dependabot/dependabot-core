@@ -1,3 +1,7 @@
+## v0.73.30, 29 September 2018
+
+- Docker: Handle 403 responses when authenticating
+
 ## v0.73.29, 29 September 2018
 
 - Docker: Handle AWS ECR hosted images
