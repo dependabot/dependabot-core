@@ -1,6 +1,6 @@
 defmodule Parser do
   def run do
-    Mix.Dep.loaded([])
+    Mix.Dep.load_on_environment([])
     |> Enum.flat_map(&parse_dep/1)
     |> Enum.map(&build_dependency(&1.opts[:lock], &1))
   end
