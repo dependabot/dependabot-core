@@ -1,3 +1,8 @@
+## v0.73.28, 29 September 2018
+
+- Elixir: Always use 3dp when using >= matcher
+- Elixir: Improve check_update logic
+
 ## v0.73.27, 28 September 2018
 
 - Ruby: Sanitize require_paths, rather than require_path
