@@ -1,3 +1,7 @@
+## v0.73.29, 29 September 2018
+
+- Docker: Handle AWS ECR hosted images
+
 ## v0.73.28, 29 September 2018
 
 - Elixir: Always use 3dp when using >= matcher
