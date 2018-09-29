@@ -67,6 +67,23 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
           expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
         end
       end
+
+      context "with a minor version specified" do
+        let(:mixfile_fixture_name) { "major_version" }
+        let(:requirements) do
+          [{ file: "mix.exs", requirement: "~> 1.3", groups: [], source: nil }]
+        end
+
+        describe "the updated mix.exs" do
+          subject(:prepared_mixfile) do
+            prepared_dependency_files.find { |f| f.name == "mix.exs" }
+          end
+
+          it "updates the requirement" do
+            expect(prepared_mixfile.content).to include('{:plug, ">= 1.3.0"}')
+          end
+        end
+      end
     end
 
     describe "the updated mix.exs" do

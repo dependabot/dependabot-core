@@ -92,6 +92,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_version_req_lower_bound(filename)
             original_req = dependency.requirements.
                            find { |r| r.fetch(:file) == filename }&.
@@ -109,10 +110,17 @@ module Dependabot
                 select { |version| version_class.correct?(version.to_s) }.
                 max_by { |version| version_class.new(version.to_s) }
 
-              ">= #{version_for_requirement || 0}"
+              return ">= 0" unless version_for_requirement
+
+              # Elixir requires that versions are specified to three places
+              # when used with a >= specifier
+              parts = version_for_requirement.to_s.split(".")
+              parts << "0" while parts.count < 3
+              ">= #{parts.join('.')}"
             end
           end
           # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def replace_git_pin(content, filename:)
             old_pin =

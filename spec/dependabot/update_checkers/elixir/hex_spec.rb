@@ -77,6 +77,15 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     context "without a lockfile" do
       let(:files) { [mixfile] }
       it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+
+      context "with a requirement specified to 2dp" do
+        let(:dependency_requirements) do
+          [{ file: "mix.exs", requirement: "~> 1.3", groups: [], source: nil }]
+        end
+        let(:mixfile_body) { fixture("elixir", "mixfiles", "major_version") }
+
+        it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+      end
     end
 
     context "when the user wants pre-releases" do
