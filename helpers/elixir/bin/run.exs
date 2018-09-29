@@ -4,7 +4,13 @@ defmodule DependencyHelper do
     |> Jason.decode!()
     |> run()
     |> case do
-      {output, 0} -> {:ok, :erlang.binary_to_term(output)}
+      {output, 0} ->
+        if output =~ "No authenticated organization found" do
+          {:error, output}
+        else
+          {:ok, :erlang.binary_to_term(output)}
+        end
+
       {error, 1} -> {:error, error}
     end
     |> handle_result()
