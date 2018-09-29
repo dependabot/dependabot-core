@@ -320,17 +320,17 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         fixture("docker", "registry_tags", "ubuntu_no_latest.json")
       end
 
-      before do
-        tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
-        stub_request(:get, tags_url).
-          and_return(
-            status: 401,
-            body: "",
-            headers: { "www_authenticate" => "basic 123" }
-          )
-      end
-
       context "without authentication credentials" do
+        before do
+          tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(
+              status: 401,
+              body: "",
+              headers: { "www_authenticate" => "basic 123" }
+            )
+        end
+
         it "raises a to PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { checker.latest_version }.
