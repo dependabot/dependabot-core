@@ -134,8 +134,7 @@ module Dependabot
 
               retry
             end
-        rescue DockerRegistry2::RegistryAuthenticationException,
-               RestClient::Forbidden
+        rescue DockerRegistry2::RegistryAuthenticationException
           raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 
@@ -150,8 +149,7 @@ module Dependabot
 
               retry
             end
-        rescue DockerRegistry2::RegistryAuthenticationException,
-               RestClient::Forbidden
+        rescue DockerRegistry2::RegistryAuthenticationException
           raise PrivateSourceAuthenticationFailure, registry_hostname
         end
 

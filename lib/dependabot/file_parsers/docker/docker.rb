@@ -108,8 +108,7 @@ module Dependabot
             # no manifest is "library/python", "2-windowsservercore".
             false
           end
-        rescue DockerRegistry2::RegistryAuthenticationException,
-               RestClient::Forbidden
+        rescue DockerRegistry2::RegistryAuthenticationException
           raise if standard_registry?(registry)
 
           raise PrivateSourceAuthenticationFailure, registry
