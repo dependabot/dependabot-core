@@ -1040,6 +1040,38 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           expect(updated_files.count).to eq(2)
         end
       end
+
+      context "when the package lock has a numeric version for a git dep" do
+        let(:manifest_fixture_name) { "git_dependency.json" }
+        let(:npm_lock_fixture_name) { "git_dependency_version.json" }
+        let(:dependency_name) { "is-number" }
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: "master"
+            }
+          }]
+        end
+        let(:previous_requirements) { requirements }
+        let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+        let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package-lock.json))
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+      end
     end
 
     #######################

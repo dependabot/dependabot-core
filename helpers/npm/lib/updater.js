@@ -79,6 +79,9 @@ function install_args(depName, desiredVersion, requirements, oldLockfile) {
       "version"
     ];
     originalVersion = originalVersion || `${source.url}#ref`;
+    if (!originalVersion.includes("#")) {
+      originalVersion = `${source.url}#ref`;
+    }
     originalVersion = originalVersion.replace(
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
