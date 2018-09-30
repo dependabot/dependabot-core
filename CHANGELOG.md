@@ -1,3 +1,7 @@
+## v0.73.31, 30 September 2018
+
+- JS: Handle npm lockfiles that specify a numeric version for a git dependency
+
 ## v0.73.30, 29 September 2018
 
 - Docker: Handle 403 responses when authenticating
