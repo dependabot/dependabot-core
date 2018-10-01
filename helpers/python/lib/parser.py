@@ -41,6 +41,7 @@ def parse_requirements(directory):
                 requirement_packages.append({
                     "name": install_req.req.name,
                     "version": version,
+                    "markers": str(install_req.markers) or None,
                     "file": rel_path,
                     "requirement": str(install_req.specifier) or None
                 })
@@ -65,6 +66,7 @@ def parse_setup(directory):
             setup_packages.append({
                 "name": install_req.req.name,
                 "version": version,
+                "markers": str(install_req.markers) or None,
                 "file": "setup.py",
                 "requirement": str(install_req.specifier) or None,
                 "requirement_type": req_type

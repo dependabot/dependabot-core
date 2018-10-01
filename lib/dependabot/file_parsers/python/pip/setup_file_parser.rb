@@ -24,6 +24,10 @@ module Dependabot
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
             parsed_setup_file.each do |dep|
+              # If a requirement has a `<` or `<=` marker then updating it is
+              # probably blocked. Ignore it.
+              next if dep["markers"].include?("<")
+
               dependencies <<
                 Dependency.new(
                   name: normalised_name(dep["name"]),

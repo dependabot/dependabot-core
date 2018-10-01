@@ -78,6 +78,29 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
     end
 
+    context "with markers" do
+      let(:requirements_fixture_name) { "markers.txt" }
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("distro")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "with extras" do
       let(:requirements_fixture_name) { "extras.txt" }
 
@@ -746,6 +769,33 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               source: nil
             }]
           )
+        end
+      end
+
+      context "with markers" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("python", "setup_files", "markers.py")
+          )
+        end
+
+        describe "a dependency with markers" do
+          subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("boto3")
+            expect(dependency.version).to eq("1.3.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==1.3.1",
+                file: "setup.py",
+                groups: ["install_requires"],
+                source: nil
+              }]
+            )
+          end
         end
       end
     end
