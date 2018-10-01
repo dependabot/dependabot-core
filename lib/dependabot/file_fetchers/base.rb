@@ -263,9 +263,7 @@ module Dependabot
           )
         raise BitbucketNotFound if response.status >= 300
 
-        JSON.parse(response.body).fetch("heads").
-          find { |d| d["type"] == "commit" }.
-          fetch("hash")
+        JSON.parse(response.body).fetch("target").fetch("hash")
       end
 
       def fetch_bitbucket_default_branch
