@@ -1,3 +1,7 @@
+## v0.73.34, 1 October 2018
+
+- Python: Ignore dependencies with a < or <= python version marker
+
 ## v0.73.33, 1 October 2018
 
 - Better PR number sanitization
