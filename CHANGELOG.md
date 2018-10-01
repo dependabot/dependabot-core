@@ -1,3 +1,7 @@
+## v0.73.32, 1 October 2018
+
+- More robust Bitbucket commit lookup
+
 ## v0.73.31, 30 September 2018
 
 - JS: Handle npm lockfiles that specify a numeric version for a git dependency
