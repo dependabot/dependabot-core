@@ -87,8 +87,8 @@ module Dependabot
           end
         end
 
-        # Note: It's important that this *always* returns a version (even if it
-        # is the exist one) as it is what we later check the digest of.
+        # Note: It's important that this *always* returns a version (even if
+        # it's the existing one) as it is what we later check the digest of.
         def fetch_latest_version
           unless dependency.version.match?(NAME_WITH_VERSION)
             return dependency.version
@@ -97,11 +97,26 @@ module Dependabot
           original_affix = affix_of(dependency.version)
           wants_prerelease = prerelease?(dependency.version)
 
-          tags_from_registry.
+          candidate_tags =
+            tags_from_registry.
             select { |tag| tag.match?(NAME_WITH_VERSION) }.
-            select { |tag| affix_of(tag) == original_affix }.
+            select { |tag| affix_of(tag) == original_affix }
+
+          # Prune out any downgrade tags before checking for pre-releases
+          # (which requires a call to the registry for each tag, so can be slow)
+          non_downgrade_tags = remove_version_downgrades(candidate_tags)
+          candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
+
+          candidate_tags.
             reject { |tag| prerelease?(tag) && !wants_prerelease }.
             max_by { |tag| version_class.new(numeric_version_from(tag)) }
+        end
+
+        def remove_version_downgrades(candidate_tags)
+          candidate_tags.select do |tag|
+            version_class.new(numeric_version_from(tag)) >=
+              version_class.new(numeric_version_from(dependency.version))
+          end
         end
 
         def version_of_latest_tag
