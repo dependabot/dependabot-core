@@ -1,3 +1,8 @@
+## v0.73.33, 1 October 2018
+
+- Better PR number sanitization
+- Docker: Handle 403s during tag and digest fetching
+
 ## v0.73.32, 1 October 2018
 
 - More robust Bitbucket commit lookup
