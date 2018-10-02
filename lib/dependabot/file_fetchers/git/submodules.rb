@@ -30,7 +30,9 @@ module Dependabot
         end
 
         def submodule_refs
-          submodule_paths.map { |path| fetch_submodule_ref_from_host(path) }
+          submodule_paths.
+            map { |path| fetch_submodule_ref_from_host(path) }.
+            tap { |refs| refs.each { |f| f.support_file = true } }
         end
 
         def submodule_paths

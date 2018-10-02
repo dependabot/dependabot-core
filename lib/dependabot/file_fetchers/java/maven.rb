@@ -92,6 +92,7 @@ module Dependabot
           return [] if full_path.start_with?("..")
 
           parent_pom = fetch_file_from_host(path)
+          parent_pom.support_file = true
           parent_pom.name = parent_pom.name.gsub("pom.xml", "pom_parent.xml")
 
           [

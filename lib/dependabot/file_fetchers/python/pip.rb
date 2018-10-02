@@ -85,7 +85,8 @@ module Dependabot
         end
 
         def pip_conf
-          @pip_conf ||= fetch_file_if_present("pip.conf")
+          @pip_conf ||= fetch_file_if_present("pip.conf")&.
+                        tap { |f| f.support_file = true }
         end
 
         def pipfile

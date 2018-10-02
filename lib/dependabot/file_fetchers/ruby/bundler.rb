@@ -74,7 +74,9 @@ module Dependabot
           return unless gemfile
           return unless gemfile.content.include?(".ruby-version")
 
-          fetch_file_if_present(".ruby-version")
+          @ruby_version_file ||=
+            fetch_file_if_present(".ruby-version")&.
+            tap { |f| f.support_file = true }
         end
 
         def path_gemspecs
@@ -109,7 +111,7 @@ module Dependabot
             raise Dependabot::PathDependenciesNotReachable, unfetchable_gems
           end
 
-          gemspec_files
+          gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
         end
 
         def require_relative_files(files)
@@ -121,7 +123,8 @@ module Dependabot
           end
 
           @require_relative_files ||=
-            paths.map { |fp| fetch_file_from_host(fp) }
+            paths.map { |path| fetch_file_from_host(path) }.
+            tap { |req_files| req_files.each { |f| f.support_file = true } }
         end
 
         def fetch_gemspecs_from_directory(dir_path)

@@ -52,11 +52,13 @@ module Dependabot
         end
 
         def npmrc
-          @npmrc ||= fetch_file_if_present(".npmrc")
+          @npmrc ||= fetch_file_if_present(".npmrc")&.
+                     tap { |f| f.support_file = true }
         end
 
         def lerna_json
-          @lerna_json ||= fetch_file_if_present("lerna.json")
+          @lerna_json ||= fetch_file_if_present("lerna.json")&.
+                          tap { |f| f.support_file = true }
         end
 
         def workspace_package_jsons
@@ -87,7 +89,7 @@ module Dependabot
 
           package_json_files += build_unfetchable_deps(unfetchable_deps)
 
-          package_json_files
+          package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
         end
 
         def path_dependency_details(fetched_files)

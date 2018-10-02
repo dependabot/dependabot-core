@@ -148,7 +148,8 @@ module Dependabot
             begin
               file = repo_contents.
                      find { |f| f.name.casecmp("nuget.config").zero? }
-              fetch_file_from_host(file.name) if file
+              file = fetch_file_from_host(file.name) if file
+              file&.tap { |f| f.support_file = true }
             end
         end
 

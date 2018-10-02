@@ -74,7 +74,7 @@ module Dependabot
             file = fetch_file_from_host(go_file.name, type: "package_main")
             next unless file.content.match?(/\s*package\s+main/)
 
-            return @main = file
+            return @main = file.tap { |f| f.support_file = true }
           end
 
           nil

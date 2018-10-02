@@ -93,7 +93,8 @@ module Dependabot
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
 
-            fetched_file = fetch_file_from_host(path, type: "path_dependency")
+            fetched_file = fetch_file_from_host(path, type: "path_dependency").
+                           tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
             grandchild_requirement_files =
               fetch_path_dependency_files(
@@ -183,7 +184,8 @@ module Dependabot
         end
 
         def rust_toolchain
-          @rust_toolchain ||= fetch_file_if_present("rust-toolchain")
+          @rust_toolchain ||= fetch_file_if_present("rust-toolchain")&.
+                              tap { |f| f.support_file = true }
         end
       end
     end

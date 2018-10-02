@@ -4,13 +4,15 @@ require "pathname"
 
 module Dependabot
   class DependencyFile
-    attr_accessor :name, :content, :directory, :type
+    attr_accessor :name, :content, :directory, :type, :support_file
 
-    def initialize(name:, content:, directory: "/", type: "file")
+    def initialize(name:, content:, directory: "/", type: "file",
+                   support_file: false)
       @name = name
       @content = content
       @directory = clean_directory(directory)
       @type = type
+      @support_file = support_file
     end
 
     def to_h
