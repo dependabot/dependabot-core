@@ -1,3 +1,8 @@
+## v0.73.35, 2 October 2018
+
+- Docker: Speed up UpdateChecker
+- Introduce new `support_file` attribute on DependencyFile instances
+
 ## v0.73.34, 1 October 2018
 
 - Python: Ignore dependencies with a < or <= python version marker
