@@ -1,4 +1,9 @@
-## v0.73.36, 2 October 2018
+## v0.73.37, 3 October 2018
+
+- Python: Better file updater requirement comparison
+- JS: Ignore dependencies with multiple sources
+
+## v0.73.36, 3 October 2018
 
 - Docker: Don't assume that private registries use 'libraries' prefix
 
