@@ -94,22 +94,25 @@ module Dependabot
             return dependency.version
           end
 
-          original_affix = affix_of(dependency.version)
-          wants_prerelease = prerelease?(dependency.version)
-
-          candidate_tags =
-            tags_from_registry.
-            select { |tag| tag.match?(NAME_WITH_VERSION) }.
-            select { |tag| affix_of(tag) == original_affix }
-
           # Prune out any downgrade tags before checking for pre-releases
           # (which requires a call to the registry for each tag, so can be slow)
+          candidate_tags = comparable_tags_from_registry
           non_downgrade_tags = remove_version_downgrades(candidate_tags)
           candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
+          wants_prerelease = prerelease?(dependency.version)
           candidate_tags.
             reject { |tag| prerelease?(tag) && !wants_prerelease }.
             max_by { |tag| version_class.new(numeric_version_from(tag)) }
+        end
+
+        def comparable_tags_from_registry
+          original_affix = affix_of(dependency.version)
+
+          tags_from_registry.
+            select { |tag| tag.match?(NAME_WITH_VERSION) }.
+            select { |tag| affix_of(tag) == original_affix }.
+            reject { |tag| commit_sha_suffix?(tag) && !latest_tag_exists? }
         end
 
         def remove_version_downgrades(candidate_tags)
@@ -117,6 +120,18 @@ module Dependabot
             version_class.new(numeric_version_from(tag)) >=
               version_class.new(numeric_version_from(dependency.version))
           end
+        end
+
+        def commit_sha_suffix?(tag)
+          # Some people suffix their versions with commit SHAs. Dependabot
+          # can't order on those but will try to, so instead we should exclude
+          # them (unless there's a `latest` version pushed to the registry, in
+          # which case we'll use that to find the latest version)
+          tag.match?(/\-[0-9a-f]{7,}$/) && !tag.match?(/\-20[0-1]\d{5}$/)
+        end
+
+        def latest_tag_exists?
+          tags_from_registry.include?("latest")
         end
 
         def version_of_latest_tag
