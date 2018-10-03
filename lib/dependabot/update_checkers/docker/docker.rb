@@ -216,6 +216,12 @@ module Dependabot
           dependency.requirements.first[:source][:registry]
         end
 
+        def using_dockerhub?
+          return true if registry_hostname.nil?
+
+          registry_hostname == "registry.hub.docker.com"
+        end
+
         def registry_credentials
           credentials_finder.credentials_for_registry(registry_hostname)
         end
@@ -226,11 +232,10 @@ module Dependabot
         end
 
         def docker_repo_name
-          @docker_repo_name ||=
-            begin
-              image = dependency.name
-              image.split("/").count < 2 ? "library/#{image}" : image
-            end
+          return dependency.name unless using_dockerhub?
+          return dependency.name unless dependency.name.split("/").count < 2
+
+          "library/#{dependency.name}"
         end
 
         def docker_registry_client

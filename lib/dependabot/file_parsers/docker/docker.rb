@@ -99,7 +99,7 @@ module Dependabot
         def version_from_digest(registry:, image:, digest:)
           return unless digest
 
-          repo = full_repo_name(image, registry)
+          repo = docker_repo_name(image, registry)
           registry_client = docker_registry_client(registry)
           registry_client.tags(repo).fetch("tags").find do |tag|
             digest == registry_client.digest(repo, tag)
@@ -115,7 +115,7 @@ module Dependabot
           raise PrivateSourceAuthenticationFailure, registry
         end
 
-        def full_repo_name(image, registry)
+        def docker_repo_name(image, registry)
           return image unless standard_registry?(registry)
           return image unless image.split("/").count < 2
 

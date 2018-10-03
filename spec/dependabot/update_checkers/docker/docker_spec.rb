@@ -302,7 +302,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     end
 
     context "when the dependency has a private registry" do
-      let(:dependency_name) { "myreg/ubuntu" }
+      let(:dependency_name) { "ubuntu" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
 
       context "without authentication credentials" do
         before do
-          tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
+          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
           stub_request(:get, tags_url).
             and_return(
               status: 401,
@@ -359,7 +359,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         end
 
         before do
-          tags_url = "https://registry-host.io:5000/v2/myreg/ubuntu/tags/list"
+          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
           stub_request(:get, tags_url).
             and_return(status: 200, body: registry_tags)
         end
