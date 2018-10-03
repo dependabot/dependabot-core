@@ -179,6 +179,19 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       it { is_expected.to eq("artful-20170916") }
     end
 
+    context "when the dependency has SHA suffices that should be ignored" do
+      let(:registry_tags) do
+        fixture("docker", "registry_tags", "sha_suffices.json")
+      end
+      let(:version) { "7.2-0.1" }
+      it { is_expected.to eq("7.2-0.3.1") }
+
+      context "for an older version of the prefix" do
+        let(:version) { "7.1-0.1" }
+        it { is_expected.to eq("7.1-0.3.1") }
+      end
+    end
+
     context "when the docker registry times out" do
       before do
         stub_request(:get, repo_url + "tags/list").
