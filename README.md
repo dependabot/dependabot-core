@@ -3,8 +3,8 @@
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub or GitHub Enterprise (we plan to support
-Bitbucket and Gitlab in future, too).
+for updating dependencies on GitHub (including GitHub Enterprise) and GitLab. We
+plan to add support for Bitbucket in future, too.
 
 If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
