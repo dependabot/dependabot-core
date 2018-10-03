@@ -349,7 +349,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
             }],
             previous_requirements: [{
               file: "setup.py",
-              requirement: ">2.5.4,<3.0.0",
+              requirement: "<3.0.0,>2.5.4",
               groups: [],
               source: nil
             }],

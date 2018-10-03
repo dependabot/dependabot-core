@@ -70,8 +70,12 @@ module Dependabot
             dec = matches.
                   select { |m| normalise(m[:name]) == dependency.name }.
                   find do |m|
-                    m[:requirements]&.gsub(/\s/, "") ==
-                      requirement.fetch(:requirement)
+                    # The FileParser can mess up a requirement's spacing so we
+                    # sanitize both requirements before comparing
+                    f_req = m[:requirements]&.gsub(/\s/, "")&.split(",")&.sort
+                    p_req = requirement.fetch(:requirement)&.
+                            gsub(/\s/, "")&.split(",")&.sort
+                    f_req == p_req
                   end
 
             raise "Declaration not found for #{dependency.name}!" unless dec
