@@ -543,6 +543,14 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                 )
               end
             end
+
+            context "when the dependency also has a non-git source" do
+              let(:package_json_fixture_name) { "multiple_sources.json" }
+
+              it "excludes the dependency" do
+                expect(dependencies.map(&:name)).to eq(["fetch-factory"])
+              end
+            end
           end
 
           context "that does flat resolution" do

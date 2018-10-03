@@ -36,7 +36,14 @@ module Dependabot
           dependency_set += yarn_lock_dependencies if yarn_locks.any?
           dependency_set += package_lock_dependencies if package_locks.any?
           dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
-          dependency_set.dependencies
+          dependencies = dependency_set.dependencies
+
+          # TODO: Currently, Dependabot can't handle dependencies that have both
+          # a git source *and* a non-git source. Fix that!
+          dependencies.reject do |dep|
+            dep.requirements.any? { |r| r.dig(:source, :type) == "git" } &&
+              dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
+          end
         end
 
         private
