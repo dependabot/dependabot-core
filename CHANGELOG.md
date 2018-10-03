@@ -1,3 +1,7 @@
+## v0.73.36, 2 October 2018
+
+- Docker: Don't assume that private registries use 'libraries' prefix
+
 ## v0.73.35, 2 October 2018
 
 - Docker: Speed up UpdateChecker
